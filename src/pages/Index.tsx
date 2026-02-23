@@ -1,5 +1,6 @@
 import Ticker from "@/components/salt/Ticker";
-import Navbar from "@/components/salt/Navbar";
+import Topbar from "@/components/salt/Topbar";
+import SaltSidebar from "@/components/salt/SaltSidebar";
 import Hero from "@/components/salt/Hero";
 import Collections from "@/components/salt/Collections";
 import Spotlight from "@/components/salt/Spotlight";
@@ -12,7 +13,8 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Ticker />
-      <Navbar />
+      <Topbar />
+      <SaltSidebar />
       <Hero />
       <Collections />
       <Spotlight />
