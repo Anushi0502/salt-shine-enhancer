@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
 
 const features = [
   "Sticky enhanced navigation",
@@ -11,7 +12,7 @@ const features = [
 
 const Spotlight = () => {
   return (
-    <section className="salt-container my-12 animate-rise animate-rise-d2">
+    <ScrollReveal className="salt-container my-12">
       <div className="bg-gradient-to-br from-[hsl(40_5%_11%)] to-[hsl(50_6%_15%)] rounded-xl border border-[hsl(50_6%_20%)] text-[hsl(38_30%_95%)] p-6 grid grid-cols-[1.1fr_0.9fr] gap-4 items-center shadow-soft max-lg:grid-cols-1">
         <div>
           <h2 className="font-serif text-[clamp(1.7rem,3.5vw,2.5rem)]">
@@ -26,16 +27,13 @@ const Spotlight = () => {
         </div>
         <div className="grid grid-cols-2 gap-2.5">
           {features.map((f) => (
-            <div
-              key={f}
-              className="border border-[hsl(50_6%_24%)] rounded-full px-3 py-2.5 text-[0.78rem] text-[hsl(36_12%_82%)] text-center bg-[rgba(255,255,255,0.03)]"
-            >
+            <div key={f} className="border border-[hsl(50_6%_24%)] rounded-full px-3 py-2.5 text-[0.78rem] text-[hsl(36_12%_82%)] text-center bg-[rgba(255,255,255,0.03)]">
               {f}
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </ScrollReveal>
   );
 };
 

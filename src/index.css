@@ -91,11 +91,12 @@
   }
 
   .salt-card-hover {
-    @apply transition-all duration-[230ms] ease-out;
+    transition: all 230ms ease-out;
   }
 
   .salt-card-hover:hover {
-    @apply -translate-y-1.5 shadow-xl;
+    transform: translateY(-6px);
+    box-shadow: 0 20px 45px -28px rgba(13, 12, 11, 0.4);
     border-color: hsl(33 25% 75%);
   }
 }

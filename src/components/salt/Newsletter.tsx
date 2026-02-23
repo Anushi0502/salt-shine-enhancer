@@ -1,10 +1,11 @@
 import { useState } from "react";
+import ScrollReveal from "./ScrollReveal";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
 
   return (
-    <section className="salt-container my-12">
+    <ScrollReveal className="salt-container my-12">
       <div className="rounded-xl border border-salt-line bg-[linear-gradient(125deg,rgba(197,154,69,0.13),rgba(205,90,50,0.11)),hsl(var(--salt-paper))] p-6 grid grid-cols-[1.05fr_0.95fr] gap-4 items-center max-lg:grid-cols-1">
         <div>
           <h2 className="font-serif text-[clamp(1.7rem,3.5vw,2.5rem)]">Get SALT Drop Alerts</h2>
@@ -28,7 +29,7 @@ const Newsletter = () => {
           </button>
         </form>
       </div>
-    </section>
+    </ScrollReveal>
   );
 };
 
