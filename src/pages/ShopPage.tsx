@@ -1,6 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowDownUp, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import {
+  ArrowDownUp,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
@@ -16,17 +23,59 @@ const sortOptions = [
   { value: "newest", label: "Newest" },
 ] as const;
 
+const perPageOptions = [24, 48, 72] as const;
+
+function asPositiveInt(input: string | null, fallback: number): number {
+  const parsed = Number(input);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function asNumberOrNull(input: string | null): number | null {
+  if (!input || !input.trim()) {
+    return null;
+  }
+
+  const parsed = Number(input);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const collectionHandle = searchParams.get("collection") || "";
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
+  const page = asPositiveInt(searchParams.get("page"), 1);
+  const perPageValue = asPositiveInt(searchParams.get("perPage"), perPageOptions[0]);
+  const perPage = perPageOptions.includes(perPageValue as (typeof perPageOptions)[number])
+    ? (perPageValue as (typeof perPageOptions)[number])
+    : perPageOptions[0];
+
+  const minParam = searchParams.get("min");
+  const maxParam = searchParams.get("max");
+  const minFilter = asNumberOrNull(minParam);
+  const maxFilter = asNumberOrNull(maxParam);
+
   const [searchInput, setSearchInput] = useState(query);
+  const [priceMinInput, setPriceMinInput] = useState(minParam || "");
+  const [priceMaxInput, setPriceMaxInput] = useState(maxParam || "");
 
   useEffect(() => {
     setSearchInput(query);
   }, [query]);
+
+  useEffect(() => {
+    setPriceMinInput(minParam || "");
+    setPriceMaxInput(maxParam || "");
+  }, [minParam, maxParam]);
 
   const {
     data: productsPayload,
@@ -56,8 +105,24 @@ const ShopPage = () => {
     [products, query, collectionHandle, typeFilter, collections],
   );
 
+  const priceFilteredProducts = useMemo(() => {
+    return filteredProducts.filter((product) => {
+      const price = minPrice(product);
+
+      if (minFilter != null && price < minFilter) {
+        return false;
+      }
+
+      if (maxFilter != null && price > maxFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [filteredProducts, minFilter, maxFilter]);
+
   const sortedProducts = useMemo(() => {
-    const base = [...filteredProducts];
+    const base = [...priceFilteredProducts];
 
     if (sort === "price-asc") {
       return base.sort((a, b) => minPrice(a) - minPrice(b));
@@ -80,10 +145,17 @@ const ShopPage = () => {
     }
 
     return base;
-  }, [filteredProducts, sort]);
+  }, [priceFilteredProducts, sort]);
 
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
   const selectedCollection = collections.find((collection) => collection.handle === collectionHandle);
+
+  const totalResults = sortedProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
+  const currentPage = Math.min(Math.max(page, 1), totalPages);
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex = Math.min(startIndex + perPage, totalResults);
+  const visibleProducts = sortedProducts.slice(startIndex, endIndex);
 
   if (productsLoading || collectionsLoading) {
     return (
@@ -115,13 +187,21 @@ const ShopPage = () => {
     );
   }
 
-  const updateParam = (key: string, value: string) => {
+  const updateParams = (updates: Record<string, string | null>, resetPage = false) => {
     const next = new URLSearchParams(searchParams);
 
-    if (value) {
-      next.set(key, value);
-    } else {
-      next.delete(key);
+    Object.entries(updates).forEach(([key, value]) => {
+      const normalized = value?.trim() || "";
+
+      if (normalized) {
+        next.set(key, normalized);
+      } else {
+        next.delete(key);
+      }
+    });
+
+    if (resetPage) {
+      next.delete("page");
     }
 
     setSearchParams(next);
@@ -130,12 +210,53 @@ const ShopPage = () => {
   const clearFilters = () => {
     setSearchParams(new URLSearchParams());
     setSearchInput("");
+    setPriceMinInput("");
+    setPriceMaxInput("");
   };
 
   const onSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    updateParam("q", searchInput.trim());
+    updateParams({ q: searchInput.trim() }, true);
   };
+
+  const onApplyPrice = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedMin = asNumberOrNull(priceMinInput);
+    const normalizedMax = asNumberOrNull(priceMaxInput);
+
+    updateParams(
+      {
+        min: normalizedMin == null ? null : String(normalizedMin),
+        max: normalizedMax == null ? null : String(normalizedMax),
+      },
+      true,
+    );
+  };
+
+  const onPageChange = (nextPage: number) => {
+    const clamped = Math.max(1, Math.min(totalPages, nextPage));
+
+    updateParams({ page: clamped <= 1 ? null : String(clamped) });
+  };
+
+  const onPerPageChange = (value: string) => {
+    const nextValue = asPositiveInt(value, perPageOptions[0]);
+    const normalized = perPageOptions.includes(nextValue as (typeof perPageOptions)[number])
+      ? String(nextValue)
+      : String(perPageOptions[0]);
+
+    updateParams({ perPage: normalized }, true);
+  };
+
+  const filterIsActive =
+    !!query ||
+    !!collectionHandle ||
+    !!typeFilter ||
+    sort !== "featured" ||
+    minFilter != null ||
+    maxFilter != null ||
+    perPage !== perPageOptions[0];
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
@@ -144,7 +265,7 @@ const ShopPage = () => {
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Shop</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">All Products</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Explore the full SALT catalog with layered filtering and quick sort controls for faster product discovery.
+            Explore the full SALT catalog with layered filtering, price controls, and paged browsing designed for large inventories.
           </p>
 
           <div className="mt-5 grid gap-3 xl:grid-cols-[1fr_auto]">
@@ -159,7 +280,7 @@ const ShopPage = () => {
               />
             </form>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 <ArrowDownUp className="h-3.5 w-3.5" /> Sort
               </div>
@@ -169,7 +290,7 @@ const ShopPage = () => {
               <select
                 id="sort-products"
                 value={sort}
-                onChange={(event) => updateParam("sort", event.target.value)}
+                onChange={(event) => updateParams({ sort: event.target.value }, true)}
                 className="h-11 min-w-[180px] rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
               >
                 {sortOptions.map((option) => (
@@ -181,16 +302,76 @@ const ShopPage = () => {
             </div>
           </div>
 
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+            <form onSubmit={onApplyPrice} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+              <input
+                type="number"
+                min={0}
+                value={priceMinInput}
+                onChange={(event) => setPriceMinInput(event.target.value)}
+                placeholder="Min price"
+                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              />
+              <input
+                type="number"
+                min={0}
+                value={priceMaxInput}
+                onChange={(event) => setPriceMaxInput(event.target.value)}
+                placeholder="Max price"
+                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              />
+              <button
+                type="submit"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground"
+              >
+                Apply price
+              </button>
+            </form>
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <select
+                value={collectionHandle}
+                onChange={(event) => updateParams({ collection: event.target.value }, true)}
+                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              >
+                <option value="">All collections</option>
+                {collections.map((collection) => (
+                  <option key={collection.id} value={collection.handle}>
+                    {collection.title}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(event) => updateParams({ type: event.target.value }, true)}
+                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              >
+                <option value="">All product types</option>
+                {productTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> {sortedProducts.length.toLocaleString()} shown
+              <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
+            </span>
+            <span className="rounded-full border border-border bg-background px-3 py-1">
+              Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
             </span>
             {query ? <span className="rounded-full border border-border bg-background px-3 py-1">Search: "{query}"</span> : null}
             {selectedCollection ? (
               <span className="rounded-full border border-border bg-background px-3 py-1">Collection: {selectedCollection.title}</span>
             ) : null}
             {typeFilter ? <span className="rounded-full border border-border bg-background px-3 py-1">Type: {typeFilter}</span> : null}
-            {(query || collectionHandle || typeFilter || sort !== "featured") && (
+            {minFilter != null ? <span className="rounded-full border border-border bg-background px-3 py-1">Min ${minFilter}</span> : null}
+            {maxFilter != null ? <span className="rounded-full border border-border bg-background px-3 py-1">Max ${maxFilter}</span> : null}
+            {filterIsActive && (
               <button
                 type="button"
                 onClick={clearFilters}
@@ -201,71 +382,26 @@ const ShopPage = () => {
             )}
           </div>
 
-          <div className="mt-4">
-            <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collections</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["new-arrivals", "summer-collection", "men-collection", "women-wear", "cookware"].map((handle) => (
               <button
+                key={handle}
                 type="button"
-                onClick={() => updateParam("collection", "")}
+                onClick={() => updateParams({ collection: handle }, true)}
                 className={`rounded-full border px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${
-                  !collectionHandle
+                  collectionHandle === handle
                     ? "border-foreground bg-foreground text-primary-foreground"
                     : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
                 }`}
               >
-                All collections
+                {handle.replace(/-/g, " ")}
               </button>
-              {collections.slice(0, 12).map((collection) => (
-                <button
-                  key={collection.id}
-                  type="button"
-                  onClick={() => updateParam("collection", collection.handle)}
-                  className={`rounded-full border px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${
-                    collectionHandle === collection.handle
-                      ? "border-foreground bg-foreground text-primary-foreground"
-                      : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
-                  }`}
-                >
-                  {collection.title}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Product type</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => updateParam("type", "")}
-                className={`rounded-full border px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${
-                  !typeFilter
-                    ? "border-foreground bg-foreground text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
-                }`}
-              >
-                All types
-              </button>
-              {productTypes.slice(0, 12).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => updateParam("type", type)}
-                  className={`rounded-full border px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${
-                    typeFilter === type
-                      ? "border-foreground bg-foreground text-primary-foreground"
-                      : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </Reveal>
 
-      {sortedProducts.length === 0 ? (
+      {totalResults === 0 ? (
         <Reveal delayMs={80} className="mt-6">
           <div className="rounded-3xl border border-border/80 bg-card p-10 text-center shadow-soft">
             <h2 className="font-display text-3xl">No products match this filter</h2>
@@ -302,12 +438,55 @@ const ShopPage = () => {
           ) : null}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {sortedProducts.map((product, index) => (
-              <Reveal key={product.id} delayMs={index * 45}>
+            {visibleProducts.map((product, index) => (
+              <Reveal key={product.id} delayMs={index * 35}>
                 <ProductCard product={product} />
               </Reveal>
             ))}
           </div>
+
+          <Reveal delayMs={80} className="mt-7">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Prev
+                </button>
+
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">Items / page</p>
+                <select
+                  value={perPage}
+                  onChange={(event) => onPerPageChange(event.target.value)}
+                  className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+                >
+                  {perPageOptions.map((count) => (
+                    <option key={count} value={count}>
+                      {count}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </Reveal>
         </>
       )}
     </section>

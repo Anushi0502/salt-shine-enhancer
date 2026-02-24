@@ -1,5 +1,13 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BadgeCheck, Clock3, Sparkles, Star, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Clock3,
+  DollarSign,
+  Sparkles,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 import HomeHero from "@/components/storefront/HomeHero";
 import CollectionCard from "@/components/storefront/CollectionCard";
 import KpiStrip from "@/components/storefront/KpiStrip";
@@ -85,6 +93,9 @@ const HomePage = () => {
   const featured = products.slice(0, 3);
   const featuredCollections = collections.slice(0, 8);
   const trendingProducts = products.slice(0, 8);
+  const popularCollections = [...collections]
+    .sort((a, b) => b.products_count - a.products_count)
+    .slice(0, 6);
 
   const hotDeals = [...products]
     .sort((a, b) => savingsPercent(b) - savingsPercent(a))
@@ -133,9 +144,74 @@ const HomePage = () => {
                 </Link>
               ))}
             </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <Link
+                to="/shop?max=25"
+                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+              >
+                Under $25
+              </Link>
+              <Link
+                to="/shop?min=25&max=60"
+                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+              >
+                $25 to $60
+              </Link>
+              <Link
+                to="/shop?min=60&max=120"
+                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+              >
+                $60 to $120
+              </Link>
+              <Link
+                to="/shop?min=120"
+                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+              >
+                $120 and above
+              </Link>
+            </div>
           </div>
         </Reveal>
       </section>
+
+      {popularCollections.length > 0 ? (
+        <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
+          <Reveal>
+            <div className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Popular Paths</p>
+                  <h3 className="font-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-tight">
+                    Most Stocked Collections
+                  </h3>
+                </div>
+                <Link
+                  to="/collections"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary"
+                >
+                  Browse all <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {popularCollections.map((collection) => (
+                  <Link
+                    key={collection.id}
+                    to={`/shop?collection=${collection.handle}`}
+                    className="rounded-2xl border border-border/75 bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
+                  >
+                    <p className="line-clamp-1 text-sm font-semibold">{collection.title}</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                      {collection.products_count.toLocaleString()} products
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </section>
+      ) : null}
 
       <section id="collections" className="mx-auto mt-12 w-[min(1280px,96vw)]">
         <Reveal>
@@ -306,6 +382,9 @@ const HomePage = () => {
                 </p>
                 <p className="inline-flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" /> Curated inventory updated continuously
+                </p>
+                <p className="inline-flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" /> Budget-friendly to premium price tiers
                 </p>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   ChevronRight,
+  History,
   Minus,
   PackageCheck,
   Plus,
@@ -26,6 +27,8 @@ import {
 } from "@/lib/formatters";
 import { useProducts } from "@/lib/shopify-data";
 
+const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
+
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
@@ -38,6 +41,7 @@ const ProductPage = () => {
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
+  const [recentHandles, setRecentHandles] = useState<string[]>([]);
 
   useEffect(() => {
     if (!product) {
@@ -49,6 +53,30 @@ const ProductPage = () => {
     setQuantity(1);
     setActiveImage(productImage(product));
   }, [product, variants]);
+
+  useEffect(() => {
+    if (!product || typeof window === "undefined") {
+      return;
+    }
+
+    let existing: string[] = [];
+    const raw = window.localStorage.getItem(RECENTLY_VIEWED_KEY);
+
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (Array.isArray(parsed)) {
+          existing = parsed.filter((value): value is string => typeof value === "string");
+        }
+      } catch {
+        existing = [];
+      }
+    }
+
+    const next = [product.handle, ...existing.filter((handle) => handle !== product.handle)].slice(0, 12);
+    window.localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
+    setRecentHandles(next);
+  }, [product]);
 
   if (isLoading) {
     return <LoadingState title="Loading product" subtitle="Preparing details, variants, and delivery info." />;
@@ -114,6 +142,12 @@ const ProductPage = () => {
     product.product_type ? `${product.product_type} essential` : "Curated everyday essential",
     ...productTagList(product).slice(0, 2),
   ];
+
+  const recentlyViewedProducts = recentHandles
+    .filter((entry) => entry !== product.handle)
+    .map((entry) => products.find((candidate) => candidate.handle === entry))
+    .filter((entry): entry is (typeof products)[number] => Boolean(entry))
+    .slice(0, 4);
 
   const deliveryStart = new Date();
   deliveryStart.setDate(deliveryStart.getDate() + 3);
@@ -326,6 +360,28 @@ const ProductPage = () => {
             {relatedProducts.map((related, index) => (
               <Reveal key={related.id} delayMs={index * 70}>
                 <ProductCard product={related} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {recentlyViewedProducts.length > 0 ? (
+        <section className="mt-10">
+          <Reveal>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Recently viewed</p>
+                <h2 className="inline-flex items-center gap-2 font-display text-[clamp(1.6rem,2.4vw,2.3rem)]">
+                  <History className="h-5 w-5 text-primary" /> Continue exploring
+                </h2>
+              </div>
+            </div>
+          </Reveal>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recentlyViewedProducts.map((entry, index) => (
+              <Reveal key={entry.id} delayMs={index * 55}>
+                <ProductCard product={entry} />
               </Reveal>
             ))}
           </div>
