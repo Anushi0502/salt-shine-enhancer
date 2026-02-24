@@ -1,11 +1,29 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  Minus,
+  PackageCheck,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Trash2,
+  Truck,
+} from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import ProductCard from "@/components/storefront/ProductCard";
 import { useCart } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { useProducts } from "@/lib/shopify-data";
+
+const FREE_SHIPPING_THRESHOLD = 49;
 
 const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, clear } = useCart();
+  const { data: productsPayload } = useProducts();
+
+  const recommendedProducts = (productsPayload?.products || []).slice(0, 4);
+  const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   if (!items.length) {
     return (
@@ -19,12 +37,20 @@ const CartPage = () => {
             <p className="mt-3 text-sm text-muted-foreground">
               Add products from the catalog and they will appear here instantly.
             </p>
-            <Link
-              to="/shop"
-              className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground hover:brightness-110"
-            >
-              Start shopping
-            </Link>
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <Link
+                to="/shop"
+                className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground hover:brightness-110"
+              >
+                Start shopping
+              </Link>
+              <Link
+                to="/collections"
+                className="inline-flex h-11 items-center rounded-full border border-border bg-background px-6 text-sm font-bold"
+              >
+                Browse collections
+              </Link>
+            </div>
           </div>
         </Reveal>
       </section>
@@ -47,6 +73,25 @@ const CartPage = () => {
           >
             Clear cart
           </button>
+        </div>
+      </Reveal>
+
+      <Reveal delayMs={40}>
+        <div className="mb-5 rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <p className="inline-flex items-center gap-1.5 font-semibold">
+              <Truck className="h-4 w-4 text-primary" />
+              {shippingGap > 0
+                ? `${formatMoney(shippingGap)} away from free shipping`
+                : "You unlocked free shipping"}
+            </p>
+            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
+              Threshold {formatMoney(FREE_SHIPPING_THRESHOLD)}
+            </p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${shippingProgress}%` }} />
+          </div>
         </div>
       </Reveal>
 
@@ -136,7 +181,7 @@ const CartPage = () => {
               href="https://saltonlinestore.com/cart"
               target="_blank"
               rel="noreferrer"
-              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+              className="mt-5 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
             >
               Checkout on Shopify <ArrowRight className="h-4 w-4" />
             </a>
@@ -147,9 +192,38 @@ const CartPage = () => {
             >
               Continue shopping
             </Link>
+
+            <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+              <p className="inline-flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5" /> Payment encryption enabled
+              </p>
+              <p className="inline-flex items-center gap-2">
+                <PackageCheck className="h-3.5 w-3.5" /> Tracking details after dispatch
+              </p>
+            </div>
           </aside>
         </Reveal>
       </div>
+
+      {recommendedProducts.length > 0 ? (
+        <section className="mt-10">
+          <Reveal>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Add-on picks</p>
+                <h2 className="font-display text-[clamp(1.7rem,2.6vw,2.5rem)]">Complete your order</h2>
+              </div>
+            </div>
+          </Reveal>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recommendedProducts.map((product, index) => (
+              <Reveal key={product.id} delayMs={index * 60}>
+                <ProductCard product={product} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 };

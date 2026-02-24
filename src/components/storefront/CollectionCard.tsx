@@ -10,7 +10,7 @@ const CollectionCard = ({ collection }: CollectionCardProps) => {
   const image = collection.image?.src || "/placeholder.svg";
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft">
+    <article className="group relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/45">
       <div className="relative aspect-[5/4] overflow-hidden">
         <img
           src={image}
@@ -18,12 +18,15 @@ const CollectionCard = ({ collection }: CollectionCardProps) => {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/28 to-transparent transition-opacity group-hover:opacity-90" />
       </div>
 
       <div className="absolute inset-x-0 bottom-0 p-4">
+        <div className="mb-2 inline-flex rounded-full border border-primary-foreground/45 bg-primary-foreground/15 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-primary-foreground/95">
+          Curated category
+        </div>
         <h3 className="text-xl font-bold text-primary-foreground">{collection.title}</h3>
-        <p className="mt-1 text-sm text-primary-foreground/85">{collection.products_count} products</p>
+        <p className="mt-1 text-sm text-primary-foreground/85">{collection.products_count} products available</p>
 
         <Link
           to={`/shop?collection=${collection.handle}`}

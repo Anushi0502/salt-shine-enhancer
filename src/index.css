@@ -103,10 +103,19 @@
   body {
     @apply bg-background text-foreground font-sans;
     background:
-      radial-gradient(circle at 10% -10%, hsl(36 60% 94%) 0%, transparent 34%),
-      radial-gradient(circle at 110% 10%, hsl(30 40% 88%) 0%, transparent 30%),
+      radial-gradient(circle at 8% -6%, hsl(30 68% 92%) 0%, transparent 36%),
+      radial-gradient(circle at 112% 10%, hsl(145 22% 85%) 0%, transparent 33%),
+      radial-gradient(circle at 40% 112%, hsl(40 44% 87%) 0%, transparent 44%),
       hsl(var(--background));
     overflow-x: clip;
+  }
+
+  .dark body {
+    background:
+      radial-gradient(circle at 0% -2%, hsl(225 36% 18%) 0%, transparent 36%),
+      radial-gradient(circle at 110% 6%, hsl(25 50% 24%) 0%, transparent 38%),
+      radial-gradient(circle at 42% 120%, hsl(215 26% 16%) 0%, transparent 42%),
+      hsl(var(--background));
   }
 }
 
@@ -143,6 +152,43 @@
     box-shadow: 0 20px 45px -28px rgba(13, 12, 11, 0.4);
     border-color: hsl(33 25% 75%);
   }
+
+  .salt-glass {
+    background: linear-gradient(140deg, hsl(var(--card) / 0.84), hsl(var(--card) / 0.62));
+    backdrop-filter: blur(10px);
+  }
+
+  .salt-gradient-text {
+    background: linear-gradient(115deg, hsl(var(--salt-accent-deep)), hsl(var(--salt-olive)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .salt-grid-bg {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.28) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.28) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+
+  .salt-button-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .salt-button-shine::after {
+    content: "";
+    position: absolute;
+    top: -120%;
+    left: -30%;
+    width: 46%;
+    height: 340%;
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.35), transparent);
+    transform: rotate(17deg);
+    animation: sweep 4.4s linear infinite;
+    pointer-events: none;
+  }
 }
 
 @layer utilities {
@@ -160,6 +206,15 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
+  }
+
+  @keyframes sweep {
+    0% {
+      transform: translateX(-60%) rotate(17deg);
+    }
+    100% {
+      transform: translateX(380%) rotate(17deg);
+    }
   }
 
   .animate-crawl {

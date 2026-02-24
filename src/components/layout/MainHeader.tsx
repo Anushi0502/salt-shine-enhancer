@@ -12,6 +12,12 @@ const navLinks = [
   { to: "/contact", label: "Contact" },
 ];
 
+const quickLinks = [
+  { to: "/shop?collection=new-arrivals", label: "New Arrivals" },
+  { to: "/shop?type=Cookware", label: "Cookware" },
+  { to: "/shop?type=Apparel", label: "Apparel" },
+];
+
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `rounded-full px-3 py-2 text-sm font-semibold transition ${
     isActive
@@ -59,10 +65,13 @@ const MainHeader = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-      <div className="hidden border-b border-border/70 bg-foreground text-primary-foreground md:block">
-        <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between py-2 text-xs">
-          <span>Free US shipping over $49</span>
-          <span>Secure checkout | Live catalog sync | Easy returns</span>
+      <div className="border-b border-border/70 bg-foreground text-primary-foreground">
+        <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2 text-[0.7rem] sm:text-xs">
+          <span className="truncate">Free US shipping over $49</span>
+          <span className="hidden text-primary-foreground/80 md:inline">Secure checkout</span>
+          <span className="truncate text-right">
+            New weekly drops • 30-day returns • Trusted by 2,300+ shoppers
+          </span>
         </div>
       </div>
 
@@ -71,7 +80,12 @@ const MainHeader = () => {
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/40 bg-gradient-to-br from-primary to-salt-olive text-base font-black text-primary-foreground">
             SA
           </span>
-          <span className="font-display text-2xl tracking-[0.08em]">SALT</span>
+          <div>
+            <span className="font-display text-2xl tracking-[0.08em]">SALT</span>
+            <p className="-mt-0.5 hidden text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground md:block">
+              Online Store
+            </p>
+          </div>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
@@ -91,7 +105,7 @@ const MainHeader = () => {
               type="search"
               placeholder="Search products"
               aria-label="Search products"
-              className="h-10 w-56 rounded-full border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary/60"
+              className="h-10 w-64 rounded-full border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary/60"
             />
           </form>
 
@@ -120,6 +134,25 @@ const MainHeader = () => {
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
+      </div>
+
+      <div className="hidden border-t border-border/70 bg-card/70 lg:block">
+        <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {quickLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className="rounded-full border border-border bg-background px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            Fast dispatch • Easy returns • Encrypted checkout
+          </p>
+        </div>
       </div>
 
       {mobileOpen ? (
@@ -157,6 +190,19 @@ const MainHeader = () => {
               </NavLink>
             ))}
           </nav>
+
+          <div className="mx-auto mt-3 flex w-[min(1280px,96vw)] flex-wrap gap-2">
+            {quickLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground"
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
 
           <div className="mx-auto mt-4 flex w-[min(1280px,96vw)] items-center justify-between gap-3">
             <ThemeToggle />

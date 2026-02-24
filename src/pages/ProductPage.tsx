@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, PackageCheck, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  ChevronRight,
+  Minus,
+  PackageCheck,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import { toast } from "sonner";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -10,6 +20,7 @@ import {
   compareAt,
   formatMoney,
   productImage,
+  productTagList,
   sortVariantsByPrice,
   stripHtml,
 } from "@/lib/formatters";
@@ -99,6 +110,24 @@ const ProductPage = () => {
     ? product.images.map((image) => image.src)
     : [productImage(product)];
 
+  const highlights = [
+    product.product_type ? `${product.product_type} essential` : "Curated everyday essential",
+    ...productTagList(product).slice(0, 2),
+  ];
+
+  const deliveryStart = new Date();
+  deliveryStart.setDate(deliveryStart.getDate() + 3);
+  const deliveryEnd = new Date();
+  deliveryEnd.setDate(deliveryEnd.getDate() + 6);
+
+  const deliveryRange = `${deliveryStart.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })} - ${deliveryEnd.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })}`;
+
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
       return;
@@ -123,15 +152,29 @@ const ProductPage = () => {
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-20 md:pb-8">
       <Reveal>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Link to="/" className="hover:text-primary">
+            Home
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <Link to="/shop" className="hover:text-primary">
+            Shop
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="line-clamp-1">{product.title}</span>
+        </div>
+      </Reveal>
+
+      <Reveal>
         <Link
           to="/shop"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+          className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
         >
           <ArrowLeft className="h-4 w-4" /> Back to shop
         </Link>
       </Reveal>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-4 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
         <Reveal>
           <div className="rounded-[2rem] border border-border/80 bg-card p-4 shadow-soft sm:p-5">
             <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
@@ -172,9 +215,14 @@ const ProductPage = () => {
               {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
             </div>
 
-            <p className={`mt-2 text-xs font-semibold ${isAvailable ? "text-emerald-700" : "text-destructive"}`}>
-              {isAvailable ? "In stock and ready to ship" : "Out of stock"}
-            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <p className={`rounded-full border px-3 py-1 text-xs font-semibold ${isAvailable ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+                {isAvailable ? "In stock and ready to ship" : "Out of stock"}
+              </p>
+              <p className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                Est. delivery {deliveryRange}
+              </p>
+            </div>
 
             {variants.length > 0 ? (
               <label className="mt-5 block text-sm font-semibold">
@@ -193,35 +241,46 @@ const ProductPage = () => {
               </label>
             ) : null}
 
-            <label className="mt-4 block text-sm font-semibold">
-              Quantity
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={quantity}
-                onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))}
-                className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              />
-            </label>
+            <div className="mt-4">
+              <p className="text-sm font-semibold">Quantity</p>
+              <div className="mt-2 inline-flex h-11 items-center rounded-full border border-border bg-background">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                  className="inline-flex h-11 w-11 items-center justify-center"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="min-w-10 text-center text-sm font-bold">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((value) => Math.min(99, value + 1))}
+                  className="inline-flex h-11 w-11 items-center justify-center"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={addToCart}
               disabled={!isAvailable}
-              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
-              {isAvailable ? "Add to cart" : "Unavailable"}
+              {isAvailable ? `Add to cart • ${formatMoney(price * quantity)}` : "Unavailable"}
             </button>
 
             <a
-              href="https://saltonlinestore.com/cart"
+              href={`https://saltonlinestore.com/products/${product.handle}`}
               target="_blank"
               rel="noreferrer"
               className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] hover:border-primary/50"
             >
-              Checkout on Shopify
+              View on Shopify
             </a>
 
             <div className="mt-5 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
@@ -234,6 +293,20 @@ const ProductPage = () => {
               <p className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5" /> 30-day returns on eligible items
               </p>
+              <p className="flex items-center gap-2">
+                <BadgeCheck className="h-3.5 w-3.5" /> Secure payment processing
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {highlights.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-border bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground"
+                >
+                  {item}
+                </span>
+              ))}
             </div>
           </aside>
         </Reveal>

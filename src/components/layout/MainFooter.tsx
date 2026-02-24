@@ -24,8 +24,19 @@ const MainFooter = () => {
             >
               saltonlinestore.com
             </a>
-            with a conversion-focused browsing experience.
+            with premium-quality picks across home, lifestyle, and gifting.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-border bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+              Fast Dispatch
+            </span>
+            <span className="rounded-full border border-border bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+              Secure Checkout
+            </span>
+            <span className="rounded-full border border-border bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+              30-day Returns
+            </span>
+          </div>
         </div>
 
         <div>
@@ -44,6 +55,11 @@ const MainFooter = () => {
             <li>
               <Link className="hover:text-primary" to="/about">
                 About
+              </Link>
+            </li>
+            <li>
+              <Link className="hover:text-primary" to="/shop?collection=new-arrivals">
+                New Arrivals
               </Link>
             </li>
           </ul>
@@ -67,6 +83,11 @@ const MainFooter = () => {
                 Returns
               </a>
             </li>
+            <li>
+              <a className="hover:text-primary" href="https://saltonlinestore.com/policies/shipping-policy" target="_blank" rel="noreferrer">
+                Shipping
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -83,7 +104,7 @@ const MainFooter = () => {
               className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground transition hover:brightness-110"
               type="submit"
             >
-              Subscribe to Drops
+              Join the SALT List
             </button>
             {subscribed ? (
               <p className="text-xs text-emerald-700">
@@ -97,7 +118,7 @@ const MainFooter = () => {
       <div className="border-t border-border/70">
         <div className="mx-auto flex w-[min(1280px,96vw)] flex-col items-center justify-between gap-2 py-4 text-xs text-muted-foreground md:flex-row">
           <span>Copyright {new Date().getFullYear()} SALT Online Store.</span>
-          <span>Built for production with responsive layout, resilient data fallback, and accessible navigation.</span>
+          <span>Mobile-optimized storefront with resilient catalog sync and accessible navigation.</span>
         </div>
       </div>
     </footer>

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, Compass, Sparkles } from "lucide-react";
 import CollectionCard from "@/components/storefront/CollectionCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
@@ -35,6 +36,7 @@ const CollectionsPage = () => {
   }
 
   const collections = data?.collections || [];
+  const totalProducts = collections.reduce((sum, collection) => sum + collection.products_count, 0);
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
@@ -43,12 +45,18 @@ const CollectionsPage = () => {
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Collections</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Shop by Collection</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Discover focused category journeys inspired by both v1 and v2 design directions.
+            Enter through curated category paths built for faster decision-making and cleaner product discovery.
           </p>
-          <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>{collections.length.toLocaleString()} collections available</span>
-            <Link to="/shop" className="font-semibold text-primary underline-offset-2 hover:underline">
-              View all products
+
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold text-muted-foreground">
+              <Compass className="h-3.5 w-3.5" /> {collections.length.toLocaleString()} collections
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5" /> {totalProducts.toLocaleString()} mapped products
+            </span>
+            <Link to="/shop" className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-2 hover:underline">
+              View all products <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
@@ -61,6 +69,31 @@ const CollectionsPage = () => {
           </Reveal>
         ))}
       </div>
+
+      <Reveal delayMs={120}>
+        <div className="mt-10 rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-salt-warm/40 p-6 shadow-soft sm:p-8">
+          <h2 className="font-display text-[clamp(1.6rem,2.8vw,2.4rem)] leading-tight">
+            Not sure where to start?
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+            Jump into the full catalog and use filters to narrow by collection, product type, and savings opportunities.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              to="/shop"
+              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+            >
+              Open full catalog
+            </Link>
+            <Link
+              to="/shop?sort=discount"
+              className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              View best savings
+            </Link>
+          </div>
+        </div>
+      </Reveal>
     </section>
   );
 };

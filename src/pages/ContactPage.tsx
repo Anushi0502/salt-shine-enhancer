@@ -1,5 +1,8 @@
 import { FormEvent, useState } from "react";
+import { Mail, MessageSquareMore, PackageSearch } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+
+const supportTopics = ["Order tracking", "Returns and exchanges", "Product recommendation", "Bulk order request"];
 
 const ContactPage = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -18,6 +21,38 @@ const ContactPage = () => {
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             Send your request and our support team will respond with shipping, returns, or product guidance.
           </p>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+              <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                <MessageSquareMore className="h-4 w-4 text-primary" /> Response time
+              </p>
+              <p className="mt-1">Within 24 business hours</p>
+            </div>
+            <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+              <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                <PackageSearch className="h-4 w-4 text-primary" /> Order support
+              </p>
+              <p className="mt-1">Tracking and delivery help</p>
+            </div>
+            <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+              <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                <Mail className="h-4 w-4 text-primary" /> Direct email
+              </p>
+              <p className="mt-1">support@saltonlinestore.com</p>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            {supportTopics.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
 
           <form onSubmit={onSubmit} className="mt-6 grid gap-3">
             <input
