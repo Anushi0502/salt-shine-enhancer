@@ -56,3 +56,16 @@ export interface CollectionsPayload {
   total: number;
   collections: ShopifyCollection[];
 }
+
+export interface CollectionProductsPayload {
+  generatedAt: string;
+  source: string;
+  totalCollections: number;
+  collections: Record<
+    string,
+    {
+      title: string;
+      productIds: number[];
+    }
+  >;
+}

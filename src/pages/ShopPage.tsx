@@ -13,7 +13,11 @@ import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
-import { useCollections, useProducts } from "@/lib/shopify-data";
+import {
+  useCollectionProductsMap,
+  useCollections,
+  useProducts,
+} from "@/lib/shopify-data";
 
 const sortOptions = [
   { value: "featured", label: "Featured" },
@@ -24,6 +28,14 @@ const sortOptions = [
 ] as const;
 
 const perPageOptions = [24, 48, 72] as const;
+
+const priceRangeOptions = [
+  { value: "all", label: "Any price", min: null, max: null },
+  { value: "under-25", label: "Under $25", min: null, max: 25 },
+  { value: "25-60", label: "$25 - $60", min: 25, max: 60 },
+  { value: "60-120", label: "$60 - $120", min: 60, max: 120 },
+  { value: "120-plus", label: "$120+", min: 120, max: null },
+] as const;
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -47,6 +59,15 @@ function asNumberOrNull(input: string | null): number | null {
   return parsed;
 }
 
+function activePriceRangeValue(min: number | null, max: number | null): string {
+  if (min == null && max == null) {
+    return "all";
+  }
+
+  const exact = priceRangeOptions.find((option) => option.min === min && option.max === max);
+  return exact?.value || "custom";
+}
+
 const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
@@ -59,23 +80,15 @@ const ShopPage = () => {
     ? (perPageValue as (typeof perPageOptions)[number])
     : perPageOptions[0];
 
-  const minParam = searchParams.get("min");
-  const maxParam = searchParams.get("max");
-  const minFilter = asNumberOrNull(minParam);
-  const maxFilter = asNumberOrNull(maxParam);
+  const minFilter = asNumberOrNull(searchParams.get("min"));
+  const maxFilter = asNumberOrNull(searchParams.get("max"));
+  const priceRangeValue = activePriceRangeValue(minFilter, maxFilter);
 
   const [searchInput, setSearchInput] = useState(query);
-  const [priceMinInput, setPriceMinInput] = useState(minParam || "");
-  const [priceMaxInput, setPriceMaxInput] = useState(maxParam || "");
 
   useEffect(() => {
     setSearchInput(query);
   }, [query]);
-
-  useEffect(() => {
-    setPriceMinInput(minParam || "");
-    setPriceMaxInput(maxParam || "");
-  }, [minParam, maxParam]);
 
   const {
     data: productsPayload,
@@ -91,22 +104,43 @@ const ShopPage = () => {
     refetch: refetchCollections,
   } = useCollections();
 
+  const { data: collectionMapPayload } = useCollectionProductsMap();
+
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
 
-  const filteredProducts = useMemo(
+  const textFilteredProducts = useMemo(
     () =>
       filterProducts(products, {
         query,
-        collection: collectionHandle,
         productType: typeFilter,
         collections,
       }),
-    [products, query, collectionHandle, typeFilter, collections],
+    [products, query, typeFilter, collections],
   );
 
+  const collectionFilteredProducts = useMemo(() => {
+    if (!collectionHandle) {
+      return textFilteredProducts;
+    }
+
+    const mapCollections = collectionMapPayload?.collections || {};
+    const hasMapEntry = Object.prototype.hasOwnProperty.call(mapCollections, collectionHandle);
+
+    if (hasMapEntry) {
+      const ids = mapCollections[collectionHandle]?.productIds || [];
+      const idSet = new Set(ids);
+      return textFilteredProducts.filter((product) => idSet.has(product.id));
+    }
+
+    return filterProducts(textFilteredProducts, {
+      collection: collectionHandle,
+      collections,
+    });
+  }, [collectionHandle, collectionMapPayload, textFilteredProducts, collections]);
+
   const priceFilteredProducts = useMemo(() => {
-    return filteredProducts.filter((product) => {
+    return collectionFilteredProducts.filter((product) => {
       const price = minPrice(product);
 
       if (minFilter != null && price < minFilter) {
@@ -119,7 +153,7 @@ const ShopPage = () => {
 
       return true;
     });
-  }, [filteredProducts, minFilter, maxFilter]);
+  }, [collectionFilteredProducts, minFilter, maxFilter]);
 
   const sortedProducts = useMemo(() => {
     const base = [...priceFilteredProducts];
@@ -210,28 +244,11 @@ const ShopPage = () => {
   const clearFilters = () => {
     setSearchParams(new URLSearchParams());
     setSearchInput("");
-    setPriceMinInput("");
-    setPriceMaxInput("");
   };
 
   const onSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     updateParams({ q: searchInput.trim() }, true);
-  };
-
-  const onApplyPrice = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const normalizedMin = asNumberOrNull(priceMinInput);
-    const normalizedMax = asNumberOrNull(priceMaxInput);
-
-    updateParams(
-      {
-        min: normalizedMin == null ? null : String(normalizedMin),
-        max: normalizedMax == null ? null : String(normalizedMax),
-      },
-      true,
-    );
   };
 
   const onPageChange = (nextPage: number) => {
@@ -247,6 +264,27 @@ const ShopPage = () => {
       : String(perPageOptions[0]);
 
     updateParams({ perPage: normalized }, true);
+  };
+
+  const onPriceRangeChange = (value: string) => {
+    if (value === "all") {
+      updateParams({ min: null, max: null }, true);
+      return;
+    }
+
+    const selectedRange = priceRangeOptions.find((option) => option.value === value);
+    if (!selectedRange) {
+      updateParams({ min: null, max: null }, true);
+      return;
+    }
+
+    updateParams(
+      {
+        min: selectedRange.min == null ? null : String(selectedRange.min),
+        max: selectedRange.max == null ? null : String(selectedRange.max),
+      },
+      true,
+    );
   };
 
   const filterIsActive =
@@ -265,10 +303,10 @@ const ShopPage = () => {
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Shop</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">All Products</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Explore the full SALT catalog with layered filtering, price controls, and paged browsing designed for large inventories.
+            Browse a simplified catalog view with precise collection matching and faster page-based discovery.
           </p>
 
-          <div className="mt-5 grid gap-3 xl:grid-cols-[1fr_auto]">
+          <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
             <form onSubmit={onSearch} className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -280,81 +318,74 @@ const ShopPage = () => {
               />
             </form>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                <ArrowDownUp className="h-3.5 w-3.5" /> Sort
-              </div>
-              <label htmlFor="sort-products" className="sr-only">
-                Sort products
-              </label>
-              <select
-                id="sort-products"
-                value={sort}
-                onChange={(event) => updateParams({ sort: event.target.value }, true)}
-                className="h-11 min-w-[180px] rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              aria-label="Sort products"
+              value={sort}
+              onChange={(event) => updateParams({ sort: event.target.value }, true)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              aria-label="Products per page"
+              value={perPage}
+              onChange={(event) => onPerPageChange(event.target.value)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+            >
+              {perPageOptions.map((count) => (
+                <option key={count} value={count}>
+                  {count} / page
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-            <form onSubmit={onApplyPrice} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <input
-                type="number"
-                min={0}
-                value={priceMinInput}
-                onChange={(event) => setPriceMinInput(event.target.value)}
-                placeholder="Min price"
-                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              />
-              <input
-                type="number"
-                min={0}
-                value={priceMaxInput}
-                onChange={(event) => setPriceMaxInput(event.target.value)}
-                placeholder="Max price"
-                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              />
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground"
-              >
-                Apply price
-              </button>
-            </form>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <select
+              aria-label="Collection filter"
+              value={collectionHandle}
+              onChange={(event) => updateParams({ collection: event.target.value }, true)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+            >
+              <option value="">All collections</option>
+              {collections.map((collection) => (
+                <option key={collection.id} value={collection.handle}>
+                  {collection.title}
+                </option>
+              ))}
+            </select>
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <select
-                value={collectionHandle}
-                onChange={(event) => updateParams({ collection: event.target.value }, true)}
-                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              >
-                <option value="">All collections</option>
-                {collections.map((collection) => (
-                  <option key={collection.id} value={collection.handle}>
-                    {collection.title}
-                  </option>
-                ))}
-              </select>
+            <select
+              aria-label="Product type filter"
+              value={typeFilter}
+              onChange={(event) => updateParams({ type: event.target.value }, true)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+            >
+              <option value="">All product types</option>
+              {productTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
 
-              <select
-                value={typeFilter}
-                onChange={(event) => updateParams({ type: event.target.value }, true)}
-                className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-              >
-                <option value="">All product types</option>
-                {productTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              aria-label="Price range filter"
+              value={priceRangeValue === "custom" ? "all" : priceRangeValue}
+              onChange={(event) => onPriceRangeChange(event.target.value)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+            >
+              {priceRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -369,8 +400,11 @@ const ShopPage = () => {
               <span className="rounded-full border border-border bg-background px-3 py-1">Collection: {selectedCollection.title}</span>
             ) : null}
             {typeFilter ? <span className="rounded-full border border-border bg-background px-3 py-1">Type: {typeFilter}</span> : null}
-            {minFilter != null ? <span className="rounded-full border border-border bg-background px-3 py-1">Min ${minFilter}</span> : null}
-            {maxFilter != null ? <span className="rounded-full border border-border bg-background px-3 py-1">Max ${maxFilter}</span> : null}
+            {minFilter != null || maxFilter != null ? (
+              <span className="rounded-full border border-border bg-background px-3 py-1">
+                Price: {minFilter == null ? "$0" : `$${minFilter}`} - {maxFilter == null ? "Any" : `$${maxFilter}`}
+              </span>
+            ) : null}
             {filterIsActive && (
               <button
                 type="button"
@@ -380,23 +414,6 @@ const ShopPage = () => {
                 Clear all
               </button>
             )}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {["new-arrivals", "summer-collection", "men-collection", "women-wear", "cookware"].map((handle) => (
-              <button
-                key={handle}
-                type="button"
-                onClick={() => updateParams({ collection: handle }, true)}
-                className={`rounded-full border px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] ${
-                  collectionHandle === handle
-                    ? "border-foreground bg-foreground text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-primary"
-                }`}
-              >
-                {handle.replace(/-/g, " ")}
-              </button>
-            ))}
           </div>
         </div>
       </Reveal>
@@ -471,19 +488,9 @@ const ShopPage = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">Items / page</p>
-                <select
-                  value={perPage}
-                  onChange={(event) => onPerPageChange(event.target.value)}
-                  className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
-                >
-                  {perPageOptions.map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                <ArrowDownUp className="h-3.5 w-3.5" />
+                Paged browsing enabled
               </div>
             </div>
           </Reveal>

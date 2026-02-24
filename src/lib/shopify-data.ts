@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type {
+  CollectionProductsPayload,
   CollectionsPayload,
   ProductsPayload,
   ShopifyCollection,
@@ -125,6 +126,19 @@ export async function loadCollections(): Promise<CollectionsPayload> {
   return seedCollectionsPayload;
 }
 
+export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
+  try {
+    return await fetchJson<CollectionProductsPayload>("/data/collection-products.json");
+  } catch {
+    return {
+      generatedAt: new Date().toISOString(),
+      source: SHOP_BASE,
+      totalCollections: 0,
+      collections: {},
+    };
+  }
+}
+
 export function useProducts() {
   return useQuery({
     queryKey: ["products", DATA_MODE],
@@ -137,6 +151,14 @@ export function useCollections() {
   return useQuery({
     queryKey: ["collections", DATA_MODE],
     queryFn: loadCollections,
+    staleTime: 15 * 60 * 1000,
+  });
+}
+
+export function useCollectionProductsMap() {
+  return useQuery({
+    queryKey: ["collection-products", DATA_MODE],
+    queryFn: loadCollectionProductsMap,
     staleTime: 15 * 60 * 1000,
   });
 }
