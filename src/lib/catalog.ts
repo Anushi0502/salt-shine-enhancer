@@ -1,8 +1,23 @@
 import { stripHtml } from "@/lib/formatters";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
-function normalize(input?: string | null): string {
-  return (input || "").trim().toLowerCase();
+function normalize(input?: unknown): string {
+  if (typeof input === "string") {
+    return input.trim().toLowerCase();
+  }
+
+  if (Array.isArray(input)) {
+    return input
+      .map((entry) => (entry == null ? "" : String(entry).trim().toLowerCase()))
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (input == null) {
+    return "";
+  }
+
+  return String(input).trim().toLowerCase();
 }
 
 function includeToken(haystack: string, needle: string): boolean {
@@ -85,6 +100,6 @@ export function filterProducts(
 
 export function uniqueProductTypes(products: ShopifyProduct[]): string[] {
   return Array.from(
-    new Set(products.map((product) => product.product_type.trim()).filter(Boolean)),
+    new Set(products.map((product) => normalize(product.product_type)).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
 }

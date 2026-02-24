@@ -20,10 +20,10 @@ export interface ShopifyProduct {
   id: number;
   title: string;
   handle: string;
-  body_html: string;
+  body_html: string | null;
   vendor: string;
   product_type: string;
-  tags: string;
+  tags: string | string[];
   created_at: string;
   published_at: string;
   updated_at: string;

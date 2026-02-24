@@ -6,8 +6,22 @@ const currencyFormatter = new Intl.NumberFormat("en-CA", {
   minimumFractionDigits: 2,
 });
 
-export function stripHtml(input: string): string {
-  return input
+function asText(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value == null) {
+    return "";
+  }
+
+  return String(value);
+}
+
+export function stripHtml(input: unknown): string {
+  const text = asText(input);
+
+  return text
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<[^>]+>/g, " ")
@@ -70,7 +84,13 @@ export function productImage(product: ShopifyProduct): string {
 }
 
 export function productTagList(product: ShopifyProduct): string[] {
-  return product.tags
+  if (Array.isArray(product.tags)) {
+    return product.tags
+      .map((tag) => asText(tag).trim())
+      .filter(Boolean);
+  }
+
+  return asText(product.tags)
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);

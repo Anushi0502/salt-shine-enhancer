@@ -3,7 +3,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const baseUrl = process.env.SALT_SHOP_URL || "https://www.saltonlinestore.com";
+const baseUrl = process.env.SALT_SHOP_URL || "https://saltonlinestore.com";
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const outDir = resolve(process.cwd(), "public", "data");
 
