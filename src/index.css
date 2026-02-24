@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -59,6 +59,36 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .dark {
+    --background: 224 23% 10%;
+    --foreground: 42 22% 92%;
+
+    --card: 223 20% 14%;
+    --card-foreground: 42 22% 92%;
+
+    --popover: 223 20% 14%;
+    --popover-foreground: 42 22% 92%;
+
+    --primary: 24 72% 56%;
+    --primary-foreground: 225 18% 12%;
+
+    --secondary: 223 15% 18%;
+    --secondary-foreground: 42 22% 92%;
+
+    --muted: 223 12% 20%;
+    --muted-foreground: 37 12% 70%;
+
+    --accent: 42 52% 55%;
+    --accent-foreground: 225 18% 12%;
+
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 42 22% 92%;
+
+    --border: 223 12% 26%;
+    --input: 223 12% 26%;
+    --ring: 24 72% 56%;
+  }
 }
 
 @layer base {
@@ -86,8 +116,22 @@
   }
 
   .salt-heading {
-    font-family: "Playfair Display", serif;
+    font-family: "Fraunces", "Playfair Display", serif;
     @apply tracking-tight;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: rise 0.7s cubic-bezier(0.18, 0.89, 0.38, 1.01) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
   }
 
   .salt-card-hover {
