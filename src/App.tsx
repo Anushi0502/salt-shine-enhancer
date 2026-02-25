@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import SiteShell from "@/components/layout/SiteShell";
 import { CartProvider } from "@/lib/cart";
 import { ThemeProvider } from "@/lib/theme";
@@ -44,6 +45,7 @@ const App = () => (
               </Route>
             </Routes>
           </BrowserRouter>
+          <Analytics />
         </TooltipProvider>
       </CartProvider>
     </ThemeProvider>
