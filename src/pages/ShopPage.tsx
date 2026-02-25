@@ -4,9 +4,11 @@ import {
   ArrowDownUp,
   ChevronLeft,
   ChevronRight,
+  Filter,
   Search,
   SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
@@ -37,6 +39,25 @@ const priceRangeOptions = [
   { value: "120-plus", label: "$120+", min: 120, max: null },
 ] as const;
 
+function formattedDateTime(value: string): string {
+  if (!value) {
+    return "recently";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -59,6 +80,19 @@ function asNumberOrNull(input: string | null): number | null {
   return parsed;
 }
 
+function asNumberFromInput(input: string): number | null {
+  if (!input.trim()) {
+    return null;
+  }
+
+  const parsed = Number(input);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 function activePriceRangeValue(min: number | null, max: number | null): string {
   if (min == null && max == null) {
     return "all";
@@ -66,6 +100,13 @@ function activePriceRangeValue(min: number | null, max: number | null): string {
 
   const exact = priceRangeOptions.find((option) => option.min === min && option.max === max);
   return exact?.value || "custom";
+}
+
+function formatTypeLabel(value: string): string {
+  return value
+    .split(/\s+/)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
 }
 
 const ShopPage = () => {
@@ -85,10 +126,22 @@ const ShopPage = () => {
   const priceRangeValue = activePriceRangeValue(minFilter, maxFilter);
 
   const [searchInput, setSearchInput] = useState(query);
+  const [customMinInput, setCustomMinInput] = useState(minFilter == null ? "" : String(minFilter));
+  const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
+  const [priceError, setPriceError] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(
+    minFilter != null || maxFilter != null || perPage !== perPageOptions[0],
+  );
 
   useEffect(() => {
     setSearchInput(query);
   }, [query]);
+
+  useEffect(() => {
+    setCustomMinInput(minFilter == null ? "" : String(minFilter));
+    setCustomMaxInput(maxFilter == null ? "" : String(maxFilter));
+    setPriceError("");
+  }, [minFilter, maxFilter]);
 
   const {
     data: productsPayload,
@@ -108,6 +161,14 @@ const ShopPage = () => {
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
+  const latestSyncAt = useMemo(() => {
+    const values = [productsPayload?.generatedAt, collectionsPayload?.generatedAt].filter(Boolean) as string[];
+    if (!values.length) {
+      return "";
+    }
+
+    return values.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+  }, [productsPayload, collectionsPayload]);
 
   const textFilteredProducts = useMemo(
     () =>
@@ -190,6 +251,24 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * perPage;
   const endIndex = Math.min(startIndex + perPage, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+  const activeFilterCount = [
+    query,
+    collectionHandle,
+    typeFilter,
+    sort !== "featured" ? sort : "",
+    minFilter != null || maxFilter != null ? "price" : "",
+    perPage !== perPageOptions[0] ? "page-size" : "",
+  ].filter(Boolean).length;
+  const activeFilterSummary = [
+    query ? `Search: "${query}"` : "",
+    selectedCollection ? `Collection: ${selectedCollection.title}` : "",
+    typeFilter ? `Type: ${formatTypeLabel(typeFilter)}` : "",
+    minFilter != null || maxFilter != null
+      ? `Price: ${minFilter == null ? "$0" : `$${minFilter}`} - ${maxFilter == null ? "Any" : `$${maxFilter}`}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
   if (productsLoading || collectionsLoading) {
     return (
@@ -244,6 +323,9 @@ const ShopPage = () => {
   const clearFilters = () => {
     setSearchParams(new URLSearchParams());
     setSearchInput("");
+    setCustomMinInput("");
+    setCustomMaxInput("");
+    setPriceError("");
   };
 
   const onSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -268,20 +350,56 @@ const ShopPage = () => {
 
   const onPriceRangeChange = (value: string) => {
     if (value === "all") {
+      setCustomMinInput("");
+      setCustomMaxInput("");
       updateParams({ min: null, max: null }, true);
       return;
     }
 
     const selectedRange = priceRangeOptions.find((option) => option.value === value);
     if (!selectedRange) {
+      setCustomMinInput("");
+      setCustomMaxInput("");
       updateParams({ min: null, max: null }, true);
       return;
     }
+
+    setCustomMinInput(selectedRange.min == null ? "" : String(selectedRange.min));
+    setCustomMaxInput(selectedRange.max == null ? "" : String(selectedRange.max));
 
     updateParams(
       {
         min: selectedRange.min == null ? null : String(selectedRange.min),
         max: selectedRange.max == null ? null : String(selectedRange.max),
+      },
+      true,
+    );
+  };
+
+  const applyCustomPrice = () => {
+    const normalizedMin = asNumberFromInput(customMinInput);
+    const normalizedMax = asNumberFromInput(customMaxInput);
+
+    if (customMinInput.trim() && normalizedMin == null) {
+      setPriceError("Min price must be a valid number.");
+      return;
+    }
+
+    if (customMaxInput.trim() && normalizedMax == null) {
+      setPriceError("Max price must be a valid number.");
+      return;
+    }
+
+    if (normalizedMin != null && normalizedMax != null && normalizedMin > normalizedMax) {
+      setPriceError("Min price cannot be higher than max price.");
+      return;
+    }
+
+    setPriceError("");
+    updateParams(
+      {
+        min: normalizedMin == null ? null : String(normalizedMin),
+        max: normalizedMax == null ? null : String(normalizedMax),
       },
       true,
     );
@@ -304,6 +422,9 @@ const ShopPage = () => {
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">All Products</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
             Browse a simplified catalog view with precise collection matching and faster page-based discovery.
+          </p>
+          <p className="mt-2 text-xs uppercase tracking-[0.1em] text-muted-foreground">
+            Catalog updated {formattedDateTime(latestSyncAt)}
           </p>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
@@ -369,7 +490,7 @@ const ShopPage = () => {
               <option value="">All product types</option>
               {productTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {formatTypeLabel(type)}
                 </option>
               ))}
             </select>
@@ -386,7 +507,7 @@ const ShopPage = () => {
                 </option>
               ))}
             </select>
-          </div>
+          
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold">
@@ -395,14 +516,9 @@ const ShopPage = () => {
             <span className="rounded-full border border-border bg-background px-3 py-1">
               Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
             </span>
-            {query ? <span className="rounded-full border border-border bg-background px-3 py-1">Search: "{query}"</span> : null}
-            {selectedCollection ? (
-              <span className="rounded-full border border-border bg-background px-3 py-1">Collection: {selectedCollection.title}</span>
-            ) : null}
-            {typeFilter ? <span className="rounded-full border border-border bg-background px-3 py-1">Type: {typeFilter}</span> : null}
-            {minFilter != null || maxFilter != null ? (
+            {activeFilterCount > 0 ? (
               <span className="rounded-full border border-border bg-background px-3 py-1">
-                Price: {minFilter == null ? "$0" : `$${minFilter}`} - {maxFilter == null ? "Any" : `$${maxFilter}`}
+                {activeFilterCount} active filters
               </span>
             ) : null}
             {filterIsActive && (
@@ -415,6 +531,8 @@ const ShopPage = () => {
               </button>
             )}
           </div>
+          </div>
+          {activeFilterSummary ? <p className="mt-2 text-xs text-muted-foreground">{activeFilterSummary}</p> : null}
         </div>
       </Reveal>
 
@@ -488,10 +606,10 @@ const ShopPage = () => {
                 </button>
               </div>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 <ArrowDownUp className="h-3.5 w-3.5" />
-                Paged browsing enabled
-              </div>
+                Sorted by {sortOptions.find((option) => option.value === sort)?.label || "Featured"}
+              </p>
             </div>
           </Reveal>
         </>

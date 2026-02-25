@@ -1,6 +1,8 @@
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  ExternalLink,
   Minus,
   PackageCheck,
   Plus,
@@ -11,19 +13,167 @@ import {
 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
-import { useCart } from "@/lib/cart";
+import {
+  buildShopifyCheckoutUrl,
+  buildShopifyProductUrl,
+  buildShopifySearchUrl,
+  isValidShopifyVariantId,
+  useCart,
+} from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
 import { useProducts } from "@/lib/shopify-data";
 
 const FREE_SHIPPING_THRESHOLD = 49;
+const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
+
+function normalizeHandleLookup(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/+/, "")
+    .replace(/^products\//i, "")
+    .split(/[/?#]/)[0];
+}
+
+function normalizeTitleLookup(input: string): string {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
 
 const CartPage = () => {
-  const { items, subtotal, itemCount, updateQuantity, removeItem, clear } = useCart();
+  const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
   const { data: productsPayload } = useProducts();
 
   const recommendedProducts = (productsPayload?.products || []).slice(0, 4);
+  const catalogLookup = useMemo(() => {
+    const byHandle = new Map<string, { variantId: number; handle: string }>();
+    const byTitle = new Map<string, { variantId: number; handle: string }>();
+
+    for (const product of productsPayload?.products || []) {
+      const preferredVariant =
+        product.variants.find(
+          (variant) => variant.available && isValidShopifyVariantId(Number(variant.id)),
+        ) ||
+        product.variants.find((variant) => isValidShopifyVariantId(Number(variant.id)));
+
+      if (!preferredVariant) {
+        continue;
+      }
+
+      const entry = {
+        variantId: Number(preferredVariant.id),
+        handle: product.handle,
+      };
+
+      const handleKey = normalizeHandleLookup(product.handle || "");
+      if (handleKey) {
+        byHandle.set(handleKey, entry);
+      }
+
+      const titleKey = normalizeTitleLookup(product.title || "");
+      if (titleKey && !byTitle.has(titleKey)) {
+        byTitle.set(titleKey, entry);
+      }
+    }
+
+    return { byHandle, byTitle };
+  }, [productsPayload]);
+
+  const resolvedCheckout = useMemo(
+    () =>
+      items.map((item) => {
+        if (isValidShopifyVariantId(item.shopifyVariantId)) {
+          return {
+            method: "direct" as const,
+            item,
+            productUrl: buildShopifyProductUrl(item.handle),
+          };
+        }
+
+        const byHandle = catalogLookup.byHandle.get(normalizeHandleLookup(item.handle || ""));
+        if (byHandle) {
+          return {
+            method: "handle" as const,
+            item: {
+              ...item,
+              handle: byHandle.handle,
+              shopifyVariantId: byHandle.variantId,
+            },
+            productUrl: buildShopifyProductUrl(byHandle.handle),
+          };
+        }
+
+        const byTitle = catalogLookup.byTitle.get(normalizeTitleLookup(item.title || ""));
+        if (byTitle) {
+          return {
+            method: "title" as const,
+            item: {
+              ...item,
+              handle: byTitle.handle,
+              shopifyVariantId: byTitle.variantId,
+            },
+            productUrl: buildShopifyProductUrl(byTitle.handle),
+          };
+        }
+
+        return {
+          method: "unresolved" as const,
+          item,
+          productUrl: buildShopifyProductUrl(item.handle),
+        };
+      }),
+    [items, catalogLookup],
+  );
+
+  const checkoutItems = resolvedCheckout.map((entry) => entry.item);
+  const autoRecoveredCount = resolvedCheckout.filter(
+    (entry) => entry.method === "handle" || entry.method === "title",
+  ).length;
+  const unresolvedEntries = resolvedCheckout.filter((entry) => entry.method === "unresolved");
+  const unresolvedCheckoutItems = unresolvedEntries.map((entry) => entry.item);
+  const unresolvedHandleSet = new Set(
+    unresolvedEntries.map((entry) => normalizeHandleLookup(entry.item.handle || "")),
+  );
+  const unresolvedShopifyLinks = unresolvedEntries
+    .map((entry) => ({
+      id: entry.item.id,
+      title: entry.item.title,
+      url:
+        catalogLookup.byHandle.has(normalizeHandleLookup(entry.item.handle || "")) && entry.productUrl
+          ? entry.productUrl
+          : buildShopifySearchUrl(entry.item.title || entry.item.handle) || entry.productUrl,
+    }))
+    .filter(
+      (entry): entry is { id: number; title: string; url: string } => Boolean(entry.url),
+    );
+  const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
+
   const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const checkoutUrl = buildShopifyCheckoutUrl(checkoutItems);
+  const shopifyCartUrl = `${SHOP_BASE}/cart`;
+
+  useEffect(() => {
+    if (autoRecoveredCount <= 0) {
+      return;
+    }
+
+    const hasPatch = checkoutItems.some((item, index) => {
+      const current = items[index];
+      if (!current) {
+        return false;
+      }
+
+      return (
+        current.shopifyVariantId !== item.shopifyVariantId ||
+        current.handle !== item.handle
+      );
+    });
+
+    if (hasPatch) {
+      replaceItems(checkoutItems);
+    }
+  }, [autoRecoveredCount, checkoutItems, items, replaceItems]);
 
   if (!items.length) {
     return (
@@ -177,13 +327,58 @@ const CartPage = () => {
               <span className="text-primary">{formatMoney(subtotal)}</span>
             </p>
 
+            <p className="mt-5 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+              Standard checkout is recommended. Express options (including Shop Pay) appear inside Shopify checkout.
+            </p>
+            {autoRecoveredCount > 0 ? (
+              <p className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:text-emerald-100">
+                Auto-recovered {autoRecoveredCount} item(s) to live Shopify variants.
+              </p>
+            ) : null}
+            {hasUnresolvedCheckoutItems ? (
+              <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                <p>
+                  {unresolvedCheckoutItems.length} item(s) in this cart could not be mapped to a
+                  live Shopify variant. Remove and re-add those item(s) before checkout, or click the button below to remove all unmapped items at once. You can also try searching for the item(s) on Shopify using the links below:
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {unresolvedShopifyLinks.map((entry) => (
+                    <li key={entry.id}>
+                      <a
+                        href={entry.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-primary"
+                      >
+                        {entry.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => {
+                    unresolvedCheckoutItems.forEach((item) => removeItem(item.id));
+                  }}
+                  className="mt-2 inline-flex h-9 items-center rounded-full border border-amber-700/40 bg-background px-3 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-amber-900 hover:border-amber-700/70 dark:text-amber-100"
+                >
+                  Remove unmapped items
+                </button>
+              </div>
+            ) : null}
+
             <a
-              href="https://saltonlinestore.com/cart"
+              href={hasUnresolvedCheckoutItems ? shopifyCartUrl : checkoutUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-5 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+              aria-disabled={hasUnresolvedCheckoutItems}
+              className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
+                hasUnresolvedCheckoutItems
+                  ? "pointer-events-none opacity-60"
+                  : "hover:brightness-110"
+              }`}
             >
-              Checkout on Shopify <ArrowRight className="h-4 w-4" />
+              Continue to Checkout <ArrowRight className="h-4 w-4" />
             </a>
 
             <Link
@@ -191,6 +386,13 @@ const CartPage = () => {
               className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] hover:border-primary/50"
             >
               Continue shopping
+            </Link>
+
+            <Link
+              to="/contact"
+              className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border bg-card px-5 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground hover:border-primary/50 hover:text-primary"
+            >
+              Need checkout help?
             </Link>
 
             <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">

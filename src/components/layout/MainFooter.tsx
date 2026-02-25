@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
+import BrandLogo from "@/components/layout/BrandLogo";
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
@@ -13,7 +14,7 @@ const MainFooter = () => {
     <footer className="mt-20 border-t border-border/70 bg-card/80">
       <div className="mx-auto grid w-[min(1280px,96vw)] gap-10 py-12 md:grid-cols-4">
         <div>
-          <h3 className="font-display text-2xl">SALT</h3>
+          <BrandLogo withWordmark size="md" />
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
             Curated everyday essentials from
             <a
@@ -26,6 +27,32 @@ const MainFooter = () => {
             </a>
             with premium-quality picks across home, lifestyle, and gifting.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <a
+              href="https://www.facebook.com/people/SALT-online-store/61573199456052/"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border bg-background px-3 py-1 font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary"
+            >
+              Facebook
+            </a>
+            <a
+              href="https://www.youtube.com/@SALTONLINESTORE"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border bg-background px-3 py-1 font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary"
+            >
+              YouTube
+            </a>
+            <a
+              href="https://www.tiktok.com/@saltonlinestore"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border bg-background px-3 py-1 font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary"
+            >
+              TikTok
+            </a>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-full border border-border bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
               Fast Dispatch
@@ -58,6 +85,11 @@ const MainFooter = () => {
               </Link>
             </li>
             <li>
+              <Link className="hover:text-primary" to="/blog">
+                Blog
+              </Link>
+            </li>
+            <li>
               <Link className="hover:text-primary" to="/shop?collection=new-arrivals">
                 New Arrivals
               </Link>
@@ -72,6 +104,11 @@ const MainFooter = () => {
               <Link className="hover:text-primary" to="/contact">
                 Contact
               </Link>
+            </li>
+            <li>
+              <a className="hover:text-primary" href="https://saltonlinestore.com/pages/about-us" target="_blank" rel="noreferrer">
+                About us (Main site)
+              </a>
             </li>
             <li>
               <a className="hover:text-primary" href="https://saltonlinestore.com/policies/privacy-policy" target="_blank" rel="noreferrer">

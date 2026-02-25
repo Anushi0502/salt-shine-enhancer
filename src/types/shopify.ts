@@ -69,3 +69,37 @@ export interface CollectionProductsPayload {
     }
   >;
 }
+
+export interface AboutPagePayload {
+  generatedAt: string;
+  source: string;
+  page: {
+    id: number;
+    handle: string;
+    title: string;
+    bodyHtml: string;
+    publishedAt: string;
+    updatedAt: string;
+  };
+}
+
+export interface BlogPost {
+  id: string;
+  handle: string;
+  url: string;
+  title: string;
+  author: string;
+  publishedAt: string;
+  updatedAt: string;
+  excerpt: string;
+  contentHtml: string;
+  image: string | null;
+}
+
+export interface BlogPostsPayload {
+  generatedAt: string;
+  source: string;
+  blogHandle: string;
+  total: number;
+  posts: BlogPost[];
+}

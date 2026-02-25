@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import BrandLogo from "@/components/layout/BrandLogo";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
 
@@ -8,14 +9,16 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
   { to: "/collections", label: "Collections" },
+  { to: "/blog", label: "Blog" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
 
 const quickLinks = [
   { to: "/shop?collection=new-arrivals", label: "New Arrivals" },
-  { to: "/shop?type=Cookware", label: "Cookware" },
-  { to: "/shop?type=Apparel", label: "Apparel" },
+  { to: "/shop?collection=cookware", label: "Cookware" },
+  { to: "/shop?collection=gifts", label: "Gifts" },
+  { to: "/shop?collection=robe", label: "Apparel" },
 ];
 
 function navClassName({ isActive }: { isActive: boolean }): string {
@@ -68,7 +71,9 @@ const MainHeader = () => {
       <div className="border-b border-border/70 bg-foreground text-primary-foreground">
         <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2 text-[0.7rem] sm:text-xs">
           <span className="truncate">Free US shipping over $49</span>
-          <span className="hidden text-primary-foreground/80 md:inline">Secure checkout</span>
+          <Link to="/contact" className="hidden text-primary-foreground/80 hover:text-primary-foreground md:inline">
+            Need help? Contact support
+          </Link>
           <span className="truncate text-right">
             New weekly drops • 30-day returns • Trusted by 2,300+ shoppers
           </span>
@@ -76,16 +81,8 @@ const MainHeader = () => {
       </div>
 
       <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-4 py-4">
-        <Link to="/" className="group flex items-center gap-2">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/40 bg-gradient-to-br from-primary to-salt-olive text-base font-black text-primary-foreground">
-            SA
-          </span>
-          <div>
-            <span className="font-display text-2xl tracking-[0.08em]">SALT</span>
-            <p className="-mt-0.5 hidden text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground md:block">
-              Online Store
-            </p>
-          </div>
+        <Link to="/" className="group flex items-center gap-2" aria-label="Go to SALT homepage">
+          <BrandLogo withWordmark size="md" />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">

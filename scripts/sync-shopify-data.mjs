@@ -5,7 +5,29 @@ import { resolve } from "node:path";
 
 const baseUrl = process.env.SALT_SHOP_URL || "https://saltonlinestore.com";
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
+const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
+const blogHandle = process.env.SALT_BLOG_HANDLE || "posts";
 const outDir = resolve(process.cwd(), "public", "data");
+
+async function fetchJsonUrl(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`);
+  }
+
+  return response.json();
+}
+
+async function fetchTextUrl(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`);
+  }
+
+  return response.text();
+}
 
 async function fetchPaged(key, endpoint) {
   const rows = [];
@@ -13,13 +35,7 @@ async function fetchPaged(key, endpoint) {
 
   while (true) {
     const url = `${baseUrl}${endpoint}?limit=${limit}&page=${page}`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status}) for ${url}`);
-    }
-
-    const json = await response.json();
+    const json = await fetchJsonUrl(url);
     const chunk = Array.isArray(json[key]) ? json[key] : [];
 
     rows.push(...chunk);
@@ -41,13 +57,7 @@ async function fetchCollectionProductIds(handle) {
 
   while (true) {
     const url = `${baseUrl}/collections/${handle}/products.json?limit=${limit}&page=${page}`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Collection request failed (${response.status}) for ${url}`);
-    }
-
-    const payload = await response.json();
+    const payload = await fetchJsonUrl(url);
     const products = Array.isArray(payload.products) ? payload.products : [];
 
     ids.push(...products.map((product) => product.id));
@@ -70,12 +80,111 @@ function sortByUpdatedAt(items) {
   });
 }
 
+function decodeEntities(input = "") {
+  return input
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function stripHtml(input = "") {
+  return input
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function excerptFromHtml(input = "", limitChars = 200) {
+  const cleaned = stripHtml(input);
+  if (cleaned.length <= limitChars) {
+    return cleaned;
+  }
+
+  return `${cleaned.slice(0, limitChars - 1).trimEnd()}…`;
+}
+
+function firstImageSrcFromHtml(input = "") {
+  const match = input.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return match?.[1] || null;
+}
+
+function readTag(input, tagName) {
+  const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
+  const match = input.match(pattern);
+  return match?.[1]?.trim() || "";
+}
+
+function parseBlogEntriesFromAtom(atomXml) {
+  const matches = [...atomXml.matchAll(/<entry>([\s\S]*?)<\/entry>/gi)];
+
+  return matches
+    .map((match) => {
+      const block = match[1] || "";
+      const id = decodeEntities(readTag(block, "id"));
+      const publishedAt = readTag(block, "published");
+      const updatedAt = readTag(block, "updated");
+      const title = decodeEntities(readTag(block, "title"));
+      const author = decodeEntities(readTag(block, "name")) || "SALT";
+      const linkMatch = block.match(
+        /<link[^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["'][^>]*>/i,
+      );
+      const url = decodeEntities(linkMatch?.[1] || id);
+      const handle = url.split("/").filter(Boolean).at(-1) || "";
+      const rawContent = readTag(block, "content");
+      const contentHtml = rawContent
+        .replace(/^<!\[CDATA\[/i, "")
+        .replace(/\]\]>$/i, "")
+        .trim();
+      const image = firstImageSrcFromHtml(contentHtml);
+
+      return {
+        id,
+        handle,
+        url,
+        title,
+        author,
+        publishedAt,
+        updatedAt,
+        excerpt: excerptFromHtml(contentHtml),
+        contentHtml,
+        image,
+      };
+    })
+    .filter((entry) => Boolean(entry.handle && entry.url && entry.title))
+    .sort((a, b) => Date.parse(b.publishedAt || "1970-01-01") - Date.parse(a.publishedAt || "1970-01-01"));
+}
+
+async function fetchAboutPage() {
+  const payload = await fetchJsonUrl(`${baseUrl}/pages/${aboutHandle}.json`);
+  const page = payload?.page || {};
+
+  return {
+    id: Number(page.id || 0),
+    handle: page.handle || aboutHandle,
+    title: page.title || "About",
+    bodyHtml: page.body_html || "",
+    publishedAt: page.published_at || "",
+    updatedAt: page.updated_at || "",
+  };
+}
+
+async function fetchBlogPosts() {
+  const atom = await fetchTextUrl(`${baseUrl}/blogs/${blogHandle}.atom`);
+  return parseBlogEntriesFromAtom(atom);
+}
+
 async function main() {
   const startedAt = new Date().toISOString();
 
-  const [products, collections] = await Promise.all([
+  const [products, collections, aboutPage, blogPosts] = await Promise.all([
     fetchPaged("products", "/products.json"),
     fetchPaged("collections", "/collections.json"),
+    fetchAboutPage(),
+    fetchBlogPosts(),
   ]);
 
   const productPayload = {
@@ -99,6 +208,20 @@ async function main() {
     collections: {},
   };
 
+  const aboutPayload = {
+    generatedAt: startedAt,
+    source: baseUrl,
+    page: aboutPage,
+  };
+
+  const blogPayload = {
+    generatedAt: startedAt,
+    source: baseUrl,
+    blogHandle,
+    total: blogPosts.length,
+    posts: blogPosts,
+  };
+
   for (const collection of collections) {
     const ids = await fetchCollectionProductIds(collection.handle);
     collectionProductMap.collections[collection.handle] = {
@@ -118,12 +241,16 @@ async function main() {
     resolve(outDir, "collection-products.json"),
     JSON.stringify(collectionProductMap),
   );
+  await writeFile(resolve(outDir, "about.json"), JSON.stringify(aboutPayload));
+  await writeFile(resolve(outDir, "blog-posts.json"), JSON.stringify(blogPayload));
 
   process.stdout.write(`Saved ${productPayload.total} products to public/data/products.json\n`);
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
   process.stdout.write(
     `Saved collection product mapping to public/data/collection-products.json\n`,
   );
+  process.stdout.write(`Saved About page to public/data/about.json\n`);
+  process.stdout.write(`Saved ${blogPayload.total} blog posts to public/data/blog-posts.json\n`);
 }
 
 main().catch((error) => {

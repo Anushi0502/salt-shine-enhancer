@@ -3,6 +3,7 @@ import { ArrowRight, Clock3, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import { formatMoney, minPrice, productImage } from "@/lib/formatters";
 import type { ShopifyProduct } from "@/types/shopify";
 import Reveal from "@/components/storefront/Reveal";
+import BrandLogo from "@/components/layout/BrandLogo";
 
 type HomeHeroProps = {
   featured: ShopifyProduct[];
@@ -18,6 +19,12 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
           <div className="pointer-events-none absolute inset-0 salt-grid-bg opacity-20" />
           <div className="absolute -right-24 -top-20 h-72 w-72 rounded-full bg-primary/35 blur-3xl" />
           <div className="absolute bottom-0 left-1/2 h-52 w-80 -translate-x-1/2 rounded-full bg-salt-olive/30 blur-[110px]" />
+
+          <BrandLogo
+            size="sm"
+            withWordmark
+            className="mb-3 w-fit rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-2 py-1"
+          />
 
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em]">

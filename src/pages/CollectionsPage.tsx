@@ -37,6 +37,9 @@ const CollectionsPage = () => {
 
   const collections = data?.collections || [];
   const totalProducts = collections.reduce((sum, collection) => sum + collection.products_count, 0);
+  const spotlightCollections = [...collections]
+    .sort((a, b) => b.products_count - a.products_count)
+    .slice(0, 8);
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
@@ -59,6 +62,20 @@ const CollectionsPage = () => {
               View all products <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
+
+          {spotlightCollections.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {spotlightCollections.map((collection) => (
+                <Link
+                  key={collection.id}
+                  to={`/shop?collection=${collection.handle}`}
+                  className="rounded-full border border-border bg-background px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+                >
+                  {collection.title}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
       </Reveal>
 

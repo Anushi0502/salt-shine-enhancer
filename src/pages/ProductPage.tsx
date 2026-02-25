@@ -28,6 +28,7 @@ import {
 import { useProducts } from "@/lib/shopify-data";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
+const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
 
 const ProductPage = () => {
   const { handle } = useParams();
@@ -129,6 +130,10 @@ const ProductPage = () => {
   const price = Number(selectedVariant?.price || 0);
   const comparePrice = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
   const isAvailable = selectedVariant?.available ?? true;
+  const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
+  const shopPayUrl = selectedVariant
+    ? `${SHOP_BASE}/cart/${selectedVariant.id}:${selectedQuantity}?payment=shop_pay`
+    : `${SHOP_BASE}/cart`;
 
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
@@ -170,7 +175,8 @@ const ProductPage = () => {
     addItem(
       {
         id: selectedVariant.id,
-        handle: `${product.handle}-${selectedVariant.id}`,
+        shopifyVariantId: selectedVariant.id,
+        handle: product.handle,
         title: `${product.title} (${selectedVariant.title})`,
         image: activeImage || productImage(product),
         unitPrice: price,
@@ -298,24 +304,43 @@ const ProductPage = () => {
               </div>
             </div>
 
+            <a
+              href={shopPayUrl}
+              aria-disabled={!isAvailable}
+              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5c3bff_0%,#3a2fd6_100%)] px-5 text-base font-semibold text-white transition ${
+                isAvailable
+                  ? "hover:brightness-110"
+                  : "pointer-events-none opacity-60"
+              }`}
+            >
+              Buy with <span className="ml-1 text-[1.9rem] font-black lowercase leading-none">shop</span>
+            </a>
+
             <button
               type="button"
               onClick={addToCart}
               disabled={!isAvailable}
-              className="mt-5 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-2 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
               {isAvailable ? `Add to cart • ${formatMoney(price * quantity)}` : "Unavailable"}
             </button>
 
-            <a
-              href={`https://saltonlinestore.com/products/${product.handle}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] hover:border-primary/50"
-            >
-              View on Shopify
-            </a>
+
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <Link
+                to={product.product_type ? `/shop?type=${encodeURIComponent(product.product_type)}` : "/shop"}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              >
+                Similar products
+              </Link>
+              <Link
+                to="/contact"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              >
+                Ask support
+              </Link>
+            </div>
 
             <div className="mt-5 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               <p className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Mail, MessageSquareMore, PackageSearch } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import { Link } from "react-router-dom";
 
 const supportTopics = ["Order tracking", "Returns and exchanges", "Product recommendation", "Bulk order request"];
 
@@ -21,6 +22,28 @@ const ContactPage = () => {
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             Send your request and our support team will respond with shipping, returns, or product guidance.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href="mailto:support@saltonlinestore.com"
+              className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              Email support
+            </a>
+            <a
+              href="https://www.saltonlinestore.com/policies/contact-information"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              Contact policy
+            </a>
+            <Link
+              to="/blog"
+              className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              Help guides
+            </Link>
+          </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
@@ -87,6 +110,15 @@ const ContactPage = () => {
               </p>
             ) : null}
           </form>
+
+          <div className="mt-6 rounded-2xl border border-border bg-background p-4 text-xs text-muted-foreground">
+            <p className="font-semibold text-foreground">Before you message us:</p>
+            <ul className="mt-2 space-y-1">
+              <li>Include your order number for the fastest support response.</li>
+              <li>Attach product or shipping screenshots when reporting an issue.</li>
+              <li>Use the same email address used at checkout for quicker verification.</li>
+            </ul>
+          </div>
         </div>
       </Reveal>
     </section>

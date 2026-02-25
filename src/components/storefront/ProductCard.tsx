@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, ShoppingBag, Sparkles } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import {
+  conciseTitle,
   compareAt,
   formatMoney,
   minPrice,
@@ -22,6 +23,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const compare = compareAt(product);
   const tags = productTagList(product).slice(0, 2);
   const inStock = product.variants.some((variant) => variant.available);
+  const defaultVariant = product.variants.find((variant) => variant.available) || null;
+  const title = conciseTitle(product.title);
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/50">
@@ -39,7 +42,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         ) : null}
         <span className="absolute bottom-3 left-3 rounded-full border border-primary-foreground/45 bg-primary-foreground/15 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.09em] text-primary-foreground">
-          {inStock ? "In stock" : "Limited stock"}
+          {inStock ? "In stock" : "Out of stock"}
         </span>
       </Link>
 
@@ -47,17 +50,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="space-y-2">
           <h3 className="line-clamp-2 min-h-[3.2rem] text-sm font-semibold leading-6">
             <Link to={`/product/${product.handle}`} className="hover:text-primary">
-              {product.title}
+              {title}
             </Link>
           </h3>
 
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-base text-primary">{formatMoney(min)}</strong>
-              {compare > min ? <s className="text-xs text-muted-foreground">{formatMoney(compare)}</s> : null}
-            </div>
+            {compare > min ? <s className="text-xs text-muted-foreground">{formatMoney(compare)}</s> : null}
+          </div>
 
-            {tags.length ? (
-              <div className="flex flex-wrap gap-2">
+          {tags.length ? (
+            <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
                 <span
                   key={`${product.id}-${tag}`}
@@ -78,15 +81,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <button
             type="button"
             onClick={() =>
-              addItem({
-                id: product.id,
-                handle: product.handle,
-                title: product.title,
-                image: productImage(product),
-                unitPrice: min,
-              })
+              defaultVariant
+                ? addItem({
+                    id: defaultVariant.id,
+                    shopifyVariantId: defaultVariant.id,
+                    handle: product.handle,
+                    title: product.title,
+                    image: productImage(product),
+                    unitPrice: min,
+                  })
+                : undefined
             }
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            disabled={!defaultVariant}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingBag className="h-4 w-4" />
             Add to Cart

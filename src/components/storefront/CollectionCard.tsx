@@ -4,10 +4,12 @@ import type { ShopifyCollection } from "@/types/shopify";
 
 type CollectionCardProps = {
   collection: ShopifyCollection;
+  productCount?: number;
 };
 
-const CollectionCard = ({ collection }: CollectionCardProps) => {
+const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
   const image = collection.image?.src || "/placeholder.svg";
+  const totalProducts = productCount ?? collection.products_count;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/45">
@@ -26,7 +28,7 @@ const CollectionCard = ({ collection }: CollectionCardProps) => {
           Curated category
         </div>
         <h3 className="text-xl font-bold text-primary-foreground">{collection.title}</h3>
-        <p className="mt-1 text-sm text-primary-foreground/85">{collection.products_count} products available</p>
+        <p className="mt-1 text-sm text-primary-foreground/85">{totalProducts} products available</p>
 
         <Link
           to={`/shop?collection=${collection.handle}`}

@@ -6,7 +6,6 @@ import {
   DollarSign,
   Sparkles,
   Star,
-  TrendingUp,
 } from "lucide-react";
 import HomeHero from "@/components/storefront/HomeHero";
 import CollectionCard from "@/components/storefront/CollectionCard";
@@ -14,33 +13,61 @@ import KpiStrip from "@/components/storefront/KpiStrip";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { formatMoney, minPrice, savingsPercent } from "@/lib/formatters";
-import { useCollections, useProducts } from "@/lib/shopify-data";
+import { readingTime, savingsPercent } from "@/lib/formatters";
+import {
+  useBlogPosts,
+  useCollectionProductsMap,
+  useCollections,
+  useProducts,
+} from "@/lib/shopify-data";
+import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
-  "Fast US fulfillment and dependable shipping updates",
-  "Secure checkout and encrypted payment processing",
+  "Fast order processing and clear shipping updates",
+  "Secure checkout with encrypted payment handling",
   "30-day returns on eligible products",
-  "Curated launches every week across key categories",
+  "Weekly catalog refresh with high-intent categories",
 ];
 
-const testimonials = [
-  {
-    quote: "The product quality is way above what I expected for the price point.",
-    name: "Priya R.",
-    label: "Verified customer",
-  },
-  {
-    quote: "Checkout was smooth and delivery updates were clear from day one.",
-    name: "Daniel M.",
-    label: "Returning customer",
-  },
-  {
-    quote: "SALT has become my first stop for smart gifts and practical home picks.",
-    name: "Nadia K.",
-    label: "Gift shopper",
-  },
-];
+function formattedDate(value: string): string {
+  if (!value) {
+    return "Recent";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Recent";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formattedDateTime(value: string): string {
+  if (!value) {
+    return "recently";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+type RankedCollection = ShopifyCollection & {
+  effectiveCount: number;
+};
 
 const HomePage = () => {
   const {
@@ -57,7 +84,16 @@ const HomePage = () => {
     refetch: refetchCollections,
   } = useCollections();
 
-  if (productsLoading || collectionsLoading) {
+  const {
+    data: blogPayload,
+    isLoading: blogLoading,
+    error: blogError,
+    refetch: refetchBlog,
+  } = useBlogPosts();
+
+  const { data: collectionMapPayload } = useCollectionProductsMap();
+
+  if (productsLoading || collectionsLoading || blogLoading) {
     return (
       <LoadingState
         title="Loading SALT catalog"
@@ -66,7 +102,7 @@ const HomePage = () => {
     );
   }
 
-  if (productsError || collectionsError) {
+  if (productsError || collectionsError || blogError) {
     return (
       <ErrorState
         title="We could not load the storefront"
@@ -77,6 +113,7 @@ const HomePage = () => {
             onClick={() => {
               refetchProducts();
               refetchCollections();
+              refetchBlog();
             }}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
           >
@@ -89,40 +126,99 @@ const HomePage = () => {
 
   const products = productsPayload?.products || [];
   const collections = collectionsPayload?.collections || [];
+  const collectionMap = collectionMapPayload?.collections || {};
+  const liveProductIdSet = new Set(products.map((product) => product.id));
+
+  const countForCollection = (handle: string, fallback: number) => {
+    const productIds = collectionMap[handle]?.productIds;
+    if (!productIds || !productIds.length) {
+      return fallback;
+    }
+
+    const uniqueIds = new Set(productIds);
+    let total = 0;
+
+    uniqueIds.forEach((id) => {
+      if (liveProductIdSet.has(id)) {
+        total += 1;
+      }
+    });
+
+    return total;
+  };
+
+  const rankedCollections: RankedCollection[] = collections
+    .map((collection) => ({
+      ...collection,
+      effectiveCount: countForCollection(collection.handle, collection.products_count),
+    }))
+    .sort((a, b) => {
+      if (b.effectiveCount !== a.effectiveCount) {
+        return b.effectiveCount - a.effectiveCount;
+      }
+
+      return (
+        new Date(b.updated_at || b.published_at || "1970-01-01").getTime() -
+        new Date(a.updated_at || a.published_at || "1970-01-01").getTime()
+      );
+    });
 
   const featured = products.slice(0, 3);
-  const featuredCollections = collections.slice(0, 8);
-  const trendingProducts = products.slice(0, 8);
-  const popularCollections = [...collections]
-    .sort((a, b) => b.products_count - a.products_count)
-    .slice(0, 6);
+  const quickCollections = rankedCollections.slice(0, 6);
+  const featuredCollections = rankedCollections.slice(0, 6);
+  const trendingProducts = [...products]
+    .sort((a, b) => {
+      const discountDelta = savingsPercent(b) - savingsPercent(a);
+      if (discountDelta !== 0) {
+        return discountDelta;
+      }
 
-  const hotDeals = [...products]
-    .sort((a, b) => savingsPercent(b) - savingsPercent(a))
-    .filter((product) => savingsPercent(product) > 0)
-    .slice(0, 4);
+      return (
+        new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
+        new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
+      );
+    })
+    .slice(0, 8);
+  const latestBlogPosts = (blogPayload?.posts || []).slice(0, 3);
 
-  const latestDrop = [...products]
-    .sort(
-      (a, b) =>
-        new Date(b.published_at || b.created_at).getTime() -
-        new Date(a.published_at || a.created_at).getTime(),
-    )
-    .slice(0, 4);
+  const syncCandidates = [
+    productsPayload?.generatedAt,
+    collectionsPayload?.generatedAt,
+    blogPayload?.generatedAt,
+  ].filter(Boolean) as string[];
+  const lastSyncedAt = syncCandidates.sort(
+    (a, b) => new Date(b).getTime() - new Date(a).getTime(),
+  )[0];
 
   return (
     <>
       <HomeHero featured={featured} />
       <KpiStrip products={products} collections={collections} />
 
+      <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
+        <Reveal>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
+            <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+              Catalog synced {formattedDateTime(lastSyncedAt)}
+            </p>
+            <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
+              Source: saltonlinestore.com • {products.length.toLocaleString()} products •{" "}
+              {collections.length.toLocaleString()} collections
+            </p>
+          </div>
+        </Reveal>
+      </section>
+
       <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
         <Reveal>
           <div className="salt-glass rounded-[2rem] border border-border/80 p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Quick access</p>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                  Quick access
+                </p>
                 <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02]">
-                  Shop by what you need right now
+                  Browse faster with fewer clicks
                 </h2>
               </div>
               <Link
@@ -133,14 +229,17 @@ const HomePage = () => {
               </Link>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {collections.slice(0, 8).map((collection) => (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {quickCollections.map((collection) => (
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="rounded-full border border-border bg-background px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+                  className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50"
                 >
-                  {collection.title}
+                  <span className="line-clamp-1">{collection.title}</span>
+                  <span className="ml-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                    {collection.effectiveCount}
+                  </span>
                 </Link>
               ))}
             </div>
@@ -175,54 +274,17 @@ const HomePage = () => {
         </Reveal>
       </section>
 
-      {popularCollections.length > 0 ? (
-        <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
-          <Reveal>
-            <div className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Popular Paths</p>
-                  <h3 className="font-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-tight">
-                    Most Stocked Collections
-                  </h3>
-                </div>
-                <Link
-                  to="/collections"
-                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary"
-                >
-                  Browse all <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {popularCollections.map((collection) => (
-                  <Link
-                    key={collection.id}
-                    to={`/shop?collection=${collection.handle}`}
-                    className="rounded-2xl border border-border/75 bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
-                  >
-                    <p className="line-clamp-1 text-sm font-semibold">{collection.title}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                      {collection.products_count.toLocaleString()} products
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      ) : null}
-
       <section id="collections" className="mx-auto mt-12 w-[min(1280px,96vw)]">
         <Reveal>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Explore</p>
               <h2 className="font-display text-[clamp(1.9rem,3vw,2.8rem)] leading-[1.02]">
-                Curated Collections, Sharper Navigation
+                Top collections with active inventory
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Move from broad browsing to focused buying with collection-led merchandising and stronger category intent.
+                Collection counts are matched against currently synced products so shoppers see
+                relevant inventory paths.
               </p>
             </div>
             <Link
@@ -234,10 +296,10 @@ const HomePage = () => {
           </div>
         </Reveal>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredCollections.map((collection, index) => (
             <Reveal key={collection.id} delayMs={index * 80}>
-              <CollectionCard collection={collection} />
+              <CollectionCard collection={collection} productCount={collection.effectiveCount} />
             </Reveal>
           ))}
         </div>
@@ -249,10 +311,11 @@ const HomePage = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Trending</p>
               <h2 className="font-display text-[clamp(1.9rem,3vw,2.8rem)] leading-[1.02]">
-                Best Sellers This Week
+                High-intent products, prioritized
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Fast-moving products from your current catalog with strong value clarity and direct add-to-cart flow.
+                Ranked by strongest discount opportunity and fresh updates to keep merchandising
+                conversion-focused.
               </p>
             </div>
             <Link
@@ -273,75 +336,43 @@ const HomePage = () => {
         </div>
       </section>
 
-      {hotDeals.length > 0 ? (
-        <section className="mx-auto mt-14 w-[min(1280px,96vw)]">
+      {latestBlogPosts.length > 0 ? (
+        <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
           <Reveal>
             <div className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Deal Focus</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    From the Blog
+                  </p>
                   <h3 className="font-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-tight">
-                    Highest Savings Right Now
+                    Fresh content from Shopify posts
                   </h3>
                 </div>
                 <Link
-                  to="/shop"
+                  to="/blog"
                   className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary"
                 >
-                  See all deals <ArrowRight className="h-3.5 w-3.5" />
+                  Browse all posts <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {hotDeals.map((product) => (
+              <div className="grid gap-3 md:grid-cols-3">
+                {latestBlogPosts.map((post) => (
                   <Link
-                    key={product.id}
-                    to={`/product/${product.handle}`}
-                    className="group rounded-2xl border border-border/80 bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/40"
+                    key={post.id}
+                    to={`/blog/${post.handle}`}
+                    className="rounded-2xl border border-border/75 bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
                   >
-                    <div className="mb-2 inline-flex items-center gap-1 rounded-full border border-primary/35 bg-primary/10 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">
-                      <TrendingUp className="h-3 w-3" /> Save {savingsPercent(product)}%
+                    <p className="line-clamp-2 text-lg font-semibold leading-7">{post.title}</p>
+                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</p>
+                    <div className="mt-3 flex items-center justify-between text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">
+                      <span>{formattedDate(post.publishedAt)}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock3 className="h-3.5 w-3.5" />
+                        {readingTime(post.contentHtml)}
+                      </span>
                     </div>
-                    <p className="line-clamp-2 min-h-[2.8rem] text-sm font-semibold leading-5">{product.title}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">From {formatMoney(minPrice(product))}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      ) : null}
-
-      {latestDrop.length > 0 ? (
-        <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
-          <Reveal>
-            <div className="rounded-[2rem] border border-border/80 bg-gradient-to-br from-card via-card to-salt-warm/40 p-5 shadow-soft sm:p-7">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Latest Drop</p>
-                  <h3 className="font-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-tight">
-                    New Picks Added to the Catalog
-                  </h3>
-                </div>
-                <Link
-                  to="/shop?collection=new-arrivals"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-bold uppercase tracking-[0.09em]"
-                >
-                  Browse new arrivals <Clock3 className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {latestDrop.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.handle}`}
-                    className="rounded-2xl border border-border/75 bg-background/85 p-4 transition hover:border-primary/50"
-                  >
-                    <p className="line-clamp-2 min-h-[2.8rem] text-sm font-semibold">{product.title}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                      Freshly published
-                    </p>
                   </Link>
                 ))}
               </div>
@@ -358,12 +389,15 @@ const HomePage = () => {
                 Built for conversion without losing the SALT identity
               </h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                This storefront blends editorial feel with practical ecommerce UX: stronger navigation hierarchy,
-                clearer pricing cues, and frictionless path-to-purchase from discovery to checkout.
+                The storefront now focuses on fewer, stronger sections: faster catalog entry,
+                cleaner filter paths, and lower friction to Shopify checkout.
               </p>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {trustBullets.map((item) => (
-                  <p key={item} className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground">
+                  <p
+                    key={item}
+                    className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground"
+                  >
                     {item}
                   </p>
                 ))}
@@ -371,20 +405,28 @@ const HomePage = () => {
             </div>
 
             <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-salt-olive/10 p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Customer proof</p>
-              <h4 className="mt-2 font-display text-2xl leading-tight">Shoppers come back for reliability and value</h4>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                Customer proof
+              </p>
+              <h4 className="mt-2 font-display text-2xl leading-tight">
+                Shoppers convert faster with trust signals
+              </h4>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2">
-                  <BadgeCheck className="h-4 w-4 text-primary" /> 4.8 average rating across featured items
+                  <BadgeCheck className="h-4 w-4 text-primary" /> Reliable product and pricing
+                  presentation
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <Star className="h-4 w-4 text-primary" /> Transparent pricing and discount visibility
+                  <Star className="h-4 w-4 text-primary" /> Clear savings visibility and product
+                  tagging
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Curated inventory updated continuously
+                  <Sparkles className="h-4 w-4 text-primary" /> Updated catalog sections with
+                  reduced noise
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" /> Budget-friendly to premium price tiers
+                  <DollarSign className="h-4 w-4 text-primary" /> Stronger path from discovery to
+                  checkout
                 </p>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -395,6 +437,12 @@ const HomePage = () => {
                   Start shopping
                 </Link>
                 <Link
+                  to="/blog"
+                  className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                >
+                  Read blog
+                </Link>
+                <Link
                   to="/contact"
                   className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
                 >
@@ -402,24 +450,6 @@ const HomePage = () => {
                 </Link>
               </div>
             </div>
-          </div>
-        </Reveal>
-      </section>
-
-      <section className="mx-auto mt-12 w-[min(1280px,96vw)] pb-4">
-        <Reveal>
-          <div className="grid gap-3 md:grid-cols-3">
-            {testimonials.map((testimonial, index) => (
-              <article key={testimonial.name} className="rounded-2xl border border-border/80 bg-card p-5 shadow-soft">
-                <p className="text-sm leading-7">“{testimonial.quote}”</p>
-                <p className="mt-4 text-xs font-bold uppercase tracking-[0.1em] text-primary">
-                  {testimonial.name} • {testimonial.label}
-                </p>
-                <p className="mt-2 text-[0.65rem] uppercase tracking-[0.1em] text-muted-foreground">
-                  Reviewed in the last 30 days ({index + 1})
-                </p>
-              </article>
-            ))}
           </div>
         </Reveal>
       </section>

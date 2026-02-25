@@ -2,6 +2,7 @@ import type { PropsWithChildren } from "react";
 import { Outlet } from "react-router-dom";
 import MainHeader from "@/components/layout/MainHeader";
 import MainFooter from "@/components/layout/MainFooter";
+import ChatBootstrap from "@/components/integrations/ChatBootstrap";
 
 const SiteShell = ({ children }: PropsWithChildren) => {
   return (
@@ -11,6 +12,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[540px] bg-[radial-gradient(circle_at_55%_90%,rgba(39,88,75,0.16),transparent_42%)]" />
 
       <MainHeader />
+      <ChatBootstrap />
       <main>{children || <Outlet />}</main>
       <MainFooter />
     </div>

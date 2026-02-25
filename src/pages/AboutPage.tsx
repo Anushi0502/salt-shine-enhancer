@@ -1,66 +1,99 @@
-import { BadgeCheck, HeartHandshake, Sparkles, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { sanitizeRichHtml } from "@/lib/formatters";
+import { useAboutPage } from "@/lib/shopify-data";
+import { Link } from "react-router-dom";
 
-const pillars = [
-  {
-    icon: Sparkles,
-    title: "Curation over clutter",
-    detail:
-      "We focus on practical products with strong quality-to-price value, so shoppers can choose quickly and confidently.",
-  },
-  {
-    icon: Truck,
-    title: "Reliable fulfillment",
-    detail:
-      "Orders are processed with clear delivery communication and tracking so customers always know what to expect.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Transparent trust",
-    detail:
-      "Clear pricing, secure checkout, and straightforward policies keep every purchase simple and dependable.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Support that responds",
-    detail:
-      "Need help pre- or post-purchase? Our team is available for product guidance, returns, and order updates.",
-  },
+const aboutHighlights = [
+  { label: "Active catalog", value: "700+ products" },
+  { label: "Weekly refresh", value: "New arrivals every week" },
+  { label: "Support response", value: "Within 24 business hours" },
 ];
 
 const AboutPage = () => {
+  const { data, isLoading, error, refetch } = useAboutPage();
+
+  if (isLoading) {
+    return (
+      <LoadingState
+        title="Loading About"
+        subtitle="Fetching the latest About content from Shopify."
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="About page unavailable"
+        subtitle="Please retry to refresh content from Shopify."
+        action={
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            Retry
+          </button>
+        }
+      />
+    );
+  }
+
+  const title = data?.page.title || "About SALT";
+  const bodyHtml = sanitizeRichHtml(data?.page.bodyHtml || "");
+
   return (
     <section className="mx-auto mt-8 w-[min(1100px,94vw)] pb-8">
       <Reveal>
         <div className="rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">About SALT</p>
-          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">
-            Curated essentials for everyday living
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            SALT Online Store is built to make shopping feel intentional: fewer distractions, better product context,
-            and a smoother path from discovery to checkout.
-          </p>
+          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">{title}</h1>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {aboutHighlights.map((item) => (
+              <p
+                key={item.label}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground"
+              >
+                <span className="block font-semibold text-foreground">{item.label}</span>
+                <span>{item.value}</span>
+              </p>
+            ))}
+          </div>
+
+          {bodyHtml ? (
+            <article
+              className="prose prose-sm mt-5 max-w-none leading-7 text-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground"
+              dangerouslySetInnerHTML={{ __html: bodyHtml }}
+            />
+          ) : (
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+              About content is currently unavailable.
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link
+              to="/shop"
+              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+            >
+              Explore products
+            </Link>
+            <Link
+              to="/blog"
+              className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              Read our blog
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+            >
+              Contact support
+            </Link>
+          </div>
         </div>
       </Reveal>
-
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        {pillars.map((pillar, index) => {
-          const Icon = pillar.icon;
-
-          return (
-            <Reveal key={pillar.title} delayMs={index * 90}>
-              <article className="h-full rounded-2xl border border-border/80 bg-card p-5 shadow-soft">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/12 text-primary">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h2 className="mt-3 font-display text-2xl leading-tight">{pillar.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">{pillar.detail}</p>
-              </article>
-            </Reveal>
-          );
-        })}
-      </div>
     </section>
   );
 };

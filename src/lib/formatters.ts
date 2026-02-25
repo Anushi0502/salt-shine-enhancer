@@ -29,6 +29,23 @@ export function stripHtml(input: unknown): string {
     .trim();
 }
 
+export function sanitizeRichHtml(input: unknown): string {
+  const raw = asText(input);
+
+  return raw
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<meta[^>]*>/gi, "")
+    .replace(/\s(?:bis_size|data-mce-fragment|contenteditable)=("[^"]*"|'[^']*')/gi, "")
+    .replace(/<img([^>]+)>/gi, (_full, attrs: string) => `<img${attrs} loading="lazy">`);
+}
+
+export function firstImageSrcFromHtml(input: unknown): string | null {
+  const html = asText(input);
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return match?.[1] || null;
+}
+
 function asNumber(value?: string | null): number {
   if (!value) {
     return 0;
@@ -100,4 +117,16 @@ export function readingTime(input: string): string {
   const words = stripHtml(input).split(/\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.round(words / 140));
   return `${minutes} min read`;
+}
+
+export function conciseTitle(input: string, maxChars = 76): string {
+  const title = stripHtml(input);
+  if (title.length <= maxChars) {
+    return title;
+  }
+
+  const slice = title.slice(0, maxChars - 1);
+  const boundary = slice.lastIndexOf(" ");
+  const shortened = boundary > 24 ? slice.slice(0, boundary) : slice;
+  return `${shortened.trimEnd()}…`;
 }
