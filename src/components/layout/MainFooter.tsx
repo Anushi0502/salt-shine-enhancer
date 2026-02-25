@@ -106,24 +106,24 @@ const MainFooter = () => {
               </Link>
             </li>
             <li>
-              <a className="hover:text-primary" href="https://saltonlinestore.com/pages/about-us" target="_blank" rel="noreferrer">
-                About us (Main site)
-              </a>
+              <Link className="hover:text-primary" to="/about">
+                About us
+              </Link>
             </li>
             <li>
-              <a className="hover:text-primary" href="https://saltonlinestore.com/policies/privacy-policy" target="_blank" rel="noreferrer">
+              <Link className="hover:text-primary" to="/privacy-policy">
                 Privacy
-              </a>
+              </Link>
             </li>
             <li>
-              <a className="hover:text-primary" href="https://saltonlinestore.com/policies/refund-policy" target="_blank" rel="noreferrer">
+              <Link className="hover:text-primary" to="/refund-policy">
                 Returns
-              </a>
+              </Link>
             </li>
             <li>
-              <a className="hover:text-primary" href="https://saltonlinestore.com/policies/shipping-policy" target="_blank" rel="noreferrer">
+              <Link className="hover:text-primary" to="/shipping-policy">
                 Shipping
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

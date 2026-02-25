@@ -14,6 +14,7 @@ import {
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import {
+  buildShopifyCartUrl,
   buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
   buildShopifySearchUrl,
@@ -24,8 +25,6 @@ import { formatMoney } from "@/lib/formatters";
 import { useProducts } from "@/lib/shopify-data";
 
 const FREE_SHIPPING_THRESHOLD = 49;
-const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
-
 function normalizeHandleLookup(input: string): string {
   return input
     .trim()
@@ -151,7 +150,7 @@ const CartPage = () => {
   const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
   const checkoutUrl = buildShopifyCheckoutUrl(checkoutItems);
-  const shopifyCartUrl = `${SHOP_BASE}/cart`;
+  const shopifyCartUrl = buildShopifyCartUrl();
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
