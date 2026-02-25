@@ -29,14 +29,12 @@ const ContactPage = () => {
             >
               Email support
             </a>
-            <a
-              href="https://www.saltonlinestore.com/policies/contact-information"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              to="/policies/contact-information"
               className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
             >
               Contact policy
-            </a>
+            </Link>
             <Link
               to="/blog"
               className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"

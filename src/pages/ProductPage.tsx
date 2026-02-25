@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { useCart } from "@/lib/cart";
+import { buildShopifyCartUrl, buildShopifyShopPayUrl, useCart } from "@/lib/cart";
 import {
   compareAt,
   formatMoney,
@@ -28,8 +28,6 @@ import {
 import { useProducts } from "@/lib/shopify-data";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
-const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
-
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
@@ -132,8 +130,8 @@ const ProductPage = () => {
   const isAvailable = selectedVariant?.available ?? true;
   const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
   const shopPayUrl = selectedVariant
-    ? `${SHOP_BASE}/cart/${selectedVariant.id}:${selectedQuantity}?payment=shop_pay`
-    : `${SHOP_BASE}/cart`;
+    ? buildShopifyShopPayUrl(selectedVariant.id, selectedQuantity)
+    : buildShopifyCartUrl();
 
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)

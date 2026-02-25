@@ -29,8 +29,49 @@ type CartContextValue = {
 };
 
 const CART_STORAGE_KEY = "salt-cart";
-const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
 const MIN_SHOPIFY_NUMERIC_ID = 10_000_000_000_000;
+const FALLBACK_SHOP_BASE = "https://0309d3-72.myshopify.com";
+const SHOPIFY_ROUTE_BYPASS_QUERY = "_fd=0&pb=0";
+
+function normalizeBaseUrl(input: string | undefined): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(withProtocol);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function resolveShopBase(): string {
+  const explicitBase =
+    normalizeBaseUrl(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL) ||
+    normalizeBaseUrl(import.meta.env.VITE_SALT_SHOP_URL);
+
+  if (!explicitBase) {
+    return FALLBACK_SHOP_BASE;
+  }
+
+  if (typeof window !== "undefined") {
+    const appOrigin = normalizeBaseUrl(window.location.origin);
+    if (appOrigin && appOrigin === explicitBase) {
+      return FALLBACK_SHOP_BASE;
+    }
+  }
+
+  return explicitBase;
+}
+
+export const SHOPIFY_STOREFRONT_BASE = resolveShopBase();
+
+export function buildShopifyCartUrl(): string {
+  return `${SHOPIFY_STOREFRONT_BASE}/cart?${SHOPIFY_ROUTE_BYPASS_QUERY}`;
+}
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -115,10 +156,19 @@ export function buildShopifyCheckoutUrl(items: CartItem[]): string {
     .filter((entry): entry is string => Boolean(entry));
 
   if (!lineItems.length) {
-    return `${SHOP_BASE}/cart`;
+    return buildShopifyCartUrl();
   }
 
-  return `${SHOP_BASE}/cart/${lineItems.join(",")}?checkout`;
+  return `${SHOPIFY_STOREFRONT_BASE}/cart/${lineItems.join(",")}?checkout&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
+}
+
+export function buildShopifyShopPayUrl(variantId: number, quantity = 1): string {
+  if (!isValidShopifyVariantId(variantId)) {
+    return buildShopifyCartUrl();
+  }
+
+  const safeQuantity = Math.max(1, Math.floor(quantity || 1));
+  return `${SHOPIFY_STOREFRONT_BASE}/cart/${variantId}:${safeQuantity}?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
 }
 
 export function buildShopifyProductUrl(handle: string | null | undefined): string | null {
@@ -127,7 +177,7 @@ export function buildShopifyProductUrl(handle: string | null | undefined): strin
     return null;
   }
 
-  return `${SHOP_BASE}/products/${encodeURIComponent(normalized)}`;
+  return `${SHOPIFY_STOREFRONT_BASE}/products/${encodeURIComponent(normalized)}`;
 }
 
 export function buildShopifySearchUrl(query: string | null | undefined): string | null {
@@ -136,7 +186,7 @@ export function buildShopifySearchUrl(query: string | null | undefined): string 
     return null;
   }
 
-  return `${SHOP_BASE}/search?q=${encodeURIComponent(normalized)}&type=product`;
+  return `${SHOPIFY_STOREFRONT_BASE}/search?q=${encodeURIComponent(normalized)}&type=product`;
 }
 
 export function CartProvider({ children }: PropsWithChildren) {

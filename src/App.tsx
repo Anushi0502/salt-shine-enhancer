@@ -15,6 +15,10 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import BlogPage from "@/pages/BlogPage";
 import BlogPostPage from "@/pages/BlogPostPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import RefundPolicyPage from "@/pages/RefundPolicyPage";
+import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
+import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import NotFound from "./pages/NotFound";
 
@@ -37,9 +41,18 @@ const App = () => (
                 <Route path="/product/:handle" element={<ProductPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/pages/about-us" element={<AboutPage />} />
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:handle" element={<BlogPostPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/pages/contact" element={<ContactPage />} />
+                <Route path="/policies/contact-information" element={<ContactInformationPolicyPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/refund-policy" element={<RefundPolicyPage />} />
+                <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+                <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
+                <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
