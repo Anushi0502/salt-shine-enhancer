@@ -23,10 +23,22 @@ import {
 import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
-  "Fast order processing and clear shipping updates",
-  "Secure checkout with encrypted payment handling",
-  "30-day returns on eligible products",
-  "Weekly catalog refresh with high-intent categories",
+  {
+    title: "Fast, transparent fulfillment",
+    detail: "Clear processing and shipping updates reduce post-purchase uncertainty.",
+  },
+  {
+    title: "Secure payment flow",
+    detail: "Encrypted checkout routing and clean pricing visibility build confidence.",
+  },
+  {
+    title: "Lower-risk purchase decisions",
+    detail: "Returns policy messaging appears early so shoppers decide faster.",
+  },
+  {
+    title: "Catalog freshness by default",
+    detail: "Frequent syncs keep discovery aligned with currently available inventory.",
+  },
 ];
 
 function formattedDate(value: string): string {
@@ -386,21 +398,57 @@ const HomePage = () => {
           <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <h3 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-tight">
-                Built for conversion without losing the SALT identity
+                Shop with confidence, not guesswork
               </h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                The storefront now focuses on fewer, stronger sections: faster catalog entry,
-                cleaner filter paths, and lower friction to Shopify checkout.
+                Find the right product faster, compare the details that matter, and check out in a
+                clean, trusted flow designed to reduce hesitation at every step.
               </p>
+
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {trustBullets.map((item) => (
-                  <p
-                    key={item}
-                    className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground"
+                  <div
+                    key={item.title}
+                    className="rounded-xl border border-border/70 bg-background px-3 py-3"
                   >
-                    {item}
-                  </p>
+                    <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                    <p className="mt-1 text-[0.72rem] leading-relaxed text-muted-foreground">
+                      {item.detail}
+                    </p>
+                  </div>
                 ))}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-border/70 bg-background p-3">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-primary">
+                  Conversion path
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
+                      1. Discover
+                    </p>
+                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
+                      High-intent collections and filters reduce search fatigue.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
+                      2. Decide
+                    </p>
+                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
+                      Clear price/savings labeling and concise product details.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
+                      3. Checkout
+                    </p>
+                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
+                      Direct, low-friction path into Shopify payment flow.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -411,6 +459,32 @@ const HomePage = () => {
               <h4 className="mt-2 font-display text-2xl leading-tight">
                 Shoppers convert faster with trust signals
               </h4>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    Products
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
+                    {products.length.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    Collections
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
+                    {rankedCollections.length.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    Last sync
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-foreground">
+                    {formattedDateTime(lastSyncedAt).split(",")[0]}
+                  </p>
+                </div>
+              </div>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2">
                   <BadgeCheck className="h-4 w-4 text-primary" /> Reliable product and pricing
@@ -428,6 +502,26 @@ const HomePage = () => {
                   <DollarSign className="h-4 w-4 text-primary" /> Stronger path from discovery to
                   checkout
                 </p>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  to="/shop?sort=newest"
+                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                >
+                  New drops
+                </Link>
+                <Link
+                  to="/shop?sort=discount"
+                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                >
+                  Best savings
+                </Link>
+                <Link
+                  to="/shop?max=25"
+                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                >
+                  Under $25
+                </Link>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
