@@ -3,6 +3,7 @@ import { ArrowRight, BookOpenText, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime } from "@/lib/formatters";
+import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
 import { useBlogPosts } from "@/lib/shopify-data";
 
 function formattedDate(value: string): string {
@@ -117,7 +118,7 @@ const BlogPage = () => {
               <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
                 <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
                   <img
-                    src={featuredPost.image || "/placeholder.svg"}
+                    src={normalizeShopifyAssetUrl(featuredPost.image) || resolveThemeAsset("/placeholder.svg")}
                     alt={featuredPost.title}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
@@ -158,7 +159,7 @@ const BlogPage = () => {
                   <article className="salt-card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
                     <Link to={`/blog/${post.handle}`} className="block overflow-hidden bg-muted">
                       <img
-                        src={post.image || "/placeholder.svg"}
+                        src={normalizeShopifyAssetUrl(post.image) || resolveThemeAsset("/placeholder.svg")}
                         alt={post.title}
                         loading="lazy"
                         className="aspect-[16/10] w-full object-cover transition-transform duration-500 hover:scale-105"

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { resolveThemeAsset } from "@/lib/theme-assets";
 
 type BrandLogoProps = {
   className?: string;
@@ -34,7 +35,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
         )}
       >
         <img
-          src="/brand/salt-logo.png"
+          src={resolveThemeAsset("/brand/salt-logo.png")}
           alt="SALT logo"
           className={cn("rounded-full object-cover", imageSizeMap[size])}
           loading="eager"

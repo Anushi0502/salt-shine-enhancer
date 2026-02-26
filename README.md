@@ -71,3 +71,46 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Shopify integration (SALT store)
+
+1. Copy environment template:
+
+```sh
+cp .env.example .env.local
+```
+
+2. Pull latest Shopify snapshot data:
+
+```sh
+SALT_SHOP_URL=https://0309d3-72.myshopify.com npm run sync:data
+```
+
+3. Run locally:
+
+```sh
+npm run dev
+```
+
+Notes:
+- UI stays unchanged; this only changes Shopify data/checkouts integration.
+- Blog sync tries multiple handles from `SALT_BLOG_HANDLE` and preserves existing blog snapshot data if public blog feeds are unavailable.
+
+## Shopify hosted theme (same UI shell)
+
+Build a Shopify theme package from the app:
+
+```sh
+npm run build:shopify-theme
+```
+
+This generates `shopify-theme/` with:
+- `layout/theme.liquid` + `sections/salt-app.liquid`
+- JSON templates for index/product/collection/cart/page/blog/article/search/404
+- app bundles + synced JSON snapshots in `shopify-theme/assets`
+
+Push it to the target store:
+
+```sh
+npx @shopify/cli theme push --path shopify-theme --store 0309d3-72.myshopify.com
+```

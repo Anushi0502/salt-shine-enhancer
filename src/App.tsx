@@ -47,13 +47,18 @@ const App = () => (
               <Route element={<SiteShell />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/shop" element={<ShopPage />} />
+                <Route path="/search" element={<ShopPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
+                <Route path="/collections/:handle" element={<ShopPage />} />
                 <Route path="/product/:handle" element={<ProductPage />} />
+                <Route path="/products/:handle" element={<ProductPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/pages/about-us" element={<AboutPage />} />
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:handle" element={<BlogPostPage />} />
+                <Route path="/blogs/:blogHandle" element={<BlogPage />} />
+                <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/pages/contact" element={<ContactPage />} />
                 <Route path="/policies/contact-information" element={<ContactInformationPolicyPage />} />

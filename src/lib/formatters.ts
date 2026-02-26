@@ -1,4 +1,5 @@
 import type { ShopifyProduct, ShopifyVariant } from "@/types/shopify";
+import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
 
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -37,14 +38,30 @@ export function sanitizeRichHtml(input: unknown): string {
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<meta[^>]*>/gi, "")
-    .replace(/\s(?:bis_size|data-mce-fragment|contenteditable)=("[^"]*"|'[^']*')/gi, "")
-    .replace(/<img([^>]+)>/gi, (_full, attrs: string) => `<img${attrs} loading="lazy">`);
+    .replace(/\s(?:bis_size|data-mce-fragment|contenteditable|data-mce-style)=("[^"]*"|'[^']*')/gi, "")
+    .replace(/<img([^>]+)>/gi, (_full, attrs: string) => {
+      let nextAttrs = attrs
+        .replace(/\s(?:srcset|sizes)=("[^"]*"|'[^']*')/gi, "")
+        .replace(/\s(?:bis_size|data-mce-fragment|contenteditable|data-mce-style)=("[^"]*"|'[^']*')/gi, "");
+
+      const srcMatch = nextAttrs.match(/\ssrc=(["'])([^"']+)\1/i);
+      if (srcMatch) {
+        const normalized = normalizeShopifyAssetUrl(srcMatch[2]) || srcMatch[2];
+        nextAttrs = nextAttrs.replace(srcMatch[0], ` src="${normalized}"`);
+      }
+
+      if (!/\sloading=(["'])lazy\1/i.test(nextAttrs)) {
+        nextAttrs = `${nextAttrs} loading="lazy"`;
+      }
+
+      return `<img${nextAttrs}>`;
+    });
 }
 
 export function firstImageSrcFromHtml(input: unknown): string | null {
   const html = asText(input);
   const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return match?.[1] || null;
+  return normalizeShopifyAssetUrl(match?.[1] || null);
 }
 
 function asNumber(value?: string | null): number {
@@ -127,7 +144,10 @@ export function formatMoney(value: number): string {
 }
 
 export function productImage(product: ShopifyProduct): string {
-  return product.image?.src || product.images[0]?.src || "/placeholder.svg";
+  return (
+    normalizeShopifyAssetUrl(product.image?.src || product.images[0]?.src) ||
+    resolveThemeAsset("/placeholder.svg")
+  );
 }
 
 export function productTagList(product: ShopifyProduct): string[] {

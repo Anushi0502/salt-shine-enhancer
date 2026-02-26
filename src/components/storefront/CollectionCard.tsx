@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import type { ShopifyCollection } from "@/types/shopify";
+import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
 
 type CollectionCardProps = {
   collection: ShopifyCollection;
@@ -8,7 +9,7 @@ type CollectionCardProps = {
 };
 
 const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
-  const image = collection.image?.src || "/placeholder.svg";
+  const image = normalizeShopifyAssetUrl(collection.image?.src) || resolveThemeAsset("/placeholder.svg");
   const totalProducts = productCount ?? collection.products_count;
 
   return (

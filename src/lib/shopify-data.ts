@@ -11,22 +11,37 @@ import type {
 } from "@/types/shopify";
 import { firstImageSrcFromHtml, stripHtml } from "@/lib/formatters";
 import { seedCollectionsPayload, seedProductsPayload } from "@/lib/seed-data";
+import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
 
-const SHOP_BASE = import.meta.env.VITE_SALT_SHOP_URL || "https://saltonlinestore.com";
-const DATA_MODE = (import.meta.env.VITE_DATA_MODE || "snapshot") as
+const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
+const SHOP_BASE =
+  import.meta.env.VITE_SALT_SHOP_URL ||
+  import.meta.env.VITE_SHOPIFY_STOREFRONT_URL ||
+  DEFAULT_SHOP_BASE;
+const DATA_MODE = (import.meta.env.VITE_DATA_MODE || "hybrid") as
   | "live"
   | "snapshot"
   | "seed"
   | "hybrid";
 const PAGE_LIMIT = Number(import.meta.env.VITE_SALT_PAGE_LIMIT || 250);
 const ABOUT_HANDLE = import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
-const BLOG_HANDLE = import.meta.env.VITE_BLOG_HANDLE || "posts";
+const BLOG_HANDLE_INPUT = import.meta.env.VITE_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
+const BLOG_HANDLES = Array.from(
+  new Set(
+    BLOG_HANDLE_INPUT
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ),
+);
+const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const resolvedUrl = resolveThemeAsset(url);
+  const response = await fetch(resolvedUrl);
 
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${url}`);
+    throw new Error(`Request failed (${response.status}) for ${resolvedUrl}`);
   }
 
   return (await response.json()) as T;
@@ -84,7 +99,20 @@ function excerptFromHtml(input: string, maxChars = 200): string {
 function normalizeRichHtml(input: string): string {
   return input
     .replace(/<meta[^>]*>/gi, "")
-    .replace(/\s(?:bis_size|data-mce-fragment|contenteditable)=("[^"]*"|'[^']*')/gi, "")
+    .replace(/\s(?:bis_size|data-mce-fragment|contenteditable|data-mce-style)=("[^"]*"|'[^']*')/gi, "")
+    .replace(/<img([^>]+)>/gi, (_full, attrs: string) => {
+      let nextAttrs = attrs
+        .replace(/\s(?:srcset|sizes)=("[^"]*"|'[^']*')/gi, "")
+        .replace(/\s(?:bis_size|data-mce-fragment|contenteditable|data-mce-style)=("[^"]*"|'[^']*')/gi, "");
+
+      const srcMatch = nextAttrs.match(/\ssrc=(["'])([^"']+)\1/i);
+      if (srcMatch) {
+        const normalizedSrc = normalizeShopifyAssetUrl(srcMatch[2]) || srcMatch[2];
+        nextAttrs = nextAttrs.replace(srcMatch[0], ` src="${normalizedSrc}"`);
+      }
+
+      return `<img${nextAttrs}>`;
+    })
     .trim();
 }
 
@@ -104,7 +132,7 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
       const linkNode = Array.from(entry.getElementsByTagName("link")).find(
         (node) => node.getAttribute("rel") === "alternate",
       );
-      const url = linkNode?.getAttribute("href") || id;
+      const url = normalizeShopifyAssetUrl(linkNode?.getAttribute("href") || id) || id;
       const handle = url.split("/").filter(Boolean).at(-1) || "";
 
       return {
@@ -117,7 +145,7 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
         updatedAt,
         excerpt: excerptFromHtml(contentHtml),
         contentHtml,
-        image: firstImageSrcFromHtml(contentHtml),
+        image: normalizeShopifyAssetUrl(firstImageSrcFromHtml(contentHtml)),
       } satisfies BlogPost;
     })
     .filter((entry) => Boolean(entry.handle && entry.title && entry.url))
@@ -129,7 +157,27 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
 }
 
 async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
-  const payload = await fetchJson<{
+  const response = await fetch(`${SHOP_BASE}/pages/${ABOUT_HANDLE}.json`);
+  if (response.status === 404) {
+    return {
+      generatedAt: new Date().toISOString(),
+      source: SHOP_BASE,
+      page: {
+        id: 0,
+        handle: ABOUT_HANDLE,
+        title: "About",
+        bodyHtml: "",
+        publishedAt: "",
+        updatedAt: "",
+      },
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${SHOP_BASE}/pages/${ABOUT_HANDLE}.json`);
+  }
+
+  const payload = (await response.json()) as {
     page: {
       id: number;
       handle: string;
@@ -138,7 +186,7 @@ async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
       published_at: string;
       updated_at: string;
     };
-  }>(`${SHOP_BASE}/pages/${ABOUT_HANDLE}.json`);
+  };
 
   return {
     generatedAt: new Date().toISOString(),
@@ -154,22 +202,34 @@ async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
   };
 }
 
-async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
-  const response = await fetch(`${SHOP_BASE}/blogs/${BLOG_HANDLE}.atom`);
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${SHOP_BASE}/blogs/${BLOG_HANDLE}.atom`);
+async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload | null> {
+  for (const handle of BLOG_HANDLES) {
+    const response = await fetch(`${SHOP_BASE}/blogs/${handle}.atom`);
+    if (response.status === 404) {
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status}) for ${SHOP_BASE}/blogs/${handle}.atom`);
+    }
+
+    const atom = await response.text();
+    const posts = parseBlogEntriesFromAtom(atom);
+
+    if (!posts.length) {
+      continue;
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      source: SHOP_BASE,
+      blogHandle: handle,
+      total: posts.length,
+      posts,
+    };
   }
 
-  const atom = await response.text();
-  const posts = parseBlogEntriesFromAtom(atom);
-
-  return {
-    generatedAt: new Date().toISOString(),
-    source: SHOP_BASE,
-    blogHandle: BLOG_HANDLE,
-    total: posts.length,
-    posts,
-  };
+  return null;
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
@@ -277,19 +337,36 @@ export async function loadAboutPage(): Promise<AboutPagePayload> {
 }
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {
+  let snapshotPayload: BlogPostsPayload | null = null;
+
+  const loadSnapshot = async (): Promise<BlogPostsPayload | null> => {
+    if (snapshotPayload) {
+      return snapshotPayload;
+    }
+
+    try {
+      snapshotPayload = await fetchJson<BlogPostsPayload>("/data/blog-posts.json");
+      return snapshotPayload;
+    } catch {
+      return null;
+    }
+  };
+
   if (DATA_MODE === "live" || DATA_MODE === "hybrid") {
     try {
-      return await fetchBlogPostsFromLive();
+      const livePayload = await fetchBlogPostsFromLive();
+      if (livePayload && livePayload.total > 0) {
+        return livePayload;
+      }
     } catch {
       // Fall back to snapshot data when live fetch is blocked by CORS or rate limits.
     }
   }
 
   if (DATA_MODE === "snapshot" || DATA_MODE === "hybrid" || DATA_MODE === "live") {
-    try {
-      return await fetchJson<BlogPostsPayload>("/data/blog-posts.json");
-    } catch {
-      // Fall through to fallback payload.
+    const snapshot = await loadSnapshot();
+    if (snapshot) {
+      return snapshot;
     }
   }
 

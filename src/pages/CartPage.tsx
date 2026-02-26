@@ -21,6 +21,7 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { resolveThemeAsset } from "@/lib/theme-assets";
 import { useProducts } from "@/lib/shopify-data";
 
 const FREE_SHIPPING_THRESHOLD = 49;
@@ -250,7 +251,7 @@ const CartPage = () => {
               <article className="salt-panel-shell rounded-2xl p-4 sm:p-5">
                 <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
                   <img
-                    src={item.image || "/placeholder.svg"}
+                    src={item.image || resolveThemeAsset("/placeholder.svg")}
                     alt={item.title}
                     className="aspect-square w-full rounded-xl border border-border bg-muted object-cover"
                   />

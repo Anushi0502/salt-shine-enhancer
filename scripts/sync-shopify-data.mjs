@@ -1,12 +1,21 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const baseUrl = process.env.SALT_SHOP_URL || "https://saltonlinestore.com";
+const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
+const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
-const blogHandle = process.env.SALT_BLOG_HANDLE || "posts";
+const blogHandleInput = process.env.SALT_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
+const blogHandles = Array.from(
+  new Set(
+    blogHandleInput
+      .split(",")
+      .map((handle) => handle.trim())
+      .filter(Boolean),
+  ),
+);
 const outDir = resolve(process.cwd(), "public", "data");
 
 async function fetchJsonUrl(url) {
@@ -17,16 +26,6 @@ async function fetchJsonUrl(url) {
   }
 
   return response.json();
-}
-
-async function fetchTextUrl(url) {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${url}`);
-  }
-
-  return response.text();
 }
 
 async function fetchPaged(key, endpoint) {
@@ -158,8 +157,38 @@ function parseBlogEntriesFromAtom(atomXml) {
     .sort((a, b) => Date.parse(b.publishedAt || "1970-01-01") - Date.parse(a.publishedAt || "1970-01-01"));
 }
 
+async function readExistingBlogPayload() {
+  try {
+    const raw = await readFile(resolve(outDir, "blog-posts.json"), "utf8");
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed?.posts)) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchAboutPage() {
-  const payload = await fetchJsonUrl(`${baseUrl}/pages/${aboutHandle}.json`);
+  const response = await fetch(`${baseUrl}/pages/${aboutHandle}.json`);
+  if (response.status === 404) {
+    return {
+      id: 0,
+      handle: aboutHandle,
+      title: "About",
+      bodyHtml: "",
+      publishedAt: "",
+      updatedAt: "",
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${baseUrl}/pages/${aboutHandle}.json`);
+  }
+
+  const payload = await response.json();
   const page = payload?.page || {};
 
   return {
@@ -173,14 +202,58 @@ async function fetchAboutPage() {
 }
 
 async function fetchBlogPosts() {
-  const atom = await fetchTextUrl(`${baseUrl}/blogs/${blogHandle}.atom`);
-  return parseBlogEntriesFromAtom(atom);
+  for (const handle of blogHandles) {
+    const response = await fetch(`${baseUrl}/blogs/${handle}.atom`);
+    if (response.status === 404) {
+      process.stdout.write(`Blog handle "${handle}" not found on ${baseUrl}\n`);
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status}) for ${baseUrl}/blogs/${handle}.atom`);
+    }
+
+    const atom = await response.text();
+    const posts = parseBlogEntriesFromAtom(atom);
+
+    if (!posts.length) {
+      process.stdout.write(`Blog handle "${handle}" returned 0 published posts\n`);
+      continue;
+    }
+
+    process.stdout.write(`Using blog handle "${handle}" with ${posts.length} posts\n`);
+    return {
+      blogHandle: handle,
+      source: baseUrl,
+      posts,
+    };
+  }
+
+  const existingPayload = await readExistingBlogPayload();
+  if (existingPayload?.posts?.length) {
+    process.stdout.write(
+      `No public blog feed found, preserving existing blog snapshot with ${existingPayload.posts.length} posts\n`,
+    );
+
+    return {
+      blogHandle: existingPayload.blogHandle || blogHandles[0] || "posts",
+      source: existingPayload.source || baseUrl,
+      posts: existingPayload.posts,
+    };
+  }
+
+  process.stdout.write("No blog feed found and no existing blog snapshot to preserve\n");
+  return {
+    blogHandle: blogHandles[0] || "posts",
+    source: baseUrl,
+    posts: [],
+  };
 }
 
 async function main() {
   const startedAt = new Date().toISOString();
 
-  const [products, collections, aboutPage, blogPosts] = await Promise.all([
+  const [products, collections, aboutPage, blogResult] = await Promise.all([
     fetchPaged("products", "/products.json"),
     fetchPaged("collections", "/collections.json"),
     fetchAboutPage(),
@@ -216,10 +289,10 @@ async function main() {
 
   const blogPayload = {
     generatedAt: startedAt,
-    source: baseUrl,
-    blogHandle,
-    total: blogPosts.length,
-    posts: blogPosts,
+    source: blogResult.source,
+    blogHandle: blogResult.blogHandle,
+    total: blogResult.posts.length,
+    posts: blogResult.posts,
   };
 
   for (const collection of collections) {

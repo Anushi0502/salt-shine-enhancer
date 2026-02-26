@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
   ChevronLeft,
@@ -109,6 +109,8 @@ function formatTypeLabel(value: string): string {
 }
 
 const ShopPage = () => {
+  const navigate = useNavigate();
+  const { handle: routeCollectionHandle } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const collectionHandle = searchParams.get("collection") || "";
@@ -131,6 +133,22 @@ const ShopPage = () => {
   const [showAdvanced, setShowAdvanced] = useState(
     minFilter != null || maxFilter != null || perPage !== perPageOptions[0],
   );
+
+  useEffect(() => {
+    if (!routeCollectionHandle || searchParams.get("collection")) {
+      return;
+    }
+
+    const next = new URLSearchParams(searchParams);
+
+    if (routeCollectionHandle.toLowerCase() === "all") {
+      next.delete("collection");
+    } else {
+      next.set("collection", routeCollectionHandle);
+    }
+
+    setSearchParams(next, { replace: true });
+  }, [routeCollectionHandle, searchParams, setSearchParams]);
 
   useEffect(() => {
     setSearchInput(query);
@@ -320,6 +338,11 @@ const ShopPage = () => {
   };
 
   const clearFilters = () => {
+    if (routeCollectionHandle) {
+      navigate("/shop", { replace: true });
+      return;
+    }
+
     setSearchParams(new URLSearchParams());
     setSearchInput("");
     setCustomMinInput("");
