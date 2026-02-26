@@ -24,20 +24,24 @@ import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
   {
-    title: "Fast, transparent fulfillment",
-    detail: "Clear processing and shipping updates reduce post-purchase uncertainty.",
+    title: "Safe and Secure Delivery",
+    detail:
+      "We don't just ship boxes; we ensure your order arrives safely and swiftly with premium tracking every step of the way.",
   },
   {
-    title: "Secure payment flow",
-    detail: "Encrypted checkout routing and clean pricing visibility build confidence.",
+    title: "Secure & Flexible Payments",
+    detail:
+      "Choose how you pay with our fully encrypted checkout, supporting all major cards and buy now, pay later options.",
   },
   {
-    title: "Lower-risk purchase decisions",
-    detail: "Returns policy messaging appears early so shoppers decide faster.",
+    title: 'Our "Happiness" Guarantee',
+    detail:
+      "Not quite what you expected? No problem. Our 30-day, hassle-free return policy ensures you never have to settle.",
   },
   {
-    title: "Catalog freshness by default",
-    detail: "Frequent syncs keep discovery aligned with currently available inventory.",
+    title: "Expertly Curated Selection",
+    detail:
+      "Every item in our store is hand-vetted by our team for quality and durability, so you only ever get the best.",
   },
 ];
 
@@ -415,12 +419,12 @@ const HomePage = () => {
           <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <h3 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-tight">
-                Convert comparison shoppers into confident buyers
+                Everything you need to shop with total confidence
               </h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                Most shoppers do not need more choices, they need cleaner confidence signals. This
-                storefront leads with side-by-side value clarity, practical category grouping, and
-                fast checkout progression so hesitation drops before cart stage.
+                We believe shopping should be effortless. That's why we've removed the guesswork,
+                focusing on curated quality and a support team that actually cares about your
+                experience.
               </p>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
@@ -491,26 +495,19 @@ const HomePage = () => {
                   total peace of mind.
                 </p>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  to="/shop?sort=newest"
-                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
-                >
-                  Shop latest arrivals
-                </Link>
-                <Link
-                  to="/shop?sort=discount"
-                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
-                >
-                  View top value picks
-                </Link>
-              </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   to="/shop"
                   className="salt-button-shine inline-flex h-10 items-center rounded-full bg-foreground px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110"
                 >
                   Shop with confidence
+                </Link>
+
+                <Link
+                  to="/shop?sort=discount"
+                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
+                >
+                  View top value picks
                 </Link>
                 <Link
                   to="/blog"
