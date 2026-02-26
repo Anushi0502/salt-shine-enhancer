@@ -1,6 +1,6 @@
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 import Reveal from "@/components/storefront/Reveal";
-import { BadgeCheck, Box, Layers3, SlidersHorizontal } from "lucide-react";
+import { Box, Layers3, PackageCheck, SlidersHorizontal } from "lucide-react";
 
 type KpiStripProps = {
   products: ShopifyProduct[];
@@ -11,12 +11,15 @@ const KpiStrip = ({ products, collections }: KpiStripProps) => {
   const averageVariants = (
     products.reduce((sum, product) => sum + product.variants.length, 0) / Math.max(products.length, 1)
   ).toFixed(1);
+  const inStockCount = products.filter((product) =>
+    product.variants.some((variant) => variant.available),
+  ).length;
 
   const metrics = [
     { label: "Live products", value: products.length.toLocaleString(), Icon: Box },
-    { label: "Curated collections", value: collections.length.toString(), Icon: Layers3 },
+    { label: "Curated collections", value: collections.length.toLocaleString(), Icon: Layers3 },
     { label: "Avg options per item", value: averageVariants, Icon: SlidersHorizontal },
-    { label: "Return window", value: "30 Days", Icon: BadgeCheck },
+    { label: "In stock now", value: inStockCount.toLocaleString(), Icon: PackageCheck },
   ];
 
   return (

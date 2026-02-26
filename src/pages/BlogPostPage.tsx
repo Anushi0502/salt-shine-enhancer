@@ -2,9 +2,9 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import ResilientImage from "@/components/storefront/ResilientImage";
 import { readingTime, sanitizeRichHtml } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
-import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 function formattedDate(value: string): string {
   if (!value) {
@@ -74,7 +74,6 @@ const BlogPostPage = () => {
   }
 
   const sanitizedHtml = sanitizeRichHtml(post.contentHtml);
-  const coverImage = normalizeShopifyAssetUrl(post.image);
   const relatedPosts = (data?.posts || [])
     .filter((entry) => entry.handle !== post.handle)
     .slice(0, 3);
@@ -127,8 +126,8 @@ const BlogPostPage = () => {
           </div>
 
           {post.image ? (
-            <img
-              src={coverImage || post.image}
+            <ResilientImage
+              src={post.image}
               alt={post.title}
               className="mt-5 w-full rounded-2xl border border-border bg-muted object-cover"
             />

@@ -75,7 +75,10 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
           </div>
 
           {mainProduct ? (
-            <div className="mt-8 grid max-w-2xl gap-3 rounded-2xl border border-primary-foreground/30 bg-primary-foreground/10 p-4 sm:grid-cols-[84px_1fr_auto] sm:items-center">
+            <Link
+              to={`/products/${mainProduct.handle}`}
+              className="mt-8 grid max-w-2xl gap-3 rounded-2xl border border-primary-foreground/30 bg-primary-foreground/10 p-4 transition hover:border-primary-foreground/45 hover:bg-primary-foreground/14 sm:grid-cols-[84px_1fr_auto] sm:items-center"
+            >
               <img
                 src={productImage(mainProduct)}
                 alt={mainProduct.title}
@@ -86,7 +89,7 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
                 <p className="text-xs text-primary-foreground/80">Best-selling pick this week</p>
               </div>
               <strong className="text-sm">{formatMoney(minPrice(mainProduct))}</strong>
-            </div>
+            </Link>
           ) : null}
 
           <div className="mt-4 grid gap-2 text-xs text-primary-foreground/85 sm:grid-cols-3">
@@ -107,7 +110,7 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
         {[secondaryProduct, tertiaryProduct].filter(Boolean).map((product, index) => (
           <Reveal key={product.id} delayMs={120 + index * 120}>
             <Link
-              to={`/product/${product.handle}`}
+              to={`/products/${product.handle}`}
               className="group salt-card-hover relative block overflow-hidden rounded-3xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.97),hsl(var(--card)/0.9))] p-3 shadow-soft"
             >
               <span className="absolute left-5 top-5 z-10 rounded-full border border-primary-foreground/45 bg-primary-foreground/14 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary-foreground">

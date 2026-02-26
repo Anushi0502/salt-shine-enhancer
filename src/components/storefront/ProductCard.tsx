@@ -28,7 +28,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   return (
     <article className="salt-card-hover group overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft">
-      <Link to={`/product/${product.handle}`} className="relative block aspect-[4/4.3] overflow-hidden bg-muted">
+      <Link to={`/products/${product.handle}`} className="relative block aspect-[4/4.3] overflow-hidden bg-muted">
         <img
           src={productImage(product)}
           alt={product.title}
@@ -53,7 +53,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <div className="space-y-3 p-4">
         <div className="space-y-2">
           <h3 className="line-clamp-2 min-h-[3.2rem] text-sm font-semibold leading-6">
-            <Link to={`/product/${product.handle}`} className="hover:text-primary">
+            <Link to={`/products/${product.handle}`} className="hover:text-primary">
               {title}
             </Link>
           </h3>
@@ -109,7 +109,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </button>
 
           <Link
-            to={`/product/${product.handle}`}
+            to={`/products/${product.handle}`}
             className="inline-flex h-10 items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.1em] hover:border-primary/50 hover:text-primary"
           >
             Details <ArrowUpRight className="h-3.5 w-3.5" />

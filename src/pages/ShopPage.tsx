@@ -300,7 +300,7 @@ const ShopPage = () => {
     return (
       <ErrorState
         title="Catalog unavailable"
-        subtitle="Retry to refresh live/snapshot data."
+        subtitle="Retry to refresh live Shopify data."
         action={
           <button
             type="button"

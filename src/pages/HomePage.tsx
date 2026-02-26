@@ -109,7 +109,7 @@ const HomePage = () => {
 
   const { data: collectionMapPayload } = useCollectionProductsMap();
 
-  if (productsLoading || collectionsLoading || blogLoading) {
+  if (productsLoading || collectionsLoading) {
     return (
       <LoadingState
         title="Loading SALT catalog"
@@ -118,11 +118,11 @@ const HomePage = () => {
     );
   }
 
-  if (productsError || collectionsError || blogError) {
+  if (productsError || collectionsError) {
     return (
       <ErrorState
         title="We could not load the storefront"
-        subtitle="Please retry. If the issue continues, the embedded fallback catalog will still appear on refresh."
+        subtitle="Please retry to pull the latest live catalog data."
         action={
           <button
             type="button"
@@ -145,10 +145,10 @@ const HomePage = () => {
   const collectionMap = collectionMapPayload?.collections || {};
   const liveProductIdSet = new Set(products.map((product) => product.id));
 
-  const countForCollection = (handle: string, fallback: number) => {
-    const productIds = collectionMap[handle]?.productIds;
+  const countForCollection = (collection: ShopifyCollection) => {
+    const productIds = collectionMap[collection.handle]?.productIds;
     if (!productIds || !productIds.length) {
-      return fallback;
+      return collection.products_count;
     }
 
     const uniqueIds = new Set(productIds);
@@ -166,7 +166,7 @@ const HomePage = () => {
   const rankedCollections: RankedCollection[] = collections
     .map((collection) => ({
       ...collection,
-      effectiveCount: countForCollection(collection.handle, collection.products_count),
+      effectiveCount: countForCollection(collection),
     }))
     .sort((a, b) => {
       if (b.effectiveCount !== a.effectiveCount) {
@@ -195,7 +195,7 @@ const HomePage = () => {
       );
     })
     .slice(0, 8);
-  const latestBlogPosts = (blogPayload?.posts || []).slice(0, 3);
+  const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
 
   const syncCandidates = [
     productsPayload?.generatedAt,
@@ -205,6 +205,23 @@ const HomePage = () => {
   const lastSyncedAt = syncCandidates.sort(
     (a, b) => new Date(b).getTime() - new Date(a).getTime(),
   )[0];
+  const sourceCandidates = [
+    productsPayload?.source,
+    collectionsPayload?.source,
+    blogPayload?.source,
+  ].filter(Boolean) as string[];
+  const liveSourceLabel = (() => {
+    const source = sourceCandidates[0];
+    if (!source) {
+      return "Live Shopify";
+    }
+
+    try {
+      return new URL(source).hostname;
+    } catch {
+      return source.replace(/^https?:\/\//i, "");
+    }
+  })();
 
   return (
     <>
@@ -215,10 +232,10 @@ const HomePage = () => {
         <Reveal>
           <div className="salt-panel-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
-              Catalog synced {formattedDateTime(lastSyncedAt)}
+              Live catalog pull {formattedDateTime(lastSyncedAt)}
             </p>
             <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
-              Source: saltonlinestore.com • {products.length.toLocaleString()} products •{" "}
+              Source: {liveSourceLabel} • {products.length.toLocaleString()} products •{" "}
               {collections.length.toLocaleString()} collections
             </p>
           </div>
