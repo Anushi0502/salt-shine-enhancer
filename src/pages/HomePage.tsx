@@ -437,37 +437,6 @@ const HomePage = () => {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-border/70 bg-background/80 p-3">
-                <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-primary">
-                  Conversion path
-                </p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
-                      1. Discover
-                    </p>
-                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
-                      High-intent collections and filters reduce search fatigue.
-                    </p>
-                  </div>
-                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
-                      2. Decide
-                    </p>
-                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
-                      Clear price/savings labeling and concise product details.
-                    </p>
-                  </div>
-                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
-                      3. Checkout
-                    </p>
-                    <p className="mt-1 text-[0.72rem] text-muted-foreground">
-                      Direct, low-friction path into Shopify payment flow.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-olive/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
@@ -475,50 +444,51 @@ const HomePage = () => {
                 Customer proof
               </p>
               <h4 className="mt-2 font-display text-2xl leading-tight">
-                Why this storefront converts first-time visitors faster
+                Why customers trust us with their shopping needs?
               </h4>
+
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Products
+                    Ready to ship
                   </p>
                   <p className="mt-1 text-sm font-bold text-foreground">
-                    {products.length.toLocaleString()}
+                    In Stock Now
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Collections
+                    New weekly drops
                   </p>
                   <p className="mt-1 text-sm font-bold text-foreground">
-                    {rankedCollections.length.toLocaleString()}
+                    Just Added
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Last sync
+                    Fast delivery
                   </p>
                   <p className="mt-1 text-sm font-bold text-foreground">
-                    {formattedDateTime(lastSyncedAt).split(",")[0]}
+                    Quick Dispatch
                   </p>
                 </div>
               </div>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2">
-                  <BadgeCheck className="h-4 w-4 text-primary" /> Reliable product and pricing
-                  presentation
+                  <BadgeCheck className="h-4 w-4 text-primary" /> Premium materials sourced from
+                  ethical, certified partners.
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <Star className="h-4 w-4 text-primary" /> Clear savings visibility and product
-                  tagging
+                  <Star className="h-4 w-4 text-primary" /> Rigorous quality testing on every item
+                  before shipping.
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Updated catalog sections with
-                  reduced noise
+                  <Sparkles className="h-4 w-4 text-primary" /> Transparent, fair pricing without the
+                  middleman markup.
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" /> Stronger path from discovery to
-                  checkout
+                  <DollarSign className="h-4 w-4 text-primary" /> Dedicated 24/7 expert support for
+                  total peace of mind.
                 </p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -526,19 +496,13 @@ const HomePage = () => {
                   to="/shop?sort=newest"
                   className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
                 >
-                  New drops
+                  Shop latest arrivals
                 </Link>
                 <Link
                   to="/shop?sort=discount"
                   className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
                 >
-                  Best savings
-                </Link>
-                <Link
-                  to="/shop?max=25"
-                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
-                >
-                  Under $25
+                  View top value picks
                 </Link>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -546,19 +510,19 @@ const HomePage = () => {
                   to="/shop"
                   className="salt-button-shine inline-flex h-10 items-center rounded-full bg-foreground px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110"
                 >
-                  Start shopping
+                  Shop with confidence
                 </Link>
                 <Link
                   to="/blog"
                   className="salt-outline-chip h-10 px-4 py-0 text-xs"
                 >
-                  Read blog
+                  Read buying guides
                 </Link>
                 <Link
                   to="/contact"
                   className="salt-outline-chip h-10 px-4 py-0 text-xs"
                 >
-                  Need help?
+                  Talk to support
                 </Link>
               </div>
             </div>
