@@ -186,29 +186,29 @@ export const SHOPIFY_POLICY_ARCHIVE = {
     archiveUrl: "https://web.archive.org/web/20250801031136id_/https://www.saltonlinestore.com/policies/refund-policy",
     route: "/refund-policy",
     bodyHtml: String.raw`<p><strong>Return Policy</strong></p>
-<p><strong>We want you to love your purchase!</strong> If for any reason you are not completely satisfied with your order, we’re here to help. Please carefully read our return policy below:</p>
+<p><strong>We want you to love your purchase!</strong> If for any reason you are not completely satisfied with your order, we’re here to help. Please carefully read our return policy below:</p>
 <p><strong>1. Order Cancellations</strong><br>-<strong>Cancellations Before Shipping</strong>: Orders can be canceled without penalty within 24 hours of placing the order. Once the order has been processed and shipped, cancellations are not possible.</p>
-<p><strong>2. Damaged, Defective, or Incorrect Items</strong><br>-<strong>If you receive a damaged, defective, or incorrect item</strong>, please contact us within 7 days of receiving your order. We will require a photo or video of the issue to process your request.<br>-<strong> We will provide a replacement or issue a refund</strong> after verifying the issue, without requiring the item to be returned.</p>
-<p><strong>3. Change of Mind / Buyer’s Remorse</strong><br>- <strong>Due to the nature of our business model, we do not accept returns or exchanges</strong> for change of mind or buyer’s remorse. Please make sure to read the product descriptions carefully before purchasing.</p>
-<p><strong>4. Non-Returnable Items</strong><br>- <strong>Certain items are non-returnable</strong>, including but not limited to:<br>  - Custom or personalized products<br>  - Clearance or sale items<br>  - Products listed as non-returnable on their product page</p>
-<p> <strong>5. Return Shipping Costs</strong><br>-<strong style="font-size:0.875rem;"> Return shipping costs are the responsibility of the custome</strong><span style="font-size:0.875rem;"><strong>r</strong> unless the return is due to an error on our part (e.g., incorrect or defective item).</span></p>
+<p><strong>2. Damaged, Defective, or Incorrect Items</strong><br>-<strong>If you receive a damaged, defective, or incorrect item</strong>, please contact us within 7 days of receiving your order. We will require a photo or video of the issue to process your request.<br>-<strong> We will provide a replacement or issue a refund</strong> after verifying the issue, without requiring the item to be returned.</p>
+<p><strong>3. Change of Mind / Buyer’s Remorse</strong><br>- <strong>Due to the nature of our business model, we do not accept returns or exchanges</strong> for change of mind or buyer’s remorse. Please make sure to read the product descriptions carefully before purchasing.</p>
+<p><strong>4. Non-Returnable Items</strong><br>- <strong>Certain items are non-returnable</strong>, including but not limited to:<br>  - Custom or personalized products<br>  - Clearance or sale items<br>  - Products listed as non-returnable on their product page</p>
+<p> <strong>5. Return Shipping Costs</strong><br>-<strong style="font-size:0.875rem;"> Return shipping costs are the responsibility of the custome</strong><span style="font-size:0.875rem;"><strong>r</strong> unless the return is due to an error on our part (e.g., incorrect or defective item).</span></p>
 <p>- If a return is required, we will provide instructions on where to ship the item. Please note that return shipping costs can be significant, especially for international returns.</p>
-<p><strong>6. Refunds</strong><br>- <strong>Refunds will be issued to the original payment method</strong> once we receive the returned item and confirm it is in its original, unused condition. Shipping fees are non-refundable.<br>-<strong> Partial refunds</strong> may be issued at our discretion, depending on the condition of the returned item.</p>
+<p><strong>6. Refunds</strong><br>- <strong>Refunds will be issued to the original payment method</strong> once we receive the returned item and confirm it is in its original, unused condition. Shipping fees are non-refundable.<br>-<strong> Partial refunds</strong> may be issued at our discretion, depending on the condition of the returned item.</p>
 <p><strong>7. Late or Missing Refunds</strong><br>-<strong> If you haven’t received a refund</strong>, please check your bank account again or contact your credit card company; it may take some time before your refund is officially posted.<br>- If you’ve done all of this and still have not received your refund, please contact us at support@saltonlinestore.com</p>
-<p><strong>8. Final Sale Items</strong><br>- <strong>All clearance and sale items are final sale</strong> and cannot be returned or exchanged.</p>
+<p><strong>8. Final Sale Items</strong><br>- <strong>All clearance and sale items are final sale</strong> and cannot be returned or exchanged.</p>
 <p><strong>9. How to Initiate a Return</strong><br>- To initiate a return, please contact our customer support at "support@saltonlinestore.com" with your order number and a detailed description of the issue. We will provide you with further instructions.</p>
-<p><strong>10. Shipping Times and Delays</strong><br>- <strong>Please note that shipping times may vary </strong>depending on the destination country and that delays caused by customs or postal services are beyond our control. We appreciate your understanding.</p>
+<p><strong>10. Shipping Times and Delays</strong><br>- <strong>Please note that shipping times may vary </strong>depending on the destination country and that delays caused by customs or postal services are beyond our control. We appreciate your understanding.</p>
 <p>---</p>
-<p><strong>Important Notes:</strong><br>- <strong>All returns must be pre-approved by our customer service team. </strong>Items sent back to us without first requesting a return will not be accepted.<br>- <strong>We reserve the right to deny returns</strong> that do not comply with our return policy.</p>
+<p><strong>Important Notes:</strong><br>- <strong>All returns must be pre-approved by our customer service team. </strong>Items sent back to us without first requesting a return will not be accepted.<br>- <strong>We reserve the right to deny returns</strong> that do not comply with our return policy.</p>
 <p>---</p>
-<p><strong>Contact Us:</strong><br>If you have any questions about our return policy, feel free to reach out to us at "support@saltonlinestore.com" </p>`,
+<p><strong>Contact Us:</strong><br>If you have any questions about our return policy, feel free to reach out to us at "support@saltonlinestore.com" </p>`,
   },
   shipping: {
     title: "Shipping policy",
     sourceUrl: "https://www.saltonlinestore.com/policies/shipping-policy",
     archiveUrl: "https://web.archive.org/web/20250801040816id_/https://www.saltonlinestore.com/policies/shipping-policy",
     route: "/shipping-policy",
-    bodyHtml: String.raw`<p>Thank you for shopping with <b>SaltOnlineStore</b> We’re committed to providing a seamless shopping experience. Please review our U.S. shipping policy below.</p>
+    bodyHtml: String.raw`<p>Thank you for shopping with <b>SaltOnlineStore</b> We’re committed to providing a seamless shopping experience. Please review our U.S. shipping policy below.</p>
 <hr>
 <h2>Order Processing</h2>
 <ul>
@@ -290,7 +290,7 @@ export const SHOPIFY_POLICY_ARCHIVE = {
     route: "/policies/contact-information",
     bodyHtml: String.raw`<p>Trade name: Saltonlinestore</p>
 <p>Email: support@saltonlinestore.com</p>
-<p> </p>`,
+<p> </p>`,
   },
 } satisfies Record<string, ShopifyPolicyRecord>;
 

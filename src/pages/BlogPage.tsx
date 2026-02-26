@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock3 } from "lucide-react";
+import { ArrowRight, BookOpenText, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime } from "@/lib/formatters";
@@ -54,11 +54,14 @@ const BlogPage = () => {
 
   const posts = data?.posts || [];
   const [featuredPost, ...remainingPosts] = posts;
+  const highlightedAuthors = Array.from(
+    new Set(posts.map((post) => post.author).filter((author): author is string => Boolean(author))),
+  ).slice(0, 4);
 
   return (
     <section className="mx-auto mt-8 w-[min(1200px,96vw)] pb-8">
       <Reveal>
-        <div className="rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
             Insights and Stories
@@ -66,12 +69,41 @@ const BlogPage = () => {
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
             Posts synced from Shopify to keep home, garden, style, and product education current.
           </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Live posts</span>
+              <span>{posts.length.toLocaleString()} synced articles</span>
+            </p>
+            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Reading format</span>
+              <span>Short actionable guides and trend roundups</span>
+            </p>
+            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Goal</span>
+              <span>Move inspiration to confident purchases</span>
+            </p>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {highlightedAuthors.map((author) => (
+              <span key={author} className="salt-outline-chip text-[0.62rem]">
+                <BookOpenText className="mr-1.5 h-3 w-3" />
+                {author}
+              </span>
+            ))}
+            <Link
+              to="/shop?sort=newest"
+              className="salt-outline-chip text-[0.62rem]"
+            >
+              <Sparkles className="mr-1.5 h-3 w-3" />
+              Shop newest arrivals
+            </Link>
+          </div>
         </div>
       </Reveal>
 
       {posts.length === 0 ? (
         <Reveal delayMs={80} className="mt-6">
-          <div className="rounded-3xl border border-border/80 bg-card p-10 text-center shadow-soft">
+          <div className="salt-surface rounded-3xl p-10 text-center">
             <h2 className="font-display text-3xl">No blog posts yet</h2>
             <p className="mt-3 text-sm text-muted-foreground">
               New posts from Shopify will appear here automatically.
@@ -82,7 +114,7 @@ const BlogPage = () => {
         <>
           {featuredPost ? (
             <Reveal delayMs={60} className="mt-6">
-              <article className="overflow-hidden rounded-[2rem] border border-border/80 bg-card shadow-soft lg:grid lg:grid-cols-[1.1fr_0.9fr]">
+              <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
                 <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
                   <img
                     src={featuredPost.image || "/placeholder.svg"}
@@ -110,7 +142,7 @@ const BlogPage = () => {
                   </div>
                   <Link
                     to={`/blog/${featuredPost.handle}`}
-                    className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+                    className="salt-primary-cta mt-5 h-11 gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em]"
                   >
                     Read featured story <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
@@ -123,7 +155,7 @@ const BlogPage = () => {
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {remainingPosts.map((post, index) => (
                 <Reveal key={post.id} delayMs={index * 70}>
-                  <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft">
+                  <article className="salt-card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
                     <Link to={`/blog/${post.handle}`} className="block overflow-hidden bg-muted">
                       <img
                         src={post.image || "/placeholder.svg"}

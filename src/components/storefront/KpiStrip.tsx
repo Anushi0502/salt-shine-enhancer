@@ -1,5 +1,6 @@
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 import Reveal from "@/components/storefront/Reveal";
+import { BadgeCheck, Box, Layers3, SlidersHorizontal } from "lucide-react";
 
 type KpiStripProps = {
   products: ShopifyProduct[];
@@ -12,23 +13,26 @@ const KpiStrip = ({ products, collections }: KpiStripProps) => {
   ).toFixed(1);
 
   const metrics = [
-    { label: "Live products", value: products.length.toLocaleString() },
-    { label: "Curated collections", value: collections.length.toString() },
-    { label: "Avg options per item", value: averageVariants },
-    { label: "Return window", value: "30 Days" },
+    { label: "Live products", value: products.length.toLocaleString(), Icon: Box },
+    { label: "Curated collections", value: collections.length.toString(), Icon: Layers3 },
+    { label: "Avg options per item", value: averageVariants, Icon: SlidersHorizontal },
+    { label: "Return window", value: "30 Days", Icon: BadgeCheck },
   ];
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)]">
       <Reveal>
-        <div className="salt-glass grid gap-3 rounded-3xl border border-border/80 p-4 shadow-soft sm:grid-cols-2 lg:grid-cols-4">
+        <div className="salt-panel-shell grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric, index) => (
             <div
               key={metric.label}
-              className={`rounded-2xl border border-border/70 bg-background/75 p-4 ${
+              className={`salt-ambient-card rounded-2xl p-4 ${
                 index % 2 === 0 ? "lg:translate-y-2" : ""
               }`}
             >
+              <p className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-primary">
+                <metric.Icon className="h-4 w-4" />
+              </p>
               <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{metric.label}</p>
               <strong className="mt-2 block font-display text-3xl leading-none text-foreground">{metric.value}</strong>
             </div>

@@ -46,6 +46,8 @@
     --salt-accent-deep: 16 72% 39%;
     --salt-olive: 100 16% 31%;
     --salt-gold: 37 52% 52%;
+    --salt-teal: 162 24% 36%;
+    --salt-clay: 25 49% 56%;
     --salt-warm-bg: 30 50% 92%;
     --salt-panel-start: 28 60% 94%;
     --salt-panel-end: 24 45% 87%;
@@ -88,6 +90,11 @@
     --border: 223 12% 26%;
     --input: 223 12% 26%;
     --ring: 24 72% 56%;
+
+    --salt-olive: 86 28% 62%;
+    --salt-gold: 40 78% 66%;
+    --salt-teal: 163 35% 64%;
+    --salt-clay: 27 72% 66%;
   }
 }
 
@@ -100,6 +107,21 @@
     scroll-behavior: smooth;
   }
 
+  a {
+    @apply transition-colors;
+  }
+
+  button,
+  [role="button"] {
+    @apply transition;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.18);
+    border-color: hsl(var(--primary) / 0.58) !important;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     background:
@@ -108,6 +130,36 @@
       radial-gradient(circle at 40% 112%, hsl(40 44% 87%) 0%, transparent 44%),
       hsl(var(--background));
     overflow-x: clip;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
+  }
+
+  body::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(122deg, hsl(var(--salt-clay) / 0.08), transparent 45%),
+      linear-gradient(302deg, hsl(var(--salt-teal) / 0.07), transparent 48%);
+    mix-blend-mode: multiply;
+  }
+
+  body::after {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(hsl(var(--foreground) / 0.085) 0.42px, transparent 0.42px);
+    background-size: 3px 3px;
+    opacity: 0.22;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.24);
+    color: hsl(var(--foreground));
   }
 
   .dark body {
@@ -116,6 +168,30 @@
       radial-gradient(circle at 110% 6%, hsl(25 50% 24%) 0%, transparent 38%),
       radial-gradient(circle at 42% 120%, hsl(215 26% 16%) 0%, transparent 42%),
       hsl(var(--background));
+  }
+
+  .dark body::before {
+    mix-blend-mode: screen;
+    opacity: 0.65;
+  }
+
+  .dark body::after {
+    opacity: 0.16;
+  }
+
+  *::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(160deg, hsl(var(--primary) / 0.54), hsl(var(--salt-olive) / 0.45));
+    border-radius: 999px;
+    border: 2px solid hsl(var(--background));
+  }
+
+  *::-webkit-scrollbar-track {
+    background: hsl(var(--background) / 0.75);
   }
 }
 
@@ -144,18 +220,145 @@
   }
 
   .salt-card-hover {
-    transition: all 230ms ease-out;
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), border-color 220ms ease, box-shadow 260ms ease;
   }
 
   .salt-card-hover:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 45px -28px rgba(13, 12, 11, 0.4);
-    border-color: hsl(33 25% 75%);
+    transform: translateY(-8px);
+    box-shadow: 0 28px 52px -30px rgba(13, 12, 11, 0.5);
+    border-color: hsl(29 36% 69%);
   }
 
   .salt-glass {
     background: linear-gradient(140deg, hsl(var(--card) / 0.84), hsl(var(--card) / 0.62));
     backdrop-filter: blur(10px);
+  }
+
+  .salt-surface {
+    background:
+      linear-gradient(160deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.92)),
+      linear-gradient(120deg, hsl(var(--salt-clay) / 0.07), transparent 44%),
+      linear-gradient(300deg, hsl(var(--salt-teal) / 0.07), transparent 46%);
+    border: 1px solid hsl(var(--border) / 0.75);
+    box-shadow:
+      0 18px 52px -34px rgba(14, 12, 10, 0.55),
+      inset 0 1px 0 hsl(0 0% 100% / 0.5);
+  }
+
+  .salt-surface-strong {
+    background:
+      linear-gradient(154deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.94)),
+      linear-gradient(130deg, hsl(var(--primary) / 0.11), transparent 42%),
+      linear-gradient(330deg, hsl(var(--salt-olive) / 0.13), transparent 46%);
+    border: 1px solid hsl(var(--border) / 0.72);
+    box-shadow:
+      0 24px 56px -34px rgba(14, 12, 10, 0.58),
+      0 1px 0 hsl(0 0% 100% / 0.5) inset;
+  }
+
+  .salt-panel-shell {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      linear-gradient(168deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.9)),
+      radial-gradient(circle at 14% 12%, hsl(var(--primary) / 0.11), transparent 32%),
+      radial-gradient(circle at 88% 84%, hsl(var(--salt-olive) / 0.12), transparent 36%);
+    border: 1px solid hsl(var(--border) / 0.72);
+    box-shadow:
+      0 28px 60px -38px rgba(14, 12, 10, 0.56),
+      inset 0 1px 0 hsl(0 0% 100% / 0.55);
+  }
+
+  .salt-panel-shell::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(122deg, hsl(var(--primary) / 0.08), transparent 42%),
+      linear-gradient(310deg, hsl(var(--salt-olive) / 0.08), transparent 46%);
+    opacity: 0.72;
+    z-index: -1;
+  }
+
+  .salt-ink-panel {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(132deg, hsl(var(--foreground)), hsl(var(--foreground) / 0.94)),
+      radial-gradient(circle at 12% 15%, hsl(var(--primary) / 0.44), transparent 36%),
+      radial-gradient(circle at 88% 85%, hsl(var(--salt-olive) / 0.32), transparent 40%);
+    border: 1px solid hsl(var(--primary-foreground) / 0.16);
+    box-shadow: 0 44px 76px -44px rgba(5, 5, 5, 0.75);
+  }
+
+  .salt-kpi-card {
+    background:
+      linear-gradient(168deg, hsl(var(--background) / 0.94), hsl(var(--background) / 0.78));
+    border: 1px solid hsl(var(--border) / 0.72);
+    box-shadow: 0 16px 34px -32px rgba(18, 15, 12, 0.56);
+  }
+
+  .salt-section-shell {
+    background:
+      linear-gradient(180deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.84)),
+      radial-gradient(circle at 7% 15%, hsl(var(--primary) / 0.07), transparent 32%),
+      radial-gradient(circle at 88% 82%, hsl(var(--salt-olive) / 0.08), transparent 34%);
+    border: 1px solid hsl(var(--border) / 0.68);
+    box-shadow: 0 20px 40px -30px rgba(16, 14, 12, 0.48);
+  }
+
+  .salt-ambient-card {
+    background:
+      linear-gradient(170deg, hsl(var(--background) / 0.95), hsl(var(--background) / 0.84)),
+      linear-gradient(120deg, hsl(var(--primary) / 0.07), transparent 45%);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  .salt-outline-chip {
+    @apply inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground transition;
+  }
+
+  .salt-outline-chip:hover {
+    border-color: hsl(var(--primary) / 0.5);
+    color: hsl(var(--primary));
+    transform: translateY(-1px);
+  }
+
+  .salt-outline-chip:focus-visible {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.16);
+  }
+
+  .salt-form-control {
+    @apply h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none transition;
+  }
+
+  .salt-form-control:focus {
+    border-color: hsl(var(--primary) / 0.62);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+  }
+
+  .salt-primary-cta {
+    @apply inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground transition;
+    box-shadow:
+      0 14px 30px -20px hsl(var(--primary) / 0.95),
+      0 1px 0 hsl(0 0% 100% / 0.24) inset;
+  }
+
+  .salt-primary-cta:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .salt-primary-cta:active {
+    transform: translateY(0);
+  }
+
+  .salt-primary-cta:focus-visible {
+    box-shadow:
+      0 0 0 3px hsl(var(--primary) / 0.22),
+      0 14px 30px -20px hsl(var(--primary) / 0.95);
   }
 
   .salt-gradient-text {
@@ -169,7 +372,7 @@
     background-image:
       linear-gradient(to right, hsl(var(--border) / 0.28) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(var(--border) / 0.28) 1px, transparent 1px);
-    background-size: 36px 36px;
+    background-size: 28px 28px;
   }
 
   .salt-button-shine {
@@ -189,9 +392,40 @@
     animation: sweep 4.4s linear infinite;
     pointer-events: none;
   }
+
+  .salt-quiet-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.46) hsl(var(--background) / 0.6);
+  }
+
+  .salt-glow-ring {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.32),
+      0 18px 44px -30px hsl(var(--primary) / 0.65);
+  }
+
+  .salt-separator {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+  }
 }
 
 @layer utilities {
+  @media (prefers-reduced-motion: reduce) {
+    .salt-card-hover,
+    .salt-outline-chip,
+    .salt-primary-cta {
+      transition: none !important;
+      transform: none !important;
+    }
+
+    .salt-button-shine::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
   @keyframes crawl {
     to { transform: translateX(-100%); }
   }
@@ -206,6 +440,11 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
+  }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -10px, 0); }
   }
 
   @keyframes sweep {
@@ -241,5 +480,9 @@
 
   .animate-float {
     animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float-slow 6.5s ease-in-out infinite;
   }
 }

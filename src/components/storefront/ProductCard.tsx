@@ -27,7 +27,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const title = conciseTitle(product.title);
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/50">
+    <article className="salt-card-hover group overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft">
       <Link to={`/product/${product.handle}`} className="relative block aspect-[4/4.3] overflow-hidden bg-muted">
         <img
           src={productImage(product)}
@@ -35,12 +35,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/35 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-foreground/65 via-foreground/15 to-transparent" />
         {sale > 0 ? (
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-primary-foreground">
             <Sparkles className="h-3 w-3" />-{sale}%
           </span>
         ) : null}
+        <span className="absolute right-3 top-3 rounded-full border border-primary-foreground/45 bg-primary-foreground/12 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-primary-foreground opacity-0 transition group-hover:opacity-100">
+          View
+        </span>
         <span className="absolute bottom-3 left-3 rounded-full border border-primary-foreground/45 bg-primary-foreground/15 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.09em] text-primary-foreground">
           {inStock ? "In stock" : "Out of stock"}
         </span>
@@ -64,7 +68,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               {tags.map((tag) => (
                 <span
                   key={`${product.id}-${tag}`}
-                  className="rounded-full border border-border bg-background px-2 py-1 text-[0.62rem] uppercase tracking-[0.1em] text-muted-foreground"
+                  className="salt-outline-chip px-2 py-1 text-[0.62rem]"
                 >
                   {tag}
                 </span>
@@ -75,7 +79,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <p className="text-xs text-muted-foreground">
             {product.vendor || "SALT"} • {product.product_type || "Everyday Essential"}
           </p>
+          <p className="rounded-lg border border-border/70 bg-background/72 px-2.5 py-1 text-[0.64rem] uppercase tracking-[0.08em] text-muted-foreground">
+            Ready for secure checkout
+          </p>
         </div>
+
+        <div className="salt-separator" />
 
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <button
@@ -93,7 +102,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 : undefined
             }
             disabled={!defaultVariant}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary transition hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingBag className="h-4 w-4" />
             Add to Cart

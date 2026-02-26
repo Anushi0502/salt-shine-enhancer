@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, Clock3 } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, sanitizeRichHtml } from "@/lib/formatters";
@@ -82,14 +82,14 @@ const BlogPostPage = () => {
       <Reveal>
         <Link
           to="/blog"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+          className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs"
         >
           <ArrowLeft className="h-4 w-4" /> Back to blog
         </Link>
       </Reveal>
 
       <Reveal delayMs={40}>
-        <article className="mt-4 rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+        <article className="salt-panel-shell mt-4 rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog Post</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">{post.title}</h1>
 
@@ -111,6 +111,18 @@ const BlogPostPage = () => {
               View on Shopify <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+              {readingTime(post.contentHtml)} read
+            </span>
+            <Link
+              to="/shop?sort=discount"
+              className="salt-outline-chip h-7 px-3 py-0 text-[0.62rem]"
+            >
+              <Sparkles className="mr-1.5 h-3 w-3" />
+              Shop best savings
+            </Link>
+          </div>
 
           {post.image ? (
             <img
@@ -125,22 +137,22 @@ const BlogPostPage = () => {
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
 
-          <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-border bg-background p-4">
+          <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4">
             <Link
               to="/shop"
-              className="inline-flex h-10 items-center rounded-full bg-primary px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+              className="salt-primary-cta h-10 px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em]"
             >
               Shop products
             </Link>
             <Link
               to="/collections"
-              className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              className="salt-outline-chip h-10 px-4 py-0 text-[0.72rem]"
             >
               Browse collections
             </Link>
             <Link
               to="/contact"
-              className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              className="salt-outline-chip h-10 px-4 py-0 text-[0.72rem]"
             >
               Contact support
             </Link>
@@ -150,14 +162,14 @@ const BlogPostPage = () => {
 
       {relatedPosts.length > 0 ? (
         <Reveal delayMs={80}>
-          <section className="mt-6 rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+          <section className="salt-panel-shell mt-6 rounded-[2rem] p-6 sm:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Related posts</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {relatedPosts.map((entry) => (
                 <Link
                   key={entry.id}
                   to={`/blog/${entry.handle}`}
-                  className="rounded-xl border border-border bg-background p-3 transition hover:border-primary/50"
+                  className="salt-kpi-card rounded-xl p-3 transition hover:border-primary/50"
                 >
                   <p className="line-clamp-2 text-sm font-semibold">{entry.title}</p>
                   <p className="mt-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">

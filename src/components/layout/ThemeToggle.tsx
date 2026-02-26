@@ -8,7 +8,7 @@ const ThemeToggle = () => {
     <button
       type="button"
       onClick={toggleTheme}
-      className="group relative inline-flex h-10 w-20 items-center rounded-full border border-border bg-card p-1 transition-colors hover:border-primary/60"
+      className="group relative inline-flex h-10 w-20 items-center rounded-full border border-border/80 bg-card/92 p-1 shadow-[0_14px_24px_-22px_rgba(0,0,0,0.55)] transition hover:border-primary/60 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.8)]"
       aria-label="Toggle color theme"
       title="Toggle color theme"
     >
@@ -19,9 +19,9 @@ const ThemeToggle = () => {
       >
         {theme === "dark" ? <MoonStar className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </span>
-      <span className="grid w-full grid-cols-2 text-xs font-bold text-muted-foreground">
-        <span className="text-center">L</span>
-        <span className="text-center">D</span>
+      <span className="grid w-full grid-cols-2 text-[0.62rem] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+        <span className="text-center">Light</span>
+        <span className="text-center">Dark</span>
       </span>
     </button>
   );

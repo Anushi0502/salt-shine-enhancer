@@ -25,6 +25,14 @@ import ScrollToTop from "@/components/layout/ScrollToTop";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+const shouldLoadVercelTelemetry = (() => {
+  const flag = String(import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS || "").trim().toLowerCase();
+  if (flag === "true") {
+    return true;
+  }
+
+  return false;
+})();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -59,8 +67,8 @@ const App = () => (
               </Route>
             </Routes>
           </BrowserRouter>
-          <SpeedInsights />
-          <Analytics />
+          {shouldLoadVercelTelemetry ? <SpeedInsights /> : null}
+          {shouldLoadVercelTelemetry ? <Analytics /> : null}
         </TooltipProvider>
       </CartProvider>
     </ThemeProvider>

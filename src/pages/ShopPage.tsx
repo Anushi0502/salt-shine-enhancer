@@ -8,7 +8,6 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
-  X,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
@@ -417,7 +416,7 @@ const ShopPage = () => {
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
       <Reveal>
-        <div className="rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Shop</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">All Products</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
@@ -435,7 +434,7 @@ const ShopPage = () => {
                 onChange={(event) => setSearchInput(event.target.value)}
                 type="search"
                 placeholder="Search by product, category, vendor"
-                className="h-11 w-full rounded-xl border border-border bg-background pl-9 pr-4 text-sm outline-none focus:border-primary/60"
+                className="salt-form-control w-full pl-9 pr-4"
               />
             </form>
 
@@ -443,7 +442,7 @@ const ShopPage = () => {
               aria-label="Sort products"
               value={sort}
               onChange={(event) => updateParams({ sort: event.target.value }, true)}
-              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              className="salt-form-control"
             >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -456,7 +455,7 @@ const ShopPage = () => {
               aria-label="Products per page"
               value={perPage}
               onChange={(event) => onPerPageChange(event.target.value)}
-              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              className="salt-form-control"
             >
               {perPageOptions.map((count) => (
                 <option key={count} value={count}>
@@ -471,7 +470,7 @@ const ShopPage = () => {
               aria-label="Collection filter"
               value={collectionHandle}
               onChange={(event) => updateParams({ collection: event.target.value }, true)}
-              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              className="salt-form-control"
             >
               <option value="">All collections</option>
               {collections.map((collection) => (
@@ -485,7 +484,7 @@ const ShopPage = () => {
               aria-label="Product type filter"
               value={typeFilter}
               onChange={(event) => updateParams({ type: event.target.value }, true)}
-              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              className="salt-form-control"
             >
               <option value="">All product types</option>
               {productTypes.map((type) => (
@@ -499,7 +498,7 @@ const ShopPage = () => {
               aria-label="Price range filter"
               value={priceRangeValue === "custom" ? "all" : priceRangeValue}
               onChange={(event) => onPriceRangeChange(event.target.value)}
-              className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+              className="salt-form-control"
             >
               {priceRangeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -507,38 +506,114 @@ const ShopPage = () => {
                 </option>
               ))}
             </select>
-          
+          </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
-            </span>
-            <span className="rounded-full border border-border bg-background px-3 py-1">
-              Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
-            </span>
-            {activeFilterCount > 0 ? (
-              <span className="rounded-full border border-border bg-background px-3 py-1">
-                {activeFilterCount} active filters
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/65 bg-background/65 p-2.5">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((value) => !value)}
+              className="salt-outline-chip h-9 px-3 py-0 text-[0.67rem]"
+            >
+              <Filter className="mr-1.5 h-3.5 w-3.5" />
+              {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
+            </button>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold">
+                <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
               </span>
-            ) : null}
-            {filterIsActive && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary"
-              >
-                Clear all
-              </button>
-            )}
+              <span className="rounded-full border border-border bg-background px-3 py-1">
+                Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
+              </span>
+              {activeFilterCount > 0 ? (
+                <span className="rounded-full border border-border bg-background px-3 py-1">
+                  {activeFilterCount} active filters
+                </span>
+              ) : null}
+              {filterIsActive ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary"
+                >
+                  Clear all
+                </button>
+              ) : null}
+            </div>
           </div>
-          </div>
+
+          {showAdvanced ? (
+            <div className="salt-section-shell mt-4 rounded-2xl p-3">
+              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={customMinInput}
+                  onChange={(event) => setCustomMinInput(event.target.value)}
+                  className="salt-form-control h-10"
+                  placeholder="Min price"
+                  aria-label="Minimum price"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={customMaxInput}
+                  onChange={(event) => setCustomMaxInput(event.target.value)}
+                  className="salt-form-control h-10"
+                  placeholder="Max price"
+                  aria-label="Maximum price"
+                />
+                <button
+                  type="button"
+                  onClick={applyCustomPrice}
+                  className="salt-primary-cta h-10 px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em]"
+                >
+                  Apply price
+                </button>
+              </div>
+              {priceError ? <p className="mt-2 text-xs text-destructive">{priceError}</p> : null}
+            </div>
+          ) : null}
+
           {activeFilterSummary ? <p className="mt-2 text-xs text-muted-foreground">{activeFilterSummary}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
+              className="salt-outline-chip text-[0.62rem]"
+            >
+              New arrivals first
+            </button>
+            <button
+              type="button"
+              onClick={() => updateParams({ sort: "discount", page: null }, true)}
+              className="salt-outline-chip text-[0.62rem]"
+            >
+              Biggest savings
+            </button>
+            <button
+              type="button"
+              onClick={() => updateParams({ min: null, max: "25", page: null }, true)}
+              className="salt-outline-chip text-[0.62rem]"
+            >
+              Budget picks under $25
+            </button>
+            <button
+              type="button"
+              onClick={() => updateParams({ collection: "cookware", page: null }, true)}
+              className="salt-outline-chip text-[0.62rem]"
+            >
+              Shop cookware
+            </button>
+          </div>
         </div>
       </Reveal>
 
       {totalResults === 0 ? (
         <Reveal delayMs={80} className="mt-6">
-          <div className="rounded-3xl border border-border/80 bg-card p-10 text-center shadow-soft">
+          <div className="salt-surface rounded-3xl p-10 text-center">
             <h2 className="font-display text-3xl">No products match this filter</h2>
             <p className="mt-3 text-sm text-muted-foreground">
               Try removing one filter or return to the full catalog.
@@ -547,13 +622,13 @@ const ShopPage = () => {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground"
+                className="salt-primary-cta h-10 px-5 text-xs font-bold uppercase tracking-[0.08em]"
               >
                 Reset filters
               </button>
               <Link
                 to="/collections"
-                className="inline-flex h-10 items-center rounded-full border border-border bg-background px-5 text-xs font-bold uppercase tracking-[0.08em]"
+                className="salt-outline-chip h-10 px-5 py-0 text-xs"
               >
                 Browse collections
               </Link>
@@ -564,7 +639,7 @@ const ShopPage = () => {
         <>
           {sort === "discount" ? (
             <Reveal delayMs={80} className="mt-6">
-              <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm text-muted-foreground">
+              <div className="salt-panel-shell rounded-2xl p-4 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2 font-semibold text-foreground">
                   <Sparkles className="h-4 w-4 text-primary" /> Showing products ordered by best available savings.
                 </p>
@@ -572,22 +647,24 @@ const ShopPage = () => {
             </Reveal>
           ) : null}
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleProducts.map((product, index) => (
-              <Reveal key={product.id} delayMs={index * 35}>
-                <ProductCard product={product} />
-              </Reveal>
-            ))}
+          <div className="salt-section-shell mt-6 rounded-[1.7rem] p-3 sm:p-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {visibleProducts.map((product, index) => (
+                <Reveal key={product.id} delayMs={index * 35}>
+                  <ProductCard product={product} />
+                </Reveal>
+              ))}
+            </div>
           </div>
 
           <Reveal delayMs={80} className="mt-7">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4">
+            <div className="salt-panel-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => onPageChange(currentPage - 1)}
                   disabled={currentPage <= 1}
-                  className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronLeft className="h-4 w-4" /> Prev
                 </button>
@@ -600,7 +677,7 @@ const ShopPage = () => {
                   type="button"
                   onClick={() => onPageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next <ChevronRight className="h-4 w-4" />
                 </button>

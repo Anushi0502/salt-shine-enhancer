@@ -40,11 +40,12 @@ const CollectionsPage = () => {
   const spotlightCollections = [...collections]
     .sort((a, b) => b.products_count - a.products_count)
     .slice(0, 8);
+  const topThreeCollections = spotlightCollections.slice(0, 3);
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
       <Reveal>
-        <div className="rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Collections</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Shop by Collection</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
@@ -63,13 +64,33 @@ const CollectionsPage = () => {
             </Link>
           </div>
 
+          {topThreeCollections.length > 0 ? (
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {topThreeCollections.map((collection, index) => (
+                <Link
+                  key={collection.id}
+                  to={`/shop?collection=${collection.handle}`}
+                  className="rounded-xl border border-border/70 bg-background/80 px-3 py-3 transition hover:-translate-y-[2px] hover:border-primary/45"
+                >
+                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-primary">
+                    Top {index + 1}
+                  </p>
+                  <p className="mt-1 line-clamp-1 text-sm font-semibold">{collection.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {collection.products_count.toLocaleString()} products
+                  </p>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
           {spotlightCollections.length > 0 ? (
             <div className="mt-4 flex flex-wrap gap-2">
               {spotlightCollections.map((collection) => (
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="rounded-full border border-border bg-background px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+                  className="salt-outline-chip text-[0.68rem]"
                 >
                   {collection.title}
                 </Link>
@@ -88,7 +109,7 @@ const CollectionsPage = () => {
       </div>
 
       <Reveal delayMs={120}>
-        <div className="mt-10 rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-salt-warm/40 p-6 shadow-soft sm:p-8">
+        <div className="salt-panel-shell mt-10 rounded-3xl bg-gradient-to-br from-card via-card to-salt-warm/40 p-6 sm:p-8">
           <h2 className="font-display text-[clamp(1.6rem,2.8vw,2.4rem)] leading-tight">
             Not sure where to start?
           </h2>
@@ -98,13 +119,13 @@ const CollectionsPage = () => {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/shop"
-              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+              className="salt-primary-cta h-11 px-5 text-xs font-bold uppercase tracking-[0.08em]"
             >
               Open full catalog
             </Link>
             <Link
               to="/shop?sort=discount"
-              className="inline-flex h-11 items-center rounded-full border border-border bg-background px-5 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              className="salt-outline-chip h-11 px-5 py-0 text-xs"
             >
               View best savings
             </Link>

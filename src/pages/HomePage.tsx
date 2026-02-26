@@ -209,7 +209,7 @@ const HomePage = () => {
 
       <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
         <Reveal>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
+          <div className="salt-panel-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
               Catalog synced {formattedDateTime(lastSyncedAt)}
             </p>
@@ -218,24 +218,41 @@ const HomePage = () => {
               {collections.length.toLocaleString()} collections
             </p>
           </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Fast decision path</span>
+              <span>Cleaner filters and tighter category routes</span>
+            </p>
+            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Checkout clarity</span>
+              <span>Direct handoff into Shopify payment flow</span>
+            </p>
+            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+              <span className="block font-semibold text-foreground">Post-purchase trust</span>
+              <span>Policy visibility and support links in every journey</span>
+            </p>
+          </div>
         </Reveal>
       </section>
 
       <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
         <Reveal>
-          <div className="salt-glass rounded-[2rem] border border-border/80 p-5 sm:p-6">
+          <div className="salt-panel-shell rounded-[2rem] p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                   Quick access
                 </p>
                 <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02]">
-                  Browse faster with fewer clicks
+                  Jump straight to what shoppers actually buy
                 </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  High-intent routes that reduce drop-off between browsing and cart.
+                </p>
               </div>
               <Link
                 to="/shop"
-                className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                className="salt-outline-chip h-10 px-4 py-0 text-xs"
               >
                 View all products
               </Link>
@@ -246,7 +263,7 @@ const HomePage = () => {
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50"
+                  className="salt-kpi-card flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50"
                 >
                   <span className="line-clamp-1">{collection.title}</span>
                   <span className="ml-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
@@ -259,25 +276,25 @@ const HomePage = () => {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Link
                 to="/shop?max=25"
-                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 Under $25
               </Link>
               <Link
                 to="/shop?min=25&max=60"
-                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $25 to $60
               </Link>
               <Link
                 to="/shop?min=60&max=120"
-                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $60 to $120
               </Link>
               <Link
                 to="/shop?min=120"
-                className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $120 and above
               </Link>
@@ -301,7 +318,7 @@ const HomePage = () => {
             </div>
             <Link
               to="/collections"
-              className="inline-flex h-11 items-center rounded-full border border-border bg-card px-5 text-sm font-bold hover:border-primary/50 hover:text-primary"
+              className="salt-outline-chip h-11 px-5 py-0 text-sm"
             >
               View all collections
             </Link>
@@ -332,7 +349,7 @@ const HomePage = () => {
             </div>
             <Link
               to="/shop"
-              className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground hover:brightness-110"
+              className="salt-primary-cta h-11 px-5 text-sm font-bold"
             >
               Shop full catalog
             </Link>
@@ -351,7 +368,7 @@ const HomePage = () => {
       {latestBlogPosts.length > 0 ? (
         <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
           <Reveal>
-            <div className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7">
+            <div className="salt-section-shell rounded-[2rem] p-5 sm:p-7">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
@@ -374,7 +391,7 @@ const HomePage = () => {
                   <Link
                     key={post.id}
                     to={`/blog/${post.handle}`}
-                    className="rounded-2xl border border-border/75 bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
+                    className="salt-kpi-card rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
                   >
                     <p className="line-clamp-2 text-lg font-semibold leading-7">{post.title}</p>
                     <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</p>
@@ -393,23 +410,24 @@ const HomePage = () => {
         </section>
       ) : null}
 
-      <section className="mx-auto mt-14 w-[min(1280px,96vw)] rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7">
+      <section className="salt-surface-strong mx-auto mt-14 w-[min(1280px,96vw)] rounded-[2rem] p-5 sm:p-7">
         <Reveal>
           <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <h3 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-tight">
-                Shop with confidence, not guesswork
+                Convert comparison shoppers into confident buyers
               </h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                Find the right product faster, compare the details that matter, and check out in a
-                clean, trusted flow designed to reduce hesitation at every step.
+                Most shoppers do not need more choices, they need cleaner confidence signals. This
+                storefront leads with side-by-side value clarity, practical category grouping, and
+                fast checkout progression so hesitation drops before cart stage.
               </p>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {trustBullets.map((item) => (
                   <div
                     key={item.title}
-                    className="rounded-xl border border-border/70 bg-background px-3 py-3"
+                    className="salt-ambient-card rounded-xl px-3 py-3"
                   >
                     <p className="text-xs font-semibold text-foreground">{item.title}</p>
                     <p className="mt-1 text-[0.72rem] leading-relaxed text-muted-foreground">
@@ -419,12 +437,12 @@ const HomePage = () => {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-border/70 bg-background p-3">
+              <div className="mt-4 rounded-xl border border-border/70 bg-background/80 p-3">
                 <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-primary">
                   Conversion path
                 </p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
                     <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
                       1. Discover
                     </p>
@@ -432,7 +450,7 @@ const HomePage = () => {
                       High-intent collections and filters reduce search fatigue.
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
                     <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
                       2. Decide
                     </p>
@@ -440,7 +458,7 @@ const HomePage = () => {
                       Clear price/savings labeling and concise product details.
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border/70 bg-card px-2.5 py-2">
+                  <div className="salt-ambient-card rounded-lg px-2.5 py-2">
                     <p className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-primary">
                       3. Checkout
                     </p>
@@ -452,12 +470,12 @@ const HomePage = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-salt-olive/10 p-5">
+            <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-olive/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                 Customer proof
               </p>
               <h4 className="mt-2 font-display text-2xl leading-tight">
-                Shoppers convert faster with trust signals
+                Why this storefront converts first-time visitors faster
               </h4>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
@@ -506,19 +524,19 @@ const HomePage = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link
                   to="/shop?sort=newest"
-                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
                 >
                   New drops
                 </Link>
                 <Link
                   to="/shop?sort=discount"
-                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
                 >
                   Best savings
                 </Link>
                 <Link
                   to="/shop?max=25"
-                  className="inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                  className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]"
                 >
                   Under $25
                 </Link>
@@ -526,19 +544,19 @@ const HomePage = () => {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   to="/shop"
-                  className="inline-flex h-10 items-center rounded-full bg-foreground px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground hover:brightness-110"
+                  className="salt-button-shine inline-flex h-10 items-center rounded-full bg-foreground px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110"
                 >
                   Start shopping
                 </Link>
                 <Link
                   to="/blog"
-                  className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
                 >
                   Read blog
                 </Link>
                 <Link
                   to="/contact"
-                  className="inline-flex h-10 items-center rounded-full border border-border bg-background px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
                 >
                   Need help?
                 </Link>

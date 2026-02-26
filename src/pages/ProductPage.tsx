@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   ChevronRight,
   History,
+  Leaf,
   Minus,
   PackageCheck,
   Plus,
@@ -128,6 +129,7 @@ const ProductPage = () => {
   const price = Number(selectedVariant?.price || 0);
   const comparePrice = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
   const isAvailable = selectedVariant?.available ?? true;
+  const savingsAmount = comparePrice > price ? comparePrice - price : 0;
   const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
   const shopPayUrl = selectedVariant
     ? buildShopifyShopPayUrl(selectedVariant.id, selectedQuantity)
@@ -206,7 +208,7 @@ const ProductPage = () => {
       <Reveal>
         <Link
           to="/shop"
-          className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+          className="salt-outline-chip mt-3 h-10 gap-2 px-4 py-0 text-xs"
         >
           <ArrowLeft className="h-4 w-4" /> Back to shop
         </Link>
@@ -214,7 +216,7 @@ const ProductPage = () => {
 
       <div className="mt-4 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
         <Reveal>
-          <div className="rounded-[2rem] border border-border/80 bg-card p-4 shadow-soft sm:p-5">
+          <div className="salt-panel-shell rounded-[2rem] p-4 sm:p-5">
             <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
               <img
                 src={activeImage || productImage(product)}
@@ -243,7 +245,7 @@ const ProductPage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <aside className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-7 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[2rem] p-5 sm:p-7 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">{stripHtml(product.body_html)}</p>
@@ -251,6 +253,11 @@ const ProductPage = () => {
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
               {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
+              {savingsAmount > 0 ? (
+                <span className="rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[0.64rem] font-bold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300">
+                  Save {formatMoney(savingsAmount)}
+                </span>
+              ) : null}
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -266,7 +273,7 @@ const ProductPage = () => {
               <label className="mt-5 block text-sm font-semibold">
                 Variant
                 <select
-                  className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/60"
+                  className="salt-form-control mt-2 w-full"
                   value={selectedVariant?.id || ""}
                   onChange={(event) => setSelectedVariantId(Number(event.target.value))}
                 >
@@ -307,7 +314,7 @@ const ProductPage = () => {
               aria-disabled={!isAvailable}
               className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5c3bff_0%,#3a2fd6_100%)] px-5 text-base font-semibold text-white transition ${
                 isAvailable
-                  ? "hover:brightness-110"
+                  ? "hover:brightness-110 hover:shadow-[0_18px_32px_-24px_rgba(73,55,224,0.95)]"
                   : "pointer-events-none opacity-60"
               }`}
             >
@@ -318,7 +325,7 @@ const ProductPage = () => {
               type="button"
               onClick={addToCart}
               disabled={!isAvailable}
-              className="mt-2 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-2 salt-button-shine salt-primary-cta h-12 w-full gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
               {isAvailable ? `Add to cart • ${formatMoney(price * quantity)}` : "Unavailable"}
@@ -328,13 +335,13 @@ const ProductPage = () => {
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <Link
                 to={product.product_type ? `/shop?type=${encodeURIComponent(product.product_type)}` : "/shop"}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                className="salt-outline-chip h-10 justify-center rounded-xl px-3 py-0 text-[0.68rem]"
               >
                 Similar products
               </Link>
               <Link
                 to="/contact"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+                className="salt-outline-chip h-10 justify-center rounded-xl px-3 py-0 text-[0.68rem]"
               >
                 Ask support
               </Link>
@@ -353,13 +360,16 @@ const ProductPage = () => {
               <p className="flex items-center gap-2">
                 <BadgeCheck className="h-3.5 w-3.5" /> Secure payment processing
               </p>
+              <p className="flex items-center gap-2">
+                <Leaf className="h-3.5 w-3.5" /> Curated quality checks before listing
+              </p>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {highlights.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-border bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground"
+                  className="salt-outline-chip px-2.5 py-1 text-[0.62rem]"
                 >
                   {item}
                 </span>
@@ -379,12 +389,14 @@ const ProductPage = () => {
               </div>
             </div>
           </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {relatedProducts.map((related, index) => (
-              <Reveal key={related.id} delayMs={index * 70}>
-                <ProductCard product={related} />
-              </Reveal>
-            ))}
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedProducts.map((related, index) => (
+                <Reveal key={related.id} delayMs={index * 70}>
+                  <ProductCard product={related} />
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
       ) : null}
@@ -401,12 +413,14 @@ const ProductPage = () => {
               </div>
             </div>
           </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {recentlyViewedProducts.map((entry, index) => (
-              <Reveal key={entry.id} delayMs={index * 55}>
-                <ProductCard product={entry} />
-              </Reveal>
-            ))}
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {recentlyViewedProducts.map((entry, index) => (
+                <Reveal key={entry.id} delayMs={index * 55}>
+                  <ProductCard product={entry} />
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
       ) : null}
@@ -416,7 +430,7 @@ const ProductPage = () => {
           type="button"
           onClick={addToCart}
           disabled={!isAvailable}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="salt-primary-cta h-12 w-full gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ShoppingBag className="h-4 w-4" />
           {isAvailable ? `Add to cart - ${formatMoney(price)}` : "Unavailable"}

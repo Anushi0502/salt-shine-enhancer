@@ -12,7 +12,7 @@ const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
   const totalProducts = productCount ?? collection.products_count;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/45">
+    <article className="salt-card-hover group relative overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft">
       <div className="relative aspect-[5/4] overflow-hidden">
         <img
           src={image}
@@ -20,7 +20,10 @@ const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/28 to-transparent transition-opacity group-hover:opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/82 via-foreground/30 to-transparent transition-opacity group-hover:opacity-90" />
+        <div className="absolute right-3 top-3 rounded-full border border-primary-foreground/50 bg-primary-foreground/14 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.09em] text-primary-foreground">
+          {totalProducts} items
+        </div>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 p-4">
@@ -29,6 +32,9 @@ const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
         </div>
         <h3 className="text-xl font-bold text-primary-foreground">{collection.title}</h3>
         <p className="mt-1 text-sm text-primary-foreground/85">{totalProducts} products available</p>
+        <p className="mt-1 inline-flex rounded-full border border-primary-foreground/35 bg-primary-foreground/10 px-2 py-1 text-[0.62rem] uppercase tracking-[0.08em] text-primary-foreground/90">
+          Fast browse path
+        </p>
 
         <Link
           to={`/shop?collection=${collection.handle}`}

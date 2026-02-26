@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  ExternalLink,
   Minus,
   PackageCheck,
   Plus,
@@ -178,7 +177,7 @@ const CartPage = () => {
     return (
       <section className="mx-auto mt-10 w-[min(880px,92vw)] pb-10 text-center">
         <Reveal>
-          <div className="rounded-[2rem] border border-border/80 bg-card p-10 shadow-soft">
+          <div className="salt-surface rounded-[2rem] p-10">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
               <ShoppingBag className="h-8 w-8" />
             </div>
@@ -189,13 +188,13 @@ const CartPage = () => {
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <Link
                 to="/shop"
-                className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground hover:brightness-110"
+                className="salt-primary-cta h-11 px-6 text-sm font-bold"
               >
                 Start shopping
               </Link>
               <Link
                 to="/collections"
-                className="inline-flex h-11 items-center rounded-full border border-border bg-background px-6 text-sm font-bold"
+                className="salt-outline-chip h-11 px-6 py-0 text-sm"
               >
                 Browse collections
               </Link>
@@ -226,7 +225,7 @@ const CartPage = () => {
       </Reveal>
 
       <Reveal delayMs={40}>
-        <div className="mb-5 rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
+        <div className="salt-panel-shell mb-5 rounded-2xl p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <p className="inline-flex items-center gap-1.5 font-semibold">
               <Truck className="h-4 w-4 text-primary" />
@@ -248,7 +247,7 @@ const CartPage = () => {
         <div className="grid gap-3">
           {items.map((item, index) => (
             <Reveal key={item.id} delayMs={index * 45}>
-              <article className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft sm:p-5">
+              <article className="salt-panel-shell rounded-2xl p-4 sm:p-5">
                 <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
                   <img
                     src={item.image || "/placeholder.svg"}
@@ -305,7 +304,7 @@ const CartPage = () => {
         </div>
 
         <Reveal delayMs={120}>
-          <aside className="rounded-[2rem] border border-border/80 bg-card p-5 shadow-soft sm:p-6 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[2rem] p-5 sm:p-6 lg:sticky lg:top-24">
             <h2 className="font-display text-3xl">Order summary</h2>
             <div className="mt-5 space-y-3 border-b border-border pb-5 text-sm">
               <p className="flex items-center justify-between">
@@ -325,6 +324,17 @@ const CartPage = () => {
               <span>Total</span>
               <span className="text-primary">{formatMoney(subtotal)}</span>
             </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Encrypted payment
+              </p>
+              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                Live order tracking
+              </p>
+              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                30-day returns
+              </p>
+            </div>
 
             <p className="mt-5 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               Standard checkout is recommended. Express options (including Shop Pay) appear inside Shopify checkout.
@@ -374,7 +384,7 @@ const CartPage = () => {
               className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
                 hasUnresolvedCheckoutItems
                   ? "pointer-events-none opacity-60"
-                  : "hover:brightness-110"
+                  : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
               }`}
             >
               Continue to Checkout <ArrowRight className="h-4 w-4" />
@@ -382,14 +392,14 @@ const CartPage = () => {
 
             <Link
               to="/shop"
-              className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] hover:border-primary/50"
+              className="salt-outline-chip mt-2 h-12 w-full justify-center rounded-xl px-5 py-0 text-sm"
             >
               Continue shopping
             </Link>
 
             <Link
               to="/contact"
-              className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border bg-card px-5 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground hover:border-primary/50 hover:text-primary"
+              className="salt-outline-chip mt-2 h-10 w-full justify-center rounded-xl px-5 py-0 text-xs"
             >
               Need checkout help?
             </Link>
@@ -416,12 +426,14 @@ const CartPage = () => {
               </div>
             </div>
           </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {recommendedProducts.map((product, index) => (
-              <Reveal key={product.id} delayMs={index * 60}>
-                <ProductCard product={product} />
-              </Reveal>
-            ))}
+          <div className="salt-section-shell rounded-[1.7rem] p-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendedProducts.map((product, index) => (
+                <Reveal key={product.id} delayMs={index * 60}>
+                  <ProductCard product={product} />
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
       ) : null}

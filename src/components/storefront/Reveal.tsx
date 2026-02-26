@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from "react";
+import { cn } from "@/lib/utils";
 
 type RevealProps = PropsWithChildren<{
   delayMs?: number;
@@ -7,7 +8,7 @@ type RevealProps = PropsWithChildren<{
 
 const Reveal = ({ children, delayMs = 0, className }: RevealProps) => {
   return (
-    <div className={`reveal ${className || ""}`} style={{ animationDelay: `${delayMs}ms` }}>
+    <div className={cn("reveal will-change-transform", className)} style={{ animationDelay: `${delayMs}ms` }}>
       {children}
     </div>
   );

@@ -24,24 +24,24 @@ const ShopifyPolicyPageTemplate = ({ policyKey, actions }: ShopifyPolicyPageTemp
   return (
     <section className="mx-auto mt-8 w-[min(1100px,94vw)] pb-8">
       <Reveal>
-        <div className="rounded-[2rem] border border-border/80 bg-card p-6 shadow-soft sm:p-8">
+        <div className="salt-surface-strong rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Legal</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">{policy.title}</h1>
 
           <article
-            className="prose prose-sm mt-6 max-w-none leading-7 text-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:border prose-table:border-border prose-th:border prose-th:border-border prose-th:bg-muted/40 prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2"
+            className="prose prose-sm mt-6 max-w-none rounded-2xl border border-border/70 bg-background/78 p-5 leading-7 text-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:border prose-table:border-border prose-th:border prose-th:border-border prose-th:bg-muted/40 prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2"
             dangerouslySetInnerHTML={{ __html: bodyHtml }}
           />
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-border/70 bg-background/78 p-3">
             {actions.map((action) => (
               <Link
                 key={action.to}
                 to={action.to}
                 className={
                   action.primary
-                    ? `${buttonClass} border-primary bg-primary text-primary-foreground hover:brightness-110`
-                    : `${buttonClass} border-border bg-background hover:border-primary/50`
+                    ? `${buttonClass} border-primary bg-primary text-primary-foreground hover:brightness-110 shadow-[0_14px_24px_-18px_hsl(var(--primary)/0.95)]`
+                    : `${buttonClass} border-border bg-background hover:-translate-y-[1px] hover:border-primary/50`
                 }
               >
                 {action.label}
