@@ -5,6 +5,7 @@ const currencyFormatter = new Intl.NumberFormat("en-CA", {
   currency: "CAD",
   minimumFractionDigits: 2,
 });
+const MAX_DISPLAY_COMPARE_MULTIPLIER = 12;
 
 function asText(value: unknown): string {
   if (typeof value === "string") {
@@ -55,6 +56,14 @@ function asNumber(value?: string | null): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export function isPlausibleComparePrice(currentPrice: number, comparePrice: number): boolean {
+  if (currentPrice <= 0 || comparePrice <= 0 || comparePrice <= currentPrice) {
+    return false;
+  }
+
+  return comparePrice / currentPrice <= MAX_DISPLAY_COMPARE_MULTIPLIER;
+}
+
 export function sortVariantsByPrice(variants: ShopifyVariant[]): ShopifyVariant[] {
   return [...variants].sort((a, b) => asNumber(a.price) - asNumber(b.price));
 }
@@ -71,7 +80,11 @@ export function maxPrice(product: ShopifyProduct): number {
 
 export function compareAt(product: ShopifyProduct): number {
   const compareValues = product.variants
-    .map((variant) => asNumber(variant.compare_at_price))
+    .map((variant) => {
+      const currentPrice = asNumber(variant.price);
+      const comparePrice = asNumber(variant.compare_at_price);
+      return isPlausibleComparePrice(currentPrice, comparePrice) ? comparePrice : 0;
+    })
     .filter((value) => value > 0);
 
   if (!compareValues.length) {
@@ -82,6 +95,23 @@ export function compareAt(product: ShopifyProduct): number {
 }
 
 export function savingsPercent(product: ShopifyProduct): number {
+  const variantSavings = product.variants
+    .map((variant) => {
+      const currentPrice = asNumber(variant.price);
+      const comparePrice = asNumber(variant.compare_at_price);
+
+      if (!isPlausibleComparePrice(currentPrice, comparePrice)) {
+        return 0;
+      }
+
+      return ((comparePrice - currentPrice) / comparePrice) * 100;
+    })
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (variantSavings.length) {
+    return Math.round(Math.max(...variantSavings));
+  }
+
   const compare = compareAt(product);
   const current = minPrice(product);
 

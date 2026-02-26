@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BadgeCheck,
+  CheckCircle2,
   ChevronRight,
   History,
   Leaf,
@@ -21,6 +22,7 @@ import { buildShopifyCartUrl, buildShopifyShopPayUrl, useCart } from "@/lib/cart
 import {
   compareAt,
   formatMoney,
+  isPlausibleComparePrice,
   productImage,
   productTagList,
   sortVariantsByPrice,
@@ -29,6 +31,30 @@ import {
 import { useProducts } from "@/lib/shopify-data";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
+
+function displayVariantTitle(title?: string): string {
+  const normalized = (title || "").trim();
+  if (!normalized || normalized.toLowerCase() === "default title") {
+    return "Standard Option";
+  }
+
+  return normalized;
+}
+
+function variantOptionTokens(title?: string): string[] {
+  const normalized = displayVariantTitle(title);
+  const parts = normalized
+    .split(/\s*\/\s*|\s-\s/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length <= 1) {
+    return [];
+  }
+
+  return parts.slice(0, 3);
+}
+
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
@@ -127,7 +153,10 @@ const ProductPage = () => {
 
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || variants[0];
   const price = Number(selectedVariant?.price || 0);
-  const comparePrice = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
+  const lowestVariantPrice = Number(variants[0]?.price || 0);
+  const availableVariantsCount = variants.filter((variant) => variant.available).length;
+  const comparePriceCandidate = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
+  const comparePrice = isPlausibleComparePrice(price, comparePriceCandidate) ? comparePriceCandidate : 0;
   const isAvailable = selectedVariant?.available ?? true;
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
   const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
@@ -270,20 +299,107 @@ const ProductPage = () => {
             </div>
 
             {variants.length > 0 ? (
-              <label className="mt-5 block text-sm font-semibold">
-                Variant
-                <select
-                  className="salt-form-control mt-2 w-full"
-                  value={selectedVariant?.id || ""}
-                  onChange={(event) => setSelectedVariantId(Number(event.target.value))}
-                >
-                  {variants.map((variant) => (
-                    <option key={variant.id} value={variant.id}>
-                      {variant.title} - {formatMoney(Number(variant.price || 0))}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="mt-5 rounded-2xl border border-border/75 bg-background/70 p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">Choose option</p>
+                  <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    {availableVariantsCount} of {variants.length} available
+                  </span>
+                </div>
+
+                {selectedVariant ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
+                    <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                      {displayVariantTitle(selectedVariant.title)}
+                    </span>
+                    <span className="rounded-full border border-border/70 bg-background px-2 py-0.5 font-semibold text-primary">
+                      {formatMoney(price)}
+                    </span>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 ${
+                        isAvailable
+                          ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {isAvailable ? "Ready to ship" : "Unavailable"}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div className="salt-quiet-scroll mt-3 grid max-h-64 gap-2 overflow-auto pr-1 sm:grid-cols-2">
+                  {variants.map((variant) => {
+                    const variantPrice = Number(variant.price || 0);
+                    const variantComparePrice = Number(variant.compare_at_price || 0);
+                    const variantAvailable = variant.available;
+                    const isVariantSelected = variant.id === selectedVariant?.id;
+                    const variantTitle = displayVariantTitle(variant.title);
+                    const optionTokens = variantOptionTokens(variant.title);
+                    const variantPriceDelta = variantPrice - lowestVariantPrice;
+                    const hasVariantSavings = isPlausibleComparePrice(variantPrice, variantComparePrice);
+
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        disabled={!variantAvailable}
+                        aria-pressed={isVariantSelected}
+                        className={`group relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition ${
+                          isVariantSelected
+                            ? "border-primary bg-primary/12 shadow-[0_14px_28px_-22px_hsl(var(--primary)/0.95)]"
+                            : "border-border bg-background hover:border-primary/45"
+                        } ${variantAvailable ? "" : "cursor-not-allowed opacity-50"}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold leading-tight text-foreground">
+                            {variantTitle}
+                          </p>
+                          {isVariantSelected ? (
+                            <span className="rounded-full border border-primary/40 bg-primary/14 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.08em] text-primary">
+                              Selected
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {optionTokens.length > 0 ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {optionTokens.map((token) => (
+                              <span
+                                key={`${variant.id}-${token}`}
+                                className="rounded-full border border-border/70 bg-background px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                              >
+                                {token}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="mt-2 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-primary">{formatMoney(variantPrice)}</span>
+                            {hasVariantSavings ? (
+                              <s className="text-[0.68rem] text-muted-foreground">
+                                {formatMoney(variantComparePrice)}
+                              </s>
+                            ) : null}
+                          </div>
+                          <span className={variantAvailable ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"}>
+                            {variantAvailable ? "Available" : "Unavailable"}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-[0.68rem] text-muted-foreground">
+                          {variantPriceDelta <= 0
+                            ? "Base price option"
+                            : `${formatMoney(variantPriceDelta)} above base`}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : null}
 
             <div className="mt-4">
