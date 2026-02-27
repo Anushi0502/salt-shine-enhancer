@@ -13,7 +13,6 @@ import {
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import {
-  buildShopifyCartUrl,
   buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
   buildShopifySearchUrl,
@@ -21,7 +20,6 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
-import { resolveThemeAsset } from "@/lib/theme-assets";
 import { useProducts } from "@/lib/shopify-data";
 
 const FREE_SHIPPING_THRESHOLD = 49;
@@ -150,7 +148,6 @@ const CartPage = () => {
   const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
   const checkoutUrl = buildShopifyCheckoutUrl(checkoutItems);
-  const shopifyCartUrl = buildShopifyCartUrl();
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -250,11 +247,19 @@ const CartPage = () => {
             <Reveal key={item.id} delayMs={index * 45}>
               <article className="salt-panel-shell rounded-2xl p-4 sm:p-5">
                 <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
-                  <img
-                    src={item.image || resolveThemeAsset("/placeholder.svg")}
-                    alt={item.title}
-                    className="aspect-square w-full rounded-xl border border-border bg-muted object-cover"
-                  />
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="aspect-square w-full rounded-xl border border-border bg-muted object-cover"
+                    />
+                  ) : (
+                    <div className="grid aspect-square w-full place-items-center rounded-xl border border-border bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-olive)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                        Image unavailable
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -378,7 +383,7 @@ const CartPage = () => {
             ) : null}
 
             <a
-              href={hasUnresolvedCheckoutItems ? shopifyCartUrl : checkoutUrl}
+              href={checkoutUrl}
               target="_blank"
               rel="noreferrer"
               aria-disabled={hasUnresolvedCheckoutItems}

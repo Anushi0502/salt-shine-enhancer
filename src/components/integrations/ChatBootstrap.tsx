@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { getRuntimeContext } from "@/lib/theme-assets";
 
 const INBOX_SCRIPT_URL =
   import.meta.env.VITE_SHOPIFY_INBOX_SCRIPT_URL ||
@@ -7,7 +8,34 @@ const INBOX_SCRIPT_URL =
 const MOOSE_SCRIPT_URL =
   import.meta.env.VITE_MOOSEDESK_SCRIPT_URL ||
   "https://cdn.shopify.com/extensions/019c84aa-c11d-7a9c-b494-e02061c252d4/development-extensions-933/assets/moosedesk.js";
-const CHAT_DOMAIN = import.meta.env.VITE_CHAT_SHOP_DOMAIN || "www.saltonlinestore.com";
+const runtimeContext = getRuntimeContext();
+const runtimeHostCandidate =
+  runtimeContext.shopDomain ||
+  runtimeContext.shopBaseUrl ||
+  (typeof window !== "undefined" ? window.location.hostname : "");
+const CHAT_DOMAIN = (() => {
+  const explicitDomain = String(import.meta.env.VITE_CHAT_SHOP_DOMAIN || "").trim();
+  if (explicitDomain) {
+    return explicitDomain;
+  }
+
+  const candidate = String(runtimeHostCandidate || "").trim();
+  if (!candidate) {
+    return "www.saltonlinestore.com";
+  }
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(candidate) ? candidate : `https://${candidate}`;
+    const parsed = new URL(withProtocol);
+    return parsed.hostname;
+  } catch {
+    return candidate;
+  }
+})();
+const CHAT_SUBDOMAIN =
+  String(import.meta.env.VITE_CHAT_SHOP_SUBDOMAIN || "").trim() ||
+  CHAT_DOMAIN.replace(/^www\./i, "").split(".")[0] ||
+  "saltonlinestore";
 const MOOSE_WIDGET_URL =
   import.meta.env.VITE_MOOSEDESK_WIDGET_URL ||
   "https://moosedesk-help-widget.moosedesk.com/58076594275/58076594275.json";
@@ -43,7 +71,13 @@ function isAllowedChatHost() {
   }
 
   const host = window.location.hostname.toLowerCase();
-  return host === "saltonlinestore.com" || host === "www.saltonlinestore.com";
+  const normalizedChatHost = CHAT_DOMAIN.toLowerCase().replace(/^https?:\/\//i, "");
+  return (
+    host === normalizedChatHost ||
+    host === "saltonlinestore.com" ||
+    host === "www.saltonlinestore.com" ||
+    host.endsWith(".myshopify.com")
+  );
 }
 
 function appendInboxContainerOnce() {
@@ -76,7 +110,7 @@ const ChatBootstrap = () => {
 
     window.mdSettings = {
       shop_id: 58076594275,
-      subdomain: "0309d3-72",
+      subdomain: CHAT_SUBDOMAIN,
       shop_name: "SALT",
       widget_id: MOOSE_WIDGET_URL,
       customer_id: null,

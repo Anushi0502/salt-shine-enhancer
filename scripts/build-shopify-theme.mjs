@@ -74,12 +74,7 @@ async function writeThemeScaffold() {
 <script>
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
-    "/placeholder.svg": {{ 'placeholder.svg' | asset_url | json }},
-    "/data/products.json": {{ 'data-products.json' | asset_url | json }},
-    "/data/collections.json": {{ 'data-collections.json' | asset_url | json }},
-    "/data/collection-products.json": {{ 'data-collection-products.json' | asset_url | json }},
-    "/data/about.json": {{ 'data-about.json' | asset_url | json }},
-    "/data/blog-posts.json": {{ 'data-blog-posts.json' | asset_url | json }}
+    "/brand-salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }}
   };
 </script>
 <script type="module" src="{{ 'salt-app.js' | asset_url }}"></script>
@@ -117,15 +112,6 @@ async function copyAssets(entryJsPath, entryCssPath) {
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
-  await cp(resolve(publicDir, "placeholder.svg"), resolve(themeAssetsDir, "placeholder.svg"));
-  await cp(resolve(publicDir, "data", "products.json"), resolve(themeAssetsDir, "data-products.json"));
-  await cp(resolve(publicDir, "data", "collections.json"), resolve(themeAssetsDir, "data-collections.json"));
-  await cp(
-    resolve(publicDir, "data", "collection-products.json"),
-    resolve(themeAssetsDir, "data-collection-products.json"),
-  );
-  await cp(resolve(publicDir, "data", "about.json"), resolve(themeAssetsDir, "data-about.json"));
-  await cp(resolve(publicDir, "data", "blog-posts.json"), resolve(themeAssetsDir, "data-blog-posts.json"));
 }
 
 async function main() {
@@ -144,4 +130,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

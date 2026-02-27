@@ -7,30 +7,26 @@ import type {
   CollectionsPayload,
   ProductsPayload,
   ShopifyCollection,
+  ShopifyPolicyPayload,
   ShopifyProduct,
 } from "@/types/shopify";
 import { firstImageSrcFromHtml, stripHtml } from "@/lib/formatters";
-import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
+import {
+  getRuntimeContext,
+  getShopBaseOrigin,
+  normalizeShopifyAssetUrl,
+  resolveThemeAsset,
+} from "@/lib/theme-assets";
 
-const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
-const SHOP_BASE =
-  import.meta.env.VITE_SALT_SHOP_URL ||
-  import.meta.env.VITE_SHOPIFY_STOREFRONT_URL ||
-  DEFAULT_SHOP_BASE;
-const SHOP_BASE_ORIGIN = (() => {
-  try {
-    const url = new URL(/^https?:\/\//i.test(SHOP_BASE) ? SHOP_BASE : `https://${SHOP_BASE}`);
-    return `${url.protocol}//${url.host}`;
-  } catch {
-    return DEFAULT_SHOP_BASE;
-  }
-})();
+const runtimeContext = getRuntimeContext();
+const SHOP_BASE_ORIGIN = getShopBaseOrigin();
+const SHOP_BASE = SHOP_BASE_ORIGIN;
 const ENABLE_CROSS_ORIGIN_BLOG_FETCH =
   String(import.meta.env.VITE_ENABLE_CROSS_ORIGIN_BLOG_FETCH || "").trim().toLowerCase() === "true";
 const DATA_MODE = "live" as const;
 const PAGE_LIMIT = Number(import.meta.env.VITE_SALT_PAGE_LIMIT || 250);
-const ABOUT_HANDLE = import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
-const BLOG_HANDLE_INPUT = import.meta.env.VITE_BLOG_HANDLE || "posts";
+const ABOUT_HANDLE = runtimeContext.aboutHandle || import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
+const BLOG_HANDLE_INPUT = runtimeContext.blogHandle || import.meta.env.VITE_BLOG_HANDLE || "posts";
 const BLOG_HANDLES = Array.from(
   new Set(
     BLOG_HANDLE_INPUT
@@ -46,9 +42,18 @@ const LIVE_PRODUCTS_REFRESH_MS = 60 * 1000;
 const LIVE_CONTENT_REFRESH_MS = 5 * 60 * 1000;
 const LIVE_COLLECTION_MAP_REFRESH_MS = 10 * 60 * 1000;
 
+function requireShopBase(): string {
+  if (!SHOP_BASE) {
+    throw new Error("Shop base URL is unavailable in runtime context");
+  }
+
+  return SHOP_BASE;
+}
+
 function getLiveBlogBases(): string[] {
   if (typeof window === "undefined") {
-    return [SHOP_BASE_ORIGIN];
+    const shopBase = requireShopBase();
+    return [shopBase];
   }
 
   const browserOrigin = window.location.origin;
@@ -58,15 +63,70 @@ function getLiveBlogBases(): string[] {
     hostname === "127.0.0.1" ||
     hostname === "::1" ||
     hostname === "[::1]";
-  const bases: string[] = isLocalHost
-    ? [`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`]
-    : [browserOrigin];
-
-  if (ENABLE_CROSS_ORIGIN_BLOG_FETCH && browserOrigin !== SHOP_BASE_ORIGIN) {
-    bases.push(SHOP_BASE_ORIGIN);
+  const bases: string[] = [];
+  if (isLocalHost) {
+    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
+    if (SHOP_BASE_ORIGIN) {
+      bases.push(SHOP_BASE_ORIGIN);
+    }
+  } else {
+    bases.push(browserOrigin);
+    if (ENABLE_CROSS_ORIGIN_BLOG_FETCH && SHOP_BASE_ORIGIN && browserOrigin !== SHOP_BASE_ORIGIN) {
+      bases.push(SHOP_BASE_ORIGIN);
+    }
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
+}
+
+function getLivePolicyBases(): string[] {
+  if (typeof window === "undefined") {
+    const shopBase = requireShopBase();
+    return [shopBase];
+  }
+
+  const browserOrigin = window.location.origin;
+  const hostname = window.location.hostname;
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]";
+  const bases: string[] = [];
+
+  if (isLocalHost) {
+    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
+    if (SHOP_BASE_ORIGIN) {
+      bases.push(SHOP_BASE_ORIGIN);
+    }
+  } else {
+    bases.push(browserOrigin);
+    if (SHOP_BASE_ORIGIN && browserOrigin !== SHOP_BASE_ORIGIN) {
+      bases.push(SHOP_BASE_ORIGIN);
+    }
+  }
+
+  return Array.from(new Set(bases.filter(Boolean)));
+}
+
+function extractPolicyContent(rawHtml: string, fallbackTitle: string): { title: string; bodyHtml: string } {
+  const parsed = new DOMParser().parseFromString(rawHtml, "text/html");
+
+  const title =
+    parsed.querySelector(".shopify-policy__title h1, h1")?.textContent?.trim() ||
+    fallbackTitle;
+
+  const bodyNode =
+    parsed.querySelector("[data-shopify-policy-body]") ||
+    parsed.querySelector(".shopify-policy__body") ||
+    parsed.querySelector(".shopify-policy__container .rte") ||
+    parsed.querySelector("main .shopify-policy__container") ||
+    parsed.querySelector("main .rte") ||
+    parsed.querySelector("main article") ||
+    parsed.querySelector("main");
+
+  const bodyHtml = normalizeRichHtml(bodyNode?.innerHTML || "");
+  return { title, bodyHtml };
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -81,11 +141,12 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 async function fetchAllProductsFromLive(): Promise<ShopifyProduct[]> {
+  const shopBase = requireShopBase();
   const allProducts: ShopifyProduct[] = [];
   let page = 1;
 
   while (true) {
-    const url = `${SHOP_BASE}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${shopBase}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
 
     allProducts.push(...payload.products);
@@ -101,11 +162,12 @@ async function fetchAllProductsFromLive(): Promise<ShopifyProduct[]> {
 }
 
 async function fetchAllCollectionsFromLive(): Promise<ShopifyCollection[]> {
+  const shopBase = requireShopBase();
   const allCollections: ShopifyCollection[] = [];
   let page = 1;
 
   while (true) {
-    const url = `${SHOP_BASE}/collections.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${shopBase}/collections.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ collections: ShopifyCollection[] }>(url);
 
     allCollections.push(...payload.collections);
@@ -121,11 +183,12 @@ async function fetchAllCollectionsFromLive(): Promise<ShopifyCollection[]> {
 }
 
 async function fetchCollectionProductIdsFromLive(handle: string): Promise<number[]> {
+  const shopBase = requireShopBase();
   const productIds = new Set<number>();
   let page = 1;
 
   while (true) {
-    const url = `${SHOP_BASE}/collections/${encodeURIComponent(handle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${shopBase}/collections/${encodeURIComponent(handle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
 
     payload.products.forEach((product) => {
@@ -177,6 +240,8 @@ function excerptFromHtml(input: string, maxChars = 200): string {
 
 function normalizeRichHtml(input: string): string {
   return input
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<meta[^>]*>/gi, "")
     .replace(/\s(?:bis_size|data-mce-fragment|contenteditable|data-mce-style)=("[^"]*"|'[^']*')/gi, "")
     .replace(/<img([^>]+)>/gi, (_full, attrs: string) => {
@@ -246,13 +311,14 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
 }
 
 async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
-  const response = await fetch(`${SHOP_BASE}/pages/${ABOUT_HANDLE}.json`);
+  const shopBase = requireShopBase();
+  const response = await fetch(`${shopBase}/pages/${ABOUT_HANDLE}.json`);
   if (response.status === 404) {
     throw new Error(`About page handle "${ABOUT_HANDLE}" was not found on Shopify`);
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${SHOP_BASE}/pages/${ABOUT_HANDLE}.json`);
+    throw new Error(`Request failed (${response.status}) for ${shopBase}/pages/${ABOUT_HANDLE}.json`);
   }
 
   const payload = (await response.json()) as {
@@ -268,7 +334,7 @@ async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
 
   return {
     generatedAt: new Date().toISOString(),
-    source: SHOP_BASE,
+    source: shopBase,
     page: {
       id: payload.page.id,
       handle: payload.page.handle || ABOUT_HANDLE,
@@ -326,12 +392,59 @@ async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
   throw new Error(`Live blog feed unavailable. ${details}`);
 }
 
+async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Promise<ShopifyPolicyPayload> {
+  const endpointErrors: string[] = [];
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  for (const base of getLivePolicyBases()) {
+    const endpoint = `${base}${normalizedPath}`;
+    try {
+      const response = await fetch(endpoint, { credentials: "omit" });
+      if (response.status === 404) {
+        continue;
+      }
+
+      if (!response.ok) {
+        endpointErrors.push(`${endpoint} -> ${response.status}`);
+        continue;
+      }
+
+      const html = await response.text();
+      const parsed = extractPolicyContent(html, fallbackTitle);
+
+      if (!parsed.bodyHtml) {
+        endpointErrors.push(`${endpoint} -> policy body not found`);
+        continue;
+      }
+
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        path: normalizedPath,
+        title: parsed.title || fallbackTitle,
+        bodyHtml: parsed.bodyHtml,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${endpoint} -> ${message}`);
+    }
+  }
+
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live policy endpoints.";
+
+  throw new Error(`Live policy fetch failed for ${normalizedPath}. ${details}`);
+}
+
 export async function loadProducts(): Promise<ProductsPayload> {
   try {
+    const shopBase = requireShopBase();
     const products = await fetchAllProductsFromLive();
     return {
       generatedAt: new Date().toISOString(),
-      source: SHOP_BASE,
+      source: shopBase,
       total: products.length,
       products,
     };
@@ -343,10 +456,11 @@ export async function loadProducts(): Promise<ProductsPayload> {
 
 export async function loadCollections(): Promise<CollectionsPayload> {
   try {
+    const shopBase = requireShopBase();
     const collections = await fetchAllCollectionsFromLive();
     return {
       generatedAt: new Date().toISOString(),
-      source: SHOP_BASE,
+      source: shopBase,
       total: collections.length,
       collections,
     };
@@ -358,6 +472,7 @@ export async function loadCollections(): Promise<CollectionsPayload> {
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
   try {
+    const shopBase = requireShopBase();
     const collections = await fetchAllCollectionsFromLive();
     const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
       const productIds = await fetchCollectionProductIdsFromLive(collection.handle);
@@ -372,7 +487,7 @@ export async function loadCollectionProductsMap(): Promise<CollectionProductsPay
 
     return {
       generatedAt: new Date().toISOString(),
-      source: SHOP_BASE,
+      source: shopBase,
       totalCollections: collections.length,
       collections: Object.fromEntries(mappedEntries),
     };
@@ -398,6 +513,15 @@ export async function loadBlogPosts(): Promise<BlogPostsPayload> {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown live blog error";
     throw new Error(`Live blog fetch failed: ${message}`);
+  }
+}
+
+export async function loadPolicyPage(path: string, fallbackTitle: string): Promise<ShopifyPolicyPayload> {
+  try {
+    return await fetchPolicyPageFromLive(path, fallbackTitle);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown live policy error";
+    throw new Error(message);
   }
 }
 
@@ -453,6 +577,18 @@ export function useBlogPosts() {
   return useQuery({
     queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
     queryFn: loadBlogPosts,
+    staleTime: LIVE_STALE_TIME_MS,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    retry: false,
+  });
+}
+
+export function usePolicyPage(path: string, fallbackTitle: string) {
+  return useQuery({
+    queryKey: ["policy-page", DATA_MODE, path],
+    queryFn: () => loadPolicyPage(path, fallbackTitle),
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,

@@ -11,6 +11,7 @@ type HomeHeroProps = {
 
 const HomeHero = ({ featured }: HomeHeroProps) => {
   const [mainProduct, secondaryProduct, tertiaryProduct] = featured;
+  const mainProductImage = mainProduct ? productImage(mainProduct) : null;
 
   return (
     <section className="mx-auto mt-8 grid w-[min(1280px,96vw)] gap-4 lg:grid-cols-[1.22fr_0.78fr]">
@@ -79,11 +80,17 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
               to={`/products/${mainProduct.handle}`}
               className="mt-8 grid max-w-2xl gap-3 rounded-2xl border border-primary-foreground/30 bg-primary-foreground/10 p-4 transition hover:border-primary-foreground/45 hover:bg-primary-foreground/14 sm:grid-cols-[84px_1fr_auto] sm:items-center"
             >
-              <img
-                src={productImage(mainProduct)}
-                alt={mainProduct.title}
-                className="h-20 w-20 rounded-xl object-cover"
-              />
+              {mainProductImage ? (
+                <img
+                  src={mainProductImage}
+                  alt={mainProduct.title}
+                  className="h-20 w-20 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="grid h-20 w-20 place-items-center rounded-xl bg-primary-foreground/14 text-[0.55rem] font-bold uppercase tracking-[0.08em] text-primary-foreground/80">
+                  No image
+                </div>
+              )}
               <div>
                 <p className="line-clamp-2 text-sm font-semibold">{mainProduct.title}</p>
                 <p className="text-xs text-primary-foreground/80">Best-selling pick this week</p>
@@ -117,12 +124,20 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
                 Quick pick
               </span>
               <div className="relative aspect-[5/3.3] overflow-hidden rounded-2xl">
-                <img
-                  src={productImage(product)}
-                  alt={product.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {productImage(product) ? (
+                  <img
+                    src={productImage(product) || ""}
+                    alt={product.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-olive)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                      Image unavailable
+                    </p>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-70 transition-opacity group-hover:opacity-100" />
               </div>
               <div className="space-y-2 p-3">

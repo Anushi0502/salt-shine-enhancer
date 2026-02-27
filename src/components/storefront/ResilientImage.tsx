@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ImgHTMLAttributes, SyntheticEvent } from "react";
+import type { ImgHTMLAttributes, ReactNode, SyntheticEvent } from "react";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 type ResilientImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src?: string | null;
+  fallback?: ReactNode;
 };
 
-const ResilientImage = ({ src, onError, alt = "", ...rest }: ResilientImageProps) => {
+const ResilientImage = ({ src, onError, alt = "", fallback = null, ...rest }: ResilientImageProps) => {
   const initialSrc = useMemo(
     () => normalizeShopifyAssetUrl(src) || "",
     [src],
@@ -25,7 +26,7 @@ const ResilientImage = ({ src, onError, alt = "", ...rest }: ResilientImageProps
   };
 
   if (!resolvedSrc) {
-    return null;
+    return <>{fallback}</>;
   }
 
   return (

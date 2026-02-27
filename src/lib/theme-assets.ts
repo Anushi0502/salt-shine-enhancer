@@ -1,20 +1,28 @@
 declare global {
   interface Window {
     SALT_THEME_ASSETS?: Record<string, string>;
+    SALT_RUNTIME_CONTEXT?: Partial<SaltRuntimeContext>;
   }
 }
 
-const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
-const SHOP_BASE =
-  import.meta.env.VITE_SALT_SHOP_URL ||
-  import.meta.env.VITE_SHOPIFY_STOREFRONT_URL ||
-  DEFAULT_SHOP_BASE;
-const LOCAL_ASSET_PREFIXES = ["/placeholder", "/data/", "/assets/", "/favicon", "/vite.svg"];
+export type SaltRuntimeContext = {
+  shopBaseUrl?: string;
+  shopDomain?: string;
+  shopName?: string;
+  currency?: string;
+  template?: string;
+  templateSuffix?: string;
+  aboutHandle?: string;
+  blogHandle?: string;
+  supportEmail?: string;
+};
 
-function normalizeBaseUrl(input: string | undefined): string {
+const LOCAL_ASSET_PREFIXES = ["/assets/", "/favicon", "/vite.svg"];
+
+function normalizeBaseUrl(input: string | undefined | null): string | null {
   const raw = String(input || "").trim();
   if (!raw) {
-    return DEFAULT_SHOP_BASE;
+    return null;
   }
 
   try {
@@ -22,11 +30,96 @@ function normalizeBaseUrl(input: string | undefined): string {
     const url = new URL(withProtocol);
     return `${url.protocol}//${url.host}`;
   } catch {
-    return DEFAULT_SHOP_BASE;
+    return null;
   }
 }
 
-const SHOP_BASE_ORIGIN = normalizeBaseUrl(SHOP_BASE);
+function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const root = document.getElementById("salt-app-root");
+  if (!root) {
+    return {};
+  }
+
+  return {
+    shopBaseUrl: root.getAttribute("data-shop-base-url") || undefined,
+    shopDomain: root.getAttribute("data-shop-domain") || undefined,
+    shopName: root.getAttribute("data-shop-name") || undefined,
+    currency: root.getAttribute("data-currency") || undefined,
+    template: root.getAttribute("data-template") || undefined,
+    templateSuffix: root.getAttribute("data-template-suffix") || undefined,
+    aboutHandle: root.getAttribute("data-about-handle") || undefined,
+    blogHandle: root.getAttribute("data-blog-handle") || undefined,
+    supportEmail: root.getAttribute("data-support-email") || undefined,
+  };
+}
+
+function readRuntimeContextFromJsonScript(): Partial<SaltRuntimeContext> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const node = document.getElementById("salt-runtime-context");
+  if (!node?.textContent) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(node.textContent) as Partial<SaltRuntimeContext>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function readRuntimeContext(): SaltRuntimeContext {
+  const fromWindow = typeof window !== "undefined" ? window.SALT_RUNTIME_CONTEXT || {} : {};
+  const fromScript = readRuntimeContextFromJsonScript();
+  const fromRoot = readRuntimeContextFromRootElement();
+
+  return {
+    ...fromScript,
+    ...fromRoot,
+    ...fromWindow,
+  };
+}
+
+const RUNTIME_CONTEXT = readRuntimeContext();
+const SHOP_BASE_ORIGIN = (() => {
+  const fromContext =
+    normalizeBaseUrl(RUNTIME_CONTEXT.shopBaseUrl) ||
+    normalizeBaseUrl(RUNTIME_CONTEXT.shopDomain);
+  if (fromContext) {
+    return fromContext;
+  }
+
+  const fromEnv =
+    normalizeBaseUrl(import.meta.env.VITE_SALT_SHOP_URL) ||
+    normalizeBaseUrl(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL);
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  if (typeof window !== "undefined") {
+    const fromOrigin = normalizeBaseUrl(window.location.origin);
+    if (fromOrigin) {
+      return fromOrigin;
+    }
+  }
+
+  return "";
+})();
+
+export function getRuntimeContext(): SaltRuntimeContext {
+  return RUNTIME_CONTEXT;
+}
+
+export function getShopBaseOrigin(): string {
+  return SHOP_BASE_ORIGIN;
+}
 
 export function resolveThemeAsset(path: string): string {
   if (typeof window === "undefined") {
@@ -57,7 +150,7 @@ export function normalizeShopifyAssetUrl(input: string | null | undefined): stri
   }
 
   if (resolved.startsWith("/")) {
-    if (LOCAL_ASSET_PREFIXES.some((prefix) => resolved.startsWith(prefix))) {
+    if (!SHOP_BASE_ORIGIN || LOCAL_ASSET_PREFIXES.some((prefix) => resolved.startsWith(prefix))) {
       return resolved;
     }
 

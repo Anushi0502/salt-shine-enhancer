@@ -1,5 +1,5 @@
 import type { ShopifyProduct, ShopifyVariant } from "@/types/shopify";
-import { normalizeShopifyAssetUrl, resolveThemeAsset } from "@/lib/theme-assets";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -60,8 +60,22 @@ export function sanitizeRichHtml(input: unknown): string {
 
 export function firstImageSrcFromHtml(input: unknown): string | null {
   const html = asText(input);
-  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return normalizeShopifyAssetUrl(match?.[1] || null);
+  if (!html) {
+    return null;
+  }
+
+  const imgTag = html.match(/<img[^>]*>/i)?.[0] || "";
+  if (!imgTag) {
+    return null;
+  }
+
+  const src =
+    imgTag.match(/\ssrc=["']([^"']+)["']/i)?.[1] ||
+    imgTag.match(/\sdata-src=["']([^"']+)["']/i)?.[1] ||
+    imgTag.match(/\ssrcset=["']([^"']+)["']/i)?.[1]?.split(",")[0]?.trim()?.split(/\s+/)[0] ||
+    "";
+
+  return normalizeShopifyAssetUrl(src || null);
 }
 
 function asNumber(value?: string | null): number {
@@ -143,11 +157,8 @@ export function formatMoney(value: number): string {
   return currencyFormatter.format(value);
 }
 
-export function productImage(product: ShopifyProduct): string {
-  return (
-    normalizeShopifyAssetUrl(product.image?.src || product.images[0]?.src) ||
-    resolveThemeAsset("/placeholder.svg")
-  );
+export function productImage(product: ShopifyProduct): string | null {
+  return normalizeShopifyAssetUrl(product.image?.src || product.images[0]?.src);
 }
 
 export function productTagList(product: ShopifyProduct): string[] {

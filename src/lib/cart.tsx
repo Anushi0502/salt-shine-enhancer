@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { getRuntimeContext } from "@/lib/theme-assets";
 
 export type CartItem = {
   id: number;
@@ -30,7 +31,6 @@ type CartContextValue = {
 
 const CART_STORAGE_KEY = "salt-cart";
 const MIN_SHOPIFY_NUMERIC_ID = 10_000_000_000_000;
-const FALLBACK_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const SHOPIFY_ROUTE_BYPASS_QUERY = "_fd=0&pb=0";
 
 function normalizeBaseUrl(input: string | undefined): string | null {
@@ -48,23 +48,53 @@ function normalizeBaseUrl(input: string | undefined): string | null {
   }
 }
 
+function isLocalOrigin(input: string | null): boolean {
+  if (!input) {
+    return false;
+  }
+
+  try {
+    const { hostname } = new URL(input);
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "[::1]"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function resolveShopBase(): string {
+  const runtimeContext = getRuntimeContext();
+  const runtimeBase =
+    normalizeBaseUrl(runtimeContext.shopBaseUrl) ||
+    normalizeBaseUrl(runtimeContext.shopDomain);
+  if (runtimeBase) {
+    return runtimeBase;
+  }
+
   const explicitBase =
     normalizeBaseUrl(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL) ||
     normalizeBaseUrl(import.meta.env.VITE_SALT_SHOP_URL);
-
-  if (!explicitBase) {
-    return FALLBACK_SHOP_BASE;
+  if (explicitBase) {
+    return explicitBase;
   }
 
   if (typeof window !== "undefined") {
+    const localProxyTarget = normalizeBaseUrl(import.meta.env.VITE_LOCAL_SHOPIFY_PROXY_TARGET);
+    if (localProxyTarget) {
+      return localProxyTarget;
+    }
+
     const appOrigin = normalizeBaseUrl(window.location.origin);
-    if (appOrigin && appOrigin === explicitBase) {
-      return FALLBACK_SHOP_BASE;
+    if (appOrigin && !isLocalOrigin(appOrigin)) {
+      return appOrigin;
     }
   }
 
-  return explicitBase;
+  return "";
 }
 
 export const SHOPIFY_STOREFRONT_BASE = resolveShopBase();

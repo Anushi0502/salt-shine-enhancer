@@ -77,7 +77,7 @@ const ProductPage = () => {
     const firstVariant = variants[0];
     setSelectedVariantId(firstVariant?.id || 0);
     setQuantity(1);
-    setActiveImage(productImage(product));
+    setActiveImage(productImage(product) || "");
   }, [product, variants]);
 
   useEffect(() => {
@@ -168,9 +168,10 @@ const ProductPage = () => {
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
     .slice(0, 4);
 
-  const imageSources = product.images.length
+  const primaryImage = productImage(product) || "";
+  const imageSources = (product.images.length
     ? product.images.map((image) => image.src)
-    : [productImage(product)];
+    : [primaryImage]).filter(Boolean);
 
   const highlights = [
     product.product_type ? `${product.product_type} essential` : "Curated everyday essential",
@@ -207,7 +208,7 @@ const ProductPage = () => {
         shopifyVariantId: selectedVariant.id,
         handle: product.handle,
         title: `${product.title} (${selectedVariant.title})`,
-        image: activeImage || productImage(product),
+        image: activeImage || primaryImage,
         unitPrice: price,
       },
       quantity,
@@ -247,11 +248,19 @@ const ProductPage = () => {
         <Reveal>
           <div className="salt-panel-shell rounded-[2rem] p-4 sm:p-5">
             <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
-              <img
-                src={activeImage || productImage(product)}
-                alt={product.title}
-                className="aspect-square w-full object-cover"
-              />
+              {activeImage || primaryImage ? (
+                <img
+                  src={activeImage || primaryImage}
+                  alt={product.title}
+                  className="aspect-square w-full object-cover"
+                />
+              ) : (
+                <div className="grid aspect-square w-full place-items-center bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-olive)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                    Image unavailable
+                  </p>
+                </div>
+              )}
             </div>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {imageSources.slice(0, 8).map((source, index) => (
@@ -260,7 +269,7 @@ const ProductPage = () => {
                   type="button"
                   onClick={() => setActiveImage(source)}
                   className={`overflow-hidden rounded-lg border ${
-                    (activeImage || productImage(product)) === source
+                    (activeImage || primaryImage) === source
                       ? "border-primary"
                       : "border-border hover:border-primary/40"
                   }`}

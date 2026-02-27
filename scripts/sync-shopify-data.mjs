@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
@@ -157,20 +157,6 @@ function parseBlogEntriesFromAtom(atomXml) {
     .sort((a, b) => Date.parse(b.publishedAt || "1970-01-01") - Date.parse(a.publishedAt || "1970-01-01"));
 }
 
-async function readExistingBlogPayload() {
-  try {
-    const raw = await readFile(resolve(outDir, "blog-posts.json"), "utf8");
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed?.posts)) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 async function fetchAboutPage() {
   const response = await fetch(`${baseUrl}/pages/${aboutHandle}.json`);
   if (response.status === 404) {
@@ -229,20 +215,7 @@ async function fetchBlogPosts() {
     };
   }
 
-  const existingPayload = await readExistingBlogPayload();
-  if (existingPayload?.posts?.length) {
-    process.stdout.write(
-      `No public blog feed found, preserving existing blog snapshot with ${existingPayload.posts.length} posts\n`,
-    );
-
-    return {
-      blogHandle: existingPayload.blogHandle || blogHandles[0] || "posts",
-      source: existingPayload.source || baseUrl,
-      posts: existingPayload.posts,
-    };
-  }
-
-  process.stdout.write("No blog feed found and no existing blog snapshot to preserve\n");
+  process.stdout.write("No public blog feed found; saving zero live posts\n");
   return {
     blogHandle: blogHandles[0] || "posts",
     source: baseUrl,

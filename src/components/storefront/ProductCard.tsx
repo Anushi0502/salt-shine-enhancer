@@ -25,16 +25,25 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const inStock = product.variants.some((variant) => variant.available);
   const defaultVariant = product.variants.find((variant) => variant.available) || null;
   const title = conciseTitle(product.title);
+  const image = productImage(product);
 
   return (
     <article className="salt-card-hover group overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft">
       <Link to={`/products/${product.handle}`} className="relative block aspect-[4/4.3] overflow-hidden bg-muted">
-        <img
-          src={productImage(product)}
-          alt={product.title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {image ? (
+          <img
+            src={image}
+            alt={product.title}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.22),transparent_48%),radial-gradient(circle_at_78%_80%,hsl(var(--salt-olive)/0.2),transparent_45%),hsl(var(--muted))] px-6 text-center">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Image unavailable
+            </p>
+          </div>
+        )}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/35 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-foreground/65 via-foreground/15 to-transparent" />
         {sale > 0 ? (
@@ -96,7 +105,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     shopifyVariantId: defaultVariant.id,
                     handle: product.handle,
                     title: product.title,
-                    image: productImage(product),
+                    image: image || "",
                     unitPrice: min,
                   })
                 : undefined

@@ -8,15 +8,15 @@ type BrandLogoProps = {
 };
 
 const imageSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "h-11 w-11",
-  md: "h-12 w-12",
-  lg: "h-14 w-14",
+  sm: "h-11 w-20",
+  md: "h-12 w-20",
+  lg: "h-14 w-26",
 };
 
 const shellSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "h-11 w-11",
-  md: "h-12 w-12",
-  lg: "h-14 w-14",
+  sm: "h-11 w-28",
+  md: "h-12 w-28",
+  lg: "h-14 w-32",
 };
 
 const textSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {

@@ -6,6 +6,14 @@ import ResilientImage from "@/components/storefront/ResilientImage";
 import { readingTime, sanitizeRichHtml } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
 
+const articleImageFallback = (
+  <div className="grid h-[280px] w-full place-items-center rounded-2xl border border-border bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-olive)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
+    <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+      Article image unavailable
+    </p>
+  </div>
+);
+
 function formattedDate(value: string): string {
   if (!value) {
     return "Recent";
@@ -129,9 +137,10 @@ const BlogPostPage = () => {
             <ResilientImage
               src={post.image}
               alt={post.title}
+              fallback={articleImageFallback}
               className="mt-5 w-full rounded-2xl border border-border bg-muted object-cover"
             />
-          ) : null}
+          ) : articleImageFallback}
 
           <article
             className="prose prose-sm mt-6 max-w-none leading-7 text-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"

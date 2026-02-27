@@ -103,3 +103,11 @@ export interface BlogPostsPayload {
   total: number;
   posts: BlogPost[];
 }
+
+export interface ShopifyPolicyPayload {
+  generatedAt: string;
+  source: string;
+  path: string;
+  title: string;
+  bodyHtml: string;
+}
