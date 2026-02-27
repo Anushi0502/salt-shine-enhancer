@@ -38,6 +38,11 @@ export default defineConfig(({ mode }) => {
       changeOrigin: true,
       secure: true,
       followRedirects: true,
+      headers: {
+        // Shopify can reject proxy requests that look like non-browser bots.
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      },
       rewrite: (inputPath: string) => inputPath.replace(/^\/__salt_shopify/, ""),
     },
   };

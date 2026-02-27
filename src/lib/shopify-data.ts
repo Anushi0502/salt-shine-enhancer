@@ -23,6 +23,8 @@ const SHOP_BASE_ORIGIN = getShopBaseOrigin();
 const SHOP_BASE = SHOP_BASE_ORIGIN;
 const ENABLE_CROSS_ORIGIN_BLOG_FETCH =
   String(import.meta.env.VITE_ENABLE_CROSS_ORIGIN_BLOG_FETCH || "").trim().toLowerCase() === "true";
+const ENABLE_CROSS_ORIGIN_CATALOG_FETCH =
+  String(import.meta.env.VITE_ENABLE_CROSS_ORIGIN_CATALOG_FETCH || "").trim().toLowerCase() === "true";
 const DATA_MODE = "live" as const;
 const PAGE_LIMIT = Number(import.meta.env.VITE_SALT_PAGE_LIMIT || 250);
 const ABOUT_HANDLE = runtimeContext.aboutHandle || import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
@@ -41,6 +43,9 @@ const LIVE_STALE_TIME_MS = 0;
 const LIVE_PRODUCTS_REFRESH_MS = 60 * 1000;
 const LIVE_CONTENT_REFRESH_MS = 5 * 60 * 1000;
 const LIVE_COLLECTION_MAP_REFRESH_MS = 10 * 60 * 1000;
+const LIVE_QUERY_MAX_RETRIES = 4;
+const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
+const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
 
 function requireShopBase(): string {
   if (!SHOP_BASE) {
@@ -66,14 +71,50 @@ function getLiveBlogBases(): string[] {
   const bases: string[] = [];
   if (isLocalHost) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-    if (SHOP_BASE_ORIGIN) {
-      bases.push(SHOP_BASE_ORIGIN);
-    }
+    bases.push(browserOrigin);
   } else {
     bases.push(browserOrigin);
-    if (ENABLE_CROSS_ORIGIN_BLOG_FETCH && SHOP_BASE_ORIGIN && browserOrigin !== SHOP_BASE_ORIGIN) {
-      bases.push(SHOP_BASE_ORIGIN);
-    }
+  }
+
+  if (
+    SHOP_BASE_ORIGIN &&
+    SHOP_BASE_ORIGIN !== browserOrigin &&
+    (isLocalHost || ENABLE_CROSS_ORIGIN_BLOG_FETCH)
+  ) {
+    bases.push(SHOP_BASE_ORIGIN);
+  }
+
+  return Array.from(new Set(bases.filter(Boolean)));
+}
+
+function getLiveCatalogBases(): string[] {
+  if (typeof window === "undefined") {
+    const shopBase = requireShopBase();
+    return [shopBase];
+  }
+
+  const browserOrigin = window.location.origin;
+  const hostname = window.location.hostname;
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]";
+  const bases: string[] = [];
+
+  if (isLocalHost) {
+    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
+    bases.push(browserOrigin);
+  } else {
+    bases.push(browserOrigin);
+  }
+
+  if (
+    SHOP_BASE_ORIGIN &&
+    SHOP_BASE_ORIGIN !== browserOrigin &&
+    (isLocalHost || ENABLE_CROSS_ORIGIN_CATALOG_FETCH)
+  ) {
+    bases.push(SHOP_BASE_ORIGIN);
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
@@ -96,14 +137,13 @@ function getLivePolicyBases(): string[] {
 
   if (isLocalHost) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-    if (SHOP_BASE_ORIGIN) {
-      bases.push(SHOP_BASE_ORIGIN);
-    }
+    bases.push(browserOrigin);
   } else {
     bases.push(browserOrigin);
-    if (SHOP_BASE_ORIGIN && browserOrigin !== SHOP_BASE_ORIGIN) {
-      bases.push(SHOP_BASE_ORIGIN);
-    }
+  }
+
+  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
+    bases.push(SHOP_BASE_ORIGIN);
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
@@ -129,6 +169,27 @@ function extractPolicyContent(rawHtml: string, fallbackTitle: string): { title: 
   return { title, bodyHtml };
 }
 
+function shouldRetryLiveQuery(failureCount: number, error: unknown): boolean {
+  if (failureCount >= LIVE_QUERY_MAX_RETRIES) {
+    return false;
+  }
+
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  // A missing page/endpoint is not transient and should not hammer retries.
+  if (message.includes(" 404") || message.includes("-> 404") || message.includes("(404)")) {
+    return false;
+  }
+
+  return true;
+}
+
+function liveQueryRetryDelay(attemptIndex: number): number {
+  const exponentialDelay = LIVE_QUERY_BASE_RETRY_DELAY_MS * 2 ** Math.max(0, attemptIndex);
+  const jitter = Math.floor(Math.random() * 260);
+  return Math.min(exponentialDelay + jitter, LIVE_QUERY_MAX_RETRY_DELAY_MS);
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const resolvedUrl = resolveThemeAsset(url);
   const response = await fetch(resolvedUrl);
@@ -140,13 +201,12 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-async function fetchAllProductsFromLive(): Promise<ShopifyProduct[]> {
-  const shopBase = requireShopBase();
+async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {
   const allProducts: ShopifyProduct[] = [];
   let page = 1;
 
   while (true) {
-    const url = `${shopBase}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${base}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
 
     allProducts.push(...payload.products);
@@ -161,13 +221,12 @@ async function fetchAllProductsFromLive(): Promise<ShopifyProduct[]> {
   return allProducts;
 }
 
-async function fetchAllCollectionsFromLive(): Promise<ShopifyCollection[]> {
-  const shopBase = requireShopBase();
+async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollection[]> {
   const allCollections: ShopifyCollection[] = [];
   let page = 1;
 
   while (true) {
-    const url = `${shopBase}/collections.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${base}/collections.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ collections: ShopifyCollection[] }>(url);
 
     allCollections.push(...payload.collections);
@@ -182,13 +241,12 @@ async function fetchAllCollectionsFromLive(): Promise<ShopifyCollection[]> {
   return allCollections;
 }
 
-async function fetchCollectionProductIdsFromLive(handle: string): Promise<number[]> {
-  const shopBase = requireShopBase();
+async function fetchCollectionProductIdsFromLive(base: string, handle: string): Promise<number[]> {
   const productIds = new Set<number>();
   let page = 1;
 
   while (true) {
-    const url = `${shopBase}/collections/${encodeURIComponent(handle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
+    const url = `${base}/collections/${encodeURIComponent(handle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
     const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
 
     payload.products.forEach((product) => {
@@ -311,39 +369,56 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
 }
 
 async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
-  const shopBase = requireShopBase();
-  const response = await fetch(`${shopBase}/pages/${ABOUT_HANDLE}.json`);
-  if (response.status === 404) {
-    throw new Error(`About page handle "${ABOUT_HANDLE}" was not found on Shopify`);
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    const endpoint = `${base}/pages/${ABOUT_HANDLE}.json`;
+    try {
+      const response = await fetch(endpoint);
+      if (response.status === 404) {
+        endpointErrors.push(`${endpoint} -> 404`);
+        continue;
+      }
+
+      if (!response.ok) {
+        endpointErrors.push(`${endpoint} -> ${response.status}`);
+        continue;
+      }
+
+      const payload = (await response.json()) as {
+        page: {
+          id: number;
+          handle: string;
+          title: string;
+          body_html: string;
+          published_at: string;
+          updated_at: string;
+        };
+      };
+
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        page: {
+          id: payload.page.id,
+          handle: payload.page.handle || ABOUT_HANDLE,
+          title: payload.page.title || "About",
+          bodyHtml: normalizeRichHtml(payload.page.body_html || ""),
+          publishedAt: payload.page.published_at || "",
+          updatedAt: payload.page.updated_at || "",
+        },
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${endpoint} -> ${message}`);
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${shopBase}/pages/${ABOUT_HANDLE}.json`);
-  }
-
-  const payload = (await response.json()) as {
-    page: {
-      id: number;
-      handle: string;
-      title: string;
-      body_html: string;
-      published_at: string;
-      updated_at: string;
-    };
-  };
-
-  return {
-    generatedAt: new Date().toISOString(),
-    source: shopBase,
-    page: {
-      id: payload.page.id,
-      handle: payload.page.handle || ABOUT_HANDLE,
-      title: payload.page.title || "About",
-      bodyHtml: normalizeRichHtml(payload.page.body_html || ""),
-      publishedAt: payload.page.published_at || "",
-      updatedAt: payload.page.updated_at || "",
-    },
-  };
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live about-page endpoints.";
+  throw new Error(`Live about page unavailable for handle "${ABOUT_HANDLE}". ${details}`);
 }
 
 async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
@@ -439,63 +514,90 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
-  try {
-    const shopBase = requireShopBase();
-    const products = await fetchAllProductsFromLive();
-    return {
-      generatedAt: new Date().toISOString(),
-      source: shopBase,
-      total: products.length,
-      products,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown live products error";
-    throw new Error(`Live products fetch failed: ${message}`);
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const products = await fetchAllProductsFromLive(base);
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        total: products.length,
+        products,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
   }
+
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live products endpoints.";
+  throw new Error(`Live products fetch failed. ${details}`);
 }
 
 export async function loadCollections(): Promise<CollectionsPayload> {
-  try {
-    const shopBase = requireShopBase();
-    const collections = await fetchAllCollectionsFromLive();
-    return {
-      generatedAt: new Date().toISOString(),
-      source: shopBase,
-      total: collections.length,
-      collections,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown live collections error";
-    throw new Error(`Live collections fetch failed: ${message}`);
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const collections = await fetchAllCollectionsFromLive(base);
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        total: collections.length,
+        collections,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
   }
+
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live collections endpoints.";
+  throw new Error(`Live collections fetch failed. ${details}`);
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
-  try {
-    const shopBase = requireShopBase();
-    const collections = await fetchAllCollectionsFromLive();
-    const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
-      const productIds = await fetchCollectionProductIdsFromLive(collection.handle);
-      return [
-        collection.handle,
-        {
-          title: collection.title,
-          productIds,
-        },
-      ] as const;
-    });
+  const endpointErrors: string[] = [];
 
-    return {
-      generatedAt: new Date().toISOString(),
-      source: shopBase,
-      totalCollections: collections.length,
-      collections: Object.fromEntries(mappedEntries),
-    };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown live collection products map error";
-    throw new Error(`Live collection products map fetch failed: ${message}`);
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const collections = await fetchAllCollectionsFromLive(base);
+      const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
+        const productIds = await fetchCollectionProductIdsFromLive(base, collection.handle);
+        return [
+          collection.handle,
+          {
+            title: collection.title,
+            productIds,
+          },
+        ] as const;
+      });
+
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        totalCollections: collections.length,
+        collections: Object.fromEntries(mappedEntries),
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
   }
+
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live collection products endpoints.";
+  throw new Error(`Live collection products map fetch failed. ${details}`);
 }
 
 export async function loadAboutPage(): Promise<AboutPagePayload> {
@@ -533,7 +635,8 @@ export function useProducts() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
-    retry: 1,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }
 
@@ -545,7 +648,8 @@ export function useCollections() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
-    retry: 1,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }
 
@@ -557,7 +661,8 @@ export function useCollectionProductsMap() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
-    retry: 1,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }
 
@@ -569,7 +674,8 @@ export function useAboutPage() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
-    retry: 1,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }
 
@@ -581,7 +687,8 @@ export function useBlogPosts() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
-    retry: false,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }
 
@@ -593,6 +700,7 @@ export function usePolicyPage(path: string, fallbackTitle: string) {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
-    retry: false,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
   });
 }

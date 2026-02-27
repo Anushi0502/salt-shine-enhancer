@@ -15,7 +15,6 @@ import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import {
-  useCollectionProductsMap,
   useCollections,
   useProducts,
 } from "@/lib/shopify-data";
@@ -174,8 +173,6 @@ const ShopPage = () => {
     refetch: refetchCollections,
   } = useCollections();
 
-  const { data: collectionMapPayload } = useCollectionProductsMap();
-
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const latestSyncAt = useMemo(() => {
@@ -202,20 +199,11 @@ const ShopPage = () => {
       return textFilteredProducts;
     }
 
-    const mapCollections = collectionMapPayload?.collections || {};
-    const hasMapEntry = Object.prototype.hasOwnProperty.call(mapCollections, collectionHandle);
-
-    if (hasMapEntry) {
-      const ids = mapCollections[collectionHandle]?.productIds || [];
-      const idSet = new Set(ids);
-      return textFilteredProducts.filter((product) => idSet.has(product.id));
-    }
-
     return filterProducts(textFilteredProducts, {
       collection: collectionHandle,
       collections,
     });
-  }, [collectionHandle, collectionMapPayload, textFilteredProducts, collections]);
+  }, [collectionHandle, textFilteredProducts, collections]);
 
   const priceFilteredProducts = useMemo(() => {
     return collectionFilteredProducts.filter((product) => {

@@ -64,7 +64,7 @@
 
   .dark {
     --background: 224 23% 10%;
-    --foreground: 42 22% 92%;
+    --foreground: 42 28% 96%;
 
     --card: 223 20% 14%;
     --card-foreground: 42 22% 92%;
@@ -79,7 +79,7 @@
     --secondary-foreground: 42 22% 92%;
 
     --muted: 223 12% 20%;
-    --muted-foreground: 37 12% 70%;
+    --muted-foreground: 37 16% 82%;
 
     --accent: 42 52% 55%;
     --accent-foreground: 225 18% 12%;
@@ -87,8 +87,8 @@
     --destructive: 0 72% 52%;
     --destructive-foreground: 42 22% 92%;
 
-    --border: 223 12% 26%;
-    --input: 223 12% 26%;
+    --border: 223 14% 32%;
+    --input: 223 14% 32%;
     --ring: 24 72% 56%;
 
     --salt-olive: 86 28% 62%;
@@ -268,6 +268,7 @@
     box-shadow:
       0 28px 60px -38px rgba(14, 12, 10, 0.56),
       inset 0 1px 0 hsl(0 0% 100% / 0.55);
+    color: hsl(var(--foreground));
   }
 
   .salt-panel-shell::before {
@@ -298,6 +299,7 @@
       linear-gradient(168deg, hsl(var(--background) / 0.94), hsl(var(--background) / 0.78));
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow: 0 16px 34px -32px rgba(18, 15, 12, 0.56);
+    color: hsl(var(--foreground));
   }
 
   .salt-section-shell {
@@ -307,6 +309,7 @@
       radial-gradient(circle at 88% 82%, hsl(var(--salt-olive) / 0.08), transparent 34%);
     border: 1px solid hsl(var(--border) / 0.68);
     box-shadow: 0 20px 40px -30px rgba(16, 14, 12, 0.48);
+    color: hsl(var(--foreground));
   }
 
   .salt-ambient-card {
@@ -314,6 +317,7 @@
       linear-gradient(170deg, hsl(var(--background) / 0.95), hsl(var(--background) / 0.84)),
       linear-gradient(120deg, hsl(var(--primary) / 0.07), transparent 45%);
     border: 1px solid hsl(var(--border) / 0.7);
+    color: hsl(var(--foreground));
   }
 
   .salt-outline-chip {

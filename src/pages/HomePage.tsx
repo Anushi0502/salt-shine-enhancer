@@ -16,7 +16,6 @@ import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, savingsPercent } from "@/lib/formatters";
 import {
   useBlogPosts,
-  useCollectionProductsMap,
   useCollections,
   useProducts,
 } from "@/lib/shopify-data";
@@ -95,7 +94,6 @@ const HomePage = () => {
 
   const {
     data: collectionsPayload,
-    isLoading: collectionsLoading,
     error: collectionsError,
     refetch: refetchCollections,
   } = useCollections();
@@ -107,9 +105,11 @@ const HomePage = () => {
     refetch: refetchBlog,
   } = useBlogPosts();
 
-  const { data: collectionMapPayload } = useCollectionProductsMap();
+  const products = productsPayload?.products || [];
+  const collections = collectionsPayload?.collections || [];
+  const isInitialProductsSync = productsLoading && !productsPayload;
 
-  if (productsLoading || collectionsLoading) {
+  if (isInitialProductsSync) {
     return (
       <LoadingState
         title="Loading SALT catalog"
@@ -118,7 +118,7 @@ const HomePage = () => {
     );
   }
 
-  if (productsError || collectionsError) {
+  if (productsError && !productsPayload) {
     return (
       <ErrorState
         title="We could not load the storefront"
@@ -140,33 +140,12 @@ const HomePage = () => {
     );
   }
 
-  const products = productsPayload?.products || [];
-  const collections = collectionsPayload?.collections || [];
-  const collectionMap = collectionMapPayload?.collections || {};
-  const liveProductIdSet = new Set(products.map((product) => product.id));
-
-  const countForCollection = (collection: ShopifyCollection) => {
-    const productIds = collectionMap[collection.handle]?.productIds;
-    if (!productIds || !productIds.length) {
-      return collection.products_count;
-    }
-
-    const uniqueIds = new Set(productIds);
-    let total = 0;
-
-    uniqueIds.forEach((id) => {
-      if (liveProductIdSet.has(id)) {
-        total += 1;
-      }
-    });
-
-    return total;
-  };
+  const hasCollectionSyncIssue = Boolean(collectionsError);
 
   const rankedCollections: RankedCollection[] = collections
     .map((collection) => ({
       ...collection,
-      effectiveCount: countForCollection(collection),
+      effectiveCount: collection.products_count,
     }))
     .sort((a, b) => {
       if (b.effectiveCount !== a.effectiveCount) {
@@ -227,6 +206,15 @@ const HomePage = () => {
     <>
       <HomeHero featured={featured} />
       <KpiStrip products={products} collections={collections} />
+      {hasCollectionSyncIssue ? (
+        <section className="mx-auto mt-4 w-[min(1280px,96vw)]">
+          <Reveal>
+            <div className="salt-ambient-card rounded-xl border border-primary/30 px-4 py-3 text-xs text-foreground">
+              Collections are refreshing from Shopify. Product shopping and checkout remain live.
+            </div>
+          </Reveal>
+        </section>
+      ) : null}
 
       <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
         <Reveal>
@@ -264,7 +252,7 @@ const HomePage = () => {
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                   Quick access
                 </p>
-                <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02]">
+                <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02] text-foreground">
                   Jump straight to what shoppers actually buy
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -284,7 +272,7 @@ const HomePage = () => {
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="salt-kpi-card flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50"
+                  className="salt-kpi-card flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
                 >
                   <span className="line-clamp-1">{collection.title}</span>
                   <span className="ml-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
@@ -297,25 +285,25 @@ const HomePage = () => {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Link
                 to="/shop?max=25"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 Under $25
               </Link>
               <Link
                 to="/shop?min=25&max=60"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $25 to $60
               </Link>
               <Link
                 to="/shop?min=60&max=120"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $60 to $120
               </Link>
               <Link
                 to="/shop?min=120"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $120 and above
               </Link>
