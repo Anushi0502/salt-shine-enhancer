@@ -6,8 +6,8 @@ const RefundPolicyPage = () => {
       policyKey="refund"
       actions={[
         { to: "/contact", label: "Start return request", primary: true },
-        { to: "/shipping-policy", label: "Shipping policy" },
-        { to: "/privacy-policy", label: "Privacy policy" },
+        { to: "/policies/shipping-policy", label: "Shipping policy" },
+        { to: "/policies/privacy-policy", label: "Privacy policy" },
       ]}
     />
   );

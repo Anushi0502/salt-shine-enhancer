@@ -15,6 +15,10 @@ export type SaltRuntimeContext = {
   aboutHandle?: string;
   blogHandle?: string;
   supportEmail?: string;
+  privacyPolicyUrl?: string;
+  refundPolicyUrl?: string;
+  shippingPolicyUrl?: string;
+  contactPolicyUrl?: string;
 };
 
 const LOCAL_ASSET_PREFIXES = ["/assets/", "/favicon", "/vite.svg"];
@@ -68,6 +72,10 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     aboutHandle: root.getAttribute("data-about-handle") || undefined,
     blogHandle: root.getAttribute("data-blog-handle") || undefined,
     supportEmail: root.getAttribute("data-support-email") || undefined,
+    privacyPolicyUrl: root.getAttribute("data-privacy-policy-url") || undefined,
+    refundPolicyUrl: root.getAttribute("data-refund-policy-url") || undefined,
+    shippingPolicyUrl: root.getAttribute("data-shipping-policy-url") || undefined,
+    contactPolicyUrl: root.getAttribute("data-contact-policy-url") || undefined,
   };
 }
 

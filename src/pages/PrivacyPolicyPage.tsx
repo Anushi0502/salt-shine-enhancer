@@ -6,8 +6,8 @@ const PrivacyPolicyPage = () => {
       policyKey="privacy"
       actions={[
         { to: "/contact", label: "Contact support", primary: true },
-        { to: "/refund-policy", label: "Returns policy" },
-        { to: "/shipping-policy", label: "Shipping policy" },
+        { to: "/policies/refund-policy", label: "Returns policy" },
+        { to: "/policies/shipping-policy", label: "Shipping policy" },
       ]}
     />
   );

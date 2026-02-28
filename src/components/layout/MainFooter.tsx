@@ -2,6 +2,12 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { BadgeCheck, Clock3, Headset } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
+import { getRuntimeContext } from "@/lib/theme-assets";
+
+const runtimeContext = getRuntimeContext();
+const privacyPolicyHref = runtimeContext.privacyPolicyUrl || "/policies/privacy-policy";
+const returnsPolicyHref = runtimeContext.refundPolicyUrl || "/policies/refund-policy";
+const shippingPolicyHref = runtimeContext.shippingPolicyUrl || "/policies/shipping-policy";
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
@@ -29,12 +35,12 @@ const MainFooter = () => {
               <Link to="/contact" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
                 Contact support
               </Link>
-              <Link to="/shipping-policy" className="salt-outline-chip h-10 px-4 py-0 text-xs">
+              <a href={shippingPolicyHref} className="salt-outline-chip h-10 px-4 py-0 text-xs">
                 Shipping policy
-              </Link>
-              <Link to="/refund-policy" className="salt-outline-chip h-10 px-4 py-0 text-xs">
+              </a>
+              <a href={returnsPolicyHref} className="salt-outline-chip h-10 px-4 py-0 text-xs">
                 Return policy
-              </Link>
+              </a>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-[0.68rem] uppercase tracking-[0.09em] text-muted-foreground">
@@ -158,19 +164,19 @@ const MainFooter = () => {
               </Link>
             </li>
             <li>
-              <Link className="hover:text-primary" to="/privacy-policy">
+              <a className="hover:text-primary" href={privacyPolicyHref}>
                 Privacy
-              </Link>
+              </a>
             </li>
             <li>
-              <Link className="hover:text-primary" to="/refund-policy">
+              <a className="hover:text-primary" href={returnsPolicyHref}>
                 Returns
-              </Link>
+              </a>
             </li>
             <li>
-              <Link className="hover:text-primary" to="/shipping-policy">
+              <a className="hover:text-primary" href={shippingPolicyHref}>
                 Shipping
-              </Link>
+              </a>
             </li>
           </ul>
         </div>

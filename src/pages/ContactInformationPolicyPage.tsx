@@ -6,8 +6,8 @@ const ContactInformationPolicyPage = () => {
       policyKey="contact"
       actions={[
         { to: "/contact", label: "Contact form", primary: true },
-        { to: "/privacy-policy", label: "Privacy policy" },
-        { to: "/shipping-policy", label: "Shipping policy" },
+        { to: "/policies/privacy-policy", label: "Privacy policy" },
+        { to: "/policies/shipping-policy", label: "Shipping policy" },
       ]}
     />
   );

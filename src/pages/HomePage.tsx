@@ -184,23 +184,6 @@ const HomePage = () => {
   const lastSyncedAt = syncCandidates.sort(
     (a, b) => new Date(b).getTime() - new Date(a).getTime(),
   )[0];
-  const sourceCandidates = [
-    productsPayload?.source,
-    collectionsPayload?.source,
-    blogPayload?.source,
-  ].filter(Boolean) as string[];
-  const liveSourceLabel = (() => {
-    const source = sourceCandidates[0];
-    if (!source) {
-      return "Live Shopify";
-    }
-
-    try {
-      return new URL(source).hostname;
-    } catch {
-      return source.replace(/^https?:\/\//i, "");
-    }
-  })();
 
   return (
     <>
@@ -218,28 +201,38 @@ const HomePage = () => {
 
       <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
         <Reveal>
-          <div className="salt-panel-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
-              Live catalog pull {formattedDateTime(lastSyncedAt)}
-            </p>
-            <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">
-              Source: {liveSourceLabel} • {products.length.toLocaleString()} products •{" "}
-              {collections.length.toLocaleString()} collections
-            </p>
-          </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Fast decision path</span>
-              <span>Cleaner filters and tighter category routes</span>
-            </p>
-            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Checkout clarity</span>
-              <span>Direct handoff into Shopify payment flow</span>
-            </p>
-            <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Post-purchase trust</span>
-              <span>Policy visibility and support links in every journey</span>
-            </p>
+          <div className="salt-panel-shell salt-sync-strip rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-foreground">
+                <span className="salt-sync-dot" aria-hidden="true"></span>
+                Catalog synced {formattedDateTime(lastSyncedAt)}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="salt-sync-pill">Live inventory</span>
+                <span className="salt-sync-pill">{products.length.toLocaleString()} products</span>
+                <span className="salt-sync-pill">{collections.length.toLocaleString()} collections</span>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Discovery acceleration
+                </span>
+                <span className="mt-1 block">Sharper category routes and cleaner filter steps.</span>
+              </p>
+              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+                  <BadgeCheck className="h-3.5 w-3.5 text-primary" /> Checkout confidence
+                </span>
+                <span className="mt-1 block">Direct handoff into secure Shopify checkout flow.</span>
+              </p>
+              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+                  <Clock3 className="h-3.5 w-3.5 text-primary" /> Always current
+                </span>
+                <span className="mt-1 block">Auto-refresh keeps catalog and pricing up to date.</span>
+              </p>
+            </div>
           </div>
         </Reveal>
       </section>
