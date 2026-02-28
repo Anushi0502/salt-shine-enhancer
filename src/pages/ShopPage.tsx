@@ -16,6 +16,7 @@ import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import {
   useCollections,
+  useCollectionProductIds,
   useProducts,
 } from "@/lib/shopify-data";
 
@@ -107,6 +108,10 @@ function formatTypeLabel(value: string): string {
     .join(" ");
 }
 
+function normalizeHandle(value: string | null | undefined): string {
+  return String(value || "").trim().toLowerCase();
+}
+
 const ShopPage = () => {
   const navigate = useNavigate();
   const { handle: routeCollectionHandle } = useParams();
@@ -173,16 +178,38 @@ const ShopPage = () => {
     refetch: refetchCollections,
   } = useCollections();
 
+  const {
+    data: collectionProductIdsPayload,
+    isLoading: collectionProductIdsLoading,
+    error: collectionProductIdsError,
+    refetch: refetchCollectionProductIds,
+  } = useCollectionProductIds(collectionHandle, Boolean(collectionHandle));
+
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
+  const selectedCollectionProductIds = useMemo(
+    () => collectionProductIdsPayload?.productIds ?? null,
+    [collectionProductIdsPayload],
+  );
+  const selectedCollectionOrder = useMemo(() => {
+    if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
+      return null;
+    }
+
+    return new Map(selectedCollectionProductIds.map((productId, index) => [productId, index]));
+  }, [collectionHandle, selectedCollectionProductIds]);
   const latestSyncAt = useMemo(() => {
-    const values = [productsPayload?.generatedAt, collectionsPayload?.generatedAt].filter(Boolean) as string[];
+    const values = [
+      productsPayload?.generatedAt,
+      collectionsPayload?.generatedAt,
+      collectionProductIdsPayload?.generatedAt,
+    ].filter(Boolean) as string[];
     if (!values.length) {
       return "";
     }
 
     return values.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-  }, [productsPayload, collectionsPayload]);
+  }, [productsPayload, collectionsPayload, collectionProductIdsPayload]);
 
   const textFilteredProducts = useMemo(
     () =>
@@ -202,8 +229,9 @@ const ShopPage = () => {
     return filterProducts(textFilteredProducts, {
       collection: collectionHandle,
       collections,
+      collectionProductIds: selectedCollectionProductIds,
     });
-  }, [collectionHandle, textFilteredProducts, collections]);
+  }, [collectionHandle, textFilteredProducts, collections, selectedCollectionProductIds]);
 
   const priceFilteredProducts = useMemo(() => {
     return collectionFilteredProducts.filter((product) => {
@@ -223,6 +251,25 @@ const ShopPage = () => {
 
   const sortedProducts = useMemo(() => {
     const base = [...priceFilteredProducts];
+
+    if (sort === "featured" && !query && selectedCollectionOrder) {
+      return base.sort((a, b) => {
+        const leftRank = selectedCollectionOrder.get(a.id);
+        const rightRank = selectedCollectionOrder.get(b.id);
+        const leftHasRank = leftRank != null;
+        const rightHasRank = rightRank != null;
+
+        if (leftHasRank && rightHasRank && leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+
+        if (leftHasRank !== rightHasRank) {
+          return leftHasRank ? -1 : 1;
+        }
+
+        return 0;
+      });
+    }
 
     if (sort === "price-asc") {
       return base.sort((a, b) => minPrice(a) - minPrice(b));
@@ -245,10 +292,12 @@ const ShopPage = () => {
     }
 
     return base;
-  }, [priceFilteredProducts, sort]);
+  }, [priceFilteredProducts, sort, query, selectedCollectionOrder]);
 
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
-  const selectedCollection = collections.find((collection) => collection.handle === collectionHandle);
+  const selectedCollection = collections.find(
+    (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
+  );
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
@@ -275,7 +324,7 @@ const ShopPage = () => {
     .filter(Boolean)
     .join(" • ");
 
-  if (productsLoading || collectionsLoading) {
+  if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
     return (
       <LoadingState
         title="Loading products"
@@ -284,7 +333,7 @@ const ShopPage = () => {
     );
   }
 
-  if (productsError || collectionsError) {
+  if (productsError || collectionsError || (Boolean(collectionHandle) && collectionProductIdsError)) {
     return (
       <ErrorState
         title="Catalog unavailable"
@@ -295,6 +344,9 @@ const ShopPage = () => {
             onClick={() => {
               refetchProducts();
               refetchCollections();
+              if (collectionHandle) {
+                refetchCollectionProductIds();
+              }
             }}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
           >

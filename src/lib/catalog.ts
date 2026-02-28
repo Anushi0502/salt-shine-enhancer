@@ -539,11 +539,16 @@ export function matchesCollection(
   product: ShopifyProduct,
   collectionHandle: string,
   collections: ShopifyCollection[],
+  collectionProductIds?: number[] | null,
 ): boolean {
   const handle = normalize(collectionHandle);
 
   if (!handle) {
     return true;
+  }
+
+  if (Array.isArray(collectionProductIds)) {
+    return collectionProductIds.includes(product.id);
   }
 
   const collection = collections.find((entry) => normalize(entry.handle) === handle);
@@ -568,19 +573,21 @@ export function filterProducts(
     collection?: string;
     productType?: string;
     collections?: ShopifyCollection[];
+    collectionProductIds?: number[] | null;
   },
 ): ShopifyProduct[] {
   const parsedQuery = parseQuery(options.query);
   const type = normalize(options.productType);
   const collectionHandle = normalize(options.collection);
   const collections = options.collections || [];
+  const collectionProductIds = options.collectionProductIds ?? null;
 
   const baseFiltered = products.filter((product) => {
     if (type && normalize(product.product_type) !== type) {
       return false;
     }
 
-    if (collectionHandle && !matchesCollection(product, collectionHandle, collections)) {
+    if (collectionHandle && !matchesCollection(product, collectionHandle, collections, collectionProductIds)) {
       return false;
     }
 

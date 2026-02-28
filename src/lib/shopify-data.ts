@@ -43,6 +43,14 @@ const LIVE_QUERY_MAX_RETRIES = 4;
 const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
 const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
 
+type CollectionProductIdsPayload = {
+  generatedAt: string;
+  source: string;
+  handle: string;
+  total: number;
+  productIds: number[];
+};
+
 function requireShopBase(): string {
   if (!SHOP_BASE) {
     throw new Error("Shop base URL is unavailable in runtime context");
@@ -607,6 +615,37 @@ export async function loadCollectionProductsMap(): Promise<CollectionProductsPay
   throw new Error(`Live collection products map fetch failed. ${details}`);
 }
 
+async function loadCollectionProductIds(handle: string): Promise<CollectionProductIdsPayload> {
+  const normalizedHandle = String(handle || "").trim();
+  if (!normalizedHandle) {
+    throw new Error("Collection handle is required");
+  }
+
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        handle: normalizedHandle,
+        total: productIds.length,
+        productIds,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
+  }
+
+  const details =
+    endpointErrors.length > 0
+      ? endpointErrors.slice(0, 4).join(" | ")
+      : "No reachable live collection products endpoints.";
+  throw new Error(`Live collection products fetch failed for "${normalizedHandle}". ${details}`);
+}
+
 export async function loadAboutPage(): Promise<AboutPagePayload> {
   try {
     return await fetchAboutPageFromLive();
@@ -664,6 +703,22 @@ export function useCollectionProductsMap() {
   return useQuery({
     queryKey: ["collection-products", DATA_MODE],
     queryFn: loadCollectionProductsMap,
+    staleTime: LIVE_STALE_TIME_MS,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+}
+
+export function useCollectionProductIds(handle: string, enabled = true) {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+
+  return useQuery({
+    queryKey: ["collection-products-by-handle", DATA_MODE, normalizedHandle],
+    queryFn: () => loadCollectionProductIds(normalizedHandle),
+    enabled: enabled && Boolean(normalizedHandle),
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
