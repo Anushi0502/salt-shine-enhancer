@@ -308,7 +308,7 @@ const ProductPage = () => {
             </div>
 
             {variants.length > 0 ? (
-              <div className="mt-5 rounded-2xl border border-border/75 bg-background/70 p-3.5">
+              <div className="salt-section-shell mt-5 rounded-2xl border border-border/75 p-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Choose option</p>
                   <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
@@ -518,7 +518,7 @@ const ProductPage = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70}>
-                  <ProductCard product={related} />
+                  <ProductCard product={related} variant="dense" />
                 </Reveal>
               ))}
             </div>
@@ -542,7 +542,7 @@ const ProductPage = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55}>
-                  <ProductCard product={entry} />
+                  <ProductCard product={entry} variant="dense" />
                 </Reveal>
               ))}
             </div>

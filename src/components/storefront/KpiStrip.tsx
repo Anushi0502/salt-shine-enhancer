@@ -26,18 +26,19 @@ const KpiStrip = ({ products, collections }: KpiStripProps) => {
     <section className="mx-auto mt-8 w-[min(1280px,96vw)]">
       <Reveal>
         <div className="salt-panel-shell grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-4">
-          {metrics.map((metric, index) => (
+          {metrics.map((metric) => (
             <div
               key={metric.label}
-              className={`salt-ambient-card rounded-2xl p-4 ${
-                index % 2 === 0 ? "lg:translate-y-2" : ""
-              }`}
+              className="salt-ambient-card salt-metric-card rounded-2xl p-4"
             >
-              <p className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-primary">
+              <p className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/75 bg-background/85 text-primary">
                 <metric.Icon className="h-4 w-4" />
               </p>
               <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{metric.label}</p>
               <strong className="mt-2 block font-display text-3xl leading-none text-foreground">{metric.value}</strong>
+              <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                live sync
+              </p>
             </div>
           ))}
         </div>

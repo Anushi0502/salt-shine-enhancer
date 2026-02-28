@@ -70,7 +70,7 @@ const CollectionsPage = () => {
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="rounded-xl border border-border/70 bg-background/80 px-3 py-3 transition hover:-translate-y-[2px] hover:border-primary/45"
+                  className="salt-kpi-card salt-metric-card rounded-xl border border-border/70 px-3 py-3 transition hover:-translate-y-[2px] hover:border-primary/45"
                 >
                   <p className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-primary">
                     Top {index + 1}
@@ -103,7 +103,10 @@ const CollectionsPage = () => {
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {collections.map((collection, index) => (
           <Reveal key={collection.id} delayMs={index * 60}>
-            <CollectionCard collection={collection} />
+            <CollectionCard
+              collection={collection}
+              variant={index < 2 ? "hero" : "default"}
+            />
           </Reveal>
         ))}
       </div>

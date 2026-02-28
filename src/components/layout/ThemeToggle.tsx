@@ -20,8 +20,8 @@ const ThemeToggle = () => {
         {theme === "dark" ? <MoonStar className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </span>
       <span className="grid w-full grid-cols-2 text-[0.62rem] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
-        <span className="text-center">Light</span>
-        <span className="text-center">Dark</span>
+        <span className={`text-center transition ${theme === "light" ? "text-foreground" : "text-muted-foreground"}`}>Light</span>
+        <span className={`text-center transition ${theme === "dark" ? "text-foreground" : "text-muted-foreground"}`}>Dark</span>
       </span>
     </button>
   );

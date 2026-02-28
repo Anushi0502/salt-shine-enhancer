@@ -423,6 +423,7 @@ const ShopPage = () => {
     minFilter != null ||
     maxFilter != null ||
     perPage !== perPageOptions[0];
+  const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
@@ -438,7 +439,7 @@ const ShopPage = () => {
           </p>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-            <form onSubmit={onSearch} className="relative">
+            <form onSubmit={onSearch} className="relative flex items-center gap-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={searchInput}
@@ -447,6 +448,12 @@ const ShopPage = () => {
                 placeholder="Search by product, category, vendor"
                 className="salt-form-control w-full pl-9 pr-4"
               />
+              <button
+                type="submit"
+                className="salt-primary-cta h-11 px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em]"
+              >
+                Search
+              </button>
             </form>
 
             <select
@@ -519,7 +526,7 @@ const ShopPage = () => {
             </select>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/65 bg-background/65 p-2.5">
+          <div className="salt-ambient-card mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/65 p-2.5">
             <button
               type="button"
               onClick={() => setShowAdvanced((value) => !value)}
@@ -530,14 +537,14 @@ const ShopPage = () => {
             </button>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
                 <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
               </span>
-              <span className="rounded-full border border-border bg-background px-3 py-1">
+              <span className="rounded-full border border-border bg-background/85 px-3 py-1">
                 Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
               </span>
               {activeFilterCount > 0 ? (
-                <span className="rounded-full border border-border bg-background px-3 py-1">
+                <span className="rounded-full border border-border bg-background/85 px-3 py-1">
                   {activeFilterCount} active filters
                 </span>
               ) : null}
@@ -588,7 +595,11 @@ const ShopPage = () => {
             </div>
           ) : null}
 
-          {activeFilterSummary ? <p className="mt-2 text-xs text-muted-foreground">{activeFilterSummary}</p> : null}
+          {activeFilterSummary ? (
+            <p className="mt-2 rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+              {activeFilterSummary}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -662,7 +673,7 @@ const ShopPage = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {visibleProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 35}>
-                  <ProductCard product={product} />
+                  <ProductCard product={product} variant="dense" />
                 </Reveal>
               ))}
             </div>
@@ -696,7 +707,7 @@ const ShopPage = () => {
 
               <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 <ArrowDownUp className="h-3.5 w-3.5" />
-                Sorted by {sortOptions.find((option) => option.value === sort)?.label || "Featured"}
+                Sorted by {sortLabel}
               </p>
             </div>
           </Reveal>

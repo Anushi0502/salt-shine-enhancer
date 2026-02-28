@@ -265,9 +265,9 @@ const HomePage = () => {
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.handle}`}
-                  className="salt-kpi-card flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                  className="salt-kpi-card salt-metric-card flex items-center justify-between rounded-xl bg-[linear-gradient(150deg,hsl(var(--card)/0.96),hsl(var(--card)/0.82))] px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
                 >
-                  <span className="line-clamp-1">{collection.title}</span>
+                  <span className="line-clamp-1 text-foreground">{collection.title}</span>
                   <span className="ml-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
                     {collection.effectiveCount}
                   </span>
@@ -278,25 +278,25 @@ const HomePage = () => {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Link
                 to="/shop?max=25"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 Under $25
               </Link>
               <Link
                 to="/shop?min=25&max=60"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $25 to $60
               </Link>
               <Link
                 to="/shop?min=60&max=120"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $60 to $120
               </Link>
               <Link
                 to="/shop?min=120"
-                className="salt-kpi-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
+                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
               >
                 $120 and above
               </Link>
@@ -330,7 +330,11 @@ const HomePage = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredCollections.map((collection, index) => (
             <Reveal key={collection.id} delayMs={index * 80}>
-              <CollectionCard collection={collection} productCount={collection.effectiveCount} />
+              <CollectionCard
+                collection={collection}
+                productCount={collection.effectiveCount}
+                variant={index < 2 ? "hero" : "default"}
+              />
             </Reveal>
           ))}
         </div>
@@ -361,7 +365,7 @@ const HomePage = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trendingProducts.map((product, index) => (
             <Reveal key={product.id} delayMs={index * 70}>
-              <ProductCard product={product} />
+              <ProductCard product={product} variant="dense" />
             </Reveal>
           ))}
         </div>
@@ -393,7 +397,7 @@ const HomePage = () => {
                   <Link
                     key={post.id}
                     to={`/blog/${post.handle}`}
-                    className="salt-kpi-card rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
+                    className="salt-kpi-card salt-metric-card rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
                   >
                     <p className="line-clamp-2 text-lg font-semibold leading-7">{post.title}</p>
                     <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</p>
@@ -429,7 +433,7 @@ const HomePage = () => {
                 {trustBullets.map((item) => (
                   <div
                     key={item.title}
-                    className="salt-ambient-card rounded-xl px-3 py-3"
+                    className="salt-ambient-card salt-metric-card rounded-xl px-3 py-3"
                   >
                     <p className="text-xs font-semibold text-foreground">{item.title}</p>
                     <p className="mt-1 text-[0.72rem] leading-relaxed text-muted-foreground">
@@ -441,7 +445,7 @@ const HomePage = () => {
 
             </div>
 
-            <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-olive/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
+            <div className="salt-card-hover salt-section-shell rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-olive/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                 Customer proof
               </p>
@@ -449,8 +453,8 @@ const HomePage = () => {
                 Why customers trust us with their shopping needs?
               </h4>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                     Ready to ship
                   </p>
@@ -458,7 +462,7 @@ const HomePage = () => {
                     In Stock Now
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                     New weekly drops
                   </p>
@@ -466,7 +470,7 @@ const HomePage = () => {
                     Just Added
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
+                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
                   <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                     Fast delivery
                   </p>
@@ -496,7 +500,7 @@ const HomePage = () => {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   to="/shop"
-                  className="salt-button-shine inline-flex h-10 items-center rounded-full bg-foreground px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground transition hover:brightness-110"
+                  className="salt-button-shine inline-flex h-10 items-center rounded-full bg-[hsl(var(--salt-ink))] px-4 text-xs font-bold uppercase tracking-[0.08em] text-[hsl(var(--salt-paper))] transition hover:brightness-110"
                 >
                   Shop with confidence
                 </Link>

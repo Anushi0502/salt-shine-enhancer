@@ -211,6 +211,10 @@ const CartPage = () => {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Cart</p>
             <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Review your order</h1>
             <p className="mt-2 text-sm text-muted-foreground">{itemCount} items currently in your cart.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="salt-outline-chip text-[0.62rem]">Shopify checkout handoff</span>
+              <span className="salt-outline-chip text-[0.62rem]">Live variant validation</span>
+            </div>
           </div>
           <button
             type="button"
@@ -331,13 +335,13 @@ const CartPage = () => {
               <span className="text-primary">{formatMoney(subtotal)}</span>
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 Encrypted payment
               </p>
-              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 Live order tracking
               </p>
-              <p className="rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 30-day returns
               </p>
             </div>
@@ -436,7 +440,7 @@ const CartPage = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {recommendedProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 60}>
-                  <ProductCard product={product} />
+                  <ProductCard product={product} variant="dense" />
                 </Reveal>
               ))}
             </div>

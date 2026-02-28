@@ -143,7 +143,7 @@ const BlogPostPage = () => {
           ) : articleImageFallback}
 
           <article
-            className="prose prose-sm mt-6 max-w-none leading-7 text-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"
+            className="prose prose-sm mt-6 max-w-none leading-7 text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
 
@@ -179,7 +179,7 @@ const BlogPostPage = () => {
                 <Link
                   key={entry.id}
                   to={`/blog/${entry.handle}`}
-                  className="salt-kpi-card rounded-xl p-3 transition hover:border-primary/50"
+                  className="salt-kpi-card salt-metric-card rounded-xl p-3 transition hover:border-primary/50"
                 >
                   <p className="line-clamp-2 text-sm font-semibold">{entry.title}</p>
                   <p className="mt-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">

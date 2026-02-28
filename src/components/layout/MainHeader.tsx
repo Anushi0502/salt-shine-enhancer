@@ -24,8 +24,8 @@ const quickLinks = [
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
     isActive
-      ? "salt-glow-ring bg-foreground text-primary-foreground"
-      : "text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)]"
+      ? "salt-glow-ring border border-primary/45 bg-[linear-gradient(130deg,hsl(var(--salt-ink)/0.98),hsl(var(--salt-ink)/0.9))] text-white"
+      : "border border-transparent text-foreground/80 hover:border-border/85 hover:bg-background/88 hover:text-foreground hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)]"
   }`;
 }
 
@@ -70,16 +70,16 @@ const MainHeader = () => {
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/82 shadow-[0_18px_44px_-34px_rgba(0,0,0,0.62)] backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-150">
       <a
         href="#main-content"
-        className="absolute left-3 top-2 z-[60] -translate-y-20 rounded-full bg-foreground px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground opacity-0 shadow-soft transition focus:translate-y-0 focus:opacity-100"
+        className="absolute left-3 top-2 z-[60] -translate-y-20 rounded-full bg-[hsl(var(--salt-ink))] px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[hsl(var(--salt-paper))] opacity-0 shadow-soft transition focus:translate-y-0 focus:opacity-100"
       >
         Skip to content
       </a>
-      <div className="border-b border-border/50 bg-[linear-gradient(90deg,hsl(var(--foreground))_0%,hsl(var(--foreground)/0.94)_42%,hsl(var(--salt-olive)/0.68)_100%)] text-primary-foreground">
+      <div className="border-b border-border/50 bg-[linear-gradient(90deg,hsl(var(--salt-ink))_0%,hsl(var(--salt-ink)/0.95)_42%,hsl(var(--salt-olive)/0.7)_100%)] text-[hsl(var(--salt-paper))]">
         <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2.5 text-[0.7rem] sm:text-xs">
           <span className="truncate">Free US shipping over $49</span>
           <Link
             to="/contact"
-            className="hidden text-primary-foreground/80 underline-offset-2 hover:text-primary-foreground hover:underline md:inline"
+            className="hidden text-[hsl(var(--salt-paper))/0.82] underline-offset-2 hover:text-[hsl(var(--salt-paper))] hover:underline md:inline"
           >
             Need help? Contact support
           </Link>
@@ -115,7 +115,7 @@ const MainHeader = () => {
               type="search"
               placeholder="Search products"
               aria-label="Search products"
-              className="h-10 w-72 rounded-full border border-border/80 bg-card/95 pl-9 pr-3 text-sm outline-none transition focus:border-primary/60 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.14)]"
+              className="salt-form-control h-10 w-72 rounded-full border-border/80 bg-card/95 pl-9 pr-3"
             />
           </form>
 
@@ -129,7 +129,7 @@ const MainHeader = () => {
             <ShoppingBag className="h-4 w-4" />
             Cart
             {itemCount > 0 ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[0.7rem] leading-none text-primary-foreground">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--salt-paper))] px-1 text-[0.7rem] leading-none text-[hsl(var(--salt-ink))]">
                 {itemCount}
               </span>
             ) : null}
@@ -146,7 +146,7 @@ const MainHeader = () => {
         </button>
       </div>
 
-      <div className="hidden border-t border-border/60 bg-[linear-gradient(180deg,hsl(var(--card)/0.72),hsl(var(--card)/0.5))] lg:block">
+      <div className="hidden border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.8),hsl(var(--card)/0.56))] lg:block">
         <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2">
           <div className="flex flex-wrap items-center gap-2">
             {quickLinks.map((link) => (
@@ -159,7 +159,7 @@ const MainHeader = () => {
               </NavLink>
             ))}
           </div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <p className="rounded-full border border-border/75 bg-background/65 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Fast dispatch • Easy returns • Encrypted checkout
           </p>
         </div>
@@ -177,7 +177,7 @@ const MainHeader = () => {
               value={mobileSearch}
               onChange={(event) => setMobileSearch(event.target.value)}
               placeholder="Search products"
-              className="h-10 flex-1 rounded-full border border-border bg-card/90 px-4 text-sm outline-none transition focus:border-primary/60 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.14)]"
+              className="salt-form-control h-10 flex-1 rounded-full border-border bg-card/90 px-4"
             />
             <button
               type="submit"

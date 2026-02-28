@@ -79,15 +79,15 @@ const BlogPage = () => {
             Posts synced from Shopify to keep home, garden, style, and product education current.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Live posts</span>
               <span>{posts.length.toLocaleString()} synced articles</span>
             </p>
-            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Reading format</span>
               <span>Short actionable guides and trend roundups</span>
             </p>
-            <p className="rounded-xl border border-border/70 bg-background/75 px-3 py-2 text-xs text-muted-foreground">
+            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Goal</span>
               <span>Move inspiration to confident purchases</span>
             </p>
@@ -165,7 +165,7 @@ const BlogPage = () => {
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {remainingPosts.map((post, index) => (
                 <Reveal key={post.id} delayMs={index * 70}>
-                  <article className="salt-card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
+                  <article className="salt-card-hover salt-metric-card flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
                     <Link to={`/blog/${post.handle}`} className="block overflow-hidden bg-muted">
                       <ResilientImage
                         src={post.image}
