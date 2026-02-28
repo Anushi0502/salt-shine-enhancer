@@ -21,10 +21,6 @@ import {
 const runtimeContext = getRuntimeContext();
 const SHOP_BASE_ORIGIN = getShopBaseOrigin();
 const SHOP_BASE = SHOP_BASE_ORIGIN;
-const ENABLE_CROSS_ORIGIN_BLOG_FETCH =
-  String(import.meta.env.VITE_ENABLE_CROSS_ORIGIN_BLOG_FETCH || "").trim().toLowerCase() === "true";
-const ENABLE_CROSS_ORIGIN_CATALOG_FETCH =
-  String(import.meta.env.VITE_ENABLE_CROSS_ORIGIN_CATALOG_FETCH || "").trim().toLowerCase() === "true";
 const DATA_MODE = "live" as const;
 const PAGE_LIMIT = Number(import.meta.env.VITE_SALT_PAGE_LIMIT || 250);
 const ABOUT_HANDLE = runtimeContext.aboutHandle || import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
@@ -55,6 +51,40 @@ function requireShopBase(): string {
   return SHOP_BASE;
 }
 
+function isLikelyLocalRuntimeHost(hostname: string): boolean {
+  const normalized = String(hostname || "").trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  if (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized.endsWith(".local") ||
+    normalized.endsWith(".lan")
+  ) {
+    return true;
+  }
+
+  if (normalized.startsWith("10.")) {
+    return true;
+  }
+
+  if (normalized.startsWith("192.168.")) {
+    return true;
+  }
+
+  const match172 = normalized.match(/^172\.(\d{1,3})\./);
+  if (match172) {
+    const secondOctet = Number(match172[1]);
+    return secondOctet >= 16 && secondOctet <= 31;
+  }
+
+  return false;
+}
+
 function getLiveBlogBases(): string[] {
   if (typeof window === "undefined") {
     const shopBase = requireShopBase();
@@ -62,12 +92,7 @@ function getLiveBlogBases(): string[] {
   }
 
   const browserOrigin = window.location.origin;
-  const hostname = window.location.hostname;
-  const isLocalHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname === "[::1]";
+  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
   const bases: string[] = [];
   if (isLocalHost) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
@@ -76,11 +101,7 @@ function getLiveBlogBases(): string[] {
     bases.push(browserOrigin);
   }
 
-  if (
-    SHOP_BASE_ORIGIN &&
-    SHOP_BASE_ORIGIN !== browserOrigin &&
-    (isLocalHost || ENABLE_CROSS_ORIGIN_BLOG_FETCH)
-  ) {
+  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
     bases.push(SHOP_BASE_ORIGIN);
   }
 
@@ -94,12 +115,7 @@ function getLiveCatalogBases(): string[] {
   }
 
   const browserOrigin = window.location.origin;
-  const hostname = window.location.hostname;
-  const isLocalHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname === "[::1]";
+  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
   const bases: string[] = [];
 
   if (isLocalHost) {
@@ -109,11 +125,7 @@ function getLiveCatalogBases(): string[] {
     bases.push(browserOrigin);
   }
 
-  if (
-    SHOP_BASE_ORIGIN &&
-    SHOP_BASE_ORIGIN !== browserOrigin &&
-    (isLocalHost || ENABLE_CROSS_ORIGIN_CATALOG_FETCH)
-  ) {
+  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
     bases.push(SHOP_BASE_ORIGIN);
   }
 
@@ -127,12 +139,7 @@ function getLivePolicyBases(): string[] {
   }
 
   const browserOrigin = window.location.origin;
-  const hostname = window.location.hostname;
-  const isLocalHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname === "[::1]";
+  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
   const bases: string[] = [];
 
   if (isLocalHost) {

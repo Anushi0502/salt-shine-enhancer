@@ -32,6 +32,7 @@ type CartContextValue = {
 const CART_STORAGE_KEY = "salt-cart";
 const MIN_SHOPIFY_NUMERIC_ID = 10_000_000_000_000;
 const SHOPIFY_ROUTE_BYPASS_QUERY = "_fd=0&pb=0";
+const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
 
 function normalizeBaseUrl(input: string | undefined): string | null {
   const raw = String(input || "").trim();
@@ -55,12 +56,29 @@ function isLocalOrigin(input: string | null): boolean {
 
   try {
     const { hostname } = new URL(input);
-    return (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "::1" ||
-      hostname === "[::1]"
-    );
+    const normalized = hostname.toLowerCase();
+    if (
+      normalized === "localhost" ||
+      normalized === "127.0.0.1" ||
+      normalized === "::1" ||
+      normalized === "[::1]" ||
+      normalized.endsWith(".local") ||
+      normalized.endsWith(".lan")
+    ) {
+      return true;
+    }
+
+    if (normalized.startsWith("10.") || normalized.startsWith("192.168.")) {
+      return true;
+    }
+
+    const match172 = normalized.match(/^172\.(\d{1,3})\./);
+    if (match172) {
+      const secondOctet = Number(match172[1]);
+      return secondOctet >= 16 && secondOctet <= 31;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -80,6 +98,11 @@ function resolveShopBase(): string {
     normalizeBaseUrl(import.meta.env.VITE_SALT_SHOP_URL);
   if (explicitBase) {
     return explicitBase;
+  }
+
+  const fallbackCanonical = normalizeBaseUrl(DEFAULT_CANONICAL_SHOP_BASE);
+  if (fallbackCanonical) {
+    return fallbackCanonical;
   }
 
   if (typeof window !== "undefined") {

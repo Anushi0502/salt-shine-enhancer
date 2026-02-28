@@ -18,6 +18,7 @@ export type SaltRuntimeContext = {
 };
 
 const LOCAL_ASSET_PREFIXES = ["/assets/", "/favicon", "/vite.svg"];
+const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
 
 function normalizeBaseUrl(input: string | undefined | null): string | null {
   const raw = String(input || "").trim();
@@ -31,6 +32,19 @@ function normalizeBaseUrl(input: string | undefined | null): string | null {
     return `${url.protocol}//${url.host}`;
   } catch {
     return null;
+  }
+}
+
+function isMyShopifyBase(input: string | null): boolean {
+  if (!input) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(input).hostname.toLowerCase();
+    return hostname.endsWith(".myshopify.com");
+  } catch {
+    return false;
   }
 }
 
@@ -89,9 +103,12 @@ function readRuntimeContext(): SaltRuntimeContext {
 
 const RUNTIME_CONTEXT = readRuntimeContext();
 const SHOP_BASE_ORIGIN = (() => {
+  const normalizedDomain = normalizeBaseUrl(RUNTIME_CONTEXT.shopDomain);
+  const normalizedBaseUrl = normalizeBaseUrl(RUNTIME_CONTEXT.shopBaseUrl);
   const fromContext =
-    normalizeBaseUrl(RUNTIME_CONTEXT.shopBaseUrl) ||
-    normalizeBaseUrl(RUNTIME_CONTEXT.shopDomain);
+    (isMyShopifyBase(normalizedDomain) ? normalizedDomain : null) ||
+    normalizedBaseUrl ||
+    normalizedDomain;
   if (fromContext) {
     return fromContext;
   }
@@ -101,6 +118,11 @@ const SHOP_BASE_ORIGIN = (() => {
     normalizeBaseUrl(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL);
   if (fromEnv) {
     return fromEnv;
+  }
+
+  const fallbackCanonical = normalizeBaseUrl(DEFAULT_CANONICAL_SHOP_BASE);
+  if (fallbackCanonical) {
+    return fallbackCanonical;
   }
 
   if (typeof window !== "undefined") {
