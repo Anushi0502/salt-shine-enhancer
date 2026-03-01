@@ -476,19 +476,28 @@ const ShopPage = () => {
     maxFilter != null ||
     perPage !== perPageOptions[0];
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
+  const shopHeading = selectedCollection ? selectedCollection.title : "All Products";
+  const shopSubtitle = selectedCollection
+    ? `Live catalog view for ${selectedCollection.title}. Inventory, pricing, and sort state update directly from Shopify sync.`
+    : "Browse a simplified catalog view with precise collection matching and faster page-based discovery.";
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
       <Reveal>
         <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Shop</p>
-          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">All Products</h1>
+          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">{shopHeading}</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Browse a simplified catalog view with precise collection matching and faster page-based discovery.
+            {shopSubtitle}
           </p>
           <p className="mt-2 text-xs uppercase tracking-[0.1em] text-muted-foreground">
             Catalog updated {formattedDateTime(latestSyncAt)}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="salt-sync-pill">{totalResults.toLocaleString()} matched</span>
+            <span className="salt-sync-pill">Sorted by {sortLabel}</span>
+            <span className="salt-sync-pill">{perPage} per page</span>
+          </div>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
             <form onSubmit={onSearch} className="relative flex items-center gap-2">

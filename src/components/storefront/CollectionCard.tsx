@@ -18,7 +18,7 @@ const CollectionCard = ({ collection, productCount, variant = "default" }: Colle
 
   return (
     <article
-      className={`salt-card-hover salt-metric-card group relative overflow-hidden border border-border/80 bg-card shadow-soft ${
+      className={`salt-card-hover salt-metric-card salt-collection-card group relative overflow-hidden border border-border/80 bg-card shadow-soft ${
         isHero ? "rounded-[1.35rem]" : "rounded-2xl"
       }`}
     >
@@ -31,15 +31,17 @@ const CollectionCard = ({ collection, productCount, variant = "default" }: Colle
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.22),transparent_48%),radial-gradient(circle_at_78%_80%,hsl(var(--salt-olive)/0.2),transparent_45%),linear-gradient(160deg,hsl(var(--muted)),hsl(var(--card)))] px-6 text-center">
+          <div className="salt-collection-fallback grid h-full w-full place-items-center px-6 text-center">
             <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-foreground/82">
               Collection image unavailable
             </p>
           </div>
         )}
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/82 via-black/42 to-black/8 transition-opacity duration-300 group-hover:from-black/88 group-hover:via-black/46 ${
-          isHero ? "opacity-95" : "opacity-90"
-        }`} />
+        <div
+          className={`salt-collection-overlay absolute inset-0 transition-opacity duration-300 ${
+            isHero ? "opacity-95" : "opacity-90"
+          }`}
+        />
         <div className={`absolute right-3 top-3 rounded-full border border-white/45 bg-black/38 font-bold uppercase tracking-[0.09em] text-white backdrop-blur-sm shadow-[0_10px_22px_-16px_rgba(0,0,0,0.7)] ${
           isHero ? "px-3 py-1.5 text-[0.65rem]" : "px-2.5 py-1 text-[0.62rem]"
         }`}>
@@ -53,7 +55,9 @@ const CollectionCard = ({ collection, productCount, variant = "default" }: Colle
         }`}>
           Curated category
         </div>
-        <h3 className={`${isHero ? "text-2xl" : "text-xl"} font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]`}>{collection.title}</h3>
+        <h3 className={`salt-collection-title ${isHero ? "text-2xl" : "text-xl"} font-bold text-white`}>
+          {collection.title}
+        </h3>
         <p className={`mt-1 ${isHero ? "text-[0.92rem]" : "text-sm"} text-white/82 drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]`}>
           {totalProducts} products available
         </p>

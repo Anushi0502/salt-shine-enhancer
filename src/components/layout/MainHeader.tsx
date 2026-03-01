@@ -22,9 +22,9 @@ const quickLinks = [
 ];
 
 function navClassName({ isActive }: { isActive: boolean }): string {
-  return `rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
+  return `salt-nav-pill rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
     isActive
-      ? "salt-glow-ring border border-primary/45 bg-[linear-gradient(130deg,hsl(var(--salt-ink)/0.98),hsl(var(--salt-ink)/0.9))] text-white"
+      ? "is-active salt-glow-ring border border-primary/50 bg-[linear-gradient(130deg,hsl(var(--salt-ink)/0.98),hsl(var(--salt-ink)/0.9))] text-[hsl(var(--salt-paper))] shadow-[0_16px_28px_-22px_rgba(0,0,0,0.8)]"
       : "border border-transparent text-foreground/80 hover:border-border/85 hover:bg-background/88 hover:text-foreground hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)]"
   }`;
 }
@@ -98,7 +98,7 @@ const MainHeader = () => {
           />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-border/70 bg-background/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] lg:flex">
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={navClassName} end={link.to === "/"}>
               {link.label}
