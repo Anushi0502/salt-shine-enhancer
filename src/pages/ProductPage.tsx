@@ -12,6 +12,8 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  ToggleLeft,
+  ToggleRight,
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -68,17 +70,34 @@ const ProductPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(true);
 
   useEffect(() => {
     if (!product) {
       return;
     }
 
-    const firstVariant = variants[0];
+    const firstVariant = variants.find((variant) => variant.available) || variants[0];
     setSelectedVariantId(firstVariant?.id || 0);
     setQuantity(1);
     setActiveImage(productImage(product) || "");
   }, [product, variants]);
+
+  useEffect(() => {
+    if (!showAvailableOnly || !selectedVariantId) {
+      return;
+    }
+
+    const selectedVariant = variants.find((variant) => variant.id === selectedVariantId);
+    if (selectedVariant?.available) {
+      return;
+    }
+
+    const firstAvailable = variants.find((variant) => variant.available);
+    if (firstAvailable) {
+      setSelectedVariantId(firstAvailable.id);
+    }
+  }, [showAvailableOnly, selectedVariantId, variants]);
 
   useEffect(() => {
     if (!product || typeof window === "undefined") {
@@ -152,6 +171,7 @@ const ProductPage = () => {
   }
 
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || variants[0];
+  const displayedVariants = showAvailableOnly ? variants.filter((variant) => variant.available) : variants;
   const price = Number(selectedVariant?.price || 0);
   const lowestVariantPrice = Number(variants[0]?.price || 0);
   const availableVariantsCount = variants.filter((variant) => variant.available).length;
@@ -311,9 +331,20 @@ const ProductPage = () => {
               <div className="salt-section-shell mt-5 rounded-2xl border border-border/75 p-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Choose option</p>
-                  <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    {availableVariantsCount} of {variants.length} available
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAvailableOnly((value) => !value)}
+                      className="salt-outline-chip h-8 px-2.5 py-0 text-[0.6rem]"
+                      aria-pressed={showAvailableOnly}
+                    >
+                      {showAvailableOnly ? <ToggleRight className="mr-1 h-3.5 w-3.5" /> : <ToggleLeft className="mr-1 h-3.5 w-3.5" />}
+                      {showAvailableOnly ? "Available only" : "All options"}
+                    </button>
+                    <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                      {availableVariantsCount} of {variants.length} available
+                    </span>
+                  </div>
                 </div>
 
                 {selectedVariant ? (
@@ -338,7 +369,7 @@ const ProductPage = () => {
                 ) : null}
 
                 <div className="salt-quiet-scroll mt-3 grid max-h-64 gap-2 overflow-auto pr-1 sm:grid-cols-2">
-                  {variants.map((variant) => {
+                  {displayedVariants.map((variant) => {
                     const variantPrice = Number(variant.price || 0);
                     const variantComparePrice = Number(variant.compare_at_price || 0);
                     const variantAvailable = variant.available;
@@ -407,6 +438,11 @@ const ProductPage = () => {
                       </button>
                     );
                   })}
+                  {displayedVariants.length === 0 ? (
+                    <p className="col-span-full rounded-xl border border-border/75 bg-background px-3 py-2 text-xs text-muted-foreground">
+                      No available options right now. Turn off "Available only" to view all variants.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

@@ -33,7 +33,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
   return (
     <article
-      className={`salt-card-hover salt-metric-card group overflow-hidden border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft ${
+      className={`salt-card-hover salt-metric-card salt-product-card group overflow-hidden border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft ${
         isDense ? "rounded-[1.15rem]" : "rounded-2xl"
       }`}
     >
@@ -133,7 +133,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             }`}
           >
             <ShoppingBag className="h-4 w-4" />
-            Add to Cart
+            {isDense ? "Quick add" : "Add to Cart"}
           </button>
 
           <Link
@@ -142,7 +142,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
               isDense ? "h-9 text-[0.58rem]" : "h-10 text-[0.68rem]"
             }`}
           >
-            Details <ArrowUpRight className="h-3.5 w-3.5" />
+            {isDense ? "View" : "Details"} <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
@@ -480,6 +481,66 @@ const ShopPage = () => {
   const shopSubtitle = selectedCollection
     ? `Live catalog view for ${selectedCollection.title}. Inventory, pricing, and sort state update directly from Shopify sync.`
     : "Browse a simplified catalog view with precise collection matching and faster page-based discovery.";
+  const activeFilterChips = [
+    query
+      ? {
+          key: "search",
+          label: `Search: ${query}`,
+          onRemove: () => {
+            setSearchInput("");
+            updateParams({ q: null }, true);
+          },
+        }
+      : null,
+    collectionHandle
+      ? {
+          key: "collection",
+          label: `Collection: ${selectedCollection?.title || collectionHandle}`,
+          onRemove: () => updateParams({ collection: null }, true),
+        }
+      : null,
+    typeFilter
+      ? {
+          key: "type",
+          label: `Type: ${formatTypeLabel(typeFilter)}`,
+          onRemove: () => updateParams({ type: null }, true),
+        }
+      : null,
+    sort !== "featured"
+      ? {
+          key: "sort",
+          label: `Sort: ${sortLabel}`,
+          onRemove: () => updateParams({ sort: "featured" }, true),
+        }
+      : null,
+    minFilter != null || maxFilter != null
+      ? {
+          key: "price",
+          label: `Price: ${minFilter == null ? "$0" : `$${minFilter}`} - ${maxFilter == null ? "Any" : `$${maxFilter}`}`,
+          onRemove: () => {
+            setCustomMinInput("");
+            setCustomMaxInput("");
+            setPriceError("");
+            updateParams({ min: null, max: null }, true);
+          },
+        }
+      : null,
+    perPage !== perPageOptions[0]
+      ? {
+          key: "perPage",
+          label: `${perPage} / page`,
+          onRemove: () => updateParams({ perPage: null }, true),
+        }
+      : null,
+  ].filter(
+    (
+      entry,
+    ): entry is {
+      key: string;
+      label: string;
+      onRemove: () => void;
+    } => Boolean(entry),
+  );
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
@@ -660,6 +721,22 @@ const ShopPage = () => {
             <p className="mt-2 rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
               {activeFilterSummary}
             </p>
+          ) : null}
+          {activeFilterChips.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeFilterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="salt-filter-chip"
+                  aria-label={`Remove ${chip.label} filter`}
+                >
+                  <span>{chip.label}</span>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ))}
+            </div>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <button

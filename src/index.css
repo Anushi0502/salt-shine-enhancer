@@ -483,6 +483,23 @@
       0 1px 0 rgba(0, 0, 0, 0.4);
   }
 
+  .salt-filter-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.08em] text-foreground transition;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .salt-filter-chip:hover {
+    border-color: hsl(var(--primary) / 0.55);
+    color: hsl(var(--primary));
+    transform: translateY(-1px);
+  }
+
+  .salt-product-card {
+    background:
+      linear-gradient(170deg, hsl(var(--card) / 0.99), hsl(var(--card) / 0.93)),
+      linear-gradient(140deg, hsl(var(--primary) / 0.08), transparent 42%);
+  }
+
   .salt-gradient-text {
     background: linear-gradient(115deg, hsl(var(--salt-accent-deep)), hsl(var(--salt-olive)));
     -webkit-background-clip: text;
@@ -626,6 +643,24 @@
   .dark .salt-collection-overlay {
     background:
       linear-gradient(180deg, rgba(8, 11, 20, 0.15) 0%, rgba(9, 12, 24, 0.78) 58%, rgba(8, 10, 20, 0.93) 100%);
+  }
+
+  .dark .salt-filter-chip {
+    border-color: hsl(var(--border) / 0.88);
+    background: linear-gradient(164deg, hsl(223 20% 18% / 0.95), hsl(223 18% 14% / 0.92));
+    color: hsl(var(--foreground) / 0.95);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  }
+
+  .dark .salt-filter-chip:hover {
+    border-color: hsl(var(--primary) / 0.58);
+    color: hsl(var(--primary));
+  }
+
+  .dark .salt-product-card {
+    background:
+      linear-gradient(170deg, hsl(223 20% 20% / 0.97), hsl(223 19% 16% / 0.93)),
+      linear-gradient(130deg, hsl(var(--primary) / 0.12), transparent 42%);
   }
 
   .dark .salt-primary-cta {
