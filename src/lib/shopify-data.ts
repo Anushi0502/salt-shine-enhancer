@@ -17,6 +17,7 @@ import {
   normalizeShopifyAssetUrl,
   resolveThemeAsset,
 } from "@/lib/theme-assets";
+import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
 
 const runtimeContext = getRuntimeContext();
 const SHOP_BASE_ORIGIN = getShopBaseOrigin();
@@ -153,11 +154,47 @@ function getLivePolicyBases(): string[] {
     bases.push(browserOrigin);
   }
 
-  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
-    bases.push(SHOP_BASE_ORIGIN);
+  return Array.from(new Set(bases.filter(Boolean)));
+}
+
+function normalizePolicyRoute(input: string): string {
+  const route = String(input || "").trim().toLowerCase();
+  if (!route) {
+    return "/";
   }
 
-  return Array.from(new Set(bases.filter(Boolean)));
+  return route.startsWith("/") ? route : `/${route}`;
+}
+
+function getArchivedPolicyRecord(path: string) {
+  const normalizedPath = normalizePolicyRoute(path);
+  const keyByPath: Partial<Record<string, ShopifyPolicyKey>> = {
+    "/policies/privacy-policy": "privacy",
+    "/privacy-policy": "privacy",
+    "/policies/refund-policy": "refund",
+    "/refund-policy": "refund",
+    "/policies/shipping-policy": "shipping",
+    "/shipping-policy": "shipping",
+    "/policies/contact-information": "contact",
+  };
+
+  const key = keyByPath[normalizedPath];
+  return key ? SHOPIFY_POLICY_ARCHIVE[key] : null;
+}
+
+function buildArchivedPolicyPayload(path: string, fallbackTitle: string): ShopifyPolicyPayload | null {
+  const record = getArchivedPolicyRecord(path);
+  if (!record?.bodyHtml) {
+    return null;
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: `archive:${record.sourceUrl}`,
+    path: normalizePolicyRoute(path),
+    title: record.title || fallbackTitle,
+    bodyHtml: record.bodyHtml,
+  };
 }
 
 function extractPolicyContent(rawHtml: string, fallbackTitle: string): { title: string; bodyHtml: string } {
@@ -664,6 +701,11 @@ export async function loadPolicyPage(path: string, fallbackTitle: string): Promi
   try {
     return await fetchPolicyPageFromLive(path, fallbackTitle);
   } catch (error) {
+    const archived = buildArchivedPolicyPayload(path, fallbackTitle);
+    if (archived) {
+      return archived;
+    }
+
     const message = error instanceof Error ? error.message : "Unknown live policy error";
     throw new Error(message);
   }

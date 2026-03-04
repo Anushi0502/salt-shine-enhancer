@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { ClipboardList, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
-import { buildShopLoginUrl, getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
+import { getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -35,17 +35,9 @@ const MainHeader = () => {
   const [desktopSearch, setDesktopSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
   const { itemCount } = useCart();
-  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const accountRoutes = useMemo(
-    () => getShopifyAccountRoutes(),
-    [location.pathname, location.search, location.hash],
-  );
-  const orderHistoryLoginHref = useMemo(
-    () => buildShopLoginUrl(accountRoutes.orders),
-    [accountRoutes.orders],
-  );
+  const accountRoutes = getShopifyAccountRoutes();
 
   const activeQuery = useMemo(() => searchParams.get("q") || "", [searchParams]);
 
@@ -136,7 +128,7 @@ const MainHeader = () => {
           {accountRoutes.isLoggedIn ? (
             <div className="hidden items-center gap-1.5 lg:flex">
               <a
-                href={accountRoutes.orders}
+                href={accountRoutes.orderHistory}
                 className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
                 aria-label="Open order history"
               >
@@ -162,18 +154,33 @@ const MainHeader = () => {
             </div>
           ) : (
             <div className="hidden items-center gap-1.5 lg:flex">
-              
               <a
-                href={accountRoutes.shopLogin}
+                href={accountRoutes.orderHistory}
                 onClick={(event) => {
-                  event.preventDefault();
-                  openShopLogin(accountRoutes.shopLogin);
+                  if (accountRoutes.loginEnabled) {
+                    event.preventDefault();
+                    openShopLogin(accountRoutes.orderHistory);
+                  }
                 }}
-                className="inline-flex h-10 items-center rounded-full bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-3 text-[0.68rem] font-bold tracking-[0.03em] text-white shadow-[0_14px_28px_-22px_rgba(71,59,215,0.92)] transition hover:brightness-110"
-                aria-label="Login with Shop"
+                className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
+                aria-label="Open order history"
               >
-                Login with Shop
+                <ClipboardList className="h-3.5 w-3.5" />
+                Order history
               </a>
+              {accountRoutes.loginEnabled ? (
+                <a
+                  href={accountRoutes.shopLogin}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openShopLogin(accountRoutes.shopLogin);
+                  }}
+                  className="inline-flex h-10 items-center rounded-full bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-3 text-[0.68rem] font-bold tracking-[0.03em] text-white shadow-[0_14px_28px_-22px_rgba(71,59,215,0.92)] transition hover:brightness-110"
+                  aria-label="Login with Shop"
+                >
+                  Login with Shop
+                </a>
+              ) : null}
             </div>
           )}
 
@@ -299,7 +306,7 @@ const MainHeader = () => {
                     Dashboard
                   </a>
                   <a
-                    href={accountRoutes.orders}
+                    href={accountRoutes.orderHistory}
                     onClick={closeMobileMenu}
                     className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
                   >
@@ -325,29 +332,33 @@ const MainHeader = () => {
               ) : (
                 <>
                   <a
-                    href={orderHistoryLoginHref}
+                    href={accountRoutes.orderHistory}
                     onClick={(event) => {
-                      event.preventDefault();
+                      if (accountRoutes.loginEnabled) {
+                        event.preventDefault();
+                        openShopLogin(accountRoutes.orderHistory);
+                      }
                       closeMobileMenu();
-                      openShopLogin(orderHistoryLoginHref);
                     }}
                     className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
                     Order history
                   </a>
-                  <a
-                    href={accountRoutes.shopLogin}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      closeMobileMenu();
-                      openShopLogin(accountRoutes.shopLogin);
-                    }}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    Login with Shop
-                  </a>
+                  {accountRoutes.loginEnabled ? (
+                    <a
+                      href={accountRoutes.shopLogin}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        closeMobileMenu();
+                        openShopLogin(accountRoutes.shopLogin);
+                      }}
+                      className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
+                    >
+                      <ClipboardList className="h-3.5 w-3.5" />
+                      Login with Shop
+                    </a>
+                  ) : null}
                 </>
               )}
             </div>

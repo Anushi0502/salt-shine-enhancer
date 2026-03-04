@@ -344,17 +344,61 @@ function toRelativeStorePath(input: string): string {
 
 export type ShopifyAccountRoutes = {
   isLoggedIn: boolean;
+  loginEnabled: boolean;
   account: string;
   login: string;
   register: string;
   logout: string;
   addresses: string;
   orders: string;
+  orderHistory: string;
   shopLogin: string;
 };
 
 export function getShopAppUrl(): string {
-  return String(RUNTIME_CONTEXT.shopAppUrl || "https://shop.app").trim() || "https://shop.app";
+  const raw = String(RUNTIME_CONTEXT.shopAppUrl || "https://shop.app").trim() || "https://shop.app";
+  return raw.replace(/\/+$/, "");
+}
+
+function hasNativeShopifyLoginMarkup(): boolean {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const nativeLoginRoot = document.getElementById("salt-shop-login-native");
+  if (!nativeLoginRoot) {
+    return false;
+  }
+
+  const anchor = nativeLoginRoot.querySelector<HTMLAnchorElement>("a[href]");
+  const button = nativeLoginRoot.querySelector<HTMLElement>("button, [role='button']");
+  return Boolean(anchor?.href || button);
+}
+
+function isCrossOriginStoreRuntime(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const appOrigin = normalizeBaseUrl(window.location.origin);
+  const shopOrigin = normalizeBaseUrl(SHOP_BASE_ORIGIN);
+  if (!appOrigin || !shopOrigin) {
+    return false;
+  }
+
+  return appOrigin !== shopOrigin;
+}
+
+function isShopifyLoginEnabledForRuntime(): boolean {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  if (hasNativeShopifyLoginMarkup()) {
+    return true;
+  }
+
+  return !isCrossOriginStoreRuntime();
 }
 
 export function buildShopLoginUrl(returnTarget?: string): string {
@@ -367,17 +411,25 @@ export function buildShopLoginUrl(returnTarget?: string): string {
     String(returnTarget || "").trim() || getCurrentReturnPath(),
   );
   const resolvedReturnTargetRelative = toRelativeStorePath(resolvedReturnTargetAbsolute);
+  const shopAppBase = getShopAppUrl();
+
+  if (!isShopifyLoginEnabledForRuntime()) {
+    const normalizedReturnTarget = resolvedReturnTargetAbsolute.toLowerCase();
+    if (normalizedReturnTarget.includes("/account/orders")) {
+      return `${shopAppBase}/account`;
+    }
+
+    return `${shopAppBase}/login`;
+  }
 
   if (storefrontLoginUrl.includes("/customer_authentication/login")) {
     try {
       const loginUrl = new URL(storefrontLoginUrl);
-      if (!loginUrl.searchParams.get("return_to")) {
-        loginUrl.searchParams.set("return_to", resolvedReturnTargetRelative);
-      }
-      loginUrl.searchParams.set("return_url", resolvedReturnTargetRelative);
+      loginUrl.searchParams.set("return_to", resolvedReturnTargetRelative);
+      loginUrl.searchParams.set("return_url", resolvedReturnTargetAbsolute);
       return loginUrl.toString();
     } catch {
-      return appendReturnUrl(storefrontLoginUrl, resolvedReturnTargetRelative);
+      return appendReturnUrl(storefrontLoginUrl, resolvedReturnTargetAbsolute);
     }
   }
 
@@ -386,6 +438,17 @@ export function buildShopLoginUrl(returnTarget?: string): string {
 
 export function openShopLogin(fallbackHref?: string): void {
   if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!isShopifyLoginEnabledForRuntime()) {
+    const explicitFallback = String(fallbackHref || "").trim();
+    if (explicitFallback) {
+      window.location.assign(explicitFallback);
+      return;
+    }
+
+    window.location.assign(`${getShopAppUrl()}/login`);
     return;
   }
 
@@ -419,6 +482,10 @@ export function getShopifyAccountRoutes(): ShopifyAccountRoutes {
     typeof RUNTIME_CONTEXT.customerLoggedIn === "boolean"
       ? RUNTIME_CONTEXT.customerLoggedIn
       : String(RUNTIME_CONTEXT.customerLoggedIn || "").trim().toLowerCase() === "true";
+  const loginEnabled = isShopifyLoginEnabledForRuntime();
+  const shopAppAccountUrl = `${getShopAppUrl()}/account`;
+  const shopAppLoginUrl = `${getShopAppUrl()}/login`;
+
   const account = toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountUrl, "/account"));
   const storefrontLoginPath = resolveStorePath(
     RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
@@ -436,15 +503,24 @@ export function getShopifyAccountRoutes(): ShopifyAccountRoutes {
       ? "/account/orders"
       : runtimeOrdersPath;
   const orders = toAbsoluteStoreUrl(normalizedOrdersPath);
+  const orderHistory = loginFlag
+    ? orders
+    : loginEnabled
+      ? buildShopLoginUrl(orders)
+      : shopAppAccountUrl;
 
   return {
     isLoggedIn: loginFlag,
+    loginEnabled,
     account,
-    login: buildShopLoginUrl(account),
-    register: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountRegisterUrl, "/account/register")),
+    login: loginEnabled ? buildShopLoginUrl() : shopAppLoginUrl,
+    register: loginEnabled
+      ? toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountRegisterUrl, "/account/register"))
+      : shopAppLoginUrl,
     logout: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountLogoutUrl, "/account/logout")),
     addresses: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountAddressesUrl, "/account/addresses")),
     orders,
-    shopLogin: buildShopLoginUrl(account),
+    orderHistory,
+    shopLogin: loginEnabled ? buildShopLoginUrl() : "",
   };
 }

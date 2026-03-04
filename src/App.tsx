@@ -21,6 +21,7 @@ import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
 import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
+import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import NotFound from "./pages/NotFound";
 
@@ -68,6 +69,9 @@ const App = () => (
                 <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
+                <Route path="/account/*" element={<ShopAuthBridgePage />} />
+                <Route path="/customer_authentication/*" element={<ShopAuthBridgePage />} />
+                <Route path="/services/login_with_shop/*" element={<ShopAuthBridgePage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

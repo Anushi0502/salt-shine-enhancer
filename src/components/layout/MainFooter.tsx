@@ -1,9 +1,8 @@
-import { FormEvent, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { FormEvent, useState } from "react";
+import { Link } from "react-router-dom";
 import { BadgeCheck, Clock3, Facebook, Headset, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
-  buildShopLoginUrl,
   getRuntimeContext,
   getShopAppUrl,
   getShopifyAccountRoutes,
@@ -25,15 +24,7 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
-  const location = useLocation();
-  const accountRoutes = useMemo(
-    () => getShopifyAccountRoutes(),
-    [location.pathname, location.search, location.hash],
-  );
-  const orderHistoryLoginHref = useMemo(
-    () => buildShopLoginUrl(accountRoutes.orders),
-    [accountRoutes.orders],
-  );
+  const accountRoutes = getShopifyAccountRoutes();
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -206,7 +197,7 @@ const MainFooter = () => {
                   </a>
                 </li>
                 <li>
-                  <a className="hover:text-primary" href={accountRoutes.orders}>
+                  <a className="hover:text-primary" href={accountRoutes.orderHistory}>
                     Order history
                   </a>
                 </li>
@@ -223,25 +214,29 @@ const MainFooter = () => {
               </>
             ) : (
               <>
+                {accountRoutes.loginEnabled ? (
+                  <li>
+                    <a
+                      className="hover:text-primary"
+                      href={accountRoutes.shopLogin}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        openShopLogin(accountRoutes.shopLogin);
+                      }}
+                    >
+                      Login with Shop
+                    </a>
+                  </li>
+                ) : null}
                 <li>
                   <a
                     className="hover:text-primary"
-                    href={accountRoutes.shopLogin}
+                    href={accountRoutes.orderHistory}
                     onClick={(event) => {
-                      event.preventDefault();
-                      openShopLogin(accountRoutes.shopLogin);
-                    }}
-                  >
-                    Login with Shop
-                  </a>
-                </li>
-                <li>
-                  <a
-                    className="hover:text-primary"
-                    href={orderHistoryLoginHref}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      openShopLogin(orderHistoryLoginHref);
+                      if (accountRoutes.loginEnabled) {
+                        event.preventDefault();
+                        openShopLogin(accountRoutes.orderHistory);
+                      }
                     }}
                   >
                     Order history
