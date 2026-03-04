@@ -1,16 +1,34 @@
-import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
-import { BadgeCheck, Clock3, Headset } from "lucide-react";
+import { FormEvent, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { BadgeCheck, Clock3, Facebook, Headset, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { getRuntimeContext } from "@/lib/theme-assets";
+import {
+  getRuntimeContext,
+  getShopAppUrl,
+  getShopifyAccountRoutes,
+  openShopLogin,
+  resolveStorefrontPath,
+} from "@/lib/theme-assets";
 
 const runtimeContext = getRuntimeContext();
-const privacyPolicyHref = runtimeContext.privacyPolicyUrl || "/policies/privacy-policy";
-const returnsPolicyHref = runtimeContext.refundPolicyUrl || "/policies/refund-policy";
-const shippingPolicyHref = runtimeContext.shippingPolicyUrl || "/policies/shipping-policy";
+const shopAppUrl = getShopAppUrl();
+const privacyPolicyHref = resolveStorefrontPath(runtimeContext.privacyPolicyUrl, "/policies/privacy-policy");
+const returnsPolicyHref = resolveStorefrontPath(runtimeContext.refundPolicyUrl, "/policies/refund-policy");
+const shippingPolicyHref = resolveStorefrontPath(runtimeContext.shippingPolicyUrl, "/policies/shipping-policy");
+
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+    <path d="M15.66 3c.26 1.72 1.3 3.09 2.92 3.9V9.4a6.94 6.94 0 0 1-2.9-.73v5.47A6.14 6.14 0 1 1 9.53 8v2.66a3.56 3.56 0 1 0 2.6 3.42V3h3.53Z" />
+  </svg>
+);
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
+  const location = useLocation();
+  const accountRoutes = useMemo(
+    () => getShopifyAccountRoutes(),
+    [location.pathname, location.search, location.hash],
+  );
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,37 +103,49 @@ const MainFooter = () => {
               href="https://www.facebook.com/people/SALT-online-store/61573199456052/"
               target="_blank"
               rel="noreferrer"
-              className="salt-outline-chip"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              aria-label="SALT on Facebook"
             >
-              Facebook
+              <Facebook className="h-6 w-6" />
             </a>
             <a
               href="https://www.youtube.com/@SALTONLINESTORE"
               target="_blank"
               rel="noreferrer"
-              className="salt-outline-chip"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              aria-label="SALT on YouTube"
             >
-              YouTube
+              <Youtube className="h-6 w-6" />
             </a>
             <a
               href="https://www.tiktok.com/@saltonlinestore"
               target="_blank"
               rel="noreferrer"
-              className="salt-outline-chip"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              aria-label="SALT on TikTok"
             >
-              TikTok
+              <TikTokIcon className="h-6 w-6" />
             </a>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="salt-outline-chip">
+          <div className="mt-4 flex w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+            <span className="salt-outline-chip shrink-0">
               Fast Dispatch
             </span>
-            <span className="salt-outline-chip">
+            <span className="salt-outline-chip shrink-0">
               Secure Checkout
             </span>
-            <span className="salt-outline-chip">
+            <span className="salt-outline-chip shrink-0">
               30-day Returns
             </span>
+            <a
+              href={shopAppUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="salt-outline-chip shrink-0"
+              aria-label="Open Shop app"
+            >
+              Shop App
+            </a>
           </div>
         </div>
 
@@ -163,6 +193,45 @@ const MainFooter = () => {
                 About us
               </Link>
             </li>
+            {accountRoutes.isLoggedIn ? (
+              <>
+                <li>
+                  <a className="hover:text-primary" href={accountRoutes.account}>
+                    My account
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-primary" href={accountRoutes.orders}>
+                    Order history
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-primary" href={accountRoutes.addresses}>
+                    Saved addresses
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-primary" href={accountRoutes.logout}>
+                    Logout
+                  </a>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <a
+                    className="hover:text-primary"
+                    href={accountRoutes.shopLogin}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openShopLogin(accountRoutes.shopLogin);
+                    }}
+                  >
+                    Login with Shop
+                  </a>
+                </li>
+              </>
+            )}
             <li>
               <a className="hover:text-primary" href={privacyPolicyHref}>
                 Privacy

@@ -65,7 +65,7 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
 
           <div className="mt-7 grid gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-white/85 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5" /> Free shipping over $49
+              <Truck className="h-3.5 w-3.5" /> Free shipping all over the US
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" /> 30-day return promise

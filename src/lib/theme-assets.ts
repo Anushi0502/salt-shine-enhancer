@@ -9,6 +9,7 @@ export type SaltRuntimeContext = {
   shopBaseUrl?: string;
   shopDomain?: string;
   shopName?: string;
+  shopAppUrl?: string;
   currency?: string;
   template?: string;
   templateSuffix?: string;
@@ -19,6 +20,14 @@ export type SaltRuntimeContext = {
   refundPolicyUrl?: string;
   shippingPolicyUrl?: string;
   contactPolicyUrl?: string;
+  customerLoggedIn?: boolean;
+  accountUrl?: string;
+  accountLoginUrl?: string;
+  accountRegisterUrl?: string;
+  accountLogoutUrl?: string;
+  accountAddressesUrl?: string;
+  accountOrderHistoryUrl?: string;
+  storefrontLoginUrl?: string;
 };
 
 const LOCAL_ASSET_PREFIXES = ["/assets/", "/favicon", "/vite.svg"];
@@ -52,6 +61,23 @@ function isMyShopifyBase(input: string | null): boolean {
   }
 }
 
+function parseBooleanFlag(input: string | null): boolean | undefined {
+  if (input == null) {
+    return undefined;
+  }
+
+  const normalized = input.trim().toLowerCase();
+  if (["true", "1", "yes"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "no"].includes(normalized)) {
+    return false;
+  }
+
+  return undefined;
+}
+
 function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
   if (typeof window === "undefined") {
     return {};
@@ -66,6 +92,7 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     shopBaseUrl: root.getAttribute("data-shop-base-url") || undefined,
     shopDomain: root.getAttribute("data-shop-domain") || undefined,
     shopName: root.getAttribute("data-shop-name") || undefined,
+    shopAppUrl: root.getAttribute("data-shop-app-url") || undefined,
     currency: root.getAttribute("data-currency") || undefined,
     template: root.getAttribute("data-template") || undefined,
     templateSuffix: root.getAttribute("data-template-suffix") || undefined,
@@ -76,6 +103,14 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     refundPolicyUrl: root.getAttribute("data-refund-policy-url") || undefined,
     shippingPolicyUrl: root.getAttribute("data-shipping-policy-url") || undefined,
     contactPolicyUrl: root.getAttribute("data-contact-policy-url") || undefined,
+    customerLoggedIn: parseBooleanFlag(root.getAttribute("data-customer-logged-in")),
+    accountUrl: root.getAttribute("data-account-url") || undefined,
+    accountLoginUrl: root.getAttribute("data-account-login-url") || undefined,
+    accountRegisterUrl: root.getAttribute("data-account-register-url") || undefined,
+    accountLogoutUrl: root.getAttribute("data-account-logout-url") || undefined,
+    accountAddressesUrl: root.getAttribute("data-account-addresses-url") || undefined,
+    accountOrderHistoryUrl: root.getAttribute("data-account-order-history-url") || undefined,
+    storefrontLoginUrl: root.getAttribute("data-storefront-login-url") || undefined,
   };
 }
 
@@ -188,4 +223,125 @@ export function normalizeShopifyAssetUrl(input: string | null | undefined): stri
   }
 
   return resolved;
+}
+
+function resolveStorePath(input: string | null | undefined, fallbackPath: string): string {
+  const value = String(input || "").trim() || fallbackPath;
+
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      return `${url.pathname}${url.search}${url.hash}` || fallbackPath;
+    } catch {
+      return fallbackPath;
+    }
+  }
+
+  if (value.startsWith("//")) {
+    try {
+      const url = new URL(`https:${value}`);
+      return `${url.pathname}${url.search}${url.hash}` || fallbackPath;
+    } catch {
+      return fallbackPath;
+    }
+  }
+
+  if (value.startsWith("?")) {
+    return `${fallbackPath}${value}`;
+  }
+
+  if (value.startsWith("/")) {
+    return value;
+  }
+
+  return value.startsWith("#") ? `${fallbackPath}${value}` : `/${value}`;
+}
+
+export function resolveStorefrontPath(input: string | null | undefined, fallbackPath: string): string {
+  return resolveStorePath(input, fallbackPath);
+}
+
+function getCurrentReturnPath(): string {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const path = window.location.pathname || "/";
+  const query = window.location.search || "";
+  const hash = window.location.hash || "";
+  return `${path}${query}${hash}` || "/";
+}
+
+function appendReturnUrl(path: string, returnPath: string): string {
+  try {
+    const url = new URL(path, "https://salt.local");
+    url.searchParams.set("return_url", returnPath);
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}return_url=${encodeURIComponent(returnPath)}`;
+  }
+}
+
+export type ShopifyAccountRoutes = {
+  isLoggedIn: boolean;
+  account: string;
+  login: string;
+  register: string;
+  logout: string;
+  addresses: string;
+  orders: string;
+  shopLogin: string;
+};
+
+export function getShopAppUrl(): string {
+  return String(RUNTIME_CONTEXT.shopAppUrl || "https://shop.app").trim() || "https://shop.app";
+}
+
+export function openShopLogin(fallbackHref?: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const nativeLoginRoot = document.getElementById("salt-shop-login-native");
+  const nativeAnchor = nativeLoginRoot?.querySelector<HTMLAnchorElement>("a[href]");
+  if (nativeAnchor?.href) {
+    window.location.assign(nativeAnchor.href);
+    return;
+  }
+
+  const nativeButton = nativeLoginRoot?.querySelector<HTMLElement>("button, [role='button']");
+  if (nativeButton) {
+    nativeButton.click();
+    return;
+  }
+
+  const fallback = String(fallbackHref || "").trim() || getShopifyAccountRoutes().shopLogin;
+  window.location.assign(fallback);
+}
+
+export function getShopifyAccountRoutes(): ShopifyAccountRoutes {
+  const loginFlag =
+    typeof RUNTIME_CONTEXT.customerLoggedIn === "boolean"
+      ? RUNTIME_CONTEXT.customerLoggedIn
+      : String(RUNTIME_CONTEXT.customerLoggedIn || "").trim().toLowerCase() === "true";
+  const storefrontLoginPath = resolveStorePath(
+    RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
+    "/account/login",
+  );
+  const shopLoginWithReturnUrl = appendReturnUrl(storefrontLoginPath, getCurrentReturnPath());
+
+  return {
+    isLoggedIn: loginFlag,
+    account: resolveStorePath(RUNTIME_CONTEXT.accountUrl, "/account"),
+    login: resolveStorePath(RUNTIME_CONTEXT.accountLoginUrl, "/account/login"),
+    register: resolveStorePath(RUNTIME_CONTEXT.accountRegisterUrl, "/account/register"),
+    logout: resolveStorePath(RUNTIME_CONTEXT.accountLogoutUrl, "/account/logout"),
+    addresses: resolveStorePath(RUNTIME_CONTEXT.accountAddressesUrl, "/account/addresses"),
+    orders: resolveStorePath(
+      RUNTIME_CONTEXT.accountOrderHistoryUrl || RUNTIME_CONTEXT.accountUrl,
+      "/account",
+    ),
+    shopLogin: shopLoginWithReturnUrl,
+  };
 }

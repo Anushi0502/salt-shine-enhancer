@@ -3,26 +3,20 @@ import { ArrowUpRight } from "lucide-react";
 import type { ShopifyCollection } from "@/types/shopify";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
-export type CollectionCardVariant = "default" | "hero";
-
 type CollectionCardProps = {
   collection: ShopifyCollection;
   productCount?: number;
-  variant?: CollectionCardVariant;
 };
 
-const CollectionCard = ({ collection, productCount, variant = "default" }: CollectionCardProps) => {
-  const isHero = variant === "hero";
+const CollectionCard = ({ collection, productCount }: CollectionCardProps) => {
   const image = normalizeShopifyAssetUrl(collection.image?.src);
   const totalProducts = productCount ?? collection.products_count;
 
   return (
     <article
-      className={`salt-card-hover salt-metric-card salt-collection-card group relative overflow-hidden border border-border/80 bg-card shadow-soft ${
-        isHero ? "rounded-[1.35rem]" : "rounded-2xl"
-      }`}
+      className="salt-card-hover salt-metric-card salt-collection-card group relative h-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-soft"
     >
-      <div className={`relative overflow-hidden ${isHero ? "aspect-[5/3.8]" : "aspect-[5/4]"}`}>
+      <div className="relative overflow-hidden aspect-[4/3]">
         {image ? (
           <img
             src={image}
@@ -32,48 +26,33 @@ const CollectionCard = ({ collection, productCount, variant = "default" }: Colle
           />
         ) : (
           <div className="salt-collection-fallback grid h-full w-full place-items-center px-6 text-center">
-            <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-foreground/82">
+            <p className="text-[0.66rem] font-bold uppercase tracking-[0.08em] text-white/95 drop-shadow-[0_3px_8px_rgba(0,0,0,0.7)]">
               Collection image unavailable
             </p>
           </div>
         )}
         <div
-          className={`salt-collection-overlay absolute inset-0 transition-opacity duration-300 ${
-            isHero ? "opacity-95" : "opacity-90"
-          }`}
+          className="salt-collection-overlay absolute inset-0 opacity-95 transition-opacity duration-300"
         />
-        <div className={`absolute right-3 top-3 rounded-full border border-white/45 bg-black/38 font-bold uppercase tracking-[0.09em] text-white backdrop-blur-sm shadow-[0_10px_22px_-16px_rgba(0,0,0,0.7)] ${
-          isHero ? "px-3 py-1.5 text-[0.65rem]" : "px-2.5 py-1 text-[0.62rem]"
-        }`}>
+        <div className="absolute right-3 top-3 rounded-full border border-white/45 bg-black/38 px-3 py-1 text-[0.64rem] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-sm shadow-[0_10px_22px_-16px_rgba(0,0,0,0.7)]">
           {totalProducts} items
         </div>
       </div>
 
-      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-5" : "p-4"}`}>
-        <div className={`mb-2 inline-flex rounded-full border border-white/38 bg-black/32 font-semibold uppercase tracking-[0.1em] text-white/95 backdrop-blur-sm ${
-          isHero ? "px-3 py-1.5 text-[0.68rem]" : "px-2.5 py-1 text-[0.65rem]"
-        }`}>
+      <div className="absolute inset-x-0 bottom-0 p-4">
+        <div className="mb-2 inline-flex rounded-full border border-white/38 bg-black/32 px-2.5 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.06em] text-white/95 backdrop-blur-sm">
           Curated category
         </div>
-        <h3 className={`salt-collection-title ${isHero ? "text-2xl" : "text-xl"} font-bold text-white`}>
+        <h3 className="salt-collection-title text-2xl font-bold text-white">
           {collection.title}
         </h3>
-        <p className={`mt-1 ${isHero ? "text-[0.92rem]" : "text-sm"} text-white/82 drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]`}>
+        <p className="mt-1 text-sm text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
           {totalProducts} products available
-        </p>
-        <p
-          className={`mt-1 inline-flex rounded-full border border-white/30 bg-black/26 uppercase tracking-[0.08em] text-white/88 backdrop-blur-sm ${
-            isHero ? "px-2.5 py-1 text-[0.66rem]" : "px-2 py-1 text-[0.62rem]"
-          }`}
-        >
-          Fast browse path
         </p>
 
         <Link
           to={`/shop?collection=${collection.handle}`}
-          className={`mt-3 inline-flex items-center gap-2 rounded-full border border-white/45 bg-black/36 font-bold uppercase tracking-[0.12em] text-white backdrop-blur-sm transition hover:border-white hover:bg-white hover:text-slate-900 ${
-            isHero ? "px-4 py-2 text-[0.68rem]" : "px-3 py-1.5 text-xs"
-          }`}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/45 bg-black/36 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-white backdrop-blur-sm transition hover:border-white hover:bg-white hover:text-slate-900"
         >
           Explore <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>

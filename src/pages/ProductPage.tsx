@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
+import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyShopPayUrl, useCart } from "@/lib/cart";
 import {
@@ -31,6 +32,7 @@ import {
   stripHtml,
 } from "@/lib/formatters";
 import { useProducts } from "@/lib/shopify-data";
+import { getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
 
@@ -59,6 +61,7 @@ function variantOptionTokens(title?: string): string[] {
 
 const ProductPage = () => {
   const { handle } = useParams();
+  const location = useLocation();
   const { addItem } = useCart();
   const { data, isLoading, error, refetch } = useProducts();
 
@@ -71,6 +74,10 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
+  const accountRoutes = useMemo(
+    () => getShopifyAccountRoutes(),
+    [location.pathname, location.search, location.hash],
+  );
 
   useEffect(() => {
     if (!product) {
@@ -481,6 +488,18 @@ const ProductPage = () => {
             >
               Buy with <span className="ml-1 text-[1.9rem] font-black lowercase leading-none">shop</span>
             </a>
+            {!accountRoutes.isLoggedIn ? (
+              <a
+                href={accountRoutes.shopLogin}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openShopLogin(accountRoutes.shopLogin);
+                }}
+                className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-4 text-xs font-bold uppercase tracking-[0.06em] text-white shadow-[0_16px_26px_-20px_rgba(71,59,215,0.95)] transition hover:brightness-110"
+              >
+                Login with Shop for faster checkout
+              </a>
+            ) : null}
 
             <button
               type="button"
@@ -510,7 +529,7 @@ const ProductPage = () => {
 
             <div className="mt-5 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               <p className="flex items-center gap-2">
-                <Truck className="h-3.5 w-3.5" /> Free shipping over $49
+                <Truck className="h-3.5 w-3.5" /> Free shipping all over the US
               </p>
               <p className="flex items-center gap-2">
                 <PackageCheck className="h-3.5 w-3.5" /> Fast US fulfillment and tracking
@@ -539,6 +558,8 @@ const ProductPage = () => {
           </aside>
         </Reveal>
       </div>
+
+      <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
 
       {relatedProducts.length > 0 ? (
         <section className="mt-12">

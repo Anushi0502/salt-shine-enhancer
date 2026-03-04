@@ -19,6 +19,7 @@ import {
   useCollections,
   useProducts,
 } from "@/lib/shopify-data";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
@@ -161,6 +162,10 @@ const HomePage = () => {
   const featured = products.slice(0, 3);
   const quickCollections = rankedCollections.slice(0, 6);
   const featuredCollections = rankedCollections.slice(0, 6);
+  const gardenCollection = rankedCollections.find((collection) =>
+    /garden|tool/i.test(`${collection.title} ${collection.handle}`),
+  );
+  const gardenImage = normalizeShopifyAssetUrl(gardenCollection?.image?.src);
   const trendingProducts = [...products]
     .sort((a, b) => {
       const discountDelta = savingsPercent(b) - savingsPercent(a);
@@ -189,6 +194,46 @@ const HomePage = () => {
     <>
       <HomeHero featured={featured} />
       <KpiStrip products={products} collections={collections} />
+      {gardenCollection ? (
+        <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
+          <Reveal>
+            <Link
+              to={`/shop?collection=${gardenCollection.handle}`}
+              className="group block overflow-hidden rounded-[1.6rem] border border-border/75 bg-[linear-gradient(120deg,hsl(var(--salt-ink)/0.96),hsl(var(--salt-ink)/0.84))] shadow-soft"
+            >
+              <div className="relative grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr] sm:p-5">
+                {gardenImage ? (
+                  <img
+                    src={gardenImage}
+                    alt={gardenCollection.title}
+                    className="h-full min-h-[180px] w-full rounded-2xl object-cover opacity-90 transition duration-500 group-hover:scale-[1.02]"
+                  />
+                ) : (
+                  <div className="grid min-h-[180px] place-items-center rounded-2xl border border-white/20 bg-white/6 text-center">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white/90">
+                      Garden tools spotlight
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-col justify-center rounded-2xl border border-white/16 bg-white/5 p-5 text-white">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-white/70">
+                    Garden essentials
+                  </p>
+                  <h3 className="mt-2 font-display text-[clamp(1.5rem,2.5vw,2.1rem)] leading-tight">
+                    Outdoor tools ready for this season
+                  </h3>
+                  <p className="mt-2 text-sm text-white/82">
+                    Hand-picked picks for pruning, planting, and easy maintenance.
+                  </p>
+                  <span className="mt-4 inline-flex w-fit items-center rounded-full bg-primary px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-primary-foreground">
+                    Shop garden tools
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </Reveal>
+        </section>
+      ) : null}
       {hasCollectionSyncIssue ? (
         <section className="mx-auto mt-4 w-[min(1280px,96vw)]">
           <Reveal>
@@ -205,32 +250,32 @@ const HomePage = () => {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-foreground">
                 <span className="salt-sync-dot" aria-hidden="true"></span>
-                Catalog synced {formattedDateTime(lastSyncedAt)}
+                Catalog verified {formattedDateTime(lastSyncedAt)}
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="salt-sync-pill">Live inventory</span>
-                <span className="salt-sync-pill">{products.length.toLocaleString()} products</span>
-                <span className="salt-sync-pill">{collections.length.toLocaleString()} collections</span>
+                <span className="salt-sync-pill">In-stock now</span>
+                <span className="salt-sync-pill">{products.length.toLocaleString()} ready-to-buy items</span>
+                <span className="salt-sync-pill">{collections.length.toLocaleString()} easy-browse categories</span>
               </div>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Discovery acceleration
+                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Find what fits faster
                 </span>
-                <span className="mt-1 block">Sharper category routes and cleaner filter steps.</span>
+                <span className="mt-1 block">Popular filters and cleaner category paths help shoppers decide quicker.</span>
               </p>
               <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <BadgeCheck className="h-3.5 w-3.5 text-primary" /> Checkout confidence
+                  <BadgeCheck className="h-3.5 w-3.5 text-primary" /> Checkout without surprises
                 </span>
-                <span className="mt-1 block">Direct handoff into secure Shopify checkout flow.</span>
+                <span className="mt-1 block">Price, variants, and cart handoff stay locked to live Shopify data.</span>
               </p>
               <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <Clock3 className="h-3.5 w-3.5 text-primary" /> Always current
+                  <Clock3 className="h-3.5 w-3.5 text-primary" /> Stock stays current
                 </span>
-                <span className="mt-1 block">Auto-refresh keeps catalog and pricing up to date.</span>
+                <span className="mt-1 block">Inventory, pricing, and collection counts refresh continuously from live sync.</span>
               </p>
             </div>
           </div>
@@ -248,9 +293,6 @@ const HomePage = () => {
                 <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02] text-foreground">
                   Jump straight to what shoppers actually buy
                 </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  High-intent routes that reduce drop-off between browsing and cart.
-                </p>
               </div>
               <Link
                 to="/shop"
@@ -273,33 +315,6 @@ const HomePage = () => {
                   </span>
                 </Link>
               ))}
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              <Link
-                to="/shop?max=25"
-                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
-              >
-                Under $25
-              </Link>
-              <Link
-                to="/shop?min=25&max=60"
-                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
-              >
-                $25 to $60
-              </Link>
-              <Link
-                to="/shop?min=60&max=120"
-                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
-              >
-                $60 to $120
-              </Link>
-              <Link
-                to="/shop?min=120"
-                className="salt-kpi-card salt-metric-card rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
-              >
-                $120 and above
-              </Link>
             </div>
           </div>
         </Reveal>
@@ -333,7 +348,6 @@ const HomePage = () => {
               <CollectionCard
                 collection={collection}
                 productCount={collection.effectiveCount}
-                variant={index < 2 ? "hero" : "default"}
               />
             </Reveal>
           ))}

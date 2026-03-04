@@ -105,7 +105,6 @@ const CollectionsPage = () => {
           <Reveal key={collection.id} delayMs={index * 60}>
             <CollectionCard
               collection={collection}
-              variant={index < 2 ? "hero" : "default"}
             />
           </Reveal>
         ))}

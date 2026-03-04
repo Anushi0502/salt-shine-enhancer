@@ -311,7 +311,7 @@
   }
 
   .salt-sync-pill {
-    @apply inline-flex items-center rounded-full border px-3 py-1 text-[0.64rem] font-bold uppercase tracking-[0.1em];
+    @apply inline-flex items-center rounded-full border px-3 py-1 text-[0.68rem] font-semibold tracking-[0.04em];
     border-color: hsl(var(--border) / 0.72);
     color: hsl(var(--foreground) / 0.9);
     background:
@@ -382,10 +382,15 @@
     left: 0.85rem;
     right: 0.85rem;
     top: 0;
-    height: 2px;
+    height: 1px;
     border-radius: 999px;
     background: linear-gradient(90deg, hsl(var(--primary) / 0.72), hsl(var(--salt-olive) / 0.55));
-    opacity: 0.65;
+    opacity: 0.22;
+    transition: opacity 220ms ease;
+  }
+
+  .salt-metric-card:hover::before {
+    opacity: 0.5;
   }
 
   .salt-metric-card:hover {
@@ -395,7 +400,7 @@
   }
 
   .salt-outline-chip {
-    @apply inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground transition;
+    @apply inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[0.72rem] font-semibold tracking-[0.03em] text-muted-foreground transition;
     backdrop-filter: blur(4px);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   }
@@ -685,6 +690,438 @@
       0 0 0 1px hsl(var(--primary) / 0.42),
       0 20px 46px -30px hsl(var(--primary) / 0.72);
   }
+
+  .salt-reviews-shell .spr-container {
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: hsl(var(--foreground));
+    font-family: "Manrope", sans-serif;
+  }
+
+  .salt-reviews-shell .spr-header-title {
+    font-family: "Fraunces", "Playfair Display", serif;
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    color: hsl(var(--foreground));
+  }
+
+  .salt-reviews-shell .spr-summary,
+  .salt-reviews-shell .spr-review {
+    border-color: hsl(var(--border) / 0.7) !important;
+  }
+
+  .salt-reviews-shell .spr-button,
+  .salt-reviews-shell .spr-button-primary,
+  .salt-reviews-shell .spr-summary-actions-newreview {
+    border-radius: 999px !important;
+    border: 1px solid hsl(var(--primary) / 0.5) !important;
+    background: linear-gradient(125deg, hsl(var(--primary)), hsl(var(--salt-accent-deep)) 78%) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: none;
+  }
+
+  .salt-reviews-shell .spr-form-input-text,
+  .salt-reviews-shell .spr-form-input-textarea {
+    border: 1px solid hsl(var(--border) / 0.85) !important;
+    border-radius: 12px !important;
+    background: hsl(var(--background) / 0.96) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .dark .salt-reviews-shell .spr-summary,
+  .dark .salt-reviews-shell .spr-review {
+    border-color: hsl(var(--border) / 0.88) !important;
+  }
+
+  .dark .salt-reviews-shell .spr-container,
+  .dark .salt-reviews-shell .spr-review-content-body,
+  .dark .salt-reviews-shell .spr-review-header-byline,
+  .dark .salt-reviews-shell .spr-review-header-title {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .dark .salt-reviews-shell .spr-form-input-text,
+  .dark .salt-reviews-shell .spr-form-input-textarea {
+    background: hsl(223 20% 14% / 0.95) !important;
+    border-color: hsl(var(--border) / 0.88) !important;
+  }
+
+  .salt-entry-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    background: linear-gradient(160deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.92));
+    backdrop-filter: blur(8px);
+    animation: salt-entry-fade-in 260ms ease;
+  }
+
+  .salt-entry-banner {
+    width: min(1320px, 100%);
+    border-radius: 1.9rem;
+    border: 1px solid hsl(var(--border) / 0.8);
+    overflow: hidden;
+    background:
+      linear-gradient(96deg, hsl(227 40% 12% / 0.98) 0%, hsl(223 34% 10% / 0.95) 52%, hsl(41 30% 20% / 0.9) 100%);
+    box-shadow:
+      0 36px 62px -42px rgba(0, 0, 0, 0.78),
+      inset 0 1px 0 hsl(0 0% 100% / 0.22);
+    display: grid;
+    grid-template-columns: 1.24fr 1fr;
+    min-height: clamp(230px, 34vh, 340px);
+    position: relative;
+  }
+
+  .salt-entry-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, hsl(0 0% 100% / 0.18) 48%, transparent 62%);
+    mix-blend-mode: screen;
+    opacity: 0.15;
+    animation: sweep 2.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .salt-entry-media {
+    display: grid;
+    grid-template-columns: minmax(68px, 84px) 1fr;
+    background:
+      linear-gradient(114deg, hsl(232 66% 16%) 0%, hsl(231 56% 20%) 30%, hsl(181 34% 82%) 72%, hsl(168 26% 80%) 100%);
+    border-right: 1px solid hsl(var(--border) / 0.45);
+    overflow: hidden;
+  }
+
+  .salt-entry-rail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.95rem;
+    padding: 1rem 0.7rem;
+    background: linear-gradient(180deg, hsl(236 63% 15%), hsl(233 61% 19%));
+    border-right: 1px solid hsl(0 0% 100% / 0.2);
+  }
+
+  .salt-entry-barcode {
+    display: block;
+    width: 100%;
+    height: 108px;
+    border-radius: 0.7rem;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        hsl(0 0% 100% / 0.94) 0 2px,
+        transparent 2px 6px,
+        hsl(0 0% 100% / 0.84) 6px 8px,
+        transparent 8px 13px
+      ),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.07), hsl(0 0% 100% / 0.01));
+    border: 1px solid hsl(0 0% 100% / 0.3);
+  }
+
+  .salt-entry-dotline {
+    display: block;
+    width: 100%;
+    height: 72px;
+    border-radius: 0.7rem;
+    background:
+      radial-gradient(circle at 50% 12%, hsl(0 0% 100% / 0.88) 0 10%, transparent 12%),
+      radial-gradient(circle at 50% 32%, hsl(0 0% 100% / 0.88) 0 10%, transparent 12%),
+      radial-gradient(circle at 50% 52%, hsl(0 0% 100% / 0.88) 0 10%, transparent 12%),
+      radial-gradient(circle at 50% 72%, hsl(0 0% 100% / 0.88) 0 10%, transparent 12%),
+      radial-gradient(circle at 50% 92%, hsl(0 0% 100% / 0.88) 0 10%, transparent 12%);
+    border: 1px solid hsl(0 0% 100% / 0.22);
+  }
+
+  .salt-entry-hero-core {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100%;
+    padding: clamp(0.9rem, 2vw, 1.35rem) clamp(1rem, 1.9vw, 1.4rem) clamp(0.9rem, 1.9vw, 1.2rem);
+  }
+
+  .salt-entry-hero-core > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .salt-entry-live-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+  }
+
+  .salt-entry-image-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(122deg, hsl(223 62% 12% / 0.62) 0%, hsl(223 48% 12% / 0.22) 46%, hsl(179 31% 12% / 0.42) 100%);
+    pointer-events: none;
+  }
+
+  .salt-entry-hero-core--image .salt-entry-media-note {
+    color: hsl(0 0% 100% / 0.92);
+    text-shadow: 0 2px 12px hsl(220 50% 10% / 0.55);
+  }
+
+  .salt-entry-hero-core::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: 0;
+    width: 1rem;
+    height: 100%;
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
+    background:
+      radial-gradient(circle at 50% 10%, #fff 0 28%, transparent 30%),
+      radial-gradient(circle at 50% 30%, #fff 0 28%, transparent 30%),
+      radial-gradient(circle at 50% 50%, #fff 0 28%, transparent 30%),
+      radial-gradient(circle at 50% 70%, #fff 0 28%, transparent 30%),
+      radial-gradient(circle at 50% 90%, #fff 0 28%, transparent 30%),
+      #f0ca23;
+  }
+
+  .salt-entry-offer {
+    align-self: flex-start;
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: 0.18rem 0.6rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #e14917 0%, #ffce1f 55%, #e17920 100%);
+    border: 1px solid rgba(82, 37, 19, 0.28);
+    box-shadow: 0 16px 24px -20px rgba(0, 0, 0, 0.65);
+    color: #1c1a18;
+    padding: 0.5rem 0.82rem;
+  }
+
+  .salt-entry-offer strong {
+    grid-column: 1 / -1;
+    font-size: 0.68rem;
+    line-height: 1;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .salt-entry-offer em {
+    font-style: normal;
+    font-size: clamp(1.95rem, 3.6vw, 3.4rem);
+    line-height: 0.9;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+
+  .salt-entry-offer small {
+    align-self: end;
+    font-size: clamp(1rem, 1.8vw, 1.4rem);
+    line-height: 1;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .salt-entry-tool-row {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(0.4rem, 1vw, 0.8rem);
+    margin: auto 0 0.6rem;
+    padding-right: 1.1rem;
+  }
+
+  .salt-entry-tool-row span {
+    display: block;
+    width: clamp(0.58rem, 1vw, 0.9rem);
+    border-radius: 999px;
+    background: linear-gradient(180deg, hsl(197 67% 36%), hsl(190 56% 29%));
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.35);
+    animation: salt-tool-bob 1.8s ease-in-out infinite;
+  }
+
+  .salt-entry-tool-row span:nth-child(1) { height: 76px; animation-delay: 0.04s; }
+  .salt-entry-tool-row span:nth-child(2) { height: 102px; animation-delay: 0.16s; }
+  .salt-entry-tool-row span:nth-child(3) { height: 90px; animation-delay: 0.24s; }
+  .salt-entry-tool-row span:nth-child(4) { height: 108px; animation-delay: 0.34s; }
+  .salt-entry-tool-row span:nth-child(5) { height: 86px; animation-delay: 0.42s; }
+
+  .salt-entry-ground {
+    display: block;
+    width: calc(100% - 1rem);
+    height: 8px;
+    border-radius: 999px;
+    background:
+      repeating-linear-gradient(90deg, hsl(42 24% 20%) 0 7px, hsl(41 22% 26%) 7px 14px);
+    margin-bottom: 0.42rem;
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.16) inset;
+  }
+
+  .salt-entry-media-note {
+    margin: 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(210 66% 18% / 0.78);
+    font-weight: 800;
+    padding-right: 1rem;
+  }
+
+  .salt-entry-copy {
+    padding: clamp(1rem, 2.4vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.68rem;
+    color: hsl(var(--salt-paper));
+    position: relative;
+  }
+
+  .salt-entry-copy::before {
+    content: "";
+    position: absolute;
+    inset: 1rem;
+    border-radius: 1.3rem;
+    border: 1px solid hsl(0 0% 100% / 0.4);
+    background: linear-gradient(130deg, hsl(0 0% 100% / 0.08), hsl(0 0% 100% / 0.02));
+    pointer-events: none;
+  }
+
+  .salt-entry-copy > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .salt-entry-kicker {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: hsl(var(--salt-paper) / 0.8);
+  }
+
+  .salt-entry-copy h2 {
+    margin: 0;
+    font-family: "Fraunces", "Playfair Display", serif;
+    font-size: clamp(1.5rem, 3.2vw, 3rem);
+    line-height: 1.03;
+    color: hsl(var(--salt-paper));
+  }
+
+  .salt-entry-copy > p {
+    margin: 0;
+    color: hsl(var(--salt-paper) / 0.88);
+    font-size: clamp(0.95rem, 1.5vw, 1.9rem);
+    line-height: 1.45;
+    max-width: 42ch;
+  }
+
+  .salt-entry-stat-strip {
+    margin-top: 0.28rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .salt-entry-stat-strip span {
+    border-radius: 999px;
+    border: 1px solid hsl(0 0% 100% / 0.32);
+    background: hsl(0 0% 100% / 0.08);
+    color: hsl(var(--salt-paper) / 0.93);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.58rem;
+  }
+
+  .salt-entry-cta {
+    margin-top: 0.42rem;
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--primary) / 0.55);
+    background: linear-gradient(130deg, hsl(var(--primary)), hsl(var(--salt-accent-deep)));
+    color: hsl(var(--primary-foreground));
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.56rem 1rem;
+  }
+
+  .salt-entry-progress {
+    margin-top: 0.6rem;
+    width: min(380px, 92%);
+    height: 7px;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border) / 0.45);
+    background: hsl(var(--salt-paper) / 0.08);
+    overflow: hidden;
+  }
+
+  .salt-entry-progress span {
+    display: block;
+    height: 100%;
+    width: 40%;
+    border-radius: 999px;
+    background: linear-gradient(130deg, hsl(var(--primary)), hsl(var(--salt-olive)));
+    animation: salt-entry-progress 1.25s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .dark .salt-entry-overlay {
+    background: linear-gradient(160deg, hsl(224 24% 8% / 0.97), hsl(224 18% 10% / 0.94));
+  }
+
+  .dark .salt-entry-copy::before {
+    border-color: hsl(0 0% 100% / 0.3);
+    background: linear-gradient(130deg, hsl(0 0% 100% / 0.06), hsl(0 0% 100% / 0.015));
+  }
+
+  @media (max-width: 920px) {
+    .salt-entry-banner {
+      grid-template-columns: 1fr;
+      min-height: auto;
+    }
+
+    .salt-entry-media {
+      min-height: 150px;
+      border-right: 0;
+      border-bottom: 1px solid hsl(var(--border) / 0.42);
+    }
+
+    .salt-entry-rail {
+      display: none;
+    }
+
+    .salt-entry-hero-core::after {
+      display: none;
+    }
+
+    .salt-entry-tool-row span:nth-child(1) { height: 52px; }
+    .salt-entry-tool-row span:nth-child(2) { height: 68px; }
+    .salt-entry-tool-row span:nth-child(3) { height: 58px; }
+    .salt-entry-tool-row span:nth-child(4) { height: 72px; }
+    .salt-entry-tool-row span:nth-child(5) { height: 56px; }
+
+    .salt-entry-copy::before {
+      inset: 0.7rem;
+    }
+
+    .salt-entry-offer em {
+      font-size: clamp(1.7rem, 7vw, 2.3rem);
+    }
+  }
 }
 
 @layer utilities {
@@ -700,6 +1137,12 @@
       animation: none;
       opacity: 0;
     }
+
+    .salt-entry-banner::before,
+    .salt-entry-tool-row span,
+    .salt-entry-progress span {
+      animation: none !important;
+    }
   }
 
   @keyframes crawl {
@@ -713,6 +1156,15 @@
     }
   }
 
+  @keyframes salt-entry-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
@@ -721,6 +1173,20 @@
   @keyframes float-slow {
     0%, 100% { transform: translate3d(0, 0, 0); }
     50% { transform: translate3d(0, -10px, 0); }
+  }
+
+  @keyframes salt-tool-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  @keyframes salt-entry-progress {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(340%);
+    }
   }
 
   @keyframes sweep {
