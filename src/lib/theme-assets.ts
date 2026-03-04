@@ -149,8 +149,8 @@ const SHOP_BASE_ORIGIN = (() => {
   const normalizedDomain = normalizeBaseUrl(RUNTIME_CONTEXT.shopDomain);
   const normalizedBaseUrl = normalizeBaseUrl(RUNTIME_CONTEXT.shopBaseUrl);
   const fromContext =
-    (isMyShopifyBase(normalizedDomain) ? normalizedDomain : null) ||
     normalizedBaseUrl ||
+    (isMyShopifyBase(normalizedDomain) ? normalizedDomain : null) ||
     normalizedDomain;
   if (fromContext) {
     return fromContext;
@@ -273,13 +273,72 @@ function getCurrentReturnPath(): string {
 }
 
 function appendReturnUrl(path: string, returnPath: string): string {
+  const rawPath = String(path || "").trim();
+  const preserveOrigin = /^https?:\/\//i.test(rawPath) || rawPath.startsWith("//");
+
   try {
-    const url = new URL(path, "https://salt.local");
+    const url = new URL(rawPath, "https://salt.local");
     url.searchParams.set("return_url", returnPath);
+    if (preserveOrigin) {
+      return `${url.protocol}//${url.host}${url.pathname}${url.search}${url.hash}`;
+    }
+
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
-    const separator = path.includes("?") ? "&" : "?";
-    return `${path}${separator}return_url=${encodeURIComponent(returnPath)}`;
+    const separator = rawPath.includes("?") ? "&" : "?";
+    return `${rawPath}${separator}return_url=${encodeURIComponent(returnPath)}`;
+  }
+}
+
+function toAbsoluteStoreUrl(path: string): string {
+  const normalizedPath = resolveStorePath(path, "/");
+  if (/^https?:\/\//i.test(normalizedPath)) {
+    return normalizedPath;
+  }
+
+  const runtimeOrigin =
+    SHOP_BASE_ORIGIN ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  if (!runtimeOrigin) {
+    return normalizedPath;
+  }
+
+  return `${runtimeOrigin}${normalizedPath}`;
+}
+
+function toAbsoluteReturnUrl(input: string): string {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return "/";
+  }
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("//")) {
+    return raw.startsWith("//") ? `https:${raw}` : raw;
+  }
+
+  const normalizedPath = resolveStorePath(raw, "/");
+  if (typeof window !== "undefined" && window.location.origin) {
+    return `${window.location.origin}${normalizedPath}`;
+  }
+
+  if (SHOP_BASE_ORIGIN) {
+    return `${SHOP_BASE_ORIGIN}${normalizedPath}`;
+  }
+
+  return normalizedPath;
+}
+
+function toRelativeStorePath(input: string): string {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return "/";
+  }
+
+  try {
+    const parsed = new URL(raw, "https://salt.local");
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
+  } catch {
+    return "/";
   }
 }
 
@@ -298,15 +357,51 @@ export function getShopAppUrl(): string {
   return String(RUNTIME_CONTEXT.shopAppUrl || "https://shop.app").trim() || "https://shop.app";
 }
 
+export function buildShopLoginUrl(returnTarget?: string): string {
+  const storefrontLoginPath = resolveStorePath(
+    RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
+    "/customer_authentication/login",
+  );
+  const storefrontLoginUrl = toAbsoluteStoreUrl(storefrontLoginPath);
+  const resolvedReturnTargetAbsolute = toAbsoluteReturnUrl(
+    String(returnTarget || "").trim() || getCurrentReturnPath(),
+  );
+  const resolvedReturnTargetRelative = toRelativeStorePath(resolvedReturnTargetAbsolute);
+
+  if (storefrontLoginUrl.includes("/customer_authentication/login")) {
+    try {
+      const loginUrl = new URL(storefrontLoginUrl);
+      if (!loginUrl.searchParams.get("return_to")) {
+        loginUrl.searchParams.set("return_to", resolvedReturnTargetRelative);
+      }
+      loginUrl.searchParams.set("return_url", resolvedReturnTargetRelative);
+      return loginUrl.toString();
+    } catch {
+      return appendReturnUrl(storefrontLoginUrl, resolvedReturnTargetRelative);
+    }
+  }
+
+  return appendReturnUrl(storefrontLoginUrl, resolvedReturnTargetAbsolute);
+}
+
 export function openShopLogin(fallbackHref?: string): void {
   if (typeof window === "undefined") {
+    return;
+  }
+
+  const explicitFallback = String(fallbackHref || "").trim();
+  if (explicitFallback) {
+    window.location.assign(explicitFallback);
     return;
   }
 
   const nativeLoginRoot = document.getElementById("salt-shop-login-native");
   const nativeAnchor = nativeLoginRoot?.querySelector<HTMLAnchorElement>("a[href]");
   if (nativeAnchor?.href) {
-    window.location.assign(nativeAnchor.href);
+    const normalizedNativeHref = toAbsoluteStoreUrl(
+      resolveStorePath(nativeAnchor.getAttribute("href") || nativeAnchor.href, "/account/login"),
+    );
+    window.location.assign(normalizedNativeHref);
     return;
   }
 
@@ -316,8 +411,7 @@ export function openShopLogin(fallbackHref?: string): void {
     return;
   }
 
-  const fallback = String(fallbackHref || "").trim() || getShopifyAccountRoutes().shopLogin;
-  window.location.assign(fallback);
+  window.location.assign(buildShopLoginUrl());
 }
 
 export function getShopifyAccountRoutes(): ShopifyAccountRoutes {
@@ -325,23 +419,32 @@ export function getShopifyAccountRoutes(): ShopifyAccountRoutes {
     typeof RUNTIME_CONTEXT.customerLoggedIn === "boolean"
       ? RUNTIME_CONTEXT.customerLoggedIn
       : String(RUNTIME_CONTEXT.customerLoggedIn || "").trim().toLowerCase() === "true";
+  const account = toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountUrl, "/account"));
   const storefrontLoginPath = resolveStorePath(
     RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
-    "/account/login",
+    "/customer_authentication/login",
   );
-  const shopLoginWithReturnUrl = appendReturnUrl(storefrontLoginPath, getCurrentReturnPath());
+  const hasNewCustomerAccounts = storefrontLoginPath.includes("/customer_authentication/");
+  const defaultOrdersPath = hasNewCustomerAccounts ? "/account/orders" : "/account";
+  const runtimeOrdersPath = resolveStorePath(
+    RUNTIME_CONTEXT.accountOrderHistoryUrl,
+    defaultOrdersPath,
+  );
+  const accountPath = resolveStorePath(RUNTIME_CONTEXT.accountUrl, "/account");
+  const normalizedOrdersPath =
+    hasNewCustomerAccounts && (runtimeOrdersPath === "/account" || runtimeOrdersPath === accountPath)
+      ? "/account/orders"
+      : runtimeOrdersPath;
+  const orders = toAbsoluteStoreUrl(normalizedOrdersPath);
 
   return {
     isLoggedIn: loginFlag,
-    account: resolveStorePath(RUNTIME_CONTEXT.accountUrl, "/account"),
-    login: resolveStorePath(RUNTIME_CONTEXT.accountLoginUrl, "/account/login"),
-    register: resolveStorePath(RUNTIME_CONTEXT.accountRegisterUrl, "/account/register"),
-    logout: resolveStorePath(RUNTIME_CONTEXT.accountLogoutUrl, "/account/logout"),
-    addresses: resolveStorePath(RUNTIME_CONTEXT.accountAddressesUrl, "/account/addresses"),
-    orders: resolveStorePath(
-      RUNTIME_CONTEXT.accountOrderHistoryUrl || RUNTIME_CONTEXT.accountUrl,
-      "/account",
-    ),
-    shopLogin: shopLoginWithReturnUrl,
+    account,
+    login: buildShopLoginUrl(account),
+    register: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountRegisterUrl, "/account/register")),
+    logout: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountLogoutUrl, "/account/logout")),
+    addresses: toAbsoluteStoreUrl(resolveStorePath(RUNTIME_CONTEXT.accountAddressesUrl, "/account/addresses")),
+    orders,
+    shopLogin: buildShopLoginUrl(account),
   };
 }

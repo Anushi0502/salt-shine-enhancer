@@ -32,7 +32,7 @@ import {
   stripHtml,
 } from "@/lib/formatters";
 import { useProducts } from "@/lib/shopify-data";
-import { getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
+import { buildShopLoginUrl, getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
 
@@ -190,6 +190,7 @@ const ProductPage = () => {
   const shopPayUrl = selectedVariant
     ? buildShopifyShopPayUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
+  const shopPayHandoffUrl = accountRoutes.isLoggedIn ? shopPayUrl : buildShopLoginUrl(shopPayUrl);
 
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
@@ -478,7 +479,14 @@ const ProductPage = () => {
             </div>
 
             <a
-              href={shopPayUrl}
+              href={shopPayHandoffUrl}
+              onClick={(event) => {
+                if (accountRoutes.isLoggedIn) {
+                  return;
+                }
+                event.preventDefault();
+                openShopLogin(shopPayHandoffUrl);
+              }}
               aria-disabled={!isAvailable}
               className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5c3bff_0%,#3a2fd6_100%)] px-5 text-base font-semibold text-white transition ${
                 isAvailable
@@ -488,19 +496,6 @@ const ProductPage = () => {
             >
               Buy with <span className="ml-1 text-[1.9rem] font-black lowercase leading-none">shop</span>
             </a>
-            {!accountRoutes.isLoggedIn ? (
-              <a
-                href={accountRoutes.shopLogin}
-                onClick={(event) => {
-                  event.preventDefault();
-                  openShopLogin(accountRoutes.shopLogin);
-                }}
-                className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-4 text-xs font-bold uppercase tracking-[0.06em] text-white shadow-[0_16px_26px_-20px_rgba(71,59,215,0.95)] transition hover:brightness-110"
-              >
-                Login with Shop for faster checkout
-              </a>
-            ) : null}
-
             <button
               type="button"
               onClick={addToCart}

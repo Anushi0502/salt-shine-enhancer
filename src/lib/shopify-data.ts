@@ -109,10 +109,6 @@ function getLiveBlogBases(): string[] {
     bases.push(browserOrigin);
   }
 
-  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
-    bases.push(SHOP_BASE_ORIGIN);
-  }
-
   return Array.from(new Set(bases.filter(Boolean)));
 }
 

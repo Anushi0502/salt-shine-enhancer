@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { BadgeCheck, Clock3, Facebook, Headset, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
+  buildShopLoginUrl,
   getRuntimeContext,
   getShopAppUrl,
   getShopifyAccountRoutes,
@@ -28,6 +29,10 @@ const MainFooter = () => {
   const accountRoutes = useMemo(
     () => getShopifyAccountRoutes(),
     [location.pathname, location.search, location.hash],
+  );
+  const orderHistoryLoginHref = useMemo(
+    () => buildShopLoginUrl(accountRoutes.orders),
+    [accountRoutes.orders],
   );
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
@@ -228,6 +233,18 @@ const MainFooter = () => {
                     }}
                   >
                     Login with Shop
+                  </a>
+                </li>
+                <li>
+                  <a
+                    className="hover:text-primary"
+                    href={orderHistoryLoginHref}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openShopLogin(orderHistoryLoginHref);
+                    }}
+                  >
+                    Order history
                   </a>
                 </li>
               </>

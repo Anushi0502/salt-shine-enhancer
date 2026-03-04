@@ -215,9 +215,34 @@ export function buildShopifyCheckoutUrl(items: CartItem[]): string {
   return `${SHOPIFY_STOREFRONT_BASE}/cart/${lineItems.join(",")}?checkout&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
 }
 
+export function buildShopifyShopPayCartUrl(): string {
+  return `${SHOPIFY_STOREFRONT_BASE}/cart?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
+}
+
+export function buildShopifyShopPayCheckoutUrl(items: CartItem[]): string {
+  const lineItems = items
+    .map((item) => {
+      const variantId = item.shopifyVariantId;
+      const quantity = Math.max(1, Math.floor(item.quantity || 1));
+
+      if (!isValidShopifyVariantId(variantId)) {
+        return null;
+      }
+
+      return `${variantId}:${quantity}`;
+    })
+    .filter((entry): entry is string => Boolean(entry));
+
+  if (!lineItems.length) {
+    return buildShopifyShopPayCartUrl();
+  }
+
+  return `${SHOPIFY_STOREFRONT_BASE}/cart/${lineItems.join(",")}?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
+}
+
 export function buildShopifyShopPayUrl(variantId: number, quantity = 1): string {
   if (!isValidShopifyVariantId(variantId)) {
-    return buildShopifyCartUrl();
+    return buildShopifyShopPayCartUrl();
   }
 
   const safeQuantity = Math.max(1, Math.floor(quantity || 1));

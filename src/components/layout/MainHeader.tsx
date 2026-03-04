@@ -4,7 +4,7 @@ import { ClipboardList, LogOut, Menu, Search, ShoppingBag, User, X } from "lucid
 import BrandLogo from "@/components/layout/BrandLogo";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
-import { getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
+import { buildShopLoginUrl, getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -41,6 +41,10 @@ const MainHeader = () => {
   const accountRoutes = useMemo(
     () => getShopifyAccountRoutes(),
     [location.pathname, location.search, location.hash],
+  );
+  const orderHistoryLoginHref = useMemo(
+    () => buildShopLoginUrl(accountRoutes.orders),
+    [accountRoutes.orders],
   );
 
   const activeQuery = useMemo(() => searchParams.get("q") || "", [searchParams]);
@@ -158,6 +162,7 @@ const MainHeader = () => {
             </div>
           ) : (
             <div className="hidden items-center gap-1.5 lg:flex">
+              
               <a
                 href={accountRoutes.shopLogin}
                 onClick={(event) => {
@@ -319,6 +324,18 @@ const MainHeader = () => {
                 </>
               ) : (
                 <>
+                  <a
+                    href={orderHistoryLoginHref}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      closeMobileMenu();
+                      openShopLogin(orderHistoryLoginHref);
+                    }}
+                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Order history
+                  </a>
                   <a
                     href={accountRoutes.shopLogin}
                     onClick={(event) => {
