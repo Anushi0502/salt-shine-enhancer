@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   ShoppingBag,
   Trash2,
-  Truck,
 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -22,7 +21,6 @@ import { formatMoney } from "@/lib/formatters";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
 
-const FREE_SHIPPING_THRESHOLD = 49;
 function normalizeHandleLookup(input: string): string {
   return input
     .trim()
@@ -145,8 +143,6 @@ const CartPage = () => {
     );
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
 
-  const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
   const shopPayCheckoutUrl = buildShopifyShopPayCheckoutUrl(checkoutItems);
   const checkoutHandoffUrl = shopPayCheckoutUrl;
 
@@ -224,25 +220,6 @@ const CartPage = () => {
           >
             Clear cart
           </button>
-        </div>
-      </Reveal>
-
-      <Reveal delayMs={40}>
-        <div className="salt-panel-shell mb-5 rounded-2xl p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <p className="inline-flex items-center gap-1.5 font-semibold">
-              <Truck className="h-4 w-4 text-primary" />
-              {shippingGap > 0
-                ? `${formatMoney(shippingGap)} away from free shipping`
-                : "You unlocked free shipping"}
-            </p>
-            <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
-              Threshold {formatMoney(FREE_SHIPPING_THRESHOLD)}
-            </p>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${shippingProgress}%` }} />
-          </div>
         </div>
       </Reveal>
 
