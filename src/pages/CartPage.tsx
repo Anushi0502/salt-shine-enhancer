@@ -396,12 +396,6 @@ const CartPage = () => {
             >
               Need checkout help?
             </Link>
-            <Link
-              to="/order-history"
-              className="salt-outline-chip mt-2 h-10 w-full justify-center rounded-xl px-5 py-0 text-xs"
-            >
-              View device order history
-            </Link>
 
             <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               <p className="inline-flex items-center gap-2">
