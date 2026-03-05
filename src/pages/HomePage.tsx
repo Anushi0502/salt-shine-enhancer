@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -14,6 +15,8 @@ import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, savingsPercent } from "@/lib/formatters";
+import { useJudgeMeRatings } from "@/lib/judgeme";
+import { useDeviceOrderHistory } from "@/lib/order-history";
 import {
   useBlogPosts,
   useCollections,
@@ -105,41 +108,11 @@ const HomePage = () => {
     error: blogError,
     refetch: refetchBlog,
   } = useBlogPosts();
+  const { purchasesLast30Days } = useDeviceOrderHistory();
 
   const products = productsPayload?.products || [];
   const collections = collectionsPayload?.collections || [];
   const isInitialProductsSync = productsLoading && !productsPayload;
-
-  if (isInitialProductsSync) {
-    return (
-      <LoadingState
-        title="Loading SALT catalog"
-        subtitle="Preparing products, collections, and featured recommendations."
-      />
-    );
-  }
-
-  if (productsError && !productsPayload) {
-    return (
-      <ErrorState
-        title="We could not load the storefront"
-        subtitle="Please retry to pull the latest live catalog data."
-        action={
-          <button
-            type="button"
-            onClick={() => {
-              refetchProducts();
-              refetchCollections();
-              refetchBlog();
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
-        }
-      />
-    );
-  }
 
   const hasCollectionSyncIssue = Boolean(collectionsError);
 
@@ -180,6 +153,48 @@ const HomePage = () => {
     })
     .slice(0, 8);
   const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
+  const trendingReviewIds = trendingProducts.slice(0, 8).map((product) => product.id);
+  const { data: trendingRatings } = useJudgeMeRatings(trendingReviewIds);
+  const reviewInsights = useMemo(() => {
+    const summaries = trendingReviewIds
+      .map((id) => trendingRatings?.[id])
+      .filter((summary): summary is NonNullable<typeof summary> => Boolean(summary));
+
+    if (!summaries.length) {
+      return null;
+    }
+
+    const totalReviews = summaries.reduce((sum, summary) => sum + summary.reviewCount, 0);
+    const weightedRating =
+      totalReviews > 0
+        ? summaries.reduce((sum, summary) => sum + summary.rating * summary.reviewCount, 0) / totalReviews
+        : summaries.reduce((sum, summary) => sum + summary.rating, 0) / summaries.length;
+
+    const topReviewedCandidates = trendingProducts
+      .map((product) => ({
+        product,
+        summary: trendingRatings?.[product.id],
+      }))
+      .filter((entry) => Boolean(entry.summary))
+      .map((entry) => ({ ...entry, summary: entry.summary! }));
+
+    const topReviewed = topReviewedCandidates
+      .sort((a, b) => {
+        const ratingDelta = b.summary.rating - a.summary.rating;
+        if (Math.abs(ratingDelta) > 0.01) {
+          return ratingDelta;
+        }
+
+        return b.summary.reviewCount - a.summary.reviewCount;
+      })[0];
+
+    return {
+      ratedProducts: summaries.filter((summary) => summary.reviewCount > 0).length,
+      totalReviews,
+      averageRating: Number.isFinite(weightedRating) ? weightedRating : 0,
+      topReviewed,
+    };
+  }, [trendingReviewIds, trendingRatings, trendingProducts]);
 
   const syncCandidates = [
     productsPayload?.generatedAt,
@@ -190,10 +205,45 @@ const HomePage = () => {
     (a, b) => new Date(b).getTime() - new Date(a).getTime(),
   )[0];
 
+  if (isInitialProductsSync) {
+    return (
+      <LoadingState
+        title="Loading SALT catalog"
+        subtitle="Preparing products, collections, and featured recommendations."
+      />
+    );
+  }
+
+  if (productsError && !productsPayload) {
+    return (
+      <ErrorState
+        title="We could not load the storefront"
+        subtitle="Please retry to pull the latest live catalog data."
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              refetchProducts();
+              refetchCollections();
+              refetchBlog();
+            }}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            Retry
+          </button>
+        }
+      />
+    );
+  }
+
   return (
     <>
       <HomeHero featured={featured} />
-      <KpiStrip products={products} collections={collections} />
+      <KpiStrip
+        products={products}
+        collections={collections}
+        purchasesLast30Days={purchasesLast30Days}
+      />
       {gardenCollection ? (
         <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
           <Reveal>
@@ -256,6 +306,7 @@ const HomePage = () => {
                 <span className="salt-sync-pill">In-stock now</span>
                 <span className="salt-sync-pill">{products.length.toLocaleString()} ready-to-buy items</span>
                 <span className="salt-sync-pill">{collections.length.toLocaleString()} easy-browse categories</span>
+                <span className="salt-sync-pill">{purchasesLast30Days.toLocaleString()} bought last month on this device</span>
               </div>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -384,6 +435,56 @@ const HomePage = () => {
           ))}
         </div>
       </section>
+
+      {reviewInsights && reviewInsights.ratedProducts > 0 ? (
+        <section className="mx-auto mt-7 w-[min(1280px,96vw)]">
+          <Reveal>
+            <div className="salt-panel-shell rounded-[1.6rem] p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-primary">
+                    Live review pulse
+                  </p>
+                  <h3 className="font-display text-[clamp(1.3rem,2.1vw,1.9rem)] leading-tight">
+                    Shoppers are actively reviewing this catalog
+                  </h3>
+                </div>
+                <p className="rounded-full border border-border/75 bg-background px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+                  Judge.me synced
+                </p>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <div className="salt-ambient-card rounded-xl px-3 py-2">
+                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Average rating</p>
+                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.averageRating.toFixed(2)} / 5</p>
+                </div>
+                <div className="salt-ambient-card rounded-xl px-3 py-2">
+                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Rated products in spotlight</p>
+                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.ratedProducts.toLocaleString()}</p>
+                </div>
+                <div className="salt-ambient-card rounded-xl px-3 py-2">
+                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Verified reviews counted</p>
+                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.totalReviews.toLocaleString()}</p>
+                </div>
+              </div>
+              {reviewInsights.topReviewed ? (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Top reviewed right now:
+                  <Link
+                    to={`/products/${reviewInsights.topReviewed.product.handle}`}
+                    className="ml-1 font-semibold text-foreground hover:text-primary"
+                  >
+                    {reviewInsights.topReviewed.product.title}
+                  </Link>
+                  {" "}
+                  with {reviewInsights.topReviewed.summary.rating.toFixed(1)} stars across{" "}
+                  {reviewInsights.topReviewed.summary.reviewCount.toLocaleString()} reviews.
+                </p>
+              ) : null}
+            </div>
+          </Reveal>
+        </section>
+      ) : null}
 
       {latestBlogPosts.length > 0 ? (
         <section className="mx-auto mt-12 w-[min(1280px,96vw)]">

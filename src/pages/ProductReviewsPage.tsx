@@ -1,0 +1,96 @@
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, MessageSquareQuote } from "lucide-react";
+import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
+import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { useProducts } from "@/lib/shopify-data";
+import { productImage } from "@/lib/formatters";
+
+const ProductReviewsPage = () => {
+  const { handle } = useParams();
+  const { data, isLoading, error, refetch } = useProducts();
+
+  const products = data?.products || [];
+  const product = products.find((entry) => entry.handle === handle);
+
+  if (isLoading) {
+    return <LoadingState title="Loading reviews" subtitle="Preparing live feedback and rating breakdown." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="We could not load reviews"
+        subtitle="Please retry to pull the latest review data."
+        action={
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            Retry
+          </button>
+        }
+      />
+    );
+  }
+
+  if (!product) {
+    return (
+      <ErrorState
+        title="Product not found"
+        subtitle="This product is unavailable in the current live catalog."
+        action={
+          <Link
+            to="/shop"
+            className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            Browse products
+          </Link>
+        }
+      />
+    );
+  }
+
+  return (
+    <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="salt-panel-shell rounded-[1.6rem] p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <img
+              src={productImage(product) || "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=320&h=320&fit=crop&auto=format"}
+              alt={product.title}
+              className="h-16 w-16 rounded-xl border border-border/80 object-cover"
+            />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.09em] text-primary">Review center</p>
+              <h1 className="mt-1 font-display text-[clamp(1.4rem,2.4vw,2rem)] leading-tight text-foreground">
+                {product.title}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Read customer feedback before you place your order.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Link to={`/products/${product.handle}`} className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs">
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to product
+            </Link>
+            <Link to="/shop" className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs">
+              <MessageSquareQuote className="h-3.5 w-3.5" /> Browse catalog
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <ShopifyProductReviews
+        productId={product.id}
+        productHandle={product.handle}
+        productTitle={product.title}
+        mode="page"
+      />
+    </section>
+  );
+};
+
+export default ProductReviewsPage;

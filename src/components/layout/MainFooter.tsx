@@ -5,8 +5,6 @@ import BrandLogo from "@/components/layout/BrandLogo";
 import {
   getRuntimeContext,
   getShopAppUrl,
-  getShopifyAccountRoutes,
-  openShopLogin,
   resolveStorefrontPath,
 } from "@/lib/theme-assets";
 
@@ -24,7 +22,6 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
-  const accountRoutes = getShopifyAccountRoutes();
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -80,7 +77,7 @@ const MainFooter = () => {
           <BrandLogo
             withWordmark
             size="md"
-            className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1.5"
+            className="shadow-[0_16px_28px_-24px_rgba(0,0,0,0.45)]"
           />
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
             Curated everyday essentials from
@@ -189,61 +186,11 @@ const MainFooter = () => {
                 About us
               </Link>
             </li>
-            {accountRoutes.isLoggedIn ? (
-              <>
-                <li>
-                  <a className="hover:text-primary" href={accountRoutes.account}>
-                    My account
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-primary" href={accountRoutes.orderHistory}>
-                    Order history
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-primary" href={accountRoutes.addresses}>
-                    Saved addresses
-                  </a>
-                </li>
-                <li>
-                  <a className="hover:text-primary" href={accountRoutes.logout}>
-                    Logout
-                  </a>
-                </li>
-              </>
-            ) : (
-              <>
-                {accountRoutes.loginEnabled ? (
-                  <li>
-                    <a
-                      className="hover:text-primary"
-                      href={accountRoutes.shopLogin}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        openShopLogin(accountRoutes.shopLogin);
-                      }}
-                    >
-                      Login with Shop
-                    </a>
-                  </li>
-                ) : null}
-                <li>
-                  <a
-                    className="hover:text-primary"
-                    href={accountRoutes.orderHistory}
-                    onClick={(event) => {
-                      if (accountRoutes.loginEnabled) {
-                        event.preventDefault();
-                        openShopLogin(accountRoutes.orderHistory);
-                      }
-                    }}
-                  >
-                    Order history
-                  </a>
-                </li>
-              </>
-            )}
+            <li>
+              <Link className="hover:text-primary" to="/order-history">
+                Order history
+              </Link>
+            </li>
             <li>
               <a className="hover:text-primary" href={privacyPolicyHref}>
                 Privacy

@@ -12,11 +12,13 @@ import HomePage from "@/pages/HomePage";
 import ShopPage from "@/pages/ShopPage";
 import CollectionsPage from "@/pages/CollectionsPage";
 import ProductPage from "@/pages/ProductPage";
+import ProductReviewsPage from "@/pages/ProductReviewsPage";
 import CartPage from "@/pages/CartPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import BlogPage from "@/pages/BlogPage";
 import BlogPostPage from "@/pages/BlogPostPage";
+import OrderHistoryPage from "@/pages/OrderHistoryPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
@@ -53,6 +55,8 @@ const App = () => (
                 <Route path="/collections/:handle" element={<ShopPage />} />
                 <Route path="/product/:handle" element={<ProductPage />} />
                 <Route path="/products/:handle" element={<ProductPage />} />
+                <Route path="/product/:handle/reviews" element={<ProductReviewsPage />} />
+                <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/pages/about-us" element={<AboutPage />} />
@@ -60,6 +64,7 @@ const App = () => (
                 <Route path="/blog/:handle" element={<BlogPostPage />} />
                 <Route path="/blogs/:blogHandle" element={<BlogPage />} />
                 <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
+                <Route path="/order-history" element={<OrderHistoryPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/pages/contact" element={<ContactPage />} />
                 <Route path="/policies/contact-information" element={<ContactInformationPolicyPage />} />
@@ -69,6 +74,7 @@ const App = () => (
                 <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
+                <Route path="/account/orders" element={<OrderHistoryPage />} />
                 <Route path="/account/*" element={<ShopAuthBridgePage />} />
                 <Route path="/customer_authentication/*" element={<ShopAuthBridgePage />} />
                 <Route path="/services/login_with_shop/*" element={<ShopAuthBridgePage />} />

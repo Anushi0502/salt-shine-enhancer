@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -12,6 +12,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Star,
   ToggleLeft,
   ToggleRight,
   Truck,
@@ -28,11 +29,16 @@ import {
   isPlausibleComparePrice,
   productImage,
   productTagList,
+  sanitizeRichHtml,
   sortVariantsByPrice,
-  stripHtml,
 } from "@/lib/formatters";
+import { useJudgeMeProductRating } from "@/lib/judgeme";
+import {
+  getProductPurchasesLast30Days,
+  recordDeviceOrderHistory,
+  useDeviceOrderHistory,
+} from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
-import { buildShopLoginUrl, getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
 
@@ -61,9 +67,9 @@ function variantOptionTokens(title?: string): string[] {
 
 const ProductPage = () => {
   const { handle } = useParams();
-  const location = useLocation();
   const { addItem } = useCart();
   const { data, isLoading, error, refetch } = useProducts();
+  const { entries: deviceOrderEntries } = useDeviceOrderHistory();
 
   const products = data?.products || [];
   const product = products.find((entry) => entry.handle === handle);
@@ -74,10 +80,7 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
-  const accountRoutes = useMemo(
-    () => getShopifyAccountRoutes(),
-    [location.pathname, location.search, location.hash],
-  );
+  const { summary: reviewSummary } = useJudgeMeProductRating(product?.id);
 
   useEffect(() => {
     if (!product) {
@@ -190,7 +193,31 @@ const ProductPage = () => {
   const shopPayUrl = selectedVariant
     ? buildShopifyShopPayUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
-  const shopPayHandoffUrl = accountRoutes.isLoggedIn ? shopPayUrl : buildShopLoginUrl(shopPayUrl);
+  const shopPayHandoffUrl = shopPayUrl;
+  const devicePurchasesLast30Days = getProductPurchasesLast30Days(
+    deviceOrderEntries,
+    product.handle,
+  );
+  const purchasedLastMonth = Math.max(
+    devicePurchasesLast30Days,
+    reviewSummary?.purchasedLastMonth || 0,
+  );
+  const reviewConfidenceScore = reviewSummary
+    ? Math.min(
+        99,
+        Math.round(
+          (Math.max(0, Math.min(reviewSummary.rating, 5)) / 5) * 70 +
+            (Math.min(reviewSummary.reviewCount, 250) / 250) * 30,
+        ),
+      )
+    : 0;
+  const reviewConfidenceLabel = reviewConfidenceScore >= 90
+    ? "Very high trust signal"
+    : reviewConfidenceScore >= 75
+      ? "Strong trust signal"
+      : reviewConfidenceScore > 0
+        ? "Emerging trust signal"
+        : "";
 
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
@@ -211,19 +238,6 @@ const ProductPage = () => {
     .map((entry) => products.find((candidate) => candidate.handle === entry))
     .filter((entry): entry is (typeof products)[number] => Boolean(entry))
     .slice(0, 4);
-
-  const deliveryStart = new Date();
-  deliveryStart.setDate(deliveryStart.getDate() + 3);
-  const deliveryEnd = new Date();
-  deliveryEnd.setDate(deliveryEnd.getDate() + 6);
-
-  const deliveryRange = `${deliveryStart.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })} - ${deliveryEnd.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })}`;
 
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
@@ -314,7 +328,10 @@ const ProductPage = () => {
           <aside className="salt-panel-shell rounded-[2rem] p-5 sm:p-7 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">{stripHtml(product.body_html)}</p>
+            <div
+              className="salt-product-description mt-3 text-sm text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.body_html) }}
+            />
 
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
@@ -325,13 +342,43 @@ const ProductPage = () => {
                 </span>
               ) : null}
             </div>
+            {reviewSummary ? (
+              <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 py-1 font-semibold text-foreground">
+                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                    {reviewSummary.rating.toFixed(1)}
+                  </span>
+                  <span>{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
+                  {purchasedLastMonth > 0 ? (
+                    <span className="rounded-full border border-border/80 bg-background px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+                      {purchasedLastMonth.toLocaleString()} bought last month
+                    </span>
+                  ) : null}
+                </div>
+                <div className="rounded-xl border border-border/80 bg-background/85 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Shopper confidence
+                    </p>
+                    <p className="text-[0.68rem] font-bold text-foreground">
+                      {reviewConfidenceScore}%
+                    </p>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <span
+                      className="block h-full rounded-full bg-primary transition-[width] duration-500"
+                      style={{ width: `${reviewConfidenceScore}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[0.65rem] text-muted-foreground">{reviewConfidenceLabel}</p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-3 flex flex-wrap gap-2">
               <p className={`rounded-full border px-3 py-1 text-xs font-semibold ${isAvailable ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
                 {isAvailable ? "In stock and ready to ship" : "Out of stock"}
-              </p>
-              <p className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                Est. delivery {deliveryRange}
               </p>
             </div>
 
@@ -480,12 +527,26 @@ const ProductPage = () => {
 
             <a
               href={shopPayHandoffUrl}
-              onClick={(event) => {
-                if (accountRoutes.isLoggedIn) {
+              onClick={() => {
+                if (!selectedVariant || !isAvailable) {
                   return;
                 }
-                event.preventDefault();
-                openShopLogin(shopPayHandoffUrl);
+
+                recordDeviceOrderHistory({
+                  source: "buy-now",
+                  checkoutUrl: shopPayHandoffUrl,
+                  items: [
+                    {
+                      id: selectedVariant.id,
+                      shopifyVariantId: selectedVariant.id,
+                      handle: product.handle,
+                      title: `${product.title} (${selectedVariant.title})`,
+                      image: activeImage || primaryImage,
+                      unitPrice: price,
+                      quantity: selectedQuantity,
+                    },
+                  ],
+                });
               }}
               aria-disabled={!isAvailable}
               className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5c3bff_0%,#3a2fd6_100%)] px-5 text-base font-semibold text-white transition ${
@@ -538,6 +599,11 @@ const ProductPage = () => {
               <p className="flex items-center gap-2">
                 <Leaf className="h-3.5 w-3.5" /> Curated quality checks before listing
               </p>
+              {purchasedLastMonth > 0 ? (
+                <p className="flex items-center gap-2">
+                  <History className="h-3.5 w-3.5" /> {purchasedLastMonth.toLocaleString()} shoppers bought this in the last month
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">

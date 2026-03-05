@@ -1,13 +1,14 @@
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 import Reveal from "@/components/storefront/Reveal";
-import { Box, Layers3, PackageCheck, SlidersHorizontal } from "lucide-react";
+import { Box, History, Layers3, PackageCheck, SlidersHorizontal } from "lucide-react";
 
 type KpiStripProps = {
   products: ShopifyProduct[];
   collections: ShopifyCollection[];
+  purchasesLast30Days?: number;
 };
 
-const KpiStrip = ({ products, collections }: KpiStripProps) => {
+const KpiStrip = ({ products, collections, purchasesLast30Days = 0 }: KpiStripProps) => {
   const averageVariants = (
     products.reduce((sum, product) => sum + product.variants.length, 0) / Math.max(products.length, 1)
   ).toFixed(1);
@@ -20,12 +21,13 @@ const KpiStrip = ({ products, collections }: KpiStripProps) => {
     { label: "Curated collections", value: collections.length.toLocaleString(), Icon: Layers3 },
     { label: "Avg options per item", value: averageVariants, Icon: SlidersHorizontal },
     { label: "In stock now", value: inStockCount.toLocaleString(), Icon: PackageCheck },
+    { label: "Bought last month", value: purchasesLast30Days.toLocaleString(), Icon: History },
   ];
 
   return (
     <section className="mx-auto mt-8 w-[min(1280px,96vw)]">
       <Reveal>
-        <div className="salt-panel-shell grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="salt-panel-shell grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-5">
           {metrics.map((metric) => (
             <div
               key={metric.label}

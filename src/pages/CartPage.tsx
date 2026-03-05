@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
-  ArrowRight,
   Minus,
   PackageCheck,
   Plus,
@@ -13,7 +12,6 @@ import {
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import {
-  buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
   buildShopifySearchUrl,
   buildShopifyShopPayCheckoutUrl,
@@ -21,8 +19,8 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
-import { buildShopLoginUrl, getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const FREE_SHIPPING_THRESHOLD = 49;
 function normalizeHandleLookup(input: string): string {
@@ -40,13 +38,8 @@ function normalizeTitleLookup(input: string): string {
 }
 
 const CartPage = () => {
-  const location = useLocation();
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
   const { data: productsPayload } = useProducts();
-  const accountRoutes = useMemo(
-    () => getShopifyAccountRoutes(),
-    [location.pathname, location.search, location.hash],
-  );
 
   const recommendedProducts = (productsPayload?.products || []).slice(0, 4);
   const catalogLookup = useMemo(() => {
@@ -154,11 +147,8 @@ const CartPage = () => {
 
   const shippingGap = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const checkoutUrl = buildShopifyCheckoutUrl(checkoutItems);
   const shopPayCheckoutUrl = buildShopifyShopPayCheckoutUrl(checkoutItems);
-  const checkoutHandoffUrl = accountRoutes.isLoggedIn
-    ? checkoutUrl
-    : buildShopLoginUrl(shopPayCheckoutUrl);
+  const checkoutHandoffUrl = shopPayCheckoutUrl;
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -360,23 +350,6 @@ const CartPage = () => {
             <p className="mt-5 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               Standard checkout is recommended. Express options (including Shop Pay) appear inside Shopify checkout.
             </p>
-            {!accountRoutes.isLoggedIn ? (
-              <a
-                href={accountRoutes.shopLogin}
-                onClick={(event) => {
-                  event.preventDefault();
-                  openShopLogin(accountRoutes.shopLogin);
-                }}
-                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-4 text-xs font-bold uppercase tracking-[0.06em] text-white shadow-[0_16px_26px_-20px_rgba(71,59,215,0.95)] transition hover:brightness-110"
-              >
-                Login with Shop
-              </a>
-            ) : null}
-            {!accountRoutes.isLoggedIn ? (
-              <p className="mt-2 rounded-xl border border-border/80 bg-background p-3 text-[0.72rem] text-muted-foreground">
-                Checkout handshake: one secure Shop login, then direct redirect to Shop Pay checkout.
-              </p>
-            ) : null}
             {autoRecoveredCount > 0 ? (
               <p className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:text-emerald-100">
                 Auto-recovered {autoRecoveredCount} item(s) to live Shopify variants.
@@ -416,12 +389,12 @@ const CartPage = () => {
 
             <a
               href={checkoutHandoffUrl}
-              onClick={(event) => {
-                if (accountRoutes.isLoggedIn) {
-                  return;
-                }
-                event.preventDefault();
-                openShopLogin(checkoutHandoffUrl);
+              onClick={() => {
+                recordDeviceOrderHistory({
+                  source: "cart",
+                  checkoutUrl: checkoutHandoffUrl,
+                  items: checkoutItems,
+                });
               }}
               aria-disabled={hasUnresolvedCheckoutItems}
               className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
@@ -430,7 +403,7 @@ const CartPage = () => {
                   : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
               }`}
             >
-              {accountRoutes.isLoggedIn ? "Continue to Checkout" : "Login with Shop & Checkout"} <ArrowRight className="h-4 w-4" />
+              Continue to Checkout
             </a>
 
             <Link
@@ -445,6 +418,12 @@ const CartPage = () => {
               className="salt-outline-chip mt-2 h-10 w-full justify-center rounded-xl px-5 py-0 text-xs"
             >
               Need checkout help?
+            </Link>
+            <Link
+              to="/order-history"
+              className="salt-outline-chip mt-2 h-10 w-full justify-center rounded-xl px-5 py-0 text-xs"
+            >
+              View device order history
             </Link>
 
             <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">

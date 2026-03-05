@@ -1,16 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
-import { ClipboardList, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { ClipboardList, Menu, Search, ShoppingBag, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
-import { getShopifyAccountRoutes, openShopLogin } from "@/lib/theme-assets";
 
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
   { to: "/collections", label: "Collections" },
   { to: "/blog", label: "Blog" },
+  { to: "/order-history", label: "Order History" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
@@ -37,7 +37,6 @@ const MainHeader = () => {
   const { itemCount } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const accountRoutes = getShopifyAccountRoutes();
 
   const activeQuery = useMemo(() => searchParams.get("q") || "", [searchParams]);
 
@@ -125,64 +124,16 @@ const MainHeader = () => {
 
           <ThemeToggle />
 
-          {accountRoutes.isLoggedIn ? (
-            <div className="hidden items-center gap-1.5 lg:flex">
-              <a
-                href={accountRoutes.orderHistory}
-                className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
-                aria-label="Open order history"
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                Orders
-              </a>
-              <a
-                href={accountRoutes.account}
-                className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
-                aria-label="Open account dashboard"
-              >
-                <User className="h-3.5 w-3.5" />
-                Account
-              </a>
-              <a
-                href={accountRoutes.logout}
-                className="inline-flex h-10 items-center rounded-full px-2 text-[0.72rem] font-semibold text-muted-foreground transition hover:text-primary"
-                aria-label="Log out from account"
-              >
-                <LogOut className="mr-1 h-3.5 w-3.5" />
-                Logout
-              </a>
-            </div>
-          ) : (
-            <div className="hidden items-center gap-1.5 lg:flex">
-              <a
-                href={accountRoutes.orderHistory}
-                onClick={(event) => {
-                  if (accountRoutes.loginEnabled) {
-                    event.preventDefault();
-                    openShopLogin(accountRoutes.orderHistory);
-                  }
-                }}
-                className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
-                aria-label="Open order history"
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                Order history
-              </a>
-              {accountRoutes.loginEnabled ? (
-                <a
-                  href={accountRoutes.shopLogin}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openShopLogin(accountRoutes.shopLogin);
-                  }}
-                  className="inline-flex h-10 items-center rounded-full bg-[linear-gradient(135deg,#5e40ff,#3f34d6)] px-3 text-[0.68rem] font-bold tracking-[0.03em] text-white shadow-[0_14px_28px_-22px_rgba(71,59,215,0.92)] transition hover:brightness-110"
-                  aria-label="Login with Shop"
-                >
-                  Login with Shop
-                </a>
-              ) : null}
-            </div>
-          )}
+          <div className="hidden items-center gap-1.5 lg:flex">
+            <Link
+              to="/order-history"
+              className="salt-outline-chip inline-flex h-10 items-center gap-1.5 px-3 py-0 text-[0.7rem] font-semibold tracking-[0.03em]"
+              aria-label="Open order history"
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Order history
+            </Link>
+          </div>
 
           <Link
             to="/cart"
@@ -292,75 +243,17 @@ const MainHeader = () => {
 
           <div className="mx-auto mt-4 grid w-[min(1280px,96vw)] gap-2 rounded-2xl border border-border/70 bg-card/70 p-3">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-              Account
+              Orders
             </p>
             <div className="flex flex-wrap gap-2">
-              {accountRoutes.isLoggedIn ? (
-                <>
-                  <a
-                    href={accountRoutes.account}
-                    onClick={closeMobileMenu}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    <User className="h-3.5 w-3.5" />
-                    Dashboard
-                  </a>
-                  <a
-                    href={accountRoutes.orderHistory}
-                    onClick={closeMobileMenu}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    Order history
-                  </a>
-                  <a
-                    href={accountRoutes.addresses}
-                    onClick={closeMobileMenu}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    Addresses
-                  </a>
-                  <a
-                    href={accountRoutes.logout}
-                    onClick={closeMobileMenu}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Logout
-                  </a>
-                </>
-              ) : (
-                <>
-                  <a
-                    href={accountRoutes.orderHistory}
-                    onClick={(event) => {
-                      if (accountRoutes.loginEnabled) {
-                        event.preventDefault();
-                        openShopLogin(accountRoutes.orderHistory);
-                      }
-                      closeMobileMenu();
-                    }}
-                    className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                  >
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    Order history
-                  </a>
-                  {accountRoutes.loginEnabled ? (
-                    <a
-                      href={accountRoutes.shopLogin}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        closeMobileMenu();
-                        openShopLogin(accountRoutes.shopLogin);
-                      }}
-                      className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                    >
-                      <ClipboardList className="h-3.5 w-3.5" />
-                      Login with Shop
-                    </a>
-                  ) : null}
-                </>
-              )}
+              <Link
+                to="/order-history"
+                onClick={closeMobileMenu}
+                className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                Order history
+              </Link>
             </div>
           </div>
         </div>

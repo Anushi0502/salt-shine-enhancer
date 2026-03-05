@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowUpRight, ShoppingBag, Sparkles, Star } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import {
   conciseTitle,
@@ -10,6 +10,7 @@ import {
   productTagList,
   savingsPercent,
 } from "@/lib/formatters";
+import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
 
 export type ProductCardVariant = "default" | "dense";
@@ -30,6 +31,16 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const defaultVariant = product.variants.find((variant) => variant.available) || null;
   const title = conciseTitle(product.title);
   const image = productImage(product);
+  const { summary: reviewSummary } = useJudgeMeProductRating(product.id);
+  const reviewSignalLabel = reviewSummary
+    ? reviewSummary.reviewCount >= 100 && reviewSummary.rating >= 4.2
+      ? "Top rated pick"
+      : reviewSummary.reviewCount >= 35
+        ? "Shopper favorite"
+        : reviewSummary.reviewCount > 0
+          ? "Customer feedback"
+          : null
+    : null;
 
   return (
     <article
@@ -86,6 +97,25 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             <strong className={`${isDense ? "text-[0.96rem]" : "text-base"} text-primary`}>{formatMoney(min)}</strong>
             {compare > min ? <s className={`${isDense ? "text-[0.68rem]" : "text-xs"} text-muted-foreground`}>{formatMoney(compare)}</s> : null}
           </div>
+          {reviewSummary ? (
+            <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.58rem]" : "text-[0.66rem]"}`}>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold text-foreground">
+                <Star className="h-3 w-3 fill-primary text-primary" />
+                {reviewSummary.rating.toFixed(1)}
+              </span>
+              <span className="text-muted-foreground">{reviewSummary.reviewCount.toLocaleString()} reviews</span>
+              {reviewSignalLabel ? (
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-primary">
+                  {reviewSignalLabel}
+                </span>
+              ) : null}
+              {reviewSummary.purchasedLastMonth > 0 ? (
+                <span className="rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  {reviewSummary.purchasedLastMonth.toLocaleString()} bought last month
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {tags.length ? (
             <div className="flex flex-wrap gap-2">

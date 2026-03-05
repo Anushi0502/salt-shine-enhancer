@@ -10,6 +10,8 @@ export type SaltRuntimeContext = {
   shopDomain?: string;
   shopName?: string;
   shopAppUrl?: string;
+  judgeMeShopDomain?: string;
+  judgeMePublicToken?: string;
   currency?: string;
   template?: string;
   templateSuffix?: string;
@@ -93,6 +95,8 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     shopDomain: root.getAttribute("data-shop-domain") || undefined,
     shopName: root.getAttribute("data-shop-name") || undefined,
     shopAppUrl: root.getAttribute("data-shop-app-url") || undefined,
+    judgeMeShopDomain: root.getAttribute("data-judgeme-shop-domain") || undefined,
+    judgeMePublicToken: root.getAttribute("data-judgeme-public-token") || undefined,
     currency: root.getAttribute("data-currency") || undefined,
     template: root.getAttribute("data-template") || undefined,
     templateSuffix: root.getAttribute("data-template-suffix") || undefined,
