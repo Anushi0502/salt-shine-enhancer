@@ -3,9 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   CheckCircle2,
+  FileDown,
   Download,
   FileSpreadsheet,
   Loader2,
+  Trash2,
   Upload,
 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
@@ -31,6 +33,7 @@ type ResolvedReviewRow = ParsedReviewRow & {
   productHandle: string;
   productUrl: string;
   productTitle: string;
+  mappedBy: "product_id" | "product_handle" | "product_url" | "unmapped";
   errors: string[];
 };
 
@@ -45,9 +48,12 @@ type BulkSubmitStats = {
   failed: number;
 };
 
+const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
+const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
+
 const templateCsv = [
-  "product_url,product_handle,product_id,name,email,rating,title,body",
-  "https://saltonlinestore.com/products/elegant-black-v-neck-long-dress-sleeveless-high-slit-prom-dress,,,Courtney Jones,courtney@example.com,5,Great fit,NICE DRESS QUITE EASILY WEARABLE LOOKS GOOD",
+  "title,body,rating,reviewer_name,reviewer_email,product_url",
+  "Great fit,NICE DRESS QUITE EASILY WEARABLE LOOKS GOOD,5,Courtney Jones,courtney@example.com,https://saltonlinestore.com/products/elegant-black-v-neck-long-dress-sleeveless-high-slit-prom-dress",
 ].join("\n");
 
 function normalizeDomain(value: string): string {
@@ -113,7 +119,7 @@ function getJudgeMeConfig(): JudgeMeConfig | null {
       (typeof window !== "undefined"
         ? (window as unknown as { jdgm?: { PUBLIC_TOKEN?: string } }).jdgm?.PUBLIC_TOKEN
         : "") ||
-      "",
+      DEFAULT_JUDGEME_PUBLIC_TOKEN,
   ).trim();
 
   const shopDomains = Array.from(
@@ -125,6 +131,7 @@ function getJudgeMeConfig(): JudgeMeConfig | null {
         import.meta.env.VITE_JUDGEME_SHOP_DOMAIN,
         import.meta.env.VITE_SALT_SHOP_URL,
         import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
+        DEFAULT_JUDGEME_SHOP_DOMAIN,
       ]
         .map((entry) => normalizeDomain(String(entry || "")))
         .filter(Boolean),
@@ -163,6 +170,24 @@ function parseRating(value: string): number {
   return Math.max(1, Math.min(5, Math.round(numeric)));
 }
 
+function escapeCsvCell(value: string): string {
+  const cell = String(value ?? "");
+  if (/[,"\n\r]/.test(cell)) {
+    return `"${cell.replace(/"/g, "\"\"")}"`;
+  }
+  return cell;
+}
+
+function getDuplicateSignature(row: Pick<ResolvedReviewRow, "productId" | "productHandle" | "email" | "title" | "body" | "rating">): string {
+  return [
+    String(row.productId ?? row.productHandle ?? ""),
+    normalizeHandle(row.email),
+    normalizeHandle(row.title),
+    normalizeHandle(row.body),
+    String(row.rating),
+  ].join("::");
+}
+
 async function parseFile(file: File): Promise<ParsedReviewRow[]> {
   const XLSX = await import("xlsx");
   const buffer = await file.arrayBuffer();
@@ -186,15 +211,15 @@ async function parseFile(file: File): Promise<ParsedReviewRow[]> {
       Object.entries(raw).map(([key, value]) => [normalizeHeader(key), value]),
     );
 
-      return {
-        rowNumber: index + 2,
-        productIdRaw: pickValue(row, ["product_id", "id", "external_id"]),
-        productHandleRaw: pickValue(row, ["product_handle", "handle", "product", "product_slug"]),
-        productUrlRaw: pickValue(row, ["product_url", "url", "product_link", "link", "product_page_url"]),
-        name: pickValue(row, ["name", "author", "reviewer_name"]),
-        email: pickValue(row, ["email", "reviewer_email"]),
-        ratingRaw: pickValue(row, ["rating", "stars", "score"]),
-        title: pickValue(row, ["title", "headline", "review_title"]),
+    return {
+      rowNumber: index + 2,
+      productIdRaw: pickValue(row, ["product_id", "id", "external_id"]),
+      productHandleRaw: pickValue(row, ["product_handle", "handle", "product", "product_slug"]),
+      productUrlRaw: pickValue(row, ["product_url", "url", "product_link", "link", "product_page_url"]),
+      name: pickValue(row, ["name", "author", "reviewer_name"]),
+      email: pickValue(row, ["email", "reviewer_email"]),
+      ratingRaw: pickValue(row, ["rating", "stars", "score"]),
+      title: pickValue(row, ["title", "headline", "review_title"]),
       body: pickValue(row, ["body", "review", "content", "comment", "text"]),
     };
   });
@@ -302,16 +327,37 @@ const BulkReviewPage = () => {
   );
 
   const resolvedRows = useMemo<ResolvedReviewRow[]>(() => {
-    return rows.map((row) => {
+    const baseRows = rows.map((row) => {
       const errors: string[] = [];
       const parsedProductId = Number(row.productIdRaw);
       const normalizedHandle = normalizeHandle(row.productHandleRaw);
       const handleFromUrl = extractHandleFromProductUrl(row.productUrlRaw);
-      const lookupHandle = normalizedHandle || handleFromUrl;
-      const product =
-        (Number.isFinite(parsedProductId) && parsedProductId > 0 ? productById.get(parsedProductId) : null) ||
-        (lookupHandle ? productByHandle.get(lookupHandle) : null) ||
-        null;
+      const hasProductIdInput = Number.isFinite(parsedProductId) && parsedProductId > 0;
+      const hasDirectHandleInput = Boolean(normalizedHandle);
+      const hasUrlHandleInput = Boolean(handleFromUrl);
+
+      let mappedBy: ResolvedReviewRow["mappedBy"] = "unmapped";
+      let product = null;
+      if (hasProductIdInput) {
+        product = productById.get(parsedProductId) || null;
+        if (product) {
+          mappedBy = "product_id";
+        }
+      }
+
+      if (!product && hasDirectHandleInput) {
+        product = productByHandle.get(normalizedHandle) || null;
+        if (product) {
+          mappedBy = "product_handle";
+        }
+      }
+
+      if (!product && hasUrlHandleInput) {
+        product = productByHandle.get(handleFromUrl) || null;
+        if (product) {
+          mappedBy = "product_url";
+        }
+      }
 
       const rating = parseRating(row.ratingRaw);
 
@@ -341,16 +387,59 @@ const BulkReviewPage = () => {
         ...row,
         rating,
         productId: product?.id || null,
-        productHandle: product?.handle || lookupHandle || "",
+        productHandle: product?.handle || normalizedHandle || handleFromUrl || "",
         productUrl: row.productUrlRaw || (product?.handle ? `${getShopBaseOrigin()}/products/${product.handle}` : ""),
         productTitle: product?.title || "",
+        mappedBy,
         errors,
       };
+    });
+
+    const duplicateCounts = new Map<string, number>();
+    for (const row of baseRows) {
+      if (!row.productId && !row.productHandle) {
+        continue;
+      }
+      const signature = getDuplicateSignature(row);
+      duplicateCounts.set(signature, (duplicateCounts.get(signature) || 0) + 1);
+    }
+
+    return baseRows.map((row) => {
+      const signature = getDuplicateSignature(row);
+      if ((duplicateCounts.get(signature) || 0) > 1) {
+        return {
+          ...row,
+          errors: row.errors.includes("Duplicate review row detected")
+            ? row.errors
+            : [...row.errors, "Duplicate review row detected"],
+        };
+      }
+      return row;
     });
   }, [productByHandle, productById, rows]);
 
   const validRows = resolvedRows.filter((row) => row.errors.length === 0);
   const invalidRows = resolvedRows.filter((row) => row.errors.length > 0);
+  const mappingStats = useMemo(() => {
+    return resolvedRows.reduce(
+      (acc, row) => {
+        if (row.mappedBy === "product_id") {
+          acc.byId += 1;
+        } else if (row.mappedBy === "product_handle") {
+          acc.byHandle += 1;
+        } else if (row.mappedBy === "product_url") {
+          acc.byUrl += 1;
+        } else {
+          acc.unmapped += 1;
+        }
+        return acc;
+      },
+      { byId: 0, byHandle: 0, byUrl: 0, unmapped: 0 },
+    );
+  }, [resolvedRows]);
+  const submissionProgressPercent = validRows.length
+    ? Math.min(100, Math.round((submitStats.processed / validRows.length) * 100))
+    : 0;
 
   const onFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -384,6 +473,60 @@ const BulkReviewPage = () => {
     link.download = "bulk-reviews-template.csv";
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const exportInvalidRows = () => {
+    if (!invalidRows.length) {
+      toast.error("No invalid rows to export.");
+      return;
+    }
+
+    const header = [
+      "row_number",
+      "status",
+      "errors",
+      "product_id",
+      "product_handle",
+      "product_url",
+      "reviewer_name",
+      "reviewer_email",
+      "rating",
+      "title",
+      "body",
+    ];
+
+    const lines = invalidRows.map((row) =>
+      [
+        row.rowNumber,
+        "invalid",
+        row.errors.join(" | "),
+        row.productIdRaw,
+        row.productHandleRaw || row.productHandle,
+        row.productUrlRaw || row.productUrl,
+        row.name,
+        row.email,
+        row.ratingRaw,
+        row.title,
+        row.body,
+      ]
+        .map((cell) => escapeCsvCell(String(cell ?? "")))
+        .join(","),
+    );
+
+    const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "bulk-review-invalid-rows.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearLoadedFile = () => {
+    setRows([]);
+    setFileName("");
+    setSubmitStats({ processed: 0, success: 0, failed: 0 });
+    toast.success("Cleared loaded review rows.");
   };
 
   const submitBulkReviews = async () => {
@@ -436,14 +579,34 @@ const BulkReviewPage = () => {
               Upload CSV/XLSX and post product reviews to Judge.me in one run.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={downloadTemplate}
-            className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download template
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download template
+            </button>
+            <button
+              type="button"
+              onClick={exportInvalidRows}
+              disabled={!invalidRows.length}
+              className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              Export invalid rows
+            </button>
+            <button
+              type="button"
+              onClick={clearLoadedFile}
+              disabled={!rows.length || isSubmitting}
+              className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear rows
+            </button>
+          </div>
         </div>
       </Reveal>
 
@@ -465,7 +628,7 @@ const BulkReviewPage = () => {
                 <FileSpreadsheet className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Required columns: <code>product_url</code> or <code>product_handle</code> or <code>product_id</code>, <code>name</code>, <code>email</code>, <code>rating</code>, <code>body</code>. Optional: <code>title</code>.
+                Preferred columns: <code>title</code>, <code>body</code>, <code>rating</code>, <code>reviewer_name</code>, <code>reviewer_email</code>, <code>product_url</code>. Alternate mappings are still supported.
               </p>
             </label>
             <button
@@ -501,6 +664,31 @@ const BulkReviewPage = () => {
               <p className="mt-1 text-[0.7rem] text-muted-foreground">
                 {submitStats.success.toLocaleString()} success • {submitStats.failed.toLocaleString()} failed
               </p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border/70">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+                  style={{ width: `${submissionProgressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="salt-ambient-card rounded-xl px-3 py-2">
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Mapped by URL</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{mappingStats.byUrl.toLocaleString()}</p>
+            </div>
+            <div className="salt-ambient-card rounded-xl px-3 py-2">
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Mapped by handle</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{mappingStats.byHandle.toLocaleString()}</p>
+            </div>
+            <div className="salt-ambient-card rounded-xl px-3 py-2">
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Mapped by id</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{mappingStats.byId.toLocaleString()}</p>
+            </div>
+            <div className="salt-ambient-card rounded-xl px-3 py-2">
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Unmapped rows</p>
+              <p className="mt-1 text-lg font-semibold text-destructive">{mappingStats.unmapped.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -531,6 +719,15 @@ const BulkReviewPage = () => {
                       <td className="px-3 py-2">
                         <p className="font-semibold text-foreground">{row.productTitle || row.productHandleRaw || row.productIdRaw || "-"}</p>
                         <p className="text-[0.7rem] text-muted-foreground">{row.productHandle || row.productHandleRaw || "-"}</p>
+                        <p className="mt-1 text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">
+                          {row.mappedBy === "product_url"
+                            ? "Mapped by product_url"
+                            : row.mappedBy === "product_handle"
+                              ? "Mapped by product_handle"
+                              : row.mappedBy === "product_id"
+                                ? "Mapped by product_id"
+                                : "Not mapped"}
+                        </p>
                         {row.productUrlRaw ? (
                           <p className="line-clamp-1 text-[0.68rem] text-muted-foreground">{row.productUrlRaw}</p>
                         ) : null}
@@ -547,10 +744,17 @@ const BulkReviewPage = () => {
                             Valid
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-destructive/35 bg-destructive/10 px-2 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-destructive">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            {row.errors[0]}
-                          </span>
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/35 bg-destructive/10 px-2 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-destructive">
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              {row.errors[0]}
+                            </span>
+                            {row.errors.length > 1 ? (
+                              <p className="text-[0.64rem] uppercase tracking-[0.07em] text-destructive/90">
+                                +{row.errors.length - 1} more issue(s)
+                              </p>
+                            ) : null}
+                          </div>
                         )}
                       </td>
                     </tr>
