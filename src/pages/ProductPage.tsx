@@ -343,15 +343,15 @@ const ProductPage = () => {
               ) : null}
             </div>
             {reviewSummary ? (
-              <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+              <div className="mt-2 space-y-2 text-sm text-muted-foreground">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-2.5 py-1 font-semibold text-foreground">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
                     <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                     {reviewSummary.rating.toFixed(1)}
                   </span>
-                  <span>{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
+                  <span className="text-base font-medium text-foreground/90">{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
                   {purchasedLastMonth > 0 ? (
-                    <span className="rounded-full border border-border/80 bg-background px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
+                    <span className="rounded-full border border-border/80 bg-background px-2.5 py-1 text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-foreground">
                       {purchasedLastMonth.toLocaleString()} bought last month
                     </span>
                   ) : null}

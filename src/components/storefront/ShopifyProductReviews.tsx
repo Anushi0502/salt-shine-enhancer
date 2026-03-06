@@ -307,10 +307,17 @@ function parseJudgeMeData(data: { badgeHtml: string; widgetHtml: string } | unde
     fallbackReviewCount > 0
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / fallbackReviewCount
       : 0;
+  const finalReviewCount = Math.max(reviewCount, fallbackReviewCount);
+  const finalAverageRating =
+    fallbackReviewCount > reviewCount
+      ? fallbackAverageRating
+      : averageRating > 0
+        ? averageRating
+        : fallbackAverageRating;
 
   return {
-    averageRating: averageRating > 0 ? averageRating : fallbackAverageRating,
-    reviewCount: reviewCount > 0 ? reviewCount : fallbackReviewCount,
+    averageRating: finalAverageRating,
+    reviewCount: finalReviewCount,
     reviews,
   };
 }

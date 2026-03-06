@@ -79,7 +79,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           View
         </span>
         <span className={`absolute bottom-3 left-3 rounded-full border border-white/40 bg-black/34 font-bold uppercase tracking-[0.09em] text-white backdrop-blur-sm ${
-          isDense ? "px-2 py-0.5 text-[0.58rem]" : "px-2.5 py-1 text-[0.62rem]"
+          isDense ? "px-2 py-0.5 text-[0.66rem]" : "px-2.5 py-1 text-[0.76rem]"
         }`}>
           {inStock ? "In stock" : "Out of stock"}
         </span>
@@ -98,7 +98,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             {compare > min ? <s className={`${isDense ? "text-[0.68rem]" : "text-xs"} text-muted-foreground`}>{formatMoney(compare)}</s> : null}
           </div>
           {reviewSummary ? (
-            <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.58rem]" : "text-[0.66rem]"}`}>
+            <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.7rem]" : "text-xs"}`}>
               <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold text-foreground">
                 <Star className="h-3 w-3 fill-primary text-primary" />
                 {reviewSummary.rating.toFixed(1)}
@@ -122,7 +122,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
               {tags.map((tag) => (
                 <span
                   key={`${product.id}-${tag}`}
-                  className={`salt-outline-chip px-2 py-1 ${isDense ? "text-[0.56rem]" : "text-[0.62rem]"}`}
+                  className={`salt-outline-chip px-2.5 py-1 ${isDense ? "text-[0.66rem]" : "text-[0.82rem]"}`}
                 >
                   {tag}
                 </span>
@@ -130,11 +130,11 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             </div>
           ) : null}
 
-          <p className={`${isDense ? "text-[0.66rem]" : "text-xs"} text-muted-foreground`}>
+          <p className={`${isDense ? "text-[0.74rem]" : "text-[0.95rem]"} text-muted-foreground`}>
             {product.vendor || "SALT"} • {product.product_type || "Everyday Essential"}
           </p>
           {!isDense ? (
-            <p className="rounded-lg border border-border/70 bg-background/72 px-2.5 py-1 text-[0.64rem] uppercase tracking-[0.08em] text-muted-foreground">
+            <p className="rounded-lg border border-border/70 bg-background/72 px-2.5 py-1 text-[0.74rem] uppercase tracking-[0.08em] text-muted-foreground">
               Ready for secure checkout
             </p>
           ) : null}

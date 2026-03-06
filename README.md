@@ -8,6 +8,7 @@ Conversion-focused React storefront for SALT, integrated with Shopify catalog/ch
 - Pulls product/collection/about/blog snapshot data from Shopify via sync scripts.
 - Uses live Shopify handoff for checkout/cart URLs.
 - Uses Judge.me for ratings/reviews and review submission.
+- Includes `/bulk-review` admin route for CSV/XLSX bulk review upload to Judge.me.
 - Builds a Shopify theme package (`shopify-theme/`) from this app bundle.
 
 ## Stack

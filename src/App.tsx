@@ -24,6 +24,7 @@ import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
 import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
 import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
+import BulkReviewPage from "@/pages/BulkReviewPage";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/blogs/:blogHandle" element={<BlogPage />} />
                 <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
                 <Route path="/order-history" element={<OrderHistoryPage />} />
+                <Route path="/bulk-review" element={<BulkReviewPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/pages/contact" element={<ContactPage />} />
                 <Route path="/policies/contact-information" element={<ContactInformationPolicyPage />} />
