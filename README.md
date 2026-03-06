@@ -107,7 +107,7 @@ npx @shopify/cli theme push --path shopify-theme --store 0309d3-72.myshopify.com
 
 ## Quality checks
 
-Before deploy
+Before deploy:
 
 ```bash
 npm run build
