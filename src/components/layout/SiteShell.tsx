@@ -28,7 +28,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
   const gardenCollection = rankedCollections.find((collection) =>
     /garden|tool/i.test(`${collection.title} ${collection.handle}`),
   );
-  const gardenLoaderImage = normalizeShopifyAssetUrl(gardenCollection?.image?.src);
+  const gardenLoaderImage = 'https://m.media-amazon.com/images/I/81Lg3hkn5KL.jpg';
   const hasGardenLoaderImage = Boolean(gardenLoaderImage);
 
   useEffect(() => {
