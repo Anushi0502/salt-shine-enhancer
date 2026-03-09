@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, Clock3, Facebook, Headset, Youtube } from "lucide-react";
+import { BadgeCheck, Clock3, Facebook, Headset, Instagram, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
   getRuntimeContext,
@@ -100,6 +100,15 @@ const MainFooter = () => {
               aria-label="SALT on Facebook"
             >
               <Facebook className="h-6 w-6" />
+            </a>
+            <a
+              href="https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg=="
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              aria-label="SALT on Instagram"
+            >
+              <Instagram className="h-6 w-6" />
             </a>
             <a
               href="https://www.youtube.com/@SALTONLINESTORE"
