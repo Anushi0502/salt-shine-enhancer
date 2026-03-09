@@ -44,7 +44,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
   return (
     <article
-      className={`salt-card-hover salt-metric-card salt-product-card group overflow-hidden border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft ${
+      className={`salt-card-hover salt-metric-card salt-product-card group flex h-full flex-col overflow-hidden border border-border/80 bg-[linear-gradient(170deg,hsl(var(--card)/0.98),hsl(var(--card)/0.93))] shadow-soft ${
         isDense ? "rounded-[1.15rem]" : "rounded-2xl"
       }`}
     >
@@ -85,8 +85,8 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         </span>
       </Link>
 
-      <div className={`space-y-3 ${isDense ? "p-3.5" : "p-4"}`}>
-        <div className="space-y-2">
+      <div className={`flex flex-1 flex-col ${isDense ? "p-3.5" : "p-4"}`}>
+        <div className="flex-1 space-y-2">
           <h3 className={`line-clamp-2 font-semibold ${isDense ? "min-h-[2.8rem] text-[0.92rem] leading-5" : "min-h-[3.2rem] text-sm leading-6"}`}>
             <Link to={`/products/${product.handle}`} className="hover:text-primary">
               {title}
@@ -97,40 +97,48 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             <strong className={`${isDense ? "text-[0.96rem]" : "text-base"} text-primary`}>{formatMoney(min)}</strong>
             {compare > min ? <s className={`${isDense ? "text-[0.68rem]" : "text-xs"} text-muted-foreground`}>{formatMoney(compare)}</s> : null}
           </div>
-          {reviewSummary ? (
-            <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.7rem]" : "text-xs"}`}>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold text-foreground">
-                <Star className="h-3 w-3 fill-primary text-primary" />
-                {reviewSummary.rating.toFixed(1)}
-              </span>
-              <span className="text-muted-foreground">{reviewSummary.reviewCount.toLocaleString()} reviews</span>
-              {reviewSignalLabel ? (
-                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-primary">
-                  {reviewSignalLabel}
+          <div className={isDense ? "min-h-[1.65rem]" : "min-h-[1.8rem]"}>
+            {reviewSummary ? (
+              <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.7rem]" : "text-xs"}`}>
+                <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold text-foreground">
+                  <Star className="h-3 w-3 fill-primary text-primary" />
+                  {reviewSummary.rating.toFixed(1)}
                 </span>
-              ) : null}
-              {reviewSummary.purchasedLastMonth > 0 ? (
-                <span className="rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  {reviewSummary.purchasedLastMonth.toLocaleString()} bought last month
-                </span>
-              ) : null}
-            </div>
-          ) : null}
+                <span className="text-muted-foreground">{reviewSummary.reviewCount.toLocaleString()} reviews</span>
+                {reviewSignalLabel ? (
+                  <span className={`rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-primary ${isDense ? "hidden lg:inline-flex" : ""}`}>
+                    {reviewSignalLabel}
+                  </span>
+                ) : null}
+                {reviewSummary.purchasedLastMonth > 0 ? (
+                  <span className={`rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold uppercase tracking-[0.08em] text-muted-foreground ${isDense ? "hidden sm:inline-flex" : ""}`}>
+                    {reviewSummary.purchasedLastMonth.toLocaleString()} bought last month
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <span className="invisible inline-flex text-xs">No reviews yet</span>
+            )}
+          </div>
 
-          {tags.length ? (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span
-                  key={`${product.id}-${tag}`}
-                  className={`salt-outline-chip px-2.5 py-1 ${isDense ? "text-[0.66rem]" : "text-[0.82rem]"}`}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
+          <div className={isDense ? "min-h-[1.85rem]" : "min-h-[2.05rem]"}>
+            {tags.length ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span
+                    key={`${product.id}-${tag}`}
+                    className={`salt-outline-chip px-2.5 py-1 ${isDense ? "text-[0.66rem]" : "text-[0.82rem]"}`}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="invisible inline-flex text-xs">Tag</span>
+            )}
+          </div>
 
-          <p className={`${isDense ? "text-[0.74rem]" : "text-[0.95rem]"} text-muted-foreground`}>
+          <p className={`${isDense ? "line-clamp-1 text-[0.74rem]" : "text-[0.95rem]"} text-muted-foreground`}>
             {product.vendor || "SALT"} • {product.product_type || "Everyday Essential"}
           </p>
           {!isDense ? (
@@ -140,9 +148,9 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           ) : null}
         </div>
 
-        <div className="salt-separator" />
+        <div className="mt-3 salt-separator" />
 
-        <div className={`grid gap-2 ${isDense ? "grid-cols-[1fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
+        <div className={`mt-3 grid gap-2 ${isDense ? "grid-cols-[1fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
           <button
             type="button"
             onClick={() =>

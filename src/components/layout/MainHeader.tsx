@@ -10,7 +10,6 @@ const navLinks = [
   { to: "/shop", label: "Shop" },
   { to: "/collections", label: "Collections" },
   { to: "/blog", label: "Blog" },
-  { to: "/order-history", label: "Order History" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
@@ -131,7 +130,7 @@ const MainHeader = () => {
               aria-label="Open order history"
             >
               <ClipboardList className="h-3.5 w-3.5" />
-              Order history
+              Order History
             </Link>
           </div>
 

@@ -15,7 +15,12 @@ type JudgeMePreviewResponse = {
   badge?: string;
 };
 
+type JudgeMeProductReviewResponse = {
+  widget?: string;
+};
+
 const JUDGEME_STALE_TIME_MS = 0;
+const JUDGEME_AUTO_REFRESH_MS = 90 * 1000;
 const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
 const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
 
@@ -87,7 +92,25 @@ function parseBadgeNumber(html: string, pattern: RegExp): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function parseJudgeMeBadge(productId: number, html: string): JudgeMeReviewSummary | null {
+function normalizeJudgeMeHtml(raw: string): string {
+  if (!raw) {
+    return "";
+  }
+
+  return raw
+    .replace(/<style[^>]*jdgm-temp-hiding-style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(
+      /(<div[^>]*class=['"][^'"]*jdgm-(?:rev-widg|prev-badge)[^'"]*['"][^>]*?)\sstyle=['"]display:\s*none;?['"]/gi,
+      "$1",
+    );
+}
+
+type JudgeMeRawSummary = {
+  rating: number;
+  reviewCount: number;
+};
+
+function parseJudgeMeBadge(html: string): JudgeMeRawSummary | null {
   const rating =
     parseBadgeNumber(html, /data-average-rating=["']([0-5](?:\.\d+)?)["']/i) ||
     parseBadgeNumber(html, /data-score=["']([0-5](?:\.\d+)?)["']/i) ||
@@ -103,38 +126,111 @@ function parseJudgeMeBadge(productId: number, html: string): JudgeMeReviewSummar
   }
 
   return {
-    productId,
     rating: Math.min(5, Math.max(0, rating || 0)),
     reviewCount: Math.max(0, reviewCount || 0),
-    purchasedLastMonth: Math.max(0, Math.round((reviewCount || 0) * 0.28)),
+  };
+}
+
+function parseJudgeMeWidgetSummary(html: string): JudgeMeRawSummary | null {
+  if (!html || typeof DOMParser === "undefined") {
+    return null;
+  }
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const widgetRoot = doc.querySelector(".jdgm-rev-widg");
+  const rootCount = Number(widgetRoot?.getAttribute("data-number-of-reviews") || 0);
+  const rootAverage = Number(widgetRoot?.getAttribute("data-average-rating") || 0);
+
+  const reviewNodes = Array.from(doc.querySelectorAll(".jdgm-rev"));
+  const reviewCountFromNodes = reviewNodes.length;
+  const averageFromNodes =
+    reviewCountFromNodes > 0
+      ? reviewNodes.reduce((sum, node) => {
+          const score = Number(node.querySelector(".jdgm-rev__rating")?.getAttribute("data-score") || 0);
+          return sum + (Number.isFinite(score) ? score : 0);
+        }, 0) / reviewCountFromNodes
+      : 0;
+
+  const reviewCount = Math.max(rootCount, reviewCountFromNodes);
+  const rating =
+    reviewCountFromNodes >= rootCount && averageFromNodes > 0
+      ? averageFromNodes
+      : rootAverage > 0
+        ? rootAverage
+        : averageFromNodes;
+
+  if (!reviewCount && !rating) {
+    return null;
+  }
+
+  return {
+    rating: Math.min(5, Math.max(0, rating || 0)),
+    reviewCount: Math.max(0, reviewCount || 0),
+  };
+}
+
+function buildSummary(productId: number, badge: JudgeMeRawSummary | null, widget: JudgeMeRawSummary | null): JudgeMeReviewSummary | null {
+  if (!badge && !widget) {
+    return null;
+  }
+
+  const badgeCount = badge?.reviewCount || 0;
+  const widgetCount = widget?.reviewCount || 0;
+  const finalReviewCount = Math.max(badgeCount, widgetCount);
+  const finalRating =
+    widgetCount >= badgeCount && (widget?.rating || 0) > 0
+      ? Number(widget?.rating || 0)
+      : (badge?.rating || 0) > 0
+        ? Number(badge?.rating || 0)
+        : Number(widget?.rating || 0);
+
+  return {
+    productId,
+    rating: Math.min(5, Math.max(0, finalRating || 0)),
+    reviewCount: Math.max(0, finalReviewCount || 0),
+    purchasedLastMonth: Math.max(0, Math.round((finalReviewCount || 0) * 0.28)),
     source: "judgeme",
   };
 }
 
-async function requestJudgeMePreviewBadge(
+async function requestJudgeMeSummary(
   shopDomain: string,
   publicToken: string,
   productId: number,
 ): Promise<JudgeMeReviewSummary | null> {
-  const endpoint = new URL("https://api.judge.me/api/v1/widgets/preview_badge");
-  endpoint.searchParams.set("public_token", publicToken);
-  endpoint.searchParams.set("api_token", publicToken);
-  endpoint.searchParams.set("shop_domain", shopDomain);
-  endpoint.searchParams.set("external_id", String(productId));
+  const baseParams = new URLSearchParams({
+    public_token: publicToken,
+    api_token: publicToken,
+    shop_domain: shopDomain,
+    external_id: String(productId),
+    t: String(Date.now()),
+  });
+  const previewEndpoint = `https://api.judge.me/api/v1/widgets/preview_badge?${baseParams.toString()}`;
+  const widgetEndpoint = `https://api.judge.me/api/v1/widgets/product_review?${baseParams.toString()}&page=1&per_page=100`;
 
-  const response = await fetch(endpoint.toString(), { credentials: "omit" });
-  if (!response.ok) {
+  const [previewResponse, widgetResponse] = await Promise.all([
+    fetch(previewEndpoint, { credentials: "omit" }),
+    fetch(widgetEndpoint, { credentials: "omit" }),
+  ]);
+
+  if (!previewResponse.ok && !widgetResponse.ok) {
     return null;
   }
 
-  const payload = (await response.json()) as JudgeMePreviewResponse;
-  const externalId = Number(payload.product_external_id || productId);
-  const badgeHtml = payload.badge || "";
-  if (!Number.isFinite(externalId) || !badgeHtml) {
+  const previewPayload = previewResponse.ok
+    ? ((await previewResponse.json()) as JudgeMePreviewResponse)
+    : {};
+  const widgetPayload = widgetResponse.ok
+    ? ((await widgetResponse.json()) as JudgeMeProductReviewResponse)
+    : {};
+  const externalId = Number(previewPayload.product_external_id || productId);
+  if (!Number.isFinite(externalId)) {
     return null;
   }
 
-  return parseJudgeMeBadge(externalId, String(badgeHtml));
+  const badgeSummary = parseJudgeMeBadge(normalizeJudgeMeHtml(String(previewPayload.badge || "")));
+  const widgetSummary = parseJudgeMeWidgetSummary(normalizeJudgeMeHtml(String(widgetPayload.widget || "")));
+  return buildSummary(externalId, badgeSummary, widgetSummary);
 }
 
 export async function fetchJudgeMeRatings(productIds: number[]): Promise<Record<number, JudgeMeReviewSummary>> {
@@ -167,7 +263,7 @@ export async function fetchJudgeMeRatings(productIds: number[]): Promise<Record<
     const entries = await Promise.all(
       unresolvedIds.map(async (productId) => {
         try {
-          const summary = await requestJudgeMePreviewBadge(domain, publicToken, productId);
+          const summary = await requestJudgeMeSummary(domain, publicToken, productId);
           return summary ? ([productId, summary] as const) : null;
         } catch {
           return null;
@@ -203,6 +299,8 @@ export function useJudgeMeRatings(productIds: number[]) {
     queryFn: () => fetchJudgeMeRatings(normalizedIds),
     enabled: normalizedIds.length > 0,
     staleTime: JUDGEME_STALE_TIME_MS,
+    refetchInterval: JUDGEME_AUTO_REFRESH_MS,
+    refetchIntervalInBackground: true,
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
     retry: false,

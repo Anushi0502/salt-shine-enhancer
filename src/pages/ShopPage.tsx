@@ -810,7 +810,7 @@ const ShopPage = () => {
           <div className="salt-section-shell mt-6 rounded-[1.7rem] p-3 sm:p-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {visibleProducts.map((product, index) => (
-                <Reveal key={product.id} delayMs={index * 35}>
+                <Reveal key={product.id} delayMs={index * 35} className="h-full">
                   <ProductCard product={product} variant="dense" />
                 </Reveal>
               ))}

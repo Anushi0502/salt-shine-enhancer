@@ -53,6 +53,7 @@ Use `.env.local` for local development.
 - `VITE_BLOG_HANDLE`: default blog handle.
 - `VITE_JUDGEME_SHOP_DOMAIN`: Judge.me shop domain.
 - `VITE_JUDGEME_PUBLIC_TOKEN`: Judge.me public token.
+- `VITE_JUDGEME_PRIVATE_TOKEN`: optional Judge.me private token for native bulk write mode.
 - `VITE_ENABLE_SHOPIFY_INBOX`: optional chat toggle.
 - `VITE_ENABLE_MOOSEDESK`: optional chat toggle.
 
@@ -82,8 +83,17 @@ Outputs:
 - Review counts shown in UI are total published reviews (verified and unverified).
 - Verified reviewers are marked with a tick badge on review cards.
 - New review submissions trigger immediate and delayed refetches to reduce lag.
+- `/bulk-review` now runs fully native API submission for all rows, including rows with date fields.
 
 If a review is visible in Judge.me admin but not in storefront UI, confirm it is published/public in Judge.me.
+
+### Bulk review import notes
+
+- `/bulk-review` supports `product_url`, `product_handle`, or `product_id` mapping in one file.
+- Date aliases are supported: `review_date`, `date`, `created_at`, `published_at`, `posted_at`.
+- Date rows are sent with multiple timestamp fields (`created_at`, `review_date`, `published_at`) in native API mode.
+- Judge.me may still normalize timestamps to current submission time depending on API permissions/app behavior.
+- Submission summary reports date rows as `kept`, `overridden`, or `pending confirmation`.
 
 ## Build Shopify theme package
 

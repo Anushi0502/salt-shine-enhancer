@@ -19,6 +19,7 @@ import { useJudgeMeRatings } from "@/lib/judgeme";
 import { useDeviceOrderHistory } from "@/lib/order-history";
 import {
   useBlogPosts,
+  useCollectionProductIds,
   useCollections,
   useProducts,
 } from "@/lib/shopify-data";
@@ -84,6 +85,19 @@ function formattedDateTime(value: string): string {
   });
 }
 
+function collectionCtaLabel(title: string): string {
+  const normalized = String(title || "").trim();
+  if (!normalized) {
+    return "Shop collection";
+  }
+
+  if (normalized.length <= 26) {
+    return `Shop ${normalized}`;
+  }
+
+  return "Shop this collection";
+}
+
 type RankedCollection = ShopifyCollection & {
   effectiveCount: number;
 };
@@ -138,20 +152,98 @@ const HomePage = () => {
   const gardenCollection = rankedCollections.find((collection) =>
     /garden|tool/i.test(`${collection.title} ${collection.handle}`),
   );
+  const trendingCollection = gardenCollection || null;
   const gardenImage = normalizeShopifyAssetUrl(gardenCollection?.image?.src);
-  const trendingProducts = [...products]
-    .sort((a, b) => {
-      const discountDelta = savingsPercent(b) - savingsPercent(a);
-      if (discountDelta !== 0) {
-        return discountDelta;
-      }
+  const {
+    data: trendingCollectionProductIdsPayload,
+  } = useCollectionProductIds(
+    trendingCollection?.handle || "",
+    Boolean(trendingCollection?.handle),
+  );
 
-      return (
-        new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
-        new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
-      );
-    })
-    .slice(0, 8);
+  const productById = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
+
+  const focusedCollectionProducts = useMemo(() => {
+    const ids = trendingCollectionProductIdsPayload?.productIds || [];
+    if (!ids.length) {
+      return [];
+    }
+
+    return ids
+      .map((id) => productById.get(id))
+      .filter((product): product is NonNullable<typeof product> => Boolean(product));
+  }, [productById, trendingCollectionProductIdsPayload]);
+
+  const focusRatingCandidateIds = useMemo(
+    () => focusedCollectionProducts.slice(0, 80).map((product) => product.id),
+    [focusedCollectionProducts],
+  );
+  const { data: focusCollectionRatings } = useJudgeMeRatings(focusRatingCandidateIds);
+
+  const trendingProducts = useMemo(() => {
+    const fallback = [...products]
+      .sort((a, b) => {
+        const discountDelta = savingsPercent(b) - savingsPercent(a);
+        if (discountDelta !== 0) {
+          return discountDelta;
+        }
+
+        return (
+          new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
+          new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
+        );
+      })
+      .slice(0, 8);
+
+    if (!trendingCollection || !focusedCollectionProducts.length) {
+      return fallback;
+    }
+
+    const rankedByRating = [...focusedCollectionProducts]
+      .sort((a, b) => {
+        const left = focusCollectionRatings?.[a.id];
+        const right = focusCollectionRatings?.[b.id];
+
+        const leftHasReviews = (left?.reviewCount || 0) > 0;
+        const rightHasReviews = (right?.reviewCount || 0) > 0;
+        if (leftHasReviews !== rightHasReviews) {
+          return rightHasReviews ? 1 : -1;
+        }
+
+        const ratingDelta = (right?.rating || 0) - (left?.rating || 0);
+        if (Math.abs(ratingDelta) > 0.01) {
+          return ratingDelta;
+        }
+
+        const reviewCountDelta = (right?.reviewCount || 0) - (left?.reviewCount || 0);
+        if (reviewCountDelta !== 0) {
+          return reviewCountDelta;
+        }
+
+        const discountDelta = savingsPercent(b) - savingsPercent(a);
+        if (discountDelta !== 0) {
+          return discountDelta;
+        }
+
+        return (
+          new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
+          new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
+        );
+      })
+      .slice(0, 8);
+
+    return rankedByRating.length ? rankedByRating : fallback;
+  }, [focusCollectionRatings, focusedCollectionProducts, products, trendingCollection]);
+
+  const trendingShopLink = trendingCollection
+    ? `/shop?collection=${trendingCollection.handle}`
+    : "/shop";
+  const trendingShopLabel = trendingCollection
+    ? collectionCtaLabel(trendingCollection.title)
+    : "Shop full catalog";
   const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
   const trendingReviewIds = trendingProducts.slice(0, 8).map((product) => product.id);
   const { data: trendingRatings } = useJudgeMeRatings(trendingReviewIds);
@@ -409,20 +501,25 @@ const HomePage = () => {
         <Reveal>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Trending</p>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                {trendingCollection ? "Collection focus" : "Trending"}
+              </p>
               <h2 className="font-display text-[clamp(1.9rem,3vw,2.8rem)] leading-[1.02]">
-                High-intent products, prioritized
+                {trendingCollection
+                  ? `Best-rated picks from ${trendingCollection.title}`
+                  : "High-intent products, prioritized"}
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Ranked by strongest discount opportunity and fresh updates to keep merchandising
-                conversion-focused.
+                {trendingCollection
+                  ? `Products are now ranked from the ${trendingCollection.title} banner collection, prioritizing stronger ratings and review depth.`
+                  : "Ranked by strongest discount opportunity and fresh updates to keep merchandising conversion-focused."}
               </p>
             </div>
             <Link
-              to="/shop"
+              to={trendingShopLink}
               className="salt-primary-cta h-11 px-5 text-sm font-bold"
             >
-              Shop full catalog
+              {trendingShopLabel}
             </Link>
           </div>
         </Reveal>
