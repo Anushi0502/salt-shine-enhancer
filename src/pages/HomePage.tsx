@@ -526,7 +526,7 @@ const HomePage = () => {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trendingProducts.map((product, index) => (
-            <Reveal key={product.id} delayMs={index * 70}>
+            <Reveal key={product.id} delayMs={index * 70} className="h-full">
               <ProductCard product={product} variant="dense" />
             </Reveal>
           ))}

@@ -6,9 +6,11 @@ import ChatBootstrap from "@/components/integrations/ChatBootstrap";
 import { useCollections } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
-const ENTRY_SPLASH_MS = 4600;
+const ENTRY_SPLASH_MAX_MS = 2400;
+const ENTRY_SPLASH_MIN_MS = 900;
 
 const SiteShell = ({ children }: PropsWithChildren) => {
+  const [splashStartedAt] = useState(() => Date.now());
   const [showEntrySplash, setShowEntrySplash] = useState(
     () => typeof window !== "undefined" && window.location.pathname === "/",
   );
@@ -37,11 +39,25 @@ const SiteShell = ({ children }: PropsWithChildren) => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(
       () => setShowEntrySplash(false),
-      reducedMotion ? 420 : ENTRY_SPLASH_MS,
+      reducedMotion ? 420 : ENTRY_SPLASH_MAX_MS,
     );
 
     return () => window.clearTimeout(timer);
   }, [showEntrySplash]);
+
+  useEffect(() => {
+    if (!showEntrySplash || typeof window === "undefined" || !collectionsPayload) {
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const minVisibleMs = reducedMotion ? 260 : ENTRY_SPLASH_MIN_MS;
+    const elapsedMs = Date.now() - splashStartedAt;
+    const remainingMs = Math.max(0, minVisibleMs - elapsedMs);
+    const timer = window.setTimeout(() => setShowEntrySplash(false), remainingMs);
+
+    return () => window.clearTimeout(timer);
+  }, [collectionsPayload, showEntrySplash, splashStartedAt]);
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
