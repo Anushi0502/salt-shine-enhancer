@@ -2,6 +2,7 @@ import { useEffect, useState, type PropsWithChildren } from "react";
 import { Outlet } from "react-router-dom";
 import MainHeader from "@/components/layout/MainHeader";
 import MainFooter from "@/components/layout/MainFooter";
+import FloatingActions from "@/components/layout/FloatingActions";
 import ChatBootstrap from "@/components/integrations/ChatBootstrap";
 import { useCollections } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
@@ -132,6 +133,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       <ChatBootstrap />
       <main id="main-content" className="relative">{children || <Outlet />}</main>
       <MainFooter />
+      <FloatingActions />
     </div>
   );
 };

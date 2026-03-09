@@ -87,19 +87,19 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
       <div className={`flex flex-1 flex-col ${isDense ? "p-3.5" : "p-4"}`}>
         <div className="flex-1 space-y-2">
-          <h3 className={`line-clamp-2 font-semibold ${isDense ? "min-h-[2.8rem] text-[0.92rem] leading-5" : "min-h-[3.2rem] text-sm leading-6"}`}>
+          <h3 className={`line-clamp-2 font-semibold ${isDense ? "min-h-[3rem] text-[1rem] leading-[1.38]" : "min-h-[3.2rem] text-sm leading-6"}`}>
             <Link to={`/products/${product.handle}`} className="hover:text-primary">
               {title}
             </Link>
           </h3>
 
           <div className="flex flex-wrap items-center gap-2">
-            <strong className={`${isDense ? "text-[0.96rem]" : "text-base"} text-primary`}>{formatMoney(min)}</strong>
-            {compare > min ? <s className={`${isDense ? "text-[0.68rem]" : "text-xs"} text-muted-foreground`}>{formatMoney(compare)}</s> : null}
+            <strong className={`${isDense ? "text-[1.08rem]" : "text-base"} text-primary`}>{formatMoney(min)}</strong>
+            {compare > min ? <s className={`${isDense ? "text-[0.8rem]" : "text-xs"} text-muted-foreground`}>{formatMoney(compare)}</s> : null}
           </div>
           <div className={isDense ? "min-h-[1.65rem]" : "min-h-[1.8rem]"}>
             {reviewSummary ? (
-              <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.7rem]" : "text-xs"}`}>
+              <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.82rem]" : "text-xs"}`}>
                 <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2 py-0.5 font-semibold text-foreground">
                   <Star className="h-3 w-3 fill-primary text-primary" />
                   {reviewSummary.rating.toFixed(1)}
@@ -138,7 +138,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             )}
           </div>
 
-          <p className={`${isDense ? "line-clamp-1 text-[0.74rem]" : "text-[0.95rem]"} text-muted-foreground`}>
+          <p className={`${isDense ? "line-clamp-1 text-[0.85rem] font-medium" : "text-[0.95rem]"} text-muted-foreground`}>
             {product.vendor || "SALT"} • {product.product_type || "Everyday Essential"}
           </p>
           {!isDense ? (
@@ -167,7 +167,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             }
             disabled={!defaultVariant}
             className={`salt-primary-cta inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 px-4 font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50 ${
-              isDense ? "h-9 text-[0.62rem]" : "h-10 text-xs"
+              isDense ? "h-9 text-[0.68rem]" : "h-10 text-xs"
             }`}
           >
             <ShoppingBag className="h-4 w-4" />
@@ -177,7 +177,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           <Link
             to={`/products/${product.handle}`}
             className={`inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-background px-3 font-bold uppercase tracking-[0.1em] hover:border-primary/50 hover:text-primary ${
-              isDense ? "h-9 text-[0.58rem]" : "h-10 text-[0.68rem]"
+              isDense ? "h-9 text-[0.63rem]" : "h-10 text-[0.68rem]"
             }`}
           >
             {isDense ? "View" : "Details"} <ArrowUpRight className="h-3.5 w-3.5" />

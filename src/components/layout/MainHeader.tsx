@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { ClipboardList, Menu, Search, ShoppingBag, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
@@ -33,6 +33,8 @@ const MainHeader = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopSearch, setDesktopSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
+  const desktopSearchRef = useRef<HTMLInputElement | null>(null);
+  const mobileSearchRef = useRef<HTMLInputElement | null>(null);
   const { itemCount } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -43,6 +45,83 @@ const MainHeader = () => {
     setDesktopSearch(activeQuery);
     setMobileSearch(activeQuery);
   }, [activeQuery]);
+
+  useEffect(() => {
+    if (!mobileOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      mobileSearchRef.current?.focus();
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const isEditableTarget = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      if (!element) {
+        return false;
+      }
+
+      return (
+        element.isContentEditable ||
+        element.tagName === "INPUT" ||
+        element.tagName === "TEXTAREA" ||
+        element.tagName === "SELECT"
+      );
+    };
+
+    const focusSearch = () => {
+      const desktopMode = window.matchMedia("(min-width: 1024px)").matches;
+      if (desktopMode) {
+        desktopSearchRef.current?.focus();
+        desktopSearchRef.current?.select();
+        return;
+      }
+
+      setMobileOpen(true);
+      window.setTimeout(() => {
+        mobileSearchRef.current?.focus();
+        mobileSearchRef.current?.select();
+      }, 90);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && mobileOpen) {
+        setMobileOpen(false);
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      const slashShortcut =
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey;
+      const commandShortcut =
+        event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey);
+
+      if (!slashShortcut && !commandShortcut) {
+        return;
+      }
+
+      event.preventDefault();
+      focusSearch();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
 
   const submitSearch = (query: string) => {
     const trimmed = query.trim();
@@ -112,13 +191,20 @@ const MainHeader = () => {
           <form onSubmit={onDesktopSearch} className="relative hidden lg:block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              ref={desktopSearchRef}
               value={desktopSearch}
               onChange={(event) => setDesktopSearch(event.target.value)}
               type="search"
               placeholder="Search products"
               aria-label="Search products"
-              className="salt-form-control h-10 w-72 rounded-full border-border/80 bg-card/95 pl-9 pr-3"
+              className="salt-form-control h-10 w-72 rounded-full border-border/80 bg-card/95 pl-9 pr-10"
             />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border/75 bg-background/88 px-1 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.06em] text-muted-foreground"
+            >
+              / K
+            </span>
           </form>
 
           <ThemeToggle />
@@ -186,6 +272,7 @@ const MainHeader = () => {
             </label>
             <input
               id="mobile-header-search"
+              ref={mobileSearchRef}
               type="search"
               value={mobileSearch}
               onChange={(event) => setMobileSearch(event.target.value)}

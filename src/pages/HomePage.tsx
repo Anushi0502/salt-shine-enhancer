@@ -15,7 +15,7 @@ import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
+import { useJudgeMeRatings, type JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useDeviceOrderHistory } from "@/lib/order-history";
 import {
   useBlogPosts,
@@ -244,6 +244,54 @@ const HomePage = () => {
   const trendingShopLabel = trendingCollection
     ? collectionCtaLabel(trendingCollection.title)
     : "Shop full catalog";
+  const focusCollectionInsights = useMemo(() => {
+    if (!trendingCollection || !focusedCollectionProducts.length) {
+      return null;
+    }
+
+    const summaries = focusedCollectionProducts
+      .map((product) => focusCollectionRatings?.[product.id])
+      .filter((summary): summary is NonNullable<typeof summary> => Boolean(summary));
+
+    const ratedProductCount = summaries.filter((summary) => summary.reviewCount > 0).length;
+    const totalReviews = summaries.reduce((sum, summary) => sum + summary.reviewCount, 0);
+    const averageRating =
+      totalReviews > 0
+        ? summaries.reduce((sum, summary) => sum + summary.rating * summary.reviewCount, 0) / totalReviews
+        : summaries.length
+          ? summaries.reduce((sum, summary) => sum + summary.rating, 0) / summaries.length
+          : 0;
+
+    const topReviewedCandidates = focusedCollectionProducts
+      .map((product) => {
+        const summary = focusCollectionRatings?.[product.id];
+        if (!summary || summary.reviewCount <= 0) {
+          return null;
+        }
+        return {
+          product,
+          summary,
+        };
+      })
+      .filter((entry): entry is { product: (typeof focusedCollectionProducts)[number]; summary: JudgeMeReviewSummary } => Boolean(entry));
+
+    const topReviewed = topReviewedCandidates
+      .sort((a, b) => {
+        const reviewDelta = b.summary.reviewCount - a.summary.reviewCount;
+        if (reviewDelta !== 0) {
+          return reviewDelta;
+        }
+        return b.summary.rating - a.summary.rating;
+      })[0];
+
+    return {
+      productCount: focusedCollectionProducts.length,
+      ratedProductCount,
+      totalReviews,
+      averageRating: Number.isFinite(averageRating) ? averageRating : 0,
+      topReviewed,
+    };
+  }, [focusCollectionRatings, focusedCollectionProducts, trendingCollection]);
   const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
   const trendingReviewIds = trendingProducts.slice(0, 8).map((product) => product.id);
   const { data: trendingRatings } = useJudgeMeRatings(trendingReviewIds);
@@ -523,6 +571,35 @@ const HomePage = () => {
             </Link>
           </div>
         </Reveal>
+
+        {focusCollectionInsights ? (
+          <Reveal delayMs={50}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-card/75 px-3 py-2.5">
+              <div className="flex flex-wrap gap-2">
+                <span className="salt-outline-chip text-[0.64rem]">
+                  {focusCollectionInsights.productCount.toLocaleString()} products in focus
+                </span>
+                <span className="salt-outline-chip text-[0.64rem]">
+                  {focusCollectionInsights.ratedProductCount.toLocaleString()} rated items
+                </span>
+                <span className="salt-outline-chip text-[0.64rem]">
+                  {focusCollectionInsights.averageRating.toFixed(2)} avg stars
+                </span>
+                <span className="salt-outline-chip text-[0.64rem]">
+                  {focusCollectionInsights.totalReviews.toLocaleString()} reviews considered
+                </span>
+              </div>
+              {focusCollectionInsights.topReviewed ? (
+                <Link
+                  to={`/products/${focusCollectionInsights.topReviewed.product.handle}`}
+                  className="text-xs font-semibold text-muted-foreground hover:text-primary"
+                >
+                  Top reviewed: {focusCollectionInsights.topReviewed.product.title}
+                </Link>
+              ) : null}
+            </div>
+          </Reveal>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trendingProducts.map((product, index) => (
