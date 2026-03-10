@@ -59,14 +59,6 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
           >
             SALT
           </span>
-          <span
-            className={cn(
-              "rounded-full border border-white/32 bg-black/20 px-1.5 py-0.5 font-bold uppercase tracking-[0.12em] text-white/92",
-              microLabelSizeMap[size],
-            )}
-          >
-            Online
-          </span>
         </span>
       </span>
 
