@@ -610,56 +610,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {reviewInsights && reviewInsights.ratedProducts > 0 ? (
-        <section className="mx-auto mt-7 w-[min(1280px,96vw)]">
-          <Reveal>
-            <div className="salt-panel-shell rounded-[1.6rem] p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-primary">
-                    Live review pulse
-                  </p>
-                  <h3 className="font-display text-[clamp(1.3rem,2.1vw,1.9rem)] leading-tight">
-                    Shoppers are actively reviewing this catalog
-                  </h3>
-                </div>
-                <p className="rounded-full border border-border/75 bg-background px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
-                  Judge.me synced
-                </p>
-              </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                <div className="salt-ambient-card rounded-xl px-3 py-2">
-                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Average rating</p>
-                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.averageRating.toFixed(2)} / 5</p>
-                </div>
-                <div className="salt-ambient-card rounded-xl px-3 py-2">
-                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Rated products in spotlight</p>
-                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.ratedProducts.toLocaleString()}</p>
-                </div>
-                <div className="salt-ambient-card rounded-xl px-3 py-2">
-                  <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Verified reviews counted</p>
-                  <p className="mt-1 text-xl font-semibold text-foreground">{reviewInsights.totalReviews.toLocaleString()}</p>
-                </div>
-              </div>
-              {reviewInsights.topReviewed ? (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Top reviewed right now:
-                  <Link
-                    to={`/products/${reviewInsights.topReviewed.product.handle}`}
-                    className="ml-1 font-semibold text-foreground hover:text-primary"
-                  >
-                    {reviewInsights.topReviewed.product.title}
-                  </Link>
-                  {" "}
-                  with {reviewInsights.topReviewed.summary.rating.toFixed(1)} stars across{" "}
-                  {reviewInsights.topReviewed.summary.reviewCount.toLocaleString()} reviews.
-                </p>
-              ) : null}
-            </div>
-          </Reveal>
-        </section>
-      ) : null}
-
+      
       {latestBlogPosts.length > 0 ? (
         <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
           <Reveal>
