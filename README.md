@@ -1,6 +1,6 @@
 # SALT Online Store (React Storefront)
 
-Conversion-focused React storefront for SALT, integrated with Shopify catalog/checkout and Judge.me reviews.
+SALT Online Store is a production‑ready, Shopify‑backed ecommerce experience built in React/Vite and deployed both as a standalone web app and as a Shopify theme bundle. It prioritizes conversion with fast discovery, curated collections, premium product cards, real‑time inventory/checkout handoff, and integrated reviews, while maintaining strict UI/UX consistency across light and dark themes. The codebase includes automated sync tooling to generate Shopify assets, robust SEO metadata (canonical, Open Graph, structured data, sitemap/robots), and official SALT branding and favicon support for strong search visibility.
 
 ## What this app does
 
