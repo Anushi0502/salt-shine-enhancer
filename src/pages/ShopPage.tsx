@@ -253,7 +253,7 @@ const ShopPage = () => {
   const sortedProducts = useMemo(() => {
     const base = [...priceFilteredProducts];
 
-    if (sort === "featured" && !query && selectedCollectionOrder) {
+    if (sort === "featured" && selectedCollectionOrder) {
       return base.sort((a, b) => {
         const leftRank = selectedCollectionOrder.get(a.id);
         const rightRank = selectedCollectionOrder.get(b.id);
