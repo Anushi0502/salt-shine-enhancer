@@ -57,8 +57,8 @@ function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] 
     return [];
   }
 
-  return input
-    .filter((entry): entry is DeviceOrderHistoryEntry => {
+  return (input as DeviceOrderHistoryEntry[])
+    .filter((entry) => {
       if (!entry || typeof entry !== "object") {
         return false;
       }
@@ -80,7 +80,7 @@ function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] 
       return {
         id: entry.id,
         createdAt: entry.createdAt,
-        source: entry.source === "buy-now" ? "buy-now" : "cart",
+        source: (entry.source === "buy-now" ? "buy-now" : "cart") as DeviceOrderHistoryEntry["source"],
         checkoutUrl: entry.checkoutUrl,
         itemCount,
         subtotal,
