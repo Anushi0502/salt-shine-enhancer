@@ -6,51 +6,51 @@
 
 @layer base {
   :root {
-    --background: 38 33% 94%;
-    --foreground: 40 8% 8%;
+    --background: 220 30% 96%;
+    --foreground: 220 20% 8%;
 
-    --card: 42 50% 98%;
-    --card-foreground: 40 8% 8%;
+    --card: 220 30% 99%;
+    --card-foreground: 220 20% 8%;
 
-    --popover: 42 50% 98%;
-    --popover-foreground: 40 8% 8%;
+    --popover: 220 30% 99%;
+    --popover-foreground: 220 20% 8%;
 
-    --primary: 45 90% 50%;
-    --primary-foreground: 40 10% 8%;
+    --primary: 45 95% 50%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 38 25% 93%;
-    --secondary-foreground: 40 8% 8%;
+    --secondary: 220 25% 93%;
+    --secondary-foreground: 220 20% 8%;
 
-    --muted: 36 18% 90%;
-    --muted-foreground: 37 7% 39%;
+    --muted: 220 18% 90%;
+    --muted-foreground: 220 10% 42%;
 
-    --accent: 42 52% 52%;
-    --accent-foreground: 40 8% 8%;
+    --accent: 220 60% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 33 30% 83%;
-    --input: 33 30% 83%;
-    --ring: 45 90% 50%;
+    --border: 220 20% 84%;
+    --input: 220 20% 84%;
+    --ring: 45 95% 50%;
 
     --radius: 0.75rem;
 
     /* SALT custom tokens */
-    --salt-bg: 38 33% 94%;
-    --salt-paper: 42 50% 98%;
-    --salt-ink: 40 8% 8%;
-    --salt-muted: 37 7% 39%;
-    --salt-line: 33 30% 83%;
-    --salt-accent: 45 90% 50%;
-    --salt-accent-deep: 43 88% 40%;
-    --salt-olive: 100 16% 31%;
-    --salt-gold: 37 52% 52%;
-    --salt-teal: 162 24% 36%;
-    --salt-clay: 25 49% 56%;
-    --salt-warm-bg: 30 50% 92%;
-    --salt-panel-start: 28 60% 94%;
-    --salt-panel-end: 24 45% 87%;
+    --salt-bg: 220 30% 96%;
+    --salt-paper: 220 30% 99%;
+    --salt-ink: 220 20% 8%;
+    --salt-muted: 220 10% 42%;
+    --salt-line: 220 20% 84%;
+    --salt-accent: 45 95% 50%;
+    --salt-accent-deep: 45 90% 40%;
+    --salt-blue: 220 60% 50%;
+    --salt-gold: 45 95% 50%;
+    --salt-navy: 220 45% 22%;
+    --salt-sky: 210 70% 60%;
+    --salt-warm-bg: 220 30% 94%;
+    --salt-panel-start: 220 35% 95%;
+    --salt-panel-end: 215 30% 90%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -63,38 +63,38 @@
   }
 
   .dark {
-    --background: 224 23% 10%;
-    --foreground: 42 28% 96%;
+    --background: 220 30% 9%;
+    --foreground: 45 30% 96%;
 
-    --card: 223 20% 14%;
-    --card-foreground: 42 22% 92%;
+    --card: 220 28% 13%;
+    --card-foreground: 45 25% 92%;
 
-    --popover: 223 20% 14%;
-    --popover-foreground: 42 22% 92%;
+    --popover: 220 28% 13%;
+    --popover-foreground: 45 25% 92%;
 
-    --primary: 45 85% 58%;
-    --primary-foreground: 40 10% 8%;
+    --primary: 45 90% 55%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 223 15% 18%;
-    --secondary-foreground: 42 22% 92%;
+    --secondary: 220 22% 17%;
+    --secondary-foreground: 45 25% 92%;
 
-    --muted: 223 12% 20%;
-    --muted-foreground: 37 16% 82%;
+    --muted: 220 18% 19%;
+    --muted-foreground: 220 12% 72%;
 
-    --accent: 42 52% 55%;
-    --accent-foreground: 225 18% 12%;
+    --accent: 215 55% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 52%;
-    --destructive-foreground: 42 22% 92%;
+    --destructive-foreground: 45 25% 92%;
 
-    --border: 223 14% 32%;
-    --input: 223 14% 32%;
-    --ring: 45 85% 58%;
+    --border: 220 18% 28%;
+    --input: 220 18% 28%;
+    --ring: 45 90% 55%;
 
-    --salt-olive: 86 28% 62%;
-    --salt-gold: 40 78% 66%;
-    --salt-teal: 163 35% 64%;
-    --salt-clay: 27 72% 66%;
+    --salt-blue: 215 55% 60%;
+    --salt-gold: 45 90% 60%;
+    --salt-navy: 220 40% 32%;
+    --salt-sky: 210 65% 68%;
   }
 }
 
