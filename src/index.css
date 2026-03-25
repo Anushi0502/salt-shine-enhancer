@@ -15,8 +15,8 @@
     --popover: 42 50% 98%;
     --popover-foreground: 40 8% 8%;
 
-    --primary: 18 62% 50%;
-    --primary-foreground: 40 30% 95%;
+    --primary: 45 90% 50%;
+    --primary-foreground: 40 10% 8%;
 
     --secondary: 38 25% 93%;
     --secondary-foreground: 40 8% 8%;
@@ -32,7 +32,7 @@
 
     --border: 33 30% 83%;
     --input: 33 30% 83%;
-    --ring: 18 62% 50%;
+    --ring: 45 90% 50%;
 
     --radius: 0.75rem;
 
@@ -42,8 +42,8 @@
     --salt-ink: 40 8% 8%;
     --salt-muted: 37 7% 39%;
     --salt-line: 33 30% 83%;
-    --salt-accent: 18 62% 50%;
-    --salt-accent-deep: 16 72% 39%;
+    --salt-accent: 45 90% 50%;
+    --salt-accent-deep: 43 88% 40%;
     --salt-olive: 100 16% 31%;
     --salt-gold: 37 52% 52%;
     --salt-teal: 162 24% 36%;
@@ -72,8 +72,8 @@
     --popover: 223 20% 14%;
     --popover-foreground: 42 22% 92%;
 
-    --primary: 24 72% 56%;
-    --primary-foreground: 42 30% 95%;
+    --primary: 45 85% 58%;
+    --primary-foreground: 40 10% 8%;
 
     --secondary: 223 15% 18%;
     --secondary-foreground: 42 22% 92%;
@@ -89,7 +89,7 @@
 
     --border: 223 14% 32%;
     --input: 223 14% 32%;
-    --ring: 24 72% 56%;
+    --ring: 45 85% 58%;
 
     --salt-olive: 86 28% 62%;
     --salt-gold: 40 78% 66%;
