@@ -1,7 +1,7 @@
 import { ShoppingBag, User } from "lucide-react";
 
 const Topbar = () => (
-  <header className="sticky top-[32px] z-[110] backdrop-blur-[14px] bg-background/86 border-b border-salt-olive/20">
+  <header className="sticky top-[32px] z-[110] backdrop-blur-[14px] bg-background/86 border-b border-salt-blue/20">
     <div className="salt-container flex items-center justify-between py-3">
       <div className="pl-12">
         <span className="font-serif text-[2rem] tracking-[0.12em] leading-none">SALT</span>

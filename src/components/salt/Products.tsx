@@ -37,7 +37,7 @@ const products = [
 
 const flagColors: Record<string, string> = {
   Sale: "bg-gradient-to-r from-primary to-salt-accent-deep",
-  Trending: "bg-salt-olive",
+  Trending: "bg-salt-blue",
   New: "bg-salt-gold",
   "Best Seller": "bg-foreground",
 };

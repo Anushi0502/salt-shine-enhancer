@@ -141,8 +141,8 @@
     inset: 0;
     z-index: -1;
     background:
-      linear-gradient(122deg, hsl(var(--salt-clay) / 0.08), transparent 45%),
-      linear-gradient(302deg, hsl(var(--salt-teal) / 0.07), transparent 48%);
+      linear-gradient(122deg, hsl(var(--salt-gold) / 0.08), transparent 45%),
+      linear-gradient(302deg, hsl(var(--salt-blue) / 0.07), transparent 48%);
     mix-blend-mode: multiply;
   }
 
@@ -257,8 +257,8 @@
   .salt-surface {
     background:
       linear-gradient(160deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.92)),
-      linear-gradient(120deg, hsl(var(--salt-clay) / 0.07), transparent 44%),
-      linear-gradient(300deg, hsl(var(--salt-teal) / 0.07), transparent 46%);
+      linear-gradient(120deg, hsl(var(--salt-gold) / 0.07), transparent 44%),
+      linear-gradient(300deg, hsl(var(--salt-blue) / 0.07), transparent 46%);
     border: 1px solid hsl(var(--border) / 0.75);
     box-shadow:
       0 18px 52px -34px rgba(14, 12, 10, 0.55),

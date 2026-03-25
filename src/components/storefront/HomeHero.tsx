@@ -19,7 +19,7 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
         <div className="salt-ink-panel relative isolate rounded-[2rem] p-8 text-[hsl(var(--salt-paper))] sm:p-12">
           <div className="pointer-events-none absolute inset-0 salt-grid-bg opacity-20" />
           <div className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-primary/35 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-1/2 h-52 w-80 -translate-x-1/2 rounded-full bg-salt-olive/30 blur-[110px]" />
+          <div className="pointer-events-none absolute bottom-0 left-1/2 h-52 w-80 -translate-x-1/2 rounded-full bg-salt-blue/30 blur-[110px]" />
           <div className="pointer-events-none absolute -left-8 top-1/3 h-32 w-32 rounded-full border border-white/20 bg-white/5 blur-sm" />
 
           <BrandLogo
@@ -132,7 +132,7 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-olive)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
+                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
                     <p className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                       Image unavailable
                     </p>

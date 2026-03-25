@@ -150,7 +150,7 @@ const MainHeader = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/82 shadow-[0_18px_44px_-34px_rgba(0,0,0,0.62)] backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-150">
       
-      <div className="border-b border-border/50 bg-[linear-gradient(90deg,hsl(var(--salt-ink))_0%,hsl(var(--salt-ink)/0.95)_42%,hsl(var(--salt-olive)/0.7)_100%)] text-[hsl(var(--salt-paper))]">
+      <div className="border-b border-border/50 bg-[linear-gradient(90deg,hsl(var(--salt-ink))_0%,hsl(var(--salt-ink)/0.95)_42%,hsl(var(--salt-blue)/0.7)_100%)] text-[hsl(var(--salt-paper))]">
         <div className="mx-auto flex w-[min(1280px,96vw)] items-center justify-between gap-3 py-2.5 text-[0.7rem] sm:text-xs">
           <span className="truncate">Free shipping all over the US</span>
           <Link

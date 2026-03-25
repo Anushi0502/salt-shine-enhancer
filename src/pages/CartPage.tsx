@@ -236,7 +236,7 @@ const CartPage = () => {
                       className="aspect-square w-full rounded-xl border border-border bg-muted object-cover"
                     />
                   ) : (
-                    <div className="grid aspect-square w-full place-items-center rounded-xl border border-border bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-olive)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
+                    <div className="grid aspect-square w-full place-items-center rounded-xl border border-border bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-blue)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
                       <p className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                         Image unavailable
                       </p>
