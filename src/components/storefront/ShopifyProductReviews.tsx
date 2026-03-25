@@ -588,7 +588,7 @@ const ShopifyProductReviews = ({
                   <button
                     key={`bucket-${bucket.value}`}
                     type="button"
-                    onClick={() => setRatingFilter((current) => (current === bucket.value ? "all" : bucket.value))}
+                    onClick={() => setRatingFilter((current) => (current === bucket.value ? "all" : bucket.value) as JudgeMeRatingFilter)}
                     className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition ${
                       ratingFilter === bucket.value
                         ? "border-primary/60 bg-primary/10"

@@ -491,8 +491,8 @@ async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
 
         return {
           generatedAt: new Date().toISOString(),
-          source: base,
-          blogHandle: handle,
+          source: base as string,
+          blogHandle: handle as string,
           total: posts.length,
           posts,
         };

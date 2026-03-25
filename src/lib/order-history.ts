@@ -57,8 +57,8 @@ function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] 
     return [];
   }
 
-  return input
-    .filter((entry): entry is DeviceOrderHistoryEntry => {
+  return (input as DeviceOrderHistoryEntry[])
+    .filter((entry) => {
       if (!entry || typeof entry !== "object") {
         return false;
       }
