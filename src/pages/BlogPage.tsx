@@ -7,7 +7,7 @@ import { readingTime } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
 
 const blogImageFallback = (
-  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-olive)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
+  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
     <p className="text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
       Image unavailable
     </p>

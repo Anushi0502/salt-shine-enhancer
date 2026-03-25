@@ -62,8 +62,10 @@ export default {
           line: "hsl(var(--salt-line))",
           accent: "hsl(var(--salt-accent))",
           "accent-deep": "hsl(var(--salt-accent-deep))",
-          olive: "hsl(var(--salt-olive))",
+          blue: "hsl(var(--salt-blue))",
           gold: "hsl(var(--salt-gold))",
+          navy: "hsl(var(--salt-navy))",
+          sky: "hsl(var(--salt-sky))",
           warm: "hsl(var(--salt-warm-bg))",
         },
         sidebar: {

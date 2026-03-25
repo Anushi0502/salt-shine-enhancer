@@ -59,7 +59,7 @@ async function writeThemeScaffold() {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="theme-color" content="#e6b800">
+    <meta name="theme-color" content="#1e3a6e">
     <title>{{ page_title }}</title>
     {{ content_for_header }}
     {{ 'salt-app.css' | asset_url | stylesheet_tag }}

@@ -14,7 +14,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-[32px] z-[110] backdrop-blur-[14px] bg-background/86 border-b border-salt-olive/20">
+    <header className="sticky top-[32px] z-[110] backdrop-blur-[14px] bg-background/86 border-b border-salt-blue/20">
       <div className="salt-container grid grid-cols-[auto_1fr_auto] gap-4 items-center py-3.5 max-lg:grid-cols-[auto_1fr_auto]">
         <a href="#" className="font-serif text-[2rem] tracking-[0.12em] leading-none">
           SALT

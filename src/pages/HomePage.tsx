@@ -685,7 +685,7 @@ const HomePage = () => {
 
             </div>
 
-            <div className="salt-card-hover salt-section-shell rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-olive/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
+            <div className="salt-card-hover salt-section-shell rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-blue/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                 Customer proof
               </p>

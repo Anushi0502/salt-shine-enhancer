@@ -37,7 +37,7 @@ const StateShell = ({ title, subtitle, action, tone, icon, showSkeleton = false 
   >
     <div className={`salt-panel-shell relative overflow-hidden rounded-2xl border p-8 ${panelToneClassMap[tone]}`}>
       <div className="pointer-events-none absolute -left-10 -top-8 h-24 w-24 rounded-full bg-primary/16 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-8 -right-10 h-24 w-24 rounded-full bg-salt-olive/18 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-8 -right-10 h-24 w-24 rounded-full bg-salt-blue/18 blur-2xl" />
       <BrandLogo className="mx-auto mb-3 w-fit" size="sm" />
       <div className={`inline-flex h-11 w-11 items-center justify-center rounded-full border ${iconClassMap[tone]}`}>
         {icon}

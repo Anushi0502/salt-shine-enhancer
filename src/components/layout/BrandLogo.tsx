@@ -41,15 +41,15 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn(
-          "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 bg-[linear-gradient(135deg,#c9a832_0%,#b09530_55%,#7f7a5a_100%)] shadow-soft",
+          "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 bg-[linear-gradient(135deg,#1e3a6e_0%,#2b508a_45%,#3b64b4_100%)] shadow-soft",
           emblemSizeMap[size],
         )}
       >
         <span className="absolute inset-[1px] rounded-full bg-[linear-gradient(126deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.15)_100%)]" />
         <span className="pointer-events-none absolute left-3 top-[0.34rem] h-[2px] w-[38%] rounded-full bg-white/75" />
-        <span className="pointer-events-none absolute left-3 bottom-[0.34rem] h-[2px] w-[31%] rounded-full bg-[#5c8bff]/90" />
+        <span className="pointer-events-none absolute left-3 bottom-[0.34rem] h-[2px] w-[31%] rounded-full bg-[#f0d249]/90" />
         <span className="pointer-events-none absolute right-3 top-[0.34rem] h-[2px] w-[34%] rounded-full bg-[#f0d249]/90" />
-        <span className="pointer-events-none absolute right-3 bottom-[0.34rem] h-[2px] w-[28%] rounded-full bg-white/68" />
+        <span className="pointer-events-none absolute right-3 bottom-[0.34rem] h-[2px] w-[28%] rounded-full bg-[#f0d249]/70" />
         <span className="relative z-[1] flex w-full items-center justify-between">
           <span
             className={cn(

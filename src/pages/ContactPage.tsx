@@ -96,7 +96,7 @@ const ContactPage = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="salt-section-shell rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-background to-salt-olive/10 p-4">
+              <div className="salt-section-shell rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-background to-salt-blue/10 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">Support quality</p>
                 <h2 className="mt-1 font-display text-[clamp(1.2rem,2.2vw,1.8rem)] leading-tight">
                   Fast, clear, and policy-aligned responses
