@@ -60,7 +60,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.22),transparent_48%),radial-gradient(circle_at_78%_80%,hsl(var(--salt-olive)/0.2),transparent_45%),hsl(var(--muted))] px-6 text-center">
+          <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.22),transparent_48%),radial-gradient(circle_at_78%_80%,hsl(var(--salt-blue)/0.2),transparent_45%),hsl(var(--muted))] px-6 text-center">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
               Image unavailable
             </p>

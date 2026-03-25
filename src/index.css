@@ -185,7 +185,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background: linear-gradient(160deg, hsl(var(--primary) / 0.54), hsl(var(--salt-olive) / 0.45));
+    background: linear-gradient(160deg, hsl(var(--primary) / 0.54), hsl(var(--salt-blue) / 0.45));
     border-radius: 999px;
     border: 2px solid hsl(var(--background));
   }
@@ -233,7 +233,7 @@
     border-radius: inherit;
     background:
       linear-gradient(128deg, hsl(var(--primary) / 0.1), transparent 36%),
-      linear-gradient(322deg, hsl(var(--salt-olive) / 0.1), transparent 42%);
+      linear-gradient(322deg, hsl(var(--salt-blue) / 0.1), transparent 42%);
     opacity: 0;
     transition: opacity 240ms ease;
     z-index: -1;
@@ -269,7 +269,7 @@
     background:
       linear-gradient(154deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.94)),
       linear-gradient(130deg, hsl(var(--primary) / 0.11), transparent 42%),
-      linear-gradient(330deg, hsl(var(--salt-olive) / 0.13), transparent 46%);
+      linear-gradient(330deg, hsl(var(--salt-blue) / 0.13), transparent 46%);
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow:
       0 24px 56px -34px rgba(14, 12, 10, 0.58),
@@ -283,7 +283,7 @@
     background:
       linear-gradient(168deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.9)),
       radial-gradient(circle at 14% 12%, hsl(var(--primary) / 0.11), transparent 32%),
-      radial-gradient(circle at 88% 84%, hsl(var(--salt-olive) / 0.12), transparent 36%);
+      radial-gradient(circle at 88% 84%, hsl(var(--salt-blue) / 0.12), transparent 36%);
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow:
       0 28px 60px -38px rgba(14, 12, 10, 0.56),
@@ -298,7 +298,7 @@
     inset: 0;
     background:
       linear-gradient(122deg, hsl(var(--primary) / 0.08), transparent 42%),
-      linear-gradient(310deg, hsl(var(--salt-olive) / 0.08), transparent 46%);
+      linear-gradient(310deg, hsl(var(--salt-blue) / 0.08), transparent 46%);
     opacity: 0.72;
     z-index: -1;
   }
@@ -338,7 +338,7 @@
     background:
       linear-gradient(132deg, hsl(var(--salt-ink) / 0.98), hsl(220 28% 12% / 0.95)),
       radial-gradient(circle at 12% 15%, hsl(var(--primary) / 0.44), transparent 36%),
-      radial-gradient(circle at 88% 85%, hsl(var(--salt-olive) / 0.32), transparent 40%);
+      radial-gradient(circle at 88% 85%, hsl(var(--salt-blue) / 0.32), transparent 40%);
     border: 1px solid hsl(0 0% 100% / 0.16);
     box-shadow: 0 44px 76px -44px rgba(5, 5, 5, 0.75);
   }
@@ -355,7 +355,7 @@
     background:
       linear-gradient(180deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.84)),
       radial-gradient(circle at 7% 15%, hsl(var(--primary) / 0.07), transparent 32%),
-      radial-gradient(circle at 88% 82%, hsl(var(--salt-olive) / 0.08), transparent 34%);
+      radial-gradient(circle at 88% 82%, hsl(var(--salt-blue) / 0.08), transparent 34%);
     border: 1px solid hsl(var(--border) / 0.68);
     box-shadow: 0 20px 40px -30px rgba(16, 14, 12, 0.48);
     color: hsl(var(--foreground));
@@ -384,7 +384,7 @@
     top: 0;
     height: 1px;
     border-radius: 999px;
-    background: linear-gradient(90deg, hsl(var(--primary) / 0.72), hsl(var(--salt-olive) / 0.55));
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.72), hsl(var(--salt-blue) / 0.55));
     opacity: 0.22;
     transition: opacity 220ms ease;
   }
@@ -553,7 +553,7 @@
   .salt-collection-fallback {
     background:
       radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.24), transparent 48%),
-      radial-gradient(circle at 78% 80%, hsl(var(--salt-olive) / 0.2), transparent 45%),
+      radial-gradient(circle at 78% 80%, hsl(var(--salt-blue) / 0.2), transparent 45%),
       linear-gradient(160deg, hsl(var(--muted)), hsl(var(--card)));
   }
 
@@ -586,7 +586,7 @@
   }
 
   .salt-gradient-text {
-    background: linear-gradient(115deg, hsl(var(--salt-accent-deep)), hsl(var(--salt-olive)));
+    background: linear-gradient(115deg, hsl(var(--salt-accent-deep)), hsl(var(--salt-blue)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -662,7 +662,7 @@
     background:
       linear-gradient(164deg, hsl(223 22% 18% / 0.96), hsl(223 22% 15% / 0.9)),
       radial-gradient(circle at 10% 12%, hsl(var(--primary) / 0.24), transparent 34%),
-      radial-gradient(circle at 88% 84%, hsl(var(--salt-olive) / 0.21), transparent 40%);
+      radial-gradient(circle at 88% 84%, hsl(var(--salt-blue) / 0.21), transparent 40%);
     box-shadow:
       0 28px 56px -34px rgba(3, 5, 8, 0.82),
       inset 0 1px 0 hsl(0 0% 100% / 0.06);
@@ -764,7 +764,7 @@
     background:
       linear-gradient(136deg, hsl(224 34% 12% / 0.99), hsl(222 30% 10% / 0.95)),
       radial-gradient(circle at 10% 14%, hsl(var(--primary) / 0.33), transparent 34%),
-      radial-gradient(circle at 88% 84%, hsl(var(--salt-olive) / 0.25), transparent 40%);
+      radial-gradient(circle at 88% 84%, hsl(var(--salt-blue) / 0.25), transparent 40%);
     border-color: hsl(0 0% 100% / 0.22);
     box-shadow:
       0 40px 72px -42px rgba(2, 3, 6, 0.88),
@@ -1161,7 +1161,7 @@
     height: 100%;
     width: 40%;
     border-radius: 999px;
-    background: linear-gradient(130deg, hsl(var(--primary)), hsl(var(--salt-olive)));
+    background: linear-gradient(130deg, hsl(var(--primary)), hsl(var(--salt-blue)));
     animation: salt-entry-progress 1.25s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
 
