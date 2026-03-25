@@ -41,7 +41,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn(
-          "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 bg-[linear-gradient(135deg,#bb6d42_0%,#9f6945_55%,#7f7a5a_100%)] shadow-soft",
+          "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 bg-[linear-gradient(135deg,#c9a832_0%,#b09530_55%,#7f7a5a_100%)] shadow-soft", shadow-soft",
           emblemSizeMap[size],
         )}
       >
