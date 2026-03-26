@@ -518,19 +518,19 @@
 
   .salt-primary-cta {
     @apply inline-flex items-center justify-center rounded-full text-white transition;
-    background:
-      linear-gradient(124deg, hsl(var(--primary)), hsl(var(--salt-gold)) 78%);
+    background: #1E3A8A;
     box-shadow:
-      0 14px 30px -20px hsl(var(--primary) / 0.95),
+      0 14px 30px -20px rgba(30, 58, 138, 0.95),
       0 1px 0 hsl(0 0% 100% / 0.24) inset;
   }
 
   .salt-primary-cta:hover {
-    filter: brightness(1.08);
+    background: #2563EB;
     transform: translateY(-1px);
   }
 
   .salt-primary-cta:active {
+    background: #1D4ED8;
     transform: translateY(0);
   }
 
