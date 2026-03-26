@@ -66,6 +66,8 @@ export default {
           gold: "hsl(var(--salt-gold))",
           navy: "hsl(var(--salt-navy))",
           sky: "hsl(var(--salt-sky))",
+          cyan: "hsl(var(--salt-cyan))",
+          "cyan-deep": "hsl(var(--salt-cyan-deep))",
           warm: "hsl(var(--salt-warm-bg))",
         },
         sidebar: {

@@ -48,6 +48,8 @@
     --salt-gold: 45 95% 50%;
     --salt-navy: 220 45% 22%;
     --salt-sky: 210 70% 60%;
+    --salt-cyan: 183 80% 42%;
+    --salt-cyan-deep: 190 75% 28%;
     --salt-warm-bg: 220 30% 94%;
     --salt-panel-start: 220 35% 95%;
     --salt-panel-end: 215 30% 90%;
@@ -95,6 +97,8 @@
     --salt-gold: 45 90% 60%;
     --salt-navy: 220 40% 32%;
     --salt-sky: 210 65% 68%;
+    --salt-cyan: 183 75% 50%;
+    --salt-cyan-deep: 190 70% 36%;
   }
 }
 
@@ -513,9 +517,9 @@
   }
 
   .salt-primary-cta {
-    @apply inline-flex items-center justify-center rounded-full text-primary-foreground transition;
+    @apply inline-flex items-center justify-center rounded-full text-white transition;
     background:
-      linear-gradient(124deg, hsl(var(--salt-blue)), hsl(var(--salt-navy)) 78%);
+      linear-gradient(124deg, hsl(var(--salt-cyan)), hsl(var(--salt-cyan-deep)) 78%);
     box-shadow:
       0 14px 30px -20px hsl(var(--primary) / 0.95),
       0 1px 0 hsl(0 0% 100% / 0.24) inset;
