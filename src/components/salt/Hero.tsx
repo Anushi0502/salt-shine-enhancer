@@ -12,7 +12,8 @@ const Hero = () => {
             background: `linear-gradient(130deg, rgba(15,15,14,0.75), rgba(15,15,14,0.38)), url(${heroImage}) center/cover`,
           }}
         >
-          <div className="absolute w-[360px] aspect-square rounded-full -right-[100px] -top-[80px] bg-[radial-gradient(circle,rgba(205,90,50,0.65),rgba(205,90,50,0))] blur-[10px] -z-10" />
+          <div className="absolute w-[360px] aspect-square rounded-full -right-[100px] -top-[80px] bg-[radial-gradient(circle,hsl(var(--salt-cyan)/0.55),hsl(var(--salt-cyan)/0))] blur-[10px] -z-10" />
+          <div className="absolute w-[480px] aspect-[2/1] rounded-full left-[10%] -bottom-[60px] bg-[radial-gradient(ellipse,hsl(var(--salt-cyan)/0.35),hsl(var(--salt-cyan-deep)/0.12),transparent_70%)] blur-[18px] -z-10" />
           <div>
             <span className="inline-flex items-center gap-2 bg-[rgba(255,255,255,0.12)] border border-[rgba(255,255,255,0.35)] rounded-full px-3 py-1.5 text-[0.74rem] uppercase tracking-widest text-[#f6eee1] mb-4">
               ✦ Everyday Design Upgrade

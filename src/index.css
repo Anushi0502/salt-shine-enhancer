@@ -519,7 +519,7 @@
   .salt-primary-cta {
     @apply inline-flex items-center justify-center rounded-full text-primary-foreground transition;
     background:
-      linear-gradient(124deg, hsl(var(--salt-blue)), hsl(var(--salt-navy)) 78%);
+      linear-gradient(124deg, hsl(var(--salt-cyan)), hsl(var(--salt-cyan-deep)) 78%);
     box-shadow:
       0 14px 30px -20px hsl(var(--primary) / 0.95),
       0 1px 0 hsl(0 0% 100% / 0.24) inset;
