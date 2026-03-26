@@ -10,20 +10,18 @@ import {
 } from "lucide-react";
 import HomeHero from "@/components/storefront/HomeHero";
 import CollectionCard from "@/components/storefront/CollectionCard";
-import KpiStrip from "@/components/storefront/KpiStrip";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings, type JudgeMeReviewSummary } from "@/lib/judgeme";
-import { useDeviceOrderHistory } from "@/lib/order-history";
+// import { useDeviceOrderHistory } from "@/lib/order-history";
 import {
   useBlogPosts,
   useCollectionProductIds,
   useCollections,
   useProducts,
 } from "@/lib/shopify-data";
-import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
@@ -66,24 +64,6 @@ function formattedDate(value: string): string {
   });
 }
 
-function formattedDateTime(value: string): string {
-  if (!value) {
-    return "recently";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "recently";
-  }
-
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function collectionCtaLabel(title: string): string {
   const normalized = String(title || "").trim();
@@ -122,13 +102,11 @@ const HomePage = () => {
     error: blogError,
     refetch: refetchBlog,
   } = useBlogPosts();
-  const { purchasesLast30Days } = useDeviceOrderHistory();
 
   const products = productsPayload?.products || [];
   const collections = collectionsPayload?.collections || [];
   const isInitialProductsSync = productsLoading && !productsPayload;
 
-  const hasCollectionSyncIssue = Boolean(collectionsError);
 
   const rankedCollections: RankedCollection[] = collections
     .map((collection) => ({
@@ -147,13 +125,11 @@ const HomePage = () => {
     });
 
   const featured = products.slice(0, 3);
-  const quickCollections = rankedCollections.slice(0, 6);
   const featuredCollections = rankedCollections.slice(0, 6);
   const gardenCollection = rankedCollections.find((collection) =>
     /garden|tool/i.test(`${collection.title} ${collection.handle}`),
   );
   const trendingCollection = gardenCollection || null;
-  const gardenImage = normalizeShopifyAssetUrl(gardenCollection?.image?.src);
   const {
     data: trendingCollectionProductIdsPayload,
   } = useCollectionProductIds(
@@ -379,137 +355,8 @@ const HomePage = () => {
   return (
     <>
       <HomeHero featured={featured} />
-      <KpiStrip
-        products={products}
-        collections={collections}
-        purchasesLast30Days={purchasesLast30Days}
-      />
-      {gardenCollection ? (
-        <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
-          <Reveal>
-            <Link
-              to={`/shop?collection=${gardenCollection.handle}`}
-              className="group block overflow-hidden rounded-[1.6rem] border border-border/75 bg-[linear-gradient(120deg,hsl(var(--salt-ink)/0.96),hsl(var(--salt-ink)/0.84))] shadow-soft"
-            >
-              <div className="relative grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr] sm:p-5">
-                {gardenImage ? (
-                  <img
-                    src={gardenImage}
-                    alt={gardenCollection.title}
-                    className="h-full min-h-[180px] w-full rounded-2xl object-cover opacity-90 transition duration-500 group-hover:scale-[1.02]"
-                  />
-                ) : (
-                  <div className="grid min-h-[180px] place-items-center rounded-2xl border border-white/20 bg-white/6 text-center">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white/90">
-                      Garden tools spotlight
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-col justify-center rounded-2xl border border-white/16 bg-white/5 p-5 text-white">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-white/70">
-                    Garden essentials
-                  </p>
-                  <h3 className="mt-2 font-display text-[clamp(1.5rem,2.5vw,2.1rem)] leading-tight">
-                    Outdoor tools ready for this season
-                  </h3>
-                  <p className="mt-2 text-sm text-white/82">
-                    Hand-picked picks for pruning, planting, and easy maintenance.
-                  </p>
-                  <span className="mt-4 inline-flex w-fit items-center rounded-full bg-primary px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-primary-foreground">
-                    Shop garden tools
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </Reveal>
-        </section>
-      ) : null}
-      {hasCollectionSyncIssue ? (
-        <section className="mx-auto mt-4 w-[min(1280px,96vw)]">
-          <Reveal>
-            <div className="salt-ambient-card rounded-xl border border-primary/30 px-4 py-3 text-xs text-foreground">
-              Collections are refreshing from Shopify. Product shopping and checkout remain live.
-            </div>
-          </Reveal>
-        </section>
-      ) : null}
 
-      <section className="mx-auto mt-6 w-[min(1280px,96vw)]">
-        <Reveal>
-          <div className="salt-panel-shell salt-sync-strip rounded-2xl p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-foreground">
-                <span className="salt-sync-dot" aria-hidden="true"></span>
-                Catalog verified {formattedDateTime(lastSyncedAt)}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="salt-sync-pill">In-stock now</span>
-                <span className="salt-sync-pill">{products.length.toLocaleString()} ready-to-buy items</span>
-                <span className="salt-sync-pill">{collections.length.toLocaleString()} easy-browse categories</span>
-                <span className="salt-sync-pill">{purchasesLast30Days.toLocaleString()} bought last month on this device</span>
-              </div>
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Find what fits faster
-                </span>
-                <span className="mt-1 block">Popular filters and cleaner category paths help shoppers decide quicker.</span>
-              </p>
-              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <BadgeCheck className="h-3.5 w-3.5 text-primary" /> Checkout without surprises
-                </span>
-                <span className="mt-1 block">Price, variants, and cart handoff stay locked to live Shopify data.</span>
-              </p>
-              <p className="salt-ambient-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                  <Clock3 className="h-3.5 w-3.5 text-primary" /> Stock stays current
-                </span>
-                <span className="mt-1 block">Inventory, pricing, and collection counts refresh continuously from live sync.</span>
-              </p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
 
-      <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
-        <Reveal>
-          <div className="salt-panel-shell rounded-[2rem] p-5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                  Quick access
-                </p>
-                <h2 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-[1.02] text-foreground">
-                  Jump straight to what shoppers actually buy
-                </h2>
-              </div>
-              <Link
-                to="/shop"
-                className="salt-outline-chip h-10 px-4 py-0 text-xs"
-              >
-                View all products
-              </Link>
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {quickCollections.map((collection) => (
-                <Link
-                  key={collection.id}
-                  to={`/shop?collection=${collection.handle}`}
-                  className="salt-kpi-card salt-metric-card flex items-center justify-between rounded-xl bg-[linear-gradient(150deg,hsl(var(--card)/0.96),hsl(var(--card)/0.82))] px-4 py-3 text-sm font-semibold text-foreground transition hover:-translate-y-[2px] hover:border-primary/50 hover:text-primary"
-                >
-                  <span className="line-clamp-1 text-foreground">{collection.title}</span>
-                  <span className="ml-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                    {collection.effectiveCount}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
 
       <section id="collections" className="mx-auto mt-12 w-[min(1280px,96vw)]">
         <Reveal>
