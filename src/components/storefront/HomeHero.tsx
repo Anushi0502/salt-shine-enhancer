@@ -146,11 +146,11 @@ const HomeHero = ({ featured }: HomeHeroProps) => {
               </Link>
             ) : null}
           </div>
-                  <div class="mt-4 min-h-[3.5rem]items-center grid gap-2 text-xs text-white/85 sm:grid-cols-3">
-    <p class="rounded-xl border border-white/20 bg-white/10 px-3 py-2">2,300+ recent orders fulfilled</p>
-    <p class="rounded-xl border border-white/20 bg-white/10 px-3 py-2">Average dispatch in under 48 hours</p>
-    <p class="rounded-xl border border-white/20 bg-white/10 px-3 py-2">Checkout encrypted end-to-end</p>
-</div>
+          <div className="mt-4 min-h-[3.5rem] items-center grid gap-2 text-xs text-white/85 sm:grid-cols-3">
+            <p className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">2,300+ recent orders fulfilled</p>
+            <p className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">Average dispatch in under 48 hours</p>
+            <p className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">Checkout encrypted end-to-end</p>
+          </div>
 
         </div>
 
