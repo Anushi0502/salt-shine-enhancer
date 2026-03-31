@@ -26,6 +26,7 @@ import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
 import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
 import BulkReviewPage from "@/pages/BulkReviewPage";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import MetaPixelTracker from "@/components/integrations/MetaPixelTracker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ScrollToTop />
+            <MetaPixelTracker />
             <Routes>
               <Route element={<SiteShell />}>
                 <Route path="/" element={<HomePage />} />

@@ -1,13 +1,16 @@
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
+  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   Filter,
   Search,
   SlidersHorizontal,
   Sparkles,
+  Star,
   X,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -15,6 +18,7 @@ import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import {
   useCollections,
   useCollectionProductIds,
@@ -111,6 +115,40 @@ function formatTypeLabel(value: string): string {
 
 function normalizeHandle(value: string | null | undefined): string {
   return String(value || "").trim().toLowerCase();
+}
+
+function plainText(input: string | null | undefined): string {
+  return String(input || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function collectionStory(title: string, description: string): string {
+  const cleaned = plainText(description);
+  if (cleaned) {
+    return cleaned;
+  }
+
+  const source = title.toLowerCase();
+
+  if (/cook|kitchen|pan|pot/.test(source)) {
+    return "Kitchen-led upgrades with giftable utility, strong everyday use, and faster comparison shopping.";
+  }
+
+  if (/gift|legacy|planner|book/.test(source)) {
+    return "Thoughtful, practical picks merchandised for meaningful gifting and low-friction discovery.";
+  }
+
+  if (/apparel|wear|dress|robe|fashion/.test(source)) {
+    return "Refined wardrobe finds grouped to help shoppers discover easy standout pieces without noise.";
+  }
+
+  if (/garden|tool|camp|outdoor/.test(source)) {
+    return "Seasonal outdoor essentials arranged around practical utility, gifting value, and ready-to-buy momentum.";
+  }
+
+  return "A curated product route built for cleaner discovery, stronger browsing confidence, and better purchase flow.";
 }
 
 const ShopPage = () => {
@@ -293,12 +331,16 @@ const ShopPage = () => {
     }
 
     return base;
-  }, [priceFilteredProducts, sort, query, selectedCollectionOrder]);
+  }, [priceFilteredProducts, sort, selectedCollectionOrder]);
 
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
+  const selectedCollectionImage = normalizeShopifyAssetUrl(selectedCollection?.image?.src);
+  const spotlightCollections = [...collections]
+    .sort((a, b) => b.products_count - a.products_count)
+    .slice(0, 6);
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
@@ -479,8 +521,8 @@ const ShopPage = () => {
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
   const shopHeading = selectedCollection ? selectedCollection.title : "All Products";
   const shopSubtitle = selectedCollection
-    ? `Live catalog view for ${selectedCollection.title}. Inventory, pricing, and sort state update directly from Shopify sync.`
-    : "Browse a simplified catalog view with precise collection matching and faster page-based discovery.";
+    ? collectionStory(selectedCollection.title, selectedCollection.description)
+    : "Browse the full SALT catalog through collection-led discovery, cleaner filtering, and premium product presentation.";
   const activeFilterChips = [
     query
       ? {
@@ -543,240 +585,334 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-6">
+    <section className="mx-auto mt-8 w-[min(1320px,96vw)] pb-8">
       <Reveal>
-        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Shop</p>
-          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">{shopHeading}</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            {shopSubtitle}
-          </p>
-          <p className="mt-2 text-xs uppercase tracking-[0.1em] text-muted-foreground">
-            Catalog updated {formattedDateTime(latestSyncAt)}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="salt-sync-pill">{totalResults.toLocaleString()} matched</span>
-            <span className="salt-sync-pill">Sorted by {sortLabel}</span>
-            <span className="salt-sync-pill">{perPage} per page</span>
-          </div>
+        <div className="salt-editorial-shell rounded-[2.2rem] p-5 sm:p-7">
+          <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
+            <div>
+              <p className="salt-kicker">{selectedCollection ? "Collection edit" : "Full catalog browse"}</p>
+              <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.5rem)] leading-[0.94]">
+                {shopHeading}
+              </h1>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+                {shopSubtitle}
+              </p>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-            <form onSubmit={onSearch} className="relative flex items-center gap-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                type="search"
-                placeholder="Search by product, category, vendor"
-                className="salt-form-control w-full pl-9 pr-4"
-              />
-              <button
-                type="submit"
-                className="salt-primary-cta h-11 px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em]"
-              >
-                Search
-              </button>
-            </form>
-
-            <select
-              aria-label="Sort products"
-              value={sort}
-              onChange={(event) => updateParams({ sort: event.target.value }, true)}
-              className="salt-form-control"
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Products per page"
-              value={perPage}
-              onChange={(event) => onPerPageChange(event.target.value)}
-              className="salt-form-control"
-            >
-              {perPageOptions.map((count) => (
-                <option key={count} value={count}>
-                  {count} / page
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <select
-              aria-label="Collection filter"
-              value={collectionHandle}
-              onChange={(event) => updateParams({ collection: event.target.value }, true)}
-              className="salt-form-control"
-            >
-              <option value="">All collections</option>
-              {collections.map((collection) => (
-                <option key={collection.id} value={collection.handle}>
-                  {collection.title}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Product type filter"
-              value={typeFilter}
-              onChange={(event) => updateParams({ type: event.target.value }, true)}
-              className="salt-form-control"
-            >
-              <option value="">All product types</option>
-              {productTypes.map((type) => (
-                <option key={type} value={type}>
-                  {formatTypeLabel(type)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Price range filter"
-              value={priceRangeValue === "custom" ? "all" : priceRangeValue}
-              onChange={(event) => onPriceRangeChange(event.target.value)}
-              className="salt-form-control"
-            >
-              {priceRangeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="salt-ambient-card mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/65 p-2.5">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((value) => !value)}
-              className="salt-outline-chip h-9 px-3 py-0 text-[0.67rem]"
-            >
-              <Filter className="mr-1.5 h-3.5 w-3.5" />
-              {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
-            </button>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
-                <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
-              </span>
-              <span className="rounded-full border border-border bg-background/85 px-3 py-1">
-                Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
-              </span>
-              {activeFilterCount > 0 ? (
-                <span className="rounded-full border border-border bg-background/85 px-3 py-1">
-                  {activeFilterCount} active filters
-                </span>
-              ) : null}
-              {filterIsActive ? (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary"
-                >
-                  Clear all
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          {showAdvanced ? (
-            <div className="salt-section-shell mt-4 rounded-2xl p-3">
-              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={customMinInput}
-                  onChange={(event) => setCustomMinInput(event.target.value)}
-                  className="salt-form-control h-10"
-                  placeholder="Min price"
-                  aria-label="Minimum price"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={customMaxInput}
-                  onChange={(event) => setCustomMaxInput(event.target.value)}
-                  className="salt-form-control h-10"
-                  placeholder="Max price"
-                  aria-label="Maximum price"
-                />
-                <button
-                  type="button"
-                  onClick={applyCustomPrice}
-                  className="salt-primary-cta h-10 px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em]"
-                >
-                  Apply price
-                </button>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="salt-ambient-card rounded-[1.15rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Matched products</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{totalResults.toLocaleString()}</p>
+                </div>
+                <div className="salt-ambient-card rounded-[1.15rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Sort mode</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">{sortLabel}</p>
+                </div>
+                <div className="salt-ambient-card rounded-[1.15rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Catalog sync</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
+                    Updated {formattedDateTime(latestSyncAt)}
+                  </p>
+                </div>
               </div>
-              {priceError ? <p className="mt-2 text-xs text-destructive">{priceError}</p> : null}
-            </div>
-          ) : null}
 
-          {activeFilterSummary ? (
-            <p className="mt-2 rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
-              {activeFilterSummary}
-            </p>
-          ) : null}
-          {activeFilterChips.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {activeFilterChips.map((chip) => (
-                <button
-                  key={chip.key}
-                  type="button"
-                  onClick={chip.onRemove}
-                  className="salt-filter-chip"
-                  aria-label={`Remove ${chip.label} filter`}
-                >
-                  <span>{chip.label}</span>
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              ))}
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(selectedCollection ? spotlightCollections.slice(0, 4) : spotlightCollections.slice(0, 5)).map((collection) => (
+                  <button
+                    key={collection.id}
+                    type="button"
+                    onClick={() => updateParams({ collection: collection.handle }, true)}
+                    className="salt-outline-chip text-[0.64rem]"
+                  >
+                    {collection.title}
+                  </button>
+                ))}
+                {!selectedCollection ? (
+                  <Link to="/collections" className="salt-outline-chip text-[0.64rem]">
+                    View all collections
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => updateParams({ collection: null }, true)}
+                    className="salt-outline-chip text-[0.64rem]"
+                  >
+                    Back to all collections
+                  </button>
+                )}
+              </div>
             </div>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
-              className="salt-outline-chip text-[0.62rem]"
-            >
-              New arrivals first
-            </button>
-            <button
-              type="button"
-              onClick={() => updateParams({ sort: "discount", page: null }, true)}
-              className="salt-outline-chip text-[0.62rem]"
-            >
-              Biggest savings
-            </button>
-            <button
-              type="button"
-              onClick={() => updateParams({ min: null, max: "25", page: null }, true)}
-              className="salt-outline-chip text-[0.62rem]"
-            >
-              Budget picks under $25
-            </button>
-            <button
-              type="button"
-              onClick={() => updateParams({ collection: "cookware", page: null }, true)}
-              className="salt-outline-chip text-[0.62rem]"
-            >
-              Shop cookware
-            </button>
+
+            <div className="relative overflow-hidden rounded-[1.9rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(var(--salt-ink)/0.84))] shadow-soft">
+              {selectedCollectionImage ? (
+                <img
+                  src={selectedCollectionImage}
+                  alt={selectedCollection?.title || "Collection preview"}
+                  className="absolute inset-0 h-full w-full object-cover opacity-38"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
+              <div className="relative flex h-full min-h-[19rem] flex-col justify-between p-5 text-white sm:p-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    {selectedCollection ? "Collection spotlight" : "Editorial browse"}
+                  </span>
+                  {selectedCollection ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/74 backdrop-blur-md">
+                      Featured respects Shopify manual ordering
+                    </span>
+                  ) : null}
+                </div>
+
+                <div>
+                  <h2 className="max-w-[15ch] font-display text-[clamp(2rem,3vw,3rem)] leading-[0.96] text-white">
+                    {selectedCollection
+                      ? `Shop ${selectedCollection.title} with stronger product focus`
+                      : "Browse the full catalog with cleaner discovery and better flow"}
+                  </h2>
+                  <p className="mt-3 max-w-[34rem] text-sm leading-7 text-white/76">
+                    {selectedCollection
+                      ? "Featured sorting preserves Shopify manual collection order, while the rest of the controls keep pricing, product type, and discovery refinements easy to scan."
+                      : "Use collection, search, product-type, and price controls without losing the editorial rhythm of a curated storefront."}
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[1.2rem] border border-white/14 bg-white/8 p-4 backdrop-blur-md">
+                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-white/62">Browse mode</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{sort === "featured" ? "Manual curation first" : sortLabel}</p>
+                  </div>
+                  <div className="rounded-[1.2rem] border border-white/14 bg-white/8 p-4 backdrop-blur-md">
+                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-white/62">Filter state</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{activeFilterCount > 0 ? `${activeFilterCount} active filters` : "Clean browse state"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="salt-glass-rail mt-5 rounded-[1.7rem] p-3 sm:p-4">
+            <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
+              <form onSubmit={onSearch} className="relative flex items-center gap-2">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  type="search"
+                  placeholder="Search by product, category, collection, or use case"
+                  className="salt-form-control h-12 w-full pl-10 pr-4"
+                />
+                <button
+                  type="submit"
+                  className="salt-primary-cta h-12 px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em]"
+                >
+                  Search
+                </button>
+              </form>
+
+              <select
+                aria-label="Sort products"
+                value={sort}
+                onChange={(event) => updateParams({ sort: event.target.value }, true)}
+                className="salt-form-control h-12"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                aria-label="Products per page"
+                value={perPage}
+                onChange={(event) => onPerPageChange(event.target.value)}
+                className="salt-form-control h-12"
+              >
+                {perPageOptions.map((count) => (
+                  <option key={count} value={count}>
+                    {count} / page
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-3">
+              <select
+                aria-label="Collection filter"
+                value={collectionHandle}
+                onChange={(event) => updateParams({ collection: event.target.value }, true)}
+                className="salt-form-control h-12"
+              >
+                <option value="">All collections</option>
+                {collections.map((collection) => (
+                  <option key={collection.id} value={collection.handle}>
+                    {collection.title}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                aria-label="Product type filter"
+                value={typeFilter}
+                onChange={(event) => updateParams({ type: event.target.value }, true)}
+                className="salt-form-control h-12"
+              >
+                <option value="">All product types</option>
+                {productTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {formatTypeLabel(type)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                aria-label="Price range filter"
+                value={priceRangeValue === "custom" ? "all" : priceRangeValue}
+                onChange={(event) => onPriceRangeChange(event.target.value)}
+                className="salt-form-control h-12"
+              >
+                {priceRangeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="salt-ambient-card mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[1.2rem] border border-border/65 p-2.5">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((value) => !value)}
+                className="salt-outline-chip h-9 px-3 py-0 text-[0.67rem]"
+              >
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
+                {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
+              </button>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
+                </span>
+                <span className="rounded-full border border-border bg-background/85 px-3 py-1">
+                  Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
+                </span>
+                {activeFilterCount > 0 ? (
+                  <span className="rounded-full border border-border bg-background/85 px-3 py-1">
+                    {activeFilterCount} active filters
+                  </span>
+                ) : null}
+                {filterIsActive ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary"
+                  >
+                    Clear all
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {showAdvanced ? (
+              <div className="salt-section-shell mt-4 rounded-[1.35rem] p-3.5">
+                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    value={customMinInput}
+                    onChange={(event) => setCustomMinInput(event.target.value)}
+                    className="salt-form-control h-11"
+                    placeholder="Min price"
+                    aria-label="Minimum price"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    value={customMaxInput}
+                    onChange={(event) => setCustomMaxInput(event.target.value)}
+                    className="salt-form-control h-11"
+                    placeholder="Max price"
+                    aria-label="Maximum price"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCustomPrice}
+                    className="salt-primary-cta h-11 px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em]"
+                  >
+                    Apply price
+                  </button>
+                </div>
+                {priceError ? <p className="mt-2 text-xs text-destructive">{priceError}</p> : null}
+              </div>
+            ) : null}
+
+            {activeFilterSummary ? (
+              <p className="mt-3 rounded-[1rem] border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                {activeFilterSummary}
+              </p>
+            ) : null}
+
+            {activeFilterChips.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeFilterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={chip.onRemove}
+                    className="salt-filter-chip"
+                    aria-label={`Remove ${chip.label} filter`}
+                  >
+                    <span>{chip.label}</span>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
+                className="salt-outline-chip text-[0.62rem]"
+              >
+                New arrivals first
+              </button>
+              <button
+                type="button"
+                onClick={() => updateParams({ sort: "discount", page: null }, true)}
+                className="salt-outline-chip text-[0.62rem]"
+              >
+                Biggest savings
+              </button>
+              <button
+                type="button"
+                onClick={() => updateParams({ min: null, max: "25", page: null }, true)}
+                className="salt-outline-chip text-[0.62rem]"
+              >
+                Budget picks under $25
+              </button>
+              <button
+                type="button"
+                onClick={() => updateParams({ collection: "cookware", page: null }, true)}
+                className="salt-outline-chip text-[0.62rem]"
+              >
+                Shop cookware
+              </button>
+            </div>
           </div>
         </div>
       </Reveal>
 
       {totalResults === 0 ? (
         <Reveal delayMs={80} className="mt-6">
-          <div className="salt-surface rounded-3xl p-10 text-center">
-            <h2 className="font-display text-3xl">No products match this filter</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Try removing one filter or return to the full catalog.
+          <div className="salt-editorial-shell rounded-[2rem] p-10 text-center">
+            <p className="salt-kicker">No matching products</p>
+            <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">No products match this filter</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+              Remove one or two filters and the live catalog will reflow instantly. Collection, search, type, and price controls are all still connected to Shopify data.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <button
@@ -799,16 +935,16 @@ const ShopPage = () => {
         <>
           {sort === "discount" ? (
             <Reveal delayMs={80} className="mt-6">
-              <div className="salt-panel-shell rounded-2xl p-4 text-sm text-muted-foreground">
+              <div className="salt-story-card rounded-[1.35rem] p-4 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" /> Showing products ordered by best available savings.
+                  <Sparkles className="h-4 w-4 text-primary" /> Showing products ordered by strongest live savings first.
                 </p>
               </div>
             </Reveal>
           ) : null}
 
-          <div className="salt-section-shell mt-6 rounded-[1.7rem] p-3 sm:p-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="salt-section-shell mt-6 rounded-[2rem] p-3 sm:p-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visibleProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 35} className="h-full">
                   <ProductCard product={product} variant="dense" />
@@ -818,7 +954,7 @@ const ShopPage = () => {
           </div>
 
           <Reveal delayMs={80} className="mt-7">
-            <div className="salt-panel-shell flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
+            <div className="salt-glass-rail flex flex-wrap items-center justify-between gap-3 rounded-[1.55rem] p-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -843,7 +979,7 @@ const ShopPage = () => {
                 </button>
               </div>
 
-              <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 <ArrowDownUp className="h-3.5 w-3.5" />
                 Sorted by {sortLabel}
               </p>

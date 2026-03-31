@@ -126,6 +126,9 @@ const HomePage = () => {
 
   const featured = products.slice(0, 3);
   const featuredCollections = rankedCollections.slice(0, 6);
+  const leadCollection = featuredCollections[0] || null;
+  const supportingCollections = featuredCollections.slice(1, 5);
+  const trailingCollections = featuredCollections.slice(5);
   const gardenCollection = rankedCollections.find((collection) =>
     /garden|tool/i.test(`${collection.title} ${collection.handle}`),
   );
@@ -358,102 +361,126 @@ const HomePage = () => {
 
 
 
-      <section id="collections" className="mx-auto mt-12 w-[min(1280px,96vw)]">
+      <section id="collections" className="mx-auto mt-12 w-[min(1320px,96vw)]">
         <Reveal>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Explore</p>
-              <h2 className="font-display text-[clamp(1.9rem,3vw,2.8rem)] leading-[1.02]">
-                Top collections with active inventory
+              <p className="salt-kicker">Shop by collection</p>
+              <h2 className="mt-3 font-display text-[clamp(2rem,3.1vw,3rem)] leading-[0.98]">
+                Merchandising paths built like an editorial storefront
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Collection counts are matched against currently synced products so shoppers see
-                relevant inventory paths.
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+                The strongest collection takes the lead, while the rest stay grouped into cleaner, faster routes for discovering home, gifts, style, and seasonal essentials.
               </p>
             </div>
-            <Link
-              to="/collections"
-              className="salt-outline-chip h-11 px-5 py-0 text-sm"
-            >
+            <Link to="/collections" className="salt-outline-chip h-11 px-5 py-0 text-sm">
               View all collections
             </Link>
           </div>
         </Reveal>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredCollections.map((collection, index) => (
-            <Reveal key={collection.id} delayMs={index * 80}>
+        <div className="salt-section-grid">
+          {leadCollection ? (
+            <Reveal>
               <CollectionCard
-                collection={collection}
-                productCount={collection.effectiveCount}
+                collection={leadCollection}
+                productCount={leadCollection.effectiveCount}
+                variant="hero"
               />
             </Reveal>
-          ))}
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {supportingCollections.map((collection, index) => (
+              <Reveal key={collection.id} delayMs={index * 70}>
+                <CollectionCard
+                  collection={collection}
+                  productCount={collection.effectiveCount}
+                />
+              </Reveal>
+            ))}
+          </div>
         </div>
+
+        {trailingCollections.length > 0 ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {trailingCollections.map((collection, index) => (
+              <Reveal key={collection.id} delayMs={160 + index * 70}>
+                <CollectionCard
+                  collection={collection}
+                  productCount={collection.effectiveCount}
+                />
+              </Reveal>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      <section id="products" className="mx-auto mt-14 w-[min(1280px,96vw)]">
+      <section id="products" className="mx-auto mt-14 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                {trendingCollection ? "Collection focus" : "Trending"}
-              </p>
-              <h2 className="font-display text-[clamp(1.9rem,3vw,2.8rem)] leading-[1.02]">
-                {trendingCollection
-                  ? `Best-rated picks from ${trendingCollection.title}`
-                  : "High-intent products, prioritized"}
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                {trendingCollection
-                  ? `Products are now ranked from the ${trendingCollection.title} banner collection, prioritizing stronger ratings and review depth.`
-                  : "Ranked by strongest discount opportunity and fresh updates to keep merchandising conversion-focused."}
-              </p>
+          <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-3xl">
+                <p className="salt-kicker">{trendingCollection ? "Collection focus" : "Trending now"}</p>
+                <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
+                  {trendingCollection
+                    ? `Best-rated picks from ${trendingCollection.title}`
+                    : "High-intent products, prioritized for conversion"}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  {trendingCollection
+                    ? `These products come from the current banner collection and are ranked by stronger ratings, deeper review coverage, and sharper purchase intent.`
+                    : "Ranked by strongest discount opportunity and recent catalog movement to keep merchandising conversion-focused."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link to={trendingShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
+                  {trendingShopLabel}
+                </Link>
+                <Link to="/shop?sort=discount" className="salt-outline-chip h-11 px-5 py-0 text-sm">
+                  View top value picks
+                </Link>
+              </div>
             </div>
-            <Link
-              to={trendingShopLink}
-              className="salt-primary-cta h-11 px-5 text-sm font-bold"
-            >
-              {trendingShopLabel}
-            </Link>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+              <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Products in focus</p>
+                <p className="mt-2 text-2xl font-semibold text-foreground">
+                  {(focusCollectionInsights?.productCount || trendingProducts.length).toLocaleString()}
+                </p>
+              </div>
+              <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average rating</p>
+                <p className="mt-2 text-2xl font-semibold text-foreground">
+                  {(focusCollectionInsights?.averageRating || reviewInsights?.averageRating || 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Reviews considered</p>
+                <p className="mt-2 text-2xl font-semibold text-foreground">
+                  {(focusCollectionInsights?.totalReviews || reviewInsights?.totalReviews || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Top reviewed</p>
+                <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-foreground">
+                  {focusCollectionInsights?.topReviewed?.product.title || reviewInsights?.topReviewed?.product.title || "Live catalog picks"}
+                </p>
+              </div>
+            </div>
           </div>
         </Reveal>
 
-        {focusCollectionInsights ? (
-          <Reveal delayMs={50}>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-card/75 px-3 py-2.5">
-              <div className="flex flex-wrap gap-2">
-                <span className="salt-outline-chip text-[0.64rem]">
-                  {focusCollectionInsights.productCount.toLocaleString()} products in focus
-                </span>
-                <span className="salt-outline-chip text-[0.64rem]">
-                  {focusCollectionInsights.ratedProductCount.toLocaleString()} rated items
-                </span>
-                <span className="salt-outline-chip text-[0.64rem]">
-                  {focusCollectionInsights.averageRating.toFixed(2)} avg stars
-                </span>
-                <span className="salt-outline-chip text-[0.64rem]">
-                  {focusCollectionInsights.totalReviews.toLocaleString()} reviews considered
-                </span>
-              </div>
-              {focusCollectionInsights.topReviewed ? (
-                <Link
-                  to={`/products/${focusCollectionInsights.topReviewed.product.handle}`}
-                  className="text-xs font-semibold text-muted-foreground hover:text-primary"
-                >
-                  Top reviewed: {focusCollectionInsights.topReviewed.product.title}
-                </Link>
-              ) : null}
-            </div>
-          </Reveal>
-        ) : null}
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {trendingProducts.map((product, index) => (
-            <Reveal key={product.id} delayMs={index * 70} className="h-full">
-              <ProductCard product={product} variant="dense" />
-            </Reveal>
-          ))}
+        <div className="salt-section-shell mt-5 rounded-[2rem] p-4 sm:p-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {trendingProducts.map((product, index) => (
+              <Reveal key={product.id} delayMs={index * 70} className="h-full">
+                <ProductCard product={product} variant="dense" />
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -461,7 +488,7 @@ const HomePage = () => {
       {latestBlogPosts.length > 0 ? (
         <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
           <Reveal>
-            <div className="salt-section-shell rounded-[2rem] p-5 sm:p-7">
+            <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
@@ -503,113 +530,87 @@ const HomePage = () => {
         </section>
       ) : null}
 
-      <section className="salt-surface-strong mx-auto mt-14 w-[min(1280px,96vw)] rounded-[2rem] p-5 sm:p-7">
+      <section className="mx-auto mt-14 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <h3 className="font-display text-[clamp(1.5rem,2.8vw,2.3rem)] leading-tight">
-                Everything you need to shop with total confidence
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                We believe shopping should be effortless. That's why we've removed the guesswork,
-                focusing on curated quality and a support team that actually cares about your
-                experience.
-              </p>
+          <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
+            <div className="salt-section-grid">
+              <div>
+                <p className="salt-kicker">Trust and conversion</p>
+                <h3 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.6rem)] leading-[0.98]">
+                  A premium storefront should feel calm, credible, and ready to buy from
+                </h3>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+                  Every trust cue here is grounded in actual store behavior: live review coverage, strong collection structure, clear dispatch messaging, and support paths that stay visible instead of buried.
+                </p>
 
-              <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                {trustBullets.map((item) => (
-                  <div
-                    key={item.title}
-                    className="salt-ambient-card salt-metric-card rounded-xl px-3 py-3"
-                  >
-                    <p className="text-xs font-semibold text-foreground">{item.title}</p>
-                    <p className="mt-1 text-[0.72rem] leading-relaxed text-muted-foreground">
-                      {item.detail}
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {trustBullets.map((item) => (
+                    <div key={item.title} className="salt-story-card rounded-[1.35rem] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">{item.title}</p>
+                      <p className="mt-2 text-[0.78rem] leading-6 text-muted-foreground">
+                        {item.detail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                <div className="salt-story-card rounded-[1.6rem] p-5">
+                  <p className="salt-kicker">Live customer proof</p>
+                  <h4 className="mt-3 font-display text-[1.9rem] leading-[1.02]">
+                    Review depth that supports faster decisions
+                  </h4>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average rating</p>
+                      <p className="mt-2 text-3xl font-semibold text-foreground">
+                        {(reviewInsights?.averageRating || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Published reviews</p>
+                      <p className="mt-2 text-3xl font-semibold text-foreground">
+                        {(reviewInsights?.totalReviews || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/72 p-4">
+                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Top reviewed product</p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
+                      {reviewInsights?.topReviewed?.product.title || "Live catalog picks surfaced automatically"}
                     </p>
                   </div>
-                ))}
-              </div>
-
-            </div>
-
-            <div className="salt-card-hover salt-section-shell rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/18 via-card to-salt-blue/12 p-5 shadow-[0_24px_46px_-32px_rgba(0,0,0,0.5)]">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                Customer proof
-              </p>
-              <h4 className="mt-2 font-display text-2xl leading-tight">
-                Why customers trust us with their shopping needs?
-              </h4>
-
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Ready to ship
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-foreground">
-                    In Stock Now
-                  </p>
                 </div>
-                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    New weekly drops
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-foreground">
-                    Just Added
-                  </p>
-                </div>
-                <div className="salt-metric-card rounded-xl border border-border/70 bg-background px-2.5 py-2 text-center">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    Fast delivery
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-foreground">
-                    Quick Dispatch
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <p className="inline-flex items-center gap-2">
-                  <BadgeCheck className="h-4 w-4 text-primary" /> Premium materials sourced from
-                  ethical, certified partners.
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <Star className="h-4 w-4 text-primary" /> Rigorous quality testing on every item
-                  before shipping.
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Transparent, fair pricing without the
-                  middleman markup.
-                </p>
-                <p className="inline-flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-primary" /> Dedicated 24/7 expert support for
-                  total peace of mind.
-                </p>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link
-                  to="/shop"
-                  className="salt-button-shine inline-flex h-10 items-center rounded-full bg-[hsl(var(--salt-ink))] px-4 text-xs font-bold uppercase tracking-[0.08em] text-[hsl(var(--salt-paper))] transition hover:brightness-110"
-                >
-                  Shop with confidence
-                </Link>
 
-                <Link
-                  to="/shop?sort=discount"
-                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
-                >
-                  View top value picks
-                </Link>
-                <Link
-                  to="/blog"
-                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
-                >
-                  Read buying guides
-                </Link>
-                <Link
-                  to="/contact"
-                  className="salt-outline-chip h-10 px-4 py-0 text-xs"
-                >
-                  Talk to support
-                </Link>
+                <div className="salt-story-card rounded-[1.6rem] p-5">
+                  <p className="salt-kicker">Confidence cues</p>
+                  <div className="mt-3 space-y-3 text-sm text-muted-foreground">
+                    <p className="inline-flex items-start gap-2">
+                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live product data stays connected to Shopify for current pricing and availability.
+                    </p>
+                    <p className="inline-flex items-start gap-2">
+                      <Star className="mt-0.5 h-4 w-4 text-primary" /> High-intent collection paths reduce noise and keep discovery closer to checkout.
+                    </p>
+                    <p className="inline-flex items-start gap-2">
+                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Editorial surfaces raise perceived value without slowing down commerce actions.
+                    </p>
+                    <p className="inline-flex items-start gap-2">
+                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Pricing, savings, and support paths remain visible in every major shopping step.
+                    </p>
+                  </div>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link to="/shop" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
+                      Shop with confidence
+                    </Link>
+                    <Link to="/blog" className="salt-outline-chip h-10 px-4 py-0 text-xs">
+                      Read buying guides
+                    </Link>
+                    <Link to="/contact" className="salt-outline-chip h-10 px-4 py-0 text-xs">
+                      Talk to support
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
