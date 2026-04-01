@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, Clock3, Facebook, Headset, Instagram, Youtube } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Facebook, Instagram, Mail, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
   getRuntimeContext,
@@ -13,6 +13,7 @@ const shopAppUrl = getShopAppUrl();
 const privacyPolicyHref = resolveStorefrontPath(runtimeContext.privacyPolicyUrl, "/policies/privacy-policy");
 const returnsPolicyHref = resolveStorefrontPath(runtimeContext.refundPolicyUrl, "/policies/refund-policy");
 const shippingPolicyHref = resolveStorefrontPath(runtimeContext.shippingPolicyUrl, "/policies/shipping-policy");
+const supportEmail = runtimeContext.supportEmail || "support@saltonlinestore.com";
 
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
@@ -29,223 +30,170 @@ const MainFooter = () => {
   };
 
   return (
-    <footer className="mt-20 border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.86),hsl(var(--card)/0.98))]">
-      <div className="mx-auto w-[min(1280px,96vw)] pt-10">
-        <div className="salt-panel-shell rounded-[1.7rem] p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+    <footer className="mt-16 border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.38),hsl(var(--card)/0.92))]">
+      <div className="mx-auto w-[min(1340px,94vw)] py-8">
+        <div className="rounded-[2rem] border border-border/70 bg-[hsl(var(--salt-ink))] px-6 py-6 text-[hsl(var(--salt-paper))] shadow-[0_36px_90px_-56px_rgba(15,23,42,0.44)] sm:px-8">
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">Support Promise</p>
-              <h3 className="font-display text-[clamp(1.3rem,2.2vw,1.9rem)] leading-tight">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-primary">
                 Need help before checkout?
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Reach support quickly for product questions, order tracking, and return guidance.
+              </p>
+              <h2 className="mt-3 font-display text-[clamp(2rem,3.8vw,3.4rem)] leading-[0.92]">
+                We keep the store clear and easy to buy from.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/72">
+                Questions about delivery, gifting, sizing, or the right product? Reach the SALT support team directly.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link to="/contact" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
-                Contact support
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <a
+                href={`mailto:${supportEmail}`}
+                className="salt-primary-cta h-12 justify-center px-5 text-[0.76rem] font-semibold uppercase tracking-[0.12em]"
+              >
+                Email support
+              </a>
+              <Link
+                to="/contact"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/16 bg-white/8 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white hover:text-[hsl(var(--salt-ink))]"
+              >
+                Contact page
               </Link>
-              <a href={shippingPolicyHref} className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                Shipping policy
-              </a>
-              <a href={returnsPolicyHref} className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                Return policy
-              </a>
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2 text-[0.68rem] uppercase tracking-[0.09em] text-muted-foreground">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-3 py-1">
-              <Clock3 className="h-3.5 w-3.5 text-primary" /> 24h average response
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-3 py-1">
-              <Headset className="h-3.5 w-3.5 text-primary" /> Human support team
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-3 py-1">
-              <BadgeCheck className="h-3.5 w-3.5 text-primary" /> Buyer-protection policies
-            </span>
+
+          <div className="mt-6 flex flex-wrap gap-2 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-white/72">
+            <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">US shipping clarity</span>
+            <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">Secure Shopify checkout</span>
+            <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">30-day returns</span>
+            <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">Curated weekly edits</span>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto w-[min(1280px,96vw)] pt-6">
-        <div className="salt-separator" />
-      </div>
-
-      <div className="mx-auto grid w-[min(1280px,96vw)] gap-10 py-12 md:grid-cols-4">
+      <div className="mx-auto grid w-[min(1340px,94vw)] gap-10 pb-12 pt-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
         <div>
-          <BrandLogo
-            withWordmark
-            size="md"
-            className="shadow-[0_16px_28px_-24px_rgba(0,0,0,0.45)]"
-          />
-          <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-            Curated everyday essentials from
-            <a
-              href="https://saltonlinestore.com"
-              target="_blank"
-              rel="noreferrer"
-              className="mx-1 font-semibold text-primary underline-offset-2 hover:underline"
-            >
-              saltonlinestore.com
-            </a>
-            with premium-quality picks across home, lifestyle, and gifting.
+          <BrandLogo withWordmark size="md" />
+          <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">
+            SALT Online Store curates home, lifestyle, gifting, seasonal, and everyday pieces with a cleaner boutique-style shopping experience.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <a
-              href="https://www.facebook.com/people/SALT-online-store/61573199456052/"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
-              aria-label="SALT on Facebook"
-            >
-              <Facebook className="h-6 w-6" />
-            </a>
+          <div className="mt-4 flex flex-wrap gap-2">
             <a
               href="https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg=="
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-card/82 text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               aria-label="SALT on Instagram"
             >
-              <Instagram className="h-6 w-6" />
+              <Instagram className="h-5 w-5" />
+            </a>
+            <a
+              href="https://www.facebook.com/people/SALT-online-store/61573199456052/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-card/82 text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+              aria-label="SALT on Facebook"
+            >
+              <Facebook className="h-5 w-5" />
             </a>
             <a
               href="https://www.youtube.com/@SALTONLINESTORE"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-card/82 text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               aria-label="SALT on YouTube"
             >
-              <Youtube className="h-6 w-6" />
+              <Youtube className="h-5 w-5" />
             </a>
             <a
               href="https://www.tiktok.com/@saltonlinestore"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/75 bg-background/85 text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-card/82 text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               aria-label="SALT on TikTok"
             >
-              <TikTokIcon className="h-6 w-6" />
+              <TikTokIcon className="h-5 w-5" />
             </a>
           </div>
-          <div className="mt-4 flex w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-            <span className="salt-outline-chip shrink-0">
-              Fast Dispatch
-            </span>
-            <span className="salt-outline-chip shrink-0">
-              Secure Checkout
-            </span>
-            <span className="salt-outline-chip shrink-0">
-              30-day Returns
-            </span>
+
+          <div className="mt-5 grid gap-2">
+            <a
+              href={`mailto:${supportEmail}`}
+              className="inline-flex items-center gap-2 text-sm text-foreground transition hover:text-primary"
+            >
+              <Mail className="h-4 w-4" />
+              {supportEmail}
+            </a>
             <a
               href={shopAppUrl}
               target="_blank"
               rel="noreferrer"
-              className="salt-outline-chip shrink-0"
-              aria-label="Open Shop app"
+              className="inline-flex items-center gap-2 text-sm text-foreground transition hover:text-primary"
             >
+              <BadgeCheck className="h-4 w-4" />
               Shop App
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>
 
         <div>
-          <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Explore</h4>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <Link className="hover:text-primary" to="/shop">
-                All Products
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/collections">
-                Collections
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/about">
-                About
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/blog">
-                Blog
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/shop?collection=new-arrivals">
-                New Arrivals
-              </Link>
-            </li>
-          </ul>
+          <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Shop
+          </h3>
+          <div className="mt-4 grid gap-2 text-sm">
+            <Link to="/shop" className="transition hover:text-primary">All products</Link>
+            <Link to="/collections" className="transition hover:text-primary">Collections</Link>
+            <Link to="/shop?sort=newest" className="transition hover:text-primary">New arrivals</Link>
+            <Link to="/shop?sort=discount" className="transition hover:text-primary">Best savings</Link>
+            <Link to="/blog" className="transition hover:text-primary">Journal</Link>
+          </div>
         </div>
 
         <div>
-          <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Support</h4>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <Link className="hover:text-primary" to="/contact">
-                Contact
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/about">
-                About us
-              </Link>
-            </li>
-            <li>
-              <Link className="hover:text-primary" to="/order-history">
-                Order history
-              </Link>
-            </li>
-            <li>
-              <a className="hover:text-primary" href={privacyPolicyHref}>
-                Privacy
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-primary" href={returnsPolicyHref}>
-                Returns
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-primary" href={shippingPolicyHref}>
-                Shipping
-              </a>
-            </li>
-          </ul>
+          <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Support
+          </h3>
+          <div className="mt-4 grid gap-2 text-sm">
+            <Link to="/contact" className="transition hover:text-primary">Contact</Link>
+            <Link to="/order-history" className="transition hover:text-primary">Order history</Link>
+            <a href={shippingPolicyHref} className="transition hover:text-primary">Shipping policy</a>
+            <a href={returnsPolicyHref} className="transition hover:text-primary">Return policy</a>
+            <a href={privacyPolicyHref} className="transition hover:text-primary">Privacy policy</a>
+          </div>
         </div>
 
         <div>
-          <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Stay Updated</h4>
-          <form className="mt-3 space-y-3" onSubmit={onSubscribe}>
+          <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Join the SALT list
+          </h3>
+          <p className="mt-4 text-sm leading-6 text-muted-foreground">
+            Product drops, gift ideas, and seasonal edits straight from the store.
+          </p>
+          <form onSubmit={onSubscribe} className="mt-4 space-y-3">
             <input
-              className="salt-form-control w-full"
+              className="salt-form-control h-12 w-full rounded-full px-4"
               type="email"
               required
               placeholder="email@domain.com"
             />
             <button
-              className="salt-primary-cta h-11 w-full text-sm font-bold"
+              className="salt-primary-cta h-12 w-full justify-center px-5 text-[0.76rem] font-semibold uppercase tracking-[0.12em]"
               type="submit"
             >
-              Join the SALT List
+              Join newsletter
             </button>
             {subscribed ? (
-              <p className="text-xs text-emerald-700">
-                Thanks. You are subscribed for product drops and launch updates.
-              </p>
+              <p className="text-sm text-emerald-700">You’re subscribed for updates from SALT.</p>
             ) : null}
           </form>
         </div>
       </div>
 
-      <div className="border-t border-border/70 bg-background/35">
-        <div className="mx-auto flex w-[min(1280px,96vw)] flex-col items-center justify-between gap-2 py-4 text-xs text-muted-foreground md:flex-row">
+      <div className="border-t border-border/70 bg-background/40">
+        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-2 py-5 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
           <span>Copyright {new Date().getFullYear()} SALT Online Store.</span>
-          <span>Mobile-optimized storefront with resilient catalog sync and accessible navigation.</span>
+          <span>Curated home, gifts, lifestyle, and everyday essentials.</span>
         </div>
       </div>
     </footer>

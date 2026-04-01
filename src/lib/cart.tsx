@@ -22,11 +22,19 @@ type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
+  isDrawerOpen: boolean;
+  addItem: (
+    item: Omit<CartItem, "quantity">,
+    quantity?: number,
+    options?: { openDrawer?: boolean },
+  ) => void;
   updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
   replaceItems: (items: CartItem[]) => void;
   clear: () => void;
+  openCartDrawer: () => void;
+  closeCartDrawer: () => void;
+  toggleCartDrawer: () => void;
 };
 
 const CART_STORAGE_KEY = "salt-cart";
@@ -269,6 +277,7 @@ export function buildShopifySearchUrl(query: string | null | undefined): string 
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>(readStoredCart);
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
@@ -282,7 +291,8 @@ export function CartProvider({ children }: PropsWithChildren) {
       items,
       itemCount,
       subtotal,
-      addItem: (newItem, quantity = 1) => {
+      isDrawerOpen,
+      addItem: (newItem, quantity = 1, options) => {
         setItems((current) => {
           const existing = current.find((entry) => entry.id === newItem.id);
 
@@ -299,6 +309,10 @@ export function CartProvider({ children }: PropsWithChildren) {
 
           return [...current, { ...newItem, quantity: Math.max(1, quantity) }];
         });
+
+        if (options?.openDrawer !== false) {
+          setDrawerOpen(true);
+        }
       },
       updateQuantity: (id, quantity) => {
         if (quantity <= 0) {
@@ -320,8 +334,11 @@ export function CartProvider({ children }: PropsWithChildren) {
       removeItem: (id) => setItems((current) => current.filter((entry) => entry.id !== id)),
       replaceItems: (nextItems) => setItems(sanitizeCartItems(nextItems)),
       clear: () => setItems([]),
+      openCartDrawer: () => setDrawerOpen(true),
+      closeCartDrawer: () => setDrawerOpen(false),
+      toggleCartDrawer: () => setDrawerOpen((current) => !current),
     };
-  }, [items]);
+  }, [isDrawerOpen, items]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

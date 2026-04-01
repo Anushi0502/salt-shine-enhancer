@@ -1,0 +1,757 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Free shipping all over the US
+        - link "Need help? Contact support" [ref=e8] [cursor=pointer]:
+          - /url: /contact
+        - generic [ref=e9]: New weekly drops • 30-day returns • Trusted by 2,300+ shoppers
+      - generic [ref=e10]:
+        - link "Go to SALT homepage" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e12]:
+            - generic [ref=e16]: SALT
+            - generic [ref=e17]:
+              - generic [ref=e18]: SALT
+              - generic [ref=e19]: Online Store
+        - navigation [ref=e21]:
+          - link "Home" [ref=e22] [cursor=pointer]:
+            - /url: /
+          - link "Shop" [ref=e23] [cursor=pointer]:
+            - /url: /shop
+          - link "Collections" [ref=e24] [cursor=pointer]:
+            - /url: /collections
+          - link "Blog" [ref=e25] [cursor=pointer]:
+            - /url: /blog
+          - link "About" [ref=e26] [cursor=pointer]:
+            - /url: /about
+          - link "Contact" [ref=e27] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - img
+            - searchbox "Search products" [ref=e30]
+            - generic: / K
+          - button "Toggle color theme" [ref=e31] [cursor=pointer]:
+            - img [ref=e33]
+            - generic [ref=e39]:
+              - generic [ref=e40]: Light
+              - generic [ref=e41]: Dark
+          - link "Open order history" [ref=e42] [cursor=pointer]:
+            - /url: /order-history
+            - img [ref=e43]
+            - text: Order History
+          - link "Open cart with 0 items" [ref=e46] [cursor=pointer]:
+            - /url: /cart
+            - img [ref=e47]
+            - text: Cart
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - link "New Arrivals" [ref=e53] [cursor=pointer]:
+            - /url: /shop?collection=new-arrivals
+          - link "Cookware" [ref=e54] [cursor=pointer]:
+            - /url: /shop?collection=cookware
+          - link "Gifts" [ref=e55] [cursor=pointer]:
+            - /url: /shop?collection=gifts
+          - link "Apparel" [ref=e56] [cursor=pointer]:
+            - /url: /shop?collection=robe
+        - generic [ref=e57]:
+          - img [ref=e58]
+          - text: Fast dispatch • Easy returns • Encrypted checkout
+    - main [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - generic [ref=e70]: SALT
+              - generic [ref=e71]:
+                - generic [ref=e72]: SALT
+                - generic [ref=e73]: Online Store
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - img [ref=e76]
+                - text: Spring curation
+              - generic [ref=e78]:
+                - img [ref=e79]
+                - text: Limited weekend drops
+          - generic [ref=e82]:
+            - paragraph [ref=e83]: Curated lifestyle retail, built to convert
+            - heading "Discover the pieces that make home, gifting, and everyday living feel deliberate, easy, and worth buying." [level=1] [ref=e84]:
+              - text: Discover the pieces that make home, gifting, and everyday living feel
+              - generic [ref=e85]: deliberate, easy, and worth buying.
+            - paragraph [ref=e86]: "SALT brings editorial warmth to real shopping behavior: cleaner collection paths, better featured picks, and a storefront designed to move from first click to confident checkout without friction."
+          - generic [ref=e87]:
+            - link "Shop New Arrivals" [ref=e88] [cursor=pointer]:
+              - /url: /shop?collection=new-arrivals
+              - text: Shop New Arrivals
+              - img [ref=e89]
+            - link "Explore Collections" [ref=e91] [cursor=pointer]:
+              - /url: /collections
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - img [ref=e95]
+                - paragraph [ref=e97]: Curated weekly
+              - paragraph [ref=e98]: Fresh collections and editorial product groupings.
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - paragraph [ref=e104]: Checkout clarity
+              - paragraph [ref=e105]: Low-friction product paths from first browse to cart.
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - img [ref=e108]
+                - paragraph [ref=e111]: Ready to gift
+              - paragraph [ref=e112]: Lifestyle, home, gifting, and everyday essentials in one flow.
+          - link "The Living Legacy Planner 2nd Edition Most loved this week The Living Legacy Planner 2nd Edition A lead product placement built to hold attention, surface price clarity fast, and give shoppers one obvious premium pick before they browse the wider catalog. Bestseller spotlight BOOK Starting at $55.99 Shop now" [ref=e113] [cursor=pointer]:
+            - /url: /products/the-living-legacy-planner-2nd-edition
+            - generic [ref=e114]:
+              - img "The Living Legacy Planner 2nd Edition" [ref=e115]
+              - img [ref=e117]
+            - generic [ref=e119]:
+              - paragraph [ref=e120]: Most loved this week
+              - paragraph [ref=e121]: The Living Legacy Planner 2nd Edition
+              - paragraph [ref=e122]: A lead product placement built to hold attention, surface price clarity fast, and give shoppers one obvious premium pick before they browse the wider catalog.
+              - generic [ref=e123]:
+                - generic [ref=e124]: Bestseller spotlight
+                - generic [ref=e125]: BOOK
+            - generic [ref=e126]:
+              - generic [ref=e127]:
+                - paragraph [ref=e128]: Starting at
+                - strong [ref=e129]: $55.99
+              - generic [ref=e130]:
+                - text: Shop now
+                - img [ref=e131]
+        - generic [ref=e133]:
+          - link "Lightweight Mesh Stuff Sack Storage Bags with Drawstring Editor’s choice Lightweight Mesh Stuff Sack Storage Bags with Drawstring A high-intent pick surfaced for clean browsing, stronger trust, and faster decision-making. Starting at $29.99 View pick" [ref=e135] [cursor=pointer]:
+            - /url: /products/hodr-mesh-bags-lightweight-mesh-stuff-sack-drawstring-storage-bags-compression-pouches-for-camping-hiking-laundry-grocery
+            - img "Lightweight Mesh Stuff Sack Storage Bags with Drawstring" [ref=e137]
+            - generic [ref=e140]:
+              - paragraph [ref=e141]: Editor’s choice
+              - heading "Lightweight Mesh Stuff Sack Storage Bags with Drawstring" [level=3] [ref=e142]
+              - paragraph [ref=e143]: A high-intent pick surfaced for clean browsing, stronger trust, and faster decision-making.
+              - generic [ref=e144]:
+                - generic [ref=e145]:
+                  - paragraph [ref=e146]: Starting at
+                  - strong [ref=e147]: $29.99
+                - generic [ref=e148]:
+                  - text: View pick
+                  - img [ref=e149]
+          - link "Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet Featured now Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet A high-intent pick surfaced for clean browsing, stronger trust, and faster decision-making. Starting at $26.99 View pick" [ref=e152] [cursor=pointer]:
+            - /url: /products/folding-toilet-portable-outdoor-storage-box-car-toilet-bucket-collapsible-trash-can-for-self-driving-travel-emergency-toilet
+            - img "Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet" [ref=e154]
+            - generic [ref=e157]:
+              - paragraph [ref=e158]: Featured now
+              - heading "Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet" [level=3] [ref=e159]
+              - paragraph [ref=e160]: A high-intent pick surfaced for clean browsing, stronger trust, and faster decision-making.
+              - generic [ref=e161]:
+                - generic [ref=e162]:
+                  - paragraph [ref=e163]: Starting at
+                  - strong [ref=e164]: $26.99
+                - generic [ref=e165]:
+                  - text: View pick
+                  - img [ref=e166]
+      - generic [ref=e168]:
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - paragraph [ref=e172]: Shop by collection
+            - heading "Merchandising paths built like an editorial storefront" [level=2] [ref=e173]
+            - paragraph [ref=e174]: The strongest collection takes the lead, while the rest stay grouped into cleaner, faster routes for discovering home, gifts, style, and seasonal essentials.
+          - link "View all collections" [ref=e175] [cursor=pointer]:
+            - /url: /collections
+        - generic [ref=e176]:
+          - article [ref=e178]:
+            - generic [ref=e179]:
+              - img "All Products" [ref=e180]
+              - generic [ref=e183]:
+                - img [ref=e184]
+                - text: Curated collection
+              - generic [ref=e186]: 562 items
+            - generic [ref=e188]:
+              - paragraph [ref=e189]: Collection spotlight
+              - heading "All Products" [level=3] [ref=e190]
+              - paragraph [ref=e191]: Curated products grouped into cleaner, faster paths for confident shopping.
+              - generic [ref=e192]:
+                - generic [ref=e193]: 562 products available
+                - link "Shop collection" [ref=e194] [cursor=pointer]:
+                  - /url: /shop?collection=all-products
+                  - text: Shop collection
+                  - img [ref=e195]
+          - generic [ref=e198]:
+            - article [ref=e200]:
+              - generic [ref=e201]:
+                - paragraph [ref=e203]: Collection image unavailable
+                - generic [ref=e206]:
+                  - img [ref=e207]
+                  - text: Curated collection
+                - generic [ref=e209]: 516 items
+              - generic [ref=e211]:
+                - paragraph [ref=e212]: Editorial pick
+                - heading "Best Sellers" [level=3] [ref=e213]
+                - paragraph [ref=e214]: Curated products grouped into cleaner, faster paths for confident shopping.
+                - generic [ref=e215]:
+                  - generic [ref=e216]: 516 products available
+                  - link "Shop collection" [ref=e217] [cursor=pointer]:
+                    - /url: /shop?collection=appplaza-best-sellers
+                    - text: Shop collection
+                    - img [ref=e218]
+            - article [ref=e222]:
+              - generic [ref=e223]:
+                - img "NEW ARRIVALS" [ref=e224]
+                - generic [ref=e227]:
+                  - img [ref=e228]
+                  - text: Curated collection
+                - generic [ref=e230]: 503 items
+              - generic [ref=e232]:
+                - paragraph [ref=e233]: Editorial pick
+                - heading "NEW ARRIVALS" [level=3] [ref=e234]
+                - paragraph [ref=e235]: Curated products grouped into cleaner, faster paths for confident shopping.
+                - generic [ref=e236]:
+                  - generic [ref=e237]: 503 products available
+                  - link "Shop collection" [ref=e238] [cursor=pointer]:
+                    - /url: /shop?collection=new-arrivals
+                    - text: Shop collection
+                    - img [ref=e239]
+            - article [ref=e243]:
+              - generic [ref=e244]:
+                - img "Summer Collection" [ref=e245]
+                - generic [ref=e248]:
+                  - img [ref=e249]
+                  - text: Curated collection
+                - generic [ref=e251]: 112 items
+              - generic [ref=e253]:
+                - paragraph [ref=e254]: Editorial pick
+                - heading "Summer Collection" [level=3] [ref=e255]
+                - paragraph [ref=e256]: Curated products grouped into cleaner, faster paths for confident shopping.
+                - generic [ref=e257]:
+                  - generic [ref=e258]: 112 products available
+                  - link "Shop collection" [ref=e259] [cursor=pointer]:
+                    - /url: /shop?collection=summer-collection
+                    - text: Shop collection
+                    - img [ref=e260]
+            - article [ref=e264]:
+              - generic [ref=e265]:
+                - img "Men Collection" [ref=e266]
+                - generic [ref=e269]:
+                  - img [ref=e270]
+                  - text: Curated collection
+                - generic [ref=e272]: 86 items
+              - generic [ref=e274]:
+                - paragraph [ref=e275]: Editorial pick
+                - heading "Men Collection" [level=3] [ref=e276]
+                - paragraph [ref=e277]: Curated products grouped into cleaner, faster paths for confident shopping.
+                - generic [ref=e278]:
+                  - generic [ref=e279]: 86 products available
+                  - link "Shop collection" [ref=e280] [cursor=pointer]:
+                    - /url: /shop?collection=men-collection
+                    - text: Shop collection
+                    - img [ref=e281]
+        - article [ref=e286]:
+          - generic [ref=e287]:
+            - img "Garden Tools" [ref=e288]
+            - generic [ref=e291]:
+              - img [ref=e292]
+              - text: Curated collection
+            - generic [ref=e294]: 64 items
+          - generic [ref=e296]:
+            - paragraph [ref=e297]: Editorial pick
+            - heading "Garden Tools" [level=3] [ref=e298]
+            - paragraph [ref=e299]: Seasonal utility picks for outdoor living, maintenance, and everyday readiness.
+            - generic [ref=e300]:
+              - generic [ref=e301]: 64 products available
+              - link "Shop collection" [ref=e302] [cursor=pointer]:
+                - /url: /shop?collection=garden-tools
+                - text: Shop collection
+                - img [ref=e303]
+      - generic [ref=e306]:
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - generic [ref=e310]:
+              - paragraph [ref=e311]: Collection focus
+              - heading "Best-rated picks from Garden Tools" [level=2] [ref=e312]
+              - paragraph [ref=e313]: These products come from the current banner collection and are ranked by stronger ratings, deeper review coverage, and sharper purchase intent.
+            - generic [ref=e314]:
+              - link "Shop Garden Tools" [ref=e315] [cursor=pointer]:
+                - /url: /shop?collection=garden-tools
+              - link "View top value picks" [ref=e316] [cursor=pointer]:
+                - /url: /shop?sort=discount
+          - generic [ref=e317]:
+            - generic [ref=e318]:
+              - paragraph [ref=e319]: Products in focus
+              - paragraph [ref=e320]: "63"
+            - generic [ref=e321]:
+              - paragraph [ref=e322]: Average rating
+              - paragraph [ref=e323]: "4.34"
+            - generic [ref=e324]:
+              - paragraph [ref=e325]: Reviews considered
+              - paragraph [ref=e326]: "71"
+            - generic [ref=e327]:
+              - paragraph [ref=e328]: Top reviewed
+              - paragraph [ref=e329]: Small Hoe with Short Wooden Handle | Handheld Garden Tool for Loosening & Weeding Soil
+        - generic [ref=e331]:
+          - article [ref=e333]:
+            - link "Labor-Saving Garden Pruning Shears Save 4% 5.0 avg In stock" [ref=e334] [cursor=pointer]:
+              - /url: /products/labor-saving-garden-pruning-shears
+              - img "Labor-Saving Garden Pruning Shears" [ref=e335]
+              - generic [ref=e337]:
+                - img [ref=e338]
+                - text: Save 4%
+              - generic [ref=e341]: 5.0 avg
+              - generic [ref=e342]:
+                - generic [ref=e343]: In stock
+                - img [ref=e345]
+            - generic [ref=e348]:
+              - generic [ref=e350]: PRUNING SHEARS
+              - generic [ref=e351]:
+                - heading "Labor-Saving Garden Pruning Shears" [level=3] [ref=e352]:
+                  - link "Labor-Saving Garden Pruning Shears" [ref=e353] [cursor=pointer]:
+                    - /url: /products/labor-saving-garden-pruning-shears
+                    - generic [ref=e354]: Labor-Saving Garden Pruning Shears
+                - paragraph [ref=e355]: Functional picks designed for seasonal utility.
+              - generic [ref=e356]:
+                - strong [ref=e357]: $24.99
+                - generic [ref=e358]: $25.99
+                - generic [ref=e359]: Save $1.00
+              - generic [ref=e360]:
+                - generic [ref=e361]:
+                  - generic [ref=e362]:
+                    - img [ref=e363]
+                    - text: "5.0"
+                  - generic [ref=e365]: 1 review
+                - generic [ref=e367]:
+                  - img [ref=e368]
+                  - text: Ready for fast dispatch
+              - generic [ref=e371]:
+                - button "Quick add" [ref=e372] [cursor=pointer]:
+                  - img [ref=e373]
+                  - text: Quick add
+                - link "View" [ref=e376] [cursor=pointer]:
+                  - /url: /products/labor-saving-garden-pruning-shears
+                  - text: View
+                  - img [ref=e377]
+          - article [ref=e381]:
+            - link "Professional Folding Grafting Knife Save 3% 5.0 avg In stock" [ref=e382] [cursor=pointer]:
+              - /url: /products/professional-folding-grafting-knife
+              - img "Professional Folding Grafting Knife" [ref=e383]
+              - generic [ref=e385]:
+                - img [ref=e386]
+                - text: Save 3%
+              - generic [ref=e389]: 5.0 avg
+              - generic [ref=e390]:
+                - generic [ref=e391]: In stock
+                - img [ref=e393]
+            - generic [ref=e396]:
+              - generic [ref=e397]:
+                - generic [ref=e398]: KNIFE
+                - generic [ref=e399]:
+                  - img [ref=e400]
+                  - text: 3 options
+              - generic [ref=e405]:
+                - heading "Professional Folding Grafting Knife" [level=3] [ref=e406]:
+                  - link "Professional Folding Grafting Knife" [ref=e407] [cursor=pointer]:
+                    - /url: /products/professional-folding-grafting-knife
+                    - generic [ref=e408]: Professional Folding Grafting Knife
+                - paragraph [ref=e409]: Curated product surfaced for stronger purchase intent.
+              - generic [ref=e410]:
+                - strong [ref=e411]: $29.99
+                - generic [ref=e412]: $30.99
+                - generic [ref=e413]: Save $1.00
+              - generic [ref=e414]:
+                - generic [ref=e415]:
+                  - generic [ref=e416]:
+                    - img [ref=e417]
+                    - text: "5.0"
+                  - generic [ref=e419]: 1 review
+                - generic [ref=e421]:
+                  - img [ref=e422]
+                  - text: Ready for fast dispatch
+              - generic [ref=e425]:
+                - button "Quick add" [ref=e426] [cursor=pointer]:
+                  - img [ref=e427]
+                  - text: Quick add
+                - link "View" [ref=e430] [cursor=pointer]:
+                  - /url: /products/professional-folding-grafting-knife
+                  - text: View
+                  - img [ref=e431]
+          - article [ref=e435]:
+            - link "Grafting & Pruning Tool Professional Branch Cutter Secateur Featured pick 5.0 avg In stock" [ref=e436] [cursor=pointer]:
+              - /url: /products/grafting-pruning-tool-professional-branch-cutter-secateur
+              - img "Grafting & Pruning Tool Professional Branch Cutter Secateur" [ref=e437]
+              - generic [ref=e439]: Featured pick
+              - generic [ref=e441]: 5.0 avg
+              - generic [ref=e442]:
+                - generic [ref=e443]: In stock
+                - img [ref=e445]
+            - generic [ref=e448]:
+              - generic [ref=e449]:
+                - generic [ref=e450]: PRUNING SHEARS
+                - generic [ref=e451]:
+                  - img [ref=e452]
+                  - text: 3 options
+              - generic [ref=e457]:
+                - heading "Grafting & Pruning Tool Professional Branch Cutter Secateur" [level=3] [ref=e458]:
+                  - link "Grafting & Pruning Tool Professional Branch Cutter Secateur" [ref=e459] [cursor=pointer]:
+                    - /url: /products/grafting-pruning-tool-professional-branch-cutter-secateur
+                    - generic [ref=e460]: Grafting & Pruning Tool Professional Branch Cutter Secateur
+                - paragraph [ref=e461]: Functional picks designed for seasonal utility.
+              - strong [ref=e463]: $39.99
+              - generic [ref=e464]:
+                - generic [ref=e465]:
+                  - generic [ref=e466]:
+                    - img [ref=e467]
+                    - text: "5.0"
+                  - generic [ref=e469]: 1 review
+                - generic [ref=e471]:
+                  - img [ref=e472]
+                  - text: Ready for fast dispatch
+              - generic [ref=e475]:
+                - button "Quick add" [ref=e476] [cursor=pointer]:
+                  - img [ref=e477]
+                  - text: Quick add
+                - link "View" [ref=e480] [cursor=pointer]:
+                  - /url: /products/grafting-pruning-tool-professional-branch-cutter-secateur
+                  - text: View
+                  - img [ref=e481]
+          - article [ref=e485]:
+            - link "Fixed Blade Outdoor Knife with SKD-11 Steel Featured pick 5.0 avg In stock" [ref=e486] [cursor=pointer]:
+              - /url: /products/fixed-blade-outdoor-knife-with-skd-11-steel
+              - img "Fixed Blade Outdoor Knife with SKD-11 Steel" [ref=e487]
+              - generic [ref=e489]: Featured pick
+              - generic [ref=e491]: 5.0 avg
+              - generic [ref=e492]:
+                - generic [ref=e493]: In stock
+                - img [ref=e495]
+            - generic [ref=e498]:
+              - generic [ref=e500]: KNIFE
+              - generic [ref=e501]:
+                - heading "Fixed Blade Outdoor Knife with SKD-11 Steel" [level=3] [ref=e502]:
+                  - link "Fixed Blade Outdoor Knife with SKD-11 Steel" [ref=e503] [cursor=pointer]:
+                    - /url: /products/fixed-blade-outdoor-knife-with-skd-11-steel
+                    - generic [ref=e504]: Fixed Blade Outdoor Knife with SKD-11 Steel
+                - paragraph [ref=e505]: Functional picks designed for seasonal utility.
+              - strong [ref=e507]: $39.99
+              - generic [ref=e508]:
+                - generic [ref=e509]:
+                  - generic [ref=e510]:
+                    - img [ref=e511]
+                    - text: "5.0"
+                  - generic [ref=e513]: 1 review
+                - generic [ref=e515]:
+                  - img [ref=e516]
+                  - text: Ready for fast dispatch
+              - generic [ref=e519]:
+                - button "Quick add" [ref=e520] [cursor=pointer]:
+                  - img [ref=e521]
+                  - text: Quick add
+                - link "View" [ref=e524] [cursor=pointer]:
+                  - /url: /products/fixed-blade-outdoor-knife-with-skd-11-steel
+                  - text: View
+                  - img [ref=e525]
+          - article [ref=e529]:
+            - link "Multifunctional 4-Stage Knife Sharpener Featured pick 5.0 avg In stock" [ref=e530] [cursor=pointer]:
+              - /url: /products/multifunctional-4-stage-knife-sharpener
+              - img "Multifunctional 4-Stage Knife Sharpener" [ref=e531]
+              - generic [ref=e533]: Featured pick
+              - generic [ref=e535]: 5.0 avg
+              - generic [ref=e536]:
+                - generic [ref=e537]: In stock
+                - img [ref=e539]
+            - generic [ref=e542]:
+              - generic [ref=e544]: KNIFE
+              - generic [ref=e545]:
+                - heading "Multifunctional 4-Stage Knife Sharpener" [level=3] [ref=e546]:
+                  - link "Multifunctional 4-Stage Knife Sharpener" [ref=e547] [cursor=pointer]:
+                    - /url: /products/multifunctional-4-stage-knife-sharpener
+                    - generic [ref=e548]: Multifunctional 4-Stage Knife Sharpener
+                - paragraph [ref=e549]: Curated product surfaced for stronger purchase intent.
+              - strong [ref=e551]: $29.99
+              - generic [ref=e552]:
+                - generic [ref=e553]:
+                  - generic [ref=e554]:
+                    - img [ref=e555]
+                    - text: "5.0"
+                  - generic [ref=e557]: 1 review
+                - generic [ref=e559]:
+                  - img [ref=e560]
+                  - text: Ready for fast dispatch
+              - generic [ref=e563]:
+                - button "Quick add" [ref=e564] [cursor=pointer]:
+                  - img [ref=e565]
+                  - text: Quick add
+                - link "View" [ref=e568] [cursor=pointer]:
+                  - /url: /products/multifunctional-4-stage-knife-sharpener
+                  - text: View
+                  - img [ref=e569]
+          - article [ref=e573]:
+            - link "Deli 10-Pack SK4 Utility Knife Blades Featured pick 5.0 avg In stock" [ref=e574] [cursor=pointer]:
+              - /url: /products/deli-10-pack-sk4-utility-knife-blades
+              - img "Deli 10-Pack SK4 Utility Knife Blades" [ref=e575]
+              - generic [ref=e577]: Featured pick
+              - generic [ref=e579]: 5.0 avg
+              - generic [ref=e580]:
+                - generic [ref=e581]: In stock
+                - img [ref=e583]
+            - generic [ref=e586]:
+              - generic [ref=e588]: KNIFE
+              - generic [ref=e589]:
+                - heading "Deli 10-Pack SK4 Utility Knife Blades" [level=3] [ref=e590]:
+                  - link "Deli 10-Pack SK4 Utility Knife Blades" [ref=e591] [cursor=pointer]:
+                    - /url: /products/deli-10-pack-sk4-utility-knife-blades
+                    - generic [ref=e592]: Deli 10-Pack SK4 Utility Knife Blades
+                - paragraph [ref=e593]: Curated product surfaced for stronger purchase intent.
+              - strong [ref=e595]: $24.99
+              - generic [ref=e596]:
+                - generic [ref=e597]:
+                  - generic [ref=e598]:
+                    - img [ref=e599]
+                    - text: "5.0"
+                  - generic [ref=e601]: 1 review
+                - generic [ref=e603]:
+                  - img [ref=e604]
+                  - text: Ready for fast dispatch
+              - generic [ref=e607]:
+                - button "Quick add" [ref=e608] [cursor=pointer]:
+                  - img [ref=e609]
+                  - text: Quick add
+                - link "View" [ref=e612] [cursor=pointer]:
+                  - /url: /products/deli-10-pack-sk4-utility-knife-blades
+                  - text: View
+                  - img [ref=e613]
+          - article [ref=e617]:
+            - link "Stainless Steel Garden Trowel | Heavy Duty Hand Shovel Featured pick 4.4 avg In stock" [ref=e618] [cursor=pointer]:
+              - /url: /products/stainless-steel-garden-trowel-heavy-duty-hand-shovel
+              - img "Stainless Steel Garden Trowel | Heavy Duty Hand Shovel" [ref=e619]
+              - generic [ref=e621]: Featured pick
+              - generic [ref=e623]: 4.4 avg
+              - generic [ref=e624]:
+                - generic [ref=e625]: In stock
+                - img [ref=e627]
+            - generic [ref=e630]:
+              - generic [ref=e631]:
+                - generic [ref=e632]: Curated pick
+                - generic [ref=e633]:
+                  - img [ref=e634]
+                  - text: 2 options
+              - generic [ref=e639]:
+                - heading "Stainless Steel Garden Trowel | Heavy Duty Hand Shovel" [level=3] [ref=e640]:
+                  - link "Stainless Steel Garden Trowel | Heavy Duty Hand Shovel" [ref=e641] [cursor=pointer]:
+                    - /url: /products/stainless-steel-garden-trowel-heavy-duty-hand-shovel
+                    - generic [ref=e642]: Stainless Steel Garden Trowel | Heavy Duty Hand Shovel
+                - paragraph [ref=e643]: Functional picks designed for seasonal utility.
+              - strong [ref=e645]: $29.99
+              - generic [ref=e646]:
+                - generic [ref=e647]:
+                  - generic [ref=e648]:
+                    - img [ref=e649]
+                    - text: "4.4"
+                  - generic [ref=e651]: 9 reviews
+                - generic [ref=e653]:
+                  - img [ref=e654]
+                  - text: 3 bought last month
+              - generic [ref=e657]:
+                - button "Quick add" [ref=e658] [cursor=pointer]:
+                  - img [ref=e659]
+                  - text: Quick add
+                - link "View" [ref=e662] [cursor=pointer]:
+                  - /url: /products/stainless-steel-garden-trowel-heavy-duty-hand-shovel
+                  - text: View
+                  - img [ref=e663]
+          - article [ref=e667]:
+            - link "Fruit Protection Bags | Insect-Proof & Reusable Garden Tool Featured pick 4.4 avg In stock" [ref=e668] [cursor=pointer]:
+              - /url: /products/fruit-protection-bags-insect-proof-reusable-garden-tool
+              - img "Fruit Protection Bags | Insect-Proof & Reusable Garden Tool" [ref=e669]
+              - generic [ref=e671]: Featured pick
+              - generic [ref=e673]: 4.4 avg
+              - generic [ref=e674]:
+                - generic [ref=e675]: In stock
+                - img [ref=e677]
+            - generic [ref=e680]:
+              - generic [ref=e681]:
+                - generic [ref=e682]: Curated pick
+                - generic [ref=e683]:
+                  - img [ref=e684]
+                  - text: 5 options
+              - generic [ref=e689]:
+                - heading "Fruit Protection Bags | Insect-Proof & Reusable Garden Tool" [level=3] [ref=e690]:
+                  - link "Fruit Protection Bags | Insect-Proof & Reusable Garden Tool" [ref=e691] [cursor=pointer]:
+                    - /url: /products/fruit-protection-bags-insect-proof-reusable-garden-tool
+                    - generic [ref=e692]: Fruit Protection Bags | Insect-Proof & Reusable Garden Tool
+                - paragraph [ref=e693]: Functional picks designed for seasonal utility.
+              - strong [ref=e695]: $34.99
+              - generic [ref=e696]:
+                - generic [ref=e697]:
+                  - generic [ref=e698]:
+                    - img [ref=e699]
+                    - text: "4.4"
+                  - generic [ref=e701]: 5 reviews
+                - generic [ref=e703]:
+                  - img [ref=e704]
+                  - text: 1 bought last month
+              - generic [ref=e707]:
+                - button "Quick add" [ref=e708] [cursor=pointer]:
+                  - img [ref=e709]
+                  - text: Quick add
+                - link "View" [ref=e712] [cursor=pointer]:
+                  - /url: /products/fruit-protection-bags-insect-proof-reusable-garden-tool
+                  - text: View
+                  - img [ref=e713]
+      - generic [ref=e719]:
+        - generic [ref=e720]:
+          - paragraph [ref=e721]: Trust and conversion
+          - heading "A premium storefront should feel calm, credible, and ready to buy from" [level=3] [ref=e722]
+          - paragraph [ref=e723]: "Every trust cue here is grounded in actual store behavior: live review coverage, strong collection structure, clear dispatch messaging, and support paths that stay visible instead of buried."
+          - generic [ref=e724]:
+            - generic [ref=e725]:
+              - paragraph [ref=e726]: Safe and Secure Delivery
+              - paragraph [ref=e727]: We don't just ship boxes; we ensure your order arrives safely and swiftly with premium tracking every step of the way.
+            - generic [ref=e728]:
+              - paragraph [ref=e729]: Secure & Flexible Payments
+              - paragraph [ref=e730]: Choose how you pay with our fully encrypted checkout, supporting all major cards and buy now, pay later options.
+            - generic [ref=e731]:
+              - paragraph [ref=e732]: Our "Happiness" Guarantee
+              - paragraph [ref=e733]: Not quite what you expected? No problem. Our 30-day, hassle-free return policy ensures you never have to settle.
+            - generic [ref=e734]:
+              - paragraph [ref=e735]: Expertly Curated Selection
+              - paragraph [ref=e736]: Every item in our store is hand-vetted by our team for quality and durability, so you only ever get the best.
+        - generic [ref=e737]:
+          - generic [ref=e738]:
+            - paragraph [ref=e739]: Live customer proof
+            - heading "Review depth that supports faster decisions" [level=4] [ref=e740]
+            - generic [ref=e741]:
+              - generic [ref=e742]:
+                - paragraph [ref=e743]: Average rating
+                - paragraph [ref=e744]: "4.60"
+              - generic [ref=e745]:
+                - paragraph [ref=e746]: Published reviews
+                - paragraph [ref=e747]: "20"
+            - generic [ref=e748]:
+              - paragraph [ref=e749]: Top reviewed product
+              - paragraph [ref=e750]: Labor-Saving Garden Pruning Shears
+          - generic [ref=e751]:
+            - paragraph [ref=e752]: Confidence cues
+            - generic [ref=e753]:
+              - paragraph [ref=e754]:
+                - img [ref=e755]
+                - text: Live product data stays connected to Shopify for current pricing and availability.
+              - paragraph [ref=e758]:
+                - img [ref=e759]
+                - text: High-intent collection paths reduce noise and keep discovery closer to checkout.
+              - paragraph [ref=e761]:
+                - img [ref=e762]
+                - text: Editorial surfaces raise perceived value without slowing down commerce actions.
+              - paragraph [ref=e764]:
+                - img [ref=e765]
+                - text: Pricing, savings, and support paths remain visible in every major shopping step.
+            - generic [ref=e767]:
+              - link "Shop with confidence" [ref=e768] [cursor=pointer]:
+                - /url: /shop
+              - link "Read buying guides" [ref=e769] [cursor=pointer]:
+                - /url: /blog
+              - link "Talk to support" [ref=e770] [cursor=pointer]:
+                - /url: /contact
+    - contentinfo [ref=e771]:
+      - generic [ref=e773]:
+        - generic [ref=e774]:
+          - generic [ref=e775]:
+            - paragraph [ref=e776]: Support Promise
+            - heading "Need help before checkout?" [level=3] [ref=e777]
+            - paragraph [ref=e778]: Reach support quickly for product questions, order tracking, and return guidance.
+          - generic [ref=e779]:
+            - link "Contact support" [ref=e780] [cursor=pointer]:
+              - /url: /contact
+            - link "Shipping policy" [ref=e781] [cursor=pointer]:
+              - /url: /policies/shipping-policy
+            - link "Return policy" [ref=e782] [cursor=pointer]:
+              - /url: /policies/refund-policy
+        - generic [ref=e783]:
+          - generic [ref=e784]:
+            - img [ref=e785]
+            - text: 24h average response
+          - generic [ref=e788]:
+            - img [ref=e789]
+            - text: Human support team
+          - generic [ref=e792]:
+            - img [ref=e793]
+            - text: Buyer-protection policies
+      - generic [ref=e798]:
+        - generic [ref=e799]:
+          - generic [ref=e800]:
+            - generic [ref=e804]: SALT
+            - generic [ref=e805]:
+              - generic [ref=e806]: SALT
+              - generic [ref=e807]: Online Store
+          - paragraph [ref=e808]:
+            - text: Curated everyday essentials from
+            - link "saltonlinestore.com" [ref=e809] [cursor=pointer]:
+              - /url: https://saltonlinestore.com
+            - text: with premium-quality picks across home, lifestyle, and gifting.
+          - generic [ref=e810]:
+            - link "SALT on Facebook" [ref=e811] [cursor=pointer]:
+              - /url: https://www.facebook.com/people/SALT-online-store/61573199456052/
+              - img [ref=e812]
+            - link "SALT on Instagram" [ref=e814] [cursor=pointer]:
+              - /url: https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg==
+              - img [ref=e815]
+            - link "SALT on YouTube" [ref=e818] [cursor=pointer]:
+              - /url: https://www.youtube.com/@SALTONLINESTORE
+              - img [ref=e819]
+            - link "SALT on TikTok" [ref=e822] [cursor=pointer]:
+              - /url: https://www.tiktok.com/@saltonlinestore
+              - img [ref=e823]
+          - generic [ref=e825]:
+            - generic [ref=e826]: Fast Dispatch
+            - generic [ref=e827]: Secure Checkout
+            - generic [ref=e828]: 30-day Returns
+            - link "Open Shop app" [ref=e829] [cursor=pointer]:
+              - /url: https://shop.app
+              - text: Shop App
+        - generic [ref=e830]:
+          - heading "Explore" [level=4] [ref=e831]
+          - list [ref=e832]:
+            - listitem [ref=e833]:
+              - link "All Products" [ref=e834] [cursor=pointer]:
+                - /url: /shop
+            - listitem [ref=e835]:
+              - link "Collections" [ref=e836] [cursor=pointer]:
+                - /url: /collections
+            - listitem [ref=e837]:
+              - link "About" [ref=e838] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e839]:
+              - link "Blog" [ref=e840] [cursor=pointer]:
+                - /url: /blog
+            - listitem [ref=e841]:
+              - link "New Arrivals" [ref=e842] [cursor=pointer]:
+                - /url: /shop?collection=new-arrivals
+        - generic [ref=e843]:
+          - heading "Support" [level=4] [ref=e844]
+          - list [ref=e845]:
+            - listitem [ref=e846]:
+              - link "Contact" [ref=e847] [cursor=pointer]:
+                - /url: /contact
+            - listitem [ref=e848]:
+              - link "About us" [ref=e849] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e850]:
+              - link "Order history" [ref=e851] [cursor=pointer]:
+                - /url: /order-history
+            - listitem [ref=e852]:
+              - link "Privacy" [ref=e853] [cursor=pointer]:
+                - /url: /policies/privacy-policy
+            - listitem [ref=e854]:
+              - link "Returns" [ref=e855] [cursor=pointer]:
+                - /url: /policies/refund-policy
+            - listitem [ref=e856]:
+              - link "Shipping" [ref=e857] [cursor=pointer]:
+                - /url: /policies/shipping-policy
+        - generic [ref=e858]:
+          - heading "Stay Updated" [level=4] [ref=e859]
+          - generic [ref=e860]:
+            - textbox "email@domain.com" [ref=e861]
+            - button "Join the SALT List" [ref=e862] [cursor=pointer]
+      - generic [ref=e864]:
+        - generic [ref=e865]: Copyright 2026 SALT Online Store.
+        - generic [ref=e866]: Mobile-optimized storefront with resilient catalog sync and accessible navigation.

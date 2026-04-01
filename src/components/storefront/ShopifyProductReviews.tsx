@@ -541,7 +541,7 @@ const ShopifyProductReviews = ({
   }
 
   return (
-    <section className={`salt-reviews-shell ${mode === "page" ? "mt-4" : "mt-12"}`}>
+    <section className={`salt-reviews-shell ${mode === "page" ? "mt-4" : "mt-10"}`}>
       <div className="salt-panel-shell rounded-[1.7rem] p-5 sm:p-6">
         {mode !== "page" ? (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

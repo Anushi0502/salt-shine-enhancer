@@ -170,15 +170,15 @@ const CartPage = () => {
 
   if (!items.length) {
     return (
-      <section className="mx-auto mt-10 w-[min(880px,92vw)] pb-10 text-center">
+      <section className="mx-auto mt-8 w-[min(880px,92vw)] pb-10 text-center">
         <Reveal>
-          <div className="salt-surface rounded-[2rem] p-10">
+          <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
               <ShoppingBag className="h-8 w-8" />
             </div>
             <h1 className="mt-4 font-display text-4xl">Your cart is empty</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Add products from the catalog and they will appear here instantly.
+              Add a few pieces from the catalog and they will appear here.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <Link
@@ -201,15 +201,15 @@ const CartPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-10">
+    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-10">
       <Reveal>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Cart</p>
-            <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Review your order</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{itemCount} items currently in your cart.</p>
+            <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Review your bag</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{itemCount} items ready for checkout.</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              <span className="salt-outline-chip text-[0.62rem]">Shopify checkout handoff</span>
+              <span className="salt-outline-chip text-[0.62rem]">Secure Shopify checkout</span>
               <span className="salt-outline-chip text-[0.62rem]">Live variant validation</span>
             </div>
           </div>
@@ -223,11 +223,11 @@ const CartPage = () => {
         </div>
       </Reveal>
 
-      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="grid gap-3">
           {items.map((item, index) => (
             <Reveal key={item.id} delayMs={index * 45}>
-              <article className="salt-panel-shell rounded-2xl p-4 sm:p-5">
+              <article className="salt-panel-shell rounded-2xl p-4">
                 <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
                   {item.image ? (
                     <img
@@ -292,9 +292,9 @@ const CartPage = () => {
         </div>
 
         <Reveal delayMs={120}>
-          <aside className="salt-panel-shell rounded-[2rem] p-5 sm:p-6 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-6 lg:sticky lg:top-24">
             <h2 className="font-display text-3xl">Order summary</h2>
-            <div className="mt-5 space-y-3 border-b border-border pb-5 text-sm">
+            <div className="mt-4 space-y-3 border-b border-border pb-4 text-sm">
               <p className="flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
                 <strong>{formatMoney(subtotal)}</strong>
@@ -324,8 +324,8 @@ const CartPage = () => {
               </p>
             </div>
 
-            <p className="mt-5 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
-              Standard checkout is recommended. Express options (including Shop Pay) appear inside Shopify checkout.
+            <p className="mt-4 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+              Express payment options appear inside secure Shopify checkout.
             </p>
             {autoRecoveredCount > 0 ? (
               <p className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:text-emerald-100">
@@ -335,8 +335,7 @@ const CartPage = () => {
             {hasUnresolvedCheckoutItems ? (
               <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
                 <p>
-                  {unresolvedCheckoutItems.length} item(s) in this cart could not be mapped to a
-                  live Shopify variant. Remove and re-add those item(s) before checkout, or click the button below to remove all unmapped items at once. You can also try searching for the item(s) on Shopify using the links below:
+                  {unresolvedCheckoutItems.length} item(s) in this cart could not be mapped to a live Shopify variant. Remove and re-add them before checkout, or remove all unmapped items at once:
                 </p>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   {unresolvedShopifyLinks.map((entry) => (
@@ -374,7 +373,7 @@ const CartPage = () => {
                 });
               }}
               aria-disabled={hasUnresolvedCheckoutItems}
-              className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
+                className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
                 hasUnresolvedCheckoutItems
                   ? "pointer-events-none opacity-60"
                   : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
@@ -397,7 +396,7 @@ const CartPage = () => {
               Need checkout help?
             </Link>
 
-            <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+            <div className="mt-3 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               <p className="inline-flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5" /> Payment encryption enabled
               </p>
@@ -410,12 +409,12 @@ const CartPage = () => {
       </div>
 
       {recommendedProducts.length > 0 ? (
-        <section className="mt-10">
+        <section className="mt-8">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Add-on picks</p>
-                <h2 className="font-display text-[clamp(1.7rem,2.6vw,2.5rem)]">Complete your order</h2>
+                <h2 className="font-display text-[clamp(1.7rem,2.6vw,2.5rem)]">Complete the basket</h2>
               </div>
             </div>
           </Reveal>

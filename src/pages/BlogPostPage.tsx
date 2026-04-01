@@ -87,7 +87,7 @@ const BlogPostPage = () => {
     .slice(0, 3);
 
   return (
-    <section className="mx-auto mt-8 w-[min(1000px,94vw)] pb-10">
+    <section className="mx-auto mt-6 w-[min(1000px,94vw)] pb-10">
       <Reveal>
         <Link
           to="/blog"
@@ -98,7 +98,7 @@ const BlogPostPage = () => {
       </Reveal>
 
       <Reveal delayMs={40}>
-        <article className="salt-panel-shell mt-4 rounded-[2rem] p-6 sm:p-8">
+        <article className="salt-panel-shell mt-4 rounded-[1.9rem] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog Post</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">{post.title}</h1>
 
@@ -143,16 +143,16 @@ const BlogPostPage = () => {
           ) : articleImageFallback}
 
           <article
-            className="prose prose-sm mt-6 max-w-none leading-7 text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"
+            className="prose prose-sm mt-5 max-w-none leading-[1.72] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
 
-          <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4">
+          <div className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4">
             <Link
               to="/shop"
               className="salt-primary-cta h-10 px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em]"
             >
-              Shop products
+              Shop the catalog
             </Link>
             <Link
               to="/collections"
@@ -172,7 +172,7 @@ const BlogPostPage = () => {
 
       {relatedPosts.length > 0 ? (
         <Reveal delayMs={80}>
-          <section className="salt-panel-shell mt-6 rounded-[2rem] p-6 sm:p-8">
+          <section className="salt-panel-shell mt-5 rounded-[1.9rem] p-5 sm:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Related posts</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {relatedPosts.map((entry) => (

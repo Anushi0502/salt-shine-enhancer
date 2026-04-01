@@ -1,267 +1,236 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BadgeCheck, Clock3, ShieldCheck, Sparkles, Star } from "lucide-react";
-import { formatMoney, minPrice, productImage } from "@/lib/formatters";
-import type { ShopifyProduct } from "@/types/shopify";
+import { ArrowRight, BadgeCheck, Sparkles, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import BrandLogo from "@/components/layout/BrandLogo";
+import { formatMoney, minPrice, productImage } from "@/lib/formatters";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 type HomeHeroProps = {
   featured: ShopifyProduct[];
+  leadCollection?: ShopifyCollection | null;
+  supportingCollections?: ShopifyCollection[];
 };
 
 const heroStats = [
   {
     label: "Curated weekly",
-    detail: "Fresh collections and editorial product groupings.",
+    detail: "Fresh edits across home, gifts, and everyday living.",
     icon: Sparkles,
   },
   {
-    label: "Checkout clarity",
-    detail: "Low-friction product paths from first browse to cart.",
-    icon: ShieldCheck,
+    label: "Ready to gift",
+    detail: "Useful picks with a polished, easy-to-shop feel.",
+    icon: BadgeCheck,
   },
   {
-    label: "Ready to gift",
-    detail: "Lifestyle, home, gifting, and everyday essentials in one flow.",
-    icon: BadgeCheck,
+    label: "Fast dispatch",
+    detail: "Clear shipping cues and secure checkout at every step.",
+    icon: Truck,
   },
 ];
 
-function sideCardCopy(product: ShopifyProduct, index: number): { eyebrow: string; note: string } {
+function cardNote(product: ShopifyProduct): string {
   const source = `${product.title} ${product.product_type}`.toLowerCase();
 
-  if (/book|planner|legacy/.test(source)) {
-    return {
-      eyebrow: index === 0 ? "Most loved gift" : "Meaningful pick",
-      note: "Thoughtful, lasting pieces shoppers tend to save for themselves and gift to others.",
-    };
+  if (/cook|kitchen|pan|pot|bake|utensil|table|serve|mug|glass|plate/.test(source)) {
+    return "A polished kitchen essential that feels both useful and gift-ready.";
   }
 
-  if (/dress|robe|wear|apparel/.test(source)) {
-    return {
-      eyebrow: "Wardrobe find",
-      note: "Soft, easy style with enough presence to feel considered instead of impulse-only.",
-    };
+  if (/dress|robe|apparel|shirt|wear|jacket|knit|set|fashion|lounge/.test(source)) {
+    return "An easy everyday piece with a soft boutique feel and clean finish.";
   }
 
-  if (/cook|kitchen|pan|pot/.test(source)) {
-    return {
-      eyebrow: "Kitchen favorite",
-      note: "Practical upgrades designed to feel giftable, useful, and ready to use every day.",
-    };
+  if (/garden|outdoor|tool|camp|folding|portable|storage|travel|utility/.test(source)) {
+    return "A practical outdoor or on-the-go find designed for useful everyday carry.";
   }
 
-  return {
-    eyebrow: index === 0 ? "Editor’s choice" : "Featured now",
-    note: "A high-intent pick surfaced for clean browsing, stronger trust, and faster decision-making.",
-  };
+  if (/decor|candle|vase|frame|blanket|pillow|home|bath/.test(source)) {
+    return "A warm home accent chosen to add texture, calm, and understated charm.";
+  }
+
+  if (/gift|box|bundle|set/.test(source)) {
+    return "A thoughtful pick with elevated presentation and easy gifting appeal.";
+  }
+
+  return "A considered find from the latest SALT edit with boutique appeal and everyday usefulness.";
 }
 
-const HomeHero = ({ featured }: HomeHeroProps) => {
+const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: HomeHeroProps) => {
+  const collectionImage = normalizeShopifyAssetUrl(leadCollection?.image?.src);
   const [mainProduct, secondaryProduct, tertiaryProduct] = featured ?? [];
-
-  const mainProductImage = mainProduct ? productImage(mainProduct) : null;
-  const sideProducts = [secondaryProduct, tertiaryProduct].filter(Boolean) as ShopifyProduct[];
+  const spotlightProducts = [secondaryProduct, tertiaryProduct].filter(Boolean) as ShopifyProduct[];
 
   return (
-    <section className="mx-auto mt-8 grid w-[min(1320px,96vw)] gap-4 lg:grid-cols-[1.16fr_0.84fr]">
+    <section className="mx-auto mt-4 grid w-[min(1340px,94vw)] grid h-[56vw] gap-3 xl:grid-cols-[1.12fr_0.88fr]">
       <Reveal>
-        <div className="salt-ink-panel relative isolate overflow-hidden rounded-[2.4rem] border border-white/10 px-6 py-8 text-[hsl(var(--salt-paper))] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.7)] sm:px-8 sm:py-10 lg:px-10 lg:py-11">
-          <div className="pointer-events-none absolute inset-0 salt-grid-bg opacity-[0.12]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_30%),radial-gradient(circle_at_88%_10%,hsl(var(--primary)/0.24),transparent_22%),radial-gradient(circle_at_45%_100%,hsl(var(--salt-blue)/0.2),transparent_30%)]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-          <div className="pointer-events-none absolute -left-12 top-20 h-44 w-44 rounded-full bg-primary/18 blur-[78px]" />
-          <div className="pointer-events-none absolute right-[-4rem] top-[-3rem] h-72 w-72 rounded-full bg-salt-blue/18 blur-[100px]" />
+        <div className="salt-ink-panel h-[56vw] relative isolate overflow-hidden rounded-[2.35rem] px-5 py-6 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:px-7 sm:py-7 lg:px-9 lg:py-8">
+          {collectionImage ? (
+            <img
+              src={collectionImage}
+              alt={leadCollection?.title || "Featured collection"}
+              className="absolute inset-0 h-full w-full object-cover opacity-30"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(20,29,52,0.9),rgba(20,29,52,0.72)_42%,rgba(20,29,52,0.84)),radial-gradient(circle_at_14%_16%,rgba(244,196,48,0.18),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(77,125,255,0.16),transparent_24%)]" />
+          <div className="pointer-events-none absolute inset-[1.15rem] rounded-[2rem] border border-white/10" />
 
           <div className="relative z-10">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <BrandLogo
                 size="sm"
                 withWordmark
-                className="w-fit rounded-full border border-white/16 bg-white/8 px-3 py-2 backdrop-blur-md"
+                className="rounded-full border border-white/10 bg-white/8 px-3 py-2 backdrop-blur"
               />
-
-              <div className="flex flex-wrap gap-2.5">
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/38 bg-primary/14 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-primary backdrop-blur-md">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Spring curation
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/78 backdrop-blur">
+                  Curated for everyday living
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/8 px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-white/82 backdrop-blur-md">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  Limited weekend drops
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                  Spring refresh
                 </span>
               </div>
             </div>
 
-            <div className="mt-8 max-w-[46rem]">
-              <p className="salt-kicker">Curated lifestyle retail, built to convert</p>
-              <h1 className="mt-4 max-w-[11ch] font-display text-[clamp(2.95rem,5.8vw,5.8rem)] leading-[0.84] tracking-[-0.045em] text-white">
-                Discover the pieces that make home, gifting, and everyday living feel
-                <span className="mt-2 block bg-gradient-to-r from-primary via-[hsl(48_97%_68%)] to-white bg-clip-text text-transparent">
-                  deliberate, easy, and worth buying.
-                </span>
+            <div className="mt-6 max-w-[40rem]">
+              <h1 className="mt-4 max-w-[15ch] font-display text-[clamp(3rem,5vw,5rem)] leading-[1.2] tracking-[-0.05em] text-white">
+                Curated pieces for home, gifting, and beautifully useful days.
               </h1>
-              <p className="mt-5 max-w-[38rem] text-[0.98rem] leading-7 text-white/74 sm:text-[1.03rem]">
-                SALT brings editorial warmth to real shopping behavior: cleaner collection paths, better featured picks, and a storefront designed to move from first click to confident checkout without friction.
+              <p className="mt-4 max-w-[31rem] text-[0.98rem] leading-6 text-white/72">
+                Discover calm, practical finds with a boutique feel, from kitchen upgrades to thoughtful gifts and everyday essentials.
               </p>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                to="/shop?collection=new-arrivals"
-                className="salt-button-shine salt-primary-cta group inline-flex h-13 items-center gap-2.5 rounded-full px-7 text-sm font-bold uppercase tracking-[0.12em] shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.65)] transition-all hover:scale-[1.02]"
+                to={leadCollection ? `/shop?collection=${leadCollection.handle}` : "/collections"}
+                className="salt-primary-cta inline-flex h-12 items-center gap-2 rounded-full px-6 text-[0.76rem] font-semibold uppercase tracking-[0.14em]"
               >
-                Shop New Arrivals
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                {leadCollection ? `Shop ${leadCollection.title}` : "Shop collections"}
+                <ArrowRight className="h-4 w-4" />
               </Link>
-
               <Link
-                to="/collections"
-                className="inline-flex h-13 items-center rounded-full border border-white/28 bg-white/8 px-7 text-sm font-bold uppercase tracking-[0.12em] text-white backdrop-blur-md transition-all hover:border-white/55 hover:bg-white hover:text-[hsl(var(--salt-ink))]"
+                to="/shop?sort=newest"
+                className="inline-flex h-12 items-center rounded-full border border-white/16 bg-white/8 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-white hover:text-[hsl(var(--salt-ink))]"
               >
-                Explore Collections
+                Browse new arrivals
               </Link>
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              {heroStats.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="salt-hero-stat rounded-[1.35rem] px-4 py-3.5">
-                    <div className="flex items-center gap-2 text-primary">
-                      <Icon className="h-4 w-4" />
-                      <p className="text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white/88">
-                        {item.label}
-                      </p>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-white/68">{item.detail}</p>
-                  </div>
-                );
-              })}
-            </div>
 
-            {mainProduct ? (
-              <Link
-                to={`/products/${mainProduct.handle}`}
-                className="group/card relative mt-8 flex min-h-[19rem] flex-col gap-5 overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.05] p-5 shadow-[0_20px_44px_-24px_rgba(0,0,0,0.58)] backdrop-blur-md transition-all duration-500 hover:border-primary/38 hover:bg-white/[0.07] sm:flex-row sm:items-center sm:p-6"
-              >
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),transparent_28%,transparent_70%,rgba(255,255,255,0.05))] opacity-0 transition-opacity duration-500 group-hover/card:opacity-100" />
+            <div className="mt-6 grid gap-3 ">
 
-                <div className="relative z-10 shrink-0 self-start sm:self-center">
-                  {mainProductImage ? (
-                    <img
-                      src={mainProductImage}
-                      alt={mainProduct.title}
-                      className="h-32 w-28 rounded-[1.45rem] object-cover shadow-[0_16px_36px_-18px_rgba(0,0,0,0.72)] ring-1 ring-white/18 transition-all duration-300 group-hover/card:scale-[1.03] sm:h-40 sm:w-32 lg:h-44 lg:w-36"
-                    />
-                  ) : (
-                    <div className="grid h-32 w-28 place-items-center rounded-[1.45rem] bg-white/12 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-white/80 sm:h-40 sm:w-32 lg:h-44 lg:w-36">
-                      No image
-                    </div>
-                  )}
-
-                  <span className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[hsl(var(--primary-foreground))] shadow-[0_14px_28px_-14px_hsl(var(--primary)/0.8)]">
-                    <Star className="h-4 w-4 fill-current" />
-                  </span>
-                </div>
-
-                <div className="relative z-10 min-w-0 flex-1">
-                  <p className="salt-kicker">Most loved this week</p>
-                  <p className="mt-3 line-clamp-2 font-display text-[clamp(1.45rem,2.8vw,2.55rem)] leading-[1] text-white">
-                    {mainProduct.title}
-                  </p>
-                  <p className="mt-3 max-w-[34rem] text-[0.96rem] leading-7 text-white/68">
-                    A lead product placement built to hold attention, surface price clarity fast, and give shoppers one obvious premium pick before they browse the wider catalog.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex rounded-full border border-white/20 bg-white/8 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-white/90">
-                      Bestseller spotlight
-                    </span>
-                    {mainProduct.product_type ? (
-                      <span className="inline-flex rounded-full border border-white/14 bg-black/20 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-white/70">
-                        {mainProduct.product_type}
-                      </span>
+              {mainProduct ? (
+                <Link
+                  to={`/products/${mainProduct.handle}`}
+                  className="group flex items-center gap-4 rounded-[1.8rem] border border-white/10 bg-white/8 p-4 backdrop-blur transition hover:border-primary/35 hover:bg-white/[0.11]"
+                >
+                  <div className="h-28 w-24 overflow-hidden rounded-[1.25rem] bg-white/10 sm:h-32 sm:w-28">
+                    {productImage(mainProduct) ? (
+                      <img
+                        src={productImage(mainProduct) || ""}
+                        alt={mainProduct.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
+                      />
                     ) : null}
                   </div>
-                </div>
-
-                <div className="relative z-10 flex shrink-0 flex-row items-end justify-between gap-4 sm:flex-col sm:items-end sm:justify-between">
-                  <div className="text-left sm:text-right">
-                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/44">
-                      Starting at
+                  <div className="min-w-0 flex-1">
+                    <p className="inline-flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      Featured this week
                     </p>
-                    <strong className="mt-1 block font-display text-3xl font-bold text-primary sm:text-[2.55rem]">
-                      {formatMoney(minPrice(mainProduct))}
-                    </strong>
+                    <p className="mt-2 line-clamp-2 font-display text-[1.6rem] leading-[1.02] text-white">
+                      {mainProduct.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-white/68">
+                      A standout pick from the current edit.
+                    </p>
+                    <div className="mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/56">Starting at</p>
+                        <p className="mt-1 font-display text-2xl text-white">
+                          {formatMoney(minPrice(mainProduct))}
+                        </p>
+                      </div>
+                      <span className="text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white/82">
+                        View pick
+                      </span>
+                    </div>
                   </div>
-
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-primary/14 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-primary transition-all group-hover/card:bg-primary group-hover/card:text-[hsl(var(--primary-foreground))]">
-                    Shop now
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/card:translate-x-0.5" />
-                  </span>
-                </div>
-              </Link>
-            ) : null}
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </Reveal>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-        {sideProducts.map((product, index) => {
-          const image = productImage(product);
-          const copy = sideCardCopy(product, index);
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+  {spotlightProducts.map((product, index) => {
+    const image = productImage(product);
 
-          return (
-            <Reveal key={product.id} delayMs={120 + index * 120}>
-              <Link
-                to={`/products/${product.handle}`}
-                className="salt-story-card group flex h-full flex-col overflow-hidden rounded-[1.9rem]"
-              >
-                <div className="relative aspect-[16/10] overflow-hidden">
-                  {image ? (
-                    <img
-                      src={image}
-                      alt={product.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
-                    />
-                  ) : (
-                    <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_22%_20%,hsl(var(--primary)/0.16),transparent_44%),radial-gradient(circle_at_76%_78%,hsl(var(--salt-blue)/0.18),transparent_38%),hsl(var(--muted))] px-6 text-center">
-                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        Image unavailable
-                      </p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--card))] via-[hsl(var(--card)/0.14)] to-transparent opacity-95" />
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/22 to-transparent" />
-                </div>
+    return (
+      <Reveal key={product.id} delayMs={120 + index * 120}>
+        <Link
+          to={`/products/${product.handle}`}
+          className="group relative flex h-full min-h-[23rem] gap-4 overflow-hidden rounded-[1.9rem] border border-white/10 bg-[rgba(14,18,28,0.62)] p-4 shadow-[0_24px_70px_-54px_rgba(15,23,42,0.9)] backdrop-blur-xl transition duration-500 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_32px_90px_-54px_rgba(15,23,42,1)] xl:min-h-[24.5rem]"
+        >
+          {image ? (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-22 transition duration-700 group-hover:scale-[1.04] group-hover:opacity-28"
+                style={{ backgroundImage: `url(${image})` }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(10,14,24,0.84),rgba(10,14,24,0.58)_42%,rgba(10,14,24,0.8)),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_34%)]" />
+            </>
+          ) : null}
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),transparent_50%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_32%)]" />
+          </div>
 
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <p className="salt-kicker">{copy.eyebrow}</p>
-                  <h3 className="mt-3 line-clamp-2 font-display text-[1.55rem] leading-[1.03] text-foreground">
-                    {product.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.note}</p>
-                  <div className="mt-auto flex items-end justify-between gap-3 pt-6">
-                    <div>
-                      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        Starting at
-                      </p>
-                      <strong className="mt-1 block text-2xl font-bold text-primary">
-                        {formatMoney(minPrice(product))}
-                      </strong>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-background px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-foreground transition group-hover:border-primary/45 group-hover:text-primary">
-                      View pick
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </Reveal>
-          );
-        })}
-      </div>
+          
+
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <p className="inline-flex w-fit items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                Spotlight pick
+              </p>
+
+              <span className="rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-1 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-white/72 transition group-hover:text-white">
+                New edit
+              </span>
+            </div>
+
+            <h3 className="mt-3 max-w-[18ch] font-display text-[2rem] leading-[0.96] tracking-[-0.04em] text-white sm:text-[2.68rem] xl:text-[2.82rem]">
+              {product.title}
+            </h3>
+
+            <p className="mt-3 max-w-[30rem] text-sm leading-6 text-white">
+              {cardNote(product)}
+            </p>
+
+
+
+            <div className="mt-auto flex items-end justify-between gap-3 border-t border-white/8 pt-4">
+              <div>
+                <p className="text-[0.68rem] uppercase tracking-[0.14em] text-primary">
+                  Starting at
+                </p>
+                <strong className="mt-1 block font-display text-[1.75rem] leading-none text-white">
+                  {formatMoney(minPrice(product))}
+                </strong>
+              </div>
+
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-primary transition duration-300 group-hover:border-primary/20 group-hover:bg-primary/12 group-hover:text-primary">
+                Shop now
+                <ArrowRight className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
+              </span>
+            </div>
+          </div>
+        </Link>
+      </Reveal>
+    );
+  })}
+</div>
     </section>
   );
 };

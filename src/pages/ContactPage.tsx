@@ -18,13 +18,13 @@ const ContactPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-8 w-[min(980px,94vw)] pb-8">
+    <section className="mx-auto mt-6 w-[min(980px,94vw)] pb-8">
       <Reveal>
-        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
+        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Contact</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Need help with your order?</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            Send your request and our support team will respond with shipping, returns, or product guidance.
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Reach the SALT support team for delivery questions, product advice, or returns.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a
@@ -47,7 +47,7 @@ const ContactPage = () => {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1.04fr_0.96fr]">
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
               <div className="mb-4 flex flex-wrap gap-2">
                 {supportTopics.map((topic) => (
@@ -99,7 +99,7 @@ const ContactPage = () => {
               <div className="salt-section-shell rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-background to-salt-blue/10 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">Support quality</p>
                 <h2 className="mt-1 font-display text-[clamp(1.2rem,2.2vw,1.8rem)] leading-tight">
-                  Fast, clear, and policy-aligned responses
+                  Fast, clear, and helpful responses
                 </h2>
                 <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                   <p className="salt-kpi-card inline-flex items-center gap-1.5 rounded-xl border border-border/70 px-3 py-2">
@@ -121,7 +121,7 @@ const ContactPage = () => {
                 <p className="font-semibold text-foreground">Before you message us:</p>
                 <ul className="mt-2 space-y-1">
                   <li>Include your order number for the fastest support response.</li>
-                  <li>Attach product or shipping screenshots when reporting an issue.</li>
+                  <li>Attach product or shipping screenshots when helpful.</li>
                   <li>Use the same email address used at checkout for quicker verification.</li>
                 </ul>
               </div>

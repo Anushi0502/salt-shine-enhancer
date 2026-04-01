@@ -13,18 +13,18 @@ const aboutHighlights = [
 
 const aboutPillars = [
   {
-    title: "Curated for utility",
-    detail: "Products are selected for practical use-cases shoppers can decide on quickly.",
+    title: "Curated with purpose",
+    detail: "The assortment is shaped around products that feel useful, giftable, and easy to choose.",
     Icon: BadgeCheck,
   },
   {
-    title: "Secure buying experience",
-    detail: "Clear pricing and trusted checkout flow reduce hesitation at payment stage.",
+    title: "Clear buying experience",
+    detail: "Pricing, support, and checkout cues stay visible so the purchase path feels confident.",
     Icon: ShieldCheck,
   },
   {
     title: "Transparent delivery",
-    detail: "Fast dispatch messaging and policy visibility are built into the customer journey.",
+    detail: "Shipping guidance and policy access are kept close to the shopping experience.",
     Icon: Truck,
   },
 ];
@@ -63,11 +63,14 @@ const AboutPage = () => {
   const bodyHtml = sanitizeRichHtml(data?.page.bodyHtml || "");
 
   return (
-    <section className="mx-auto mt-8 w-[min(1100px,94vw)] pb-8">
+    <section className="mx-auto mt-6 w-[min(1100px,94vw)] pb-8">
       <Reveal>
-        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
+        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">About SALT</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">{title}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            SALT Online Store brings together home, lifestyle, gifting, and everyday products in a cleaner, more curated shopping environment.
+          </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             {aboutHighlights.map((item) => (
               <p
@@ -86,18 +89,18 @@ const AboutPage = () => {
                 <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-primary">
                   <Icon className="h-3.5 w-3.5" /> {pillarTitle}
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{detail}</p>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>
               </div>
             ))}
           </div>
 
           {bodyHtml ? (
             <article
-              className="prose prose-sm mt-5 max-w-none rounded-2xl border border-border/70 bg-background/78 p-5 leading-7 text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground"
+              className="prose prose-sm mt-5 max-w-none rounded-2xl border border-border/70 bg-background/78 p-5 leading-[1.72] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground"
               dangerouslySetInnerHTML={{ __html: bodyHtml }}
             />
           ) : (
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
               About content is currently unavailable.
             </p>
           )}
@@ -107,13 +110,13 @@ const AboutPage = () => {
               to="/shop"
               className="salt-primary-cta h-11 px-5 text-xs font-bold uppercase tracking-[0.08em]"
             >
-              Explore products
+              Shop the catalog
             </Link>
             <Link
               to="/blog"
               className="salt-outline-chip h-11 px-5 py-0 text-xs"
             >
-              Read our blog
+              Read the journal
             </Link>
             <Link
               to="/contact"

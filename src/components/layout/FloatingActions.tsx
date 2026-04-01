@@ -7,7 +7,7 @@ const SCROLL_VISIBILITY_THRESHOLD = 460;
 
 const FloatingActions = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { itemCount } = useCart();
+  const { itemCount, isDrawerOpen, openCartDrawer } = useCart();
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -30,7 +30,7 @@ const FloatingActions = () => {
   );
   const showOrderShortcut = useMemo(() => pathname !== "/order-history", [pathname]);
 
-  if (!isVisible) {
+  if (!isVisible || isDrawerOpen) {
     return null;
   }
 
@@ -40,22 +40,23 @@ const FloatingActions = () => {
       style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       {showCartShortcut ? (
-        <Link
-          to="/cart"
-          className="salt-button-shine inline-flex h-11 items-center gap-2 rounded-full border border-primary/50 bg-primary px-4 text-xs font-bold uppercase tracking-[0.08em] text-primary-foreground shadow-[0_18px_34px_-22px_hsl(var(--primary)/0.88)] transition hover:brightness-110"
+        <button
+          type="button"
+          onClick={openCartDrawer}
+          className="salt-primary-cta inline-flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold uppercase tracking-[0.1em]"
           aria-label={`Open cart (${itemCount} items)`}
         >
           <ShoppingBag className="h-4 w-4" />
           Cart
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--salt-paper))] px-1 text-[0.68rem] leading-none text-[hsl(var(--salt-ink))]">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/16 px-1 text-[0.68rem] leading-none">
             {itemCount}
           </span>
-        </Link>
+        </button>
       ) : null}
       {showOrderShortcut ? (
         <Link
           to="/order-history"
-          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border/80 bg-background/96 px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-foreground shadow-[0_16px_30px_-20px_rgba(0,0,0,0.55)] transition hover:border-primary/45 hover:text-primary"
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border/80 bg-card/92 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-foreground shadow-[0_18px_34px_-28px_rgba(15,23,42,0.24)] transition hover:border-primary/45 hover:text-primary"
           aria-label="Open order history"
         >
           <ClipboardList className="h-3.5 w-3.5" />
@@ -65,7 +66,7 @@ const FloatingActions = () => {
       <button
         type="button"
         onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
-        className="inline-flex h-10 items-center justify-center gap-1 rounded-full border border-border/80 bg-background/96 px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-foreground shadow-[0_16px_30px_-20px_rgba(0,0,0,0.55)] transition hover:border-primary/45 hover:text-primary"
+        className="inline-flex h-10 items-center justify-center gap-1 rounded-full border border-border/80 bg-card/92 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-foreground shadow-[0_18px_34px_-28px_rgba(15,23,42,0.24)] transition hover:border-primary/45 hover:text-primary"
         aria-label="Back to top"
       >
         <ArrowUp className="h-3.5 w-3.5" />

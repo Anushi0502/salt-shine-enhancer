@@ -59,15 +59,15 @@ const OrderHistoryPage = () => {
 
   if (!entries.length) {
     return (
-      <section className="mx-auto mt-10 w-[min(880px,92vw)] pb-10 text-center">
+      <section className="mx-auto mt-8 w-[min(880px,92vw)] pb-10 text-center">
         <Reveal>
-          <div className="salt-surface rounded-[2rem] p-10">
+          <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
               <History className="h-8 w-8" />
             </div>
             <h1 className="mt-4 font-display text-4xl">No orders on this device yet</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Once checkout starts, your order timeline appears here for fast reorders and tracking.
+              Once checkout starts, your recent order timeline appears here.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <Link to="/shop" className="salt-primary-cta h-11 px-6 text-sm font-bold">
@@ -84,16 +84,16 @@ const OrderHistoryPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-12">
+    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-12">
       <Reveal>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Order history</p>
             <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
-              This device timeline
+              Your recent order timeline
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {purchasesLast30Days.toLocaleString()} items purchased in the last 30 days from this device.
+              {purchasesLast30Days.toLocaleString()} items purchased from this device in the last 30 days.
             </p>
           </div>
           <button
@@ -118,7 +118,7 @@ const OrderHistoryPage = () => {
               <p className="mt-1 text-xl font-semibold text-foreground">{purchasesLast30Days.toLocaleString()}</p>
             </div>
             <div className="salt-ambient-card rounded-xl px-3 py-2">
-              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Device spend</p>
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Spend on this device</p>
               <p className="mt-1 text-xl font-semibold text-foreground">{formatMoney(totalSpent)}</p>
             </div>
             <div className="salt-ambient-card rounded-xl px-3 py-2">
@@ -159,20 +159,20 @@ const OrderHistoryPage = () => {
               Buy with shop
             </button>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Showing {filteredEntries.length.toLocaleString()} order(s) and {filteredItemCount.toLocaleString()} item(s)
-            {sourceFilter !== "all" ? ` • ${sourceFilter === "buy-now" ? "Buy with Shop only" : "Cart checkout only"}` : ""}
-            {normalizedQuery ? ` • matching "${query.trim()}"` : ""}
-          </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Showing {filteredEntries.length.toLocaleString()} order(s) and {filteredItemCount.toLocaleString()} item(s)
+              {sourceFilter !== "all" ? ` • ${sourceFilter === "buy-now" ? "Buy with Shop only" : "Cart checkout only"}` : ""}
+              {normalizedQuery ? ` • matching "${query.trim()}"` : ""}
+            </p>
         </div>
       </Reveal>
 
       {filteredEntries.length === 0 ? (
         <Reveal>
-          <div className="salt-surface rounded-2xl p-8 text-center">
+          <div className="salt-surface rounded-2xl p-7 text-center">
             <p className="font-semibold text-lg">No matching orders found</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Try a different keyword or switch source filter to see more order history.
+              Try a different keyword or switch the source filter.
             </p>
           </div>
         </Reveal>

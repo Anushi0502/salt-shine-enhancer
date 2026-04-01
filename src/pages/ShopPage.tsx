@@ -133,22 +133,22 @@ function collectionStory(title: string, description: string): string {
   const source = title.toLowerCase();
 
   if (/cook|kitchen|pan|pot/.test(source)) {
-    return "Kitchen-led upgrades with giftable utility, strong everyday use, and faster comparison shopping.";
+    return "Kitchen pieces chosen for everyday use and easy gifting.";
   }
 
   if (/gift|legacy|planner|book/.test(source)) {
-    return "Thoughtful, practical picks merchandised for meaningful gifting and low-friction discovery.";
+    return "Thoughtful finds for gifting and everyday use.";
   }
 
   if (/apparel|wear|dress|robe|fashion/.test(source)) {
-    return "Refined wardrobe finds grouped to help shoppers discover easy standout pieces without noise.";
+    return "Wardrobe finds grouped for a cleaner boutique browse.";
   }
 
   if (/garden|tool|camp|outdoor/.test(source)) {
-    return "Seasonal outdoor essentials arranged around practical utility, gifting value, and ready-to-buy momentum.";
+    return "Seasonal outdoor essentials arranged around utility and easy purchase flow.";
   }
 
-  return "A curated product route built for cleaner discovery, stronger browsing confidence, and better purchase flow.";
+  return "A cleaner path into the catalog.";
 }
 
 const ShopPage = () => {
@@ -356,17 +356,6 @@ const ShopPage = () => {
     minFilter != null || maxFilter != null ? "price" : "",
     perPage !== perPageOptions[0] ? "page-size" : "",
   ].filter(Boolean).length;
-  const activeFilterSummary = [
-    query ? `Search: "${query}"` : "",
-    selectedCollection ? `Collection: ${selectedCollection.title}` : "",
-    typeFilter ? `Type: ${formatTypeLabel(typeFilter)}` : "",
-    minFilter != null || maxFilter != null
-      ? `Price: ${minFilter == null ? "$0" : `$${minFilter}`} - ${maxFilter == null ? "Any" : `$${maxFilter}`}`
-      : "",
-  ]
-    .filter(Boolean)
-    .join(" • ");
-
   if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
     return (
       <LoadingState
@@ -522,7 +511,7 @@ const ShopPage = () => {
   const shopHeading = selectedCollection ? selectedCollection.title : "All Products";
   const shopSubtitle = selectedCollection
     ? collectionStory(selectedCollection.title, selectedCollection.description)
-    : "Browse the full SALT catalog through collection-led discovery, cleaner filtering, and premium product presentation.";
+    : "Browse the full SALT catalog through collection-led discovery and refined filters.";
   const activeFilterChips = [
     query
       ? {
@@ -585,20 +574,20 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-8 w-[min(1320px,96vw)] pb-8">
+    <section className="mx-auto mt-6 w-[min(1320px,96vw)] pb-8">
       <Reveal>
-        <div className="salt-editorial-shell rounded-[2.2rem] p-5 sm:p-7">
-          <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
+        <div className="salt-editorial-shell rounded-[2.1rem] p-4 sm:p-6">
+          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
             <div>
               <p className="salt-kicker">{selectedCollection ? "Collection edit" : "Full catalog browse"}</p>
               <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.5rem)] leading-[0.94]">
                 {shopHeading}
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                 {shopSubtitle}
               </p>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="salt-ambient-card rounded-[1.15rem] p-4">
                   <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Matched products</p>
                   <p className="mt-2 text-2xl font-semibold text-foreground">{totalResults.toLocaleString()}</p>
@@ -615,7 +604,7 @@ const ShopPage = () => {
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {(selectedCollection ? spotlightCollections.slice(0, 4) : spotlightCollections.slice(0, 5)).map((collection) => (
                   <button
                     key={collection.id}
@@ -642,7 +631,7 @@ const ShopPage = () => {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-[1.9rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(var(--salt-ink)/0.84))] shadow-soft">
+            <div className="relative overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft">
               {selectedCollectionImage ? (
                 <img
                   src={selectedCollectionImage}
@@ -650,8 +639,8 @@ const ShopPage = () => {
                   className="absolute inset-0 h-full w-full object-cover opacity-38"
                 />
               ) : null}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
-              <div className="relative flex h-full min-h-[19rem] flex-col justify-between p-5 text-white sm:p-6">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),radial-gradient(circle_at_74%_84%,hsl(var(--salt-blue)/0.22),transparent_28%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
+              <div className="relative flex h-full min-h-[17.5rem] flex-col justify-between p-5 text-white sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -659,7 +648,7 @@ const ShopPage = () => {
                   </span>
                   {selectedCollection ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/74 backdrop-blur-md">
-                      Featured respects Shopify manual ordering
+                      Shopify collection order stays intact
                     </span>
                   ) : null}
                 </div>
@@ -667,13 +656,13 @@ const ShopPage = () => {
                 <div>
                   <h2 className="max-w-[15ch] font-display text-[clamp(2rem,3vw,3rem)] leading-[0.96] text-white">
                     {selectedCollection
-                      ? `Shop ${selectedCollection.title} with stronger product focus`
-                      : "Browse the full catalog with cleaner discovery and better flow"}
+                      ? `${selectedCollection.title}, edited for easier browsing`
+                      : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
-                  <p className="mt-3 max-w-[34rem] text-sm leading-7 text-white/76">
+                  <p className="mt-2 max-w-[30rem] text-sm leading-6 text-white/76">
                     {selectedCollection
-                      ? "Featured sorting preserves Shopify manual collection order, while the rest of the controls keep pricing, product type, and discovery refinements easy to scan."
-                      : "Use collection, search, product-type, and price controls without losing the editorial rhythm of a curated storefront."}
+                      ? "Shopify collection order stays intact while filters and price controls keep the browse light."
+                      : "Use collection, search, type, and price controls without losing the calm feel of a curated storefront."}
                   </p>
                 </div>
 
@@ -691,7 +680,7 @@ const ShopPage = () => {
             </div>
           </div>
 
-          <div className="salt-glass-rail mt-5 rounded-[1.7rem] p-3 sm:p-4">
+          <div className="salt-glass-rail mt-4 rounded-[1.6rem] p-3 sm:p-4">
             <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
               <form onSubmit={onSearch} className="relative flex items-center gap-2">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -699,7 +688,7 @@ const ShopPage = () => {
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   type="search"
-                  placeholder="Search by product, category, collection, or use case"
+                  placeholder="Search by product, collection, or gifting idea"
                   className="salt-form-control h-12 w-full pl-10 pr-4"
                 />
                 <button
@@ -849,12 +838,6 @@ const ShopPage = () => {
               </div>
             ) : null}
 
-            {activeFilterSummary ? (
-              <p className="mt-3 rounded-[1rem] border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
-                {activeFilterSummary}
-              </p>
-            ) : null}
-
             {activeFilterChips.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {activeFilterChips.map((chip) => (
@@ -908,11 +891,11 @@ const ShopPage = () => {
 
       {totalResults === 0 ? (
         <Reveal delayMs={80} className="mt-6">
-          <div className="salt-editorial-shell rounded-[2rem] p-10 text-center">
+          <div className="salt-editorial-shell rounded-[2rem] p-8 text-center">
             <p className="salt-kicker">No matching products</p>
             <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">No products match this filter</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-              Remove one or two filters and the live catalog will reflow instantly. Collection, search, type, and price controls are all still connected to Shopify data.
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              Remove one or two filters and try again.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <button
@@ -937,7 +920,7 @@ const ShopPage = () => {
             <Reveal delayMs={80} className="mt-6">
               <div className="salt-story-card rounded-[1.35rem] p-4 text-sm text-muted-foreground">
                 <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" /> Showing products ordered by strongest live savings first.
+                  <Sparkles className="h-4 w-4 text-primary" /> Showing the strongest live savings first.
                 </p>
               </div>
             </Reveal>

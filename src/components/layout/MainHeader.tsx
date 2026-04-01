@@ -1,45 +1,286 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
-import { ClipboardList, Menu, Search, ShoppingBag, Sparkles, X } from "lucide-react";
+import {
+  ChevronRight,
+  ClipboardList,
+  Menu,
+  Search,
+  ShoppingBag,
+  X,
+} from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
-import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
+import { formatMoney, minPrice, productImage } from "@/lib/formatters";
+import { useCollections, useProducts } from "@/lib/shopify-data";
+import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const navLinks = [
-  { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
   { to: "/collections", label: "Collections" },
-  { to: "/blog", label: "Blog" },
+  { to: "/blog", label: "Journal" },
   { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
+  { to: "/contact", label: "Support" },
 ];
 
-const quickLinks = [
-  { to: "/shop?collection=new-arrivals", label: "New Arrivals" },
-  { to: "/shop?collection=cookware", label: "Cookware" },
-  { to: "/shop?collection=gifts", label: "Gifts" },
-  { to: "/shop?collection=robe", label: "Apparel" },
-];
+type SearchSuggestions = {
+  products: ShopifyProduct[];
+  collections: ShopifyCollection[];
+};
 
-function navClassName({ isActive }: { isActive: boolean }): string {
-  return `salt-nav-pill rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
-    isActive
-      ? "is-active salt-glow-ring border border-primary/45 bg-[linear-gradient(135deg,hsl(var(--salt-ink)/0.98),hsl(var(--salt-ink)/0.88))] text-[hsl(var(--salt-paper))]"
-      : "border border-transparent text-foreground/78 hover:border-border/85 hover:bg-background/90 hover:text-foreground"
-  }`;
+function normalizeText(value: string | string[] | null | undefined): string {
+  if (Array.isArray(value)) {
+    return value.join(" ");
+  }
+
+  return String(value || "").trim().toLowerCase();
 }
 
+function buildSearchSuggestions(
+  query: string,
+  products: ShopifyProduct[],
+  collections: ShopifyCollection[],
+): SearchSuggestions {
+  const normalized = query.trim().toLowerCase();
+  if (normalized.length < 2) {
+    return { products: [], collections: [] };
+  }
+
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const includesAllTokens = (haystack: string) =>
+    tokens.every((token) => haystack.includes(token));
+
+  const productMatches = products
+    .filter((product) =>
+      includesAllTokens(
+        [
+          product.title,
+          product.product_type,
+          normalizeText(product.tags),
+          product.vendor,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase(),
+      ),
+    )
+    .slice(0, 5);
+
+  const collectionMatches = collections
+    .filter((collection) =>
+      includesAllTokens(
+        [collection.title, collection.handle, collection.description]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase(),
+      ),
+    )
+    .slice(0, 4);
+
+  return {
+    products: productMatches,
+    collections: collectionMatches,
+  };
+}
+
+function navClassName({ isActive }: { isActive: boolean }): string {
+  return [
+    "inline-flex items-center rounded-full px-3 py-2 text-[0.76rem] font-semibold tracking-[0.04em] transition xl:px-4 xl:py-2.5 xl:text-[0.82rem]",
+    isActive
+      ? "bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))] shadow-[0_18px_36px_-28px_rgba(15,23,42,0.34)]"
+      : "text-foreground/78 hover:bg-card hover:text-foreground",
+  ].join(" ");
+}
+
+type SearchPanelProps = {
+  collections: ShopifyCollection[];
+  mode?: "desktop" | "mobile";
+  onCollectionSelect: () => void;
+  onClose: () => void;
+  onProductSelect: () => void;
+  onSearchAll: () => void;
+  query: string;
+  suggestions: SearchSuggestions;
+};
+
+const SearchPanel = ({
+  collections,
+  mode = "desktop",
+  onCollectionSelect,
+  onClose,
+  onProductSelect,
+  onSearchAll,
+  query,
+  suggestions,
+}: SearchPanelProps) => {
+  const hasSuggestions = suggestions.products.length > 0 || suggestions.collections.length > 0;
+  const panelClassName =
+    mode === "mobile"
+      ? "absolute left-0 right-0 top-[calc(100%+0.7rem)] z-50 overflow-hidden rounded-[1.05rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.24)]"
+      : "absolute right-0 top-[calc(100%+0.7rem)] z-50 w-[min(44rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.05rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.24)]";
+
+  return (
+    <div className={panelClassName} onMouseDown={(event) => event.preventDefault()}>
+      {hasSuggestions ? (
+        <div className="grid gap-4 p-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-3 pr-12">
+              <div className="min-w-0">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                  Products
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">Quick paths into the catalog.</p>
+              </div>
+              <button
+                type="button"
+                onClick={onSearchAll}
+                className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground"
+              >
+                Search all
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {suggestions.products.map((product) => {
+                const image = productImage(product);
+
+                return (
+                  <Link
+                    key={product.id}
+                    to={`/products/${product.handle}`}
+                    onClick={onProductSelect}
+                    className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[0.9rem] border border-border/70 bg-card/80 p-3 transition hover:border-primary/35 hover:bg-background"
+                  >
+                    <div className="h-16 w-14 overflow-hidden rounded-[0.85rem] bg-muted">
+                      {image ? (
+                        <img src={image} alt={product.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground transition group-hover:text-primary">
+                        {product.title}
+                      </p>
+                      <p className="mt-1 text-[0.7rem] uppercase tracking-[0.14em] text-muted-foreground">
+                        {product.product_type || "Curated pick"}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-semibold text-foreground">{formatMoney(minPrice(product))}</p>
+                      <p className="mt-1 whitespace-nowrap text-[0.68rem] text-muted-foreground">View product</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-[0.95rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] p-4">
+            <p className="pr-10 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+              Collections
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Browse by collection or everyday category.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {suggestions.collections.map((collection) => (
+                <Link
+                  key={collection.id}
+                  to={`/shop?collection=${collection.handle}`}
+                  onClick={onCollectionSelect}
+                  className="salt-outline-chip h-9 px-4 py-0 text-[0.68rem]"
+                >
+                  {collection.title}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-[0.95rem] border border-border/70 bg-card/82 p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Popular routes
+              </p>
+              <div className="mt-3 space-y-2">
+                {collections.slice(0, 4).map((collection) => (
+                  <Link
+                    key={collection.id}
+                    to={`/shop?collection=${collection.handle}`}
+                    onClick={onCollectionSelect}
+                    className="flex items-center justify-between rounded-[0.8rem] px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                  >
+                    <span>{collection.title}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="p-5">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+            Search SALT
+          </p>
+          <h3 className="mt-2 font-display text-[1.6rem] leading-none">No direct matches yet</h3>
+          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+            Try a product type, collection name, or gifting idea.
+          </p>
+          <button
+            type="button"
+            onClick={onSearchAll}
+            className="salt-primary-cta mt-4 h-11 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.1em]"
+          >
+            Search for “{query.trim()}”
+          </button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground transition hover:text-foreground"
+        aria-label="Close search suggestions"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
+
 const MainHeader = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { itemCount, openCartDrawer } = useCart();
+  const { data: productsPayload } = useProducts();
+  const { data: collectionsPayload } = useCollections();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopSearch, setDesktopSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
+  const [activePanel, setActivePanel] = useState<"desktop" | "mobile" | null>(null);
   const desktopSearchRef = useRef<HTMLInputElement | null>(null);
   const mobileSearchRef = useRef<HTMLInputElement | null>(null);
-  const { itemCount } = useCart();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
+  const products = productsPayload?.products || [];
+  const collections = useMemo(
+    () =>
+      [...(collectionsPayload?.collections || [])]
+        .sort((left, right) => right.products_count - left.products_count)
+        .slice(0, 7),
+    [collectionsPayload],
+  );
   const activeQuery = useMemo(() => searchParams.get("q") || "", [searchParams]);
+  const deferredDesktopSearch = useDeferredValue(desktopSearch);
+  const deferredMobileSearch = useDeferredValue(mobileSearch);
+  const desktopSuggestions = useMemo(
+    () => buildSearchSuggestions(deferredDesktopSearch, products, collections),
+    [collections, deferredDesktopSearch, products],
+  );
+  const mobileSuggestions = useMemo(
+    () => buildSearchSuggestions(deferredMobileSearch, products, collections),
+    [collections, deferredMobileSearch, products],
+  );
 
   useEffect(() => {
     setDesktopSearch(activeQuery);
@@ -63,42 +304,23 @@ const MainHeader = () => {
       return;
     }
 
-    const isEditableTarget = (target: EventTarget | null) => {
-      const element = target as HTMLElement | null;
-      if (!element) {
-        return false;
-      }
-
-      return (
-        element.isContentEditable ||
-        element.tagName === "INPUT" ||
-        element.tagName === "TEXTAREA" ||
-        element.tagName === "SELECT"
-      );
-    };
-
-    const focusSearch = () => {
-      const desktopMode = window.matchMedia("(min-width: 1024px)").matches;
-      if (desktopMode) {
-        desktopSearchRef.current?.focus();
-        desktopSearchRef.current?.select();
-        return;
-      }
-
-      setMobileOpen(true);
-      window.setTimeout(() => {
-        mobileSearchRef.current?.focus();
-        mobileSearchRef.current?.select();
-      }, 90);
-    };
-
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && mobileOpen) {
-        setMobileOpen(false);
+      const target = event.target as HTMLElement | null;
+      const isEditable =
+        target?.isContentEditable ||
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT";
+
+      if (event.key === "Escape") {
+        setActivePanel(null);
+        if (mobileOpen) {
+          setMobileOpen(false);
+        }
         return;
       }
 
-      if (isEditableTarget(event.target)) {
+      if (isEditable) {
         return;
       }
 
@@ -108,15 +330,26 @@ const MainHeader = () => {
         !event.ctrlKey &&
         !event.altKey &&
         !event.shiftKey;
-      const commandShortcut =
-        event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey);
+      const commandShortcut = event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey);
 
       if (!slashShortcut && !commandShortcut) {
         return;
       }
 
       event.preventDefault();
-      focusSearch();
+
+      if (window.matchMedia("(min-width: 1024px)").matches) {
+        desktopSearchRef.current?.focus();
+        desktopSearchRef.current?.select();
+        setActivePanel("desktop");
+      } else {
+        setMobileOpen(true);
+        window.setTimeout(() => {
+          mobileSearchRef.current?.focus();
+          mobileSearchRef.current?.select();
+          setActivePanel("mobile");
+        }, 90);
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -125,6 +358,7 @@ const MainHeader = () => {
 
   const submitSearch = (query: string) => {
     const trimmed = query.trim();
+    setActivePanel(null);
 
     if (trimmed) {
       navigate(`/shop?q=${encodeURIComponent(trimmed)}`);
@@ -145,206 +379,199 @@ const MainHeader = () => {
     setMobileOpen(false);
   };
 
-  const closeMobileMenu = () => setMobileOpen(false);
+  const closeMobileMenu = () => {
+    setActivePanel(null);
+    setMobileOpen(false);
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/78 shadow-[0_18px_44px_-34px_rgba(0,0,0,0.62)] backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-150">
-      <div className="border-b border-border/40 bg-[linear-gradient(90deg,hsl(var(--salt-ink))_0%,hsl(var(--salt-ink)/0.95)_36%,hsl(var(--salt-blue)/0.46)_70%,hsl(var(--salt-gold)/0.22)_100%)] text-[hsl(var(--salt-paper))]">
-        <div className="mx-auto flex w-[min(1320px,96vw)] items-center justify-between gap-3 py-2.5 text-[0.7rem] sm:text-xs">
-          <span className="truncate font-medium text-white/92">Free shipping all over the US</span>
-          <Link
-            to="/contact"
-            className="hidden text-white/78 underline-offset-2 transition hover:text-white hover:underline md:inline"
-          >
-            Need help? Contact support
-          </Link>
-          <span className="truncate text-right text-white/88">
-            New weekly drops • 30-day returns • Trusted by 2,300+ shoppers
-          </span>
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/84 backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150">
+      <div className="border-b border-border/60 bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))]">
+        <div className="mx-auto flex w-[min(1340px,94vw)] flex-wrap items-center justify-between gap-3 py-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-white/78 sm:text-[0.72rem]">
+          <span>Curated home, gifts, lifestyle, and everyday essentials</span>
+          <span className="hidden md:inline">Free shipping across the US</span>
+          <span>Fast checkout and 30-day returns</span>
         </div>
       </div>
 
-      <div className="mx-auto flex w-[min(1320px,96vw)] items-center justify-between gap-4 py-4 lg:py-5">
-        <Link to="/" className="group shrink-0" aria-label="Go to SALT homepage">
-          <BrandLogo
-            withWordmark
-            size="md"
-            className="rounded-full border border-border/65 bg-card/82 px-3 py-1.5 shadow-[0_18px_38px_-26px_rgba(0,0,0,0.5)] transition group-hover:border-primary/35 group-hover:shadow-[0_24px_44px_-28px_rgba(0,0,0,0.56)]"
-          />
+      <div className="mx-auto grid w-[min(1340px,94vw)] grid-cols-[auto_1fr] items-center gap-3 py-3 md:gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:py-4">
+        <Link to="/" className="shrink-0" aria-label="Go to SALT homepage">
+          <BrandLogo withWordmark size="sm" className="xl:hidden" />
+          <BrandLogo withWordmark size="md" className="hidden xl:inline-flex" />
         </Link>
 
-        <div className="hidden flex-1 items-center justify-center gap-3 lg:flex">
-          <nav className="salt-glass-rail flex items-center gap-1 rounded-full p-1.5">
-            {navLinks.map((link) => (
-              <NavLink key={link.to} to={link.to} className={navClassName} end={link.to === "/"}>
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
+        <nav className="hidden min-w-0 items-center justify-center gap-1 lg:flex xl:gap-1.5">
+          {navLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} className={navClassName}>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <form onSubmit={onDesktopSearch} className="salt-glass-rail relative hidden rounded-full px-1.5 py-1 lg:block">
+        <div className="hidden min-w-0 items-center gap-2 md:flex lg:justify-self-end">
+          <form onSubmit={onDesktopSearch} className="relative w-[min(14.5rem,18vw)] xl:w-[min(17rem,21vw)] 2xl:w-[19rem]">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               ref={desktopSearchRef}
+              type="search"
               value={desktopSearch}
               onChange={(event) => setDesktopSearch(event.target.value)}
-              type="search"
-              placeholder="Search products"
+              onFocus={() => setActivePanel("desktop")}
+              onBlur={() => window.setTimeout(() => setActivePanel(null), 120)}
+              placeholder="Search..."
               aria-label="Search products"
-              className="salt-form-control h-10 w-80 rounded-full border-transparent bg-transparent pl-10 pr-12 shadow-none"
+              className="salt-form-control h-10 w-full rounded-full border-transparent bg-card/85 pl-10 pr-11 text-[0.88rem] shadow-none"
             />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-border/75 bg-background/88 px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-            >
+            <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-border/70 bg-background/88 px-1.5 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground 2xl:block">
               / K
             </span>
+            {activePanel === "desktop" && deferredDesktopSearch.trim().length >= 2 ? (
+              <SearchPanel
+                collections={collections}
+                query={desktopSearch}
+                suggestions={desktopSuggestions}
+                mode="desktop"
+                onCollectionSelect={() => setActivePanel(null)}
+                onClose={() => setActivePanel(null)}
+                onProductSelect={() => setActivePanel(null)}
+                onSearchAll={() => submitSearch(desktopSearch)}
+              />
+            ) : null}
           </form>
-
-          <ThemeToggle />
 
           <Link
             to="/order-history"
-            className="salt-glass-rail inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[0.7rem] font-semibold tracking-[0.03em] text-foreground"
-            aria-label="Open order history"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/35 hover:text-primary 2xl:h-10 2xl:w-auto 2xl:gap-2 2xl:px-3"
+            aria-label="Order history"
+            title="Order history"
           >
-            <ClipboardList className="h-3.5 w-3.5" />
-            Order History
+            <ClipboardList className="h-4 w-4" />
+            <span className="hidden 2xl:inline">Orders</span>
           </Link>
 
-          <Link
-            to="/cart"
-            className="salt-button-shine relative inline-flex h-10 items-center gap-2 rounded-full border border-primary/50 bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110"
-            aria-label={`Open cart with ${itemCount} items`}
+          <button
+            type="button"
+            onClick={openCartDrawer}
+            className="salt-primary-cta inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[0.7rem] font-semibold uppercase tracking-[0.12em] xl:h-11 xl:px-5 xl:text-[0.75rem]"
+            aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
           >
             <ShoppingBag className="h-4 w-4" />
             Cart
-            {itemCount > 0 ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--salt-paper))] px-1 text-[0.7rem] leading-none text-[hsl(var(--salt-ink))]">
-                {itemCount}
-              </span>
-            ) : null}
-          </Link>
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/16 px-2 py-0.5 text-[0.68rem]">
+              {itemCount}
+            </span>
+          </button>
         </div>
 
         <button
           type="button"
           onClick={() => setMobileOpen((open) => !open)}
-          className="salt-glass-rail inline-flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-card text-foreground transition hover:border-primary/35 lg:hidden"
           aria-label="Toggle navigation"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      <div className="hidden border-t border-border/45 bg-[linear-gradient(180deg,hsl(var(--card)/0.85),hsl(var(--card)/0.7))] lg:block">
-        <div className="mx-auto flex w-[min(1320px,96vw)] items-center justify-between gap-4 py-2.5">
-          <div className="salt-glass-rail flex flex-wrap items-center gap-2 rounded-full px-2 py-1.5">
-            {quickLinks.map((link) => (
-              <NavLink key={link.to} to={link.to} className="salt-outline-chip border-transparent bg-transparent">
-                {link.label}
-              </NavLink>
+      <div className="hidden border-t border-border/70 lg:block">
+        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-3 py-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {collections.map((collection) => (
+              <Link
+                key={collection.id}
+                to={`/shop?collection=${collection.handle}`}
+                className="salt-outline-chip h-9 px-3 py-0 text-[0.68rem] xl:px-4 xl:text-[0.7rem]"
+              >
+                {collection.title}
+              </Link>
             ))}
           </div>
-          <div className="salt-glass-rail flex items-center gap-2 rounded-full px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Fast dispatch • Easy returns • Encrypted checkout
-          </div>
+          <p className="hidden text-[0.72rem] font-medium uppercase tracking-[0.16em] text-muted-foreground 2xl:block">
+            Home, gifts, apparel, kitchen, decor, seasonal
+          </p>
         </div>
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-border/60 bg-background/94 px-4 py-4 shadow-[0_26px_46px_-34px_rgba(0,0,0,0.65)] backdrop-blur lg:hidden">
-          <div className="mx-auto grid w-[min(1320px,96vw)] gap-4">
-            <div className="salt-editorial-shell rounded-[1.6rem] p-4">
-              <form onSubmit={onMobileSearch} className="flex items-center gap-2">
-                <label htmlFor="mobile-header-search" className="sr-only">
-                  Search products
-                </label>
-                <div className="salt-glass-rail relative flex-1 rounded-full px-1.5 py-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    id="mobile-header-search"
-                    ref={mobileSearchRef}
-                    type="search"
-                    value={mobileSearch}
-                    onChange={(event) => setMobileSearch(event.target.value)}
-                    placeholder="Search products"
-                    className="salt-form-control h-10 w-full rounded-full border-transparent bg-transparent pl-10 pr-3 shadow-none"
+        <div className="border-t border-border/70 bg-background/96 px-4 py-4 shadow-[0_26px_60px_-42px_rgba(15,23,42,0.24)] lg:hidden">
+          <div className="mx-auto grid w-[min(1340px,94vw)] gap-4">
+            <div className="rounded-[1.6rem] border border-border/70 bg-card/82 p-4">
+              <form onSubmit={onMobileSearch} className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  ref={mobileSearchRef}
+                  type="search"
+                  value={mobileSearch}
+                  onChange={(event) => setMobileSearch(event.target.value)}
+                  onFocus={() => setActivePanel("mobile")}
+                  onBlur={() => window.setTimeout(() => setActivePanel(null), 120)}
+                  placeholder="Search by product or collection"
+                  className="salt-form-control h-12 w-full rounded-full border-transparent bg-background pl-11 pr-4 shadow-none"
+                />
+                {activePanel === "mobile" && deferredMobileSearch.trim().length >= 2 ? (
+                  <SearchPanel
+                    collections={collections}
+                    query={mobileSearch}
+                    suggestions={mobileSuggestions}
+                    mode="mobile"
+                    onCollectionSelect={closeMobileMenu}
+                    onClose={() => setActivePanel(null)}
+                    onProductSelect={closeMobileMenu}
+                    onSearchAll={() => {
+                      submitSearch(mobileSearch);
+                      closeMobileMenu();
+                    }}
                   />
-                </div>
-                <button
-                  type="submit"
-                  className="salt-primary-cta h-10 rounded-full px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em]"
-                >
-                  Search
-                </button>
+                ) : null}
               </form>
 
-              <nav className="mt-4 grid gap-2">
+              <div className="mt-4 grid gap-2">
                 {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={navClassName}
-                    end={link.to === "/"}
-                    onClick={closeMobileMenu}
-                  >
+                  <NavLink key={link.to} to={link.to} className={navClassName} onClick={closeMobileMenu}>
                     {link.label}
                   </NavLink>
                 ))}
-              </nav>
+              </div>
             </div>
 
-            <div className="salt-glass-rail flex flex-wrap gap-2 rounded-[1.35rem] p-2.5">
-              {quickLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  onClick={closeMobileMenu}
-                  className="salt-outline-chip"
-                >
-                  {link.label}
-                </NavLink>
-              ))}
+            <div className="rounded-[1.45rem] border border-border/70 bg-card/78 p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                Shop by collection
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {collections.map((collection) => (
+                  <Link
+                    key={collection.id}
+                    to={`/shop?collection=${collection.handle}`}
+                    onClick={closeMobileMenu}
+                    className="salt-outline-chip h-9 px-4 py-0 text-[0.68rem]"
+                  >
+                    {collection.title}
+                  </Link>
+                ))}
+              </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
-              <ThemeToggle />
+            <div className="grid gap-2 sm:grid-cols-2">
               <Link
-                to="/cart"
+                to="/order-history"
                 onClick={closeMobileMenu}
-                className="salt-button-shine inline-flex h-11 items-center justify-center gap-2 rounded-full border border-primary/50 bg-primary px-4 text-sm font-bold text-primary-foreground"
-                aria-label={`View cart with ${itemCount} items`}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/70 bg-card px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+              >
+                <ClipboardList className="h-4 w-4" />
+                Orders
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  closeMobileMenu();
+                  openCartDrawer();
+                }}
+                className="salt-primary-cta inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em]"
               >
                 <ShoppingBag className="h-4 w-4" />
-                View Cart ({itemCount})
-              </Link>
-            </div>
-
-            <div className="salt-glass-rail grid gap-2 rounded-[1.35rem] p-4">
-              <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                Orders and support
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/order-history"
-                  onClick={closeMobileMenu}
-                  className="salt-outline-chip inline-flex h-9 items-center gap-1.5 px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                >
-                  <ClipboardList className="h-3.5 w-3.5" />
-                  Order history
-                </Link>
-                <Link
-                  to="/contact"
-                  onClick={closeMobileMenu}
-                  className="salt-outline-chip inline-flex h-9 items-center px-3 py-0 text-[0.68rem] font-bold uppercase tracking-[0.08em]"
-                >
-                  Contact support
-                </Link>
-              </div>
+                Cart ({itemCount})
+              </button>
             </div>
           </div>
         </div>

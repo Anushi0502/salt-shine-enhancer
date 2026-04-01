@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Clock3, PackageCheck, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ArrowUpRight, ShoppingBag, Sparkles, Star } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import {
-  conciseTitle,
   compareAt,
+  conciseTitle,
   formatMoney,
   minPrice,
   productImage,
@@ -22,23 +22,23 @@ type ProductCardProps = {
 function merchandisingLine(product: ShopifyProduct): string {
   const source = `${product.title} ${product.product_type}`.toLowerCase();
 
-  if (/book|planner|legacy/.test(source)) {
-    return "Giftable, practical, and built for repeat use.";
-  }
-
   if (/cook|kitchen|pan|pot|mold/.test(source)) {
-    return "Useful home essentials with strong gifting appeal.";
+    return "Kitchen utility with giftable appeal.";
   }
 
-  if (/dress|robe|wear|apparel|shirt|tops/.test(source)) {
-    return "Easy style with stronger everyday wearability.";
+  if (/dress|robe|wear|apparel|shirt/.test(source)) {
+    return "An everyday piece with a refined feel.";
   }
 
   if (/garden|tool|camp|outdoor/.test(source)) {
-    return "Functional picks designed for seasonal utility.";
+    return "Season-ready function with a polished finish.";
   }
 
-  return "Curated product surfaced for stronger purchase intent.";
+  if (/book|planner|legacy/.test(source)) {
+    return "Thoughtful to give, useful to keep close.";
+  }
+
+  return "A considered pick from the current SALT edit.";
 }
 
 const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
@@ -47,194 +47,131 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const sale = savingsPercent(product);
   const min = minPrice(product);
   const compare = compareAt(product);
-  const savingsValue = compare > min ? compare - min : 0;
-  const inStock = product.variants.some((entry) => entry.available);
-  const availableVariantCount = product.variants.filter((entry) => entry.available).length;
-  const defaultVariant = product.variants.find((entry) => entry.available) || null;
-  const title = conciseTitle(product.title);
   const image = productImage(product);
-  const merchandisingCopy = merchandisingLine(product);
-  const { summary: reviewSummary } = useJudgeMeProductRating(product.id);
-  const optionCount = Math.max(availableVariantCount, product.variants.length || 1);
-  const optionCountText = `${optionCount} ${optionCount === 1 ? "option" : "options"}`;
-  const reviewCountText = reviewSummary
-    ? `${reviewSummary.reviewCount.toLocaleString()} ${reviewSummary.reviewCount === 1 ? "review" : "reviews"}`
-    : "Review data syncing";
-  const mediaRatio = isDense ? "aspect-[4/4.3]" : "aspect-[4/4.5]";
-  const titleClasses = isDense
-    ? "min-h-[3.4rem] text-[1.06rem] leading-[1.34]"
-    : "min-h-[3.9rem] text-[1.2rem] leading-[1.36]";
+  const title = conciseTitle(product.title);
+  const review = useJudgeMeProductRating(product.id).summary;
+  const availableVariantCount = product.variants.filter((entry) => entry.available).length;
+  const defaultVariant = product.variants.find((entry) => entry.available) || product.variants[0] || null;
 
   return (
-    <article
-      className={`group flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--card)/0.97))] shadow-[0_24px_60px_-34px_rgba(0,0,0,0.28)] transition duration-500 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_36px_84px_-44px_rgba(0,0,0,0.34)] ${
-        isDense ? "" : "salt-card-hover"
-      }`}
-    >
+    <article className="group flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-border/75 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_24px_54px_-34px_rgba(15,23,42,0.18)] transition duration-500 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_34px_80px_-42px_rgba(15,23,42,0.24)]">
       <Link
         to={`/products/${product.handle}`}
-        className={`relative isolate block overflow-hidden bg-[linear-gradient(145deg,hsl(var(--muted)),hsl(var(--card)))] ${mediaRatio}`}
+        className={`relative isolate block overflow-hidden bg-muted ${isDense ? "aspect-[4/4.8]" : "aspect-[4/5]"}`}
       >
         {image ? (
           <img
             src={image}
             alt={product.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.045]"
+            className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_20%_18%,hsl(var(--primary)/0.24),transparent_32%),radial-gradient(circle_at_84%_80%,hsl(var(--salt-blue)/0.22),transparent_36%),linear-gradient(160deg,hsl(var(--muted)),hsl(var(--card)))] px-6 text-center">
-            <div className="space-y-2 rounded-[1.2rem] border border-white/25 bg-black/20 px-5 py-4 text-white backdrop-blur-md">
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white/92">
-                Product image unavailable
-              </p>
-              <p className="text-xs text-white/72">
-                Open details to view live catalog information.
-              </p>
-            </div>
+          <div className="grid h-full w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Image unavailable
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,12,0.08)_0%,rgba(8,10,14,0)_34%,rgba(8,9,14,0.12)_56%,rgba(8,9,14,0.78)_100%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/28 via-black/8 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,28,49,0.02),rgba(18,28,49,0)_30%,rgba(18,28,49,0.14)_72%,rgba(18,28,49,0.34)_100%)]" />
 
-        <div className="absolute left-3 top-3 flex items-center gap-2">
+        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
           {sale > 0 ? (
-            <span className={`inline-flex items-center gap-1 rounded-full border border-white/22 bg-[linear-gradient(125deg,hsl(var(--primary)),hsl(var(--salt-accent-deep))_84%)] font-extrabold uppercase tracking-[0.08em] text-[hsl(var(--salt-paper))] shadow-[0_16px_28px_-18px_rgba(0,0,0,0.7)] ${
-              isDense ? "px-2.5 py-1 text-[0.62rem]" : "px-3 py-1.5 text-[0.7rem]"
-            }`}>
-              <Sparkles className="h-3 w-3" /> Save {sale}%
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/16 bg-[hsl(var(--salt-ink))]/82 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+              <Sparkles className="h-3 w-3 text-primary" />
+              Save {sale}%
             </span>
           ) : (
-            <span className={`inline-flex items-center gap-1 rounded-full border border-white/18 bg-black/28 font-bold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md ${
-              isDense ? "px-2.5 py-1 text-[0.58rem]" : "px-3 py-1.5 text-[0.64rem]"
-            }`}>
-              Featured pick
+            <span className="inline-flex rounded-full border border-white/16 bg-white/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] backdrop-blur">
+              Curated pick
             </span>
           )}
         </div>
 
-        <div className="absolute right-3 top-3 flex items-center gap-2">
-          {reviewSummary?.reviewCount ? (
-            <span className={`rounded-full border border-white/28 bg-black/28 font-semibold text-white/92 backdrop-blur-md ${
-              isDense ? "px-2.5 py-1 text-[0.58rem]" : "px-3 py-1 text-[0.62rem]"
-            }`}>
-              {reviewSummary.rating.toFixed(1)} avg
-            </span>
-          ) : (
-            <span className={`rounded-full border border-white/28 bg-black/28 font-semibold uppercase tracking-[0.08em] text-white/92 backdrop-blur-md ${
-              isDense ? "px-2.5 py-1 text-[0.58rem]" : "px-3 py-1 text-[0.62rem]"
-            }`}>
-              {optionCountText}
-            </span>
-          )}
+        <div className="absolute right-3 top-3">
+          <span className="inline-flex rounded-full border border-white/16 bg-white/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] backdrop-blur">
+            {availableVariantCount > 1 ? `${availableVariantCount} options` : "Ready to ship"}
+          </span>
         </div>
 
         <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
-          <span className={`inline-flex items-center rounded-full border border-white/30 bg-black/30 font-bold uppercase tracking-[0.1em] text-white backdrop-blur-md shadow-[0_10px_24px_-18px_rgba(0,0,0,0.7)] ${
-            isDense ? "px-2.5 py-1 text-[0.64rem]" : "px-3 py-1.5 text-[0.72rem]"
-          }`}>
-            {inStock ? "In stock" : "Unavailable"}
-          </span>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/28 bg-black/24 text-white/95 opacity-0 backdrop-blur-md transition duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+          <div className="rounded-full border border-white/16 bg-[hsl(var(--salt-ink))]/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+            {product.product_type || "Featured"}
+          </div>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/16 bg-white/70 text-[hsl(var(--salt-ink))] opacity-0 transition duration-300 group-hover:opacity-100">
             <ArrowUpRight className="h-4 w-4" />
           </span>
         </div>
       </Link>
 
-      <div className={`grid flex-1 grid-rows-[auto_auto_auto_1fr_auto] gap-3 ${isDense ? "p-3.5" : "p-[1.125rem]"}`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded-full border border-border/80 bg-background/88 px-2.5 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            {product.product_type || "Curated pick"}
-          </span>
-          {availableVariantCount > 1 ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/88 px-2.5 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              <PackageCheck className="h-3.5 w-3.5 text-primary" />
-              {optionCountText}
-            </span>
-          ) : null}
-        </div>
-
+      <div className={`flex flex-1 flex-col ${isDense ? "gap-3 p-4" : "gap-3.5 p-[1.125rem]"}`}>
         <div className="space-y-2">
-          <h3 className={`font-semibold tracking-[-0.02em] text-foreground ${titleClasses}`}>
-            <Link to={`/products/${product.handle}`} className="transition hover:text-primary">
-              <span className="line-clamp-2">{title}</span>
+          <h3 className={`font-display leading-[1.02] tracking-[-0.02em] text-foreground ${isDense ? "text-[1.2rem]" : "text-[1.38rem]"}`}>
+            <Link to={`/products/${product.handle}`} className="line-clamp-2 transition group-hover:text-primary">
+              {title}
             </Link>
           </h3>
-
-          <p className={`line-clamp-2 text-muted-foreground ${isDense ? "text-[0.8rem] leading-6" : "text-[0.88rem] leading-6"}`}>
-            {merchandisingCopy}
+          <p className={`line-clamp-2 text-muted-foreground ${isDense ? "text-[0.82rem] leading-5" : "text-[0.88rem] leading-6"}`}>
+            {merchandisingLine(product)}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-x-2 gap-y-1.5">
-          <strong className={`${isDense ? "text-[1.26rem]" : "text-[1.5rem]"} font-extrabold leading-none text-primary`}>
+        <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+          <strong className={`font-display leading-none text-foreground ${isDense ? "text-[1.45rem]" : "text-[1.7rem]"}`}>
             {formatMoney(min)}
           </strong>
           {compare > min ? (
-            <s className={`${isDense ? "text-[0.86rem]" : "text-[0.96rem]"} font-medium text-muted-foreground`}>
-              {formatMoney(compare)}
-            </s>
-          ) : null}
-          {savingsValue > 0 ? (
-            <span className={`inline-flex items-center rounded-full border border-emerald-500/22 bg-emerald-500/8 font-bold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300 ${
-              isDense ? "px-2 py-0.5 text-[0.58rem]" : "px-2.5 py-1 text-[0.62rem]"
-            }`}>
-              Save {formatMoney(savingsValue)}
-            </span>
+            <s className="text-sm text-muted-foreground">{formatMoney(compare)}</s>
           ) : null}
         </div>
 
-        <div className={`rounded-[1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.95),hsl(var(--background)/0.8))] ${isDense ? "min-h-[6rem] p-2.5" : "min-h-[6.5rem] p-3"}`}>
-          <div className={`flex flex-wrap items-center gap-2 ${isDense ? "text-[0.8rem]" : "text-[0.86rem]"}`}>
-            <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/92 px-2.5 py-1 font-semibold text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
-              <Star className={`h-3.5 w-3.5 ${reviewSummary ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-              {reviewSummary ? reviewSummary.rating.toFixed(1) : "New"}
-            </span>
-            <span className="font-medium text-muted-foreground">{reviewCountText}</span>
+        <div className="flex items-center justify-between rounded-[1rem] border border-border/70 bg-card/85 px-3 py-2.5">
+          <div>
+            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Reviews
+            </p>
+            <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
+              <span className="inline-flex items-center gap-1 font-semibold">
+                <Star className={`h-3.5 w-3.5 ${review ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                {review ? review.rating.toFixed(1) : "New"}
+              </span>
+              <span className="text-muted-foreground">
+                {review?.reviewCount ? `${review.reviewCount.toLocaleString()} reviews` : "New arrival"}
+              </span>
+            </div>
           </div>
 
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background/88 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              <Clock3 className="h-3.5 w-3.5 text-primary" />
-              {reviewSummary?.purchasedLastMonth
-                ? `${reviewSummary.purchasedLastMonth.toLocaleString()} bought last month`
-                : inStock
-                  ? "Ready for fast dispatch"
-                  : "Waiting for restock"}
-            </span>
-          </div>
+          <p className="text-right text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
+            {availableVariantCount > 1 ? `${availableVariantCount} variants` : "Single option"}
+          </p>
         </div>
 
         <div className={`grid gap-2 ${isDense ? "grid-cols-[1fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
           <button
             type="button"
-            onClick={() =>
-              defaultVariant
-                ? addItem({
-                    id: defaultVariant.id,
-                    shopifyVariantId: defaultVariant.id,
-                    handle: product.handle,
-                    title: product.title,
-                    image: image || "",
-                    unitPrice: min,
-                  })
-                : undefined
-            }
+            onClick={() => {
+              if (!defaultVariant) {
+                return;
+              }
+
+              addItem({
+                id: defaultVariant.id,
+                shopifyVariantId: defaultVariant.id,
+                handle: product.handle,
+                title: product.title,
+                image: image || "",
+                unitPrice: min,
+              });
+            }}
             disabled={!defaultVariant}
-            className={`salt-primary-cta inline-flex items-center justify-center gap-2 rounded-[1rem] border border-primary/40 px-4 font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50 ${
-              isDense ? "h-10 text-[0.68rem]" : "h-11 text-[0.72rem]"
-            }`}
+            className={`salt-primary-cta justify-center rounded-[1rem] px-4 ${isDense ? "h-10 text-[0.7rem]" : "h-11 text-[0.72rem]"} font-semibold uppercase tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <ShoppingBag className="h-4 w-4" />
-            {defaultVariant ? (isDense ? "Quick add" : "Add to cart") : "Unavailable"}
+            Quick add
           </button>
 
           <Link
             to={`/products/${product.handle}`}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-[1rem] border border-border bg-background/88 px-3 font-bold uppercase tracking-[0.1em] text-foreground transition hover:border-primary/50 hover:text-primary ${
-              isDense ? "h-10 text-[0.63rem]" : "h-11 text-[0.68rem]"
-            }`}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-[1rem] border border-border/75 bg-card px-4 font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/40 hover:text-primary ${isDense ? "h-10 text-[0.66rem]" : "h-11 text-[0.7rem]"}`}
           >
             View
             <ArrowUpRight className="h-3.5 w-3.5" />

@@ -26,24 +26,20 @@ import type { ShopifyCollection } from "@/types/shopify";
 
 const trustBullets = [
   {
-    title: "Safe and Secure Delivery",
-    detail:
-      "We don't just ship boxes; we ensure your order arrives safely and swiftly with premium tracking every step of the way.",
+    title: "Clear shipping",
+    detail: "Trackable delivery and checkout clarity stay visible from add to confirmation.",
   },
   {
-    title: "Secure & Flexible Payments",
-    detail:
-      "Choose how you pay with our fully encrypted checkout, supporting all major cards and buy now, pay later options.",
+    title: "Secure checkout",
+    detail: "Cards, fast-pay options, and pricing stay easy to trust at a glance.",
   },
   {
-    title: 'Our "Happiness" Guarantee',
-    detail:
-      "Not quite what you expected? No problem. Our 30-day, hassle-free return policy ensures you never have to settle.",
+    title: "Simple returns",
+    detail: "Policy access stays close when a piece is not quite right.",
   },
   {
-    title: "Expertly Curated Selection",
-    detail:
-      "Every item in our store is hand-vetted by our team for quality and durability, so you only ever get the best.",
+    title: "Edited catalog",
+    detail: "Collections help shoppers move from inspiration to purchase without extra noise.",
   },
 ];
 
@@ -357,24 +353,28 @@ const HomePage = () => {
 
   return (
     <>
-      <HomeHero featured={featured} />
+      <HomeHero
+        featured={featured}
+        leadCollection={leadCollection}
+        supportingCollections={supportingCollections}
+      />
 
 
 
-      <section id="collections" className="mx-auto mt-12 w-[min(1320px,96vw)]">
+      <section id="collections" className="mx-auto mt-10 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="salt-kicker">Shop by collection</p>
               <h2 className="mt-3 font-display text-[clamp(2rem,3.1vw,3rem)] leading-[0.98]">
-                Merchandising paths built like an editorial storefront
+                Browse the store by collection
               </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                The strongest collection takes the lead, while the rest stay grouped into cleaner, faster routes for discovering home, gifts, style, and seasonal essentials.
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Start with the mood, room, or gifting moment you have in mind.
               </p>
             </div>
             <Link to="/collections" className="salt-outline-chip h-11 px-5 py-0 text-sm">
-              View all collections
+              Explore all collections
             </Link>
           </div>
         </Reveal>
@@ -416,21 +416,21 @@ const HomePage = () => {
         ) : null}
       </section>
 
-      <section id="products" className="mx-auto mt-14 w-[min(1320px,96vw)]">
+      <section id="products" className="mx-auto mt-11 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
+          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
                 <p className="salt-kicker">{trendingCollection ? "Collection focus" : "Trending now"}</p>
                 <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
                   {trendingCollection
-                    ? `Best-rated picks from ${trendingCollection.title}`
-                    : "High-intent products, prioritized for conversion"}
+                    ? `${trendingCollection.title} picks shoppers are choosing first`
+                    : "Fresh favorites with buying momentum"}
                 </h2>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   {trendingCollection
-                    ? `These products come from the current banner collection and are ranked by stronger ratings, deeper review coverage, and sharper purchase intent.`
-                    : "Ranked by strongest discount opportunity and recent catalog movement to keep merchandising conversion-focused."}
+                    ? `A tighter edit balanced around strong reviews and recent demand.`
+                    : "A current mix of newness, value, and shopper attention."}
                 </p>
               </div>
 
@@ -439,41 +439,41 @@ const HomePage = () => {
                   {trendingShopLabel}
                 </Link>
                 <Link to="/shop?sort=discount" className="salt-outline-chip h-11 px-5 py-0 text-sm">
-                  View top value picks
+                  Shop best value
                 </Link>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+            <div className="mt-4 grid gap-3 lg:grid-cols-4">
               <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Products in focus</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {(focusCollectionInsights?.productCount || trendingProducts.length).toLocaleString()}
-                </p>
-              </div>
-              <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average rating</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {(focusCollectionInsights?.averageRating || reviewInsights?.averageRating || 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Reviews considered</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {(focusCollectionInsights?.totalReviews || reviewInsights?.totalReviews || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Top reviewed</p>
-                <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-foreground">
-                  {focusCollectionInsights?.topReviewed?.product.title || reviewInsights?.topReviewed?.product.title || "Live catalog picks"}
-                </p>
-              </div>
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Products in focus</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">
+                    {(focusCollectionInsights?.productCount || trendingProducts.length).toLocaleString()}
+                  </p>
+                </div>
+                <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average shopper rating</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">
+                    {(focusCollectionInsights?.averageRating || reviewInsights?.averageRating || 0).toFixed(2)}
+                  </p>
+                </div>
+                <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Published reviews</p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">
+                    {(focusCollectionInsights?.totalReviews || reviewInsights?.totalReviews || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="salt-ambient-card rounded-[1.2rem] p-4">
+                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Most reviewed</p>
+                  <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-foreground">
+                    {focusCollectionInsights?.topReviewed?.product.title || reviewInsights?.topReviewed?.product.title || "Live catalog picks"}
+                  </p>
+                </div>
             </div>
           </div>
         </Reveal>
 
-        <div className="salt-section-shell mt-5 rounded-[2rem] p-4 sm:p-5">
+        <div className="salt-section-shell mt-4 rounded-[2rem] p-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {trendingProducts.map((product, index) => (
               <Reveal key={product.id} delayMs={index * 70} className="h-full">
@@ -486,16 +486,16 @@ const HomePage = () => {
 
       
       {latestBlogPosts.length > 0 ? (
-        <section className="mx-auto mt-12 w-[min(1280px,96vw)]">
+        <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
           <Reveal>
-            <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                     From the Blog
                   </p>
                   <h3 className="font-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-tight">
-                    Fresh content from Shopify posts
+                    Ideas and seasonal inspiration
                   </h3>
                 </div>
                 <Link
@@ -530,24 +530,24 @@ const HomePage = () => {
         </section>
       ) : null}
 
-      <section className="mx-auto mt-14 w-[min(1320px,96vw)]">
+      <section className="mx-auto mt-11 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="salt-editorial-shell rounded-[2rem] p-5 sm:p-7">
+          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
             <div className="salt-section-grid">
               <div>
                 <p className="salt-kicker">Trust and conversion</p>
                 <h3 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.6rem)] leading-[0.98]">
-                  A premium storefront should feel calm, credible, and ready to buy from
+                  Shopping should feel calm and easy to finish
                 </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-                  Every trust cue here is grounded in actual store behavior: live review coverage, strong collection structure, clear dispatch messaging, and support paths that stay visible instead of buried.
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Clear service cues and real review coverage keep the path to checkout clean.
                 </p>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {trustBullets.map((item) => (
                     <div key={item.title} className="salt-story-card rounded-[1.35rem] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">{item.title}</p>
-                      <p className="mt-2 text-[0.78rem] leading-6 text-muted-foreground">
+                      <p className="mt-2 text-[0.78rem] leading-5 text-muted-foreground">
                         {item.detail}
                       </p>
                     </div>
@@ -559,7 +559,7 @@ const HomePage = () => {
                 <div className="salt-story-card rounded-[1.6rem] p-5">
                   <p className="salt-kicker">Live customer proof</p>
                   <h4 className="mt-3 font-display text-[1.9rem] leading-[1.02]">
-                    Review depth that supports faster decisions
+                    Reviews that help people decide
                   </h4>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="salt-ambient-card rounded-[1.2rem] p-4">
@@ -576,7 +576,7 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/72 p-4">
-                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Top reviewed product</p>
+                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Most reviewed product</p>
                     <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
                       {reviewInsights?.topReviewed?.product.title || "Live catalog picks surfaced automatically"}
                     </p>
@@ -584,27 +584,27 @@ const HomePage = () => {
                 </div>
 
                 <div className="salt-story-card rounded-[1.6rem] p-5">
-                  <p className="salt-kicker">Confidence cues</p>
-                  <div className="mt-3 space-y-3 text-sm text-muted-foreground">
+                  <p className="salt-kicker">Why it converts</p>
+                  <div className="mt-3 space-y-2.5 text-sm text-muted-foreground">
                     <p className="inline-flex items-start gap-2">
-                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live product data stays connected to Shopify for current pricing and availability.
+                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live Shopify data keeps pricing and availability current.
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <Star className="mt-0.5 h-4 w-4 text-primary" /> High-intent collection paths reduce noise and keep discovery closer to checkout.
+                      <Star className="mt-0.5 h-4 w-4 text-primary" /> Collection-led discovery keeps browsing intentional.
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Editorial surfaces raise perceived value without slowing down commerce actions.
+                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Editorial presentation adds polish without slowing action.
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Pricing, savings, and support paths remain visible in every major shopping step.
+                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Pricing, savings, and support stay easy to see.
                     </p>
                   </div>
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <Link to="/shop" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
-                      Shop with confidence
+                      Shop the catalog
                     </Link>
                     <Link to="/blog" className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                      Read buying guides
+                      Read the journal
                     </Link>
                     <Link to="/contact" className="salt-outline-chip h-10 px-4 py-0 text-xs">
                       Talk to support

@@ -21,6 +21,12 @@ import { toast } from "sonner";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyShopPayUrl, useCart } from "@/lib/cart";
 import {
@@ -31,6 +37,7 @@ import {
   productTagList,
   sanitizeRichHtml,
   sortVariantsByPrice,
+  stripHtml,
 } from "@/lib/formatters";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
 import {
@@ -229,9 +236,10 @@ const ProductPage = () => {
     : [primaryImage]).filter(Boolean);
 
   const highlights = [
-    product.product_type ? `${product.product_type} essential` : "Curated everyday essential",
+    product.product_type ? `${product.product_type} essential` : "Curated essential",
     ...productTagList(product).slice(0, 2),
   ];
+  const shortDescription = stripHtml(product.body_html);
 
   const recentlyViewedProducts = recentHandles
     .filter((entry) => entry !== product.handle)
@@ -262,7 +270,7 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-8 w-[min(1280px,96vw)] pb-20 md:pb-8">
+    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-20 md:pb-8">
       <Reveal>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Link to="/" className="hover:text-primary">
@@ -278,17 +286,14 @@ const ProductPage = () => {
       </Reveal>
 
       <Reveal>
-        <Link
-          to="/shop"
-          className="salt-outline-chip mt-3 h-10 gap-2 px-4 py-0 text-xs"
-        >
+        <Link to="/shop" className="salt-outline-chip mt-3 h-10 gap-2 px-4 py-0 text-xs">
           <ArrowLeft className="h-4 w-4" /> Back to shop
         </Link>
       </Reveal>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
         <Reveal>
-          <div className="salt-panel-shell rounded-[2rem] p-4 sm:p-5">
+          <div className="salt-panel-shell rounded-[1.8rem] p-4">
             <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
               {activeImage || primaryImage ? (
                 <img
@@ -325,13 +330,12 @@ const ProductPage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <aside className="salt-panel-shell rounded-[2rem] p-5 sm:p-7 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-6 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
-            <div
-              className="salt-product-description mt-3 text-sm text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.body_html) }}
-            />
+            <p className="mt-2 max-w-[34rem] text-sm leading-6 text-muted-foreground">
+              {shortDescription || "A thoughtfully chosen SALT piece with live pricing, clear variants, and easy checkout."}
+            </p>
 
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
@@ -378,7 +382,7 @@ const ProductPage = () => {
 
             <div className="mt-3 flex flex-wrap gap-2">
               <p className={`rounded-full border px-3 py-1 text-xs font-semibold ${isAvailable ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
-                {isAvailable ? "In stock and ready to ship" : "Out of stock"}
+                {isAvailable ? "In stock" : "Out of stock"}
               </p>
             </div>
 
@@ -549,9 +553,9 @@ const ProductPage = () => {
                 });
               }}
               aria-disabled={!isAvailable}
-              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#5c3bff_0%,#3a2fd6_100%)] px-5 text-base font-semibold text-white transition ${
+              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#2f63ff_0%,#2047c7_100%)] px-5 text-base font-semibold text-white transition ${
                 isAvailable
-                  ? "hover:brightness-110 hover:shadow-[0_18px_32px_-24px_rgba(73,55,224,0.95)]"
+                  ? "hover:brightness-110 hover:shadow-[0_18px_32px_-24px_rgba(37,99,235,0.5)]"
                   : "pointer-events-none opacity-60"
               }`}
             >
@@ -583,12 +587,42 @@ const ProductPage = () => {
               </Link>
             </div>
 
-            <div className="mt-5 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+            <Accordion type="multiple" className="mt-4 rounded-[1.2rem] border border-border/80 bg-card/86 px-4">
+              <AccordionItem value="details" className="border-border/70">
+                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                  Product details
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div
+                    className="salt-product-description pb-4 text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.body_html) }}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="shipping" className="border-border/70">
+                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                  Shipping and returns
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
+                  Shipping and taxes are calculated at Shopify checkout. Eligible items can be returned within the policy window.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="service" className="border-none">
+                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                  Why shoppers choose SALT
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
+                  Curated assortment, clearer variant selection, visible savings, and support that stays close.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
               <p className="flex items-center gap-2">
-                <Truck className="h-3.5 w-3.5" /> Free shipping all over the US
+                <Truck className="h-3.5 w-3.5" /> Free shipping across the US
               </p>
               <p className="flex items-center gap-2">
-                <PackageCheck className="h-3.5 w-3.5" /> Fast US fulfillment and tracking
+                <PackageCheck className="h-3.5 w-3.5" /> Fast fulfillment and tracking
               </p>
               <p className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5" /> 30-day returns on eligible items
@@ -597,7 +631,7 @@ const ProductPage = () => {
                 <BadgeCheck className="h-3.5 w-3.5" /> Secure payment processing
               </p>
               <p className="flex items-center gap-2">
-                <Leaf className="h-3.5 w-3.5" /> Curated quality checks before listing
+                <Leaf className="h-3.5 w-3.5" /> Selected for a more considered store edit
               </p>
               {purchasedLastMonth > 0 ? (
                 <p className="flex items-center gap-2">
@@ -606,7 +640,7 @@ const ProductPage = () => {
               ) : null}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {highlights.map((item) => (
                 <span
                   key={item}
@@ -623,7 +657,7 @@ const ProductPage = () => {
       <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
 
       {relatedProducts.length > 0 ? (
-        <section className="mt-12">
+        <section className="mt-10">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
@@ -645,7 +679,7 @@ const ProductPage = () => {
       ) : null}
 
       {recentlyViewedProducts.length > 0 ? (
-        <section className="mt-10">
+        <section className="mt-8">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>

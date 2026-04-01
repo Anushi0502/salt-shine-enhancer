@@ -68,15 +68,15 @@ const BlogPage = () => {
   ).slice(0, 4);
 
   return (
-    <section className="mx-auto mt-8 w-[min(1200px,96vw)] pb-8">
+    <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-8">
       <Reveal>
-        <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
+        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
-            Insights and Stories
+            Stories, guides, and seasonal ideas
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Posts synced from Shopify to keep home, garden, style, and product education current.
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Editorial pieces from SALT covering everyday living, gifting, and seasonal inspiration.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
@@ -85,11 +85,11 @@ const BlogPage = () => {
             </p>
             <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Reading format</span>
-              <span>Short actionable guides and trend roundups</span>
+              <span>Short, useful reads</span>
             </p>
             <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Goal</span>
-              <span>Move inspiration to confident purchases</span>
+              <span>Easier shopping decisions</span>
             </p>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -112,7 +112,7 @@ const BlogPage = () => {
 
       {posts.length === 0 ? (
         <Reveal delayMs={80} className="mt-6">
-          <div className="salt-surface rounded-3xl p-10 text-center">
+          <div className="salt-surface rounded-3xl p-8 text-center">
             <h2 className="font-display text-3xl">No blog posts yet</h2>
             <p className="mt-3 text-sm text-muted-foreground">
               New posts from Shopify will appear here automatically.
@@ -122,7 +122,7 @@ const BlogPage = () => {
       ) : (
         <>
           {featuredPost ? (
-            <Reveal delayMs={60} className="mt-6">
+            <Reveal delayMs={60} className="mt-5">
               <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
                 <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
                   <ResilientImage
@@ -140,7 +140,7 @@ const BlogPage = () => {
                       {featuredPost.title}
                     </Link>
                   </h2>
-                  <p className="mt-3 text-sm leading-7 text-muted-foreground">{featuredPost.excerpt}</p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{featuredPost.excerpt}</p>
                   <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span>{formattedDate(featuredPost.publishedAt)}</span>
                     <span>•</span>
@@ -154,7 +154,7 @@ const BlogPage = () => {
                     to={`/blog/${featuredPost.handle}`}
                     className="salt-primary-cta mt-5 h-11 gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em]"
                   >
-                    Read featured story <ArrowRight className="h-3.5 w-3.5" />
+                    Read the story <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               </article>
@@ -162,7 +162,7 @@ const BlogPage = () => {
           ) : null}
 
           {remainingPosts.length > 0 ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {remainingPosts.map((post, index) => (
                 <Reveal key={post.id} delayMs={index * 70}>
                   <article className="salt-card-hover salt-metric-card flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
@@ -185,7 +185,7 @@ const BlogPage = () => {
                           {post.title}
                         </Link>
                       </h2>
-                      <p className="mt-3 line-clamp-4 text-sm leading-7 text-muted-foreground">{post.excerpt}</p>
+                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{post.excerpt}</p>
                       <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                         <span>{post.author || "SALT"}</span>
                         <span className="inline-flex items-center gap-1">
