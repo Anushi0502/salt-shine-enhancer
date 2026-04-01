@@ -11,28 +11,6 @@ type CollectionCardProps = {
   variant?: CollectionCardVariant;
 };
 
-function collectionStory(title: string, handle: string): string {
-  const source = `${title} ${handle}`.toLowerCase();
-
-  if (/cook|kitchen|pan|pot/.test(source)) {
-    return "Useful kitchen pieces with easy gifting potential.";
-  }
-
-  if (/gift|legacy|planner|book/.test(source)) {
-    return "Thoughtful finds for meaningful occasions.";
-  }
-
-  if (/apparel|wear|dress|robe|fashion/.test(source)) {
-    return "Easy wardrobe discoveries with a boutique feel.";
-  }
-
-  if (/garden|tool|camp|outdoor/.test(source)) {
-    return "Outdoor and utility pieces gathered for the current season.";
-  }
-
-  return "A cleaner route into the products shoppers want first.";
-}
-
 const CollectionCard = ({
   collection,
   productCount,
@@ -43,8 +21,8 @@ const CollectionCard = ({
   const isHero = variant === "hero";
 
   return (
-    <article className={`salt-story-card group relative h-full overflow-hidden ${isHero ? "rounded-[2.1rem]" : "rounded-[1.7rem]"}`}>
-      <div className={`relative overflow-hidden ${isHero ? "aspect-[16/11]" : "aspect-[4/4.6]"}`}>
+    <article className={`salt-story-card group relative h-full overflow-hidden ${isHero ? "rounded-[1.9rem]" : "rounded-[1.7rem]"}`}>
+      <div className={`relative overflow-hidden ${isHero ? "aspect-[16/9.8] sm:aspect-[16/8.8] lg:aspect-[16/7.2]" : "aspect-[4/4.6]"}`}>
         {image ? (
           <img
             src={image}
@@ -62,36 +40,29 @@ const CollectionCard = ({
 
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,28,49,0.02),rgba(18,28,49,0.05)_28%,rgba(18,28,49,0.24)_72%,rgba(18,28,49,0.56)_100%)]" />
 
-        <div className="absolute left-4 top-4 rounded-full border border-white/14 bg-white/75 px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--salt-ink))] backdrop-blur">
-          {isHero ? "Collection spotlight" : "Curated collection"}
-        </div>
 
-        <div className="absolute right-4 top-4 rounded-full border border-white/14 bg-[hsl(var(--salt-ink))]/74 px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur">
+        <div className={`absolute rounded-full border border-white/14 bg-[hsl(var(--salt-ink))]/74 font-semibold uppercase tracking-[0.14em] text-white backdrop-blur ${isHero ? "right-3 top-3 px-2.5 py-1 text-[0.58rem]" : "right-4 top-4 px-3 py-1 text-[0.64rem]"}`}>
           {totalProducts} items
         </div>
       </div>
 
-      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5"}`}>
-        <div className={`rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.76))] backdrop-blur ${isHero ? "p-[1.125rem] sm:p-5" : "p-3.5"}`}>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            {isHero ? "Lead the browse" : "Shop by edit"}
-          </p>
-          <h3 className={`mt-2 font-display leading-[0.96] text-foreground ${isHero ? "text-[clamp(1.9rem,3vw,3rem)]" : "text-[1.55rem]"}`}>
+      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-3 sm:p-4" : "p-3.5"}`}>
+        <div className={`border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(255,255,255,0.8))] shadow-[0_20px_50px_-36px_rgba(15,23,42,0.4)] backdrop-blur ${isHero ? "w-fit max-w-[min(22rem,calc(100%-0.5rem))] rounded-[1rem] p-3.5 sm:p-4" : "rounded-[1.35rem] p-3.5"}`}>
+          {isHero ? (
+            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Collection
+            </p>
+          ) : null}
+          <h3 className={`font-display leading-[0.96] text-foreground ${isHero ? "mt-1 text-[clamp(1.35rem,1.7vw,1.95rem)]" : "mt-2 text-[1.55rem]"}`}>
             {collection.title}
           </h3>
-          <p className={`mt-2.5 max-w-2xl text-muted-foreground ${isHero ? "text-sm leading-6" : "text-[0.82rem] leading-5"}`}>
-            {collectionStory(collection.title, collection.handle)}
-          </p>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              {totalProducts} products
-            </span>
+          <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-2.5" : "mt-4"}`}>
             <Link
               to={`/shop?collection=${collection.handle}`}
-              className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-foreground transition hover:border-primary/40 hover:text-primary"
+              className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-card font-semibold uppercase tracking-[0.14em] text-foreground transition hover:border-primary/40 hover:text-primary ${isHero ? "px-3 py-1.5 text-[0.62rem]" : "px-4 py-2 text-[0.72rem]"}`}
             >
-              Shop collection
+              Shop
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>

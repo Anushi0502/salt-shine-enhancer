@@ -27,19 +27,15 @@ import type { ShopifyCollection } from "@/types/shopify";
 const trustBullets = [
   {
     title: "Clear shipping",
-    detail: "Trackable delivery and checkout clarity stay visible from add to confirmation.",
   },
   {
     title: "Secure checkout",
-    detail: "Cards, fast-pay options, and pricing stay easy to trust at a glance.",
   },
   {
     title: "Simple returns",
-    detail: "Policy access stays close when a piece is not quite right.",
   },
   {
     title: "Edited catalog",
-    detail: "Collections help shoppers move from inspiration to purchase without extra noise.",
   },
 ];
 
@@ -369,9 +365,6 @@ const HomePage = () => {
               <h2 className="mt-3 font-display text-[clamp(2rem,3.1vw,3rem)] leading-[0.98]">
                 Browse the store by collection
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Start with the mood, room, or gifting moment you have in mind.
-              </p>
             </div>
             <Link to="/collections" className="salt-outline-chip h-11 px-5 py-0 text-sm">
               Explore all collections
@@ -379,18 +372,18 @@ const HomePage = () => {
           </div>
         </Reveal>
 
-        <div className="salt-section-grid">
-          {leadCollection ? (
-            <Reveal>
-              <CollectionCard
-                collection={leadCollection}
-                productCount={leadCollection.effectiveCount}
-                variant="hero"
-              />
-            </Reveal>
-          ) : null}
+        {leadCollection ? (
+          <Reveal>
+            <CollectionCard
+              collection={leadCollection}
+              productCount={leadCollection.effectiveCount}
+              variant="hero"
+            />
+          </Reveal>
+        ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+        {supportingCollections.length > 0 ? (
+          <div className={`${leadCollection ? "mt-4" : ""} grid gap-4 sm:grid-cols-2 xl:grid-cols-4`}>
             {supportingCollections.map((collection, index) => (
               <Reveal key={collection.id} delayMs={index * 70}>
                 <CollectionCard
@@ -400,7 +393,7 @@ const HomePage = () => {
               </Reveal>
             ))}
           </div>
-        </div>
+        ) : null}
 
         {trailingCollections.length > 0 ? (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -427,11 +420,6 @@ const HomePage = () => {
                     ? `${trendingCollection.title} picks shoppers are choosing first`
                     : "Fresh favorites with buying momentum"}
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {trendingCollection
-                    ? `A tighter edit balanced around strong reviews and recent demand.`
-                    : "A current mix of newness, value, and shopper attention."}
-                </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -514,7 +502,6 @@ const HomePage = () => {
                     className="salt-kpi-card salt-metric-card rounded-2xl p-4 transition hover:-translate-y-0.5 hover:border-primary/50"
                   >
                     <p className="line-clamp-2 text-lg font-semibold leading-7">{post.title}</p>
-                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</p>
                     <div className="mt-3 flex items-center justify-between text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">
                       <span>{formattedDate(post.publishedAt)}</span>
                       <span className="inline-flex items-center gap-1">
@@ -539,17 +526,11 @@ const HomePage = () => {
                 <h3 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.6rem)] leading-[0.98]">
                   Shopping should feel calm and easy to finish
                 </h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Clear service cues and real review coverage keep the path to checkout clean.
-                </p>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {trustBullets.map((item) => (
                     <div key={item.title} className="salt-story-card rounded-[1.35rem] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">{item.title}</p>
-                      <p className="mt-2 text-[0.78rem] leading-5 text-muted-foreground">
-                        {item.detail}
-                      </p>
                     </div>
                   ))}
                 </div>
@@ -558,9 +539,6 @@ const HomePage = () => {
               <div className="grid gap-3">
                 <div className="salt-story-card rounded-[1.6rem] p-5">
                   <p className="salt-kicker">Live customer proof</p>
-                  <h4 className="mt-3 font-display text-[1.9rem] leading-[1.02]">
-                    Reviews that help people decide
-                  </h4>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="salt-ambient-card rounded-[1.2rem] p-4">
                       <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average rating</p>
@@ -587,27 +565,27 @@ const HomePage = () => {
                   <p className="salt-kicker">Why it converts</p>
                   <div className="mt-3 space-y-2.5 text-sm text-muted-foreground">
                     <p className="inline-flex items-start gap-2">
-                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live Shopify data keeps pricing and availability current.
+                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live Shopify data
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <Star className="mt-0.5 h-4 w-4 text-primary" /> Collection-led discovery keeps browsing intentional.
+                      <Star className="mt-0.5 h-4 w-4 text-primary" /> Collection-led browse
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Editorial presentation adds polish without slowing action.
+                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Cleaner presentation
                     </p>
                     <p className="inline-flex items-start gap-2">
-                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Pricing, savings, and support stay easy to see.
+                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Visible pricing
                     </p>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link to="/shop" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
-                      Shop the catalog
+                      Shop
                     </Link>
                     <Link to="/blog" className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                      Read the journal
+                      Journal
                     </Link>
                     <Link to="/contact" className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                      Talk to support
+                      Support
                     </Link>
                   </div>
                 </div>

@@ -19,28 +19,6 @@ type ProductCardProps = {
   variant?: ProductCardVariant;
 };
 
-function merchandisingLine(product: ShopifyProduct): string {
-  const source = `${product.title} ${product.product_type}`.toLowerCase();
-
-  if (/cook|kitchen|pan|pot|mold/.test(source)) {
-    return "Kitchen utility with giftable appeal.";
-  }
-
-  if (/dress|robe|wear|apparel|shirt/.test(source)) {
-    return "An everyday piece with a refined feel.";
-  }
-
-  if (/garden|tool|camp|outdoor/.test(source)) {
-    return "Season-ready function with a polished finish.";
-  }
-
-  if (/book|planner|legacy/.test(source)) {
-    return "Thoughtful to give, useful to keep close.";
-  }
-
-  return "A considered pick from the current SALT edit.";
-}
-
 const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const { addItem } = useCart();
   const isDense = variant === "dense";
@@ -110,9 +88,6 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
               {title}
             </Link>
           </h3>
-          <p className={`line-clamp-2 text-muted-foreground ${isDense ? "text-[0.82rem] leading-5" : "text-[0.88rem] leading-6"}`}>
-            {merchandisingLine(product)}
-          </p>
         </div>
 
         <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
@@ -125,20 +100,10 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         </div>
 
         <div className="flex items-center justify-between rounded-[1rem] border border-border/70 bg-card/85 px-3 py-2.5">
-          <div>
-            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Reviews
-            </p>
-            <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
-              <span className="inline-flex items-center gap-1 font-semibold">
-                <Star className={`h-3.5 w-3.5 ${review ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                {review ? review.rating.toFixed(1) : "New"}
-              </span>
-              <span className="text-muted-foreground">
-                {review?.reviewCount ? `${review.reviewCount.toLocaleString()} reviews` : "New arrival"}
-              </span>
-            </div>
-          </div>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
+            <Star className={`h-3.5 w-3.5 ${review ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+            {review ? review.rating.toFixed(1) : "New"}
+          </span>
 
           <p className="text-right text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
             {availableVariantCount > 1 ? `${availableVariantCount} variants` : "Single option"}

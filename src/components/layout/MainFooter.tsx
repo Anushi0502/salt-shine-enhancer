@@ -33,50 +33,34 @@ const MainFooter = () => {
     <footer className="mt-16 border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.38),hsl(var(--card)/0.92))]">
       <div className="mx-auto w-[min(1340px,94vw)] py-8">
         <div className="rounded-[2rem] border border-border/70 bg-[hsl(var(--salt-ink))] px-6 py-6 text-[hsl(var(--salt-paper))] shadow-[0_36px_90px_-56px_rgba(15,23,42,0.44)] sm:px-8">
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-            <div>
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-primary">
-                Need help before checkout?
-              </p>
-              <h2 className="mt-3 font-display text-[clamp(2rem,3.8vw,3.4rem)] leading-[0.92]">
-                We keep the store clear and easy to buy from.
-              </h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-white/72">
-                Questions about delivery, gifting, sizing, or the right product? Reach the SALT support team directly.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <BrandLogo withWordmark size="md" />
+            <div className="flex flex-wrap gap-3">
               <a
                 href={`mailto:${supportEmail}`}
-                className="salt-primary-cta h-12 justify-center px-5 text-[0.76rem] font-semibold uppercase tracking-[0.12em]"
+                className="salt-primary-cta h-11 justify-center px-5 text-[0.72rem] font-semibold uppercase tracking-[0.12em]"
               >
-                Email support
+                Support
               </a>
               <Link
                 to="/contact"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-white/16 bg-white/8 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white hover:text-[hsl(var(--salt-ink))]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/16 bg-white/8 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white hover:text-[hsl(var(--salt-ink))]"
               >
-                Contact page
+                Contact
               </Link>
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-white/72">
+          <div className="mt-5 flex flex-wrap gap-2 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-white/72">
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">US shipping clarity</span>
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">Secure Shopify checkout</span>
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">30-day returns</span>
-            <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">Curated weekly edits</span>
           </div>
         </div>
       </div>
 
       <div className="mx-auto grid w-[min(1340px,94vw)] gap-10 pb-12 pt-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
         <div>
-          <BrandLogo withWordmark size="md" />
-          <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">
-            SALT Online Store curates home, lifestyle, gifting, seasonal, and everyday pieces with a cleaner boutique-style shopping experience.
-          </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a
               href="https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg=="
@@ -167,9 +151,6 @@ const MainFooter = () => {
           <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Join the SALT list
           </h3>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Product drops, gift ideas, and seasonal edits straight from the store.
-          </p>
           <form onSubmit={onSubscribe} className="mt-4 space-y-3">
             <input
               className="salt-form-control h-12 w-full rounded-full px-4"

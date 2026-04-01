@@ -333,10 +333,6 @@ const ProductPage = () => {
           <aside className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-6 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
-            <p className="mt-2 max-w-[34rem] text-sm leading-6 text-muted-foreground">
-              {shortDescription || "A thoughtfully chosen SALT piece with live pricing, clear variants, and easy checkout."}
-            </p>
-
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
               {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}

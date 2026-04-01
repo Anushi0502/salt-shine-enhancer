@@ -128,7 +128,6 @@ const SearchPanel = ({
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
                   Products
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">Quick paths into the catalog.</p>
               </div>
               <button
                 type="button"
@@ -181,11 +180,8 @@ const SearchPanel = ({
             <p className="pr-10 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
               Collections
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Browse by collection or everyday category.
-            </p>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {suggestions.collections.map((collection) => (
                 <Link
                   key={collection.id}
@@ -223,14 +219,10 @@ const SearchPanel = ({
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
             Search SALT
           </p>
-          <h3 className="mt-2 font-display text-[1.6rem] leading-none">No direct matches yet</h3>
-          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            Try a product type, collection name, or gifting idea.
-          </p>
           <button
             type="button"
             onClick={onSearchAll}
-            className="salt-primary-cta mt-4 h-11 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.1em]"
+            className="salt-primary-cta mt-3 h-11 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.1em]"
           >
             Search for “{query.trim()}”
           </button>

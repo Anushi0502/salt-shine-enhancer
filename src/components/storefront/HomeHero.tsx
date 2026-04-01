@@ -13,48 +13,10 @@ type HomeHeroProps = {
 };
 
 const heroStats = [
-  {
-    label: "Curated weekly",
-    detail: "Fresh edits across home, gifts, and everyday living.",
-    icon: Sparkles,
-  },
-  {
-    label: "Ready to gift",
-    detail: "Useful picks with a polished, easy-to-shop feel.",
-    icon: BadgeCheck,
-  },
-  {
-    label: "Fast dispatch",
-    detail: "Clear shipping cues and secure checkout at every step.",
-    icon: Truck,
-  },
+  { label: "Curated weekly", icon: Sparkles },
+  { label: "Gift-ready", icon: BadgeCheck },
+  { label: "Fast dispatch", icon: Truck },
 ];
-
-function cardNote(product: ShopifyProduct): string {
-  const source = `${product.title} ${product.product_type}`.toLowerCase();
-
-  if (/cook|kitchen|pan|pot|bake|utensil|table|serve|mug|glass|plate/.test(source)) {
-    return "A polished kitchen essential that feels both useful and gift-ready.";
-  }
-
-  if (/dress|robe|apparel|shirt|wear|jacket|knit|set|fashion|lounge/.test(source)) {
-    return "An easy everyday piece with a soft boutique feel and clean finish.";
-  }
-
-  if (/garden|outdoor|tool|camp|folding|portable|storage|travel|utility/.test(source)) {
-    return "A practical outdoor or on-the-go find designed for useful everyday carry.";
-  }
-
-  if (/decor|candle|vase|frame|blanket|pillow|home|bath/.test(source)) {
-    return "A warm home accent chosen to add texture, calm, and understated charm.";
-  }
-
-  if (/gift|box|bundle|set/.test(source)) {
-    return "A thoughtful pick with elevated presentation and easy gifting appeal.";
-  }
-
-  return "A considered find from the latest SALT edit with boutique appeal and everyday usefulness.";
-}
 
 const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: HomeHeroProps) => {
   const collectionImage = normalizeShopifyAssetUrl(leadCollection?.image?.src);
@@ -82,23 +44,15 @@ const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: Home
                 withWordmark
                 className="rounded-full border border-white/10 bg-white/8 px-3 py-2 backdrop-blur"
               />
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/78 backdrop-blur">
-                  Curated for everyday living
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                  Spring refresh
-                </span>
-              </div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
+                New edit
+              </span>
             </div>
 
             <div className="mt-6 max-w-[40rem]">
               <h1 className="mt-4 max-w-[15ch] font-display text-[clamp(3rem,5vw,5rem)] leading-[1.2] tracking-[-0.05em] text-white">
                 Curated pieces for home, gifting, and beautifully useful days.
               </h1>
-              <p className="mt-4 max-w-[31rem] text-[0.98rem] leading-6 text-white/72">
-                Discover calm, practical finds with a boutique feel, from kitchen upgrades to thoughtful gifts and everyday essentials.
-              </p>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -118,7 +72,23 @@ const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: Home
             </div>
 
 
-            <div className="mt-6 grid gap-3 ">
+            <div className="mt-5 flex flex-wrap gap-2">
+              {heroStats.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <span
+                    key={item.label}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/78 backdrop-blur"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-primary" />
+                    {item.label}
+                  </span>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 grid gap-3 ">
 
               {mainProduct ? (
                 <Link
@@ -142,18 +112,14 @@ const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: Home
                     <p className="mt-2 line-clamp-2 font-display text-[1.6rem] leading-[1.02] text-white">
                       {mainProduct.title}
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-white/68">
-                      A standout pick from the current edit.
-                    </p>
                     <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/56">Starting at</p>
                         <p className="mt-1 font-display text-2xl text-white">
                           {formatMoney(minPrice(mainProduct))}
                         </p>
                       </div>
                       <span className="text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white/82">
-                        View pick
+                        View
                       </span>
                     </div>
                   </div>
@@ -204,17 +170,8 @@ const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: Home
               {product.title}
             </h3>
 
-            <p className="mt-3 max-w-[30rem] text-sm leading-6 text-white">
-              {cardNote(product)}
-            </p>
-
-
-
             <div className="mt-auto flex items-end justify-between gap-3 border-t border-white/8 pt-4">
               <div>
-                <p className="text-[0.68rem] uppercase tracking-[0.14em] text-primary">
-                  Starting at
-                </p>
                 <strong className="mt-1 block font-display text-[1.75rem] leading-none text-white">
                   {formatMoney(minPrice(product))}
                 </strong>

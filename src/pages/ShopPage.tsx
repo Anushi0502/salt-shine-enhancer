@@ -127,28 +127,28 @@ function plainText(input: string | null | undefined): string {
 function collectionStory(title: string, description: string): string {
   const cleaned = plainText(description);
   if (cleaned) {
-    return cleaned;
+    return "";
   }
 
   const source = title.toLowerCase();
 
   if (/cook|kitchen|pan|pot/.test(source)) {
-    return "Kitchen pieces chosen for everyday use and easy gifting.";
+    return "";
   }
 
   if (/gift|legacy|planner|book/.test(source)) {
-    return "Thoughtful finds for gifting and everyday use.";
+    return "";
   }
 
   if (/apparel|wear|dress|robe|fashion/.test(source)) {
-    return "Wardrobe finds grouped for a cleaner boutique browse.";
+    return "";
   }
 
   if (/garden|tool|camp|outdoor/.test(source)) {
-    return "Seasonal outdoor essentials arranged around utility and easy purchase flow.";
+    return "";
   }
 
-  return "A cleaner path into the catalog.";
+  return "";
 }
 
 const ShopPage = () => {
@@ -511,7 +511,7 @@ const ShopPage = () => {
   const shopHeading = selectedCollection ? selectedCollection.title : "All Products";
   const shopSubtitle = selectedCollection
     ? collectionStory(selectedCollection.title, selectedCollection.description)
-    : "Browse the full SALT catalog through collection-led discovery and refined filters.";
+    : "";
   const activeFilterChips = [
     query
       ? {
@@ -583,9 +583,6 @@ const ShopPage = () => {
               <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.5rem)] leading-[0.94]">
                 {shopHeading}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                {shopSubtitle}
-              </p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="salt-ambient-card rounded-[1.15rem] p-4">
@@ -659,11 +656,6 @@ const ShopPage = () => {
                       ? `${selectedCollection.title}, edited for easier browsing`
                       : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
-                  <p className="mt-2 max-w-[30rem] text-sm leading-6 text-white/76">
-                    {selectedCollection
-                      ? "Shopify collection order stays intact while filters and price controls keep the browse light."
-                      : "Use collection, search, type, and price controls without losing the calm feel of a curated storefront."}
-                  </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
