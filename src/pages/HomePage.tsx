@@ -51,8 +51,8 @@ function collectionCtaLabel(title: string): string {
   return "Shop this collection";
 }
 
-function isCookwareCollection(collection: ShopifyCollection): boolean {
-  return /cook|kitchen|pan|pot/i.test(`${collection.title} ${collection.handle}`);
+function isBestSellersCollection(collection: ShopifyCollection): boolean {
+  return /best[\s-]*seller/i.test(`${collection.title} ${collection.handle}`);
 }
 
 type RankedCollection = ShopifyCollection & {
@@ -105,7 +105,7 @@ const HomePage = () => {
   const featuredCollections = rankedCollections.slice(0, 6);
   const heroCollection = featuredCollections[0] || null;
   const focusCollection =
-    rankedCollections.find((collection) => isCookwareCollection(collection)) || heroCollection;
+    rankedCollections.find((collection) => isBestSellersCollection(collection)) || heroCollection;
   const browseCollections = rankedCollections
     .filter((collection) => collection.id !== focusCollection?.id)
     .slice(0, 6);
