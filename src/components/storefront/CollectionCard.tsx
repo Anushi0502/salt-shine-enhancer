@@ -21,50 +21,78 @@ const CollectionCard = ({
   const isHero = variant === "hero";
 
   return (
-    <article className={`salt-story-card group relative h-full overflow-hidden ${isHero ? "rounded-[1.9rem]" : "rounded-[1.7rem]"}`}>
-      <div className={`relative overflow-hidden ${isHero ? "aspect-[16/9.8] sm:aspect-[16/8.8] lg:aspect-[16/7.2]" : "aspect-[4/4.6]"}`}>
+    <article
+      className={`salt-story-card group relative h-full overflow-hidden border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.42))] shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)] ${isHero ? "rounded-[1.95rem]" : "rounded-[1.8rem]"}`}
+    >
+      <div
+        className={`relative overflow-hidden ${
+          isHero
+            ? "aspect-[16/9.25]"
+            : "aspect-[4/4.75] md:aspect-[4/4.2] lg:aspect-[4/3.55] xl:aspect-[4/3.1]"
+        }`}
+      >
         {image ? (
           <img
             src={image}
             alt={collection.title}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
           />
         ) : (
-          <div className="salt-collection-fallback grid h-full w-full place-items-center px-6 text-center">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--salt-ink))]">
-              Collection image unavailable
-            </p>
+          <div className="salt-collection-fallback grid h-full w-full place-items-center bg-[linear-gradient(135deg,rgba(247,244,236,0.98),rgba(239,234,224,0.98))] px-6 text-center">
+            <div>
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[hsl(var(--salt-ink))/0.5]">
+                SALT collection
+              </p>
+              <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--salt-ink))/0.84]">
+                Collection image unavailable
+              </p>
+            </div>
           </div>
         )}
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,28,49,0.02),rgba(18,28,49,0.05)_28%,rgba(18,28,49,0.24)_72%,rgba(18,28,49,0.56)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.02),rgba(12,20,38,0.05)_20%,rgba(12,20,38,0.18)_58%,rgba(12,20,38,0.52)_100%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/8 to-transparent" />
 
-
-        <div className={`absolute rounded-full border border-white/14 bg-[hsl(var(--salt-ink))]/74 font-semibold uppercase tracking-[0.14em] text-white backdrop-blur ${isHero ? "right-3 top-3 px-2.5 py-1 text-[0.58rem]" : "right-4 top-4 px-3 py-1 text-[0.64rem]"}`}>
+        <div
+          className={`absolute rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.72)] backdrop-blur-md ${isHero ? "right-3 top-3 px-2.5 py-1 text-[0.56rem]" : "right-4 top-4 px-3 py-1 text-[0.62rem]"}`}
+        >
           {totalProducts} items
         </div>
       </div>
 
-      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-3 sm:p-4" : "p-3.5"}`}>
-        <div className={`border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(255,255,255,0.8))] shadow-[0_20px_50px_-36px_rgba(15,23,42,0.4)] backdrop-blur ${isHero ? "w-fit max-w-[min(22rem,calc(100%-0.5rem))] rounded-[1rem] p-3.5 sm:p-4" : "rounded-[1.35rem] p-3.5"}`}>
+      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5 sm:p-4"}`}>
+        <div
+          className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${isHero ? "w-fit max-w-[min(25.5rem,calc(100%-0.5rem))] rounded-[1.18rem] p-4 sm:p-[1.125rem]" : "rounded-[1.45rem] p-4"}`}
+        >
           {isHero ? (
-            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-[0.98rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Collection
             </p>
-          ) : null}
-          <h3 className={`font-display leading-[0.96] text-foreground ${isHero ? "mt-1 text-[clamp(1.35rem,1.7vw,1.95rem)]" : "mt-2 text-[1.55rem]"}`}>
+          ) : (
+            <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Curated edit
+            </p>
+          )}
+          <h3
+            className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${isHero ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]" : "mt-2 text-[1.58rem] sm:text-[1.66rem]"}`}
+          >
             {collection.title}
           </h3>
 
-          <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-2.5" : "mt-4"}`}>
+          <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-4"}`}>
             <Link
               to={`/shop?collection=${collection.handle}`}
-              className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-card font-semibold uppercase tracking-[0.14em] text-foreground transition hover:border-primary/40 hover:text-primary ${isHero ? "px-3 py-1.5 text-[0.62rem]" : "px-4 py-2 text-[0.72rem]"}`}
+              className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-white font-semibold uppercase tracking-[0.16em] text-foreground shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
             >
               Shop
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
+            {!isHero ? (
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
+                Explore now
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

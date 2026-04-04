@@ -2,11 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  BadgeCheck,
   Clock3,
-  DollarSign,
-  Sparkles,
-  Star,
 } from "lucide-react";
 import HomeHero from "@/components/storefront/HomeHero";
 import CollectionCard from "@/components/storefront/CollectionCard";
@@ -14,7 +10,7 @@ import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { readingTime, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeRatings, type JudgeMeReviewSummary } from "@/lib/judgeme";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 // import { useDeviceOrderHistory } from "@/lib/order-history";
 import {
   useBlogPosts,
@@ -23,21 +19,6 @@ import {
   useProducts,
 } from "@/lib/shopify-data";
 import type { ShopifyCollection } from "@/types/shopify";
-
-const trustBullets = [
-  {
-    title: "Clear shipping",
-  },
-  {
-    title: "Secure checkout",
-  },
-  {
-    title: "Simple returns",
-  },
-  {
-    title: "Edited catalog",
-  },
-];
 
 function formattedDate(value: string): string {
   if (!value) {
@@ -70,6 +51,10 @@ function collectionCtaLabel(title: string): string {
   return "Shop this collection";
 }
 
+function isCookwareCollection(collection: ShopifyCollection): boolean {
+  return /cook|kitchen|pan|pot/i.test(`${collection.title} ${collection.handle}`);
+}
+
 type RankedCollection = ShopifyCollection & {
   effectiveCount: number;
 };
@@ -95,8 +80,8 @@ const HomePage = () => {
     refetch: refetchBlog,
   } = useBlogPosts();
 
-  const products = productsPayload?.products || [];
-  const collections = collectionsPayload?.collections || [];
+  const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
+  const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const isInitialProductsSync = productsLoading && !productsPayload;
 
 
@@ -118,18 +103,17 @@ const HomePage = () => {
 
   const featured = products.slice(0, 3);
   const featuredCollections = rankedCollections.slice(0, 6);
-  const leadCollection = featuredCollections[0] || null;
-  const supportingCollections = featuredCollections.slice(1, 5);
-  const trailingCollections = featuredCollections.slice(5);
-  const gardenCollection = rankedCollections.find((collection) =>
-    /garden|tool/i.test(`${collection.title} ${collection.handle}`),
-  );
-  const trendingCollection = gardenCollection || null;
+  const heroCollection = featuredCollections[0] || null;
+  const focusCollection =
+    rankedCollections.find((collection) => isCookwareCollection(collection)) || heroCollection;
+  const browseCollections = rankedCollections
+    .filter((collection) => collection.id !== focusCollection?.id)
+    .slice(0, 6);
   const {
-    data: trendingCollectionProductIdsPayload,
+    data: focusCollectionProductIdsPayload,
   } = useCollectionProductIds(
-    trendingCollection?.handle || "",
-    Boolean(trendingCollection?.handle),
+    focusCollection?.handle || "",
+    Boolean(focusCollection?.handle),
   );
 
   const productById = useMemo(
@@ -138,7 +122,7 @@ const HomePage = () => {
   );
 
   const focusedCollectionProducts = useMemo(() => {
-    const ids = trendingCollectionProductIdsPayload?.productIds || [];
+    const ids = focusCollectionProductIdsPayload?.productIds || [];
     if (!ids.length) {
       return [];
     }
@@ -146,7 +130,7 @@ const HomePage = () => {
     return ids
       .map((id) => productById.get(id))
       .filter((product): product is NonNullable<typeof product> => Boolean(product));
-  }, [productById, trendingCollectionProductIdsPayload]);
+  }, [focusCollectionProductIdsPayload, productById]);
 
   const focusRatingCandidateIds = useMemo(
     () => focusedCollectionProducts.slice(0, 80).map((product) => product.id),
@@ -154,7 +138,7 @@ const HomePage = () => {
   );
   const { data: focusCollectionRatings } = useJudgeMeRatings(focusRatingCandidateIds);
 
-  const trendingProducts = useMemo(() => {
+  const focusProducts = useMemo(() => {
     const fallback = [...products]
       .sort((a, b) => {
         const discountDelta = savingsPercent(b) - savingsPercent(a);
@@ -169,7 +153,7 @@ const HomePage = () => {
       })
       .slice(0, 8);
 
-    if (!trendingCollection || !focusedCollectionProducts.length) {
+    if (!focusCollection || !focusedCollectionProducts.length) {
       return fallback;
     }
 
@@ -207,114 +191,18 @@ const HomePage = () => {
       .slice(0, 8);
 
     return rankedByRating.length ? rankedByRating : fallback;
-  }, [focusCollectionRatings, focusedCollectionProducts, products, trendingCollection]);
+  }, [focusCollection, focusCollectionRatings, focusedCollectionProducts, products]);
 
-  const trendingShopLink = trendingCollection
-    ? `/shop?collection=${trendingCollection.handle}`
+  const focusShopLink = focusCollection
+    ? `/shop?collection=${focusCollection.handle}`
     : "/shop";
-  const trendingShopLabel = trendingCollection
-    ? collectionCtaLabel(trendingCollection.title)
+  const focusShopLabel = focusCollection
+    ? collectionCtaLabel(focusCollection.title)
     : "Shop full catalog";
-  const focusCollectionInsights = useMemo(() => {
-    if (!trendingCollection || !focusedCollectionProducts.length) {
-      return null;
-    }
-
-    const summaries = focusedCollectionProducts
-      .map((product) => focusCollectionRatings?.[product.id])
-      .filter((summary): summary is NonNullable<typeof summary> => Boolean(summary));
-
-    const ratedProductCount = summaries.filter((summary) => summary.reviewCount > 0).length;
-    const totalReviews = summaries.reduce((sum, summary) => sum + summary.reviewCount, 0);
-    const averageRating =
-      totalReviews > 0
-        ? summaries.reduce((sum, summary) => sum + summary.rating * summary.reviewCount, 0) / totalReviews
-        : summaries.length
-          ? summaries.reduce((sum, summary) => sum + summary.rating, 0) / summaries.length
-          : 0;
-
-    const topReviewedCandidates = focusedCollectionProducts
-      .map((product) => {
-        const summary = focusCollectionRatings?.[product.id];
-        if (!summary || summary.reviewCount <= 0) {
-          return null;
-        }
-        return {
-          product,
-          summary,
-        };
-      })
-      .filter((entry): entry is { product: (typeof focusedCollectionProducts)[number]; summary: JudgeMeReviewSummary } => Boolean(entry));
-
-    const topReviewed = topReviewedCandidates
-      .sort((a, b) => {
-        const reviewDelta = b.summary.reviewCount - a.summary.reviewCount;
-        if (reviewDelta !== 0) {
-          return reviewDelta;
-        }
-        return b.summary.rating - a.summary.rating;
-      })[0];
-
-    return {
-      productCount: focusedCollectionProducts.length,
-      ratedProductCount,
-      totalReviews,
-      averageRating: Number.isFinite(averageRating) ? averageRating : 0,
-      topReviewed,
-    };
-  }, [focusCollectionRatings, focusedCollectionProducts, trendingCollection]);
+  const focusBestValueLink = focusCollection
+    ? `/shop?collection=${focusCollection.handle}&sort=discount`
+    : "/shop?sort=discount";
   const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
-  const trendingReviewIds = trendingProducts.slice(0, 8).map((product) => product.id);
-  const { data: trendingRatings } = useJudgeMeRatings(trendingReviewIds);
-  const reviewInsights = useMemo(() => {
-    const summaries = trendingReviewIds
-      .map((id) => trendingRatings?.[id])
-      .filter((summary): summary is NonNullable<typeof summary> => Boolean(summary));
-
-    if (!summaries.length) {
-      return null;
-    }
-
-    const totalReviews = summaries.reduce((sum, summary) => sum + summary.reviewCount, 0);
-    const weightedRating =
-      totalReviews > 0
-        ? summaries.reduce((sum, summary) => sum + summary.rating * summary.reviewCount, 0) / totalReviews
-        : summaries.reduce((sum, summary) => sum + summary.rating, 0) / summaries.length;
-
-    const topReviewedCandidates = trendingProducts
-      .map((product) => ({
-        product,
-        summary: trendingRatings?.[product.id],
-      }))
-      .filter((entry) => Boolean(entry.summary))
-      .map((entry) => ({ ...entry, summary: entry.summary! }));
-
-    const topReviewed = topReviewedCandidates
-      .sort((a, b) => {
-        const ratingDelta = b.summary.rating - a.summary.rating;
-        if (Math.abs(ratingDelta) > 0.01) {
-          return ratingDelta;
-        }
-
-        return b.summary.reviewCount - a.summary.reviewCount;
-      })[0];
-
-    return {
-      ratedProducts: summaries.filter((summary) => summary.reviewCount > 0).length,
-      totalReviews,
-      averageRating: Number.isFinite(weightedRating) ? weightedRating : 0,
-      topReviewed,
-    };
-  }, [trendingReviewIds, trendingRatings, trendingProducts]);
-
-  const syncCandidates = [
-    productsPayload?.generatedAt,
-    collectionsPayload?.generatedAt,
-    blogPayload?.generatedAt,
-  ].filter(Boolean) as string[];
-  const lastSyncedAt = syncCandidates.sort(
-    (a, b) => new Date(b).getTime() - new Date(a).getTime(),
-  )[0];
 
   if (isInitialProductsSync) {
     return (
@@ -351,8 +239,8 @@ const HomePage = () => {
     <>
       <HomeHero
         featured={featured}
-        leadCollection={leadCollection}
-        supportingCollections={supportingCollections}
+        leadCollection={heroCollection}
+        supportingCollections={featuredCollections.slice(1, 5)}
       />
 
 
@@ -372,98 +260,62 @@ const HomePage = () => {
           </div>
         </Reveal>
 
-        {leadCollection ? (
-          <Reveal>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {browseCollections.map((collection, index) => (
+            <Reveal key={collection.id} delayMs={index * 70}>
+              <CollectionCard
+                collection={collection}
+                productCount={collection.effectiveCount}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section id="products" className="mx-auto mt-11 w-[min(1320px,96vw)]">
+        <Reveal>
+          
+          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
+                    {focusCollection ? (
+          <Reveal delayMs={90} className="mt-4">
             <CollectionCard
-              collection={leadCollection}
-              productCount={leadCollection.effectiveCount}
+              collection={focusCollection}
+              productCount={focusCollection.effectiveCount}
               variant="hero"
             />
           </Reveal>
         ) : null}
 
-        {supportingCollections.length > 0 ? (
-          <div className={`${leadCollection ? "mt-4" : ""} grid gap-4 sm:grid-cols-2 xl:grid-cols-4`}>
-            {supportingCollections.map((collection, index) => (
-              <Reveal key={collection.id} delayMs={index * 70}>
-                <CollectionCard
-                  collection={collection}
-                  productCount={collection.effectiveCount}
-                />
-              </Reveal>
-            ))}
-          </div>
-        ) : null}
-
-        {trailingCollections.length > 0 ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {trailingCollections.map((collection, index) => (
-              <Reveal key={collection.id} delayMs={160 + index * 70}>
-                <CollectionCard
-                  collection={collection}
-                  productCount={collection.effectiveCount}
-                />
-              </Reveal>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section id="products" className="mx-auto mt-11 w-[min(1320px,96vw)]">
-        <Reveal>
-          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
+              
               <div className="max-w-3xl">
-                <p className="salt-kicker">{trendingCollection ? "Collection focus" : "Trending now"}</p>
+                <p className="salt-kicker">{focusCollection ? "Collection focus" : "Trending now"}</p>
                 <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
-                  {trendingCollection
-                    ? `${trendingCollection.title} picks shoppers are choosing first`
+                  {focusCollection
+                    ? `${focusCollection.title} picks shoppers are choosing first`
                     : "Fresh favorites with buying momentum"}
                 </h2>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Link to={trendingShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
-                  {trendingShopLabel}
+                <Link to={focusShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
+                  {focusShopLabel}
                 </Link>
-                <Link to="/shop?sort=discount" className="salt-outline-chip h-11 px-5 py-0 text-sm">
+                <Link
+                  to={focusBestValueLink}
+                  className="salt-outline-chip h-11 px-5 py-0 text-sm"
+                >
                   Shop best value
                 </Link>
               </div>
             </div>
-
-            <div className="mt-4 grid gap-3 lg:grid-cols-4">
-              <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Products in focus</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">
-                    {(focusCollectionInsights?.productCount || trendingProducts.length).toLocaleString()}
-                  </p>
-                </div>
-                <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average shopper rating</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">
-                    {(focusCollectionInsights?.averageRating || reviewInsights?.averageRating || 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Published reviews</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">
-                    {(focusCollectionInsights?.totalReviews || reviewInsights?.totalReviews || 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Most reviewed</p>
-                  <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-foreground">
-                    {focusCollectionInsights?.topReviewed?.product.title || reviewInsights?.topReviewed?.product.title || "Live catalog picks"}
-                  </p>
-                </div>
-            </div>
           </div>
         </Reveal>
 
+
         <div className="salt-section-shell mt-4 rounded-[2rem] p-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {trendingProducts.map((product, index) => (
+            {focusProducts.map((product, index) => (
               <Reveal key={product.id} delayMs={index * 70} className="h-full">
                 <ProductCard product={product} variant="dense" />
               </Reveal>
@@ -516,84 +368,6 @@ const HomePage = () => {
           </Reveal>
         </section>
       ) : null}
-
-      <section className="mx-auto mt-11 w-[min(1320px,96vw)]">
-        <Reveal>
-          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
-            <div className="salt-section-grid">
-              <div>
-                <p className="salt-kicker">Trust and conversion</p>
-                <h3 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.6rem)] leading-[0.98]">
-                  Shopping should feel calm and easy to finish
-                </h3>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {trustBullets.map((item) => (
-                    <div key={item.title} className="salt-story-card rounded-[1.35rem] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">{item.title}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="salt-story-card rounded-[1.6rem] p-5">
-                  <p className="salt-kicker">Live customer proof</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Average rating</p>
-                      <p className="mt-2 text-3xl font-semibold text-foreground">
-                        {(reviewInsights?.averageRating || 0).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="salt-ambient-card rounded-[1.2rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Published reviews</p>
-                      <p className="mt-2 text-3xl font-semibold text-foreground">
-                        {(reviewInsights?.totalReviews || 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 rounded-[1.2rem] border border-border/70 bg-background/72 p-4">
-                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Most reviewed product</p>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
-                      {reviewInsights?.topReviewed?.product.title || "Live catalog picks surfaced automatically"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="salt-story-card rounded-[1.6rem] p-5">
-                  <p className="salt-kicker">Why it converts</p>
-                  <div className="mt-3 space-y-2.5 text-sm text-muted-foreground">
-                    <p className="inline-flex items-start gap-2">
-                      <BadgeCheck className="mt-0.5 h-4 w-4 text-primary" /> Live Shopify data
-                    </p>
-                    <p className="inline-flex items-start gap-2">
-                      <Star className="mt-0.5 h-4 w-4 text-primary" /> Collection-led browse
-                    </p>
-                    <p className="inline-flex items-start gap-2">
-                      <Sparkles className="mt-0.5 h-4 w-4 text-primary" /> Cleaner presentation
-                    </p>
-                    <p className="inline-flex items-start gap-2">
-                      <DollarSign className="mt-0.5 h-4 w-4 text-primary" /> Visible pricing
-                    </p>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Link to="/shop" className="salt-primary-cta h-10 px-4 text-xs font-bold uppercase tracking-[0.08em]">
-                      Shop
-                    </Link>
-                    <Link to="/blog" className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                      Journal
-                    </Link>
-                    <Link to="/contact" className="salt-outline-chip h-10 px-4 py-0 text-xs">
-                      Support
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
     </>
   );
 };

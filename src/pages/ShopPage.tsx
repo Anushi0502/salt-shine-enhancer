@@ -43,25 +43,6 @@ const priceRangeOptions = [
   { value: "120-plus", label: "$120+", min: 120, max: null },
 ] as const;
 
-function formattedDateTime(value: string): string {
-  if (!value) {
-    return "recently";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "recently";
-  }
-
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -237,19 +218,6 @@ const ShopPage = () => {
 
     return new Map(selectedCollectionProductIds.map((productId, index) => [productId, index]));
   }, [collectionHandle, selectedCollectionProductIds]);
-  const latestSyncAt = useMemo(() => {
-    const values = [
-      productsPayload?.generatedAt,
-      collectionsPayload?.generatedAt,
-      collectionProductIdsPayload?.generatedAt,
-    ].filter(Boolean) as string[];
-    if (!values.length) {
-      return "";
-    }
-
-    return values.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-  }, [productsPayload, collectionsPayload, collectionProductIdsPayload]);
-
   const textFilteredProducts = useMemo(
     () =>
       filterProducts(products, {
@@ -338,9 +306,6 @@ const ShopPage = () => {
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
   const selectedCollectionImage = normalizeShopifyAssetUrl(selectedCollection?.image?.src);
-  const spotlightCollections = [...collections]
-    .sort((a, b) => b.products_count - a.products_count)
-    .slice(0, 6);
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
@@ -583,49 +548,6 @@ const ShopPage = () => {
               <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.5rem)] leading-[0.94]">
                 {shopHeading}
               </h1>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="salt-ambient-card rounded-[1.15rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Matched products</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{totalResults.toLocaleString()}</p>
-                </div>
-                <div className="salt-ambient-card rounded-[1.15rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Sort mode</p>
-                  <p className="mt-2 text-2xl font-semibold text-foreground">{sortLabel}</p>
-                </div>
-                <div className="salt-ambient-card rounded-[1.15rem] p-4">
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Catalog sync</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-foreground">
-                    Updated {formattedDateTime(latestSyncAt)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {(selectedCollection ? spotlightCollections.slice(0, 4) : spotlightCollections.slice(0, 5)).map((collection) => (
-                  <button
-                    key={collection.id}
-                    type="button"
-                    onClick={() => updateParams({ collection: collection.handle }, true)}
-                    className="salt-outline-chip text-[0.64rem]"
-                  >
-                    {collection.title}
-                  </button>
-                ))}
-                {!selectedCollection ? (
-                  <Link to="/collections" className="salt-outline-chip text-[0.64rem]">
-                    View all collections
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => updateParams({ collection: null }, true)}
-                    className="salt-outline-chip text-[0.64rem]"
-                  >
-                    Back to all collections
-                  </button>
-                )}
-              </div>
             </div>
 
             <div className="relative overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft">
@@ -656,17 +578,6 @@ const ShopPage = () => {
                       ? `${selectedCollection.title}, edited for easier browsing`
                       : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.2rem] border border-white/14 bg-white/8 p-4 backdrop-blur-md">
-                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-white/62">Browse mode</p>
-                    <p className="mt-2 text-sm font-semibold text-white">{sort === "featured" ? "Manual curation first" : sortLabel}</p>
-                  </div>
-                  <div className="rounded-[1.2rem] border border-white/14 bg-white/8 p-4 backdrop-blur-md">
-                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-white/62">Filter state</p>
-                    <p className="mt-2 text-sm font-semibold text-white">{activeFilterCount > 0 ? `${activeFilterCount} active filters` : "Clean browse state"}</p>
-                  </div>
                 </div>
               </div>
             </div>

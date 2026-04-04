@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, BadgeCheck, Sparkles, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { formatMoney, minPrice, productImage } from "@/lib/formatters";
+import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
@@ -18,15 +18,15 @@ const heroStats = [
   { label: "Fast dispatch", icon: Truck },
 ];
 
-const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: HomeHeroProps) => {
+const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
   const collectionImage = normalizeShopifyAssetUrl(leadCollection?.image?.src);
   const [mainProduct, secondaryProduct, tertiaryProduct] = featured ?? [];
   const spotlightProducts = [secondaryProduct, tertiaryProduct].filter(Boolean) as ShopifyProduct[];
 
   return (
-    <section className="mx-auto mt-4 grid w-[min(1340px,94vw)] grid h-[56vw] gap-3 xl:grid-cols-[1.12fr_0.88fr]">
+    <section className="mx-auto mt-4 grid w-[min(1340px,94vw)] gap-3 xl:min-h-[56vw] xl:grid-cols-[1.12fr_0.88fr]">
       <Reveal>
-        <div className="salt-ink-panel h-[56vw] relative isolate overflow-hidden rounded-[2.35rem] px-5 py-6 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:px-7 sm:py-7 lg:px-9 lg:py-8">
+        <div className="salt-ink-panel relative isolate min-h-[34rem] overflow-hidden rounded-[2.35rem] px-5 py-6 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:min-h-[38rem] sm:px-7 sm:py-7 lg:px-9 lg:py-8 xl:h-[56vw] xl:min-h-0">
           {collectionImage ? (
             <img
               src={collectionImage}
@@ -131,63 +131,67 @@ const HomeHero = ({ featured, leadCollection, supportingCollections = [] }: Home
       </Reveal>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-  {spotlightProducts.map((product, index) => {
-    const image = productImage(product);
+        {spotlightProducts.map((product, index) => {
+          const image = productImage(product);
+          const savings = savingsPercent(product);
+          const variantCount = product.variants.length;
+          const badgeLabel =
+            savings > 0
+              ? `${savings}% off`
+              : `${variantCount} ${variantCount === 1 ? "option" : "options"}`;
 
-    return (
-      <Reveal key={product.id} delayMs={120 + index * 120}>
-        <Link
-          to={`/products/${product.handle}`}
-          className="group relative flex h-full min-h-[23rem] gap-4 overflow-hidden rounded-[1.9rem] border border-white/10 bg-[rgba(14,18,28,0.62)] p-4 shadow-[0_24px_70px_-54px_rgba(15,23,42,0.9)] backdrop-blur-xl transition duration-500 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_32px_90px_-54px_rgba(15,23,42,1)] xl:min-h-[24.5rem]"
-        >
-          {image ? (
-            <>
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-22 transition duration-700 group-hover:scale-[1.04] group-hover:opacity-28"
-                style={{ backgroundImage: `url(${image})` }}
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(10,14,24,0.84),rgba(10,14,24,0.58)_42%,rgba(10,14,24,0.8)),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_34%)]" />
-            </>
-          ) : null}
-          <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),transparent_50%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_32%)]" />
-          </div>
+          return (
+            <Reveal key={product.id} delayMs={120 + index * 120} className="h-full">
+              <Link
+                to={`/products/${product.handle}`}
+                className="salt-story-card group relative block h-full min-h-[18rem] overflow-hidden rounded-[1.95rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.42))] shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)] sm:min-h-[20rem] md:min-h-[22rem] xl:min-h-[24.5rem]"
+              >
+                {image ? (
+                  <img
+                    src={image}
+                    alt={product.title}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+                  />
+                ) : (
+                  <div className="salt-collection-fallback grid h-full w-full place-items-center bg-[linear-gradient(135deg,rgba(247,244,236,0.98),rgba(239,234,224,0.98))] px-6 text-center">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--salt-ink))/0.84]">
+                      Product image unavailable
+                    </p>
+                  </div>
+                )}
 
-          
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.02),rgba(12,20,38,0.05)_20%,rgba(12,20,38,0.18)_58%,rgba(12,20,38,0.52)_100%)]" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/8 to-transparent" />
 
-          <div className="relative flex min-w-0 flex-1 flex-col">
-            <div className="flex items-start justify-between gap-3">
-              <p className="inline-flex w-fit items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                Spotlight pick
-              </p>
+                <div className="absolute right-4 top-4 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.72)] backdrop-blur-md">
+                  {badgeLabel}
+                </div>
 
-              <span className="rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-1 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-white/72 transition group-hover:text-white">
-                New edit
-              </span>
-            </div>
+                <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-4">
+                  <div className="rounded-[1.45rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] p-4 shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md">
+                    <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      Featured product
+                    </p>
+                    <h3 className="mt-2 line-clamp-3 max-w-[11ch] font-display text-[1.58rem] leading-[0.94] tracking-[-0.035em] text-foreground sm:text-[1.66rem]">
+                      {product.title}
+                    </h3>
 
-            <h3 className="mt-3 max-w-[18ch] font-display text-[2rem] leading-[0.96] tracking-[-0.04em] text-white sm:text-[2.68rem] xl:text-[2.82rem]">
-              {product.title}
-            </h3>
-
-            <div className="mt-auto flex items-end justify-between gap-3 border-t border-white/8 pt-4">
-              <div>
-                <strong className="mt-1 block font-display text-[1.75rem] leading-none text-white">
-                  {formatMoney(minPrice(product))}
-                </strong>
-              </div>
-
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-primary transition duration-300 group-hover:border-primary/20 group-hover:bg-primary/12 group-hover:text-primary">
-                Shop now
-                <ArrowRight className="h-4 w-4 transition duration-300 group-hover:translate-x-1" />
-              </span>
-            </div>
-          </div>
-        </Link>
-      </Reveal>
-    );
-  })}
-</div>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-white px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-foreground shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:bg-primary group-hover:text-primary-foreground">
+                        Shop
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
+                        {formatMoney(minPrice(product))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </Reveal>
+          );
+        })}
+      </div>
     </section>
   );
 };

@@ -1,0 +1,137 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Curated home, gifts, lifestyle, and everyday essentials
+        - generic [ref=e8]: Free shipping across the US
+        - generic [ref=e9]: Fast checkout and 30-day returns
+      - generic [ref=e10]:
+        - link "Go to SALT homepage" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e12]:
+            - generic [ref=e16]: SALT
+            - generic [ref=e17]:
+              - generic [ref=e18]: SALT
+              - generic [ref=e19]: Online Store
+        - navigation [ref=e20]:
+          - link "Shop" [ref=e21] [cursor=pointer]:
+            - /url: /shop
+          - link "Collections" [ref=e22] [cursor=pointer]:
+            - /url: /collections
+          - link "Journal" [ref=e23] [cursor=pointer]:
+            - /url: /blog
+          - link "About" [ref=e24] [cursor=pointer]:
+            - /url: /about
+          - link "Support" [ref=e25] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - img
+            - searchbox "Search products" [ref=e28]
+          - link "Order history" [ref=e29] [cursor=pointer]:
+            - /url: /order-history
+            - img [ref=e30]
+          - button "Open cart with 0 items" [ref=e33] [cursor=pointer]:
+            - img [ref=e34]
+            - text: Cart
+            - generic [ref=e37]: "0"
+      - generic [ref=e40]:
+        - link "All Products" [ref=e41] [cursor=pointer]:
+          - /url: /shop?collection=all-products
+        - link "Best Sellers" [ref=e42] [cursor=pointer]:
+          - /url: /shop?collection=appplaza-best-sellers
+        - link "NEW ARRIVALS" [ref=e43] [cursor=pointer]:
+          - /url: /shop?collection=new-arrivals
+        - link "Summer Collection" [ref=e44] [cursor=pointer]:
+          - /url: /shop?collection=summer-collection
+        - link "Men Collection" [ref=e45] [cursor=pointer]:
+          - /url: /shop?collection=men-collection
+        - link "COOKWARE" [ref=e46] [cursor=pointer]:
+          - /url: /shop?collection=cookware
+        - link "Garden Tools" [ref=e47] [cursor=pointer]:
+          - /url: /shop?collection=garden-tools
+    - main [ref=e48]:
+      - generic [ref=e50]:
+        - generic [ref=e55]: SALT
+        - img [ref=e57]
+        - heading "Loading SALT catalog" [level=2] [ref=e59]
+        - paragraph [ref=e60]: Preparing products, collections, and featured recommendations.
+    - contentinfo [ref=e65]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e73]: SALT
+            - generic [ref=e74]:
+              - generic [ref=e75]: SALT
+              - generic [ref=e76]: Online Store
+          - generic [ref=e77]:
+            - link "Support" [ref=e78] [cursor=pointer]:
+              - /url: mailto:support@saltonlinestore.com
+            - link "Contact" [ref=e79] [cursor=pointer]:
+              - /url: /contact
+        - generic [ref=e80]:
+          - generic [ref=e81]: US shipping clarity
+          - generic [ref=e82]: Secure Shopify checkout
+          - generic [ref=e83]: 30-day returns
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - link "SALT on Instagram" [ref=e87] [cursor=pointer]:
+              - /url: https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg==
+              - img [ref=e88]
+            - link "SALT on Facebook" [ref=e91] [cursor=pointer]:
+              - /url: https://www.facebook.com/people/SALT-online-store/61573199456052/
+              - img [ref=e92]
+            - link "SALT on YouTube" [ref=e94] [cursor=pointer]:
+              - /url: https://www.youtube.com/@SALTONLINESTORE
+              - img [ref=e95]
+            - link "SALT on TikTok" [ref=e98] [cursor=pointer]:
+              - /url: https://www.tiktok.com/@saltonlinestore
+              - img [ref=e99]
+          - generic [ref=e101]:
+            - link "support@saltonlinestore.com" [ref=e102] [cursor=pointer]:
+              - /url: mailto:support@saltonlinestore.com
+              - img [ref=e103]
+              - text: support@saltonlinestore.com
+            - link "Shop App" [ref=e106] [cursor=pointer]:
+              - /url: https://shop.app
+              - img [ref=e107]
+              - text: Shop App
+              - img [ref=e110]
+        - generic [ref=e113]:
+          - heading "Shop" [level=3] [ref=e114]
+          - generic [ref=e115]:
+            - link "All products" [ref=e116] [cursor=pointer]:
+              - /url: /shop
+            - link "Collections" [ref=e117] [cursor=pointer]:
+              - /url: /collections
+            - link "New arrivals" [ref=e118] [cursor=pointer]:
+              - /url: /shop?sort=newest
+            - link "Best savings" [ref=e119] [cursor=pointer]:
+              - /url: /shop?sort=discount
+            - link "Journal" [ref=e120] [cursor=pointer]:
+              - /url: /blog
+        - generic [ref=e121]:
+          - heading "Support" [level=3] [ref=e122]
+          - generic [ref=e123]:
+            - link "Contact" [ref=e124] [cursor=pointer]:
+              - /url: /contact
+            - link "Order history" [ref=e125] [cursor=pointer]:
+              - /url: /order-history
+            - link "Shipping policy" [ref=e126] [cursor=pointer]:
+              - /url: /policies/shipping-policy
+            - link "Return policy" [ref=e127] [cursor=pointer]:
+              - /url: /policies/refund-policy
+            - link "Privacy policy" [ref=e128] [cursor=pointer]:
+              - /url: /policies/privacy-policy
+        - generic [ref=e129]:
+          - heading "Join the SALT list" [level=3] [ref=e130]
+          - generic [ref=e131]:
+            - textbox "email@domain.com" [ref=e132]
+            - button "Join newsletter" [ref=e133] [cursor=pointer]
+      - generic [ref=e135]:
+        - generic [ref=e136]: Copyright 2026 SALT Online Store.
+        - generic [ref=e137]: Curated home, gifts, lifestyle, and everyday essentials.

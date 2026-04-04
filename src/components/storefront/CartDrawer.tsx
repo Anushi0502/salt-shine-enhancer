@@ -49,7 +49,7 @@ const CartDrawer = () => {
     <Sheet open={isDrawerOpen} onOpenChange={(open) => (open ? undefined : closeCartDrawer())}>
       <SheetContent
         side="right"
-        className="w-full max-w-[30rem] overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0"
+        className="w-full !max-w-full sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem] overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0"
       >
         <div className="flex min-h-full flex-col">
           <SheetHeader className="border-b border-border/70 px-5 pb-5 pt-12 text-left sm:px-6">
@@ -61,9 +61,6 @@ const CartDrawer = () => {
                 <SheetTitle className="mt-2 font-display text-[clamp(1.8rem,4vw,2.4rem)] leading-[0.95]">
                   {itemCount > 0 ? `${itemCount} item${itemCount === 1 ? "" : "s"} saved` : "Your bag is ready"}
                 </SheetTitle>
-                <SheetDescription className="mt-2 max-w-sm text-sm leading-6">
-                  Live Shopify pricing and a quick path back to browsing.
-                </SheetDescription>
               </div>
               <div className="rounded-[1.25rem] border border-border/70 bg-card/80 px-4 py-3 text-right shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -73,26 +70,6 @@ const CartDrawer = () => {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-[1.1rem] border border-border/70 bg-card/85 px-4 py-3 text-sm text-muted-foreground">
-                <p className="inline-flex items-center gap-2 font-medium text-foreground">
-                  <Truck className="h-4 w-4 text-primary" />
-                  Dispatch-ready checkout
-                </p>
-                <p className="mt-1 text-[0.82rem] leading-5">
-                  Shipping and tax stay transparent at checkout.
-                </p>
-              </div>
-              <div className="rounded-[1.1rem] border border-border/70 bg-card/85 px-4 py-3 text-sm text-muted-foreground">
-                <p className="inline-flex items-center gap-2 font-medium text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  Secure handoff
-                </p>
-                <p className="mt-1 text-[0.82rem] leading-5">
-                  Encrypted payment and verified variant selection stay preserved.
-                </p>
-              </div>
-            </div>
           </SheetHeader>
 
           <div className="flex-1 px-5 py-5 sm:px-6">
