@@ -6,9 +6,11 @@ import {
 } from "lucide-react";
 import HomeHero from "@/components/storefront/HomeHero";
 import CollectionCard from "@/components/storefront/CollectionCard";
+import ProductLoadingBanner from "@/components/storefront/ProductLoadingBanner";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { useMinimumDelay } from "@/hooks/useMinimumDelay";
 import { readingTime, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 // import { useDeviceOrderHistory } from "@/lib/order-history";
@@ -79,6 +81,7 @@ const HomePage = () => {
     error: blogError,
     refetch: refetchBlog,
   } = useBlogPosts();
+  const homeLoadDelayElapsed = useMinimumDelay(5000);
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
@@ -204,12 +207,9 @@ const HomePage = () => {
     : "/shop?sort=discount";
   const latestBlogPosts = !blogError && !blogLoading ? (blogPayload?.posts || []).slice(0, 3) : [];
 
-  if (isInitialProductsSync) {
+  if (!homeLoadDelayElapsed || isInitialProductsSync) {
     return (
-      <LoadingState
-        title="Loading SALT catalog"
-        subtitle="Preparing products, collections, and featured recommendations."
-      />
+      <ProductLoadingBanner />
     );
   }
 

@@ -223,6 +223,15 @@ export function buildShopifyCheckoutUrl(items: CartItem[]): string {
   return `${SHOPIFY_STOREFRONT_BASE}/cart/${lineItems.join(",")}?checkout&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
 }
 
+export function buildShopifyDirectCheckoutUrl(variantId: number, quantity = 1): string {
+  if (!isValidShopifyVariantId(variantId)) {
+    return buildShopifyCartUrl();
+  }
+
+  const safeQuantity = Math.max(1, Math.floor(quantity || 1));
+  return `${SHOPIFY_STOREFRONT_BASE}/cart/${variantId}:${safeQuantity}?checkout&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
+}
+
 export function buildShopifyShopPayCartUrl(): string {
   return `${SHOPIFY_STOREFRONT_BASE}/cart?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
 }

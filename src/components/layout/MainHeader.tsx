@@ -377,7 +377,7 @@ const MainHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/84 backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150">
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.98),rgba(250,244,235,0.985),rgba(243,247,251,0.98))] shadow-[0_16px_42px_-34px_rgba(15,23,42,0.24)]">
       <div className="border-b border-border/60 bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))]">
         <div className="mx-auto flex w-[min(1340px,94vw)] flex-wrap items-center justify-between gap-3 py-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-white/78 sm:text-[0.72rem]">
           <span>Curated home, gifts, lifestyle, and everyday essentials</span>
@@ -465,7 +465,7 @@ const MainHeader = () => {
         </button>
       </div>
 
-      <div className="hidden border-t border-border/70 lg:block">
+      <div className="hidden border-t border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.96),rgba(250,244,235,0.975),rgba(243,247,251,0.97))] lg:block">
         <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-3 py-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {collections.map((collection) => (

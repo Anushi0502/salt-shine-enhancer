@@ -24,9 +24,9 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
   const spotlightProducts = [secondaryProduct, tertiaryProduct].filter(Boolean) as ShopifyProduct[];
 
   return (
-    <section className="mx-auto mt-4 grid w-[min(1340px,94vw)] gap-3 xl:min-h-[56vw] xl:grid-cols-[1.12fr_0.88fr]">
+    <section className="mx-auto mt-4 grid w-[min(1340px,94vw)] gap-3 xl:min-h-[60vw] xl:grid-cols-[1.12fr_0.88fr]">
       <Reveal>
-        <div className="salt-ink-panel relative isolate min-h-[34rem] overflow-hidden rounded-[2.35rem] px-5 py-6 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:min-h-[38rem] sm:px-7 sm:py-7 lg:px-9 lg:py-8 xl:h-[56vw] xl:min-h-0">
+        <div className="salt-ink-panel relative isolate min-h-[36rem] overflow-hidden rounded-[2.35rem] px-5 py-6 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:min-h-[41rem] sm:px-7 sm:py-7 lg:px-9 lg:py-8 xl:h-[60vw] xl:min-h-0">
           {collectionImage ? (
             <img
               src={collectionImage}
@@ -44,9 +44,6 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
                 withWordmark
                 className="rounded-full border border-white/10 bg-white/8 px-3 py-2 backdrop-blur"
               />
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                New edit
-              </span>
             </div>
 
             <div className="mt-6 max-w-[40rem]">
@@ -88,42 +85,45 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
               })}
             </div>
 
-            <div className="mt-5 grid gap-3 ">
+            <div className="mt-5  grid gap-3 ">
 
-              {mainProduct ? (
-                <Link
-                  to={`/products/${mainProduct.handle}`}
-                  className="group flex items-center gap-4 rounded-[1.8rem] border border-white/10 bg-white/8 p-4 backdrop-blur transition hover:border-primary/35 hover:bg-white/[0.11]"
-                >
-                  <div className="h-28 w-24 overflow-hidden rounded-[1.25rem] bg-white/10 sm:h-32 sm:w-28">
-                    {productImage(mainProduct) ? (
-                      <img
-                        src={productImage(mainProduct) || ""}
-                        alt={mainProduct.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="inline-flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      Featured this week
-                    </p>
-                    <p className="mt-2 line-clamp-2 font-display text-[1.6rem] leading-[1.02] text-white">
-                      {mainProduct.title}
-                    </p>
-                    <div className="mt-4 flex items-end justify-between gap-3">
-                      <div>
-                        <p className="mt-1 font-display text-2xl text-white">
-                          {formatMoney(minPrice(mainProduct))}
-                        </p>
-                      </div>
-                      <span className="text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white/82">
-                        View
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+              {mainProduct ? (<Link
+  to={`/products/${mainProduct.handle}`}
+  className="group flex items-stretch gap-4 rounded-[1.8rem] border border-white/10 bg-white/8 p-4 backdrop-blur transition hover:border-primary/35 hover:bg-white/[0.11] sm:gap-5 sm:p-5 lg:p-6"
+>
+  <div className="w-28 shrink-0 overflow-hidden rounded-[1.25rem] bg-white/10 sm:w-32 lg:w-36">
+    {productImage(mainProduct) ? (
+        <img
+          src={productImage(mainProduct) || ""}
+          alt={mainProduct.title}
+          className="block h-full min-h-[13.5rem] w-full object-cover object-center transition duration-700 group-hover:scale-[1.05] sm:min-h-[15rem] lg:min-h-[16rem]"
+        />
+    ) : null}
+  </div>
+
+  <div className="flex min-w-0 flex-1 flex-col justify-between py-2">
+    <div>
+      <p className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-primary">
+        <Star className="h-3.5 w-3.5 fill-current" />
+        Featured this week
+      </p>
+
+      <p className="mt-3 line-clamp-3 font-display text-[1.8rem] leading-[0.98] text-white sm:text-[2.05rem] lg:text-[2.55rem]">
+        {mainProduct.title}
+      </p>
+    </div>
+
+    <div className="mt-4 flex items-end justify-between gap-3">
+      <p className="font-display text-[2.2rem] leading-none text-white sm:text-[2.7rem] lg:text-[3.2rem]">
+        {formatMoney(minPrice(mainProduct))}
+      </p>
+
+      <span className="text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-white/82 transition group-hover:text-white">
+        View
+      </span>
+    </div>
+  </div>
+</Link>
               ) : null}
             </div>
           </div>

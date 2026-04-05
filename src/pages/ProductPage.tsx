@@ -28,7 +28,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { buildShopifyCartUrl, buildShopifyShopPayUrl, useCart } from "@/lib/cart";
+import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
 import {
   compareAt,
   formatMoney,
@@ -197,10 +197,10 @@ const ProductPage = () => {
   const isAvailable = selectedVariant?.available ?? true;
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
   const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
-  const shopPayUrl = selectedVariant
-    ? buildShopifyShopPayUrl(selectedVariant.id, selectedQuantity)
+  const directCheckoutUrl = selectedVariant
+    ? buildShopifyDirectCheckoutUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
-  const shopPayHandoffUrl = shopPayUrl;
+  const checkoutHandoffUrl = directCheckoutUrl;
   const devicePurchasesLast30Days = getProductPurchasesLast30Days(
     deviceOrderEntries,
     product.handle,
@@ -526,7 +526,7 @@ const ProductPage = () => {
             </div>
 
             <a
-              href={shopPayHandoffUrl}
+              href={checkoutHandoffUrl}
               onClick={() => {
                 if (!selectedVariant || !isAvailable) {
                   return;
@@ -534,7 +534,7 @@ const ProductPage = () => {
 
                 recordDeviceOrderHistory({
                   source: "buy-now",
-                  checkoutUrl: shopPayHandoffUrl,
+                  checkoutUrl: checkoutHandoffUrl,
                   items: [
                     {
                       id: selectedVariant.id,
@@ -549,13 +549,13 @@ const ProductPage = () => {
                 });
               }}
               aria-disabled={!isAvailable}
-              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#2f63ff_0%,#2047c7_100%)] px-5 text-base font-semibold text-white transition ${
+              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#f3d45d] bg-[linear-gradient(135deg,#ffe071_0%,#f6cf3e_38%,#dda611_100%)] px-5 text-base font-semibold text-[#1c2233] shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_18px_34px_-24px_rgba(221,166,17,0.68)] transition ${
                 isAvailable
-                  ? "hover:brightness-110 hover:shadow-[0_18px_32px_-24px_rgba(37,99,235,0.5)]"
+                  ? "hover:-translate-y-[1px] hover:brightness-[1.03] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_22px_40px_-24px_rgba(221,166,17,0.78)]"
                   : "pointer-events-none opacity-60"
               }`}
             >
-              Buy with <span className="ml-1 text-[1.9rem] font-black lowercase leading-none">shop</span>
+              Buy now
             </a>
             <button
               type="button"
@@ -625,9 +625,6 @@ const ProductPage = () => {
               </p>
               <p className="flex items-center gap-2">
                 <BadgeCheck className="h-3.5 w-3.5" /> Secure payment processing
-              </p>
-              <p className="flex items-center gap-2">
-                <Leaf className="h-3.5 w-3.5" /> Selected for a more considered store edit
               </p>
               {purchasedLastMonth > 0 ? (
                 <p className="flex items-center gap-2">

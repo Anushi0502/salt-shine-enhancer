@@ -28,6 +28,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const image = productImage(product);
   const title = conciseTitle(product.title);
   const review = useJudgeMeProductRating(product.id).summary;
+  const reviewCount = review?.reviewCount || 0;
   const availableVariantCount = product.variants.filter((entry) => entry.available).length;
   const defaultVariant = product.variants.find((entry) => entry.available) || product.variants[0] || null;
 
@@ -106,7 +107,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           </span>
 
           <p className="text-right text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
-            {availableVariantCount > 1 ? `${availableVariantCount} variants` : "Single option"}
+            {reviewCount > 0 ? `${reviewCount} ${reviewCount === 1 ? "rating" : "ratings"}` : "No ratings"}
           </p>
         </div>
 
