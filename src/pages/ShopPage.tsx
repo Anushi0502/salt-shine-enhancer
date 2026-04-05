@@ -305,7 +305,11 @@ const ShopPage = () => {
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
-  const selectedCollectionImage = normalizeShopifyAssetUrl(selectedCollection?.image?.src);
+  const allProductsCollection = collections.find(
+    (collection) => normalizeHandle(collection.handle) === "all-products",
+  );
+  const previewCollection = selectedCollection || allProductsCollection || null;
+  const selectedCollectionImage = normalizeShopifyAssetUrl(previewCollection?.image?.src);
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
@@ -541,49 +545,35 @@ const ShopPage = () => {
   return (
     <section className="mx-auto mt-6 w-[min(1320px,96vw)] pb-8">
       <Reveal>
-        <div className="salt-editorial-shell rounded-[2.1rem] p-4 sm:p-6">
-          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
-            <div>
-              <p className="salt-kicker">{selectedCollection ? "Collection edit" : "Full catalog browse"}</p>
-              <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.5rem)] leading-[0.94]">
-                {shopHeading}
-              </h1>
-            </div>
+        <div className="salt-editorial-shell rounded-[3.1rem] p-4 sm:p-6">
+          <div className="grid gap-4 xl:items-stretch">
+            
 
             <div className="relative overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft">
               {selectedCollectionImage ? (
                 <img
                   src={selectedCollectionImage}
-                  alt={selectedCollection?.title || "Collection preview"}
+                  alt={previewCollection?.title || "Collection preview"}
                   className="absolute inset-0 h-full w-full object-cover opacity-38"
                 />
               ) : null}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),radial-gradient(circle_at_74%_84%,hsl(var(--salt-blue)/0.22),transparent_28%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
-              <div className="relative flex h-full min-h-[17.5rem] flex-col justify-between p-5 text-white sm:p-6">
+              <div className="relative flex h-full min-h-[27.5rem] flex-col justify-between p-5 text-white sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                     {selectedCollection ? "Collection spotlight" : "Editorial browse"}
                   </span>
-                  {selectedCollection ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/74 backdrop-blur-md">
-                      Shopify collection order stays intact
-                    </span>
-                  ) : null}
                 </div>
 
                 <div>
                   <h2 className="max-w-[15ch] font-display text-[clamp(2rem,3vw,3rem)] leading-[0.96] text-white">
                     {selectedCollection
-                      ? `${selectedCollection.title}, edited for easier browsing`
+                      ? `${selectedCollection.title}`
                       : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="salt-glass-rail mt-4 rounded-[1.6rem] p-3 sm:p-4">
+                <div className="salt-glass-rail mt-4 rounded-[1.6rem] p-3 sm:p-4">
             <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
               <form onSubmit={onSearch} className="relative flex items-center gap-2">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -789,6 +779,11 @@ const ShopPage = () => {
               </button>
             </div>
           </div>
+              </div>
+            </div>
+          </div>
+
+          
         </div>
       </Reveal>
 

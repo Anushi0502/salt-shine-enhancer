@@ -274,41 +274,49 @@ const HomePage = () => {
 
       <section id="products" className="mx-auto mt-11 w-[min(1320px,96vw)]">
         <Reveal>
-          
           <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
-                    {focusCollection ? (
-          <Reveal delayMs={90} className="mt-4">
-            <CollectionCard
-              collection={focusCollection}
-              productCount={focusCollection.effectiveCount}
-              variant="hero"
-            />
-          </Reveal>
-        ) : null}
+            {focusCollection ? (
+              <Reveal delayMs={90}>
+                <CollectionCard
+                  collection={focusCollection}
+                  productCount={focusCollection.effectiveCount}
+                  variant="hero"
+                  editorialContent={{
+                    kicker: "Collection focus",
+                    headline: `${focusCollection.title} picks shoppers are choosing`,
+                    primaryAction: {
+                      to: focusShopLink,
+                      label: focusShopLabel,
+                    },
+                    secondaryAction: {
+                      to: focusBestValueLink,
+                      label: "Shop best value",
+                    },
+                  }}
+                />
+              </Reveal>
+            ) : (
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="max-w-3xl">
+                  <p className="salt-kicker">Trending now</p>
+                  <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
+                    Fresh favorites with buying momentum
+                  </h2>
+                </div>
 
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              
-              <div className="max-w-3xl">
-                <p className="salt-kicker">{focusCollection ? "Collection focus" : "Trending now"}</p>
-                <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
-                  {focusCollection
-                    ? `${focusCollection.title} picks shoppers are choosing first`
-                    : "Fresh favorites with buying momentum"}
-                </h2>
+                <div className="flex flex-wrap gap-2">
+                  <Link to={focusShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
+                    {focusShopLabel}
+                  </Link>
+                  <Link
+                    to={focusBestValueLink}
+                    className="salt-outline-chip h-11 px-5 py-0 text-sm"
+                  >
+                    Shop best value
+                  </Link>
+                </div>
               </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Link to={focusShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
-                  {focusShopLabel}
-                </Link>
-                <Link
-                  to={focusBestValueLink}
-                  className="salt-outline-chip h-11 px-5 py-0 text-sm"
-                >
-                  Shop best value
-                </Link>
-              </div>
-            </div>
+            )}
           </div>
         </Reveal>
 

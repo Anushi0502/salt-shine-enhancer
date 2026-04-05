@@ -5,20 +5,36 @@ import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 export type CollectionCardVariant = "default" | "hero";
 
+type CollectionCardEditorialContent = {
+  kicker: string;
+  headline: string;
+  primaryAction: {
+    to: string;
+    label: string;
+  };
+  secondaryAction?: {
+    to: string;
+    label: string;
+  };
+};
+
 type CollectionCardProps = {
   collection: ShopifyCollection;
   productCount?: number;
   variant?: CollectionCardVariant;
+  editorialContent?: CollectionCardEditorialContent;
 };
 
 const CollectionCard = ({
   collection,
   productCount,
   variant = "default",
+  editorialContent,
 }: CollectionCardProps) => {
   const image = normalizeShopifyAssetUrl(collection.image?.src);
   const totalProducts = productCount ?? collection.products_count;
   const isHero = variant === "hero";
+  const hasEditorialContent = isHero && Boolean(editorialContent);
 
   return (
     <article
@@ -63,37 +79,73 @@ const CollectionCard = ({
 
       <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5 sm:p-4"}`}>
         <div
-          className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${isHero ? "w-fit max-w-[min(25.5rem,calc(100%-0.5rem))] rounded-[1.18rem] p-4 sm:p-[1.125rem]" : "rounded-[1.45rem] p-4"}`}
+          className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${
+            hasEditorialContent
+              ? "rounded-[2rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 sm:px-6 sm:py-5 lg:px-7 lg:py-6"
+              : isHero
+                ? "w-fit max-w-[min(25.5rem,calc(100%-0.5rem))] rounded-[1.18rem] p-4 sm:p-[1.125rem]"
+                : "rounded-[1.45rem] p-4"
+          }`}
         >
-          {isHero ? (
-            <p className="text-[0.98rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Collection
-            </p>
-          ) : (
-            <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Curated edit
-            </p>
-          )}
-          <h3
-            className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${isHero ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]" : "mt-2 text-[1.58rem] sm:text-[1.66rem]"}`}
-          >
-            {collection.title}
-          </h3>
+          {hasEditorialContent && editorialContent ? (
+            <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-nowrap lg:gap-8">
+              <div className="min-w-0 flex-1">
+                <p className="salt-kicker">{editorialContent.kicker}</p>
+                <h3 className="mt-4 max-w-5xl font-display text-[clamp(2.35rem,5vw,4.8rem)] leading-[0.9] tracking-[-0.05em] text-foreground">
+                  {editorialContent.headline}
+                </h3>
+              </div>
 
-          <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-4"}`}>
-            <Link
-              to={`/shop?collection=${collection.handle}`}
-              className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-white font-semibold uppercase tracking-[0.16em] text-foreground shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
-            >
-              Shop
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-            {!isHero ? (
-              <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
-                Explore now
-              </span>
-            ) : null}
-          </div>
+              <div className="flex shrink-0 flex-wrap gap-2.5 lg:justify-end">
+                <Link
+                  to={editorialContent.primaryAction.to}
+                  className="salt-primary-cta h-12 px-7 text-sm font-bold sm:h-14 sm:px-8 sm:text-[1.05rem]"
+                >
+                  {editorialContent.primaryAction.label}
+                </Link>
+                {editorialContent.secondaryAction ? (
+                  <Link
+                    to={editorialContent.secondaryAction.to}
+                    className="salt-outline-chip h-12 px-7 py-0 text-sm sm:h-14 sm:px-8 sm:text-[1.05rem]"
+                  >
+                    {editorialContent.secondaryAction.label}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <>
+              {isHero ? (
+                <p className="text-[0.98rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Collection
+                </p>
+              ) : (
+                <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Curated edit
+                </p>
+              )}
+              <h3
+                className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${isHero ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]" : "mt-2 text-[1.58rem] sm:text-[1.66rem]"}`}
+              >
+                {collection.title}
+              </h3>
+
+              <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-4"}`}>
+                <Link
+                  to={`/shop?collection=${collection.handle}`}
+                  className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-white font-semibold uppercase tracking-[0.16em] text-foreground shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
+                >
+                  Shop
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+                {!isHero ? (
+                  <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
+                    Explore now
+                  </span>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </article>

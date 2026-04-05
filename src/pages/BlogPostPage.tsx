@@ -133,14 +133,12 @@ const BlogPostPage = () => {
             </Link>
           </div>
 
-          {post.image ? (
-            <ResilientImage
-              src={post.image}
-              alt={post.title}
-              fallback={articleImageFallback}
-              className="mt-5 w-full rounded-2xl border border-border bg-muted object-cover"
-            />
-          ) : articleImageFallback}
+          <ResilientImage
+            src={post.image}
+            alt={post.title}
+            fallback={articleImageFallback}
+            className="mt-5 w-full rounded-2xl border border-border bg-muted object-cover"
+          />
 
           <article
             className="prose prose-sm mt-5 max-w-none leading-[1.72] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-img:rounded-xl prose-img:border prose-img:border-border"

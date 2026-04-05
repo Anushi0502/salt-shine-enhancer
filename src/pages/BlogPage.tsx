@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpenText, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
-import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { readingTime } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
@@ -45,19 +45,33 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <ErrorState
-        title="Blog unavailable"
-        subtitle="Please retry to refresh posts."
-        action={
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
-        }
-      />
+      <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-8">
+        <Reveal>
+          <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
+            <p className="salt-kicker">Journal</p>
+            <div className="mt-4 rounded-[1.75rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,247,243,0.9))] px-5 py-8 text-center shadow-[0_24px_64px_-48px_rgba(15,23,42,0.22)] sm:px-7 sm:py-10">
+              <h1 className="font-display text-[clamp(2.1rem,4vw,3.5rem)] leading-[0.94] text-foreground">
+                Blog unavailable
+              </h1>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                Please retry to refresh posts.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="salt-primary-cta h-11 px-5 text-sm font-bold"
+                >
+                  Retry
+                </button>
+                <Link to="/shop?sort=newest" className="salt-outline-chip h-11 px-5 py-0 text-sm">
+                  Shop newest
+                </Link>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
     );
   }
 

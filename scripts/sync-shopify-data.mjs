@@ -6,6 +6,9 @@ import { resolve } from "node:path";
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
+const adminAccessToken =
+  process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
+const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2025-01";
 const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
 const blogHandleInput = process.env.SALT_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
 const blogHandles = Array.from(
@@ -23,6 +26,28 @@ async function fetchJsonUrl(url) {
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}) for ${url}`);
+  }
+
+  return response.json();
+}
+
+async function fetchAdminJson(path) {
+  if (!adminAccessToken) {
+    throw new Error("Shopify Admin API token not configured");
+  }
+
+  const adminBase = new URL(baseUrl).origin;
+  const url = `${adminBase}/admin/api/${adminApiVersion}${path}`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": adminAccessToken,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Admin request failed (${response.status}) for ${url}`);
   }
 
   return response.json();
@@ -111,6 +136,25 @@ function firstImageSrcFromHtml(input = "") {
   return match?.[1] || null;
 }
 
+function firstAtomImageSrc(input = "") {
+  const patterns = [
+    /<media:content[^>]+url=["']([^"']+)["']/i,
+    /<media:thumbnail[^>]+url=["']([^"']+)["']/i,
+    /<link[^>]+rel=["']enclosure["'][^>]+href=["']([^"']+)["']/i,
+    /<link[^>]+type=["']image\/[^"']+["'][^>]+href=["']([^"']+)["']/i,
+    /<enclosure[^>]+url=["']([^"']+)["']/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
 function readTag(input, tagName) {
   const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
   const match = input.match(pattern);
@@ -138,7 +182,7 @@ function parseBlogEntriesFromAtom(atomXml) {
         .replace(/^<!\[CDATA\[/i, "")
         .replace(/\]\]>$/i, "")
         .trim();
-      const image = firstImageSrcFromHtml(contentHtml);
+      const image = firstAtomImageSrc(block) || firstImageSrcFromHtml(contentHtml);
 
       return {
         id,
@@ -187,7 +231,72 @@ async function fetchAboutPage() {
   };
 }
 
+async function fetchBlogPostsFromAdmin() {
+  if (!adminAccessToken) {
+    return null;
+  }
+
+  const blogsPayload = await fetchAdminJson("/blogs.json?limit=250&fields=id,handle,title");
+  const blogs = Array.isArray(blogsPayload.blogs) ? blogsPayload.blogs : [];
+
+  for (const handle of blogHandles) {
+    const matchedBlog = blogs.find((blog) => String(blog.handle || "").trim() === handle);
+    if (!matchedBlog?.id) {
+      process.stdout.write(`Admin blog handle "${handle}" not found\n`);
+      continue;
+    }
+
+    const articlesPayload = await fetchAdminJson(
+      `/blogs/${matchedBlog.id}/articles.json?limit=250&published_status=published&fields=id,handle,title,author,published_at,updated_at,summary_html,body_html,image`,
+    );
+    const articles = Array.isArray(articlesPayload.articles) ? articlesPayload.articles : [];
+    const posts = articles
+      .map((article) => {
+        const contentHtml = article.body_html || "";
+        const summaryHtml = article.summary_html || "";
+        const image =
+          article.image?.src || article.image?.url || firstImageSrcFromHtml(contentHtml) || null;
+
+        return {
+          id: String(article.id || ""),
+          handle: String(article.handle || ""),
+          url: `${new URL(baseUrl).origin}/blogs/${handle}/${article.handle}`,
+          title: article.title || "",
+          author: article.author || "SALT",
+          publishedAt: article.published_at || "",
+          updatedAt: article.updated_at || "",
+          excerpt: excerptFromHtml(summaryHtml || contentHtml),
+          contentHtml,
+          image,
+        };
+      })
+      .filter((entry) => Boolean(entry.handle && entry.title && entry.url))
+      .sort(
+        (a, b) => Date.parse(b.publishedAt || b.updatedAt || "1970-01-01") - Date.parse(a.publishedAt || a.updatedAt || "1970-01-01"),
+      );
+
+    if (!posts.length) {
+      process.stdout.write(`Admin blog handle "${handle}" returned 0 published posts\n`);
+      continue;
+    }
+
+    process.stdout.write(`Using Admin API blog handle "${handle}" with ${posts.length} posts\n`);
+    return {
+      blogHandle: handle,
+      source: "shopify-admin-api",
+      posts,
+    };
+  }
+
+  return null;
+}
+
 async function fetchBlogPosts() {
+  const adminResult = await fetchBlogPostsFromAdmin();
+  if (adminResult) {
+    return adminResult;
+  }
+
   for (const handle of blogHandles) {
     const response = await fetch(`${baseUrl}/blogs/${handle}.atom`);
     if (response.status === 404) {

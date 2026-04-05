@@ -36,6 +36,7 @@ const BLOG_HANDLES = Array.from(
 );
 const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
 const LOCAL_SHOPIFY_PROXY_PATH = "/__salt_shopify";
+const BLOG_POSTS_DATA_PATH = "/data/blog-posts.json";
 const LIVE_STALE_TIME_MS = 0;
 const LIVE_PRODUCTS_REFRESH_MS = 60 * 1000;
 const LIVE_CONTENT_REFRESH_MS = 5 * 60 * 1000;
@@ -394,6 +395,35 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
       );
       const url = normalizeShopifyAssetUrl(linkNode?.getAttribute("href") || id) || id;
       const handle = url.split("/").filter(Boolean).at(-1) || "";
+      const linkImageNode = Array.from(entry.getElementsByTagName("link")).find((node) => {
+        const rel = node.getAttribute("rel")?.toLowerCase() || "";
+        const type = node.getAttribute("type")?.toLowerCase() || "";
+        return rel === "enclosure" || type.startsWith("image/");
+      });
+      const mediaNodes = [
+        ...Array.from(entry.getElementsByTagName("media:content")),
+        ...Array.from(entry.getElementsByTagName("media:thumbnail")),
+        ...Array.from(entry.getElementsByTagName("thumbnail")),
+        ...Array.from(entry.getElementsByTagName("image")),
+        ...Array.from(entry.getElementsByTagName("enclosure")),
+        ...Array.from(entry.getElementsByTagNameNS("*", "content")).filter((node) => {
+          const type = node.getAttribute("type")?.toLowerCase() || "";
+          const medium = node.getAttribute("medium")?.toLowerCase() || "";
+          return type.startsWith("image/") || medium === "image";
+        }),
+        ...Array.from(entry.getElementsByTagNameNS("*", "thumbnail")),
+        ...Array.from(entry.getElementsByTagNameNS("*", "image")),
+      ];
+      const atomImage =
+        normalizeShopifyAssetUrl(linkImageNode?.getAttribute("href")) ||
+        mediaNodes
+          .map((node) =>
+            normalizeShopifyAssetUrl(
+              node.getAttribute("url") || node.getAttribute("href") || node.getAttribute("src"),
+            ),
+          )
+          .find(Boolean) ||
+        null;
 
       return {
         id,
@@ -405,7 +435,7 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
         updatedAt,
         excerpt: excerptFromHtml(contentHtml),
         contentHtml,
-        image: normalizeShopifyAssetUrl(firstImageSrcFromHtml(contentHtml)),
+        image: atomImage || normalizeShopifyAssetUrl(firstImageSrcFromHtml(contentHtml)),
       } satisfies BlogPost;
     })
     .filter((entry) => Boolean(entry.handle && entry.title && entry.url))
@@ -414,6 +444,84 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
         new Date(b.publishedAt || b.updatedAt || "1970-01-01").getTime() -
         new Date(a.publishedAt || a.updatedAt || "1970-01-01").getTime(),
     );
+}
+
+function normalizeBlogPayload(payload: BlogPostsPayload): BlogPostsPayload {
+  const stemBlogToken = (token: string): string => {
+    let next = token.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (next.length < 4) {
+      return "";
+    }
+
+    for (const suffix of ["ingly", "edly", "ing", "ers", "ies", "ied", "er", "ed", "es", "s"]) {
+      if (next.endsWith(suffix) && next.length - suffix.length >= 4) {
+        next = next.slice(0, -suffix.length);
+        break;
+      }
+    }
+
+    return next;
+  };
+
+  const blogKeywordSet = (input: string): Set<string> =>
+    new Set(
+      String(input || "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map(stemBlogToken)
+        .filter((token) => token.length >= 4),
+    );
+
+  return {
+    ...payload,
+    total: payload.total || (payload.posts || []).length,
+    posts: (() => {
+      const normalizedPosts = (payload.posts || []).map((post) => ({
+        ...post,
+        image:
+          normalizeShopifyAssetUrl(post.image) ||
+          normalizeShopifyAssetUrl(firstImageSrcFromHtml(post.contentHtml)) ||
+          null,
+      }));
+
+      const inferRelatedBlogImage = (post: BlogPost): string | null => {
+        const targetTokens = blogKeywordSet(`${post.title} ${post.excerpt}`);
+        if (!targetTokens.size) {
+          return null;
+        }
+
+        let bestScore = 0;
+        let bestImage: string | null = null;
+
+        for (const candidate of normalizedPosts) {
+          if (candidate.id === post.id || !candidate.image) {
+            continue;
+          }
+
+          const candidateTokens = blogKeywordSet(`${candidate.title} ${candidate.excerpt}`);
+          let overlap = 0;
+
+          targetTokens.forEach((token) => {
+            if (candidateTokens.has(token)) {
+              overlap += 1;
+            }
+          });
+
+          if (overlap > bestScore) {
+            bestScore = overlap;
+            bestImage = candidate.image;
+          }
+        }
+
+        return bestScore >= 2 ? bestImage : null;
+      };
+
+      return normalizedPosts.map((post) => ({
+        ...post,
+        image: post.image || inferRelatedBlogImage(post) || null,
+      }));
+    })(),
+  };
 }
 
 async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
@@ -489,13 +597,13 @@ async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
         const atom = await response.text();
         const posts = parseBlogEntriesFromAtom(atom);
 
-        return {
+        return normalizeBlogPayload({
           generatedAt: new Date().toISOString(),
           source: base as string,
           blogHandle: handle as string,
           total: posts.length,
           posts,
-        };
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
         endpointErrors.push(`${endpoint} -> ${message}`);
@@ -513,6 +621,23 @@ async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
       : "No reachable live blog endpoints.";
 
   throw new Error(`Live blog feed unavailable. ${details}`);
+}
+
+async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
+  const payload = await fetchJson<BlogPostsPayload>(`${BLOG_POSTS_DATA_PATH}?ts=${Date.now()}`);
+  const posts = Array.isArray(payload.posts) ? payload.posts : [];
+
+  if (!posts.length) {
+    throw new Error("Cached blog payload is empty");
+  }
+
+  return normalizeBlogPayload({
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: payload.source || BLOG_POSTS_DATA_PATH,
+    blogHandle: payload.blogHandle || BLOG_HANDLE,
+    total: payload.total || posts.length,
+    posts,
+  });
 }
 
 async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Promise<ShopifyPolicyPayload> {
@@ -690,10 +815,21 @@ export async function loadAboutPage(): Promise<AboutPagePayload> {
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {
   try {
-    return await fetchBlogPostsFromLive();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown live blog error";
-    throw new Error(`Live blog fetch failed: ${message}`);
+    const cached = await fetchBlogPostsFromCache();
+    return {
+      ...cached,
+      source: `cache:${cached.source}`,
+    };
+  } catch (cacheError) {
+    const cacheMessage =
+      cacheError instanceof Error ? cacheError.message : "Unknown cached blog error";
+
+    try {
+      return await fetchBlogPostsFromLive();
+    } catch (liveError) {
+      const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live blog error";
+      throw new Error(`Cached blog fallback failed: ${cacheMessage}. Live blog fetch failed: ${liveMessage}`);
+    }
   }
 }
 
@@ -784,7 +920,8 @@ export function useBlogPosts() {
     queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
     queryFn: loadBlogPosts,
     staleTime: LIVE_STALE_TIME_MS,
-    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
     retry: shouldRetryLiveQuery,
