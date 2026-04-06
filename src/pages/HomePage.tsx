@@ -245,7 +245,7 @@ const HomePage = () => {
 
 
 
-      <section id="collections" className="mx-auto mt-10 w-[min(1320px,96vw)]">
+      <section id="collections" className="mx-auto mt-8 w-[min(1320px,94vw)] sm:mt-10 sm:w-[min(1320px,96vw)]">
         <Reveal>
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
             <div>
@@ -260,7 +260,7 @@ const HomePage = () => {
           </div>
         </Reveal>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
           {browseCollections.map((collection, index) => (
             <Reveal key={collection.id} delayMs={index * 70}>
               <CollectionCard
@@ -272,9 +272,9 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section id="products" className="mx-auto mt-11 w-[min(1320px,96vw)]">
+      <section id="products" className="mx-auto mt-9 w-[min(1320px,94vw)] sm:mt-11 sm:w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
+          <div className="salt-editorial-shell rounded-[1.6rem] p-3.5 sm:rounded-[2rem] sm:p-6">
             {focusCollection ? (
               <Reveal delayMs={90}>
                 <CollectionCard
@@ -321,8 +321,8 @@ const HomePage = () => {
         </Reveal>
 
 
-        <div className="salt-section-shell mt-4 rounded-[2rem] p-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="salt-section-shell mt-3.5 rounded-[1.6rem] p-3.5 sm:mt-4 sm:rounded-[2rem] sm:p-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
             {focusProducts.map((product, index) => (
               <Reveal key={product.id} delayMs={index * 70} className="h-full">
                 <ProductCard product={product} variant="dense" />
@@ -334,9 +334,9 @@ const HomePage = () => {
 
       
       {latestBlogPosts.length > 0 ? (
-        <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
+        <section className="mx-auto mt-9 w-[min(1280px,94vw)] sm:mt-10 sm:w-[min(1280px,96vw)]">
           <Reveal>
-            <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
+            <div className="salt-editorial-shell rounded-[1.6rem] p-3.5 sm:rounded-[2rem] sm:p-6">
               <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">

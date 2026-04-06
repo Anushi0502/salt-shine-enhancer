@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
 import { formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
@@ -86,8 +87,17 @@ function navClassName({ isActive }: { isActive: boolean }): string {
   return [
     "inline-flex items-center rounded-full px-3 py-2 text-[0.76rem] font-semibold tracking-[0.04em] transition xl:px-4 xl:py-2.5 xl:text-[0.82rem]",
     isActive
-      ? "bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))] shadow-[0_18px_36px_-28px_rgba(15,23,42,0.34)]"
-      : "text-foreground/78 hover:bg-card hover:text-foreground",
+      ? "bg-[hsl(var(--salt-ink))] text-white shadow-[0_18px_36px_-28px_rgba(15,23,42,0.34)] hover:text-white"
+      : "text-[hsl(var(--salt-ink))] opacity-80 hover:bg-card hover:text-[hsl(var(--salt-ink))] hover:opacity-100 dark:text-white dark:opacity-78 dark:hover:bg-white/8 dark:hover:text-white",
+  ].join(" ");
+}
+
+function mobileNavClassName({ isActive }: { isActive: boolean }): string {
+  return [
+    "flex h-12 w-full items-center justify-start rounded-[1rem] border px-4 text-[0.92rem] font-semibold tracking-[0.01em] transition",
+    isActive
+      ? "border-[hsl(var(--salt-ink))] bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.36)]"
+      : "border-border/75 bg-background text-foreground hover:border-primary/35 hover:text-primary",
   ].join(" ");
 }
 
@@ -115,7 +125,7 @@ const SearchPanel = ({
   const hasSuggestions = suggestions.products.length > 0 || suggestions.collections.length > 0;
   const panelClassName =
     mode === "mobile"
-      ? "absolute left-0 right-0 top-[calc(100%+0.7rem)] z-50 overflow-hidden rounded-[1.05rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.24)]"
+      ? "absolute left-0 right-0 top-[calc(100%+0.7rem)] z-50 max-h-[min(24rem,56svh)] overflow-y-auto overflow-x-hidden rounded-[1rem] border border-border/85 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.24)]"
       : "absolute right-0 top-[calc(100%+0.7rem)] z-50 w-[min(44rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.05rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] shadow-[0_30px_90px_-50px_rgba(15,23,42,0.24)]";
 
   return (
@@ -248,11 +258,13 @@ const MainHeader = () => {
   const { data: productsPayload } = useProducts();
   const { data: collectionsPayload } = useCollections();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobilePanelTop, setMobilePanelTop] = useState(0);
   const [desktopSearch, setDesktopSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
   const [activePanel, setActivePanel] = useState<"desktop" | "mobile" | null>(null);
   const desktopSearchRef = useRef<HTMLInputElement | null>(null);
   const mobileSearchRef = useRef<HTMLInputElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
 
   const products = productsPayload?.products ?? [];
   const collections = useMemo(
@@ -289,6 +301,37 @@ const MainHeader = () => {
     }, 80);
 
     return () => window.clearTimeout(timer);
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    if (!mobileOpen) {
+      setMobilePanelTop(0);
+      return () => undefined;
+    }
+
+    const updateMobilePanelTop = () => {
+      setMobilePanelTop(headerRef.current?.getBoundingClientRect().bottom ?? 0);
+    };
+
+    updateMobilePanelTop();
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    window.addEventListener("resize", updateMobilePanelTop);
+    window.addEventListener("scroll", updateMobilePanelTop, { passive: true });
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("resize", updateMobilePanelTop);
+      window.removeEventListener("scroll", updateMobilePanelTop);
+    };
   }, [mobileOpen]);
 
   useEffect(() => {
@@ -377,7 +420,10 @@ const MainHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.98),rgba(250,244,235,0.985),rgba(243,247,251,0.98))] shadow-[0_16px_42px_-34px_rgba(15,23,42,0.24)]">
+    <header
+      ref={headerRef}
+      className="relative sticky top-0 z-50 border-b border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.992),rgba(250,244,235,0.994),rgba(243,247,251,0.992))] shadow-[0_16px_42px_-34px_rgba(15,23,42,0.24)] dark:bg-[linear-gradient(90deg,rgba(20,27,42,0.995),rgba(18,24,38,0.996),rgba(22,28,44,0.995))] dark:shadow-[0_18px_46px_-32px_rgba(0,0,0,0.72)]"
+    >
       <div className="border-b border-border/60 bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))]">
         <div className="mx-auto flex w-[min(1340px,94vw)] flex-col items-center gap-1.5 py-2 text-center text-[0.58rem] font-medium uppercase tracking-[0.14em] text-white/78 sm:flex-row sm:justify-between sm:gap-3 sm:text-left sm:text-[0.72rem] sm:tracking-[0.16em]">
           <span className="max-w-[24rem]">Curated home, gifts, lifestyle, and everyday essentials</span>
@@ -431,9 +477,11 @@ const MainHeader = () => {
             ) : null}
           </form>
 
+          <ThemeToggle className="shrink-0" />
+
           <Link
             to="/order-history"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/35 hover:text-primary 2xl:h-10 2xl:w-auto 2xl:gap-2 2xl:px-3"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] shadow-[0_14px_28px_-24px_rgba(15,23,42,0.2)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/45 hover:text-primary hover:shadow-[0_20px_38px_-24px_rgba(37,99,235,0.34)] dark:text-white dark:hover:bg-[hsl(var(--salt-ink))] dark:hover:text-primary 2xl:h-10 2xl:w-auto 2xl:gap-2 2xl:px-3"
             aria-label="Order history"
             title="Order history"
           >
@@ -458,14 +506,14 @@ const MainHeader = () => {
         <button
           type="button"
           onClick={() => setMobileOpen((open) => !open)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-card text-foreground transition hover:border-primary/35 lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-card text-[hsl(var(--salt-ink))] transition hover:border-primary/35 dark:text-white lg:hidden"
           aria-label="Toggle navigation"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      <div className="hidden border-t border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.96),rgba(250,244,235,0.975),rgba(243,247,251,0.97))] lg:block">
+      <div className="hidden border-t border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.96),rgba(250,244,235,0.975),rgba(243,247,251,0.97))] dark:bg-[linear-gradient(90deg,rgba(22,30,46,0.985),rgba(18,24,38,0.986),rgba(20,28,42,0.985))] lg:block">
         <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-3 py-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {collections.map((collection) => (
@@ -485,9 +533,16 @@ const MainHeader = () => {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-border/70 bg-background/96 px-3 py-3 shadow-[0_26px_60px_-42px_rgba(15,23,42,0.24)] sm:px-4 sm:py-4 lg:hidden">
-          <div className="mx-auto grid w-[min(1340px,94vw)] gap-4">
-            <div className="rounded-[1.4rem] border border-border/70 bg-card/82 p-3.5 sm:rounded-[1.6rem] sm:p-4">
+        <div
+          className="fixed inset-x-0 z-[80] border-t border-border/75 bg-[linear-gradient(180deg,rgba(255,251,242,0.998),rgba(250,245,236,0.998),rgba(244,248,252,0.998))] shadow-[0_26px_60px_-42px_rgba(15,23,42,0.24)] dark:bg-[linear-gradient(180deg,rgba(22,30,46,0.995),rgba(18,24,38,0.996),rgba(17,23,36,0.995))] dark:shadow-[0_30px_70px_-42px_rgba(0,0,0,0.74)] lg:hidden"
+          style={{
+            top: mobilePanelTop ? `${mobilePanelTop}px` : undefined,
+            height: mobilePanelTop ? `calc(100svh - ${mobilePanelTop}px)` : undefined,
+          }}
+        >
+          <div className="mx-auto h-full w-[min(1340px,94vw)] overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4">
+            <div className="grid gap-3.5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <div className="rounded-[1.35rem] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(250,247,241,0.975))] p-3.5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.14)] sm:rounded-[1.6rem] sm:p-4">
               <form onSubmit={onMobileSearch} className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -517,23 +572,33 @@ const MainHeader = () => {
                 ) : null}
               </form>
 
-              <div className="mt-4 grid gap-2">
+              <div className="mt-3 grid gap-2">
                 {navLinks.map((link) => (
                   <NavLink
                     key={link.to}
                     to={link.to}
-                    className={({ isActive }) =>
-                      `${navClassName({ isActive })} justify-center text-sm`
-                    }
+                    className={mobileNavClassName}
                     onClick={closeMobileMenu}
                   >
                     {link.label}
                   </NavLink>
                 ))}
               </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-[1rem] border border-border/70 bg-background/85 px-4 py-3">
+                <div>
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Theme
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
+                    Switch light and dark mode
+                  </p>
+                </div>
+                <ThemeToggle className="shrink-0" />
+              </div>
             </div>
 
-            <div className="rounded-[1.35rem] border border-border/70 bg-card/78 p-3.5 sm:rounded-[1.45rem] sm:p-4">
+            <div className="rounded-[1.25rem] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,240,0.965))] p-3.5 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.12)] sm:rounded-[1.45rem] sm:p-4">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
                 Shop by collection
               </p>
@@ -555,7 +620,7 @@ const MainHeader = () => {
               <Link
                 to="/order-history"
                 onClick={closeMobileMenu}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/70 bg-card px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
               >
                 <ClipboardList className="h-4 w-4" />
                 Orders
@@ -573,6 +638,7 @@ const MainHeader = () => {
               </button>
             </div>
           </div>
+        </div>
         </div>
       ) : null}
     </header>

@@ -45,9 +45,9 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-8">
+      <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
         <Reveal>
-          <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
+          <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
             <p className="salt-kicker">Journal</p>
             <div className="mt-4 rounded-[1.75rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,247,243,0.9))] px-5 py-8 text-center shadow-[0_24px_64px_-48px_rgba(15,23,42,0.22)] sm:px-7 sm:py-10">
               <h1 className="font-display text-[clamp(2.1rem,4vw,3.5rem)] leading-[0.94] text-foreground">
@@ -82,9 +82,9 @@ const BlogPage = () => {
   ).slice(0, 4);
 
   return (
-    <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-8">
+    <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
       <Reveal>
-        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
+        <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
             Stories, guides, and seasonal ideas
@@ -92,7 +92,7 @@ const BlogPage = () => {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Editorial pieces from SALT covering everyday living, gifting, and seasonal inspiration.
           </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="mt-4 hidden gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
               <span className="block font-semibold text-foreground">Live posts</span>
               <span>{posts.length.toLocaleString()} synced articles</span>
@@ -136,7 +136,7 @@ const BlogPage = () => {
       ) : (
         <>
           {featuredPost ? (
-            <Reveal delayMs={60} className="mt-5">
+            <Reveal delayMs={60} className="mt-4 sm:mt-5">
               <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
                 <Link to={`/blog/${featuredPost.handle}`} className="block aspect-[16/10] h-full overflow-hidden bg-muted lg:aspect-auto">
                   <ResilientImage

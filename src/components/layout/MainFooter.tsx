@@ -1,15 +1,13 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, BadgeCheck, Facebook, Instagram, Mail, Youtube } from "lucide-react";
+import { Facebook, Instagram, Mail, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
   getRuntimeContext,
-  getShopAppUrl,
   resolveStorefrontPath,
 } from "@/lib/theme-assets";
 
 const runtimeContext = getRuntimeContext();
-const shopAppUrl = getShopAppUrl();
 const privacyPolicyHref = resolveStorefrontPath(runtimeContext.privacyPolicyUrl, "/policies/privacy-policy");
 const returnsPolicyHref = resolveStorefrontPath(runtimeContext.refundPolicyUrl, "/policies/refund-policy");
 const shippingPolicyHref = resolveStorefrontPath(runtimeContext.shippingPolicyUrl, "/policies/shipping-policy");
@@ -59,8 +57,8 @@ const MainFooter = () => {
         </div>
       </div>
 
-      <div className="mx-auto grid w-[min(1340px,94vw)] gap-8 pb-12 pt-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
-        <div className="text-center lg:text-left">
+      <div className="mx-auto grid w-[min(1340px,94vw)] gap-8 pb-12 pt-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
+        <div className="text-center sm:col-span-2 lg:col-span-1 lg:text-left">
           <div className="mt-4 flex flex-wrap justify-center gap-2 lg:justify-start">
             <a
               href="https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg=="
@@ -108,20 +106,10 @@ const MainFooter = () => {
               <Mail className="h-4 w-4" />
               {supportEmail}
             </a>
-            <a
-              href={shopAppUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-foreground transition hover:text-primary"
-            >
-              <BadgeCheck className="h-4 w-4" />
-              Shop App
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
           </div>
         </div>
 
-        <div>
+        <div className="text-center sm:text-left">
           <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Shop
           </h3>
@@ -134,7 +122,7 @@ const MainFooter = () => {
           </div>
         </div>
 
-        <div>
+        <div className="text-center sm:text-left">
           <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Support
           </h3>
@@ -147,7 +135,7 @@ const MainFooter = () => {
           </div>
         </div>
 
-        <div>
+        <div className="sm:col-span-2 lg:col-span-1">
           <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Join the SALT list
           </h3>

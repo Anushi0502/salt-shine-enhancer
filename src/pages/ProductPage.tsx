@@ -283,9 +283,9 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-4 w-[min(1280px,96vw)] pb-24 sm:mt-6 md:pb-8">
+    <section className="mx-auto mt-4 w-[min(1280px,94vw)] pb-28 sm:mt-6 sm:w-[min(1280px,96vw)] md:pb-8">
       <Reveal>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="hidden flex-wrap items-center gap-2 text-xs text-muted-foreground sm:flex">
           <Link to="/" className="hover:text-primary">
             Home
           </Link>
@@ -299,15 +299,15 @@ const ProductPage = () => {
       </Reveal>
 
       <Reveal>
-        <Link to="/shop" className="salt-outline-chip mt-3 h-10 gap-2 px-4 py-0 text-xs">
+        <Link to="/shop" className="salt-outline-chip mt-2 h-9 gap-2 px-3.5 py-0 text-[0.7rem] sm:mt-3 sm:h-10 sm:px-4 sm:text-xs">
           <ArrowLeft className="h-4 w-4" /> Back to shop
         </Link>
       </Reveal>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+      <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-[1.08fr_0.92fr]">
         <Reveal>
-          <div className="salt-panel-shell rounded-[1.5rem] p-3 sm:rounded-[1.8rem] sm:p-4">
-            <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
+          <div className="salt-panel-shell rounded-[1.3rem] p-2.5 sm:rounded-[1.8rem] sm:p-4">
+            <div className="overflow-hidden rounded-[1.15rem] border border-border bg-muted sm:rounded-[1.4rem]">
               {activeImage || primaryImage ? (
                 <img
                   src={activeImage || primaryImage}
@@ -322,7 +322,7 @@ const ProductPage = () => {
                 </div>
               )}
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2">
+            <div className="mt-2.5 grid grid-cols-4 gap-2 sm:mt-3">
               {imageSources.slice(0, 8).map((source, index) => (
                 <button
                   key={`${source}-${index}`}
@@ -343,7 +343,7 @@ const ProductPage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <aside className="salt-panel-shell rounded-[1.5rem] p-4 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[1.3rem] p-3.5 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
@@ -396,7 +396,7 @@ const ProductPage = () => {
             </div>
 
             {variants.length > 0 ? (
-              <div className="salt-section-shell mt-5 rounded-2xl border border-border/75 p-3.5">
+              <div className="salt-section-shell mt-4 rounded-[1.2rem] border border-border/75 p-3 sm:mt-5 sm:rounded-2xl sm:p-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Choose option</p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -721,16 +721,24 @@ const ProductPage = () => {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
-        <button
-          type="button"
-          onClick={addToCart}
-          disabled={!isAvailable}
-          className="salt-primary-cta h-12 w-full gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <ShoppingBag className="h-4 w-4" />
-          {isAvailable ? `Add to cart - ${formatMoney(price)}` : "Unavailable"}
-        </button>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/96 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
+        <div className="mx-auto flex w-[min(1280px,100%)] items-center gap-3">
+          <div className="min-w-0 shrink-0">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {isAvailable ? "Ready to ship" : "Unavailable"}
+            </p>
+            <p className="font-display text-[1.45rem] leading-none text-primary">{formatMoney(price)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={addToCart}
+            disabled={!isAvailable}
+            className="salt-primary-cta h-12 flex-1 gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {isAvailable ? "Add to cart" : "Unavailable"}
+          </button>
+        </div>
       </div>
     </section>
   );

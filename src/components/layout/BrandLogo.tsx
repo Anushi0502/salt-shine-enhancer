@@ -64,10 +64,17 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
 
       {withWordmark ? (
         <span className="leading-none">
-          <span className={cn("block font-display tracking-[0.08em]", textSizeMap[size])}>SALT</span>
           <span
             className={cn(
-              "block pt-0.5 uppercase tracking-[0.14em] text-muted-foreground",
+              "block font-display tracking-[0.08em] text-[hsl(var(--salt-ink))] dark:text-white",
+              textSizeMap[size],
+            )}
+          >
+            SALT
+          </span>
+          <span
+            className={cn(
+              "block pt-0.5 uppercase tracking-[0.14em] text-[hsl(var(--salt-muted))] dark:text-white/76",
               wordmarkSubtextSizeMap[size],
             )}
           >

@@ -43,9 +43,9 @@ const CollectionsPage = () => {
   const topThreeCollections = spotlightCollections.slice(0, 3);
 
   return (
-    <section className="mx-auto mt-6 w-[min(1320px,96vw)] pb-8 sm:pb-10">
+    <section className="mx-auto mt-5 w-[min(1320px,94vw)] pb-8 sm:mt-6 sm:w-[min(1320px,96vw)] sm:pb-10">
       <Reveal>
-        <div className="salt-panel-shell relative overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,245,238,0.98))] p-5 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.32)] sm:p-6 lg:p-7">
+        <div className="salt-panel-shell relative overflow-hidden rounded-[1.6rem] border border-border/60 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,245,238,0.98))] p-4 shadow-[0_28px_90px_-56px_rgba(15,23,42,0.32)] sm:rounded-[2rem] sm:p-6 lg:p-7">
           <div className="pointer-events-none absolute inset-0 opacity-70">
             <div className="absolute inset-y-0 right-0 w-[38%] bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.08),transparent_52%)]" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
@@ -157,7 +157,7 @@ const CollectionsPage = () => {
         </div>
       </Reveal>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-5 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
         {collections.map((collection, index) => (
           <Reveal key={collection.id} delayMs={index * 60}>
             <CollectionCard

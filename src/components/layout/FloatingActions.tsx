@@ -36,7 +36,7 @@ const FloatingActions = () => {
 
   return (
     <div
-      className="fixed right-3 z-[70] flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 sm:right-4"
+      className="fixed right-3 z-[70] hidden max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 md:flex md:right-4"
       style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       {showCartShortcut ? (

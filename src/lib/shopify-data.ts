@@ -36,6 +36,10 @@ const BLOG_HANDLES = Array.from(
 );
 const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
 const LOCAL_SHOPIFY_PROXY_PATH = "/__salt_shopify";
+const PRODUCTS_DATA_PATH = "/data/products.json";
+const COLLECTIONS_DATA_PATH = "/data/collections.json";
+const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
+const ABOUT_DATA_PATH = "/data/about.json";
 const BLOG_POSTS_DATA_PATH = "/data/blog-posts.json";
 const LIVE_STALE_TIME_MS = 0;
 const LIVE_PRODUCTS_REFRESH_MS = 60 * 1000;
@@ -340,6 +344,11 @@ async function fetchJson<T>(url: string): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+function cacheBustedPath(path: string): string {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}ts=${Date.now()}`;
 }
 
 async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {
@@ -732,6 +741,92 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
   });
 }
 
+async function fetchProductsFromCache(): Promise<ProductsPayload> {
+  const payload = await fetchJson<ProductsPayload>(cacheBustedPath(PRODUCTS_DATA_PATH));
+  const products = Array.isArray(payload.products) ? payload.products : [];
+
+  if (!products.length) {
+    throw new Error("Cached product payload is empty");
+  }
+
+  return {
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: `cache:${payload.source || PRODUCTS_DATA_PATH}`,
+    total: payload.total || products.length,
+    products,
+  };
+}
+
+async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
+  const payload = await fetchJson<CollectionsPayload>(cacheBustedPath(COLLECTIONS_DATA_PATH));
+  const collections = Array.isArray(payload.collections) ? payload.collections : [];
+
+  if (!collections.length) {
+    throw new Error("Cached collections payload is empty");
+  }
+
+  return {
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: `cache:${payload.source || COLLECTIONS_DATA_PATH}`,
+    total: payload.total || collections.length,
+    collections,
+  };
+}
+
+async function fetchCollectionProductsMapFromCache(): Promise<CollectionProductsPayload> {
+  const payload = await fetchJson<CollectionProductsPayload>(cacheBustedPath(COLLECTION_PRODUCTS_DATA_PATH));
+  const collections = payload.collections || {};
+  const totalCollections = Object.keys(collections).length;
+
+  if (!totalCollections) {
+    throw new Error("Cached collection products map is empty");
+  }
+
+  return {
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: `cache:${payload.source || COLLECTION_PRODUCTS_DATA_PATH}`,
+    totalCollections: payload.totalCollections || totalCollections,
+    collections,
+  };
+}
+
+async function fetchCollectionProductIdsFromCache(handle: string): Promise<CollectionProductIdsPayload> {
+  const payload = await fetchCollectionProductsMapFromCache();
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const match = Object.entries(payload.collections || {}).find(
+    ([entryHandle]) => entryHandle.trim().toLowerCase() === normalizedHandle,
+  );
+
+  if (!match) {
+    throw new Error(`Cached collection map missing handle "${normalizedHandle}"`);
+  }
+
+  const [matchedHandle, entry] = match;
+  const productIds = Array.isArray(entry.productIds) ? entry.productIds : [];
+
+  return {
+    generatedAt: payload.generatedAt,
+    source: payload.source,
+    handle: matchedHandle,
+    total: productIds.length,
+    productIds,
+  };
+}
+
+async function fetchAboutPageFromCache(): Promise<AboutPagePayload> {
+  const payload = await fetchJson<AboutPagePayload>(cacheBustedPath(ABOUT_DATA_PATH));
+
+  if (!payload?.page?.title) {
+    throw new Error("Cached about payload is empty");
+  }
+
+  return {
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: `cache:${payload.source || ABOUT_DATA_PATH}`,
+    page: payload.page,
+  };
+}
+
 async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Promise<ShopifyPolicyPayload> {
   const endpointErrors: string[] = [];
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -800,7 +895,13 @@ export async function loadProducts(): Promise<ProductsPayload> {
     endpointErrors.length > 0
       ? endpointErrors.slice(0, 4).join(" | ")
       : "No reachable live products endpoints.";
-  throw new Error(`Live products fetch failed. ${details}`);
+
+  try {
+    return await fetchProductsFromCache();
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    throw new Error(`Live products fetch failed. ${details}. Cached products fetch failed: ${cacheMessage}`);
+  }
 }
 
 export async function loadCollections(): Promise<CollectionsPayload> {
@@ -825,7 +926,13 @@ export async function loadCollections(): Promise<CollectionsPayload> {
     endpointErrors.length > 0
       ? endpointErrors.slice(0, 4).join(" | ")
       : "No reachable live collections endpoints.";
-  throw new Error(`Live collections fetch failed. ${details}`);
+
+  try {
+    return await fetchCollectionsFromCache();
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    throw new Error(`Live collections fetch failed. ${details}. Cached collections fetch failed: ${cacheMessage}`);
+  }
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
@@ -862,7 +969,13 @@ export async function loadCollectionProductsMap(): Promise<CollectionProductsPay
     endpointErrors.length > 0
       ? endpointErrors.slice(0, 4).join(" | ")
       : "No reachable live collection products endpoints.";
-  throw new Error(`Live collection products map fetch failed. ${details}`);
+
+  try {
+    return await fetchCollectionProductsMapFromCache();
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    throw new Error(`Live collection products map fetch failed. ${details}. Cached collection map fetch failed: ${cacheMessage}`);
+  }
 }
 
 async function loadCollectionProductIds(handle: string): Promise<CollectionProductIdsPayload> {
@@ -893,15 +1006,27 @@ async function loadCollectionProductIds(handle: string): Promise<CollectionProdu
     endpointErrors.length > 0
       ? endpointErrors.slice(0, 4).join(" | ")
       : "No reachable live collection products endpoints.";
-  throw new Error(`Live collection products fetch failed for "${normalizedHandle}". ${details}`);
+
+  try {
+    return await fetchCollectionProductIdsFromCache(normalizedHandle);
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    throw new Error(`Live collection products fetch failed for "${normalizedHandle}". ${details}. Cached collection ids fetch failed: ${cacheMessage}`);
+  }
 }
 
 export async function loadAboutPage(): Promise<AboutPagePayload> {
   try {
     return await fetchAboutPageFromLive();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown live about page error";
-    throw new Error(`Live about page fetch failed: ${message}`);
+    const liveMessage = error instanceof Error ? error.message : "Unknown live about page error";
+
+    try {
+      return await fetchAboutPageFromCache();
+    } catch (cacheError) {
+      const cacheMessage = cacheError instanceof Error ? cacheError.message : "Unknown cached about page error";
+      throw new Error(`Live about page fetch failed: ${liveMessage}. Cached about page fetch failed: ${cacheMessage}`);
+    }
   }
 }
 

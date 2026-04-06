@@ -53,7 +53,7 @@ const CartDrawer = () => {
         className="w-full !max-w-full overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0 sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem]"
       >
         <div className="flex min-h-full flex-col">
-          <SheetHeader className="border-b border-border/70 px-4 pb-5 pt-12 text-left sm:px-6">
+          <SheetHeader className="border-b border-border/70 px-4 pb-4 pt-10 text-left sm:px-6 sm:pb-5 sm:pt-12">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-primary">
@@ -63,7 +63,7 @@ const CartDrawer = () => {
                   {itemCount > 0 ? `${itemCount} item${itemCount === 1 ? "" : "s"} saved` : "Your bag is ready"}
                 </SheetTitle>
               </div>
-              <div className="rounded-[1.25rem] border border-border/70 bg-card/80 px-4 py-3 text-left shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)] sm:text-right">
+              <div className="rounded-[1.1rem] border border-border/70 bg-card/80 px-4 py-3 text-left shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)] sm:rounded-[1.25rem] sm:text-right">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   Subtotal
                 </p>
@@ -75,7 +75,7 @@ const CartDrawer = () => {
 
           <div className="flex-1 px-4 py-5 sm:px-6">
             {items.length === 0 ? (
-              <div className="rounded-[1.7rem] border border-dashed border-border/80 bg-card/70 px-5 py-10 text-center">
+              <div className="rounded-[1.4rem] border border-dashed border-border/80 bg-card/70 px-5 py-8 text-center sm:rounded-[1.7rem] sm:py-10">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border/70 bg-background text-primary">
                   <ShoppingBag className="h-6 w-6" />
                 </div>
@@ -268,7 +268,7 @@ const CartDrawer = () => {
             ) : null}
           </div>
 
-          <div className="sticky bottom-0 border-t border-border/70 bg-background/92 px-4 py-5 backdrop-blur sm:px-6">
+          <div className="sticky bottom-0 border-t border-border/70 bg-background/95 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
             {invalidItemCount > 0 ? (
               <p className="mb-3 rounded-[1rem] border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-[0.78rem] leading-6 text-amber-900 dark:text-amber-100">
                 {invalidItemCount} item{invalidItemCount === 1 ? "" : "s"} need a quick review before checkout.

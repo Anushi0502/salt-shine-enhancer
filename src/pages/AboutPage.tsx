@@ -63,15 +63,15 @@ const AboutPage = () => {
   const bodyHtml = sanitizeRichHtml(data?.page.bodyHtml || "");
 
   return (
-    <section className="mx-auto mt-6 w-[min(1100px,94vw)] pb-8">
+    <section className="mx-auto mt-5 w-[min(1100px,94vw)] pb-8 sm:mt-6">
       <Reveal>
-        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
+        <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">About SALT</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             SALT Online Store brings together home, lifestyle, gifting, and everyday products in a cleaner, more curated shopping environment.
           </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="mt-4 hidden gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {aboutHighlights.map((item) => (
               <p
                 key={item.label}
@@ -83,7 +83,7 @@ const AboutPage = () => {
             ))}
           </div>
 
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {aboutPillars.map(({ title: pillarTitle, detail, Icon }) => (
               <div key={pillarTitle} className="salt-ambient-card salt-metric-card rounded-xl p-3">
                 <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-primary">

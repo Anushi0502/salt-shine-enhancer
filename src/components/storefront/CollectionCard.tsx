@@ -81,10 +81,10 @@ const CollectionCard = ({
         <div
           className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${
             hasEditorialContent
-              ? "rounded-[1.6rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 sm:rounded-[2rem] sm:px-6 sm:py-5 lg:px-7 lg:py-6"
+              ? "rounded-[1.6rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:rounded-[2rem] sm:px-6 sm:py-5 lg:px-7 lg:py-6"
               : isHero
-                ? "w-full max-w-[min(25.5rem,100%)] rounded-[1.18rem] p-4 sm:w-fit sm:max-w-[min(25.5rem,calc(100%-0.5rem))] sm:p-[1.125rem]"
-                : "rounded-[1.45rem] p-4"
+                ? "w-full max-w-[min(25.5rem,100%)] rounded-[1.18rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:w-fit sm:max-w-[min(25.5rem,calc(100%-0.5rem))] sm:p-[1.125rem]"
+                : "rounded-[1.45rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))]"
           }`}
         >
           {hasEditorialContent && editorialContent ? (
@@ -133,7 +133,7 @@ const CollectionCard = ({
               <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-4"}`}>
                 <Link
                   to={`/shop?collection=${collection.handle}`}
-                  className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-white font-semibold uppercase tracking-[0.16em] text-foreground shadow-[0_12px_28px_-22px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
+                  className={`salt-showcase-pill hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
                 >
                   Shop
                   <ArrowUpRight className="h-3.5 w-3.5" />

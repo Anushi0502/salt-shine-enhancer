@@ -7,8 +7,11 @@ import { basename, resolve } from "node:path";
 const rootDir = process.cwd();
 const distDir = resolve(rootDir, "dist");
 const publicDir = resolve(rootDir, "public");
-const themeDir = resolve(rootDir, "shopify-theme");
+const themeDir = resolve(
+  "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-online-store-v2",
+);
 const themeAssetsDir = resolve(themeDir, "assets");
+const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
 
 function parseEntryAssets(indexHtml) {
   const jsMatch = indexHtml.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/i);
@@ -135,7 +138,12 @@ async function main() {
   const indexHtml = await readFile(resolve(distDir, "index.html"), "utf8");
   const { jsPath, cssPath } = parseEntryAssets(indexHtml);
 
-  await rm(themeDir, { recursive: true, force: true });
+  await mkdir(themeDir, { recursive: true });
+  await Promise.all(
+    themeScaffoldEntries.map((entry) =>
+      rm(resolve(themeDir, entry), { recursive: true, force: true }),
+    ),
+  );
   await writeThemeScaffold();
   await copyAssets(jsPath, cssPath);
 

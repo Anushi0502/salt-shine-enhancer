@@ -55,34 +55,34 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
         <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
           {sale > 0 ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/16 bg-[hsl(var(--salt-ink))]/82 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+            <span className="salt-media-pill gap-1 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
               <Sparkles className="h-3 w-3 text-primary" />
               Save {sale}%
             </span>
           ) : (
-            <span className="inline-flex rounded-full border border-white/16 bg-white/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] backdrop-blur">
+            <span className="salt-media-pill salt-media-pill--light px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
               Curated pick
             </span>
           )}
         </div>
 
-        <div className="absolute right-3 top-3">
-          <span className="inline-flex rounded-full border border-white/16 bg-white/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] backdrop-blur">
+        <div className="absolute right-3 top-3 hidden sm:block">
+          <span className="salt-media-pill salt-media-pill--light px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
             {availableVariantCount > 1 ? `${availableVariantCount} options` : "Ready to ship"}
           </span>
         </div>
 
         <div className="absolute inset-x-2.5 bottom-2.5 flex items-end justify-between gap-3 sm:inset-x-3 sm:bottom-3">
-          <div className="rounded-full border border-white/16 bg-[hsl(var(--salt-ink))]/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+          <div className="salt-media-pill px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
             {product.product_type || "Featured"}
           </div>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/16 bg-white/70 text-[hsl(var(--salt-ink))] opacity-0 transition duration-300 group-hover:opacity-100">
+          <span className="salt-media-pill salt-media-pill--light h-9 w-9 justify-center px-0 opacity-0 transition duration-300 group-hover:opacity-100">
             <ArrowUpRight className="h-4 w-4" />
           </span>
         </div>
       </Link>
 
-      <div className={`flex flex-1 flex-col ${isDense ? "gap-3 p-4" : "gap-3.5 p-[1.125rem]"}`}>
+        <div className={`flex flex-1 flex-col ${isDense ? "gap-3 p-4" : "gap-3 p-4 sm:gap-3.5 sm:p-[1.125rem]"}`}>
         <div className="space-y-2">
           <h3 className={`font-display leading-[1.02] tracking-[-0.02em] text-foreground ${isDense ? "text-[1.08rem] sm:text-[1.2rem]" : "text-[1.2rem] sm:text-[1.38rem]"}`}>
             <Link to={`/products/${product.handle}`} className="line-clamp-2 transition group-hover:text-primary">

@@ -18,9 +18,9 @@ const ContactPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-6 w-[min(980px,94vw)] pb-8">
+    <section className="mx-auto mt-5 w-[min(980px,94vw)] pb-8 sm:mt-6">
       <Reveal>
-        <div className="salt-panel-shell rounded-[1.9rem] p-5 sm:p-6">
+        <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Contact</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Need help with your order?</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -49,7 +49,7 @@ const ContactPage = () => {
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
-              <div className="mb-4 flex flex-wrap gap-2">
+              <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                 {supportTopics.map((topic) => (
                   <span
                     key={topic}

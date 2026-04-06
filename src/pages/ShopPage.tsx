@@ -580,13 +580,13 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-4 w-[min(1320px,96vw)] pb-8 sm:mt-6">
+    <section className="mx-auto mt-4 w-[min(1320px,94vw)] pb-8 sm:mt-6 sm:w-[min(1320px,96vw)]">
       <Reveal>
-        <div className="salt-editorial-shell rounded-[2rem] p-3 sm:rounded-[3.1rem] sm:p-6">
+        <div className="salt-editorial-shell rounded-[1.55rem] p-2.5 sm:rounded-[3.1rem] sm:p-6">
           <div className="grid gap-4 xl:items-stretch">
             
 
-            <div className="relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft sm:rounded-[1.8rem]">
+            <div className="relative overflow-hidden rounded-[1.2rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft sm:rounded-[1.8rem]">
               {selectedCollectionImage ? (
                 <img
                   src={selectedCollectionImage}
@@ -595,7 +595,7 @@ const ShopPage = () => {
                 />
               ) : null}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),radial-gradient(circle_at_74%_84%,hsl(var(--salt-blue)/0.22),transparent_28%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
-              <div className="relative flex h-full min-h-[19rem] flex-col justify-between p-4 text-white sm:min-h-[27.5rem] sm:p-6">
+              <div className="relative flex h-full min-h-[15rem] flex-col justify-between p-3 text-white sm:min-h-[27.5rem] sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -604,14 +604,14 @@ const ShopPage = () => {
                 </div>
 
                 <div>
-                  <h2 className="max-w-[15ch] font-display text-[clamp(1.8rem,9vw,3rem)] leading-[0.96] text-white">
+                  <h2 className="max-w-[11ch] font-display text-[clamp(1.35rem,7.6vw,3rem)] leading-[0.98] text-white sm:max-w-[15ch] sm:leading-[0.96]">
                     {selectedCollection
                       ? `${selectedCollection.title}`
                       : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
                 </div>
-                <div className="salt-glass-rail mt-4 rounded-[1.35rem] p-3 sm:rounded-[1.6rem] sm:p-4">
-            <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
+                <div className="salt-glass-rail mt-3 rounded-[1rem] p-2 sm:mt-4 sm:rounded-[1.6rem] sm:p-4">
+            <div className="grid gap-2.5 xl:grid-cols-[1fr_auto_auto]">
               <form onSubmit={onSearch} className="relative flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -656,7 +656,7 @@ const ShopPage = () => {
               </select>
             </div>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-2.5 grid gap-2.5 sm:mt-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-3">
               <select
                 aria-label="Collection filter"
                 value={collectionHandle}
@@ -699,7 +699,7 @@ const ShopPage = () => {
               </select>
             </div>
 
-            <div className="salt-ambient-card mt-3 flex flex-col items-start gap-2 rounded-[1.2rem] border border-border/65 p-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="salt-ambient-card mt-2.5 flex flex-col items-start gap-2 rounded-[1rem] border border-border/65 p-2.5 sm:mt-3 sm:rounded-[1.2rem] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <button
                 type="button"
                 onClick={() => setShowAdvanced((value) => !value)}
@@ -709,7 +709,7 @@ const ShopPage = () => {
                 {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
               </button>
 
-              <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground sm:w-auto">
+              <div className="flex w-full flex-wrap items-center gap-2 text-[0.72rem] text-muted-foreground sm:w-auto sm:text-xs">
                 <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
                   <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
                 </span>
@@ -734,7 +734,7 @@ const ShopPage = () => {
             </div>
 
             {showAdvanced ? (
-              <div className="salt-section-shell mt-4 rounded-[1.35rem] p-3.5">
+              <div className="salt-section-shell mt-3 rounded-[1.1rem] p-3 sm:mt-4 sm:rounded-[1.35rem] sm:p-3.5">
                 <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                   <input
                     type="number"
@@ -769,7 +769,7 @@ const ShopPage = () => {
             ) : null}
 
             {activeFilterChips.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2 sm:mt-3">
                 {activeFilterChips.map((chip) => (
                   <button
                     key={chip.key}
@@ -785,7 +785,7 @@ const ShopPage = () => {
               </div>
             ) : null}
 
-            <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+            <div className="-mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-1 sm:mt-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               <button
                 type="button"
                 onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
@@ -861,8 +861,8 @@ const ShopPage = () => {
             </Reveal>
           ) : null}
 
-          <div className="salt-section-shell mt-6 rounded-[2rem] p-3 sm:p-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-4">
               {visibleProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 35} className="h-full">
                   <ProductCard product={product} variant="dense" />

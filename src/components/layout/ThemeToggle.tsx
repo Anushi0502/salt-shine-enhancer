@@ -1,16 +1,24 @@
+import { type HTMLAttributes } from "react";
 import { MoonStar, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 
-const ThemeToggle = () => {
+type ThemeToggleProps = HTMLAttributes<HTMLButtonElement>;
+
+const ThemeToggle = ({ className, ...props }: ThemeToggleProps) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="group relative inline-flex h-10 w-20 items-center rounded-full border border-border/80 bg-card/92 p-1 shadow-[0_14px_24px_-22px_rgba(0,0,0,0.55)] transition hover:border-primary/60 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.8)]"
+      className={cn(
+        "group relative inline-flex h-10 w-20 items-center rounded-full border border-border/80 bg-card/92 p-1 shadow-[0_14px_24px_-22px_rgba(0,0,0,0.55)] transition hover:border-primary/60 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.8)]",
+        className,
+      )}
       aria-label="Toggle color theme"
       title="Toggle color theme"
+      {...props}
     >
       <span
         className={`absolute left-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft transition-transform duration-300 ${

@@ -33,25 +33,25 @@ const panelToneClassMap: Record<StateTone, string> = {
 
 const StateShell = ({ title, subtitle, action, tone, icon, showSkeleton = false }: StateShellProps) => (
   <section
-    className={`mx-auto mt-6 w-[min(1040px,92vw)] rounded-[2rem] border p-5 text-center shadow-soft sm:p-8 ${toneClassMap[tone]}`}
+    className={`mx-auto mt-5 w-[min(1040px,94vw)] rounded-[1.65rem] border p-3.5 text-center shadow-soft sm:mt-6 sm:rounded-[2rem] sm:p-8 ${toneClassMap[tone]}`}
   >
-    <div className={`salt-panel-shell relative overflow-hidden rounded-[1.7rem] border p-6 sm:p-7 ${panelToneClassMap[tone]}`}>
-      <div className="pointer-events-none absolute -left-10 -top-8 h-24 w-24 rounded-full bg-primary/12 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-8 -right-10 h-24 w-24 rounded-full bg-salt-blue/12 blur-2xl" />
+    <div className={`salt-panel-shell relative overflow-hidden rounded-[1.35rem] border p-4 sm:rounded-[1.7rem] sm:p-7 ${panelToneClassMap[tone]}`}>
+      <div className="pointer-events-none absolute -left-10 -top-8 h-20 w-20 rounded-full bg-primary/12 blur-2xl sm:h-24 sm:w-24" />
+      <div className="pointer-events-none absolute -bottom-8 -right-10 h-20 w-20 rounded-full bg-salt-blue/12 blur-2xl sm:h-24 sm:w-24" />
       <BrandLogo className="mx-auto mb-3 w-fit" size="sm" />
-      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-full border ${iconClassMap[tone]}`}>
+      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-full border sm:h-11 sm:w-11 ${iconClassMap[tone]}`}>
         {icon}
       </div>
-      <h2 className="mt-4 font-display text-[clamp(1.8rem,3vw,2.7rem)] leading-[0.96]">{title}</h2>
-      {subtitle ? <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{subtitle}</p> : null}
+      <h2 className="mt-3 font-display text-[clamp(1.7rem,8vw,2.7rem)] leading-[0.96] sm:mt-4">{title}</h2>
+      {subtitle ? <p className="mx-auto mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground sm:mt-3">{subtitle}</p> : null}
       {showSkeleton ? (
-        <div className="mx-auto mt-5 grid max-w-xl gap-2 sm:grid-cols-3">
+        <div className="mx-auto mt-4 grid max-w-xl gap-2 sm:mt-5 sm:grid-cols-3">
           <span className="h-2 rounded-full bg-muted/80" />
           <span className="h-2 rounded-full bg-muted/65" />
           <span className="h-2 rounded-full bg-muted/50" />
         </div>
       ) : null}
-      {action ? <div className="mt-6">{action}</div> : null}
+      {action ? <div className="mt-5 sm:mt-6">{action}</div> : null}
     </div>
   </section>
 );

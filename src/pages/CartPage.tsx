@@ -170,7 +170,7 @@ const CartPage = () => {
 
   if (!items.length) {
     return (
-      <section className="mx-auto mt-8 w-[min(880px,92vw)] pb-10 text-center">
+      <section className="mx-auto mt-8 w-[min(880px,94vw)] pb-10 text-center sm:w-[min(880px,92vw)]">
         <Reveal>
           <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -201,7 +201,7 @@ const CartPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-10">
+    <section className="mx-auto mt-5 w-[min(1280px,94vw)] pb-28 sm:mt-6 sm:w-[min(1280px,96vw)] md:pb-10">
       <Reveal>
         <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>
@@ -210,7 +210,7 @@ const CartPage = () => {
             <p className="mt-2 text-sm text-muted-foreground">{itemCount} items ready for checkout.</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="salt-outline-chip text-[0.62rem]">Secure Shopify checkout</span>
-              <span className="salt-outline-chip text-[0.62rem]">Live variant validation</span>
+              <span className="hidden salt-outline-chip text-[0.62rem] sm:inline-flex">Live variant validation</span>
             </div>
           </div>
           <button
@@ -227,7 +227,7 @@ const CartPage = () => {
         <div className="grid gap-3">
           {items.map((item, index) => (
             <Reveal key={item.id} delayMs={index * 45}>
-              <article className="salt-panel-shell rounded-2xl p-4">
+              <article className="salt-panel-shell rounded-[1.35rem] p-3.5 sm:rounded-2xl sm:p-4">
                 <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
                   {item.image ? (
                     <img
@@ -292,7 +292,7 @@ const CartPage = () => {
         </div>
 
         <Reveal delayMs={120}>
-          <aside className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-6 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[1.45rem] p-4 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
             <h2 className="font-display text-3xl">Order summary</h2>
             <div className="mt-4 space-y-3 border-b border-border pb-4 text-sm">
               <p className="flex items-center justify-between">
@@ -312,7 +312,7 @@ const CartPage = () => {
               <span>Total</span>
               <span className="text-primary">{formatMoney(subtotal)}</span>
             </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-3">
               <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 Encrypted payment
               </p>
@@ -430,6 +430,36 @@ const CartPage = () => {
           </div>
         </section>
       ) : null}
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/96 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
+        <div className="mx-auto flex w-[min(1280px,100%)] items-center gap-3">
+          <div className="min-w-0 shrink-0">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+            </p>
+            <p className="font-display text-[1.4rem] leading-none text-primary">{formatMoney(subtotal)}</p>
+          </div>
+          <a
+            href={checkoutHandoffUrl}
+            onClick={() => {
+              trackMetaPixelInitiateCheckout(checkoutItems);
+              recordDeviceOrderHistory({
+                source: "cart",
+                checkoutUrl: checkoutHandoffUrl,
+                items: checkoutItems,
+              });
+            }}
+            aria-disabled={hasUnresolvedCheckoutItems}
+            className={`salt-button-shine salt-primary-cta inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] ${
+              hasUnresolvedCheckoutItems
+                ? "pointer-events-none opacity-60"
+                : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
+            }`}
+          >
+            Continue to checkout
+          </a>
+        </div>
+      </div>
     </section>
   );
 };
