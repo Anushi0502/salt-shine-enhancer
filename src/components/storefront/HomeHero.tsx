@@ -172,7 +172,7 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
                     <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                       Featured product
                     </p>
-                    <h3 className="mt-2 line-clamp-2 max-w-[15ch] font-display text-[1.58rem] leading-[0.94] tracking-[-0.035em] text-foreground sm:text-[1.66rem]">
+                    <h3 className="mt-2 line-clamp-2 max-w-[25ch] font-display text-[1.58rem] leading-[1.2] tracking-[-0.035em] text-foreground sm:text-[1.66rem]">
                       {product.title}
                     </h3>
 
