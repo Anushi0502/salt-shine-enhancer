@@ -21,7 +21,7 @@ import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-pol
 
 const runtimeContext = getRuntimeContext();
 const SHOP_BASE_ORIGIN = getShopBaseOrigin();
-const SHOP_BASE = SHOP_BASE_ORIGIN;
+const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const DATA_MODE = "live" as const;
 const PAGE_LIMIT = Number(import.meta.env.VITE_SALT_PAGE_LIMIT || 250);
 const ABOUT_HANDLE = runtimeContext.aboutHandle || import.meta.env.VITE_ABOUT_PAGE_HANDLE || "about-us";
@@ -52,6 +52,51 @@ type CollectionProductIdsPayload = {
   total: number;
   productIds: number[];
 };
+
+function normalizeBaseUrl(input: string | undefined | null): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(withProtocol);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function isMyShopifyBase(input: string | null): boolean {
+  if (!input) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(input).hostname.toLowerCase();
+    return hostname.endsWith(".myshopify.com");
+  } catch {
+    return false;
+  }
+}
+
+const SHOP_API_BASE = (() => {
+  const candidates = [
+    runtimeContext.shopDomain,
+    import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
+    runtimeContext.shopBaseUrl,
+    SHOP_BASE_ORIGIN,
+    DEFAULT_CANONICAL_SHOP_BASE,
+  ]
+    .map((candidate) => normalizeBaseUrl(candidate))
+    .filter((candidate): candidate is string => Boolean(candidate));
+
+  const canonicalCandidate = candidates.find((candidate) => isMyShopifyBase(candidate));
+  return canonicalCandidate || candidates[0] || "";
+})();
+
+const SHOP_BASE = SHOP_API_BASE || SHOP_BASE_ORIGIN;
 
 function requireShopBase(): string {
   if (!SHOP_BASE) {
@@ -103,12 +148,28 @@ function getLiveBlogBases(): string[] {
 
   const browserOrigin = window.location.origin;
   const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
+  const browserBase = normalizeBaseUrl(browserOrigin);
+  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
+  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
   const bases: string[] = [];
-  if (isLocalHost) {
+
+  const shouldUseProxy =
+    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
+
+  if (shouldUseProxy) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-    bases.push(browserOrigin);
-  } else {
-    bases.push(browserOrigin);
+  }
+
+  if (!isLocalHost && canonicalBase) {
+    bases.push(canonicalBase);
+  }
+
+  if (browserBase) {
+    bases.push(browserBase);
+  }
+
+  if (brandedBase && brandedBase !== browserBase) {
+    bases.push(brandedBase);
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
@@ -122,17 +183,28 @@ function getLiveCatalogBases(): string[] {
 
   const browserOrigin = window.location.origin;
   const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
+  const browserBase = normalizeBaseUrl(browserOrigin);
+  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
+  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
   const bases: string[] = [];
 
-  if (isLocalHost) {
+  const shouldUseProxy =
+    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
+
+  if (shouldUseProxy) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-    bases.push(browserOrigin);
-  } else {
-    bases.push(browserOrigin);
   }
 
-  if (SHOP_BASE_ORIGIN && SHOP_BASE_ORIGIN !== browserOrigin) {
-    bases.push(SHOP_BASE_ORIGIN);
+  if (!isLocalHost && canonicalBase) {
+    bases.push(canonicalBase);
+  }
+
+  if (browserBase) {
+    bases.push(browserBase);
+  }
+
+  if (brandedBase && brandedBase !== browserBase) {
+    bases.push(brandedBase);
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
@@ -146,13 +218,28 @@ function getLivePolicyBases(): string[] {
 
   const browserOrigin = window.location.origin;
   const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
+  const browserBase = normalizeBaseUrl(browserOrigin);
+  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
+  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
   const bases: string[] = [];
 
-  if (isLocalHost) {
+  const shouldUseProxy =
+    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
+
+  if (shouldUseProxy) {
     bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-    bases.push(browserOrigin);
-  } else {
-    bases.push(browserOrigin);
+  }
+
+  if (!isLocalHost && canonicalBase) {
+    bases.push(canonicalBase);
+  }
+
+  if (browserBase) {
+    bases.push(browserBase);
+  }
+
+  if (brandedBase && brandedBase !== browserBase) {
+    bases.push(brandedBase);
   }
 
   return Array.from(new Set(bases.filter(Boolean)));
@@ -245,6 +332,11 @@ async function fetchJson<T>(url: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}) for ${resolvedUrl}`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!/json/i.test(contentType)) {
+    throw new Error(`Expected JSON but received ${contentType || "unknown content type"} for ${resolvedUrl}`);
   }
 
   return (await response.json()) as T;

@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "routes": [
     {
+      "src": "/__salt_shopify/(.*)",
+      "dest": "https://0309d3-72.myshopify.com/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
