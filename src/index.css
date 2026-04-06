@@ -696,6 +696,23 @@
     transform: translateY(-1px);
   }
 
+  @media (max-width: 640px) {
+    .salt-editorial-shell::after {
+      inset: 0.7rem;
+    }
+
+    .salt-outline-chip,
+    .salt-primary-cta {
+      min-height: 2.75rem;
+    }
+
+    .salt-filter-chip {
+      max-width: 100%;
+      white-space: normal;
+      text-align: left;
+    }
+  }
+
   .salt-product-card {
     background:
       linear-gradient(170deg, hsl(var(--card) / 0.99), hsl(var(--card) / 0.93)),

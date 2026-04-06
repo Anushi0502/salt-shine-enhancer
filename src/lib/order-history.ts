@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CartItem } from "@/lib/cart";
+import {
+  buildShopifyCheckoutUrl,
+  buildShopifyDirectCheckoutUrl,
+  isValidShopifyVariantId,
+  type CartItem,
+} from "@/lib/cart";
 
 export type DeviceOrderHistoryItem = {
   id: number;
@@ -52,6 +57,43 @@ function sanitizeOrderHistoryItem(item: DeviceOrderHistoryItem): DeviceOrderHist
   };
 }
 
+function toCartItems(items: DeviceOrderHistoryItem[]): CartItem[] {
+  return items.map((item) => ({
+    id: item.id,
+    handle: item.handle,
+    title: item.title,
+    image: item.image,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+    shopifyVariantId: item.shopifyVariantId,
+  }));
+}
+
+function resolveEntryCheckoutUrl(
+  source: DeviceOrderHistoryEntry["source"] | undefined,
+  existingCheckoutUrl: string,
+  items: DeviceOrderHistoryItem[],
+): string {
+  const normalizedExisting = String(existingCheckoutUrl || "").trim();
+  const normalizedItems = toCartItems(items);
+  const firstItem = normalizedItems[0];
+
+  if (
+    source === "buy-now" &&
+    normalizedItems.length === 1 &&
+    firstItem &&
+    isValidShopifyVariantId(firstItem.shopifyVariantId)
+  ) {
+    return buildShopifyDirectCheckoutUrl(firstItem.shopifyVariantId, firstItem.quantity);
+  }
+
+  if (normalizedItems.length > 0) {
+    return buildShopifyCheckoutUrl(normalizedItems);
+  }
+
+  return normalizedExisting;
+}
+
 function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] {
   if (!Array.isArray(input)) {
     return [];
@@ -76,12 +118,13 @@ function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] 
       const items = entry.items.map(sanitizeOrderHistoryItem);
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+      const source = (entry.source === "buy-now" ? "buy-now" : "cart") as DeviceOrderHistoryEntry["source"];
 
       return {
         id: entry.id,
         createdAt: entry.createdAt,
-        source: (entry.source === "buy-now" ? "buy-now" : "cart") as DeviceOrderHistoryEntry["source"],
-        checkoutUrl: entry.checkoutUrl,
+        source,
+        checkoutUrl: resolveEntryCheckoutUrl(source, entry.checkoutUrl, items),
         itemCount,
         subtotal,
         items,

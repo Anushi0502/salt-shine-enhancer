@@ -40,6 +40,7 @@ import {
   stripHtml,
 } from "@/lib/formatters";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
 import {
   getProductPurchasesLast30Days,
   recordDeviceOrderHistory,
@@ -88,6 +89,10 @@ const ProductPage = () => {
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
   const { summary: reviewSummary } = useJudgeMeProductRating(product?.id);
+  const selectedVariant = useMemo(
+    () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
+    [selectedVariantId, variants],
+  );
 
   useEffect(() => {
     if (!product) {
@@ -140,6 +145,14 @@ const ProductPage = () => {
     setRecentHandles(next);
   }, [product]);
 
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    trackMetaPixelViewContent(product, selectedVariant);
+  }, [product, selectedVariant]);
+
   if (isLoading) {
     return <LoadingState title="Loading product" subtitle="Preparing details, variants, and delivery info." />;
   }
@@ -187,7 +200,6 @@ const ProductPage = () => {
     );
   }
 
-  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || variants[0];
   const displayedVariants = showAvailableOnly ? variants.filter((variant) => variant.available) : variants;
   const price = Number(selectedVariant?.price || 0);
   const lowestVariantPrice = Number(variants[0]?.price || 0);
@@ -260,6 +272,7 @@ const ProductPage = () => {
         title: `${product.title} (${selectedVariant.title})`,
         image: activeImage || primaryImage,
         unitPrice: price,
+        productType: product.product_type,
       },
       quantity,
     );
@@ -270,7 +283,7 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-20 md:pb-8">
+    <section className="mx-auto mt-4 w-[min(1280px,96vw)] pb-24 sm:mt-6 md:pb-8">
       <Reveal>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Link to="/" className="hover:text-primary">
@@ -293,7 +306,7 @@ const ProductPage = () => {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
         <Reveal>
-          <div className="salt-panel-shell rounded-[1.8rem] p-4">
+          <div className="salt-panel-shell rounded-[1.5rem] p-3 sm:rounded-[1.8rem] sm:p-4">
             <div className="overflow-hidden rounded-[1.4rem] border border-border bg-muted">
               {activeImage || primaryImage ? (
                 <img
@@ -330,7 +343,7 @@ const ProductPage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <aside className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-6 lg:sticky lg:top-24">
+          <aside className="salt-panel-shell rounded-[1.5rem] p-4 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
@@ -504,7 +517,7 @@ const ProductPage = () => {
 
             <div className="mt-4">
               <p className="text-sm font-semibold">Quantity</p>
-              <div className="mt-2 inline-flex h-11 items-center rounded-full border border-border bg-background">
+              <div className="mt-2 inline-flex h-11 w-full items-center justify-between rounded-full border border-border bg-background sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setQuantity((value) => Math.max(1, value - 1))}
@@ -532,6 +545,18 @@ const ProductPage = () => {
                   return;
                 }
 
+                trackMetaPixelInitiateCheckout([
+                  {
+                    id: selectedVariant.id,
+                    shopifyVariantId: selectedVariant.id,
+                    handle: product.handle,
+                    title: `${product.title} (${selectedVariant.title})`,
+                    unitPrice: price,
+                    quantity: selectedQuantity,
+                    productType: product.product_type,
+                  },
+                ]);
+
                 recordDeviceOrderHistory({
                   source: "buy-now",
                   checkoutUrl: checkoutHandoffUrl,
@@ -544,6 +569,7 @@ const ProductPage = () => {
                       image: activeImage || primaryImage,
                       unitPrice: price,
                       quantity: selectedQuantity,
+                      productType: product.product_type,
                     },
                   ],
                 });
@@ -633,11 +659,11 @@ const ProductPage = () => {
               ) : null}
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               {highlights.map((item) => (
                 <span
                   key={item}
-                  className="salt-outline-chip px-2.5 py-1 text-[0.62rem]"
+                  className="salt-outline-chip shrink-0 px-2.5 py-1 text-[0.62rem]"
                 >
                   {item}
                 </span>
@@ -695,7 +721,7 @@ const ProductPage = () => {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
         <button
           type="button"
           onClick={addToCart}

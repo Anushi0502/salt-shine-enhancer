@@ -77,7 +77,7 @@ const CollectionsPage = () => {
                 </span>
                 <Link
                   to="/shop"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-primary/15 bg-primary px-4 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-primary-foreground shadow-[0_14px_40px_-24px_rgba(37,99,235,0.9)] transition hover:-translate-y-0.5 hover:bg-primary/90"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-primary/15 bg-primary px-4 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-primary-foreground shadow-[0_14px_40px_-24px_rgba(37,99,235,0.9)] transition hover:-translate-y-0.5 hover:bg-primary/90 sm:w-auto"
                 >
                   Shop all products
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -123,12 +123,12 @@ const CollectionsPage = () => {
               <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                 Quick collection browse
               </p>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                 {spotlightCollections.map((collection, index) => (
                   <Link
                     key={collection.id}
                     to={`/shop?collection=${collection.handle}`}
-                    className={`inline-flex h-11 items-center rounded-full border px-4 text-[0.72rem] font-semibold uppercase tracking-[0.08em] transition ${
+                    className={`inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-[0.72rem] font-semibold uppercase tracking-[0.08em] transition ${
                       index === 0
                         ? "border-primary/20 bg-primary text-primary-foreground shadow-[0_16px_40px_-26px_rgba(37,99,235,0.9)] hover:bg-primary/90"
                         : "border-border/80 bg-background/80 text-foreground hover:-translate-y-0.5 hover:border-primary/30 hover:bg-background"
@@ -187,16 +187,16 @@ const CollectionsPage = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
               <Link
                 to="/shop"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-slate-950 transition hover:-translate-y-0.5 hover:bg-white/90"
+                className="inline-flex h-11 w-full items-center justify-center rounded-full bg-white px-5 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-slate-950 transition hover:-translate-y-0.5 hover:bg-white/90 sm:w-auto"
               >
                 Open full catalog
               </Link>
               <Link
                 to="/shop?sort=discount"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/10 px-5 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-white/16"
+                className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/15 bg-white/10 px-5 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-white/16 sm:w-auto"
               >
                 Shop best savings
               </Link>

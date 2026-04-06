@@ -1,22 +1,13 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-
-declare global {
-  interface Window {
-    fbq?: (...args: unknown[]) => void;
-    _fbq?: (...args: unknown[]) => void;
-  }
-}
+import { ensureMetaPixel, trackMetaPixelPageView } from "@/lib/meta-pixel";
 
 const MetaPixelTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.fbq !== "function") {
-      return;
-    }
-
-    window.fbq("track", "PageView");
+    ensureMetaPixel();
+    trackMetaPixelPageView();
   }, [location.pathname, location.search]);
 
   return null;

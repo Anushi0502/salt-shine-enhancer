@@ -254,10 +254,10 @@ const MainHeader = () => {
   const desktopSearchRef = useRef<HTMLInputElement | null>(null);
   const mobileSearchRef = useRef<HTMLInputElement | null>(null);
 
-  const products = productsPayload?.products || [];
+  const products = productsPayload?.products ?? [];
   const collections = useMemo(
     () =>
-      [...(collectionsPayload?.collections || [])]
+      [...(collectionsPayload?.collections ?? [])]
         .sort((left, right) => right.products_count - left.products_count)
         .slice(0, 7),
     [collectionsPayload],
@@ -379,15 +379,15 @@ const MainHeader = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.98),rgba(250,244,235,0.985),rgba(243,247,251,0.98))] shadow-[0_16px_42px_-34px_rgba(15,23,42,0.24)]">
       <div className="border-b border-border/60 bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))]">
-        <div className="mx-auto flex w-[min(1340px,94vw)] flex-wrap items-center justify-between gap-3 py-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-white/78 sm:text-[0.72rem]">
-          <span>Curated home, gifts, lifestyle, and everyday essentials</span>
+        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col items-center gap-1.5 py-2 text-center text-[0.58rem] font-medium uppercase tracking-[0.14em] text-white/78 sm:flex-row sm:justify-between sm:gap-3 sm:text-left sm:text-[0.72rem] sm:tracking-[0.16em]">
+          <span className="max-w-[24rem]">Curated home, gifts, lifestyle, and everyday essentials</span>
           <span className="hidden md:inline">Free shipping across the US</span>
-          <span>Fast checkout and 30-day returns</span>
+          <span className="max-w-[20rem]">Fast checkout and 30-day returns</span>
         </div>
       </div>
 
-      <div className="mx-auto grid w-[min(1340px,94vw)] grid-cols-[auto_1fr] items-center gap-3 py-3 md:gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:py-4">
-        <Link to="/" className="shrink-0" aria-label="Go to SALT homepage">
+      <div className="mx-auto grid w-[min(1340px,94vw)] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2.5 sm:gap-3 sm:py-3 md:gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:py-4">
+        <Link to="/" className="min-w-0 shrink-0" aria-label="Go to SALT homepage">
           <BrandLogo withWordmark size="sm" className="xl:hidden" />
           <BrandLogo withWordmark size="md" className="hidden xl:inline-flex" />
         </Link>
@@ -485,9 +485,9 @@ const MainHeader = () => {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-border/70 bg-background/96 px-4 py-4 shadow-[0_26px_60px_-42px_rgba(15,23,42,0.24)] lg:hidden">
+        <div className="border-t border-border/70 bg-background/96 px-3 py-3 shadow-[0_26px_60px_-42px_rgba(15,23,42,0.24)] sm:px-4 sm:py-4 lg:hidden">
           <div className="mx-auto grid w-[min(1340px,94vw)] gap-4">
-            <div className="rounded-[1.6rem] border border-border/70 bg-card/82 p-4">
+            <div className="rounded-[1.4rem] border border-border/70 bg-card/82 p-3.5 sm:rounded-[1.6rem] sm:p-4">
               <form onSubmit={onMobileSearch} className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -519,24 +519,31 @@ const MainHeader = () => {
 
               <div className="mt-4 grid gap-2">
                 {navLinks.map((link) => (
-                  <NavLink key={link.to} to={link.to} className={navClassName} onClick={closeMobileMenu}>
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={({ isActive }) =>
+                      `${navClassName({ isActive })} justify-center text-sm`
+                    }
+                    onClick={closeMobileMenu}
+                  >
                     {link.label}
                   </NavLink>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-[1.45rem] border border-border/70 bg-card/78 p-4">
+            <div className="rounded-[1.35rem] border border-border/70 bg-card/78 p-3.5 sm:rounded-[1.45rem] sm:p-4">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
                 Shop by collection
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                 {collections.map((collection) => (
                   <Link
                     key={collection.id}
                     to={`/shop?collection=${collection.handle}`}
                     onClick={closeMobileMenu}
-                    className="salt-outline-chip h-9 px-4 py-0 text-[0.68rem]"
+                    className="salt-outline-chip h-9 shrink-0 px-4 py-0 text-[0.68rem]"
                   >
                     {collection.title}
                   </Link>

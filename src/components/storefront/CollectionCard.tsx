@@ -81,32 +81,32 @@ const CollectionCard = ({
         <div
           className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${
             hasEditorialContent
-              ? "rounded-[2rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 sm:px-6 sm:py-5 lg:px-7 lg:py-6"
+              ? "rounded-[1.6rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 sm:rounded-[2rem] sm:px-6 sm:py-5 lg:px-7 lg:py-6"
               : isHero
-                ? "w-fit max-w-[min(25.5rem,calc(100%-0.5rem))] rounded-[1.18rem] p-4 sm:p-[1.125rem]"
+                ? "w-full max-w-[min(25.5rem,100%)] rounded-[1.18rem] p-4 sm:w-fit sm:max-w-[min(25.5rem,calc(100%-0.5rem))] sm:p-[1.125rem]"
                 : "rounded-[1.45rem] p-4"
           }`}
         >
           {hasEditorialContent && editorialContent ? (
-            <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-nowrap lg:gap-8">
+            <div className="flex flex-col items-start gap-4 lg:flex-row lg:flex-nowrap lg:justify-between lg:gap-8">
               <div className="min-w-0 flex-1">
                 <p className="salt-kicker">{editorialContent.kicker}</p>
-                <h3 className="mt-4 max-w-5xl font-display text-[clamp(2.35rem,5vw,4.8rem)] leading-[0.9] tracking-[-0.05em] text-foreground">
+                <h3 className="mt-4 max-w-5xl font-display text-[clamp(1.9rem,8vw,4.8rem)] leading-[0.92] tracking-[-0.05em] text-foreground">
                   {editorialContent.headline}
                 </h3>
               </div>
 
-              <div className="flex shrink-0 flex-wrap gap-2.5 lg:justify-end">
+              <div className="flex w-full shrink-0 flex-col gap-2.5 sm:flex-row lg:w-auto lg:justify-end">
                 <Link
                   to={editorialContent.primaryAction.to}
-                  className="salt-primary-cta h-12 px-7 text-sm font-bold sm:h-14 sm:px-8 sm:text-[1.05rem]"
+                  className="salt-primary-cta h-12 w-full px-6 text-sm font-bold sm:h-14 sm:w-auto sm:px-8 sm:text-[1.05rem]"
                 >
                   {editorialContent.primaryAction.label}
                 </Link>
                 {editorialContent.secondaryAction ? (
                   <Link
                     to={editorialContent.secondaryAction.to}
-                    className="salt-outline-chip h-12 px-7 py-0 text-sm sm:h-14 sm:px-8 sm:text-[1.05rem]"
+                    className="salt-outline-chip h-12 w-full px-6 py-0 text-sm sm:h-14 sm:w-auto sm:px-8 sm:text-[1.05rem]"
                   >
                     {editorialContent.secondaryAction.label}
                   </Link>

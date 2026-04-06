@@ -1,5 +1,4 @@
-
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
@@ -18,6 +17,7 @@ import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
+import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import {
   useCollections,
@@ -157,6 +157,7 @@ const ShopPage = () => {
   const [showAdvanced, setShowAdvanced] = useState(
     minFilter != null || maxFilter != null || perPage !== perPageOptions[0],
   );
+  const lastTrackedSearchRef = useRef("");
 
   useEffect(() => {
     if (!routeCollectionHandle || searchParams.get("collection")) {
@@ -317,6 +318,42 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * perPage;
   const endIndex = Math.min(startIndex + perPage, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
+      return;
+    }
+
+    if (productsError || collectionsError || (Boolean(collectionHandle) && collectionProductIdsError)) {
+      return;
+    }
+
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      lastTrackedSearchRef.current = "";
+      return;
+    }
+
+    const signature = `${normalizedQuery.toLowerCase()}::${totalResults}`;
+    if (lastTrackedSearchRef.current === signature) {
+      return;
+    }
+
+    lastTrackedSearchRef.current = signature;
+    trackMetaPixelSearch(normalizedQuery, totalResults);
+  }, [
+    collectionHandle,
+    collectionProductIdsError,
+    collectionProductIdsLoading,
+    collectionsError,
+    collectionsLoading,
+    productsError,
+    productsLoading,
+    query,
+    totalResults,
+  ]);
+
   const activeFilterCount = [
     query,
     collectionHandle,
@@ -543,13 +580,13 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-6 w-[min(1320px,96vw)] pb-8">
+    <section className="mx-auto mt-4 w-[min(1320px,96vw)] pb-8 sm:mt-6">
       <Reveal>
-        <div className="salt-editorial-shell rounded-[3.1rem] p-4 sm:p-6">
+        <div className="salt-editorial-shell rounded-[2rem] p-3 sm:rounded-[3.1rem] sm:p-6">
           <div className="grid gap-4 xl:items-stretch">
             
 
-            <div className="relative overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft">
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft sm:rounded-[1.8rem]">
               {selectedCollectionImage ? (
                 <img
                   src={selectedCollectionImage}
@@ -558,7 +595,7 @@ const ShopPage = () => {
                 />
               ) : null}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),radial-gradient(circle_at_74%_84%,hsl(var(--salt-blue)/0.22),transparent_28%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
-              <div className="relative flex h-full min-h-[27.5rem] flex-col justify-between p-5 text-white sm:p-6">
+              <div className="relative flex h-full min-h-[19rem] flex-col justify-between p-4 text-white sm:min-h-[27.5rem] sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -567,15 +604,15 @@ const ShopPage = () => {
                 </div>
 
                 <div>
-                  <h2 className="max-w-[15ch] font-display text-[clamp(2rem,3vw,3rem)] leading-[0.96] text-white">
+                  <h2 className="max-w-[15ch] font-display text-[clamp(1.8rem,9vw,3rem)] leading-[0.96] text-white">
                     {selectedCollection
                       ? `${selectedCollection.title}`
                       : "Browse the full catalog with a cleaner retail rhythm"}
                   </h2>
                 </div>
-                <div className="salt-glass-rail mt-4 rounded-[1.6rem] p-3 sm:p-4">
+                <div className="salt-glass-rail mt-4 rounded-[1.35rem] p-3 sm:rounded-[1.6rem] sm:p-4">
             <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
-              <form onSubmit={onSearch} className="relative flex items-center gap-2">
+              <form onSubmit={onSearch} className="relative flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={searchInput}
@@ -586,7 +623,7 @@ const ShopPage = () => {
                 />
                 <button
                   type="submit"
-                  className="salt-primary-cta h-12 px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em]"
+                  className="salt-primary-cta h-12 w-full px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em] sm:w-auto"
                 >
                   Search
                 </button>
@@ -619,7 +656,7 @@ const ShopPage = () => {
               </select>
             </div>
 
-            <div className="mt-3 grid gap-3 lg:grid-cols-3">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <select
                 aria-label="Collection filter"
                 value={collectionHandle}
@@ -662,17 +699,17 @@ const ShopPage = () => {
               </select>
             </div>
 
-            <div className="salt-ambient-card mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[1.2rem] border border-border/65 p-2.5">
+            <div className="salt-ambient-card mt-3 flex flex-col items-start gap-2 rounded-[1.2rem] border border-border/65 p-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <button
                 type="button"
                 onClick={() => setShowAdvanced((value) => !value)}
-                className="salt-outline-chip h-9 px-3 py-0 text-[0.67rem]"
+                className="salt-outline-chip h-9 w-full justify-center px-3 py-0 text-[0.67rem] sm:w-auto"
               >
                 <Filter className="mr-1.5 h-3.5 w-3.5" />
                 {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
               </button>
 
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground sm:w-auto">
                 <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
                   <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
                 </span>
@@ -688,7 +725,7 @@ const ShopPage = () => {
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary"
+                    className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary sm:ml-auto"
                   >
                     Clear all
                   </button>
@@ -722,7 +759,7 @@ const ShopPage = () => {
                   <button
                     type="button"
                     onClick={applyCustomPrice}
-                    className="salt-primary-cta h-11 px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em]"
+                    className="salt-primary-cta h-11 w-full px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em] sm:w-auto"
                   >
                     Apply price
                   </button>
@@ -748,32 +785,32 @@ const ShopPage = () => {
               </div>
             ) : null}
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
               <button
                 type="button"
                 onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
-                className="salt-outline-chip text-[0.62rem]"
+                className="salt-outline-chip shrink-0 text-[0.62rem]"
               >
                 New arrivals first
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ sort: "discount", page: null }, true)}
-                className="salt-outline-chip text-[0.62rem]"
+                className="salt-outline-chip shrink-0 text-[0.62rem]"
               >
                 Biggest savings
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ min: null, max: "25", page: null }, true)}
-                className="salt-outline-chip text-[0.62rem]"
+                className="salt-outline-chip shrink-0 text-[0.62rem]"
               >
                 Budget picks under $25
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ collection: "cookware", page: null }, true)}
-                className="salt-outline-chip text-[0.62rem]"
+                className="salt-outline-chip shrink-0 text-[0.62rem]"
               >
                 Shop cookware
               </button>
@@ -795,17 +832,17 @@ const ShopPage = () => {
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
               Remove one or two filters and try again.
             </p>
-            <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={clearFilters}
-                className="salt-primary-cta h-10 px-5 text-xs font-bold uppercase tracking-[0.08em]"
+                className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
               >
                 Reset filters
               </button>
               <Link
                 to="/collections"
-                className="salt-outline-chip h-10 px-5 py-0 text-xs"
+                className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto"
               >
                 Browse collections
               </Link>
@@ -835,18 +872,18 @@ const ShopPage = () => {
           </div>
 
           <Reveal delayMs={80} className="mt-7">
-            <div className="salt-glass-rail flex flex-wrap items-center justify-between gap-3 rounded-[1.55rem] p-4">
-              <div className="flex items-center gap-2">
+            <div className="salt-glass-rail flex flex-col items-start gap-3 rounded-[1.55rem] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <button
                   type="button"
                   onClick={() => onPageChange(currentPage - 1)}
                   disabled={currentPage <= 1}
-                  className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
                 >
                   <ChevronLeft className="h-4 w-4" /> Prev
                 </button>
 
-                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                <p className="w-full text-center text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:w-auto sm:text-left">
                   Page {currentPage} of {totalPages}
                 </p>
 
@@ -854,13 +891,13 @@ const ShopPage = () => {
                   type="button"
                   onClick={() => onPageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
                 >
                   Next <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
 
-              <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">
+              <p className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-center text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground sm:w-auto">
                 <ArrowDownUp className="h-3.5 w-3.5" />
                 Sorted by {sortLabel}
               </p>

@@ -32,10 +32,10 @@ const MainFooter = () => {
   return (
     <footer className="mt-16 border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.38),hsl(var(--card)/0.92))]">
       <div className="mx-auto w-[min(1340px,94vw)] py-8">
-        <div className="rounded-[2rem] border border-border/70 bg-[hsl(var(--salt-ink))] px-6 py-6 text-[hsl(var(--salt-paper))] shadow-[0_36px_90px_-56px_rgba(15,23,42,0.44)] sm:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="rounded-[2rem] border border-border/70 bg-[hsl(var(--salt-ink))] px-4 py-5 text-[hsl(var(--salt-paper))] shadow-[0_36px_90px_-56px_rgba(15,23,42,0.44)] sm:px-8 sm:py-6">
+          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
             <BrandLogo withWordmark size="md" />
-            <div className="flex flex-wrap gap-3">
+            <div className="flex w-full flex-wrap justify-center gap-3 sm:w-auto sm:justify-end">
               <a
                 href={`mailto:${supportEmail}`}
                 className="salt-primary-cta h-11 justify-center px-5 text-[0.72rem] font-semibold uppercase tracking-[0.12em]"
@@ -51,7 +51,7 @@ const MainFooter = () => {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-white/72">
+          <div className="mt-5 flex flex-wrap justify-center gap-2 text-[0.66rem] font-medium uppercase tracking-[0.14em] text-white/72 sm:justify-start sm:text-[0.7rem]">
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">US shipping clarity</span>
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">Secure Shopify checkout</span>
             <span className="rounded-full border border-white/14 bg-white/8 px-4 py-2">30-day returns</span>
@@ -59,9 +59,9 @@ const MainFooter = () => {
         </div>
       </div>
 
-      <div className="mx-auto grid w-[min(1340px,94vw)] gap-10 pb-12 pt-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
-        <div>
-          <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mx-auto grid w-[min(1340px,94vw)] gap-8 pb-12 pt-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]">
+        <div className="text-center lg:text-left">
+          <div className="mt-4 flex flex-wrap justify-center gap-2 lg:justify-start">
             <a
               href="https://www.instagram.com/saltonlinestore?igsh=MXV0amdybnp6bW1hYg=="
               target="_blank"
@@ -100,7 +100,7 @@ const MainFooter = () => {
             </a>
           </div>
 
-          <div className="mt-5 grid gap-2">
+          <div className="mt-5 grid gap-2 justify-items-center lg:justify-items-start">
             <a
               href={`mailto:${supportEmail}`}
               className="inline-flex items-center gap-2 text-sm text-foreground transition hover:text-primary"
@@ -172,7 +172,7 @@ const MainFooter = () => {
       </div>
 
       <div className="border-t border-border/70 bg-background/40">
-        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-2 py-5 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-2 py-5 text-center text-sm text-muted-foreground md:flex-row md:items-center md:justify-between md:text-left">
           <span>Copyright {new Date().getFullYear()} SALT Online Store.</span>
           <span>Curated home, gifts, lifestyle, and everyday essentials.</span>
         </div>

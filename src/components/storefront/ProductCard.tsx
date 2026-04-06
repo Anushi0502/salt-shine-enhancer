@@ -72,7 +72,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           </span>
         </div>
 
-        <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
+        <div className="absolute inset-x-2.5 bottom-2.5 flex items-end justify-between gap-3 sm:inset-x-3 sm:bottom-3">
           <div className="rounded-full border border-white/16 bg-[hsl(var(--salt-ink))]/80 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
             {product.product_type || "Featured"}
           </div>
@@ -84,7 +84,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
       <div className={`flex flex-1 flex-col ${isDense ? "gap-3 p-4" : "gap-3.5 p-[1.125rem]"}`}>
         <div className="space-y-2">
-          <h3 className={`font-display leading-[1.02] tracking-[-0.02em] text-foreground ${isDense ? "text-[1.2rem]" : "text-[1.38rem]"}`}>
+          <h3 className={`font-display leading-[1.02] tracking-[-0.02em] text-foreground ${isDense ? "text-[1.08rem] sm:text-[1.2rem]" : "text-[1.2rem] sm:text-[1.38rem]"}`}>
             <Link to={`/products/${product.handle}`} className="line-clamp-2 transition group-hover:text-primary">
               {title}
             </Link>
@@ -111,7 +111,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           </p>
         </div>
 
-        <div className={`grid gap-2 ${isDense ? "grid-cols-[1fr_auto]" : "sm:grid-cols-[1fr_auto]"}`}>
+        <div className={`grid gap-2 ${isDense ? "grid-cols-1 sm:grid-cols-[1fr_auto]" : "grid-cols-1 sm:grid-cols-[1fr_auto]"}`}>
           <button
             type="button"
             onClick={() => {
@@ -126,10 +126,11 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
                 title: product.title,
                 image: image || "",
                 unitPrice: min,
+                productType: product.product_type,
               });
             }}
             disabled={!defaultVariant}
-            className={`salt-primary-cta justify-center rounded-[1rem] px-4 ${isDense ? "h-10 text-[0.7rem]" : "h-11 text-[0.72rem]"} font-semibold uppercase tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-50`}
+            className={`salt-primary-cta justify-center rounded-[1rem] px-4 ${isDense ? "h-10 text-[0.7rem]" : "h-11 text-[0.72rem]"} w-full font-semibold uppercase tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <ShoppingBag className="h-4 w-4" />
             Quick add
@@ -137,7 +138,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
           <Link
             to={`/products/${product.handle}`}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-[1rem] border border-border/75 bg-card px-4 font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/40 hover:text-primary ${isDense ? "h-10 text-[0.66rem]" : "h-11 text-[0.7rem]"}`}
+            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-[1rem] border border-border/75 bg-card px-4 font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/40 hover:text-primary sm:w-auto ${isDense ? "h-10 text-[0.66rem]" : "h-11 text-[0.7rem]"}`}
           >
             View
             <ArrowUpRight className="h-3.5 w-3.5" />

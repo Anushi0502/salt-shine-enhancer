@@ -11,13 +11,14 @@ import {
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import {
+  buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
   buildShopifySearchUrl,
-  buildShopifyShopPayCheckoutUrl,
   isValidShopifyVariantId,
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
 
@@ -143,8 +144,7 @@ const CartPage = () => {
     );
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
 
-  const shopPayCheckoutUrl = buildShopifyShopPayCheckoutUrl(checkoutItems);
-  const checkoutHandoffUrl = shopPayCheckoutUrl;
+  const checkoutHandoffUrl = buildShopifyCheckoutUrl(checkoutItems);
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -203,7 +203,7 @@ const CartPage = () => {
   return (
     <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-10">
       <Reveal>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Cart</p>
             <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Review your bag</h1>
@@ -216,7 +216,7 @@ const CartPage = () => {
           <button
             type="button"
             onClick={clear}
-            className="inline-flex h-10 items-center rounded-full border border-border px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-destructive/40 hover:text-destructive"
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-border px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-destructive/40 hover:text-destructive sm:w-auto"
           >
             Clear cart
           </button>
@@ -259,7 +259,7 @@ const CartPage = () => {
                       </button>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                       <div className="inline-flex h-10 items-center rounded-full border border-border bg-background">
                         <button
                           type="button"
@@ -280,7 +280,7 @@ const CartPage = () => {
                         </button>
                       </div>
 
-                      <p className="font-display text-2xl text-primary">
+                      <p className="font-display text-2xl text-primary sm:text-right">
                         {formatMoney(item.unitPrice * item.quantity)}
                       </p>
                     </div>
@@ -366,6 +366,7 @@ const CartPage = () => {
             <a
               href={checkoutHandoffUrl}
               onClick={() => {
+                trackMetaPixelInitiateCheckout(checkoutItems);
                 recordDeviceOrderHistory({
                   source: "cart",
                   checkoutUrl: checkoutHandoffUrl,

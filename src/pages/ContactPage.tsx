@@ -26,22 +26,22 @@ const ContactPage = () => {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Reach the SALT support team for delivery questions, product advice, or returns.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <a
               href={`mailto:${supportEmail}`}
-              className="salt-outline-chip h-10 px-4 py-0 text-xs"
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
             >
               Email support
             </a>
             <a
               href={contactPolicyHref}
-              className="salt-outline-chip h-10 px-4 py-0 text-xs"
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
             >
               Contact policy
             </a>
             <Link
               to="/blog"
-              className="salt-outline-chip h-10 px-4 py-0 text-xs"
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
             >
               Help guides
             </Link>
@@ -60,7 +60,7 @@ const ContactPage = () => {
                 ))}
               </div>
 
-              <form onSubmit={onSubmit} className="salt-section-shell grid gap-3 rounded-2xl border border-border/70 p-4">
+              <form onSubmit={onSubmit} className="salt-section-shell grid gap-3 rounded-2xl border border-border/70 p-3.5 sm:p-4">
                 <input
                   required
                   type="text"

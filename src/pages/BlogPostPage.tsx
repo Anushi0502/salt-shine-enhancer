@@ -104,13 +104,13 @@ const BlogPostPage = () => {
 
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>{formattedDate(post.publishedAt)}</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span>{post.author || "SALT"}</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span className="inline-flex items-center gap-1">
               <Clock3 className="h-3.5 w-3.5" /> {readingTime(post.contentHtml)}
             </span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <a
               href={post.url}
               target="_blank"
@@ -145,22 +145,22 @@ const BlogPostPage = () => {
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
 
-          <div className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4">
+          <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4 sm:flex-row sm:flex-wrap">
             <Link
               to="/shop"
-              className="salt-primary-cta h-10 px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em]"
+              className="salt-primary-cta h-10 w-full px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em] sm:w-auto"
             >
               Shop the catalog
             </Link>
             <Link
               to="/collections"
-              className="salt-outline-chip h-10 px-4 py-0 text-[0.72rem]"
+              className="salt-outline-chip h-10 w-full px-4 py-0 text-[0.72rem] sm:w-auto"
             >
               Browse collections
             </Link>
             <Link
               to="/contact"
-              className="salt-outline-chip h-10 px-4 py-0 text-[0.72rem]"
+              className="salt-outline-chip h-10 w-full px-4 py-0 text-[0.72rem] sm:w-auto"
             >
               Contact support
             </Link>

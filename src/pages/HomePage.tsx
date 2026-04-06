@@ -247,14 +247,14 @@ const HomePage = () => {
 
       <section id="collections" className="mx-auto mt-10 w-[min(1320px,96vw)]">
         <Reveal>
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
             <div>
               <p className="salt-kicker">Shop by collection</p>
               <h2 className="mt-3 font-display text-[clamp(2rem,3.1vw,3rem)] leading-[0.98]">
                 Browse the store by collection
               </h2>
             </div>
-            <Link to="/collections" className="salt-outline-chip h-11 px-5 py-0 text-sm">
+            <Link to="/collections" className="salt-outline-chip h-11 w-full justify-center px-5 py-0 text-sm sm:w-auto">
               Explore all collections
             </Link>
           </div>
@@ -296,7 +296,7 @@ const HomePage = () => {
                 />
               </Reveal>
             ) : (
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                 <div className="max-w-3xl">
                   <p className="salt-kicker">Trending now</p>
                   <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[0.98]">
@@ -304,13 +304,13 @@ const HomePage = () => {
                   </h2>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Link to={focusShopLink} className="salt-primary-cta h-11 px-5 text-sm font-bold">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+                  <Link to={focusShopLink} className="salt-primary-cta h-11 w-full px-5 text-sm font-bold sm:w-auto">
                     {focusShopLabel}
                   </Link>
                   <Link
                     to={focusBestValueLink}
-                    className="salt-outline-chip h-11 px-5 py-0 text-sm"
+                    className="salt-outline-chip h-11 w-full px-5 py-0 text-sm sm:w-auto"
                   >
                     Shop best value
                   </Link>
@@ -337,7 +337,7 @@ const HomePage = () => {
         <section className="mx-auto mt-10 w-[min(1280px,96vw)]">
           <Reveal>
             <div className="salt-editorial-shell rounded-[2rem] p-4 sm:p-6">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                     From the Blog
@@ -348,7 +348,7 @@ const HomePage = () => {
                 </div>
                 <Link
                   to="/blog"
-                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary"
+                  className="inline-flex w-full items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-primary sm:w-auto"
                 >
                   Browse all posts <ArrowRight className="h-3.5 w-3.5" />
                 </Link>

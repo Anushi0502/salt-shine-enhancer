@@ -138,7 +138,7 @@ const BlogPage = () => {
           {featuredPost ? (
             <Reveal delayMs={60} className="mt-5">
               <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
-                <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
+                <Link to={`/blog/${featuredPost.handle}`} className="block aspect-[16/10] h-full overflow-hidden bg-muted lg:aspect-auto">
                   <ResilientImage
                     src={featuredPost.image}
                     alt={featuredPost.title}
@@ -166,7 +166,7 @@ const BlogPage = () => {
                   </div>
                   <Link
                     to={`/blog/${featuredPost.handle}`}
-                    className="salt-primary-cta mt-5 h-11 gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em]"
+                    className="salt-primary-cta mt-5 h-11 w-full gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
                   >
                     Read the story <ArrowRight className="h-3.5 w-3.5" />
                   </Link>

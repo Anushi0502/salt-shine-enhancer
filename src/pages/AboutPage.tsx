@@ -105,22 +105,22 @@ const AboutPage = () => {
             </p>
           )}
 
-          <div className="salt-section-shell mt-6 flex flex-wrap gap-2 rounded-2xl border border-border/70 bg-gradient-to-r from-background/90 to-primary/10 p-3">
+          <div className="salt-section-shell mt-6 flex flex-col gap-2 rounded-2xl border border-border/70 bg-gradient-to-r from-background/90 to-primary/10 p-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/shop"
-              className="salt-primary-cta h-11 px-5 text-xs font-bold uppercase tracking-[0.08em]"
+              className="salt-primary-cta h-11 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
             >
               Shop the catalog
             </Link>
             <Link
               to="/blog"
-              className="salt-outline-chip h-11 px-5 py-0 text-xs"
+              className="salt-outline-chip h-11 w-full px-5 py-0 text-xs sm:w-auto"
             >
               Read the journal
             </Link>
             <Link
               to="/contact"
-              className="salt-outline-chip h-11 px-5 py-0 text-xs"
+              className="salt-outline-chip h-11 w-full px-5 py-0 text-xs sm:w-auto"
             >
               Contact support
             </Link>

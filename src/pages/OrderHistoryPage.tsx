@@ -4,6 +4,7 @@ import { ArrowUpRight, ClipboardList, History, RotateCcw, Search, Trash2 } from 
 import Reveal from "@/components/storefront/Reveal";
 import { useCart } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { useDeviceOrderHistory } from "@/lib/order-history";
 
 function formatTimestamp(value: string): string {
@@ -86,7 +87,7 @@ const OrderHistoryPage = () => {
   return (
     <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-12">
       <Reveal>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Order history</p>
             <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
@@ -99,7 +100,7 @@ const OrderHistoryPage = () => {
           <button
             type="button"
             onClick={clear}
-            className="inline-flex h-10 items-center rounded-full border border-border px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-destructive/40 hover:text-destructive"
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-border px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-destructive/40 hover:text-destructive sm:w-auto"
           >
             Clear history
           </button>
@@ -140,28 +141,28 @@ const OrderHistoryPage = () => {
             <button
               type="button"
               onClick={() => setSourceFilter("all")}
-              className={`salt-outline-chip h-10 px-4 py-0 text-xs ${sourceFilter === "all" ? "border-primary/50 text-primary" : ""}`}
+              className={`salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs lg:w-auto ${sourceFilter === "all" ? "border-primary/50 text-primary" : ""}`}
             >
               All sources
             </button>
             <button
               type="button"
               onClick={() => setSourceFilter("cart")}
-              className={`salt-outline-chip h-10 px-4 py-0 text-xs ${sourceFilter === "cart" ? "border-primary/50 text-primary" : ""}`}
+              className={`salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs lg:w-auto ${sourceFilter === "cart" ? "border-primary/50 text-primary" : ""}`}
             >
               Cart checkout
             </button>
             <button
               type="button"
               onClick={() => setSourceFilter("buy-now")}
-              className={`salt-outline-chip h-10 px-4 py-0 text-xs ${sourceFilter === "buy-now" ? "border-primary/50 text-primary" : ""}`}
+              className={`salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs lg:w-auto ${sourceFilter === "buy-now" ? "border-primary/50 text-primary" : ""}`}
             >
-              Buy with shop
+              Buy now
             </button>
           </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Showing {filteredEntries.length.toLocaleString()} order(s) and {filteredItemCount.toLocaleString()} item(s)
-              {sourceFilter !== "all" ? ` • ${sourceFilter === "buy-now" ? "Buy with Shop only" : "Cart checkout only"}` : ""}
+              {sourceFilter !== "all" ? ` • ${sourceFilter === "buy-now" ? "Buy now only" : "Cart checkout only"}` : ""}
               {normalizedQuery ? ` • matching "${query.trim()}"` : ""}
             </p>
         </div>
@@ -186,32 +187,33 @@ const OrderHistoryPage = () => {
                 <div>
                   <p className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-primary">
                     <ClipboardList className="h-3.5 w-3.5" />
-                    {entry.source === "buy-now" ? "Buy with Shop flow" : "Cart checkout flow"}
+                    {entry.source === "buy-now" ? "Direct checkout flow" : "Cart checkout flow"}
                   </p>
                   <h2 className="mt-1 font-semibold text-lg">{formatTimestamp(entry.createdAt)}</h2>
                   <p className="text-sm text-muted-foreground">
                     {entry.itemCount} item(s) • {formatMoney(entry.subtotal)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
                     onClick={() => replaceItems(entry.items)}
-                    className="salt-outline-chip h-10 px-4 py-0 text-xs"
+                    className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
                   >
                     <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                     Re-add to cart
                   </button>
                   <a
                     href={entry.checkoutUrl}
-                    className="salt-primary-cta h-10 px-4 text-xs font-bold"
+                    onClick={() => trackMetaPixelInitiateCheckout(entry.items)}
+                    className="salt-primary-cta h-10 w-full px-4 text-xs font-bold sm:w-auto"
                   >
                     Checkout again <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
                   </a>
                   <button
                     type="button"
                     onClick={() => remove(entry.id)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border hover:border-destructive/40 hover:text-destructive"
+                    className="inline-flex h-10 w-full items-center justify-center rounded-full border border-border hover:border-destructive/40 hover:text-destructive sm:w-10"
                     aria-label="Remove history entry"
                   >
                     <Trash2 className="h-4 w-4" />

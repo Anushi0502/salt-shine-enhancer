@@ -7,6 +7,7 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney, productImage } from "@/lib/formatters";
+import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -49,11 +50,11 @@ const CartDrawer = () => {
     <Sheet open={isDrawerOpen} onOpenChange={(open) => (open ? undefined : closeCartDrawer())}>
       <SheetContent
         side="right"
-        className="w-full !max-w-full sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem] overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0"
+        className="w-full !max-w-full overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0 sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem]"
       >
         <div className="flex min-h-full flex-col">
-          <SheetHeader className="border-b border-border/70 px-5 pb-5 pt-12 text-left sm:px-6">
-            <div className="flex items-start justify-between gap-4">
+          <SheetHeader className="border-b border-border/70 px-4 pb-5 pt-12 text-left sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-primary">
                   Cart
@@ -62,7 +63,7 @@ const CartDrawer = () => {
                   {itemCount > 0 ? `${itemCount} item${itemCount === 1 ? "" : "s"} saved` : "Your bag is ready"}
                 </SheetTitle>
               </div>
-              <div className="rounded-[1.25rem] border border-border/70 bg-card/80 px-4 py-3 text-right shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
+              <div className="rounded-[1.25rem] border border-border/70 bg-card/80 px-4 py-3 text-left shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)] sm:text-right">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   Subtotal
                 </p>
@@ -72,7 +73,7 @@ const CartDrawer = () => {
 
           </SheetHeader>
 
-          <div className="flex-1 px-5 py-5 sm:px-6">
+          <div className="flex-1 px-4 py-5 sm:px-6">
             {items.length === 0 ? (
               <div className="rounded-[1.7rem] border border-dashed border-border/80 bg-card/70 px-5 py-10 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border/70 bg-background text-primary">
@@ -137,7 +138,7 @@ const CartDrawer = () => {
                           </button>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between gap-3">
+                        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
                           <div className="inline-flex h-10 items-center rounded-full border border-border/70 bg-background/90 px-1">
                             <button
                               type="button"
@@ -202,12 +203,12 @@ const CartDrawer = () => {
                     return (
                       <article
                         key={product.id}
-                        className="flex items-center gap-3 rounded-[1.35rem] border border-border/70 bg-card/82 p-3"
+                        className="flex flex-col gap-3 rounded-[1.35rem] border border-border/70 bg-card/82 p-3 sm:flex-row sm:items-center"
                       >
                         <Link
                           to={`/products/${product.handle}`}
                           onClick={closeCartDrawer}
-                          className="h-20 w-16 overflow-hidden rounded-[0.95rem] border border-border/70 bg-muted"
+                          className="h-40 w-full overflow-hidden rounded-[0.95rem] border border-border/70 bg-muted sm:h-20 sm:w-16"
                         >
                           {image ? (
                             <img src={image} alt={product.title} className="h-full w-full object-cover" />
@@ -249,12 +250,13 @@ const CartDrawer = () => {
                                 title: product.title,
                                 image: image || "",
                                 unitPrice: Number(defaultVariant.price || 0),
+                                productType: product.product_type,
                               },
                               1,
                             );
                           }}
                           disabled={!defaultVariant}
-                          className="salt-outline-chip h-10 shrink-0 px-3 py-0 text-[0.68rem]"
+                          className="salt-outline-chip h-10 w-full shrink-0 px-3 py-0 text-[0.68rem] sm:w-auto"
                         >
                           Add
                         </button>
@@ -266,7 +268,7 @@ const CartDrawer = () => {
             ) : null}
           </div>
 
-          <div className="sticky bottom-0 border-t border-border/70 bg-background/92 px-5 py-5 backdrop-blur sm:px-6">
+          <div className="sticky bottom-0 border-t border-border/70 bg-background/92 px-4 py-5 backdrop-blur sm:px-6">
             {invalidItemCount > 0 ? (
               <p className="mb-3 rounded-[1rem] border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-[0.78rem] leading-6 text-amber-900 dark:text-amber-100">
                 {invalidItemCount} item{invalidItemCount === 1 ? "" : "s"} need a quick review before checkout.
@@ -278,6 +280,7 @@ const CartDrawer = () => {
                 <a
                   href={checkoutUrl}
                   onClick={() => {
+                    trackMetaPixelInitiateCheckout(items);
                     recordDeviceOrderHistory({
                       source: "cart",
                       checkoutUrl,

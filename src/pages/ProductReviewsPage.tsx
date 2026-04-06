@@ -72,11 +72,11 @@ const ProductReviewsPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link to={`/products/${product.handle}`} className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link to={`/products/${product.handle}`} className="salt-outline-chip h-10 w-full gap-1 px-4 py-0 text-xs sm:w-auto">
               <ArrowLeft className="h-3.5 w-3.5" /> Back to product
             </Link>
-            <Link to="/shop" className="salt-outline-chip h-10 gap-1 px-4 py-0 text-xs">
+            <Link to="/shop" className="salt-outline-chip h-10 w-full gap-1 px-4 py-0 text-xs sm:w-auto">
               <MessageSquareQuote className="h-3.5 w-3.5" /> Browse catalog
             </Link>
           </div>

@@ -6,7 +6,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { getRuntimeContext } from "@/lib/theme-assets";
+import { trackMetaPixelAddToCart } from "@/lib/meta-pixel";
+import { getShopBaseOrigin } from "@/lib/theme-assets";
 
 export type CartItem = {
   id: number;
@@ -16,6 +17,7 @@ export type CartItem = {
   unitPrice: number;
   quantity: number;
   shopifyVariantId?: number;
+  productType?: string;
 };
 
 type CartContextValue = {
@@ -40,95 +42,7 @@ type CartContextValue = {
 const CART_STORAGE_KEY = "salt-cart";
 const MIN_SHOPIFY_NUMERIC_ID = 10_000_000_000_000;
 const SHOPIFY_ROUTE_BYPASS_QUERY = "_fd=0&pb=0";
-const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
-
-function normalizeBaseUrl(input: string | undefined): string | null {
-  const raw = String(input || "").trim();
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-    const url = new URL(withProtocol);
-    return `${url.protocol}//${url.host}`;
-  } catch {
-    return null;
-  }
-}
-
-function isLocalOrigin(input: string | null): boolean {
-  if (!input) {
-    return false;
-  }
-
-  try {
-    const { hostname } = new URL(input);
-    const normalized = hostname.toLowerCase();
-    if (
-      normalized === "localhost" ||
-      normalized === "127.0.0.1" ||
-      normalized === "::1" ||
-      normalized === "[::1]" ||
-      normalized.endsWith(".local") ||
-      normalized.endsWith(".lan")
-    ) {
-      return true;
-    }
-
-    if (normalized.startsWith("10.") || normalized.startsWith("192.168.")) {
-      return true;
-    }
-
-    const match172 = normalized.match(/^172\.(\d{1,3})\./);
-    if (match172) {
-      const secondOctet = Number(match172[1]);
-      return secondOctet >= 16 && secondOctet <= 31;
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-function resolveShopBase(): string {
-  const runtimeContext = getRuntimeContext();
-  const runtimeBase =
-    normalizeBaseUrl(runtimeContext.shopBaseUrl) ||
-    normalizeBaseUrl(runtimeContext.shopDomain);
-  if (runtimeBase) {
-    return runtimeBase;
-  }
-
-  const explicitBase =
-    normalizeBaseUrl(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL) ||
-    normalizeBaseUrl(import.meta.env.VITE_SALT_SHOP_URL);
-  if (explicitBase) {
-    return explicitBase;
-  }
-
-  const fallbackCanonical = normalizeBaseUrl(DEFAULT_CANONICAL_SHOP_BASE);
-  if (fallbackCanonical) {
-    return fallbackCanonical;
-  }
-
-  if (typeof window !== "undefined") {
-    const localProxyTarget = normalizeBaseUrl(import.meta.env.VITE_LOCAL_SHOPIFY_PROXY_TARGET);
-    if (localProxyTarget) {
-      return localProxyTarget;
-    }
-
-    const appOrigin = normalizeBaseUrl(window.location.origin);
-    if (appOrigin && !isLocalOrigin(appOrigin)) {
-      return appOrigin;
-    }
-  }
-
-  return "";
-}
-
-export const SHOPIFY_STOREFRONT_BASE = resolveShopBase();
+export const SHOPIFY_STOREFRONT_BASE = getShopBaseOrigin();
 
 export function buildShopifyCartUrl(): string {
   return `${SHOPIFY_STOREFRONT_BASE}/cart?${SHOPIFY_ROUTE_BYPASS_QUERY}`;
@@ -232,40 +146,6 @@ export function buildShopifyDirectCheckoutUrl(variantId: number, quantity = 1): 
   return `${SHOPIFY_STOREFRONT_BASE}/cart/${variantId}:${safeQuantity}?checkout&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
 }
 
-export function buildShopifyShopPayCartUrl(): string {
-  return `${SHOPIFY_STOREFRONT_BASE}/cart?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
-}
-
-export function buildShopifyShopPayCheckoutUrl(items: CartItem[]): string {
-  const lineItems = items
-    .map((item) => {
-      const variantId = item.shopifyVariantId;
-      const quantity = Math.max(1, Math.floor(item.quantity || 1));
-
-      if (!isValidShopifyVariantId(variantId)) {
-        return null;
-      }
-
-      return `${variantId}:${quantity}`;
-    })
-    .filter((entry): entry is string => Boolean(entry));
-
-  if (!lineItems.length) {
-    return buildShopifyShopPayCartUrl();
-  }
-
-  return `${SHOPIFY_STOREFRONT_BASE}/cart/${lineItems.join(",")}?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
-}
-
-export function buildShopifyShopPayUrl(variantId: number, quantity = 1): string {
-  if (!isValidShopifyVariantId(variantId)) {
-    return buildShopifyShopPayCartUrl();
-  }
-
-  const safeQuantity = Math.max(1, Math.floor(quantity || 1));
-  return `${SHOPIFY_STOREFRONT_BASE}/cart/${variantId}:${safeQuantity}?payment=shop_pay&${SHOPIFY_ROUTE_BYPASS_QUERY}`;
-}
-
 export function buildShopifyProductUrl(handle: string | null | undefined): string | null {
   const normalized = normalizeShopifyHandle(handle);
   if (!normalized) {
@@ -302,6 +182,8 @@ export function CartProvider({ children }: PropsWithChildren) {
       subtotal,
       isDrawerOpen,
       addItem: (newItem, quantity = 1, options) => {
+        const safeQuantity = Math.max(1, Math.floor(quantity || 1));
+
         setItems((current) => {
           const existing = current.find((entry) => entry.id === newItem.id);
 
@@ -310,13 +192,18 @@ export function CartProvider({ children }: PropsWithChildren) {
               entry.id === newItem.id
                 ? {
                     ...entry,
-                    quantity: Math.max(1, entry.quantity + quantity),
+                    quantity: Math.max(1, entry.quantity + safeQuantity),
                   }
                 : entry,
             );
           }
 
-          return [...current, { ...newItem, quantity: Math.max(1, quantity) }];
+          return [...current, { ...newItem, quantity: safeQuantity }];
+        });
+
+        trackMetaPixelAddToCart({
+          ...newItem,
+          quantity: safeQuantity,
         });
 
         if (options?.openDrawer !== false) {
