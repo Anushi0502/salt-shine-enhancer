@@ -199,7 +199,6 @@ const ProductPage = () => {
       />
     );
   }
-
   const displayedVariants = showAvailableOnly ? variants.filter((variant) => variant.available) : variants;
   const price = Number(selectedVariant?.price || 0);
   const lowestVariantPrice = Number(variants[0]?.price || 0);
