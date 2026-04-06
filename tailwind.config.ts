@@ -15,10 +15,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Manrope", "sans-serif"],
-        serif: ["Playfair Display", "serif"],
-        display: ["Fraunces", "Playfair Display", "serif"],
-        techno: ["Chakra Petch", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        serif: ["Source Serif 4", "Georgia", "serif"],
+        display: ["Source Serif 4", "Georgia", "serif"],
+        techno: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

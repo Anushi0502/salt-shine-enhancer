@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -109,6 +109,8 @@
 
   html {
     scroll-behavior: smooth;
+    font-kerning: normal;
+    text-size-adjust: 100%;
   }
 
   a {
@@ -118,6 +120,13 @@
   button,
   [role="button"] {
     @apply transition;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 
   :focus-visible {
@@ -136,6 +145,9 @@
     overflow-x: clip;
     min-height: 100vh;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
   }
 
   body::before {
@@ -207,7 +219,7 @@
   }
 
   .salt-heading {
-    font-family: "Fraunces", "Playfair Display", serif;
+    font-family: "Source Serif 4", Georgia, serif;
     @apply tracking-tight;
   }
 
@@ -964,11 +976,11 @@
     padding: 0 !important;
     background: transparent !important;
     color: hsl(var(--foreground));
-    font-family: "Manrope", sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
   }
 
   .salt-reviews-shell .spr-header-title {
-    font-family: "Fraunces", "Playfair Display", serif;
+    font-family: "Source Serif 4", Georgia, serif;
     font-size: clamp(1.2rem, 2vw, 1.6rem);
     color: hsl(var(--foreground));
   }
@@ -1279,7 +1291,7 @@
 
   .salt-entry-copy h2 {
     margin: 0;
-    font-family: "Fraunces", "Playfair Display", serif;
+    font-family: "Source Serif 4", Georgia, serif;
     font-size: clamp(1.5rem, 3.2vw, 3rem);
     line-height: 1.03;
     color: hsl(var(--salt-paper));

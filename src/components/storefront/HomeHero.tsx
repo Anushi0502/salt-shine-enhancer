@@ -47,7 +47,7 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
             </div>
 
             <div className="mt-6 max-w-[40rem]">
-              <h1 className="mt-4 max-w-[12ch] font-display text-[clamp(2.25rem,11vw,5rem)] leading-[1.04] tracking-[-0.05em] text-white sm:max-w-[15ch] sm:leading-[1.2]">
+              <h1 className="mt-4 max-w-[12ch] font-display text-[clamp(2.25rem,11vw,5rem)] leading-[1.04] tracking-[-0.05em] text-white sm:max-w-[18ch] sm:leading-[1.1]">
                 Curated pieces for home, gifting, and beautifully useful days.
               </h1>
             </div>
