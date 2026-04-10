@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import {
   compareAt,
   formatMoney,
@@ -76,6 +77,7 @@ function variantOptionTokens(title?: string): string[] {
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
+  const { isAuthenticated, session } = useCustomerAuth();
   const { data, isLoading, error, refetch } = useProducts();
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
 
@@ -212,6 +214,9 @@ const ProductPage = () => {
     ? buildShopifyDirectCheckoutUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
   const checkoutHandoffUrl = directCheckoutUrl;
+  const checkoutTargetUrl = isAuthenticated
+    ? checkoutHandoffUrl
+    : buildCustomerAccessPath({ mode: "login", next: checkoutHandoffUrl, reason: "checkout" });
   const devicePurchasesLast30Days = getProductPurchasesLast30Days(
     deviceOrderEntries,
     product.handle,
@@ -538,9 +543,9 @@ const ProductPage = () => {
             </div>
 
             <a
-              href={checkoutHandoffUrl}
+              href={checkoutTargetUrl}
               onClick={() => {
-                if (!selectedVariant || !isAvailable) {
+                if (!isAuthenticated || !selectedVariant || !isAvailable) {
                   return;
                 }
 
@@ -571,6 +576,7 @@ const ProductPage = () => {
                       productType: product.product_type,
                     },
                   ],
+                  userId: session?.user?.id,
                 });
               }}
               aria-disabled={!isAvailable}
@@ -580,7 +586,7 @@ const ProductPage = () => {
                   : "pointer-events-none opacity-60"
               }`}
             >
-              Buy now
+              {isAuthenticated ? "Buy now" : "Login to buy"}
             </a>
             <button
               type="button"

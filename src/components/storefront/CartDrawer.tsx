@@ -6,6 +6,7 @@ import {
   isValidShopifyVariantId,
   useCart,
 } from "@/lib/cart";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { formatMoney, productImage } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
@@ -15,6 +16,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 const CartDrawer = () => {
   const location = useLocation();
   const { data: productsPayload } = useProducts();
+  const { isAuthenticated, session } = useCustomerAuth();
   const {
     items,
     itemCount,
@@ -44,6 +46,9 @@ const CartDrawer = () => {
 
   const invalidItemCount = items.filter((item) => !isValidShopifyVariantId(item.shopifyVariantId)).length;
   const checkoutUrl = buildShopifyCheckoutUrl(items);
+  const checkoutTargetUrl = isAuthenticated
+    ? checkoutUrl
+    : buildCustomerAccessPath({ mode: "login", next: checkoutUrl, reason: "checkout" });
   const canCheckout = items.length > 0 && invalidItemCount === 0;
 
   return (
@@ -278,18 +283,23 @@ const CartDrawer = () => {
             <div className="grid gap-2">
               {canCheckout ? (
                 <a
-                  href={checkoutUrl}
+                  href={checkoutTargetUrl}
                   onClick={() => {
+                    if (!isAuthenticated) {
+                      return;
+                    }
+
                     trackMetaPixelInitiateCheckout(items);
                     recordDeviceOrderHistory({
                       source: "cart",
                       checkoutUrl,
                       items,
+                      userId: session?.user?.id,
                     });
                   }}
                   className="salt-primary-cta h-12 justify-center px-5 text-sm font-semibold uppercase tracking-[0.12em]"
                 >
-                  Continue to checkout
+                  {isAuthenticated ? "Continue to checkout" : "Login to continue"}
                 </a>
               ) : (
                 <Link

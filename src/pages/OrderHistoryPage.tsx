@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ArrowUpRight, ClipboardList, History, RotateCcw, Search, Trash2 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { useCart } from "@/lib/cart";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { formatMoney } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { useDeviceOrderHistory } from "@/lib/order-history";
@@ -25,8 +26,18 @@ function formatTimestamp(value: string): string {
 const OrderHistoryPage = () => {
   const { entries, purchasesLast30Days, clear, remove } = useDeviceOrderHistory();
   const { replaceItems } = useCart();
+  const { isAuthenticated } = useCustomerAuth();
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "cart" | "buy-now">("all");
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to={buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" })}
+        replace
+      />
+    );
+  }
 
   const totalSpent = useMemo(
     () => entries.reduce((sum, entry) => sum + entry.subtotal, 0),
@@ -66,9 +77,9 @@ const OrderHistoryPage = () => {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
               <History className="h-8 w-8" />
             </div>
-            <h1 className="mt-4 font-display text-4xl">No orders on this device yet</h1>
+            <h1 className="mt-4 font-display text-4xl">No account orders yet</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Once checkout starts, your recent order timeline appears here.
+              Once checkout starts, your recent order timeline appears here across signed-in sessions.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <Link to="/shop" className="salt-primary-cta h-11 px-6 text-sm font-bold">
@@ -94,7 +105,7 @@ const OrderHistoryPage = () => {
               Your recent order timeline
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {purchasesLast30Days.toLocaleString()} items purchased from this device in the last 30 days.
+              {purchasesLast30Days.toLocaleString()} items recorded on your account in the last 30 days.
             </p>
           </div>
           <button
@@ -111,7 +122,7 @@ const OrderHistoryPage = () => {
         <div className="salt-panel-shell mb-4 rounded-2xl p-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <div className="salt-ambient-card rounded-xl px-3 py-2">
-              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Orders on this device</p>
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Orders on this account</p>
               <p className="mt-1 text-xl font-semibold text-foreground">{entries.length.toLocaleString()}</p>
             </div>
             <div className="salt-ambient-card rounded-xl px-3 py-2">
@@ -119,7 +130,7 @@ const OrderHistoryPage = () => {
               <p className="mt-1 text-xl font-semibold text-foreground">{purchasesLast30Days.toLocaleString()}</p>
             </div>
             <div className="salt-ambient-card rounded-xl px-3 py-2">
-              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Spend on this device</p>
+              <p className="text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">Spend on this account</p>
               <p className="mt-1 text-xl font-semibold text-foreground">{formatMoney(totalSpent)}</p>
             </div>
             <div className="salt-ambient-card rounded-xl px-3 py-2">

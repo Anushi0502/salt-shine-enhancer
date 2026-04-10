@@ -17,6 +17,7 @@ import {
   isValidShopifyVariantId,
   useCart,
 } from "@/lib/cart";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { formatMoney } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
@@ -38,6 +39,7 @@ function normalizeTitleLookup(input: string): string {
 
 const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
+  const { isAuthenticated, session } = useCustomerAuth();
   const { data: productsPayload } = useProducts();
 
   const recommendedProducts = (productsPayload?.products || []).slice(0, 4);
@@ -145,6 +147,13 @@ const CartPage = () => {
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
 
   const checkoutHandoffUrl = buildShopifyCheckoutUrl(checkoutItems);
+  const checkoutTargetUrl = isAuthenticated
+    ? checkoutHandoffUrl
+    : buildCustomerAccessPath({
+        mode: "login",
+        next: checkoutHandoffUrl,
+        reason: "checkout",
+      });
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -364,13 +373,18 @@ const CartPage = () => {
             ) : null}
 
             <a
-              href={checkoutHandoffUrl}
+              href={checkoutTargetUrl}
               onClick={() => {
+                if (!isAuthenticated) {
+                  return;
+                }
+
                 trackMetaPixelInitiateCheckout(checkoutItems);
                 recordDeviceOrderHistory({
                   source: "cart",
                   checkoutUrl: checkoutHandoffUrl,
                   items: checkoutItems,
+                  userId: session?.user?.id,
                 });
               }}
               aria-disabled={hasUnresolvedCheckoutItems}
@@ -380,7 +394,7 @@ const CartPage = () => {
                   : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
               }`}
             >
-              Continue to Checkout
+              {isAuthenticated ? "Continue to Checkout" : "Login to continue"}
             </a>
 
             <Link
@@ -440,13 +454,18 @@ const CartPage = () => {
             <p className="font-display text-[1.4rem] leading-none text-primary">{formatMoney(subtotal)}</p>
           </div>
           <a
-            href={checkoutHandoffUrl}
+            href={checkoutTargetUrl}
             onClick={() => {
+              if (!isAuthenticated) {
+                return;
+              }
+
               trackMetaPixelInitiateCheckout(checkoutItems);
               recordDeviceOrderHistory({
                 source: "cart",
                 checkoutUrl: checkoutHandoffUrl,
                 items: checkoutItems,
+                userId: session?.user?.id,
               });
             }}
             aria-disabled={hasUnresolvedCheckoutItems}
@@ -456,7 +475,7 @@ const CartPage = () => {
                 : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
             }`}
           >
-            Continue to checkout
+            {isAuthenticated ? "Continue to checkout" : "Login to continue"}
           </a>
         </div>
       </div>

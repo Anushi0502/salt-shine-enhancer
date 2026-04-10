@@ -1,6 +1,7 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  ChevronDown,
   ChevronRight,
   ClipboardList,
   Menu,
@@ -11,6 +12,7 @@ import {
 import BrandLogo from "@/components/layout/BrandLogo";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useCart } from "@/lib/cart";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
@@ -262,9 +264,12 @@ const MainHeader = () => {
   const [desktopSearch, setDesktopSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
   const [activePanel, setActivePanel] = useState<"desktop" | "mobile" | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const desktopSearchRef = useRef<HTMLInputElement | null>(null);
   const mobileSearchRef = useRef<HTMLInputElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const { isAuthenticated, logout } = useCustomerAuth();
 
   const products = productsPayload?.products ?? [];
   const collections = useMemo(
@@ -285,6 +290,11 @@ const MainHeader = () => {
     () => buildSearchSuggestions(deferredMobileSearch, products, collections),
     [collections, deferredMobileSearch, products],
   );
+  const orderHistoryHref = isAuthenticated
+    ? "/order-history"
+    : buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" });
+  const loginHref = buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "account" });
+  const signupHref = buildCustomerAccessPath({ mode: "signup", next: "/order-history", reason: "account" });
 
   useEffect(() => {
     setDesktopSearch(activeQuery);
@@ -349,6 +359,7 @@ const MainHeader = () => {
 
       if (event.key === "Escape") {
         setActivePanel(null);
+        setAccountMenuOpen(false);
         if (mobileOpen) {
           setMobileOpen(false);
         }
@@ -390,6 +401,21 @@ const MainHeader = () => {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
 
   const submitSearch = (query: string) => {
     const trimmed = query.trim();
@@ -479,28 +505,112 @@ const MainHeader = () => {
 
           <ThemeToggle className="shrink-0" />
 
-          <Link
-            to="/order-history"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--salt-ink))] shadow-[0_14px_28px_-24px_rgba(15,23,42,0.2)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/45 hover:text-primary hover:shadow-[0_20px_38px_-24px_rgba(37,99,235,0.34)] dark:text-white dark:hover:bg-[hsl(var(--salt-ink))] dark:hover:text-primary 2xl:h-10 2xl:w-auto 2xl:gap-2 2xl:px-3"
-            aria-label="Order history"
-            title="Order history"
-          >
-            <ClipboardList className="h-4 w-4" />
-            <span className="hidden 2xl:inline">Orders</span>
-          </Link>
+          <div ref={accountMenuRef} className="relative hidden xl:block">
+            <button
+              type="button"
+              onClick={() => setAccountMenuOpen((open) => !open)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-primary/40 bg-[hsl(var(--salt-accent))] px-5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_-24px_rgba(37,99,235,0.7)] transition hover:bg-[hsl(var(--salt-accent)/0.92)] xl:h-11 xl:px-6 xl:text-[0.75rem]"
+              aria-haspopup="menu"
+              aria-expanded={accountMenuOpen}
+            >
+              <span className="inline-flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Account
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 transition ${accountMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
 
-          <button
-            type="button"
-            onClick={openCartDrawer}
-            className="salt-primary-cta inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[0.7rem] font-semibold uppercase tracking-[0.12em] xl:h-11 xl:px-5 xl:text-[0.75rem]"
-            aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            Cart
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/16 px-2 py-0.5 text-[0.68rem]">
-              {itemCount}
-            </span>
-          </button>
+            {accountMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.65rem)] z-50 w-56 rounded-[1.15rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] p-2 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)]">
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        openCartDrawer();
+                      }}
+                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4" />
+                        Cart
+                      </span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <Link
+                      to={orderHistoryHref}
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4" />
+                        Orders
+                      </span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        setAccountMenuOpen(false);
+                      }}
+                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span>Logout</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        openCartDrawer();
+                      }}
+                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4" />
+                        Cart
+                      </span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <Link
+                      to={loginHref}
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span>Login</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      to={signupHref}
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span>Sign up</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      to={orderHistoryHref}
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4" />
+                        Orders
+                      </span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <button
@@ -617,8 +727,49 @@ const MainHeader = () => {
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to={orderHistoryHref}
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+                  >
+                    Orders
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      closeMobileMenu();
+                    }}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={loginHref}
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to={signupHref}
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
               <Link
-                to="/order-history"
+                to={orderHistoryHref}
                 onClick={closeMobileMenu}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
               >

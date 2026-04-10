@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Mail, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
+import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import {
   getRuntimeContext,
   resolveStorefrontPath,
@@ -21,6 +22,10 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
+  const { isAuthenticated } = useCustomerAuth();
+  const orderHistoryHref = isAuthenticated
+    ? "/order-history"
+    : buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" });
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -128,7 +133,7 @@ const MainFooter = () => {
           </h3>
           <div className="mt-4 grid gap-2 text-sm">
             <Link to="/contact" className="transition hover:text-primary">Contact</Link>
-            <Link to="/order-history" className="transition hover:text-primary">Order history</Link>
+            <Link to={orderHistoryHref} className="transition hover:text-primary">Order history</Link>
             <a href={shippingPolicyHref} className="transition hover:text-primary">Shipping policy</a>
             <a href={returnsPolicyHref} className="transition hover:text-primary">Return policy</a>
             <a href={privacyPolicyHref} className="transition hover:text-primary">Privacy policy</a>
