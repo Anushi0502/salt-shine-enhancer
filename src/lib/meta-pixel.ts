@@ -21,7 +21,7 @@ export type MetaPixelCartItem = {
   productType?: string;
 };
 
-const DEFAULT_META_PIXEL_ID = "1617705319275041";
+const DEFAULT_META_PIXEL_ID = "1147374030261395";
 
 function getMetaPixelId(): string {
   if (typeof window !== "undefined") {
