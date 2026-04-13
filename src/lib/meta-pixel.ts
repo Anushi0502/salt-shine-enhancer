@@ -24,7 +24,13 @@ export type MetaPixelCartItem = {
 const DEFAULT_META_PIXEL_ID = "1147374030261395";
 
 function getMetaPixelId(): string {
-  return "1147374030261395";
+  const runtimeId = typeof window !== "undefined" ? String(window.SALT_META_PIXEL_ID ?? "").trim() : "";
+  if (runtimeId) {
+    return runtimeId;
+  }
+
+  const envId = String(import.meta.env.VITE_META_PIXEL_ID ?? "").trim();
+  return envId || DEFAULT_META_PIXEL_ID;
 }
 
 function getCurrencyCode(): string {

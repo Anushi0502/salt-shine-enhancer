@@ -73,7 +73,7 @@ async function writeThemeScaffold() {
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
-      window.SALT_META_PIXEL_ID = '1617705319275041';
+      window.SALT_META_PIXEL_ID = '1147374030261395';
       fbq('init', window.SALT_META_PIXEL_ID);
     </script>
     {{ content_for_header }}
