@@ -13,124 +13,67 @@ type HomeHeroProps = {
 };
 
 const heroStats = [
-  { label: "Curated weekly", icon: Sparkles },
-  { label: "Gift-ready", icon: BadgeCheck },
-  { label: "Fast dispatch", icon: Truck },
+  { label: "Easy to browse", icon: Sparkles },
+  { label: "Gift-friendly finds", icon: BadgeCheck },
+  { label: "Fast U.S. dispatch", icon: Truck },
 ];
 
 const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
   const collectionImage = normalizeShopifyAssetUrl(leadCollection?.image?.src);
   const [mainProduct, secondaryProduct, tertiaryProduct] = featured ?? [];
-  const spotlightProducts = [secondaryProduct, tertiaryProduct].filter(Boolean) as ShopifyProduct[];
+  const spotlightProducts = [mainProduct, secondaryProduct,].filter(Boolean) as ShopifyProduct[];
+  const primaryCtaHref = leadCollection ? `/shop?collection=${leadCollection.handle}` : "/shop?sort=discount";
+  const primaryCtaLabel = leadCollection && /best[\s-]*seller/i.test(leadCollection.title)
+    ? "Shop best sellers"
+    : "Shop curated picks";
 
   return (
-    <section className="mx-auto mt-3 grid w-[min(1340px,94vw)] gap-3 sm:mt-4 sm:w-[min(1340px,96vw)] sm:gap-4 xl:min-h-[60vw] xl:grid-cols-[1.12fr_0.88fr]">
-      <Reveal>
-        <div className="salt-ink-panel relative isolate min-h-[26.5rem] overflow-hidden rounded-[1.55rem] px-3.5 py-4 text-[hsl(var(--salt-paper))] shadow-[0_44px_120px_-72px_rgba(15,23,42,0.6)] sm:min-h-[41rem] sm:rounded-[2.35rem] sm:px-7 sm:py-7 lg:px-9 lg:py-8 xl:h-[60vw] xl:min-h-0">
+    <section className="mx-auto grid w-full max-w-[1340px] gap-4 px-4 sm:gap-6 xl:min-h-[700px] xl:grid-cols-[1.15fr_0.85fr]">
+      <Reveal className="min-w-0 overflow-hidden">
+        <div className="relative isolate flex min-h-[30rem] flex-col overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 sm:min-h-[45rem] sm:p-12 xl:h-full">
           {collectionImage ? (
             <img
               src={collectionImage}
               alt={leadCollection?.title || "Featured collection"}
-              className="absolute inset-0 h-full w-full object-cover opacity-30"
+              className="absolute inset-0 h-full w-full object-cover mix-blend-multiply opacity-20"
             />
           ) : null}
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(20,29,52,0.9),rgba(20,29,52,0.72)_42%,rgba(20,29,52,0.84)),radial-gradient(circle_at_14%_16%,rgba(244,196,48,0.18),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(77,125,255,0.16),transparent_24%)]" />
-          <div className="pointer-events-none absolute inset-2.5 rounded-[1.35rem] border border-white/10 sm:inset-[1.15rem] sm:rounded-[2rem]" />
-
-          <div className="relative z-10">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          
+          <div className="relative z-10 flex h-full flex-col justify-center max-w-[44rem]">
+            
               <BrandLogo
                 size="sm"
                 withWordmark
                 className="rounded-full border border-white/10 bg-white/8 px-3 py-2 backdrop-blur"
               />
-            </div>
 
-            <div className="mt-5 max-w-[40rem]">
-              <h1 className="mt-3 max-w-[11ch] font-display text-[clamp(2.05rem,11vw,5rem)] leading-[1.02] tracking-[-0.05em] text-white sm:mt-4 sm:max-w-[18ch] sm:leading-[1.1]">
-                Curated pieces for home, gifting, and beautifully useful days.
-              </h1>
-            </div>
+            <h1 className="font-display text-[clamp(2.5rem,7vw,5rem)] leading-[1.05] tracking-[-0.03em] text-[#1a1a1a]">
+              Curated home, kitchen, gifts, and essentials — made easy to shop.
+            </h1>
+            
+            <p className="mt-6 text-[clamp(1rem,2vw,1.25rem)] leading-relaxed text-[#4a453e]/90">
+              SALT brings practical lifestyle finds and giftable favorites into one calm, premium storefront that is easy to understand in seconds.
+            </p>
 
-            <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:flex-row sm:flex-wrap sm:gap-3">
+            <div className="mt-8 flex flex-col gap-4 sm:mt-10 sm:flex-row sm:items-center">
               <Link
-                to={leadCollection ? `/shop?collection=${leadCollection.handle}` : "/collections"}
-                className="salt-primary-cta inline-flex h-11 w-full items-center gap-2 rounded-full px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] sm:h-12 sm:w-auto sm:px-6 sm:text-[0.76rem]"
+                to={primaryCtaHref}
+                className="inline-flex h-14 items-center justify-center rounded-full bg-[#1a1a1a] px-10 text-[0.76rem] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-primary active:scale-[0.98]"
               >
-                {leadCollection ? `Shop ${leadCollection.title}` : "Shop collections"}
-                <ArrowRight className="h-4 w-4" />
+                {primaryCtaLabel}
               </Link>
               <Link
-                to="/shop?sort=newest"
-                className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/16 bg-white/8 px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-white hover:text-[hsl(var(--salt-ink))] sm:h-12 sm:w-auto sm:px-6 sm:text-[0.76rem]"
+                to="/collections"
+                className="inline-flex h-14 items-center justify-center rounded-full border border-[#1a1a1a] px-10 text-[0.76rem] font-bold uppercase tracking-[0.18em] text-[#1a1a1a] transition-all hover:bg-[#1a1a1a] hover:text-white active:scale-[0.98]"
               >
-                Browse new arrivals
+                Explore categories
               </Link>
-            </div>
-
-
-            <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
-              {heroStats.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <span
-                    key={item.label}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/78 backdrop-blur"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-primary" />
-                    {item.label}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:mt-5">
-
-              {mainProduct ? (<Link
-                to={`/products/${mainProduct.handle}`}
-                className="group grid grid-cols-[5.5rem_minmax(0,1fr)] items-stretch gap-3 rounded-[1.2rem] border border-white/10 bg-white/8 p-3 backdrop-blur transition hover:border-primary/35 hover:bg-white/[0.11] sm:flex sm:flex-row sm:gap-5 sm:rounded-[1.8rem] sm:p-5 lg:p-6"
-              >
-                <div className="h-[5.5rem] min-h-[5.5rem] w-full shrink-0 overflow-hidden rounded-[0.95rem] bg-white/10 sm:h-auto sm:min-h-0 sm:w-32 sm:rounded-[1.25rem] lg:w-36">
-                  {productImage(mainProduct) ? (
-                    <img
-                      src={productImage(mainProduct) || ""}
-                      alt={mainProduct.title}
-                      className="block h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.05] sm:h-[11rem] lg:h-[11rem]"
-                    />
-                  ) : null}
-                </div>
-
-                <div className="flex min-w-0 flex-1 flex-col justify-between py-1 sm:py-2">
-                  <div>
-                    <p className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      Featured this week
-                    </p>
-
-                    <p className="mt-2 line-clamp-3 font-display text-[1.2rem] leading-[0.98] text-white sm:mt-3 sm:text-[2.05rem] lg:text-[2.55rem]">
-                      {mainProduct.title}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-end justify-between gap-3 sm:mt-4">
-                    <p className="font-display text-[1.55rem] leading-none text-white sm:text-[2.7rem] lg:text-[3.2rem]">
-                      {formatMoney(minPrice(mainProduct))}
-                    </p>
-
-                    <span className="text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white/82 transition group-hover:text-white sm:text-[0.82rem]">
-                      View
-                    </span>
-                  </div>
-                </div>
-              </Link>
-              ) : null}
             </div>
           </div>
         </div>
       </Reveal>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-1">
         {spotlightProducts.map((product, index) => {
           const image = productImage(product);
           const savings = savingsPercent(product);
@@ -169,8 +112,8 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
 
                 <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
                   <div className="rounded-[1.2rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] p-3.5 shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:rounded-[1.45rem] sm:p-4">
-                    <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                      Featured product
+                      <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Curated pick
                     </p>
                     <h3 className="mt-2 line-clamp-2 max-w-[25ch] font-display text-[1.32rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.66rem]">
                       {product.title}
@@ -197,3 +140,4 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
 };
 
 export default HomeHero;
+

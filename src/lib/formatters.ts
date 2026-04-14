@@ -180,14 +180,53 @@ export function readingTime(input: string): string {
   return `${minutes} min read`;
 }
 
-export function conciseTitle(input: string, maxChars = 76): string {
-  const title = stripHtml(input);
+function trimText(input: string, maxChars: number): string {
+  if (input.length <= maxChars) {
+    return input;
+  }
+
+  const slice = input.slice(0, maxChars - 1);
+  const boundary = slice.lastIndexOf(" ");
+  const shortened = boundary > 24 ? slice.slice(0, boundary) : slice;
+  return `${shortened.trimEnd()}…`;
+}
+
+function primaryTitleSegment(input: string): string {
+  const title = stripHtml(input).replace(/\s+/g, " ").trim();
+  if (!title) {
+    return "";
+  }
+
+  const separators = [" | ", " – ", " — ", " - "];
+  for (const separator of separators) {
+    if (!title.includes(separator)) {
+      continue;
+    }
+
+    const [segment] = title.split(separator);
+    if (segment.trim().length >= 8) {
+      return segment.trim();
+    }
+  }
+
+  return title;
+}
+
+export function conciseTitle(input: string, maxChars = 58): string {
+  const title = primaryTitleSegment(input);
   if (title.length <= maxChars) {
     return title;
   }
 
-  const slice = title.slice(0, maxChars - 1);
-  const boundary = slice.lastIndexOf(" ");
-  const shortened = boundary > 24 ? slice.slice(0, boundary) : slice;
-  return `${shortened.trimEnd()}…`;
+  return trimText(title, maxChars);
+}
+
+export function productBenefitText(product: ShopifyProduct, maxChars = 84): string {
+  const description = stripHtml(product.body_html).replace(/\s+/g, " ").trim();
+  const firstSentence = description.split(/(?<=[.!?])\s+/).find(Boolean)?.trim() || description;
+  const fallback = product.product_type
+    ? `${product.product_type} made easier to browse, gift, and use every day.`
+    : "Useful everyday find selected to feel practical, giftable, and easy to shop.";
+
+  return trimText(firstSentence || fallback, maxChars);
 }

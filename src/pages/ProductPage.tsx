@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronRight,
   History,
+  Heart,
   Leaf,
   Minus,
   PackageCheck,
@@ -48,6 +49,7 @@ import {
   useDeviceOrderHistory,
 } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
+import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 
 const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
 
@@ -77,6 +79,7 @@ function variantOptionTokens(title?: string): string[] {
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
+  const { isWishlisted, toggleItem } = useWishlist();
   const { isAuthenticated, session } = useCustomerAuth();
   const { data, isLoading, error, refetch } = useProducts();
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
@@ -256,6 +259,15 @@ const ProductPage = () => {
     ...productTagList(product).slice(0, 2),
   ];
   const shortDescription = stripHtml(product.body_html);
+  const wishlisted = isWishlisted(product.handle);
+
+  const toggleWishlistState = () => {
+    const nextSaved = !wishlisted;
+    toggleItem(wishlistItemFromProduct(product));
+    toast.success(nextSaved ? "Saved to wishlist" : "Removed from wishlist", {
+      description: product.title,
+    });
+  };
 
   const recentlyViewedProducts = recentHandles
     .filter((entry) => entry !== product.handle)
@@ -408,7 +420,7 @@ const ProductPage = () => {
                       type="button"
                       onClick={() => setShowAvailableOnly((value) => !value)}
                       className="salt-outline-chip h-8 px-2.5 py-0 text-[0.6rem]"
-                      aria-pressed={showAvailableOnly}
+                      aria-pressed={showAvailableOnly ? "true" : "false"}
                     >
                       {showAvailableOnly ? <ToggleRight className="mr-1 h-3.5 w-3.5" /> : <ToggleLeft className="mr-1 h-3.5 w-3.5" />}
                       {showAvailableOnly ? "Available only" : "All options"}
@@ -457,7 +469,7 @@ const ProductPage = () => {
                         type="button"
                         onClick={() => setSelectedVariantId(variant.id)}
                         disabled={!variantAvailable}
-                        aria-pressed={isVariantSelected}
+                        aria-pressed={isVariantSelected ? "true" : "false"}
                         className={`group relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition ${
                           isVariantSelected
                             ? "border-primary bg-primary/12 shadow-[0_14px_28px_-22px_hsl(var(--primary)/0.95)]"
@@ -579,7 +591,7 @@ const ProductPage = () => {
                   userId: session?.user?.id,
                 });
               }}
-              aria-disabled={!isAvailable}
+              aria-disabled={isAvailable ? "false" : "true"}
               className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#f3d45d] bg-[linear-gradient(135deg,#ffe071_0%,#f6cf3e_38%,#dda611_100%)] px-5 text-base font-semibold text-[#1c2233] shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_18px_34px_-24px_rgba(221,166,17,0.68)] transition ${
                 isAvailable
                   ? "hover:-translate-y-[1px] hover:brightness-[1.03] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_22px_40px_-24px_rgba(221,166,17,0.78)]"
@@ -596,6 +608,16 @@ const ProductPage = () => {
             >
               <ShoppingBag className="h-4 w-4" />
               {isAvailable ? `Add to cart • ${formatMoney(price * quantity)}` : "Unavailable"}
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleWishlistState}
+              aria-pressed={wishlisted ? "true" : "false"}
+              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/40 hover:text-primary"
+            >
+              <Heart className={`h-4 w-4 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
+              {wishlisted ? "Saved to wishlist" : "Save to wishlist"}
             </button>
 
 
@@ -734,6 +756,15 @@ const ProductPage = () => {
             </p>
             <p className="font-display text-[1.45rem] leading-none text-primary">{formatMoney(price)}</p>
           </div>
+          <button
+            type="button"
+            onClick={toggleWishlistState}
+            aria-pressed={wishlisted ? "true" : "false"}
+            aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
+            className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-foreground transition hover:border-primary/40 hover:text-primary"
+          >
+            <Heart className={`h-4.5 w-4.5 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
+          </button>
           <button
             type="button"
             onClick={addToCart}

@@ -1,9 +1,11 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  CircleUserRound,
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  Heart,
   Menu,
   Search,
   ShoppingBag,
@@ -15,14 +17,24 @@ import { useCart } from "@/lib/cart";
 import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
+import { useWishlist } from "@/lib/wishlist";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const navLinks = [
-  { to: "/shop", label: "Shop" },
-  { to: "/collections", label: "Collections" },
-  { to: "/blog", label: "Journal" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Support" },
+  { to: "/collections/new-arrivals", label: "New Arrivals" },
+  { to: "/collections/cookware", label: "Kitchen" },
+  { to: "/collections/home-decor", label: "Home" },
+  { to: "/shop?q=gift", label: "Gifts" },
+  { to: "/collections/women-wear", label: "Apparel" },
+  { to: "/collections/personal-care", label: "Wellness" },
+  { to: "/shop?sort=discount", label: "Sale" },
+];
+
+const curatedQuickLinks = [
+  { to: "/shop?collection=appplaza-best-sellers", label: "Best Sellers" },
+  { to: "/shop?max=25", label: "Under $25" },
+  { to: "/shop?q=gift", label: "Giftable Finds" },
+  { to: "/collections/new-arrivals", label: "New This Week" },
 ];
 
 type SearchSuggestions = {
@@ -85,23 +97,16 @@ function buildSearchSuggestions(
   };
 }
 
-function navClassName({ isActive }: { isActive: boolean }): string {
-  return [
-    "inline-flex items-center rounded-full px-3 py-2 text-[0.76rem] font-semibold tracking-[0.04em] transition xl:px-4 xl:py-2.5 xl:text-[0.82rem]",
-    isActive
-      ? "bg-[hsl(var(--salt-ink))] text-white shadow-[0_18px_36px_-28px_rgba(15,23,42,0.34)] hover:text-white"
-      : "text-[hsl(var(--salt-ink))] opacity-80 hover:bg-card hover:text-[hsl(var(--salt-ink))] hover:opacity-100 dark:text-white dark:opacity-78 dark:hover:bg-white/8 dark:hover:text-white",
-  ].join(" ");
+function navClassName(): string {
+  return "inline-flex items-center rounded-full px-3 py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[hsl(var(--salt-ink))] opacity-80 transition hover:bg-card hover:text-primary hover:opacity-100 xl:px-4 xl:py-2.5 xl:text-[0.82rem] dark:text-white dark:opacity-78 dark:hover:bg-white/8 dark:hover:text-white";
 }
 
-function mobileNavClassName({ isActive }: { isActive: boolean }): string {
-  return [
-    "flex h-12 w-full items-center justify-start rounded-[1rem] border px-4 text-[0.92rem] font-semibold tracking-[0.01em] transition",
-    isActive
-      ? "border-[hsl(var(--salt-ink))] bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.36)]"
-      : "border-border/75 bg-background text-foreground hover:border-primary/35 hover:text-primary",
-  ].join(" ");
+function mobileNavClassName(): string {
+  return "flex h-12 w-full items-center justify-start rounded-[1rem] border border-border/75 bg-background px-4 text-[0.92rem] font-semibold tracking-[0.01em] text-foreground transition hover:border-primary/35 hover:text-primary";
 }
+
+const iconButtonClassName =
+  "relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/75 bg-card/88 text-[hsl(var(--salt-ink))] transition hover:border-primary/40 hover:text-primary dark:text-white";
 
 type SearchPanelProps = {
   collections: ShopifyCollection[];
@@ -257,6 +262,7 @@ const MainHeader = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { itemCount, openCartDrawer } = useCart();
+  const { itemCount: wishlistCount } = useWishlist();
   const { data: productsPayload } = useProducts();
   const { data: collectionsPayload } = useCollections();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -271,7 +277,7 @@ const MainHeader = () => {
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const { isAuthenticated, logout } = useCustomerAuth();
 
-  const products = productsPayload?.products ?? [];
+  const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(
     () =>
       [...(collectionsPayload?.collections ?? [])]
@@ -450,31 +456,31 @@ const MainHeader = () => {
       ref={headerRef}
       className="relative sticky top-0 z-50 border-b border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.992),rgba(250,244,235,0.994),rgba(243,247,251,0.992))] shadow-[0_16px_42px_-34px_rgba(15,23,42,0.24)] dark:bg-[linear-gradient(90deg,rgba(20,27,42,0.995),rgba(18,24,38,0.996),rgba(22,28,44,0.995))] dark:shadow-[0_18px_46px_-32px_rgba(0,0,0,0.72)]"
     >
-      <div className="border-b border-border/60 bg-[hsl(var(--salt-ink))] text-[hsl(var(--salt-paper))]">
-        <div className="mx-auto flex w-[min(1340px,94vw)] flex-col items-center gap-1.5 py-2 text-center text-[0.58rem] font-medium uppercase tracking-[0.14em] text-white/78 sm:flex-row sm:justify-between sm:gap-3 sm:text-left sm:text-[0.72rem] sm:tracking-[0.16em]">
-          <span className="max-w-[24rem]">Curated home, gifts, lifestyle, and everyday essentials</span>
-          <span className="hidden md:inline">Free shipping across the US</span>
-          <span className="max-w-[20rem]">Fast checkout and 30-day returns</span>
+      <div className="bg-[#fdfbf7] border-b border-[#e5e1da]">
+        <div className="mx-auto flex max-w-[1340px] items-center justify-center py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[#4a453e] sm:text-[0.7rem]">
+          Free U.S. shipping on curated SALT essentials
         </div>
       </div>
 
-      <div className="mx-auto grid w-[min(1340px,94vw)] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2.5 sm:gap-3 sm:py-3 md:gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:py-4">
-        <Link to="/" className="min-w-0 shrink-0" aria-label="Go to SALT homepage">
-          <BrandLogo withWordmark size="sm" className="xl:hidden" />
-          <BrandLogo withWordmark size="md" className="hidden xl:inline-flex" />
+      <div className="mx-auto flex max-w-[1340px] items-center justify-between gap-4 px-4 py-3 lg:py-5">
+        <Link to="/" className="shrink-0" aria-label="Go to SALT homepage">
+          <BrandLogo withWordmark size="md" />
         </Link>
 
-        <nav className="hidden min-w-0 items-center justify-center gap-1 lg:flex xl:gap-1.5">
+        <nav className="hidden items-center justify-center gap-2 lg:flex xl:gap-4">
           {navLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={navClassName}>
+            <Link 
+              key={link.to} 
+              to={link.to} 
+              className="text-[0.76rem] font-bold uppercase tracking-[0.15em] text-[#1a1a1a] transition-colors hover:text-primary xl:text-[0.82rem]"
+            >
               {link.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
 
-        <div className="hidden min-w-0 items-center gap-2 md:flex lg:justify-self-end">
-          <form onSubmit={onDesktopSearch} className="relative w-[min(14.5rem,18vw)] xl:w-[min(17rem,21vw)] 2xl:w-[19rem]">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <form onSubmit={onDesktopSearch} className="relative hidden md:block">
             <input
               ref={desktopSearchRef}
               type="search"
@@ -483,161 +489,53 @@ const MainHeader = () => {
               onFocus={() => setActivePanel("desktop")}
               onBlur={() => window.setTimeout(() => setActivePanel(null), 120)}
               placeholder="Search..."
-              aria-label="Search products"
-              className="salt-form-control h-10 w-full rounded-full border-transparent bg-card/85 pl-10 pr-11 text-[0.88rem] shadow-none"
+              className="h-10 w-40 rounded-full border-none bg-[#f5f2ed] pl-4 pr-10 text-sm transition-all focus:w-64 focus:ring-1 focus:ring-[#e5e1da] xl:w-48"
             />
-            <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-border/70 bg-background/88 px-1.5 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground 2xl:block">
-              / K
-            </span>
-            {activePanel === "desktop" && deferredDesktopSearch.trim().length >= 2 ? (
-              <SearchPanel
-                collections={collections}
-                query={desktopSearch}
-                suggestions={desktopSuggestions}
-                mode="desktop"
-                onCollectionSelect={() => setActivePanel(null)}
-                onClose={() => setActivePanel(null)}
-                onProductSelect={() => setActivePanel(null)}
-                onSearchAll={() => submitSearch(desktopSearch)}
-              />
-            ) : null}
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a09a90]" />
           </form>
 
-          <ThemeToggle className="shrink-0" />
-
-          <div ref={accountMenuRef} className="relative hidden xl:block">
-            <button
-              type="button"
-              onClick={() => setAccountMenuOpen((open) => !open)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-primary/40 bg-[hsl(var(--salt-accent))] px-5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_14px_34px_-24px_rgba(37,99,235,0.7)] transition hover:bg-[hsl(var(--salt-accent)/0.92)] xl:h-11 xl:px-6 xl:text-[0.75rem]"
-              aria-haspopup="menu"
-              aria-expanded={accountMenuOpen}
-            >
-              <span className="inline-flex items-center gap-2">
-                <ClipboardList className="h-4 w-4" />
-                Account
+          <Link to="/wishlist" className="relative p-2 text-[#1a1a1a] transition-colors hover:text-primary">
+            <Heart className={`h-5 w-5 ${wishlistCount > 0 ? "fill-primary text-primary" : ""}`} />
+            {wishlistCount > 0 && (
+              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-white">
+                {wishlistCount}
               </span>
-              <ChevronDown
-                className={`h-4 w-4 transition ${accountMenuOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+            )}
+          </Link>
 
-            {accountMenuOpen ? (
-              <div className="absolute right-0 top-[calc(100%+0.65rem)] z-50 w-56 rounded-[1.15rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--card)),hsl(var(--background)))] p-2 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)]">
-                {isAuthenticated ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        openCartDrawer();
-                      }}
-                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <ShoppingBag className="h-4 w-4" />
-                        Cart
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                    <Link
-                      to={orderHistoryHref}
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <ClipboardList className="h-4 w-4" />
-                        Orders
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        logout();
-                        setAccountMenuOpen(false);
-                      }}
-                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span>Logout</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        openCartDrawer();
-                      }}
-                      className="flex h-11 w-full items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <ShoppingBag className="h-4 w-4" />
-                        Cart
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                    <Link
-                      to={loginHref}
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span>Login</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                    <Link
-                      to={signupHref}
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span>Sign up</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                    <Link
-                      to={orderHistoryHref}
-                      onClick={() => setAccountMenuOpen(false)}
-                      className="flex h-11 items-center justify-between rounded-[0.95rem] px-3 text-sm font-medium text-foreground transition hover:bg-background hover:text-primary"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <ClipboardList className="h-4 w-4" />
-                        Orders
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  </>
-                )}
-              </div>
-            ) : null}
-          </div>
+          <button onClick={openCartDrawer} className="relative p-2 text-[#1a1a1a] transition-colors hover:text-primary">
+            <ShoppingBag className="h-5 w-5" />
+            {itemCount > 0 && (
+              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-white">
+                {itemCount}
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => setMobileOpen((open) => !open)} 
+            className="p-2 text-[#1a1a1a] lg:hidden"
+          >
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setMobileOpen((open) => !open)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-card text-[hsl(var(--salt-ink))] transition hover:border-primary/35 dark:text-white lg:hidden"
-          aria-label="Toggle navigation"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
 
       <div className="hidden border-t border-border/70 bg-[linear-gradient(90deg,rgba(255,247,224,0.96),rgba(250,244,235,0.975),rgba(243,247,251,0.97))] dark:bg-[linear-gradient(90deg,rgba(22,30,46,0.985),rgba(18,24,38,0.986),rgba(20,28,42,0.985))] lg:block">
         <div className="mx-auto flex w-[min(1340px,94vw)] flex-col gap-3 py-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            {collections.map((collection) => (
+            {curatedQuickLinks.map((collection) => (
               <Link
-                key={collection.id}
-                to={`/shop?collection=${collection.handle}`}
+                key={collection.label}
+                to={collection.to}
                 className="salt-outline-chip h-9 px-3 py-0 text-[0.68rem] xl:px-4 xl:text-[0.7rem]"
               >
-                {collection.title}
+                {collection.label}
               </Link>
             ))}
           </div>
           <p className="hidden text-[0.72rem] font-medium uppercase tracking-[0.16em] text-muted-foreground 2xl:block">
-            Home, gifts, apparel, kitchen, decor, seasonal
+            Easy category browsing for home, kitchen, gifts, apparel, and wellness
           </p>
         </div>
       </div>
@@ -684,14 +582,14 @@ const MainHeader = () => {
 
               <div className="mt-3 grid gap-2">
                 {navLinks.map((link) => (
-                  <NavLink
+                  <Link
                     key={link.to}
                     to={link.to}
-                    className={mobileNavClassName}
+                    className={mobileNavClassName()}
                     onClick={closeMobileMenu}
                   >
                     {link.label}
-                  </NavLink>
+                  </Link>
                 ))}
               </div>
 
@@ -710,17 +608,17 @@ const MainHeader = () => {
 
             <div className="rounded-[1.25rem] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,240,0.965))] p-3.5 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.12)] sm:rounded-[1.45rem] sm:p-4">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary">
-                Shop by collection
+                Shop by category
               </p>
               <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {collections.map((collection) => (
+                {curatedQuickLinks.map((collection) => (
                   <Link
-                    key={collection.id}
-                    to={`/shop?collection=${collection.handle}`}
+                    key={collection.label}
+                    to={collection.to}
                     onClick={closeMobileMenu}
                     className="salt-outline-chip h-9 shrink-0 px-4 py-0 text-[0.68rem]"
                   >
-                    {collection.title}
+                    {collection.label}
                   </Link>
                 ))}
               </div>
@@ -767,7 +665,15 @@ const MainHeader = () => {
               )}
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Link
+                to="/wishlist"
+                onClick={closeMobileMenu}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border/75 bg-background px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground"
+              >
+                <Heart className="h-4 w-4" />
+                Wishlist
+              </Link>
               <Link
                 to={orderHistoryHref}
                 onClick={closeMobileMenu}
