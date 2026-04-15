@@ -30,15 +30,6 @@ const OrderHistoryPage = () => {
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "cart" | "buy-now">("all");
 
-  if (!isAuthenticated) {
-    return (
-      <Navigate
-        to={buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" })}
-        replace
-      />
-    );
-  }
-
   const totalSpent = useMemo(
     () => entries.reduce((sum, entry) => sum + entry.subtotal, 0),
     [entries],
@@ -68,6 +59,15 @@ const OrderHistoryPage = () => {
     () => filteredEntries.reduce((sum, entry) => sum + entry.itemCount, 0),
     [filteredEntries],
   );
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to={buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" })}
+        replace
+      />
+    );
+  }
 
   if (!entries.length) {
     return (
@@ -171,18 +171,18 @@ const OrderHistoryPage = () => {
               Buy now
             </button>
           </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Showing {filteredEntries.length.toLocaleString()} order(s) and {filteredItemCount.toLocaleString()} item(s)
-              {sourceFilter !== "all" ? ` • ${sourceFilter === "buy-now" ? "Buy now only" : "Cart checkout only"}` : ""}
-              {normalizedQuery ? ` • matching "${query.trim()}"` : ""}
-            </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Showing {filteredEntries.length.toLocaleString()} order(s) and {filteredItemCount.toLocaleString()} item(s)
+            {sourceFilter !== "all" ? ` | ${sourceFilter === "buy-now" ? "Buy now only" : "Cart checkout only"}` : ""}
+            {normalizedQuery ? ` | matching "${query.trim()}"` : ""}
+          </p>
         </div>
       </Reveal>
 
       {filteredEntries.length === 0 ? (
         <Reveal>
           <div className="salt-surface rounded-2xl p-7 text-center">
-            <p className="font-semibold text-lg">No matching orders found</p>
+            <p className="text-lg font-semibold">No matching orders found</p>
             <p className="mt-2 text-sm text-muted-foreground">
               Try a different keyword or switch the source filter.
             </p>
@@ -200,9 +200,9 @@ const OrderHistoryPage = () => {
                     <ClipboardList className="h-3.5 w-3.5" />
                     {entry.source === "buy-now" ? "Direct checkout flow" : "Cart checkout flow"}
                   </p>
-                  <h2 className="mt-1 font-semibold text-lg">{formatTimestamp(entry.createdAt)}</h2>
+                  <h2 className="mt-1 text-lg font-semibold">{formatTimestamp(entry.createdAt)}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {entry.itemCount} item(s) • {formatMoney(entry.subtotal)}
+                    {entry.itemCount} item(s) | {formatMoney(entry.subtotal)}
                   </p>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
@@ -253,7 +253,7 @@ const OrderHistoryPage = () => {
                     <div className="min-w-0">
                       <p className="line-clamp-1 text-sm font-semibold">{item.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        Qty {item.quantity} • {formatMoney(item.unitPrice)}
+                        Qty {item.quantity} | {formatMoney(item.unitPrice)}
                       </p>
                     </div>
                   </div>

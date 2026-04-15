@@ -1,531 +1,602 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Gift,
-  HeartHandshake,
-  ShieldCheck,
-  Sparkles,
-  Truck,
-} from "lucide-react";
-import HomeHero from "@/components/storefront/HomeHero";
-import CollectionCard from "@/components/storefront/CollectionCard";
-import ProductLoadingBanner from "@/components/storefront/ProductLoadingBanner";
-import ProductCard from "@/components/storefront/ProductCard";
+import { ArrowRight, CreditCard, Headphones, RotateCcw, Sparkles, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
-import { ErrorState } from "@/components/storefront/LoadState";
-import { useMinimumDelay } from "@/hooks/useMinimumDelay";
-import { savingsPercent } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
-import {
-  useCollectionProductIds,
-  useCollections,
-  useProducts,
-} from "@/lib/shopify-data";
+import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
+import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
-import type { ShopifyCollection } from "@/types/shopify";
+import collectionApparel from "@/assets/collection-apparel.jpg";
+import collectionDecor from "@/assets/collection-decor.jpg";
+import heroMain from "@/assets/hero-main.jpg";
+import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
-function collectionCtaLabel(title: string): string {
-  const normalized = String(title || "").trim();
-  if (!normalized) {
-    return "Shop collection";
-  }
-
-  if (normalized.length <= 26) {
-    return `Shop ${normalized}`;
-  }
-
-  return "Shop this collection";
-}
-
-function isBestSellersCollection(collection: ShopifyCollection): boolean {
-  return /best[\s-]*seller/i.test(`${collection.title} ${collection.handle}`);
-}
-
-function isUtilityCollection(collection: ShopifyCollection): boolean {
-  return /all[\s-]*products?/i.test(`${collection.title} ${collection.handle}`);
-}
-
-function matchesCollectionPattern(collection: ShopifyCollection, patterns: RegExp[]): boolean {
-  const haystack = `${collection.title} ${collection.handle} ${collection.description}`;
-  return patterns.some((pattern) => pattern.test(haystack));
-}
-
-type RankedCollection = ShopifyCollection & {
-  effectiveCount: number;
-};
-
-type CategoryCard = {
+type ImageTile = {
   title: string;
-  description: string;
-  eyebrow: string;
+  image: string;
   to: string;
-  image: string | null;
 };
+
+type ProductTile = ImageTile & {
+  price: string;
+};
+
+type TrustTile = {
+  title: string;
+  copy: string;
+  icon: typeof Truck;
+};
+
+type ReviewTile = {
+  quote: string;
+};
+
+const categoryTileConfigs = [
+  {
+    title: "Kitchen",
+    to: "/collections/cookware",
+    collectionHandles: ["cookware", "kitchen"],
+    productKeywords: ["kitchen", "cookware", "pan", "pot"],
+  },
+  {
+    title: "Home",
+    to: "/collections/home-decor",
+    collectionHandles: ["home-decor", "home", "decor"],
+    productKeywords: ["home", "decor", "candle"],
+  },
+  {
+    title: "Gifts",
+    to: "/collections/gifts",
+    collectionHandles: ["gifts", "gift"],
+    productKeywords: ["gift", "present", "planner"],
+  },
+  {
+    title: "Wellness",
+    to: "/collections/personal-care",
+    collectionHandles: ["personal-care", "wellness", "health"],
+    productKeywords: ["wellness", "care", "health", "essential"],
+  },
+];
+
+const fallbackBestSellerTiles: ProductTile[] = [
+  {
+    title: "Ceramic Cookware Set",
+    price: "$80.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
+    to: "/products/13-piece-ceramic-cookware-set-nonstick-detachable-handles",
+  },
+  {
+    title: "Aroma Diffuser",
+    price: "$35.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4b2af5f653b447a580f6b1509d15acd6I.webp?v=1741589663",
+    to: "/products/mini-train-shape-aromatherapy-diffuser-with-led-lamp-1",
+  },
+  {
+    title: "Cozy Home Layer",
+    price: "$29.99",
+    image: collectionApparel,
+    to: "/shop?q=robe",
+  },
+  {
+    title: "Ceramic Bowl Set",
+    price: "$40.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8652b5fe8d4042aba9342aef6e7b8468m.webp?v=1755687078",
+    to: "/products/japanese-ramen-bowl-set-310ml-cereal-salad-bowl-serving-set-2-4-6-pcs-ceramic-table-wear-oven-safe",
+  },
+];
+
+const giftTileConfigs = [
+  {
+    title: "Gifts for Her",
+    to: "/collections/gifts",
+    collectionHandles: ["gifts", "gift"],
+    productKeywords: ["women", "her", "gift", "planner"],
+  },
+  {
+    title: "Gifts for Him",
+    to: "/shop?q=men",
+    collectionHandles: ["gifts", "gift"],
+    productKeywords: ["men", "him", "gift", "tool"],
+  },
+  {
+    title: "Fun & Unique Finds",
+    to: "/shop?max=25",
+    collectionHandles: ["home-decor", "gifts", "gift"],
+    productKeywords: ["unique", "home", "decor", "gift"],
+  },
+];
+
+const trustTiles: TrustTile[] = [
+  {
+    title: "Fast Shipping",
+    copy: "Clear delivery timelines for everyday essentials.",
+    icon: Truck,
+  },
+  {
+    title: "Secure Checkout",
+    copy: "Trusted payments with a smooth, simple flow.",
+    icon: CreditCard,
+  },
+  {
+    title: "Easy Returns",
+    copy: "A 30-day return window to shop with confidence.",
+    icon: RotateCcw,
+  },
+  {
+    title: "Friendly Support",
+    copy: "Quick help when you need product or order guidance.",
+    icon: Headphones,
+  },
+];
+
+const reviewTiles: ReviewTile[] = [
+  {
+    quote: "Creating a warm home feels easier when everything is grouped in one calm place.",
+  },
+  {
+    quote: "The layout feels clean, the categories make sense, and checkout is quick.",
+  },
+  {
+    quote: "Beautiful picks, soft colors, and products that feel giftable right away.",
+  },
+];
+
+const stars = Array.from({ length: 5 }, (_, index) => index);
+const featuredBookPriority = [
+  {
+    key: "daily-bloom",
+    titleIncludes: ["daily bloom"],
+    handleIncludes: ["daily-bloom", "daily_bloom"],
+  },
+  {
+    key: "living-legacy-planner-second-edition",
+    titleIncludes: ["living legacy planner", "second edition"],
+    handleIncludes: ["living-legacy-planner", "planner-second-edition", "second-edition"],
+  },
+] as const;
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
+      <span className="h-px bg-[#bfd4fb]" />
+      <h2 className="font-display text-[clamp(1.12rem,3.15vw,1.65rem)] leading-none text-[#1c4b96]">
+        {title}
+      </h2>
+      <span className="h-px bg-[#bfd4fb]" />
+    </div>
+  );
+}
+
+function normalizeHandle(value: string | null | undefined): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeText(value: string | null | undefined): string {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ");
+}
+
+function isPriorityBookMatch(
+  product: ShopifyProduct,
+  target: (typeof featuredBookPriority)[number],
+): boolean {
+  const title = normalizeText(product.title);
+  const handle = normalizeHandle(product.handle);
+
+  const titleMatches = target.titleIncludes.every((token) => title.includes(token));
+  const handleMatches = target.handleIncludes.some((token) => handle.includes(token));
+
+  return titleMatches || handleMatches;
+}
+
+function findBestSellerCollection(collections: ShopifyCollection[]): ShopifyCollection | null {
+  const priorityHandles = [
+    "appplaza-best-sellers",
+    "best-sellers",
+    "best-seller",
+    "bestsellers",
+    "bestseller",
+  ];
+
+  const byHandle = collections.find((collection) =>
+    priorityHandles.includes(normalizeHandle(collection.handle)),
+  );
+  if (byHandle) {
+    return byHandle;
+  }
+
+  const byTitle = collections.find((collection) => /best\s*[- ]?\s*sellers?/i.test(collection.title));
+  return byTitle || null;
+}
+
+function productSearchText(product: ShopifyProduct): string {
+  const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
+  return normalizeText(`${product.title} ${product.product_type} ${tags}`);
+}
 
 const HomePage = () => {
-  const {
-    data: productsPayload,
-    isLoading: productsLoading,
-    error: productsError,
-    refetch: refetchProducts,
-  } = useProducts();
-
-  const {
-    data: collectionsPayload,
-    error: collectionsError,
-    refetch: refetchCollections,
-  } = useCollections();
-
-  const homeLoadDelayElapsed = useMinimumDelay(5000);
-
+  const { data: productsPayload } = useProducts();
+  const { data: collectionsPayload } = useCollections();
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
-  const isInitialProductsSync = productsLoading && !productsPayload;
-
-
-  const rankedCollections: RankedCollection[] = collections
-    .map((collection) => ({
-      ...collection,
-      effectiveCount: collection.products_count,
-    }))
-    .sort((a, b) => {
-      if (b.effectiveCount !== a.effectiveCount) {
-        return b.effectiveCount - a.effectiveCount;
-      }
-
-      return (
-        new Date(b.updated_at || b.published_at || "1970-01-01").getTime() -
-        new Date(a.updated_at || a.published_at || "1970-01-01").getTime()
-      );
-    });
-
-  const merchCollections = rankedCollections.filter(
-    (collection) => collection.effectiveCount > 0 && !isUtilityCollection(collection),
+  const bestSellerCollection = useMemo(
+    () => findBestSellerCollection(collections),
+    [collections],
   );
-
-  const findCollection = (patterns: RegExp[]) =>
-    merchCollections.find((collection) => matchesCollectionPattern(collection, patterns)) || null;
-
-  const featured = products.slice(0, 3);
-  const heroCollection =
-    merchCollections.find((collection) => isBestSellersCollection(collection)) ||
-    findCollection([/new[\s-]*arrivals/i, /summer/i]) ||
-    merchCollections[0] ||
-    null;
-  const focusCollection = heroCollection;
-  const kitchenCollection = findCollection([/cookware/i, /kitchen/i, /cooking/i]);
-  const homeCollection = findCollection([/home/i, /decor/i, /candles/i]);
-  const giftsCollection = findCollection([/^gifts?$/i, /gift/i, /unique-products/i]);
-  const wellnessCollection = findCollection([/personal-care/i, /wellness/i, /care/i, /medical/i]);
-  const seasonalCollection =
-    findCollection([/new[\s-]*arrivals/i, /summer/i]) || homeCollection || kitchenCollection || focusCollection;
-
-  const categoryCards: CategoryCard[] = [
-    {
-      title: "Kitchen",
-      description: "Cookware, prep tools, and everyday kitchen helpers that feel simple to shop.",
-      eyebrow: "Easy cooking essentials",
-      to: kitchenCollection ? `/collections/${kitchenCollection.handle}` : "/shop?q=kitchen",
-      image: normalizeShopifyAssetUrl(kitchenCollection?.image?.src),
-    },
-    {
-      title: "Home",
-      description: "Decor, candles, and practical home finds curated to feel calm and giftable.",
-      eyebrow: "Warm home updates",
-      to: homeCollection ? `/collections/${homeCollection.handle}` : "/shop?q=home",
-      image: normalizeShopifyAssetUrl(homeCollection?.image?.src),
-    },
-    {
-      title: "Gifts",
-      description: "Thoughtful gift-ready picks that help mixed-category browsing feel more intentional.",
-      eyebrow: "Gift-friendly discovery",
-      to: giftsCollection ? `/collections/${giftsCollection.handle}` : "/shop?q=gift",
-      image: normalizeShopifyAssetUrl(giftsCollection?.image?.src),
-    },
-    {
-      title: "Wellness",
-      description: "Personal care and feel-good essentials presented in a clean, easy-to-scan way.",
-      eyebrow: "Everyday care",
-      to: wellnessCollection ? `/collections/${wellnessCollection.handle}` : "/shop?q=wellness",
-      image: normalizeShopifyAssetUrl(wellnessCollection?.image?.src),
-    },
-  ];
-
-  const giftDiscoveryLinks = [
-    {
-      title: "Gifts Under $25",
-      description: "Budget-friendly finds that still feel thoughtful and easy to give.",
-      to: "/shop?max=25",
-    },
-    {
-      title: "Gifts for Her",
-      description: "Practical, giftable picks across apparel, decor, and everyday lifestyle finds.",
-      to: "/shop?q=women",
-    },
-    {
-      title: "Gifts for Him",
-      description: "Useful everyday products selected for practical shoppers and easy gifting.",
-      to: "/shop?q=men",
-    },
-    {
-      title: "Housewarming Picks",
-      description: "Home, kitchen, and decor pieces that work beautifully for new-space gifting.",
-      to: homeCollection ? `/collections/${homeCollection.handle}` : "/shop?q=home",
-    },
-    {
-      title: "Unique Finds",
-      description: "Interesting lifestyle products that help SALT feel selected rather than overwhelming.",
-      to: giftsCollection ? `/collections/${giftsCollection.handle}` : "/shop?q=unique",
-    },
-  ];
-
-  const trustPoints = [
-    { title: "Fast Shipping", copy: "Clear, confidence-building delivery expectations for daily-use finds.", icon: Truck },
-    { title: "Secure Checkout", copy: "A cleaner Shopify buying flow that feels safe and trustworthy.", icon: ShieldCheck },
-    { title: "Easy Returns", copy: "A calmer post-purchase promise that reduces hesitation before buying.", icon: BadgeCheck },
-    { title: "Friendly Support", copy: "Approachable help for shoppers who want a simple, guided experience.", icon: HeartHandshake },
-  ];
-
-  const testimonials = [
-    {
-      quote: "The layout feels much easier to shop. I found gifts and kitchen items without digging through pages.",
-      name: "Maya R.",
-      meta: "Verified SALT shopper",
-    },
-    {
-      quote: "It finally feels like a curated store instead of a random catalog. The product cards are much clearer.",
-      name: "Jordan T.",
-      meta: "Repeat customer",
-    },
-    {
-      quote: "I like how quickly I can scan categories, trust the checkout, and move straight to products I want.",
-      name: "Avery L.",
-      meta: "First-time shopper",
-    },
-  ];
-  const {
-    data: focusCollectionProductIdsPayload,
-  } = useCollectionProductIds(
-    focusCollection?.handle || "",
-    Boolean(focusCollection?.handle),
+  const bestSellerCollectionHandle = bestSellerCollection?.handle || "";
+  const { data: bestSellerIdsPayload } = useCollectionProductIds(
+    bestSellerCollectionHandle,
+    Boolean(bestSellerCollectionHandle),
   );
-
-  const productById = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products],
+  const bestSellerProductIds = useMemo(
+    () => bestSellerIdsPayload?.productIds ?? [],
+    [bestSellerIdsPayload],
   );
-
-  const focusedCollectionProducts = useMemo(() => {
-    const ids = focusCollectionProductIdsPayload?.productIds || [];
-    if (!ids.length) {
+  const bestSellerProducts = useMemo(() => {
+    if (!products.length) {
       return [];
     }
 
-    return ids
-      .map((id) => productById.get(id))
-      .filter((product): product is NonNullable<typeof product> => Boolean(product));
-  }, [focusCollectionProductIdsPayload, productById]);
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const bestSellerCandidates =
+      bestSellerProductIds.length > 0
+        ? bestSellerProductIds
+            .map((productId) => productById.get(productId))
+            .filter((product): product is ShopifyProduct => Boolean(product))
+        : [];
 
-  const focusRatingCandidateIds = useMemo(
-    () => focusedCollectionProducts.slice(0, 80).map((product) => product.id),
-    [focusedCollectionProducts],
-  );
-  const { data: focusCollectionRatings } = useJudgeMeRatings(focusRatingCandidateIds);
+    const priorityBooks = featuredBookPriority
+      .map((target) => products.find((product) => isPriorityBookMatch(product, target)) || null)
+      .filter((product): product is ShopifyProduct => Boolean(product));
 
-  const focusProducts = useMemo(() => {
-    const fallback = [...products]
-      .sort((a, b) => {
-        const discountDelta = savingsPercent(b) - savingsPercent(a);
-        if (discountDelta !== 0) {
-          return discountDelta;
+    const rankedFallback = [...products]
+      .sort((left, right) => {
+        const savingsDiff = savingsPercent(right) - savingsPercent(left);
+        if (savingsDiff !== 0) {
+          return savingsDiff;
         }
 
-        return (
-          new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
-          new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
-        );
-      })
-      .slice(0, 8);
+        return minPrice(left) - minPrice(right);
+      });
 
-    if (!focusCollection || !focusedCollectionProducts.length) {
-      return fallback;
+    const uniqueProducts: ShopifyProduct[] = [];
+    const seenProductIds = new Set<number>();
+    [...priorityBooks, ...bestSellerCandidates, ...rankedFallback].forEach((product) => {
+      if (seenProductIds.has(product.id)) {
+        return;
+      }
+
+      seenProductIds.add(product.id);
+      uniqueProducts.push(product);
+    });
+
+    return uniqueProducts.slice(0, 4);
+  }, [bestSellerProductIds, products]);
+  const bestSellerTiles = useMemo<ProductTile[]>(() => {
+    if (!bestSellerProducts.length) {
+      return fallbackBestSellerTiles;
     }
 
-    const rankedByRating = [...focusedCollectionProducts]
-      .sort((a, b) => {
-        const left = focusCollectionRatings?.[a.id];
-        const right = focusCollectionRatings?.[b.id];
-
-        const leftHasReviews = (left?.reviewCount || 0) > 0;
-        const rightHasReviews = (right?.reviewCount || 0) > 0;
-        if (leftHasReviews !== rightHasReviews) {
-          return rightHasReviews ? 1 : -1;
-        }
-
-        const ratingDelta = (right?.rating || 0) - (left?.rating || 0);
-        if (Math.abs(ratingDelta) > 0.01) {
-          return ratingDelta;
-        }
-
-        const reviewCountDelta = (right?.reviewCount || 0) - (left?.reviewCount || 0);
-        if (reviewCountDelta !== 0) {
-          return reviewCountDelta;
-        }
-
-        const discountDelta = savingsPercent(b) - savingsPercent(a);
-        if (discountDelta !== 0) {
-          return discountDelta;
-        }
-
-        return (
-          new Date(b.updated_at || b.published_at || b.created_at || "1970-01-01").getTime() -
-          new Date(a.updated_at || a.published_at || a.created_at || "1970-01-01").getTime()
-        );
-      })
-      .slice(0, 8);
-
-    return rankedByRating.length ? rankedByRating : fallback;
-  }, [focusCollection, focusCollectionRatings, focusedCollectionProducts, products]);
-
-  const focusShopLink = focusCollection
-    ? `/shop?collection=${focusCollection.handle}`
-    : "/shop";
-  const focusShopLabel = focusCollection
-    ? collectionCtaLabel(focusCollection.title)
-    : "Shop full catalog";
-  const focusBestValueLink = focusCollection
-    ? `/shop?collection=${focusCollection.handle}&sort=discount`
+    return bestSellerProducts.map((product) => ({
+      title: product.title,
+      price: formatMoney(minPrice(product)),
+      image: productImage(product) || heroMain,
+      to: `/products/${product.handle}`,
+    }));
+  }, [bestSellerProducts]);
+  const bestSellerHeroImage =
+    normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
+  const bestSellerCtaLink = bestSellerCollection
+    ? `/shop?collection=${bestSellerCollection.handle}`
     : "/shop?sort=discount";
-  if (!homeLoadDelayElapsed || isInitialProductsSync) {
-    return (
-      <ProductLoadingBanner />
-    );
-  }
+  const collectionImageByHandle = useMemo(() => {
+    const map = new Map<string, string>();
 
-  if (productsError && !productsPayload) {
-    return (
-      <ErrorState
-        title="We could not load the storefront"
-        subtitle="Please retry to pull the latest live catalog data."
-        action={
-          <button
-            type="button"
-            onClick={() => {
-              refetchProducts();
-              refetchCollections();
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
+    collections.forEach((collection) => {
+      const image = normalizeShopifyAssetUrl(collection.image?.src);
+      if (image) {
+        map.set(normalizeHandle(collection.handle), image);
+      }
+    });
+
+    return map;
+  }, [collections]);
+  const rankedProductsWithImages = useMemo(
+    () =>
+      [...products]
+        .filter((product) => Boolean(productImage(product)))
+        .sort(
+          (left, right) =>
+            new Date(right.published_at || right.created_at || "1970-01-01").getTime() -
+            new Date(left.published_at || left.created_at || "1970-01-01").getTime(),
+        ),
+    [products],
+  );
+
+  const findProductImageByKeywords = useCallback(
+    (keywords: string[], usedProductIds?: Set<number>): string | null => {
+      const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword)).filter(Boolean);
+      const matchedProduct = rankedProductsWithImages.find((product) => {
+        if (usedProductIds?.has(product.id)) {
+          return false;
         }
-      />
-    );
-  }
 
+        const haystack = productSearchText(product);
+        return normalizedKeywords.some((keyword) => haystack.includes(keyword));
+      });
+
+      if (matchedProduct) {
+        usedProductIds?.add(matchedProduct.id);
+        return productImage(matchedProduct);
+      }
+
+      const fallbackProduct = rankedProductsWithImages.find(
+        (product) => !(usedProductIds && usedProductIds.has(product.id)),
+      );
+
+      if (fallbackProduct) {
+        usedProductIds?.add(fallbackProduct.id);
+        return productImage(fallbackProduct);
+      }
+
+      return null;
+    },
+    [rankedProductsWithImages],
+  );
+
+  const categoryTiles = useMemo<ImageTile[]>(
+    () =>
+      categoryTileConfigs.map((tile) => {
+        const imageFromCollection =
+          tile.collectionHandles
+            .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
+            .find(Boolean) || null;
+        const imageFromProduct = findProductImageByKeywords(tile.productKeywords);
+
+        return {
+          title: tile.title,
+          to: tile.to,
+          image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
+        };
+      }),
+    [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords],
+  );
+
+  const giftTiles = useMemo<ImageTile[]>(() => {
+    const usedGiftProductIds = new Set<number>();
+
+    return giftTileConfigs.map((tile) => {
+      const imageFromProduct = findProductImageByKeywords(tile.productKeywords, usedGiftProductIds);
+      const imageFromCollection =
+        tile.collectionHandles
+          .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
+          .find(Boolean) || null;
+
+      return {
+        title: tile.title,
+        to: tile.to,
+        image: imageFromProduct || imageFromCollection || bestSellerHeroImage,
+      };
+    });
+  }, [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords]);
   return (
-    <>
-      <HomeHero
-        featured={featured}
-        leadCollection={focusCollection}
-      />
-
-      <section id="collections" className="mx-auto mt-20 w-full max-w-[1340px] px-4 sm:mt-24">
+    <section className="mx-auto mt-2 w-full max-w-[1120px] px-2.5 pb-10 sm:mt-4 sm:px-4 sm:pb-14 md:px-5 lg:pb-20">
+      <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
-          <div className="mb-12 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-primary">Shop by category</span>
-              <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,3.5rem)] leading-[1.05] text-[#1a1a1a]">
-                Curated essentials for every room
-              </h2>
-            </div>
-            <Link to="/collections" className="text-[0.76rem] font-bold uppercase tracking-[0.15em] text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 transition-colors hover:text-primary hover:border-primary">
-              Explore all categories
-            </Link>
-          </div>
-        </Reveal>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {categoryCards.map((category, index) => (
-            <Reveal key={category.title} delayMs={index * 100}>
-              <Link
-                to={category.to}
-                className="group relative block aspect-[4/5] overflow-hidden rounded-[2rem] bg-[#f8f5f0]"
-              >
-                {category.image ? (
-                  <img
-                    src={category.image}
-                    alt={category.title}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-[#efeae2]" />
-                )}
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                
-                <div className="absolute inset-x-0 bottom-0 p-8">
-                  <h3 className="font-display text-2xl text-white">
-                    {category.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-white/80 line-clamp-2">
-                    {category.description}
-                  </p>
-                  <div className="mt-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#1a1a1a] transition-transform duration-300 group-hover:translate-x-2">
-                    <ArrowRight className="h-5 w-5" />
-                  </div>
-                </div>
-              </Link>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      <section id="products" className="mx-auto mt-24 w-full max-w-[1340px] px-4 sm:mt-32">
-        <Reveal>
-          <div className="mb-12 text-center">
-            <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-primary">Best Sellers</span>
-            <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,3.5rem)] leading-[1.05] text-[#1a1a1a]">
-              The most loved pieces on SALT right now
-            </h2>
-          </div>
-        </Reveal>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {focusProducts.map((product, index) => (
-            <Reveal key={product.id} delayMs={index * 80} className="h-full">
-              <ProductCard product={product} variant="dense" />
-            </Reveal>
-          ))}
-        </div>
-
-        <div className="mt-16 flex justify-center">
-          <Link to={focusShopLink} className="inline-flex h-14 items-center justify-center rounded-full bg-[#1a1a1a] px-12 text-[0.76rem] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-primary">
-            {focusShopLabel}
-          </Link>
-        </div>
-      </section>
-
-      <section className="bg-[#fdfbf7] py-24 mt-24 sm:mt-32">
-        <div className="mx-auto w-full max-w-[1340px] px-4">
-          <Reveal>
-            <div className="mb-12 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-primary">Gift Discovery</span>
-                <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,3.5rem)] leading-[1.05] text-[#1a1a1a]">
-                  Thoughtful finds for everyone
-                </h2>
-              </div>
-              <Link to="/shop?q=gift" className="text-[0.76rem] font-bold uppercase tracking-[0.15em] text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 transition-colors hover:text-primary hover:border-primary">
-                Shop all gifts
-              </Link>
-            </div>
-          </Reveal>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {giftDiscoveryLinks.map((item, index) => (
-              <Reveal key={item.title} delayMs={index * 80}>
-                <Link
-                  to={item.to}
-                  className="group flex h-full flex-col rounded-[1.5rem] bg-white p-8 transition-all hover:shadow-xl hover:shadow-[#1a1a1a]/5"
-                >
-                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#f8f5f0] text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                    <Gift className="h-6 w-6" />
-                  </div>
-                  <h3 className="font-display text-xl text-[#1a1a1a]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-4 flex-1 text-sm leading-relaxed text-[#4a453e]/80">
-                    {item.description}
-                  </p>
-                  <div className="mt-6 flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary transition-transform group-hover:translate-x-1">
-                    Discover <ArrowRight className="h-4 w-4" />
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-24 w-full max-w-[1340px] px-4 sm:mt-32">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-          <Reveal>
-            <div className="max-w-xl">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-primary">Our Promise</span>
-              <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,3.5rem)] leading-[1.05] text-[#1a1a1a]">
-                The SALT difference
-              </h2>
-              <p className="mt-6 text-lg leading-relaxed text-[#4a453e]/90">
-                We believe shopping should be as calm and intentional as the home you're building. Every piece in our collection is selected for quality, utility, and simple beauty.
-              </p>
-              
-              <div className="mt-12 grid gap-8 sm:grid-cols-2">
-                {trustPoints.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="flex flex-col items-start">
-                      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#f8f5f0] text-primary">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-display text-lg text-[#1a1a1a]">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-[#4a453e]/80">{item.copy}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </Reveal>
-          
-          <Reveal delayMs={200}>
-            <div className="relative aspect-square overflow-hidden rounded-[2.5rem] bg-[#f8f5f0]">
-              <img 
-                src="https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop" 
-                alt="Lifestyle" 
-                className="absolute inset-0 h-full w-full object-cover"
+          <section className="grid border-b border-[#dce9ff] lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="relative min-h-[12rem] sm:min-h-[16rem] lg:min-h-[23rem]">
+              <img
+                src={bestSellerHeroImage}
+                alt={`${bestSellerCollection?.title || "Best Sellers"} collection`}
+                className="h-full w-full object-cover"
               />
+              <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(18,58,128,0.18)_0%,rgba(18,58,128,0.08)_50%,rgba(18,58,128,0.03)_100%)]" />
             </div>
-          </Reveal>
-        </div>
-      </section>
 
-      <section className="bg-[#1a1a1a] py-24 mt-24 sm:mt-32 text-white">
-        <div className="mx-auto w-full max-w-[1340px] px-4">
-          <Reveal>
-            <div className="mb-16 text-center">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-primary">Kind Words</span>
-              <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,3.5rem)] leading-[1.05]">
-                What our community says
-              </h2>
-            </div>
-          </Reveal>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {testimonials.map((item, index) => (
-              <Reveal key={item.name} delayMs={index * 100}>
-                <div className="flex h-full flex-col border border-white/10 p-10 rounded-[2rem]">
-                  <p className="text-xl italic leading-relaxed text-white/90">
-                    "{item.quote}"
-                  </p>
-                  <div className="mt-8">
-                    <p className="font-bold text-sm uppercase tracking-[0.2em]">
-                      {item.name}
-                    </p>
-                    <p className="mt-1 text-xs text-white/50 uppercase tracking-[0.1em]">
-                      {item.meta}
-                    </p>
-                  </div>
+            <div className="flex items-center justify-center bg-[linear-gradient(160deg,#f7fbff_0%,#edf5ff_42%,#f8fbff_100%)] px-5 py-8 text-left sm:px-7 sm:py-10 lg:px-11">
+              <div className="relative w-full max-w-[26.4rem] overflow-hidden rounded-[1.28rem] border border-[#cadeff] bg-[linear-gradient(155deg,#f9fcff_0%,#edf5ff_45%,#f4f8ff_100%)] p-6 shadow-[0_30px_62px_-46px_rgba(22,77,160,0.56)] sm:p-7 lg:p-8">
+                <div className="pointer-events-none absolute left-0 top-9 h-20 w-1 rounded-r-full bg-[#1f63d8]" />
+                <div className="pointer-events-none absolute -right-8 -top-12 h-28 w-28 rounded-full bg-[#f2c100]/16 blur-2xl" />
+                <p className="inline-flex items-center gap-1.5 rounded-full border border-[#ffe17a] bg-[#fff5ca] px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.62rem]">
+                  <Sparkles className="h-3 w-3" />
+                  Salt best sellers
+                </p>
+                <h1 className="mt-4 font-display text-[clamp(2rem,6.4vw,3.45rem)] leading-[1.04] tracking-[-0.015em] text-[#183f84]">
+                  <span className="block text-[0.92em] leading-[0.95] text-[#2b68db]">
+                    Curated Home,
+                  </span>
+                  <span className="block bg-[linear-gradient(90deg,#1a4f9e_0%,#2d6cdf_100%)] bg-clip-text text-transparent">
+                    Kitchen & Gifts
+                  </span>
+                  <span className="block">for Everyday Living</span>
+                </h1>
+                <div className="mt-7 flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    to={bestSellerCtaLink}
+                    className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.78rem] bg-[#1f63d8] px-6 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_14px_30px_-18px_rgba(31,99,216,0.9)] transition hover:bg-[#1d56be] sm:px-7 sm:text-[0.72rem]"
+                  >
+                    Shop now
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                  <Link
+                    to="/collections"
+                    className="inline-flex h-11 items-center justify-center rounded-[0.78rem] border border-[#bcd6ff] bg-white/88 px-6 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[#1a4fa5] transition hover:-translate-y-[1px] hover:border-[#90b8ff] hover:text-[#133d83] sm:px-7 sm:text-[0.72rem]"
+                  >
+                    Browse collections
+                  </Link>
                 </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+              </div>
+            </div>
+          </section>
+        </Reveal>
 
-      </>
+        <Reveal delayMs={80}>
+          <section className="px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="Shop by Category" />
+            <div className="mt-4 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:mt-5 sm:gap-3.5 lg:grid-cols-4">
+              {categoryTiles.map((tile, index) => (
+                <Reveal key={tile.title} delayMs={120 + index * 70}>
+                  <Link
+                    to={tile.to}
+                    className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
+                  >
+                    <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
+                      <img
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.92))] px-3 py-2.5 text-center">
+                      <p className="font-display text-[0.98rem] text-white sm:text-[1.08rem]">
+                        {tile.title}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={120}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="Best Sellers" />
+            <div className="mt-4 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:mt-5 sm:gap-3.5 lg:grid-cols-4">
+              {bestSellerTiles.map((tile, index) => (
+                <Reveal key={tile.title} delayMs={160 + index * 70}>
+                  <Link
+                    to={tile.to}
+                    className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
+                  >
+                    <div className="aspect-[1.05/1] overflow-hidden sm:aspect-[1/0.94]">
+                      <img
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.96))] px-2.5 py-2 text-center text-white">
+                      <p className="font-display text-[0.88rem] leading-tight sm:text-[0.98rem]">
+                        {tile.title}
+                      </p>
+                      <p className="mt-1 text-[0.78rem] font-semibold tracking-[0.04em] text-[#ffe27a]">
+                        {tile.price}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={160}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="Gift Ideas Under $25" />
+            <div className="mt-4 grid grid-cols-1 gap-3.5 min-[620px]:grid-cols-2 sm:mt-5 md:grid-cols-3">
+              {giftTiles.map((tile, index) => (
+                <Reveal key={tile.title} delayMs={200 + index * 80}>
+                  <Link
+                    to={tile.to}
+                    className="group block overflow-hidden border border-[#d2e4ff] bg-white shadow-[0_14px_40px_-32px_rgba(22,77,160,0.24)] transition hover:-translate-y-0.5"
+                  >
+                    <div className="aspect-[1.4/0.82] overflow-hidden bg-[#edf5ff]">
+                      <img
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                      />
+                    </div>
+                    <div className="px-4 py-3 text-center">
+                      <p className="font-display text-[1rem] text-[#1c4b96] sm:text-[1.02rem]">
+                        {tile.title}
+                      </p>
+                      <span className="mt-3 inline-flex h-9 items-center justify-center bg-[#f2b600] px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white transition group-hover:bg-[#d7a200]">
+                        Shop Now
+                      </span>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={220}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <div className="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
+              <div className="rounded-[1.15rem] border border-[#d2e4ff] bg-[#f8fbff] p-4 sm:rounded-[1.35rem] sm:p-6">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#f2b600]">
+                  Our Promise
+                </p>
+                <h2 className="mt-2 font-display text-[clamp(1.6rem,3.5vw,2.6rem)] leading-[1.06] text-[#183f84]">
+                  The SALT Difference
+                </h2>
+                <p className="mt-3 max-w-[36ch] text-sm leading-6 text-[#2f5fa9] sm:text-[0.97rem]">
+                  We keep shopping calm and intentional. Each pick is chosen for daily value, quality, and gift-ready simplicity.
+                </p>
+
+                <div className="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
+                  {trustTiles.map((tile, index) => {
+                    const Icon = tile.icon;
+
+                    return (
+                      <Reveal key={tile.title} delayMs={240 + index * 60}>
+                        <div className="rounded-[0.95rem] border border-[#d2e4ff] bg-white p-3.5 sm:p-4">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ffe27a] bg-[#fff8d7] text-[#1f63d8]">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <p className="mt-2 text-[0.95rem] font-semibold text-[#1c4b96]">
+                            {tile.title}
+                          </p>
+                          <p className="mt-1 text-[0.82rem] leading-5 text-[#2f5fa9]">
+                            {tile.copy}
+                          </p>
+                        </div>
+                      </Reveal>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-[1.15rem] border border-[#d2e4ff] bg-[#eef5ff] sm:rounded-[1.35rem]">
+                <img
+                  src={collectionDecor}
+                  alt="Styled home wall with decor frames and shelves"
+                  className="h-full min-h-[17rem] w-full object-cover sm:min-h-[21rem]"
+                />
+              </div>
+            </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={260}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="What Our Customers Are Saying" />
+            <div className="mt-5 grid grid-cols-1 gap-3.5 sm:mt-6 md:grid-cols-2 lg:grid-cols-3">
+              {reviewTiles.map((tile, index) => (
+                <Reveal key={tile.quote} delayMs={300 + index * 80}>
+                  <article className="h-full border border-[#d2e4ff] bg-[#ffffff] p-5 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)]">
+                    <div className="flex items-center gap-1 text-[#f2c100]">
+                      {stars.map((star) => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-[#2f5fa9]">
+                      "{tile.quote}"
+                    </p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+      </div>
+    </section>
   );
 };
 
 export default HomePage;
+

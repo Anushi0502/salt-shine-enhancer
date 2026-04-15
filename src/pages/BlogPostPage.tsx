@@ -98,19 +98,21 @@ const BlogPostPage = () => {
       </Reveal>
 
       <Reveal delayMs={40}>
-        <article className="salt-panel-shell mt-4 rounded-[1.9rem] p-5 sm:p-6">
+        <article className="salt-panel-shell relative mt-4 overflow-hidden rounded-[1.9rem] p-5 sm:p-6">
+          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/65" />
+          <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog Post</p>
           <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">{post.title}</h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground">
             <span>{formattedDate(post.publishedAt)}</span>
-            <span className="hidden sm:inline">•</span>
+            <span className="text-muted-foreground/60">|</span>
             <span>{post.author || "SALT"}</span>
-            <span className="hidden sm:inline">•</span>
+            <span className="text-muted-foreground/60">|</span>
             <span className="inline-flex items-center gap-1">
               <Clock3 className="h-3.5 w-3.5" /> {readingTime(post.contentHtml)}
             </span>
-            <span className="hidden sm:inline">•</span>
+            <span className="text-muted-foreground/60">|</span>
             <a
               href={post.url}
               target="_blank"
@@ -145,7 +147,7 @@ const BlogPostPage = () => {
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
 
-          <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-border bg-gradient-to-r from-background/95 to-primary/10 p-4 sm:flex-row sm:flex-wrap">
+          <div className="salt-section-shell mt-6 flex flex-col gap-2 rounded-2xl border border-border/70 p-4 sm:flex-row sm:flex-wrap">
             <Link
               to="/shop"
               className="salt-primary-cta h-10 w-full px-4 text-[0.72rem] font-bold uppercase tracking-[0.08em] sm:w-auto"

@@ -6,53 +6,53 @@
 
 @layer base {
   :root {
-    --background: 48 46% 97%;
-    --foreground: 223 34% 15%;
+    --background: 214 95% 97%;
+    --foreground: 221 67% 21%;
 
-    --card: 48 50% 99%;
-    --card-foreground: 223 34% 15%;
+    --card: 214 100% 99%;
+    --card-foreground: 221 67% 21%;
 
-    --popover: 48 50% 99%;
-    --popover-foreground: 223 34% 15%;
+    --popover: 214 100% 99%;
+    --popover-foreground: 221 67% 21%;
 
-    --primary: 46 86% 58%;
-    --primary-foreground: 224 26% 16%;
+    --primary: 221 82% 55%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 214 34% 94%;
-    --secondary-foreground: 223 34% 15%;
+    --secondary: 214 96% 92%;
+    --secondary-foreground: 221 67% 24%;
 
-    --muted: 215 26% 93%;
-    --muted-foreground: 221 14% 41%;
+    --muted: 214 58% 93%;
+    --muted-foreground: 221 40% 40%;
 
-    --accent: 48 90% 88%;
-    --accent-foreground: 223 34% 15%;
+    --accent: 47 100% 84%;
+    --accent-foreground: 221 67% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 22% 85%;
-    --input: 220 22% 85%;
-    --ring: 46 86% 58%;
+    --border: 216 68% 85%;
+    --input: 216 68% 85%;
+    --ring: 47 95% 56%;
 
     --radius: 0.9rem;
 
     /* SALT custom tokens */
-    --salt-bg: 48 46% 97%;
-    --salt-paper: 48 50% 99%;
-    --salt-ink: 223 34% 15%;
-    --salt-muted: 221 14% 41%;
-    --salt-line: 220 22% 85%;
-    --salt-accent: 46 86% 58%;
+    --salt-bg: 214 95% 97%;
+    --salt-paper: 214 100% 99%;
+    --salt-ink: 221 67% 21%;
+    --salt-muted: 221 35% 45%;
+    --salt-line: 216 68% 85%;
+    --salt-accent: 47 95% 56%;
     --salt-accent-deep: 222 74% 47%;
-    --salt-blue: 226 79% 62%;
-    --salt-gold: 46 86% 58%;
-    --salt-navy: 223 34% 18%;
-    --salt-sky: 213 72% 92%;
-    --salt-cyan: 218 48% 64%;
-    --salt-cyan-deep: 221 38% 40%;
-    --salt-warm-bg: 48 42% 95%;
-    --salt-panel-start: 48 50% 99%;
-    --salt-panel-end: 214 34% 94%;
+    --salt-blue: 221 82% 56%;
+    --salt-gold: 47 95% 56%;
+    --salt-navy: 221 67% 21%;
+    --salt-sky: 214 92% 90%;
+    --salt-cyan: 214 68% 70%;
+    --salt-cyan-deep: 221 50% 42%;
+    --salt-warm-bg: 214 90% 95%;
+    --salt-panel-start: 214 100% 99%;
+    --salt-panel-end: 214 90% 94%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -65,40 +65,40 @@
   }
 
   .dark {
-    --background: 222 32% 11%;
-    --foreground: 48 28% 94%;
+    --background: 222 38% 10%;
+    --foreground: 47 100% 88%;
 
-    --card: 222 28% 14%;
-    --card-foreground: 48 28% 94%;
+    --card: 222 30% 14%;
+    --card-foreground: 47 100% 88%;
 
-    --popover: 222 28% 14%;
-    --popover-foreground: 48 28% 94%;
+    --popover: 222 30% 14%;
+    --popover-foreground: 47 100% 88%;
 
-    --primary: 46 82% 62%;
-    --primary-foreground: 224 24% 14%;
+    --primary: 221 82% 64%;
+    --primary-foreground: 222 34% 12%;
 
-    --secondary: 222 18% 18%;
-    --secondary-foreground: 48 28% 94%;
+    --secondary: 222 22% 18%;
+    --secondary-foreground: 47 100% 88%;
 
-    --muted: 222 16% 18%;
-    --muted-foreground: 215 16% 72%;
+    --muted: 222 18% 18%;
+    --muted-foreground: 214 40% 72%;
 
-    --accent: 221 22% 24%;
-    --accent-foreground: 48 28% 94%;
+    --accent: 221 28% 24%;
+    --accent-foreground: 47 100% 88%;
 
     --destructive: 0 72% 52%;
     --destructive-foreground: 45 25% 92%;
 
-    --border: 221 16% 28%;
-    --input: 221 16% 28%;
-    --ring: 46 82% 62%;
+    --border: 221 24% 30%;
+    --input: 221 24% 30%;
+    --ring: 47 95% 58%;
 
-    --salt-blue: 226 70% 66%;
-    --salt-gold: 46 82% 62%;
-    --salt-navy: 222 24% 24%;
-    --salt-sky: 221 22% 30%;
-    --salt-cyan: 218 36% 56%;
-    --salt-cyan-deep: 220 22% 40%;
+    --salt-blue: 221 76% 66%;
+    --salt-gold: 47 92% 62%;
+    --salt-navy: 222 26% 24%;
+    --salt-sky: 221 28% 30%;
+    --salt-cyan: 214 44% 58%;
+    --salt-cyan-deep: 220 28% 42%;
   }
 }
 
@@ -302,13 +302,18 @@
     isolation: isolate;
     overflow: hidden;
     background:
-      linear-gradient(164deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.95)),
-      radial-gradient(circle at 12% 16%, hsl(var(--salt-gold) / 0.04), transparent 30%),
-      radial-gradient(circle at 88% 80%, hsl(var(--salt-blue) / 0.03), transparent 34%);
+      linear-gradient(162deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.94)),
+      radial-gradient(circle at 8% 12%, hsl(var(--salt-gold) / 0.09), transparent 32%),
+      radial-gradient(circle at 90% 84%, hsl(var(--salt-blue) / 0.09), transparent 36%);
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow:
-      0 18px 40px -34px rgba(15, 23, 42, 0.12),
+      0 22px 44px -34px rgba(15, 23, 42, 0.18),
       inset 0 1px 0 hsl(0 0% 100% / 0.56);
+    backdrop-filter: blur(8px);
+    transition:
+      border-color 220ms ease,
+      box-shadow 260ms ease,
+      transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .salt-editorial-shell::before {
@@ -317,9 +322,11 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(180deg, hsl(0 0% 100% / 0.32), transparent 16%),
-      linear-gradient(124deg, hsl(var(--salt-gold) / 0.04), transparent 40%),
-      linear-gradient(300deg, hsl(var(--salt-blue) / 0.04), transparent 42%);
+      linear-gradient(180deg, hsl(0 0% 100% / 0.34), transparent 20%),
+      radial-gradient(circle at 85% 12%, hsl(var(--salt-gold) / 0.12), transparent 36%),
+      linear-gradient(126deg, hsl(var(--salt-gold) / 0.06), transparent 42%),
+      linear-gradient(304deg, hsl(var(--salt-blue) / 0.08), transparent 44%);
+    opacity: 0.78;
     z-index: -1;
   }
 
@@ -327,11 +334,20 @@
     content: "";
     pointer-events: none;
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    border: 0;
-    opacity: 0;
+    inset: 0.7rem;
+    border-radius: calc(1rem + 0.2vw);
+    border: 1px solid hsl(0 0% 100% / 0.44);
+    background: linear-gradient(160deg, hsl(0 0% 100% / 0.18), hsl(0 0% 100% / 0.02));
+    opacity: 0.56;
     z-index: -1;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.22);
+  }
+
+  .salt-editorial-shell:hover {
+    border-color: hsl(var(--primary) / 0.4);
+    box-shadow:
+      0 28px 52px -36px rgba(15, 23, 42, 0.22),
+      inset 0 1px 0 hsl(0 0% 100% / 0.62);
   }
 
   .salt-surface {
@@ -361,14 +377,16 @@
     isolation: isolate;
     overflow: hidden;
     background:
-      linear-gradient(168deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.93)),
-      radial-gradient(circle at 14% 12%, hsl(var(--salt-gold) / 0.035), transparent 28%),
-      radial-gradient(circle at 88% 84%, hsl(var(--salt-blue) / 0.03), transparent 32%);
+      linear-gradient(166deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.92)),
+      radial-gradient(circle at 14% 10%, hsl(var(--salt-gold) / 0.06), transparent 30%),
+      radial-gradient(circle at 86% 84%, hsl(var(--salt-blue) / 0.06), transparent 34%);
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow:
-      0 16px 34px -28px rgba(15, 23, 42, 0.12),
+      0 18px 38px -30px rgba(15, 23, 42, 0.16),
       inset 0 1px 0 hsl(0 0% 100% / 0.62);
+    backdrop-filter: blur(8px);
     color: hsl(var(--foreground));
+    transition: border-color 220ms ease, box-shadow 260ms ease;
   }
 
   .salt-panel-shell::before {
@@ -377,9 +395,57 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(122deg, hsl(var(--salt-gold) / 0.02), transparent 40%),
-      linear-gradient(310deg, hsl(var(--salt-blue) / 0.02), transparent 44%);
-    opacity: 0.42;
+      linear-gradient(180deg, hsl(0 0% 100% / 0.26), transparent 22%),
+      linear-gradient(120deg, hsl(var(--salt-gold) / 0.05), transparent 42%),
+      linear-gradient(314deg, hsl(var(--salt-blue) / 0.05), transparent 44%);
+    opacity: 0.6;
+    z-index: -1;
+  }
+
+  .salt-panel-shell::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0.62rem;
+    border-radius: calc(0.95rem + 0.12vw);
+    border: 1px solid hsl(0 0% 100% / 0.34);
+    opacity: 0.45;
+    z-index: -1;
+  }
+
+  .salt-panel-shell:hover {
+    border-color: hsl(var(--primary) / 0.34);
+    box-shadow:
+      0 24px 46px -34px rgba(15, 23, 42, 0.2),
+      inset 0 1px 0 hsl(0 0% 100% / 0.62);
+  }
+
+  .salt-section-shell {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      linear-gradient(176deg, hsl(var(--card) / 0.97), hsl(var(--background) / 0.92)),
+      radial-gradient(circle at 8% 14%, hsl(var(--salt-gold) / 0.04), transparent 30%),
+      radial-gradient(circle at 90% 82%, hsl(var(--salt-blue) / 0.04), transparent 34%);
+    border: 1px solid hsl(var(--border) / 0.68);
+    box-shadow:
+      0 14px 30px -24px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 hsl(0 0% 100% / 0.56);
+    color: hsl(var(--foreground));
+    backdrop-filter: blur(6px);
+  }
+
+  .salt-section-shell::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.2), transparent 26%),
+      linear-gradient(120deg, hsl(var(--salt-gold) / 0.03), transparent 40%),
+      linear-gradient(310deg, hsl(var(--salt-blue) / 0.03), transparent 42%);
+    opacity: 0.52;
     z-index: -1;
   }
 
@@ -428,16 +494,6 @@
       linear-gradient(168deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.86));
     border: 1px solid hsl(var(--border) / 0.72);
     box-shadow: 0 18px 36px -32px rgba(15, 23, 42, 0.14);
-    color: hsl(var(--foreground));
-  }
-
-  .salt-section-shell {
-    background:
-      linear-gradient(180deg, hsl(var(--card) / 0.97), hsl(var(--background) / 0.92)),
-      radial-gradient(circle at 7% 15%, hsl(var(--salt-gold) / 0.02), transparent 26%),
-      radial-gradient(circle at 88% 82%, hsl(var(--salt-blue) / 0.02), transparent 30%);
-    border: 1px solid hsl(var(--border) / 0.68);
-    box-shadow: 0 12px 28px -22px rgba(15, 23, 42, 0.1);
     color: hsl(var(--foreground));
   }
 
@@ -521,6 +577,57 @@
     transform: translateY(-3px);
     border-color: hsl(var(--primary) / 0.5);
     box-shadow: 0 20px 38px -30px rgba(15, 23, 42, 0.24);
+  }
+
+  .salt-editorial-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em];
+    color: hsl(var(--salt-accent-deep));
+    border: 1px solid hsl(var(--salt-gold) / 0.56);
+    background:
+      linear-gradient(140deg, hsl(47 100% 92% / 0.98), hsl(0 0% 100% / 0.88)),
+      linear-gradient(120deg, hsl(var(--salt-gold) / 0.42), transparent 58%);
+    box-shadow:
+      0 10px 22px -18px rgba(146, 98, 14, 0.42),
+      inset 0 1px 0 hsl(0 0% 100% / 0.78);
+  }
+
+  .salt-editorial-meta {
+    @apply inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.72rem] font-semibold;
+    border: 1px solid hsl(var(--primary) / 0.24);
+    color: hsl(var(--salt-accent-deep) / 0.9);
+    background:
+      linear-gradient(160deg, hsl(0 0% 100% / 0.86), hsl(0 0% 100% / 0.7)),
+      linear-gradient(126deg, hsl(var(--primary) / 0.12), transparent 56%);
+    box-shadow:
+      0 12px 26px -22px rgba(37, 99, 235, 0.38),
+      inset 0 1px 0 hsl(0 0% 100% / 0.7);
+    backdrop-filter: blur(5px);
+  }
+
+  .salt-editorial-action {
+    @apply inline-flex items-center justify-center rounded-full border px-4 text-[0.66rem] font-semibold uppercase tracking-[0.08em] transition;
+    min-height: 2.25rem;
+    border-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--salt-accent-deep));
+    background:
+      linear-gradient(154deg, hsl(0 0% 100% / 0.95), hsl(var(--background) / 0.88)),
+      linear-gradient(130deg, hsl(var(--primary) / 0.16), transparent 58%);
+    box-shadow:
+      0 12px 26px -22px rgba(37, 99, 235, 0.42),
+      inset 0 1px 0 hsl(0 0% 100% / 0.74);
+  }
+
+  .salt-editorial-action:hover {
+    border-color: hsl(var(--primary) / 0.52);
+    color: hsl(var(--primary));
+    transform: translateY(-1px);
+  }
+
+  .salt-editorial-action:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px hsl(var(--primary) / 0.18),
+      0 12px 26px -20px rgba(37, 99, 235, 0.44);
   }
 
   .salt-outline-chip {
@@ -759,9 +866,10 @@
       box-shadow: 0 18px 38px -30px rgba(15, 23, 42, 0.14);
     }
 
-    .salt-editorial-shell::after {
-      inset: 0.65rem;
-      opacity: 0.6;
+    .salt-editorial-shell::after,
+    .salt-panel-shell::after {
+      inset: 0.55rem;
+      opacity: 0.5;
     }
 
     .salt-outline-chip,
@@ -899,6 +1007,13 @@
       inset 0 1px 0 hsl(0 0% 100% / 0.05);
   }
 
+  .dark .salt-editorial-shell::after,
+  .dark .salt-panel-shell::after {
+    border-color: hsl(0 0% 100% / 0.14);
+    background: linear-gradient(160deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.01));
+    opacity: 0.5;
+  }
+
   .dark .salt-glass-rail {
     background:
       linear-gradient(150deg, hsl(223 20% 18% / 0.94), hsl(223 18% 15% / 0.9)),
@@ -947,6 +1062,34 @@
     color: hsl(var(--foreground) / 0.95);
     background:
       linear-gradient(160deg, hsl(223 20% 17% / 0.94), hsl(223 18% 14% / 0.9));
+  }
+
+  .dark .salt-editorial-pill {
+    border-color: hsl(var(--salt-gold) / 0.52);
+    color: hsl(var(--salt-paper));
+    background:
+      linear-gradient(145deg, hsl(40 64% 24% / 0.9), hsl(222 26% 17% / 0.92)),
+      linear-gradient(120deg, hsl(var(--salt-gold) / 0.32), transparent 58%);
+    box-shadow:
+      0 10px 20px -16px rgba(2, 4, 10, 0.56),
+      inset 0 1px 0 hsl(0 0% 100% / 0.1);
+  }
+
+  .dark .salt-editorial-meta,
+  .dark .salt-editorial-action {
+    border-color: hsl(var(--border) / 0.9);
+    color: hsl(var(--foreground) / 0.95);
+    background:
+      linear-gradient(160deg, hsl(223 20% 18% / 0.92), hsl(223 18% 14% / 0.88)),
+      linear-gradient(128deg, hsl(var(--primary) / 0.16), transparent 56%);
+    box-shadow:
+      0 10px 22px -18px rgba(3, 5, 8, 0.56),
+      inset 0 1px 0 hsl(0 0% 100% / 0.08);
+  }
+
+  .dark .salt-editorial-action:hover {
+    border-color: hsl(var(--primary) / 0.56);
+    color: hsl(var(--primary));
   }
 
   .dark .salt-form-control {
@@ -1270,10 +1413,10 @@
     align-items: center;
     gap: 0.18rem 0.6rem;
     border-radius: 1rem;
-    background: linear-gradient(135deg, #e14917 0%, #ffce1f 55%, #e17920 100%);
+    background: linear-gradient(135deg, #1d60d8 0%, #f2c100 55%, #f2b600 100%);
     border: 1px solid rgba(82, 37, 19, 0.28);
     box-shadow: 0 16px 24px -20px rgba(0, 0, 0, 0.65);
-    color: #1c1a18;
+    color: #153a80;
     padding: 0.5rem 0.82rem;
   }
 
@@ -1608,7 +1751,8 @@
   @media (prefers-reduced-motion: reduce) {
     .salt-card-hover,
     .salt-outline-chip,
-    .salt-primary-cta {
+    .salt-primary-cta,
+    .salt-editorial-action {
       transition: none !important;
       transform: none !important;
     }

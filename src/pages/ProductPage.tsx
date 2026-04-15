@@ -713,7 +713,7 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
                   <ProductCard product={related} variant="dense" />
@@ -737,7 +737,7 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55} className="h-full">
                   <ProductCard product={entry} variant="dense" />

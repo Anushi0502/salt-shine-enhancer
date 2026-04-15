@@ -1,21 +1,15 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
-  BadgeCheck,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  Search,
-  SlidersHorizontal,
   Sparkles,
-  Star,
-  X,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
+import { filterProducts } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
@@ -33,15 +27,7 @@ const sortOptions = [
   { value: "newest", label: "Newest" },
 ] as const;
 
-const perPageOptions = [24, 48, 72] as const;
-
-const priceRangeOptions = [
-  { value: "all", label: "Any price", min: null, max: null },
-  { value: "under-25", label: "Under $25", min: null, max: 25 },
-  { value: "25-60", label: "$25 - $60", min: 25, max: 60 },
-  { value: "60-120", label: "$60 - $120", min: 60, max: 120 },
-  { value: "120-plus", label: "$120+", min: 120, max: null },
-] as const;
+const PAGE_SIZE = 24;
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -65,71 +51,35 @@ function asNumberOrNull(input: string | null): number | null {
   return parsed;
 }
 
-function asNumberFromInput(input: string): number | null {
-  if (!input.trim()) {
-    return null;
-  }
-
-  const parsed = Number(input);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return null;
-  }
-
-  return parsed;
-}
-
-function activePriceRangeValue(min: number | null, max: number | null): string {
-  if (min == null && max == null) {
-    return "all";
-  }
-
-  const exact = priceRangeOptions.find((option) => option.min === min && option.max === max);
-  return exact?.value || "custom";
-}
-
-function formatTypeLabel(value: string): string {
-  return value
-    .split(/\s+/)
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join(" ");
-}
-
 function normalizeHandle(value: string | null | undefined): string {
   return String(value || "").trim().toLowerCase();
 }
 
-function plainText(input: string | null | undefined): string {
-  return String(input || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+function isBestSellerCollection(handle: string, title: string): boolean {
+  const normalizedHandle = normalizeHandle(handle);
+  const normalizedTitle = String(title || "").trim().toLowerCase();
+
+  if (
+    normalizedHandle === "appplaza-best-sellers" ||
+    normalizedHandle === "best-sellers" ||
+    normalizedHandle === "best-seller" ||
+    normalizedHandle === "bestsellers" ||
+    normalizedHandle === "bestseller"
+  ) {
+    return true;
+  }
+
+  return /best[\s-]*sellers?/.test(`${normalizedHandle} ${normalizedTitle}`);
 }
 
-function collectionStory(title: string, description: string): string {
-  const cleaned = plainText(description);
-  if (cleaned) {
+function normalizeCollectionFilter(value: string | null | undefined): string {
+  const normalized = normalizeHandle(value);
+
+  if (!normalized || normalized === "all" || normalized === "all-products") {
     return "";
   }
 
-  const source = title.toLowerCase();
-
-  if (/cook|kitchen|pan|pot/.test(source)) {
-    return "";
-  }
-
-  if (/gift|legacy|planner|book/.test(source)) {
-    return "";
-  }
-
-  if (/apparel|wear|dress|robe|fashion/.test(source)) {
-    return "";
-  }
-
-  if (/garden|tool|camp|outdoor/.test(source)) {
-    return "";
-  }
-
-  return "";
+  return normalized;
 }
 
 const ShopPage = () => {
@@ -137,53 +87,38 @@ const ShopPage = () => {
   const { handle: routeCollectionHandle } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
-  const collectionHandle = searchParams.get("collection") || "";
+  const collectionHandle = normalizeCollectionFilter(searchParams.get("collection"));
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
   const page = asPositiveInt(searchParams.get("page"), 1);
-  const perPageValue = asPositiveInt(searchParams.get("perPage"), perPageOptions[0]);
-  const perPage = perPageOptions.includes(perPageValue as (typeof perPageOptions)[number])
-    ? (perPageValue as (typeof perPageOptions)[number])
-    : perPageOptions[0];
+  const perPage = PAGE_SIZE;
 
   const minFilter = asNumberOrNull(searchParams.get("min"));
   const maxFilter = asNumberOrNull(searchParams.get("max"));
-  const priceRangeValue = activePriceRangeValue(minFilter, maxFilter);
-
-  const [searchInput, setSearchInput] = useState(query);
-  const [customMinInput, setCustomMinInput] = useState(minFilter == null ? "" : String(minFilter));
-  const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
-  const [priceError, setPriceError] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(
-    minFilter != null || maxFilter != null || perPage !== perPageOptions[0],
-  );
   const lastTrackedSearchRef = useRef("");
 
   useEffect(() => {
-    if (!routeCollectionHandle || searchParams.get("collection")) {
+    if (!routeCollectionHandle) {
+      return;
+    }
+
+    const nextCollection = normalizeCollectionFilter(routeCollectionHandle);
+    const currentCollection = normalizeCollectionFilter(searchParams.get("collection"));
+
+    if (nextCollection === currentCollection) {
       return;
     }
 
     const next = new URLSearchParams(searchParams);
 
-    if (routeCollectionHandle.toLowerCase() === "all") {
+    if (!nextCollection) {
       next.delete("collection");
     } else {
-      next.set("collection", routeCollectionHandle);
+      next.set("collection", nextCollection);
     }
 
     setSearchParams(next, { replace: true });
   }, [routeCollectionHandle, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(query);
-  }, [query]);
-
-  useEffect(() => {
-    setCustomMinInput(minFilter == null ? "" : String(minFilter));
-    setCustomMaxInput(maxFilter == null ? "" : String(maxFilter));
-    setPriceError("");
-  }, [minFilter, maxFilter]);
 
   const {
     data: productsPayload,
@@ -302,14 +237,16 @@ const ShopPage = () => {
     return base;
   }, [priceFilteredProducts, sort, selectedCollectionOrder]);
 
-  const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
+  );
+  const bestSellerCollection = collections.find((collection) =>
+    isBestSellerCollection(collection.handle, collection.title),
   );
   const allProductsCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === "all-products",
   );
-  const previewCollection = selectedCollection || allProductsCollection || null;
+  const previewCollection = selectedCollection || bestSellerCollection || allProductsCollection || null;
   const selectedCollectionImage = normalizeShopifyAssetUrl(previewCollection?.image?.src);
 
   const totalResults = sortedProducts.length;
@@ -354,14 +291,6 @@ const ShopPage = () => {
     totalResults,
   ]);
 
-  const activeFilterCount = [
-    query,
-    collectionHandle,
-    typeFilter,
-    sort !== "featured" ? sort : "",
-    minFilter != null || maxFilter != null ? "price" : "",
-    perPage !== perPageOptions[0] ? "page-size" : "",
-  ].filter(Boolean).length;
   if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
     return (
       <LoadingState
@@ -412,6 +341,7 @@ const ShopPage = () => {
       next.delete("page");
     }
 
+    next.delete("perPage");
     setSearchParams(next);
   };
 
@@ -422,15 +352,6 @@ const ShopPage = () => {
     }
 
     setSearchParams(new URLSearchParams());
-    setSearchInput("");
-    setCustomMinInput("");
-    setCustomMaxInput("");
-    setPriceError("");
-  };
-
-  const onSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    updateParams({ q: searchInput.trim() }, true);
   };
 
   const onPageChange = (nextPage: number) => {
@@ -439,383 +360,46 @@ const ShopPage = () => {
     updateParams({ page: clamped <= 1 ? null : String(clamped) });
   };
 
-  const onPerPageChange = (value: string) => {
-    const nextValue = asPositiveInt(value, perPageOptions[0]);
-    const normalized = perPageOptions.includes(nextValue as (typeof perPageOptions)[number])
-      ? String(nextValue)
-      : String(perPageOptions[0]);
-
-    updateParams({ perPage: normalized }, true);
-  };
-
-  const onPriceRangeChange = (value: string) => {
-    if (value === "all") {
-      setCustomMinInput("");
-      setCustomMaxInput("");
-      updateParams({ min: null, max: null }, true);
-      return;
-    }
-
-    const selectedRange = priceRangeOptions.find((option) => option.value === value);
-    if (!selectedRange) {
-      setCustomMinInput("");
-      setCustomMaxInput("");
-      updateParams({ min: null, max: null }, true);
-      return;
-    }
-
-    setCustomMinInput(selectedRange.min == null ? "" : String(selectedRange.min));
-    setCustomMaxInput(selectedRange.max == null ? "" : String(selectedRange.max));
-
-    updateParams(
-      {
-        min: selectedRange.min == null ? null : String(selectedRange.min),
-        max: selectedRange.max == null ? null : String(selectedRange.max),
-      },
-      true,
-    );
-  };
-
-  const applyCustomPrice = () => {
-    const normalizedMin = asNumberFromInput(customMinInput);
-    const normalizedMax = asNumberFromInput(customMaxInput);
-
-    if (customMinInput.trim() && normalizedMin == null) {
-      setPriceError("Min price must be a valid number.");
-      return;
-    }
-
-    if (customMaxInput.trim() && normalizedMax == null) {
-      setPriceError("Max price must be a valid number.");
-      return;
-    }
-
-    if (normalizedMin != null && normalizedMax != null && normalizedMin > normalizedMax) {
-      setPriceError("Min price cannot be higher than max price.");
-      return;
-    }
-
-    setPriceError("");
-    updateParams(
-      {
-        min: normalizedMin == null ? null : String(normalizedMin),
-        max: normalizedMax == null ? null : String(normalizedMax),
-      },
-      true,
-    );
-  };
-
-  const filterIsActive =
-    !!query ||
-    !!collectionHandle ||
-    !!typeFilter ||
-    sort !== "featured" ||
-    minFilter != null ||
-    maxFilter != null ||
-    perPage !== perPageOptions[0];
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
-  const shopHeading = selectedCollection ? selectedCollection.title : "All Products";
-  const shopSubtitle = selectedCollection
-    ? collectionStory(selectedCollection.title, selectedCollection.description)
-    : "";
-  const activeFilterChips = [
-    query
-      ? {
-          key: "search",
-          label: `Search: ${query}`,
-          onRemove: () => {
-            setSearchInput("");
-            updateParams({ q: null }, true);
-          },
-        }
-      : null,
-    collectionHandle
-      ? {
-          key: "collection",
-          label: `Collection: ${selectedCollection?.title || collectionHandle}`,
-          onRemove: () => updateParams({ collection: null }, true),
-        }
-      : null,
-    typeFilter
-      ? {
-          key: "type",
-          label: `Type: ${formatTypeLabel(typeFilter)}`,
-          onRemove: () => updateParams({ type: null }, true),
-        }
-      : null,
-    sort !== "featured"
-      ? {
-          key: "sort",
-          label: `Sort: ${sortLabel}`,
-          onRemove: () => updateParams({ sort: "featured" }, true),
-        }
-      : null,
-    minFilter != null || maxFilter != null
-      ? {
-          key: "price",
-          label: `Price: ${minFilter == null ? "$0" : `$${minFilter}`} - ${maxFilter == null ? "Any" : `$${maxFilter}`}`,
-          onRemove: () => {
-            setCustomMinInput("");
-            setCustomMaxInput("");
-            setPriceError("");
-            updateParams({ min: null, max: null }, true);
-          },
-        }
-      : null,
-    perPage !== perPageOptions[0]
-      ? {
-          key: "perPage",
-          label: `${perPage} / page`,
-          onRemove: () => updateParams({ perPage: null }, true),
-        }
-      : null,
-  ].filter(
-    (
-      entry,
-    ): entry is {
-      key: string;
-      label: string;
-      onRemove: () => void;
-    } => Boolean(entry),
-  );
 
   return (
     <section className="mx-auto mt-4 w-[min(1320px,94vw)] pb-8 sm:mt-6 sm:w-[min(1320px,96vw)]">
       <Reveal>
-        <div className="salt-editorial-shell rounded-[1.55rem] p-2.5 sm:rounded-[3.1rem] sm:p-6">
+        <div className="rounded-[1.55rem] sm:rounded-[3.1rem]">
           <div className="grid gap-4 xl:items-stretch">
             
 
-            <div className="relative overflow-hidden rounded-[1.2rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--salt-ink)/0.97),hsl(222_34%_20%/0.86))] shadow-soft sm:rounded-[1.8rem]">
+            <div className="salt-editorial-shell relative overflow-hidden rounded-[1.45rem] p-3 sm:rounded-[1.95rem] sm:p-5">
+              <div className="pointer-events-none absolute left-0 top-8 h-16 w-1 rounded-r-full bg-primary/55" />
               {selectedCollectionImage ? (
                 <img
                   src={selectedCollectionImage}
                   alt={previewCollection?.title || "Collection preview"}
-                  className="absolute inset-0 h-full w-full object-cover opacity-38"
+                  className="absolute inset-0 h-full w-full object-cover opacity-[0.24]"
                 />
               ) : null}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.08),transparent_28%),radial-gradient(circle_at_82%_18%,hsl(var(--primary)/0.28),transparent_25%),radial-gradient(circle_at_74%_84%,hsl(var(--salt-blue)/0.22),transparent_28%),linear-gradient(160deg,rgba(255,255,255,0.04),transparent_45%,rgba(255,255,255,0.06))]" />
-              <div className="relative flex h-full min-h-[15rem] flex-col justify-between p-3 text-white sm:min-h-[27.5rem] sm:p-6">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.12),transparent_32%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.14),transparent_35%),linear-gradient(160deg,rgba(255,255,255,0.36),rgba(255,255,255,0.18))]" />
+              <div className="relative flex h-full min-h-[9rem] flex-col justify-between p-3 sm:min-h-[11rem] sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-white/8 px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/88 backdrop-blur-md">
+                  <span className="salt-editorial-pill">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                     {selectedCollection ? "Collection spotlight" : "Editorial browse"}
                   </span>
                 </div>
-
-                <div>
-                  <h2 className="max-w-[11ch] font-display text-[clamp(1.35rem,7.6vw,3rem)] leading-[0.98] text-white sm:max-w-[15ch] sm:leading-[0.96]">
-                    {selectedCollection
-                      ? `${selectedCollection.title}`
-                      : "Browse the full catalog with a cleaner retail rhythm"}
-                  </h2>
+                <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                  <p className="salt-editorial-meta">
+                    {totalResults.toLocaleString()} matched | Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
+                  </p>
+                  {query || collectionHandle || typeFilter || sort !== "featured" || minFilter != null || maxFilter != null ? (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="salt-editorial-action"
+                    >
+                      Clear all filters
+                    </button>
+                  ) : null}
                 </div>
-                <div className="salt-glass-rail mt-3 rounded-[1rem] p-2 sm:mt-4 sm:rounded-[1.6rem] sm:p-4">
-            <div className="grid gap-2.5 xl:grid-cols-[1fr_auto_auto]">
-              <form onSubmit={onSearch} className="relative flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  type="search"
-                  placeholder="Search by product, collection, or gifting idea"
-                  className="salt-form-control h-12 w-full pl-10 pr-4"
-                />
-                <button
-                  type="submit"
-                  className="salt-primary-cta h-12 w-full px-4 text-[0.66rem] font-bold uppercase tracking-[0.09em] sm:w-auto"
-                >
-                  Search
-                </button>
-              </form>
-
-              <select
-                aria-label="Sort products"
-                value={sort}
-                onChange={(event) => updateParams({ sort: event.target.value }, true)}
-                className="salt-form-control h-12"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                aria-label="Products per page"
-                value={perPage}
-                onChange={(event) => onPerPageChange(event.target.value)}
-                className="salt-form-control h-12"
-              >
-                {perPageOptions.map((count) => (
-                  <option key={count} value={count}>
-                    {count} / page
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="mt-2.5 grid gap-2.5 sm:mt-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-3">
-              <select
-                aria-label="Collection filter"
-                value={collectionHandle}
-                onChange={(event) => updateParams({ collection: event.target.value }, true)}
-                className="salt-form-control h-12"
-              >
-                <option value="">All collections</option>
-                {collections.map((collection) => (
-                  <option key={collection.id} value={collection.handle}>
-                    {collection.title}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                aria-label="Product type filter"
-                value={typeFilter}
-                onChange={(event) => updateParams({ type: event.target.value }, true)}
-                className="salt-form-control h-12"
-              >
-                <option value="">All product types</option>
-                {productTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {formatTypeLabel(type)}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                aria-label="Price range filter"
-                value={priceRangeValue === "custom" ? "all" : priceRangeValue}
-                onChange={(event) => onPriceRangeChange(event.target.value)}
-                className="salt-form-control h-12"
-              >
-                {priceRangeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="salt-ambient-card mt-2.5 flex flex-col items-start gap-2 rounded-[1rem] border border-border/65 p-2.5 sm:mt-3 sm:rounded-[1.2rem] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((value) => !value)}
-                className="salt-outline-chip h-9 w-full justify-center px-3 py-0 text-[0.67rem] sm:w-auto"
-              >
-                <Filter className="mr-1.5 h-3.5 w-3.5" />
-                {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
-              </button>
-
-              <div className="flex w-full flex-wrap items-center gap-2 text-[0.72rem] text-muted-foreground sm:w-auto sm:text-xs">
-                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 font-semibold">
-                  <SlidersHorizontal className="h-3.5 w-3.5" /> {totalResults.toLocaleString()} matched
-                </span>
-                <span className="rounded-full border border-border bg-background/85 px-3 py-1">
-                  Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
-                </span>
-                {activeFilterCount > 0 ? (
-                  <span className="rounded-full border border-border bg-background/85 px-3 py-1">
-                    {activeFilterCount} active filters
-                  </span>
-                ) : null}
-                {filterIsActive ? (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="rounded-full border border-border px-3 py-1 font-semibold hover:border-primary/40 hover:text-primary sm:ml-auto"
-                  >
-                    Clear all
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            {showAdvanced ? (
-              <div className="salt-section-shell mt-3 rounded-[1.1rem] p-3 sm:mt-4 sm:rounded-[1.35rem] sm:p-3.5">
-                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={customMinInput}
-                    onChange={(event) => setCustomMinInput(event.target.value)}
-                    className="salt-form-control h-11"
-                    placeholder="Min price"
-                    aria-label="Minimum price"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={customMaxInput}
-                    onChange={(event) => setCustomMaxInput(event.target.value)}
-                    className="salt-form-control h-11"
-                    placeholder="Max price"
-                    aria-label="Maximum price"
-                  />
-                  <button
-                    type="button"
-                    onClick={applyCustomPrice}
-                    className="salt-primary-cta h-11 w-full px-4 text-[0.7rem] font-bold uppercase tracking-[0.09em] sm:w-auto"
-                  >
-                    Apply price
-                  </button>
-                </div>
-                {priceError ? <p className="mt-2 text-xs text-destructive">{priceError}</p> : null}
-              </div>
-            ) : null}
-
-            {activeFilterChips.length > 0 ? (
-              <div className="mt-2.5 flex flex-wrap gap-2 sm:mt-3">
-                {activeFilterChips.map((chip) => (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    onClick={chip.onRemove}
-                    className="salt-filter-chip"
-                    aria-label={`Remove ${chip.label} filter`}
-                  >
-                    <span>{chip.label}</span>
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="-mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-1 sm:mt-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              <button
-                type="button"
-                onClick={() => updateParams({ sort: "newest", collection: null, page: null }, true)}
-                className="salt-outline-chip shrink-0 text-[0.62rem]"
-              >
-                New arrivals first
-              </button>
-              <button
-                type="button"
-                onClick={() => updateParams({ sort: "discount", page: null }, true)}
-                className="salt-outline-chip shrink-0 text-[0.62rem]"
-              >
-                Biggest savings
-              </button>
-              <button
-                type="button"
-                onClick={() => updateParams({ min: null, max: "25", page: null }, true)}
-                className="salt-outline-chip shrink-0 text-[0.62rem]"
-              >
-                Budget picks under $25
-              </button>
-              <button
-                type="button"
-                onClick={() => updateParams({ collection: "cookware", page: null }, true)}
-                className="salt-outline-chip shrink-0 text-[0.62rem]"
-              >
-                Shop cookware
-              </button>
-            </div>
-          </div>
               </div>
             </div>
           </div>
@@ -862,7 +446,7 @@ const ShopPage = () => {
           ) : null}
 
           <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
               {visibleProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 35} className="h-full">
                   <ProductCard product={product} variant="dense" />

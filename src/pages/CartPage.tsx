@@ -434,7 +434,7 @@ const CartPage = () => {
             </div>
           </Reveal>
           <div className="salt-section-shell rounded-[1.7rem] p-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
               {recommendedProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 60} className="h-full">
                   <ProductCard product={product} variant="dense" />
