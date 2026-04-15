@@ -182,122 +182,69 @@ const CollectionsPage = () => {
       </Reveal>
 
       <Reveal>
-        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.45rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6">
-          <div className="pointer-events-none absolute left-0 top-8 h-14 w-1 rounded-r-full bg-primary/60" />
-          <div className="pointer-events-none absolute inset-0 opacity-70">
-            <div className="absolute inset-y-0 right-0 w-[36%] bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.14),transparent_58%)]" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          </div>
+        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5">
+          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.1),transparent_30%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.1),transparent_32%),linear-gradient(160deg,rgba(247,250,255,0.94),rgba(244,248,255,0.9))]" />
 
-          <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)] lg:items-start">
-            <div>
-              <p className="inline-flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.18em] text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                Curated collections
-              </p>
-
-              <h1 className="mt-3 max-w-[13ch] font-display text-[clamp(1.85rem,4.2vw,3.1rem)] leading-[0.95] tracking-[-0.04em] text-foreground">
-                Shop by Collection Intent
-              </h1>
-
-              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
-                Pick your intent, then open the matching collection without browsing the full wall first.
-              </p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2.5 text-[0.7rem] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Compass className="h-3.5 w-3.5 text-primary" />
-                  {collectionsWithIntent.length.toLocaleString()} collections
-                </span>
-                <span className="text-border">|</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  {totalProducts.toLocaleString()} products
-                </span>
-                <span className="text-border">|</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <selectedIntent.Icon className="h-3.5 w-3.5 text-primary" />
-                  {intentCountById[activeIntent].toLocaleString()} in {selectedIntent.label}
-                </span>
-              </div>
-
-              <div className="mt-3.5 flex flex-wrap items-center gap-3 text-xs">
-                <Link
-                  to="/shop"
-                  className="inline-flex items-center gap-1.5 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-primary transition hover:text-primary/80"
-                >
-                  Shop all products
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <Link
-                  to="/shop?sort=newest"
-                  className="inline-flex items-center gap-1.5 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-muted-foreground transition hover:text-primary"
-                >
-                  Shop newest
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-
-              <div className="mt-4 border-t border-border/75 pt-3.5">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  Browse by intent
+          <div className="relative">
+            <span className="salt-editorial-pill">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Collection browse
+            </span>
+            <SectionHeading
+              className="mt-3"
+              title={activeIntent === "all" ? "Shop by Collection Intent" : `Shop ${selectedIntent.label}`}
+              description={
+                activeIntent === "all"
+                  ? "Use collections as your first step, then drill into products with cleaner navigation."
+                  : `${selectedIntent.description}. Open the matching collection tiles below.`
+              }
+              action={
+                <p className="salt-editorial-meta">
+                  {filteredCollections.length.toLocaleString()} shown | {totalProducts.toLocaleString()} products
                 </p>
-              </div>
+              }
+            />
+            <TrustStrip
+              className="mt-4"
+              items={[
+                { icon: Truck, label: "US shipping included" },
+                { icon: ShieldCheck, label: "Secure checkout" },
+                { icon: Sparkles, label: "Curated by category" },
+              ]}
+            />
+          </div>
+        </div>
+      </Reveal>
 
-              <div className="-mx-1 mt-2.5 flex gap-4 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {intentConfigs.map((intent) => (
-                  <button
-                    key={intent.id}
-                    type="button"
-                    onClick={() => setActiveIntent(intent.id)}
-                    className={
-                      intent.id === activeIntent
-                        ? "inline-flex shrink-0 items-center gap-1.5 border-b-2 border-primary pb-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary"
-                        : "inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent pb-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-primary/35 hover:text-primary"
-                    }
-                  >
-                    <intent.Icon className="h-3.5 w-3.5" />
-                    {intent.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="lg:pl-6 lg:pt-1">
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">
-                Fast entry points
-              </p>
-              {topIntentCollections.length > 0 ? (
-                <div className="mt-2.5 divide-y divide-border/70 border-t border-border/70">
-                  {topIntentCollections.map((collection, index) => (
-                    <Link
-                      key={collection.id}
-                      to={`/shop?collection=${collection.handle}`}
-                      className="group flex items-start justify-between gap-4 py-3"
-                    >
-                      <div>
-                        <p className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-primary">
-                          {activeIntent === "all" ? `Top ${index + 1}` : "Top pick"}
-                        </p>
-                        <p className="mt-1 font-display text-[1.02rem] leading-tight text-foreground transition group-hover:text-primary">
-                          {collection.title}
-                        </p>
-                        <p className="mt-1 text-[0.72rem] font-medium text-muted-foreground">
-                          {collection.products_count.toLocaleString()} products
-                        </p>
-                      </div>
-                      <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-2.5 border-t border-dashed border-border/80 py-4 text-sm text-muted-foreground">
-                  No collections currently mapped to this intent. Switch intent to continue browsing.
-                </div>
-              )}
-            </div>
+      <Reveal delayMs={72}>
+        <div className="salt-filter-shell mt-4 rounded-[1.05rem] p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              Browse by intent | {intentCountById[activeIntent].toLocaleString()} collections
+            </p>
+            <Link to="/shop" className="salt-outline-chip h-8 px-3 py-0 text-[0.62rem]">
+              Shop all products
+            </Link>
           </div>
 
+          <div className="-mx-1 mt-2.5 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+            {intentConfigs.map((intent) => (
+              <button
+                key={intent.id}
+                type="button"
+                onClick={() => setActiveIntent(intent.id)}
+                className={
+                  intent.id === activeIntent
+                    ? "salt-primary-cta inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
+                    : "salt-outline-chip inline-flex h-9 shrink-0 items-center gap-1.5 px-3 py-0 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
+                }
+              >
+                <intent.Icon className="h-3.5 w-3.5" />
+                {intent.label}
+              </button>
+            ))}
+          </div>
         </div>
       </Reveal>
 
@@ -308,80 +255,45 @@ const CollectionsPage = () => {
           title={activeIntent === "all" ? "Explore the full collection wall" : `Explore ${selectedIntent.label}`}
           description={
             activeIntent === "all"
-              ? "A cleaner browse inspired by the storefront visual language, with stronger spacing, clearer grouping, and easier scanning across every collection tile."
+              ? "A storefront-aligned collection wall with cleaner spacing and faster scanning."
               : `${intentCountById[activeIntent].toLocaleString()} collections are currently grouped under this shopping intent.`
           }
         />
       </Reveal>
 
-      <div className="mt-5 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredCollections.length ? (
-          filteredCollections.map((collection, index) => (
-            <Reveal key={collection.id} delayMs={index * 60}>
-              <CollectionCard
-                collection={collection}
-              />
+      <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredCollections.length ? (
+            filteredCollections.map((collection, index) => (
+              <Reveal key={collection.id} delayMs={index * 60}>
+                <CollectionCard
+                  collection={collection}
+                />
+              </Reveal>
+            ))
+          ) : (
+            <Reveal>
+              <article className="salt-panel-shell col-span-full rounded-[1.45rem] p-5 text-center">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">No mapped collections</p>
+                <h3 className="mt-2 font-display text-[clamp(1.4rem,2.6vw,2rem)]">Try another collection intent</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This intent currently has no assigned collections in live catalog metadata.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveIntent("all")}
+                  className="salt-primary-cta mt-4 h-10 px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em]"
+                >
+                  View all collections
+                </button>
+              </article>
             </Reveal>
-          ))
-        ) : (
-          <Reveal>
-            <article className="salt-panel-shell col-span-full rounded-[1.45rem] p-5 text-center">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">No mapped collections</p>
-              <h3 className="mt-2 font-display text-[clamp(1.4rem,2.6vw,2rem)]">Try another collection intent</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                This intent currently has no assigned collections in live catalog metadata.
-              </p>
-              <button
-                type="button"
-                onClick={() => setActiveIntent("all")}
-                className="salt-primary-cta mt-4 h-10 px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em]"
-              >
-                View all collections
-              </button>
-            </article>
-          </Reveal>
-        )}
-      </div>
-
-      <Reveal delayMs={140}>
-        <div className="salt-surface-strong relative mt-10 overflow-hidden rounded-[2rem] p-5 sm:p-6 lg:p-7">
-          <div className="pointer-events-none absolute inset-0 opacity-80">
-            <div className="absolute inset-y-0 right-0 w-[32%] bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.22),transparent_55%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          </div>
-
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-primary">
-                Need a faster way in?
-              </p>
-              <h2 className="mt-2 max-w-[12ch] font-display text-[clamp(1.9rem,3vw,3rem)] leading-[0.94] tracking-[-0.05em] text-foreground">
-                Open the full catalog and refine from there
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
-                Jump into the complete product view, then filter by collection, type, or value to find the right edit faster.
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
-              <Link
-                to="/shop"
-                className="salt-primary-cta inline-flex h-11 w-full items-center justify-center px-5 text-[0.72rem] font-bold uppercase tracking-[0.12em] sm:w-auto"
-              >
-                Open full catalog
-              </Link>
-              <Link
-                to="/shop?sort=discount"
-                className="salt-outline-chip inline-flex h-11 w-full items-center justify-center px-5 py-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] sm:w-auto"
-              >
-                Shop best savings
-              </Link>
-            </div>
-          </div>
+          )}
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 };
 
 export default CollectionsPage;
+

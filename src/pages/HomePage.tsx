@@ -8,6 +8,10 @@ import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
 import collectionDecor from "@/assets/collection-decor.jpg";
 import heroMain from "@/assets/hero-main.jpg";
+import productDock from "@/assets/product-dock.jpg";
+import productLaptopStand from "@/assets/product-laptop-stand.jpg";
+import productPortableStand from "@/assets/product-portable-stand.jpg";
+import productTripod from "@/assets/product-tripod.jpg";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 type ImageTile = {
@@ -81,6 +85,30 @@ const fallbackBestSellerTiles: ProductTile[] = [
     price: "$40.99",
     image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8652b5fe8d4042aba9342aef6e7b8468m.webp?v=1755687078",
     to: "/products/japanese-ramen-bowl-set-310ml-cereal-salad-bowl-serving-set-2-4-6-pcs-ceramic-table-wear-oven-safe",
+  },
+  {
+    title: "Portable LED Night Light",
+    price: "$25.99",
+    image: productTripod,
+    to: "/shop?q=night+light",
+  },
+  {
+    title: "Laptop Phone Mount",
+    price: "$16.99",
+    image: productLaptopStand,
+    to: "/shop?q=laptop+mount",
+  },
+  {
+    title: "Living Legacy Planner",
+    price: "$55.99",
+    image: productPortableStand,
+    to: "/shop?q=planner",
+  },
+  {
+    title: "Daily Bloom Journal",
+    price: "$49.99",
+    image: productDock,
+    to: "/shop?q=journal",
   },
 ];
 
@@ -271,7 +299,7 @@ const HomePage = () => {
       uniqueProducts.push(product);
     });
 
-    return uniqueProducts.slice(0, 4);
+    return uniqueProducts.slice(0, 8);
   }, [bestSellerProductIds, products]);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
     if (!bestSellerProducts.length) {
@@ -381,7 +409,7 @@ const HomePage = () => {
     });
   }, [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords]);
   return (
-    <section className="mx-auto mt-2 w-full max-w-[1120px] px-2.5 pb-10 sm:mt-4 sm:px-4 sm:pb-14 md:px-5 lg:pb-20">
+    <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
           <section className="grid border-b border-[#dce9ff] lg:grid-cols-[1.05fr_0.95fr]">
@@ -442,11 +470,13 @@ const HomePage = () => {
                     className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
                   >
                     <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
-                      <img
-                        src={tile.image}
-                        alt={tile.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                      />
+                      <div className="salt-category-scroll-track h-full w-full">
+                        <img
+                          src={tile.image}
+                          alt={tile.title}
+                          className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        />
+                      </div>
                     </div>
                     <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.92))] px-3 py-2.5 text-center">
                       <p className="font-display text-[0.98rem] text-white sm:text-[1.08rem]">

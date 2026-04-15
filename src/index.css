@@ -1053,6 +1053,18 @@
     animation: salt-grid-drift 40s linear infinite;
   }
 
+  .salt-category-scroll-track {
+    animation: salt-category-pan 12s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .salt-category-scroll-track {
+      animation: none;
+      transform: none;
+    }
+  }
+
   @keyframes salt-sync-pulse {
     0% {
       box-shadow: 0 0 0 0 hsl(var(--primary) / 0.52);
@@ -1074,6 +1086,18 @@
     }
     100% {
       background-position: 28px 0, 0 28px;
+    }
+  }
+
+  @keyframes salt-category-pan {
+    0% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4%);
+    }
+    100% {
+      transform: translateY(-8%);
     }
   }
 
