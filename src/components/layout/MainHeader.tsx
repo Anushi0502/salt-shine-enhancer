@@ -56,6 +56,52 @@ function isNavItemActive(item: NavItem, pathname: string): boolean {
 const actionButtonClassName =
   "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d7d1bd] bg-[#fbf8ef] text-[#293244] transition hover:border-[#c8b77a] hover:text-[#111827] sm:h-10 sm:w-10";
 
+const RECENT_SEARCHES_KEY = "salt-recent-searches";
+const DEFAULT_TRENDING_SEARCHES = [
+  "Gifts",
+  "Candles",
+  "Kitchen",
+  "Pet accessories",
+  "Home decor",
+];
+
+function normalizeSearchPhrase(input: string): string {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function approximateSearchScore(haystack: string, queryTokens: string[]): number {
+  if (!haystack || !queryTokens.length) {
+    return 0;
+  }
+
+  const words = haystack.split(" ").filter(Boolean);
+  let score = 0;
+
+  queryTokens.forEach((token) => {
+    if (!token) {
+      return;
+    }
+
+    if (haystack.includes(token)) {
+      score += 5;
+      return;
+    }
+
+    const prefix = token.length > 3 ? token.slice(0, token.length - 1) : token;
+    if (words.some((word) => word.startsWith(prefix))) {
+      score += 3;
+      return;
+    }
+
+    const compact = token.replace(/[aeiou]/g, "");
+    if (compact && words.some((word) => word.includes(compact))) {
+      score += 1;
+    }
+  });
+
+  return score;
+}
+
 const MainHeader = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -67,6 +113,7 @@ const MainHeader = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const showHeaderSearch = true;
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData?.products]);
   const allCollections = useMemo(
@@ -83,8 +130,103 @@ const MainHeader = () => {
       return allProducts.slice(0, 5);
     }
 
-    return filterProducts(allProducts, { query: searchInput.trim() }).slice(0, 6);
+    const strictMatches = filterProducts(allProducts, { query: searchInput.trim() }).slice(0, 6);
+    if (strictMatches.length > 0) {
+      return strictMatches;
+    }
+
+    const normalizedQuery = normalizeSearchPhrase(searchInput);
+    const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+    if (!queryTokens.length) {
+      return [];
+    }
+
+    return allProducts
+      .map((product) => {
+        const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
+        const searchable = normalizeSearchPhrase(`${product.title} ${product.product_type || ""} ${tags}`);
+        const score = approximateSearchScore(searchable, queryTokens);
+        return score > 0 ? { product, score } : null;
+      })
+      .filter((entry): entry is { product: (typeof allProducts)[number]; score: number } => Boolean(entry))
+      .sort((left, right) => right.score - left.score || minPrice(left.product) - minPrice(right.product))
+      .slice(0, 6)
+      .map((entry) => entry.product);
   }, [allProducts, hasSearchQuery, searchInput]);
+  const trendingSearches = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    allProducts.forEach((product) => {
+      const label = String(product.product_type || "").trim();
+      if (!label) {
+        return;
+      }
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    const topFromCatalog = [...counts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .map(([label]) => label)
+      .slice(0, 5);
+    const merged = [...topFromCatalog, ...DEFAULT_TRENDING_SEARCHES];
+
+    return merged.filter((value, index) => merged.findIndex((entry) => entry.toLowerCase() === value.toLowerCase()) === index).slice(0, 6);
+  }, [allProducts]);
+  const categorySuggestions = useMemo(() => {
+    const query = normalizeSearchPhrase(searchInput);
+    const suggestions: Array<{ label: string; to: string }> = [];
+    const seen = new Set<string>();
+
+    allCollections.forEach((collection) => {
+      const label = String(collection.title || "").trim();
+      const handle = String(collection.handle || "").trim();
+      if (!label || !handle) {
+        return;
+      }
+
+      if (query) {
+        const searchable = normalizeSearchPhrase(`${collection.title} ${collection.handle}`);
+        if (!searchable.includes(query)) {
+          return;
+        }
+      }
+
+      const key = `collection:${label.toLowerCase()}`;
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      suggestions.push({ label, to: `/collections/${handle}` });
+    });
+
+    const typeCounts = new Map<string, number>();
+    allProducts.forEach((product) => {
+      const label = String(product.product_type || "").trim();
+      if (!label) {
+        return;
+      }
+      typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
+    });
+
+    [...typeCounts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .forEach(([label]) => {
+        if (query && !normalizeSearchPhrase(label).includes(query)) {
+          return;
+        }
+
+        const key = `type:${label.toLowerCase()}`;
+        if (seen.has(key)) {
+          return;
+        }
+
+        seen.add(key);
+        suggestions.push({ label, to: `/shop?type=${encodeURIComponent(label)}` });
+      });
+
+    return suggestions.slice(0, 8);
+  }, [allCollections, allProducts, searchInput]);
   const bestSellerCollection = useMemo(
     () =>
       allCollections.find((collection) =>
@@ -143,6 +285,31 @@ const MainHeader = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        const sanitized = parsed
+          .filter((entry): entry is string => typeof entry === "string")
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+          .slice(0, 6);
+        setRecentSearches(sanitized);
+      }
+    } catch {
+      setRecentSearches([]);
+    }
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSearchInput(params.get("q") || "");
   }, [location.pathname, location.search]);
@@ -164,6 +331,16 @@ const MainHeader = () => {
     setMobileOpen(false);
   };
 
+  const rememberSearchQuery = (query: string) => {
+    if (!query || typeof window === "undefined") {
+      return;
+    }
+
+    const next = [query, ...recentSearches.filter((entry) => entry.toLowerCase() !== query.toLowerCase())].slice(0, 6);
+    setRecentSearches(next);
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+  };
+
   const applySearchQuery = (value: string) => {
     const normalizedQuery = value.trim();
     if (!normalizedQuery) {
@@ -171,7 +348,14 @@ const MainHeader = () => {
       return;
     }
 
+    rememberSearchQuery(normalizedQuery);
     navigate(`/search?q=${encodeURIComponent(normalizedQuery)}`);
+  };
+
+  const runQuickSearch = (value: string) => {
+    setSearchInput(value);
+    setSearchDropdownOpen(false);
+    applySearchQuery(value);
   };
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -310,7 +494,27 @@ const MainHeader = () => {
 
                       {hasSearchQuery && !dropdownProducts.length ? (
                         <div className="rounded-[1rem] border border-dashed border-[#d5d5cf] px-3 py-4 text-sm text-[#616879]">
-                          No product matches this search. Try another keyword.
+                          <p>No product matches this search yet. Try a category shortcut:</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
+                              <button
+                                key={entry.label}
+                                type="button"
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  setSearchDropdownOpen(false);
+                                }}
+                                onClick={() => {
+                                  if ("to" in entry) {
+                                    navigate(entry.to);
+                                  }
+                                }}
+                                className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                              >
+                                {entry.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ) : null}
                     </div>
@@ -345,6 +549,62 @@ const MainHeader = () => {
                             <span>{route.label}</span>
                             <ChevronRight className="h-4 w-4 text-[#2f3748]" />
                           </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {categorySuggestions.length ? (
+                      <div className="mt-2 rounded-[0.8rem] border border-[#d5d5cf] bg-[#f3f3ef] p-3">
+                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#596172]">Category suggestions</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {categorySuggestions.slice(0, 6).map((entry) => (
+                            <Link
+                              key={`${entry.label}-${entry.to}`}
+                              to={entry.to}
+                              onClick={() => setSearchDropdownOpen(false)}
+                              className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                            >
+                              {entry.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-2 rounded-[0.8rem] border border-[#d5d5cf] bg-[#f3f3ef] p-3">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#596172]">Recent searches</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(recentSearches.length ? recentSearches : trendingSearches).slice(0, 6).map((term) => (
+                          <button
+                            key={term}
+                            type="button"
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              runQuickSearch(term);
+                            }}
+                            className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                          >
+                            {term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-2 rounded-[0.8rem] border border-[#d5d5cf] bg-[#f3f3ef] p-3">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#596172]">Trending searches</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {trendingSearches.slice(0, 6).map((term) => (
+                          <button
+                            key={`trend-${term}`}
+                            type="button"
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              runQuickSearch(term);
+                            }}
+                            className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                          >
+                            {term}
+                          </button>
                         ))}
                       </div>
                     </div>

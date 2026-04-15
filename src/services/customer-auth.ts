@@ -99,10 +99,16 @@ export async function signupWithEmail(payload: {
   }
 
   const supabase = getSupabaseClient();
+  const emailRedirectTo =
+    typeof window === "undefined"
+      ? undefined
+      : `${window.location.origin}/customer-access?mode=login&reason=account`;
+
   const { data, error } = await supabase.auth.signUp({
     email: payload.email,
     password: payload.password,
     options: {
+      emailRedirectTo,
       data: {
         first_name: payload.firstName,
         last_name: payload.lastName,

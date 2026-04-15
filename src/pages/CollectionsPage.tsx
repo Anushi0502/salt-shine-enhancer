@@ -122,10 +122,6 @@ const CollectionsPage = () => {
     [activeIntent, collectionsWithIntent],
   );
   const totalProducts = collections.reduce((sum, collection) => sum + collection.products_count, 0);
-  const spotlightCollections = [...filteredCollections]
-    .sort((a, b) => b.products_count - a.products_count)
-    .slice(0, 8);
-  const topThreeCollections = spotlightCollections.slice(0, 3);
   const intentCountById = useMemo(
     () =>
       collectionsWithIntent.reduce<Record<IntentId, number>>(
@@ -186,65 +182,69 @@ const CollectionsPage = () => {
       </Reveal>
 
       <Reveal>
-        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.75rem] p-4 sm:rounded-[2.05rem] sm:p-6 lg:p-7">
-          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/65" />
+        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.45rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6">
+          <div className="pointer-events-none absolute left-0 top-8 h-14 w-1 rounded-r-full bg-primary/60" />
           <div className="pointer-events-none absolute inset-0 opacity-70">
-            <div className="absolute inset-y-0 right-0 w-[42%] bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.16),transparent_58%)]" />
+            <div className="absolute inset-y-0 right-0 w-[36%] bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.14),transparent_58%)]" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
           </div>
 
-          <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-start">
+          <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)] lg:items-start">
             <div>
-              <div className="salt-editorial-pill gap-2 tracking-[0.16em]">
+              <p className="inline-flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.18em] text-primary">
                 <Sparkles className="h-3.5 w-3.5" />
                 Curated collections
-              </div>
+              </p>
 
-              <h1 className="mt-4 max-w-[12ch] font-display text-[clamp(2.2rem,4.8vw,4rem)] leading-[0.93] tracking-[-0.05em] text-foreground">
+              <h1 className="mt-3 max-w-[13ch] font-display text-[clamp(1.85rem,4.2vw,3.1rem)] leading-[0.95] tracking-[-0.04em] text-foreground">
                 Shop by Collection Intent
               </h1>
 
-              <p className="mt-3 max-w-2xl text-[0.98rem] leading-7 text-muted-foreground sm:text-base">
-                Start with the shopping goal first, then dive into the matching collection wall. The non-home experience now follows a cleaner intent-led structure with stronger hierarchy and faster discovery.
+              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
+                Pick your intent, then open the matching collection without browsing the full wall first.
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
-                <span className="salt-editorial-meta">
+              <div className="mt-4 flex flex-wrap items-center gap-2.5 text-[0.7rem] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
                   <Compass className="h-3.5 w-3.5 text-primary" />
                   {collectionsWithIntent.length.toLocaleString()} collections
                 </span>
-                <span className="salt-editorial-meta">
+                <span className="text-border">|</span>
+                <span className="inline-flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  {totalProducts.toLocaleString()} products across collections
+                  {totalProducts.toLocaleString()} products
                 </span>
-                <span className="salt-editorial-meta">
+                <span className="text-border">|</span>
+                <span className="inline-flex items-center gap-1.5">
                   <selectedIntent.Icon className="h-3.5 w-3.5 text-primary" />
-                  {selectedIntent.label} | {intentCountById[activeIntent].toLocaleString()} collections
+                  {intentCountById[activeIntent].toLocaleString()} in {selectedIntent.label}
                 </span>
+              </div>
+
+              <div className="mt-3.5 flex flex-wrap items-center gap-3 text-xs">
                 <Link
                   to="/shop"
-                  className="salt-primary-cta inline-flex h-10 w-full items-center justify-center gap-2 px-4 text-[0.7rem] font-bold uppercase tracking-[0.14em] sm:w-auto"
+                  className="inline-flex items-center gap-1.5 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-primary transition hover:text-primary/80"
                 >
                   Shop all products
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
-                  to="/blog"
-                  className="salt-outline-chip inline-flex h-10 w-full items-center justify-center px-4 py-0 text-[0.7rem] font-bold uppercase tracking-[0.14em] sm:w-auto"
+                  to="/shop?sort=newest"
+                  className="inline-flex items-center gap-1.5 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-muted-foreground transition hover:text-primary"
                 >
-                  Browse stories
+                  Shop newest
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
-              <TrustStrip
-                className="mt-4"
-                items={[
-                  { icon: Truck, label: "US shipping" },
-                  { icon: ShieldCheck, label: "Secure checkout" },
-                  { icon: Sparkles, label: "Curated picks" },
-                ]}
-              />
 
-              <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+              <div className="mt-4 border-t border-border/75 pt-3.5">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  Browse by intent
+                </p>
+              </div>
+
+              <div className="-mx-1 mt-2.5 flex gap-4 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                 {intentConfigs.map((intent) => (
                   <button
                     key={intent.id}
@@ -252,8 +252,8 @@ const CollectionsPage = () => {
                     onClick={() => setActiveIntent(intent.id)}
                     className={
                       intent.id === activeIntent
-                        ? "salt-primary-cta inline-flex h-10 shrink-0 items-center gap-1.5 px-3 text-[0.64rem] font-bold uppercase tracking-[0.08em]"
-                        : "salt-outline-chip inline-flex h-10 shrink-0 items-center gap-1.5 px-3 py-0 text-[0.64rem] font-bold uppercase tracking-[0.08em]"
+                        ? "inline-flex shrink-0 items-center gap-1.5 border-b-2 border-primary pb-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary"
+                        : "inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent pb-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground transition hover:border-primary/35 hover:text-primary"
                     }
                   >
                     <intent.Icon className="h-3.5 w-3.5" />
@@ -263,59 +263,41 @@ const CollectionsPage = () => {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              {topThreeCollections.length > 0 ? (
-                topThreeCollections.map((collection, index) => (
-                  <Link
-                    key={collection.id}
-                    to={`/shop?collection=${collection.handle}`}
-                    className="salt-kpi-card salt-metric-card group relative overflow-hidden rounded-[1.25rem] px-4 py-4 transition duration-300 hover:-translate-y-0.5"
-                  >
-                    <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-primary/8 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-                    <p className="relative text-[0.64rem] font-bold uppercase tracking-[0.16em] text-primary">
-                      {activeIntent === "all" ? `Top ${index + 1}` : selectedIntent.label}
-                    </p>
-                    <p className="relative mt-2 line-clamp-1 font-display text-[1.2rem] leading-none tracking-[-0.03em] text-foreground">
-                      {collection.title}
-                    </p>
-                    <div className="relative mt-3 flex items-center justify-between gap-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {collection.products_count.toLocaleString()} products
-                      </p>
-                      <span className="inline-flex items-center gap-1 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground transition group-hover:text-primary">
-                        Explore <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    </div>
-                  </Link>
-                ))
+            <div className="lg:pl-6 lg:pt-1">
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">
+                Fast entry points
+              </p>
+              {topIntentCollections.length > 0 ? (
+                <div className="mt-2.5 divide-y divide-border/70 border-t border-border/70">
+                  {topIntentCollections.map((collection, index) => (
+                    <Link
+                      key={collection.id}
+                      to={`/shop?collection=${collection.handle}`}
+                      className="group flex items-start justify-between gap-4 py-3"
+                    >
+                      <div>
+                        <p className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-primary">
+                          {activeIntent === "all" ? `Top ${index + 1}` : "Top pick"}
+                        </p>
+                        <p className="mt-1 font-display text-[1.02rem] leading-tight text-foreground transition group-hover:text-primary">
+                          {collection.title}
+                        </p>
+                        <p className="mt-1 text-[0.72rem] font-medium text-muted-foreground">
+                          {collection.products_count.toLocaleString()} products
+                        </p>
+                      </div>
+                      <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </Link>
+                  ))}
+                </div>
               ) : (
-                <div className="rounded-[1.45rem] border border-dashed border-border bg-background/70 px-4 py-5 text-sm text-muted-foreground">
+                <div className="mt-2.5 border-t border-dashed border-border/80 py-4 text-sm text-muted-foreground">
                   No collections currently mapped to this intent. Switch intent to continue browsing.
                 </div>
               )}
             </div>
           </div>
 
-          {spotlightCollections.length > 0 ? (
-            <div className="relative mt-6 border-t border-border/70 pt-5">
-              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                Quick browse: {selectedIntent.label}
-              </p>
-              <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {spotlightCollections.map((collection, index) => (
-                  <Link
-                    key={collection.id}
-                    to={`/shop?collection=${collection.handle}`}
-                    className={index === 0
-                      ? "salt-primary-cta inline-flex h-11 shrink-0 items-center px-4 text-[0.72rem] font-semibold uppercase tracking-[0.08em]"
-                      : "salt-outline-chip inline-flex h-11 shrink-0 items-center px-4 py-0 text-[0.72rem] font-semibold uppercase tracking-[0.08em]"}
-                  >
-                    {collection.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </div>
       </Reveal>
 

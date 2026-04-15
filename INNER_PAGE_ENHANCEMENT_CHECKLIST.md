@@ -2,6 +2,18 @@
 
 Scope: improve all non-home pages while preserving the homepage UI exactly as-is.
 
+## Current Status (Execution Board)
+
+- [x] Homepage UI freeze rule enforced for all ongoing work.
+- [x] Collection page desktop filter sidebar is hideable.
+- [x] Desktop filters are hidden by default.
+- [x] Mobile filter interaction is inline (not full-screen popup).
+- [x] Product card duplicate price/action block issue fixed.
+- [ ] Collection page sticky toolbar polish + chips refinement pass.
+- [ ] Product page conversion layout pass.
+- [ ] Search relevance/predictive suggestions pass.
+- [ ] Cart reassurance + hierarchy pass.
+
 ## 0) Hard Guardrail (Must Pass First)
 
 - [ ] Do not modify homepage layout, spacing, typography, tile styles, section order, banners, product-card visuals, or promotion logic.

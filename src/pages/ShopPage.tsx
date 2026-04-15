@@ -284,44 +284,7 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
-
-  const bestInCollection = useMemo(
-    () => [...sortedProducts].sort((a, b) => savingsPercent(b) - savingsPercent(a)).slice(0, 4),
-    [sortedProducts],
-  );
-  const underTwentyFive = useMemo(() => sortedProducts.filter((product) => minPrice(product) <= 25).slice(0, 4), [sortedProducts]);
-  const mostGifted = useMemo(
-    () =>
-      sortedProducts
-        .filter((product) =>
-          /gift|candle|decor|set|bundle/i.test(`${product.title} ${product.product_type} ${product.tags}`),
-        )
-        .slice(0, 4),
-    [sortedProducts],
-  );
-  const newInCategory = useMemo(
-    () =>
-      [...sortedProducts]
-        .sort(
-          (a, b) =>
-            new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime(),
-        )
-        .slice(0, 4),
-    [sortedProducts],
-  );
-  const pairsWellWith = useMemo(() => {
-    const anchorProduct = visibleProducts[0];
-    if (!anchorProduct) {
-      return [];
-    }
-
-    return sortedProducts
-      .filter(
-        (product) =>
-          product.id !== anchorProduct.id && normalizeHandle(product.product_type) !== normalizeHandle(anchorProduct.product_type),
-      )
-      .slice(0, 4);
-  }, [sortedProducts, visibleProducts]);
+  const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
   useEffect(() => {
     if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
@@ -506,6 +469,9 @@ const ShopPage = () => {
       onRemove: () => void;
     } => Boolean(entry),
   );
+  const hasActiveFilters = filterChips.length > 0;
+  const desktopToolbarChips = filterChips.slice(0, 3);
+  const hiddenDesktopChipCount = Math.max(0, filterChips.length - desktopToolbarChips.length);
 
   const breadcrumbItems = [
     { label: "Home", to: "/" },
@@ -513,14 +479,14 @@ const ShopPage = () => {
     { label: selectedCollection?.title || "Catalog" },
   ];
   const sidebarFilterPanelContent = (
-    <div className="mt-2.5 grid gap-2.5">
+    <div className="mt-2 grid gap-2">
       <div className="grid gap-1">
-        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collection</p>
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collection</p>
         <select
           aria-label="Collection filter"
           value={collectionHandle}
           onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           <option value="">All collections</option>
           {collections.map((collection) => (
@@ -532,12 +498,12 @@ const ShopPage = () => {
       </div>
 
       <div className="grid gap-1">
-        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Product type</p>
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Product type</p>
         <select
           aria-label="Product type filter"
           value={typeFilter}
           onChange={(event) => updateParams({ type: event.target.value || null }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           <option value="">All product types</option>
           {productTypes.map((type) => (
@@ -549,12 +515,12 @@ const ShopPage = () => {
       </div>
 
       <div className="grid gap-1">
-        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Sort by</p>
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Sort by</p>
         <select
           aria-label="Sort products"
           value={sort}
           onChange={(event) => updateParams({ sort: event.target.value }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -565,12 +531,12 @@ const ShopPage = () => {
       </div>
 
       <div className="grid gap-1">
-        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Price range</p>
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Price range</p>
         <select
           aria-label="Price range filter"
           value={priceRangeOptions.find((option) => option.min === minFilter && option.max === maxFilter)?.value || "custom"}
           onChange={(event) => onPricePresetChange(event.target.value)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           {priceRangeOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -581,8 +547,8 @@ const ShopPage = () => {
         </select>
       </div>
 
-      <div className="grid gap-2 border-t border-border/70 pt-3">
-        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Custom price</p>
+      <div className="grid gap-1.5 border-t border-border/70 pt-2.5">
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Custom price</p>
         <input
           type="number"
           min={0}
@@ -590,7 +556,7 @@ const ShopPage = () => {
           value={customMinInput}
           onChange={(event) => setCustomMinInput(event.target.value)}
           placeholder="Min price"
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
         <input
@@ -600,7 +566,7 @@ const ShopPage = () => {
           value={customMaxInput}
           onChange={(event) => setCustomMaxInput(event.target.value)}
           placeholder="Max price"
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
           aria-label="Maximum price"
         />
         <button
@@ -609,7 +575,7 @@ const ShopPage = () => {
             applyCustomPrice();
             setMobileFiltersOpen(false);
           }}
-          className="salt-primary-cta h-9 w-full justify-center text-[0.62rem] font-bold uppercase tracking-[0.08em]"
+          className="salt-primary-cta h-8.5 w-full justify-center text-[0.58rem] font-bold uppercase tracking-[0.08em]"
         >
           Apply price
         </button>
@@ -618,13 +584,13 @@ const ShopPage = () => {
   );
 
   const mobileFilterPanelContent = (
-    <div className="mt-2.5 grid gap-2.5">
+    <div className="mt-2 grid gap-2">
       <div className="salt-filter-grid sm:grid-cols-2 lg:grid-cols-4">
         <select
           aria-label="Collection filter"
           value={collectionHandle}
           onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           <option value="">All collections</option>
           {collections.map((collection) => (
@@ -637,7 +603,7 @@ const ShopPage = () => {
           aria-label="Product type filter"
           value={typeFilter}
           onChange={(event) => updateParams({ type: event.target.value || null }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           <option value="">All product types</option>
           {productTypes.map((type) => (
@@ -650,7 +616,7 @@ const ShopPage = () => {
           aria-label="Sort products"
           value={sort}
           onChange={(event) => updateParams({ sort: event.target.value }, true)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -662,7 +628,7 @@ const ShopPage = () => {
           aria-label="Price range filter"
           value={priceRangeOptions.find((option) => option.min === minFilter && option.max === maxFilter)?.value || "custom"}
           onChange={(event) => onPricePresetChange(event.target.value)}
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
         >
           {priceRangeOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -681,7 +647,7 @@ const ShopPage = () => {
           value={customMinInput}
           onChange={(event) => setCustomMinInput(event.target.value)}
           placeholder="Min price"
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
         <input
@@ -691,13 +657,13 @@ const ShopPage = () => {
           value={customMaxInput}
           onChange={(event) => setCustomMaxInput(event.target.value)}
           placeholder="Max price"
-          className="salt-filter-field"
+          className="salt-filter-field salt-filter-field-compact"
           aria-label="Maximum price"
         />
         <button
           type="button"
           onClick={applyCustomPrice}
-          className="salt-primary-cta h-11 w-full px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em] sm:w-auto"
+          className="salt-primary-cta h-9 w-full px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] sm:w-auto"
         >
           Apply price
         </button>
@@ -712,16 +678,16 @@ const ShopPage = () => {
       </Reveal>
 
       <Reveal>
-        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.45rem] p-4 sm:rounded-[2rem] sm:p-6">
+        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5">
           <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
           {selectedCollectionImage ? (
             <img
               src={selectedCollectionImage}
               alt={previewCollection?.title || "Collection preview"}
-              className="absolute inset-0 h-full w-full object-cover opacity-[0.18]"
+              className="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
             />
           ) : null}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.12),transparent_32%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.14),transparent_35%),linear-gradient(160deg,rgba(255,255,255,0.36),rgba(255,255,255,0.18))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.1),transparent_30%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.1),transparent_32%),linear-gradient(160deg,rgba(247,250,255,0.94),rgba(244,248,255,0.9))]" />
 
           <div className="relative">
             <span className="salt-editorial-pill">
@@ -738,20 +704,20 @@ const ShopPage = () => {
           </div>
         </div>
       </Reveal>
-      <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
+      <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[252px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
 
 
         {desktopFiltersVisible ? (
           <Reveal delayMs={70} className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
-            <aside id="desktop-shop-filters" className="salt-filter-shell rounded-[1.35rem] p-2.5 sm:p-3.5 lg:flex lg:min-h-[calc(100vh-8rem)] lg:flex-col">
+            <aside id="desktop-shop-filters" className="salt-filter-shell salt-filter-shell-compact rounded-[1.05rem] p-2 sm:p-2.5 lg:flex lg:min-h-[calc(100vh-8rem)] lg:flex-col">
               <div className="flex items-center justify-between gap-2">
-                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">
+                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary">
                   <SlidersHorizontal className="h-3.5 w-3.5" /> Filter and sort
                 </p>
                 <button
                   type="button"
                   onClick={() => setDesktopFiltersVisible(false)}
-                  className="salt-outline-chip h-7 px-2.5 py-0 text-[0.58rem]"
+                  className="salt-outline-chip h-6.5 px-2 py-0 text-[0.54rem]"
                   aria-label="Hide filters sidebar"
                 >
                   Hide
@@ -775,20 +741,51 @@ const ShopPage = () => {
         ) : null}
 
         <div className={desktopFiltersVisible ? "lg:col-start-2" : "lg:col-start-1"}>
-          {!desktopFiltersVisible ? (
-            <Reveal delayMs={70} className="mb-3 hidden lg:block">
-              <button
-                type="button"
-                onClick={() => setDesktopFiltersVisible(true)}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-primary/30 bg-background/90 px-3 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/50 hover:text-primary/90"
-                aria-controls="desktop-shop-filters"
-                aria-expanded={desktopFiltersVisible}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                Show filters
-              </button>
-            </Reveal>
-          ) : null}
+          <Reveal delayMs={78} className="mb-3 hidden lg:block">
+            <div className="salt-filter-shell sticky top-24 z-20 rounded-[1.05rem] p-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  {totalResults.toLocaleString()} products
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    <ArrowDownUp className="h-3.5 w-3.5" /> {sortLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDesktopFiltersVisible((current) => !current)}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-4 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white shadow-[0_16px_30px_-20px_rgba(21,71,154,0.72)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_20px_34px_-22px_rgba(21,71,154,0.78)]"
+                    aria-controls="desktop-shop-filters"
+                    aria-expanded={desktopFiltersVisible}
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    {desktopFiltersVisible ? "Hide filters" : "Show filters"}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {desktopToolbarChips.map((chip) => (
+                  <button key={`toolbar-${chip.key}`} type="button" onClick={chip.onRemove} className="salt-applied-chip" aria-label={`Remove ${chip.label} filter`}>
+                    <span>{chip.label}</span>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+                {hiddenDesktopChipCount > 0 ? (
+                  <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    +{hiddenDesktopChipCount} more
+                  </span>
+                ) : null}
+                {hasActiveFilters ? (
+                  <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    No active filters
+                  </span>
+                )}
+              </div>
+            </div>
+          </Reveal>
+
           <Reveal delayMs={70} className="lg:hidden">
             <div className="salt-filter-shell rounded-[1.1rem] p-3">
               <button
@@ -853,110 +850,71 @@ const ShopPage = () => {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-                {bestInCollection.length > 0 ? (
-                  <Reveal delayMs={120}>
-                    <div className="salt-curation-block rounded-[1.45rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Best in this collection</p>
-                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                        {bestInCollection.map((product) => (
-                          <ProductCard key={`best-${product.id}`} product={product} variant="dense" />
-                        ))}
-                      </div>
-                    </div>
-                  </Reveal>
-                ) : null}
-
-                {underTwentyFive.length > 0 ? (
-                  <Reveal delayMs={140}>
-                    <div className="salt-curation-block rounded-[1.45rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Under $25</p>
-                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                        {underTwentyFive.map((product) => (
-                          <ProductCard key={`budget-${product.id}`} product={product} variant="dense" />
-                        ))}
-                      </div>
-                    </div>
-                  </Reveal>
-                ) : null}
-
-                {mostGifted.length > 0 ? (
-                  <Reveal delayMs={160}>
-                    <div className="salt-curation-block rounded-[1.45rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Most gifted</p>
-                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                        {mostGifted.map((product) => (
-                          <ProductCard key={`gifted-${product.id}`} product={product} variant="dense" />
-                        ))}
-                      </div>
-                    </div>
-                  </Reveal>
-                ) : null}
-
-                {newInCategory.length > 0 ? (
-                  <Reveal delayMs={180}>
-                    <div className="salt-curation-block rounded-[1.45rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">New in this category</p>
-                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                        {newInCategory.map((product) => (
-                          <ProductCard key={`new-${product.id}`} product={product} variant="dense" />
-                        ))}
-                      </div>
-                    </div>
-                  </Reveal>
-                ) : null}
-
-                {pairsWellWith.length > 0 ? (
-                  <Reveal delayMs={200}>
-                    <div className="salt-curation-block rounded-[1.45rem] p-4">
-                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Pairs well with</p>
-                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                        {pairsWellWith.map((product) => (
-                          <ProductCard key={`pair-${product.id}`} product={product} variant="dense" />
-                        ))}
-                      </div>
-                    </div>
-                  </Reveal>
-                ) : null}
-
-                <Reveal delayMs={220} className="xl:col-span-3">
-                  <article className="salt-editorial-shell rounded-[1.45rem] p-4 sm:p-5">
-                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Editorial micro-pick</p>
-                    <h3 className="mt-2 font-display text-[clamp(1.45rem,2.5vw,2rem)] leading-[0.98]">
-                      Practical gifts under $50 for everyday living
-                    </h3>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                      Start with budget-friendly upgrades, then combine decor, kitchen, and utility products to build a curated checkout mix.
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateParams({ max: "50", sort: "discount" }, true)}
-                        className="salt-primary-cta h-10 px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em]"
-                      >
-                        Shop under $50
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate("/collections")}
-                        className="salt-outline-chip h-10 px-4 py-0 text-[0.66rem]"
-                      >
-                        Browse collection edits
-                      </button>
-                    </div>
-                  </article>
-                </Reveal>
-              </div>
-
               <Reveal delayMs={180} className="mt-7">
-                <div className="salt-glass-rail flex flex-col items-start gap-3 rounded-[1.55rem] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                    <button type="button" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1} className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"><ChevronLeft className="h-4 w-4" /> Prev</button>
-                    <p className="w-full text-center text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:w-auto sm:text-left">Page {currentPage} of {totalPages}</p>
-                    <button type="button" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages} className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none">Next <ChevronRight className="h-4 w-4" /></button>
+                <div className="salt-glass-rail rounded-[1rem] p-2.5 sm:p-3">
+                  <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="w-full max-w-md">
+                      <div className="flex flex-wrap items-center gap-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        <span>Page {currentPage} of {totalPages}</span>
+                        <span className="text-border">|</span>
+                        <span>Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex} of {totalResults}</span>
+                      </div>
+                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-border/70">
+                        <span className="block h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${pageProgressPercent}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="salt-outline-chip h-8 flex-1 gap-1 px-3 py-0 text-[0.62rem] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="salt-outline-chip h-8 flex-1 gap-1 px-3 py-0 text-[0.62rem] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                      <p className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-border bg-background/88 px-2 py-1 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground sm:w-auto">
+                        <ArrowDownUp className="h-3 w-3" />Sorted by {sortLabel}
+                      </p>
+                    </div>
                   </div>
-                  <p className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-center text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground sm:w-auto"><ArrowDownUp className="h-3.5 w-3.5" />Sorted by {sortLabel}</p>
                 </div>
+              </Reveal>
+
+              <Reveal delayMs={210} className="mt-5">
+                <article className="salt-editorial-shell rounded-[1.25rem] p-3.5 sm:p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">Need help narrowing results?</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Start with curated routes instead of scrolling the full catalog.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link to="/collections" className="salt-primary-cta h-9 px-3.5 text-[0.62rem] font-bold uppercase tracking-[0.08em]">
+                        Browse collections
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => updateParams({ sort: "newest" }, true)}
+                        className="salt-outline-chip h-9 px-3.5 py-0 text-[0.62rem]"
+                      >
+                        Sort newest
+                      </button>
+                      <Link to="/contact" className="salt-outline-chip h-9 px-3.5 py-0 text-[0.62rem]">
+                        Ask support
+                      </Link>
+                    </div>
+                  </div>
+                </article>
               </Reveal>
             </>
           )}
