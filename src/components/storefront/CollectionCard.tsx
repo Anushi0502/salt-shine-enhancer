@@ -35,6 +35,7 @@ const CollectionCard = ({
   const totalProducts = productCount ?? collection.products_count;
   const isHero = variant === "hero";
   const hasEditorialContent = isHero && Boolean(editorialContent);
+  const collectionHref = `/shop?collection=${collection.handle}`;
 
   return (
     <article
@@ -77,14 +78,14 @@ const CollectionCard = ({
         </div>
       </div>
 
-      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5 sm:p-4"}`}>
+        <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5 sm:p-4"}`}>
         <div
           className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${
             hasEditorialContent
               ? "rounded-[1.6rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:rounded-[2rem] sm:px-6 sm:py-5 lg:px-7 lg:py-6"
               : isHero
                 ? "w-full max-w-[min(25.5rem,100%)] rounded-[1.18rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:w-fit sm:max-w-[min(25.5rem,calc(100%-0.5rem))] sm:p-[1.125rem]"
-                : "rounded-[1.45rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))]"
+                  : "flex min-h-[11.5rem] flex-col rounded-[1.45rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))]"
           }`}
         >
           {hasEditorialContent && editorialContent ? (
@@ -125,14 +126,19 @@ const CollectionCard = ({
                 </p>
               )}
               <h3
-                className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${isHero ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]" : "mt-2 text-[1.58rem] sm:text-[1.66rem]"}`}
+                title={collection.title}
+                className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${
+                  isHero
+                    ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]"
+                    : "mt-2 line-clamp-3 min-h-[4.5rem] text-[1.36rem] sm:min-h-[4.8rem] sm:text-[1.5rem] lg:line-clamp-2 lg:min-h-[3.05rem] lg:text-[1.58rem]"
+                }`}
               >
                 {collection.title}
               </h3>
 
-              <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-4"}`}>
+              <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-auto pt-4"}`}>
                 <Link
-                  to={`/shop?collection=${collection.handle}`}
+                  to={collectionHref}
                   className={`salt-showcase-pill hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
                 >
                   Shop
