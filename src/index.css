@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merienda:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -243,6 +243,21 @@
   .salt-heading {
     font-family: "Source Serif 4", Georgia, serif;
     @apply tracking-tight;
+  }
+
+  .salt-hero-script {
+    font-family: "Merienda", "Source Serif 4", Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+
+  .salt-readable-script {
+    font-family: "Merienda", "Source Serif 4", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: 0.012em;
+    line-height: 1.2;
+    text-wrap: balance;
   }
 
   .salt-kicker {
@@ -1058,10 +1073,33 @@
     will-change: transform;
   }
 
+  .salt-category-carousel {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .salt-category-carousel-track {
+    display: inline-flex;
+    width: max-content;
+    gap: 0.875rem;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    animation-name: salt-category-carousel-marquee;
+    animation-duration:49900ms;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: reverse;
+    animation-play-state: running;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .salt-category-scroll-track {
       animation: none;
       transform: none;
+    }
+
+    .salt-category-carousel-track {
+      transform: translate3d(0, 0, 0);
     }
   }
 
@@ -1098,6 +1136,15 @@
     }
     100% {
       transform: translateY(-8%);
+    }
+  }
+
+  @keyframes salt-category-carousel-marquee {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-50%, 0, 0);
     }
   }
 

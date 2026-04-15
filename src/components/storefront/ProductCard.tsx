@@ -62,12 +62,16 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         className="relative isolate block overflow-hidden rounded-[0.9rem] border border-[#bfd6ff]/70 bg-muted"
       >
         {image ? (
-          <img
-            src={image}
-            alt={product.title}
-            loading="lazy"
-            className="aspect-square w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
-          />
+          <div className="aspect-square w-full overflow-hidden">
+            <div className="salt-category-scroll-track h-full w-full">
+              <img
+                src={image}
+                alt={product.title}
+                loading="lazy"
+                className="h-[112%] w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
+              />
+            </div>
+          </div>
         ) : (
           <div className="grid aspect-square w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Image unavailable

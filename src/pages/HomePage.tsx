@@ -373,22 +373,53 @@ const HomePage = () => {
     [rankedProductsWithImages],
   );
 
-  const categoryTiles = useMemo<ImageTile[]>(
-    () =>
-      categoryTileConfigs.map((tile) => {
-        const imageFromCollection =
-          tile.collectionHandles
-            .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
-            .find(Boolean) || null;
-        const imageFromProduct = findProductImageByKeywords(tile.productKeywords);
+  const categoryTiles = useMemo<ImageTile[]>(() => {
+    const seenHandles = new Set<string>();
+    const liveCollectionTiles = collections.reduce<ImageTile[]>((acc, collection) => {
+      const handle = normalizeHandle(collection.handle);
+      if (!handle || seenHandles.has(handle)) {
+        return acc;
+      }
 
-        return {
-          title: tile.title,
-          to: tile.to,
-          image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
-        };
-      }),
-    [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords],
+      seenHandles.add(handle);
+
+      const imageFromCollection = normalizeShopifyAssetUrl(collection.image?.src);
+      const keywordTokens = normalizeText(`${collection.title} ${collection.handle}`)
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 5);
+      const imageFromProduct = keywordTokens.length ? findProductImageByKeywords(keywordTokens) : null;
+
+      acc.push({
+        title: collection.title || "Collection",
+        to: `/collections/${collection.handle}`,
+        image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
+      });
+
+      return acc;
+    }, []);
+
+    if (liveCollectionTiles.length) {
+      return liveCollectionTiles;
+    }
+
+    return categoryTileConfigs.map((tile) => {
+      const imageFromCollection =
+        tile.collectionHandles
+          .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
+          .find(Boolean) || null;
+      const imageFromProduct = findProductImageByKeywords(tile.productKeywords);
+
+      return {
+        title: tile.title,
+        to: tile.to,
+        image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
+      };
+    });
+  }, [bestSellerHeroImage, collectionImageByHandle, collections, findProductImageByKeywords]);
+  const categoryCarouselTiles = useMemo(
+    () => (categoryTiles.length > 1 ? [...categoryTiles, ...categoryTiles] : categoryTiles),
+    [categoryTiles],
   );
 
   const giftTiles = useMemo<ImageTile[]>(() => {
@@ -462,12 +493,13 @@ const HomePage = () => {
         <Reveal delayMs={80}>
           <section className="px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="Shop by Category" />
-            <div className="mt-4 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:mt-5 sm:gap-3.5 lg:grid-cols-4">
-              {categoryTiles.map((tile, index) => (
-                <Reveal key={tile.title} delayMs={120 + index * 70}>
+            <div className="salt-category-carousel mt-4 sm:mt-5">
+              <div className="salt-category-carousel-track">
+                {categoryCarouselTiles.map((tile, index) => (
                   <Link
+                    key={`${tile.to}-${index}`}
                     to={tile.to}
-                    className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
+                    className="group relative block w-[15.75rem] shrink-0 overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] sm:w-[17.4rem] lg:w-[19rem]"
                   >
                     <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
                       <div className="salt-category-scroll-track h-full w-full">
@@ -484,8 +516,8 @@ const HomePage = () => {
                       </p>
                     </div>
                   </Link>
-                </Reveal>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
         </Reveal>
