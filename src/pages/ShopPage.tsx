@@ -1,23 +1,27 @@
-import { useEffect, useMemo, useRef } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
+  Truck,
+  X,
 } from "lucide-react";
+import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
+import SectionHeading from "@/components/storefront/SectionHeading";
+import TrustStrip from "@/components/storefront/TrustStrip";
+
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { filterProducts } from "@/lib/catalog";
+import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
-import {
-  useCollections,
-  useCollectionProductIds,
-  useProducts,
-} from "@/lib/shopify-data";
+import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
   { value: "featured", label: "Featured" },
@@ -25,6 +29,14 @@ const sortOptions = [
   { value: "price-desc", label: "Price: High to Low" },
   { value: "discount", label: "Biggest Savings" },
   { value: "newest", label: "Newest" },
+] as const;
+
+const priceRangeOptions = [
+  { value: "all", label: "Any price", min: null, max: null },
+  { value: "under-25", label: "Under $25", min: null, max: 25 },
+  { value: "25-50", label: "$25 to $50", min: 25, max: 50 },
+  { value: "50-100", label: "$50 to $100", min: 50, max: 100 },
+  { value: "100-plus", label: "$100+", min: 100, max: null },
 ] as const;
 
 const PAGE_SIZE = 24;
@@ -55,23 +67,6 @@ function normalizeHandle(value: string | null | undefined): string {
   return String(value || "").trim().toLowerCase();
 }
 
-function isBestSellerCollection(handle: string, title: string): boolean {
-  const normalizedHandle = normalizeHandle(handle);
-  const normalizedTitle = String(title || "").trim().toLowerCase();
-
-  if (
-    normalizedHandle === "appplaza-best-sellers" ||
-    normalizedHandle === "best-sellers" ||
-    normalizedHandle === "best-seller" ||
-    normalizedHandle === "bestsellers" ||
-    normalizedHandle === "bestseller"
-  ) {
-    return true;
-  }
-
-  return /best[\s-]*sellers?/.test(`${normalizedHandle} ${normalizedTitle}`);
-}
-
 function normalizeCollectionFilter(value: string | null | undefined): string {
   const normalized = normalizeHandle(value);
 
@@ -80,6 +75,57 @@ function normalizeCollectionFilter(value: string | null | undefined): string {
   }
 
   return normalized;
+}
+
+function normalizeSearchText(value: string): string {
+  return normalizeHandle(value).replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function isBestSellerCollection(handle: string, title: string): boolean {
+  const normalizedHandle = normalizeHandle(handle);
+  const normalizedTitle = String(title || "").trim().toLowerCase();
+
+  if (["appplaza-best-sellers", "best-sellers", "best-seller", "bestsellers", "bestseller"].includes(normalizedHandle)) {
+    return true;
+  }
+
+  return /best[\s-]*sellers?/.test(`${normalizedHandle} ${normalizedTitle}`);
+}
+
+function formatCollectionDescription(input?: string | null): string {
+  const source = String(input || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!source) {
+    return "Discover curated picks with cleaner filters, stronger hierarchy, and quicker routes into the catalog.";
+  }
+
+  if (source.length <= 170) {
+    return source;
+  }
+
+  return `${source.slice(0, 167).trimEnd()}...`;
+}
+
+function formatTypeLabel(value: string): string {
+  const cleaned = normalizeSearchText(value)
+    .replace(/\bassocerries\b/g, "accessories")
+    .replace(/\bassoceries\b/g, "accessories");
+
+  const overrides: Record<string, string> = {
+    "pet accessories": "Pet Accessories",
+    "walking sticks": "Walking Sticks",
+    "home decor": "Home Decor",
+    "personal care": "Personal Care",
+  };
+
+  if (overrides[cleaned]) {
+    return overrides[cleaned];
+  }
+
+  return cleaned
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 const ShopPage = () => {
@@ -91,11 +137,19 @@ const ShopPage = () => {
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
   const page = asPositiveInt(searchParams.get("page"), 1);
-  const perPage = PAGE_SIZE;
-
   const minFilter = asNumberOrNull(searchParams.get("min"));
   const maxFilter = asNumberOrNull(searchParams.get("max"));
+
+  const [customMinInput, setCustomMinInput] = useState(minFilter == null ? "" : String(minFilter));
+  const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(false);
   const lastTrackedSearchRef = useRef("");
+
+  useEffect(() => {
+    setCustomMinInput(minFilter == null ? "" : String(minFilter));
+    setCustomMaxInput(maxFilter == null ? "" : String(maxFilter));
+  }, [minFilter, maxFilter]);
 
   useEffect(() => {
     if (!routeCollectionHandle) {
@@ -104,13 +158,11 @@ const ShopPage = () => {
 
     const nextCollection = normalizeCollectionFilter(routeCollectionHandle);
     const currentCollection = normalizeCollectionFilter(searchParams.get("collection"));
-
     if (nextCollection === currentCollection) {
       return;
     }
 
     const next = new URLSearchParams(searchParams);
-
     if (!nextCollection) {
       next.delete("collection");
     } else {
@@ -120,20 +172,8 @@ const ShopPage = () => {
     setSearchParams(next, { replace: true });
   }, [routeCollectionHandle, searchParams, setSearchParams]);
 
-  const {
-    data: productsPayload,
-    isLoading: productsLoading,
-    error: productsError,
-    refetch: refetchProducts,
-  } = useProducts();
-
-  const {
-    data: collectionsPayload,
-    isLoading: collectionsLoading,
-    error: collectionsError,
-    refetch: refetchCollections,
-  } = useCollections();
-
+  const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
+  const { data: collectionsPayload, isLoading: collectionsLoading, error: collectionsError, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
     isLoading: collectionProductIdsLoading,
@@ -143,10 +183,8 @@ const ShopPage = () => {
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
-  const selectedCollectionProductIds = useMemo(
-    () => collectionProductIdsPayload?.productIds ?? null,
-    [collectionProductIdsPayload],
-  );
+  const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
+  const selectedCollectionProductIds = useMemo(() => collectionProductIdsPayload?.productIds ?? null, [collectionProductIdsPayload]);
   const selectedCollectionOrder = useMemo(() => {
     if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
       return null;
@@ -154,13 +192,9 @@ const ShopPage = () => {
 
     return new Map(selectedCollectionProductIds.map((productId, index) => [productId, index]));
   }, [collectionHandle, selectedCollectionProductIds]);
+
   const textFilteredProducts = useMemo(
-    () =>
-      filterProducts(products, {
-        query,
-        productType: typeFilter,
-        collections,
-      }),
+    () => filterProducts(products, { query, productType: typeFilter, collections }),
     [products, query, typeFilter, collections],
   );
 
@@ -176,21 +210,22 @@ const ShopPage = () => {
     });
   }, [collectionHandle, textFilteredProducts, collections, selectedCollectionProductIds]);
 
-  const priceFilteredProducts = useMemo(() => {
-    return collectionFilteredProducts.filter((product) => {
-      const price = minPrice(product);
+  const priceFilteredProducts = useMemo(
+    () =>
+      collectionFilteredProducts.filter((product) => {
+        const price = minPrice(product);
+        if (minFilter != null && price < minFilter) {
+          return false;
+        }
 
-      if (minFilter != null && price < minFilter) {
-        return false;
-      }
+        if (maxFilter != null && price > maxFilter) {
+          return false;
+        }
 
-      if (maxFilter != null && price > maxFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [collectionFilteredProducts, minFilter, maxFilter]);
+        return true;
+      }),
+    [collectionFilteredProducts, minFilter, maxFilter],
+  );
 
   const sortedProducts = useMemo(() => {
     const base = [...priceFilteredProducts];
@@ -228,9 +263,7 @@ const ShopPage = () => {
 
     if (sort === "newest") {
       return base.sort(
-        (a, b) =>
-          new Date(b.published_at || b.created_at).getTime() -
-          new Date(a.published_at || a.created_at).getTime(),
+        (a, b) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime(),
       );
     }
 
@@ -240,21 +273,55 @@ const ShopPage = () => {
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
-  const bestSellerCollection = collections.find((collection) =>
-    isBestSellerCollection(collection.handle, collection.title),
-  );
-  const allProductsCollection = collections.find(
-    (collection) => normalizeHandle(collection.handle) === "all-products",
-  );
+  const bestSellerCollection = collections.find((collection) => isBestSellerCollection(collection.handle, collection.title));
+  const allProductsCollection = collections.find((collection) => normalizeHandle(collection.handle) === "all-products");
   const previewCollection = selectedCollection || bestSellerCollection || allProductsCollection || null;
   const selectedCollectionImage = normalizeShopifyAssetUrl(previewCollection?.image?.src);
 
   const totalResults = sortedProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
+  const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
-  const startIndex = (currentPage - 1) * perPage;
-  const endIndex = Math.min(startIndex + perPage, totalResults);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+
+  const bestInCollection = useMemo(
+    () => [...sortedProducts].sort((a, b) => savingsPercent(b) - savingsPercent(a)).slice(0, 4),
+    [sortedProducts],
+  );
+  const underTwentyFive = useMemo(() => sortedProducts.filter((product) => minPrice(product) <= 25).slice(0, 4), [sortedProducts]);
+  const mostGifted = useMemo(
+    () =>
+      sortedProducts
+        .filter((product) =>
+          /gift|candle|decor|set|bundle/i.test(`${product.title} ${product.product_type} ${product.tags}`),
+        )
+        .slice(0, 4),
+    [sortedProducts],
+  );
+  const newInCategory = useMemo(
+    () =>
+      [...sortedProducts]
+        .sort(
+          (a, b) =>
+            new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime(),
+        )
+        .slice(0, 4),
+    [sortedProducts],
+  );
+  const pairsWellWith = useMemo(() => {
+    const anchorProduct = visibleProducts[0];
+    if (!anchorProduct) {
+      return [];
+    }
+
+    return sortedProducts
+      .filter(
+        (product) =>
+          product.id !== anchorProduct.id && normalizeHandle(product.product_type) !== normalizeHandle(anchorProduct.product_type),
+      )
+      .slice(0, 4);
+  }, [sortedProducts, visibleProducts]);
 
   useEffect(() => {
     if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
@@ -266,7 +333,6 @@ const ShopPage = () => {
     }
 
     const normalizedQuery = query.trim();
-
     if (!normalizedQuery) {
       lastTrackedSearchRef.current = "";
       return;
@@ -290,7 +356,6 @@ const ShopPage = () => {
     query,
     totalResults,
   ]);
-
   if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
     return (
       <LoadingState
@@ -329,7 +394,6 @@ const ShopPage = () => {
 
     Object.entries(updates).forEach(([key, value]) => {
       const normalized = value?.trim() || "";
-
       if (normalized) {
         next.set(key, normalized);
       } else {
@@ -345,152 +409,562 @@ const ShopPage = () => {
     setSearchParams(next);
   };
 
-  const clearFilters = () => {
-    if (routeCollectionHandle) {
-      navigate("/shop", { replace: true });
+  const onPricePresetChange = (value: string) => {
+    const selected = priceRangeOptions.find((option) => option.value === value);
+    if (!selected) {
       return;
     }
 
-    setSearchParams(new URLSearchParams());
+    const nextMin = selected.min == null ? "" : String(selected.min);
+    const nextMax = selected.max == null ? "" : String(selected.max);
+    setCustomMinInput(nextMin);
+    setCustomMaxInput(nextMax);
+    updateParams(
+      {
+        min: selected.min == null ? null : String(selected.min),
+        max: selected.max == null ? null : String(selected.max),
+      },
+      true,
+    );
+  };
+
+  const applyCustomPrice = () => {
+    const parsedMin = asNumberOrNull(customMinInput);
+    const parsedMax = asNumberOrNull(customMaxInput);
+
+    if (parsedMin != null && parsedMax != null && parsedMin > parsedMax) {
+      return;
+    }
+
+    updateParams(
+      {
+        min: parsedMin == null ? null : String(parsedMin),
+        max: parsedMax == null ? null : String(parsedMax),
+      },
+      true,
+    );
+  };
+
+  const clearFilters = () => {
+    const preservedSearchQuery = query.trim();
+    const nextParams = new URLSearchParams();
+    if (preservedSearchQuery) {
+      nextParams.set("q", preservedSearchQuery);
+    }
+
+    if (routeCollectionHandle) {
+      const suffix = nextParams.toString();
+      navigate(suffix ? `/shop?${suffix}` : "/shop", { replace: true });
+      setMobileFiltersOpen(false);
+      return;
+    }
+
+    setSearchParams(nextParams);
+    setCustomMinInput("");
+    setCustomMaxInput("");
+    setMobileFiltersOpen(false);
   };
 
   const onPageChange = (nextPage: number) => {
     const clamped = Math.max(1, Math.min(totalPages, nextPage));
-
     updateParams({ page: clamped <= 1 ? null : String(clamped) });
   };
 
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
 
+  const filterChips = [
+    collectionHandle
+      ? {
+          key: "collection",
+          label: `Collection: ${selectedCollection?.title || collectionHandle}`,
+          onRemove: () => updateParams({ collection: null }, true),
+        }
+      : null,
+    typeFilter
+      ? {
+          key: "type",
+          label: `Type: ${formatTypeLabel(typeFilter)}`,
+          onRemove: () => updateParams({ type: null }, true),
+        }
+      : null,
+    sort !== "featured"
+      ? { key: "sort", label: `Sort: ${sortLabel}`, onRemove: () => updateParams({ sort: "featured" }, true) }
+      : null,
+    minFilter != null || maxFilter != null
+      ? {
+          key: "price",
+          label: `Price: ${minFilter == null ? "$0" : `$${minFilter}`} - ${maxFilter == null ? "Any" : `$${maxFilter}`}`,
+          onRemove: () => updateParams({ min: null, max: null }, true),
+        }
+      : null,
+  ].filter(
+    (
+      entry,
+    ): entry is {
+      key: string;
+      label: string;
+      onRemove: () => void;
+    } => Boolean(entry),
+  );
+
+  const breadcrumbItems = [
+    { label: "Home", to: "/" },
+    { label: "Shop", to: "/shop" },
+    { label: selectedCollection?.title || "Catalog" },
+  ];
+  const sidebarFilterPanelContent = (
+    <div className="mt-2.5 grid gap-2.5">
+      <div className="grid gap-1">
+        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collection</p>
+        <select
+          aria-label="Collection filter"
+          value={collectionHandle}
+          onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
+          className="salt-filter-field"
+        >
+          <option value="">All collections</option>
+          {collections.map((collection) => (
+            <option key={collection.id} value={collection.handle}>
+              {collection.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-1">
+        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Product type</p>
+        <select
+          aria-label="Product type filter"
+          value={typeFilter}
+          onChange={(event) => updateParams({ type: event.target.value || null }, true)}
+          className="salt-filter-field"
+        >
+          <option value="">All product types</option>
+          {productTypes.map((type) => (
+            <option key={type} value={type}>
+              {formatTypeLabel(type)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-1">
+        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Sort by</p>
+        <select
+          aria-label="Sort products"
+          value={sort}
+          onChange={(event) => updateParams({ sort: event.target.value }, true)}
+          className="salt-filter-field"
+        >
+          {sortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-1">
+        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Price range</p>
+        <select
+          aria-label="Price range filter"
+          value={priceRangeOptions.find((option) => option.min === minFilter && option.max === maxFilter)?.value || "custom"}
+          onChange={(event) => onPricePresetChange(event.target.value)}
+          className="salt-filter-field"
+        >
+          {priceRangeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+
+      <div className="grid gap-2 border-t border-border/70 pt-3">
+        <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Custom price</p>
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={customMinInput}
+          onChange={(event) => setCustomMinInput(event.target.value)}
+          placeholder="Min price"
+          className="salt-filter-field"
+          aria-label="Minimum price"
+        />
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={customMaxInput}
+          onChange={(event) => setCustomMaxInput(event.target.value)}
+          placeholder="Max price"
+          className="salt-filter-field"
+          aria-label="Maximum price"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            applyCustomPrice();
+            setMobileFiltersOpen(false);
+          }}
+          className="salt-primary-cta h-9 w-full justify-center text-[0.62rem] font-bold uppercase tracking-[0.08em]"
+        >
+          Apply price
+        </button>
+      </div>
+    </div>
+  );
+
+  const mobileFilterPanelContent = (
+    <div className="mt-2.5 grid gap-2.5">
+      <div className="salt-filter-grid sm:grid-cols-2 lg:grid-cols-4">
+        <select
+          aria-label="Collection filter"
+          value={collectionHandle}
+          onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
+          className="salt-filter-field"
+        >
+          <option value="">All collections</option>
+          {collections.map((collection) => (
+            <option key={collection.id} value={collection.handle}>
+              {collection.title}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Product type filter"
+          value={typeFilter}
+          onChange={(event) => updateParams({ type: event.target.value || null }, true)}
+          className="salt-filter-field"
+        >
+          <option value="">All product types</option>
+          {productTypes.map((type) => (
+            <option key={type} value={type}>
+              {formatTypeLabel(type)}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Sort products"
+          value={sort}
+          onChange={(event) => updateParams({ sort: event.target.value }, true)}
+          className="salt-filter-field"
+        >
+          {sortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Price range filter"
+          value={priceRangeOptions.find((option) => option.min === minFilter && option.max === maxFilter)?.value || "custom"}
+          onChange={(event) => onPricePresetChange(event.target.value)}
+          className="salt-filter-field"
+        >
+          {priceRangeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+
+      <div className="salt-filter-grid sm:grid-cols-[1fr_1fr_auto]">
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={customMinInput}
+          onChange={(event) => setCustomMinInput(event.target.value)}
+          placeholder="Min price"
+          className="salt-filter-field"
+          aria-label="Minimum price"
+        />
+        <input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          value={customMaxInput}
+          onChange={(event) => setCustomMaxInput(event.target.value)}
+          placeholder="Max price"
+          className="salt-filter-field"
+          aria-label="Maximum price"
+        />
+        <button
+          type="button"
+          onClick={applyCustomPrice}
+          className="salt-primary-cta h-11 w-full px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em] sm:w-auto"
+        >
+          Apply price
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <section className="mx-auto mt-4 w-[min(1320px,94vw)] pb-8 sm:mt-6 sm:w-[min(1320px,96vw)]">
+    <section className="mx-auto mt-4 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
       <Reveal>
-        <div className="rounded-[1.55rem] sm:rounded-[3.1rem]">
-          <div className="grid gap-4 xl:items-stretch">
-            
-
-            <div className="salt-editorial-shell relative overflow-hidden rounded-[1.45rem] p-3 sm:rounded-[1.95rem] sm:p-5">
-              <div className="pointer-events-none absolute left-0 top-8 h-16 w-1 rounded-r-full bg-primary/55" />
-              {selectedCollectionImage ? (
-                <img
-                  src={selectedCollectionImage}
-                  alt={previewCollection?.title || "Collection preview"}
-                  className="absolute inset-0 h-full w-full object-cover opacity-[0.24]"
-                />
-              ) : null}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.12),transparent_32%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.14),transparent_35%),linear-gradient(160deg,rgba(255,255,255,0.36),rgba(255,255,255,0.18))]" />
-              <div className="relative flex h-full min-h-[9rem] flex-col justify-between p-3 sm:min-h-[11rem] sm:p-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="salt-editorial-pill">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    {selectedCollection ? "Collection spotlight" : "Editorial browse"}
-                  </span>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                  <p className="salt-editorial-meta">
-                    {totalResults.toLocaleString()} matched | Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}
-                  </p>
-                  {query || collectionHandle || typeFilter || sort !== "featured" || minFilter != null || maxFilter != null ? (
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="salt-editorial-action"
-                    >
-                      Clear all filters
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          
-        </div>
+        <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
 
-      {totalResults === 0 ? (
-        <Reveal delayMs={80} className="mt-6">
-          <div className="salt-editorial-shell rounded-[2rem] p-8 text-center">
-            <p className="salt-kicker">No matching products</p>
-            <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">No products match this filter</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-              Remove one or two filters and try again.
-            </p>
-            <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+      <Reveal>
+        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.45rem] p-4 sm:rounded-[2rem] sm:p-6">
+          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
+          {selectedCollectionImage ? (
+            <img
+              src={selectedCollectionImage}
+              alt={previewCollection?.title || "Collection preview"}
+              className="absolute inset-0 h-full w-full object-cover opacity-[0.18]"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.12),transparent_32%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.14),transparent_35%),linear-gradient(160deg,rgba(255,255,255,0.36),rgba(255,255,255,0.18))]" />
+
+          <div className="relative">
+            <span className="salt-editorial-pill">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              {selectedCollection ? "Collection spotlight" : "Editorial browse"}
+            </span>
+            <SectionHeading
+              className="mt-3"
+              title={selectedCollection?.title || "Explore the full SALT catalog"}
+              description={formatCollectionDescription(selectedCollection?.description)}
+              action={<p className="salt-editorial-meta">{totalResults.toLocaleString()} matched | Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}</p>}
+            />
+            <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
+          </div>
+        </div>
+      </Reveal>
+      <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
+
+
+        {desktopFiltersVisible ? (
+          <Reveal delayMs={70} className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+            <aside id="desktop-shop-filters" className="salt-filter-shell rounded-[1.35rem] p-2.5 sm:p-3.5 lg:flex lg:min-h-[calc(100vh-8rem)] lg:flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filter and sort
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDesktopFiltersVisible(false)}
+                  className="salt-outline-chip h-7 px-2.5 py-0 text-[0.58rem]"
+                  aria-label="Hide filters sidebar"
+                >
+                  Hide
+                </button>
+              </div>
+              {sidebarFilterPanelContent}
+
+              <div className="mt-3 flex flex-wrap gap-1.5 lg:mt-4">
+                {filterChips.map((chip) => (
+                  <button key={chip.key} type="button" onClick={chip.onRemove} className="salt-applied-chip" aria-label={`Remove ${chip.label} filter`}>
+                    <span>{chip.label}</span>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+                {filterChips.length ? (
+                  <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
+                ) : null}
+              </div>
+            </aside>
+          </Reveal>
+        ) : null}
+
+        <div className={desktopFiltersVisible ? "lg:col-start-2" : "lg:col-start-1"}>
+          {!desktopFiltersVisible ? (
+            <Reveal delayMs={70} className="mb-3 hidden lg:block">
               <button
                 type="button"
-                onClick={clearFilters}
-                className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
+                onClick={() => setDesktopFiltersVisible(true)}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-primary/30 bg-background/90 px-3 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/50 hover:text-primary/90"
+                aria-controls="desktop-shop-filters"
+                aria-expanded={desktopFiltersVisible}
               >
-                Reset filters
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Show filters
               </button>
-              <Link
-                to="/collections"
-                className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto"
-              >
-                Browse collections
-              </Link>
-            </div>
-          </div>
-        </Reveal>
-      ) : (
-        <>
-          {sort === "discount" ? (
-            <Reveal delayMs={80} className="mt-6">
-              <div className="salt-story-card rounded-[1.35rem] p-4 text-sm text-muted-foreground">
-                <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" /> Showing the strongest live savings first.
-                </p>
-              </div>
             </Reveal>
           ) : null}
-
-          <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
-              {visibleProducts.map((product, index) => (
-                <Reveal key={product.id} delayMs={index * 35} className="h-full">
-                  <ProductCard product={product} variant="dense" />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-
-          <Reveal delayMs={80} className="mt-7">
-            <div className="salt-glass-rail flex flex-col items-start gap-3 rounded-[1.55rem] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => onPageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
-                >
-                  <ChevronLeft className="h-4 w-4" /> Prev
-                </button>
-
-                <p className="w-full text-center text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:w-auto sm:text-left">
-                  Page {currentPage} of {totalPages}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => onPageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
-                >
-                  Next <ChevronRight className="h-4 w-4" />
-                </button>
+          <Reveal delayMs={70} className="lg:hidden">
+            <div className="salt-filter-shell rounded-[1.1rem] p-3">
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((current) => !current)}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-primary/30 bg-background/90 px-3 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/50 hover:text-primary/90"
+                aria-expanded={mobileFiltersOpen}
+                aria-controls="mobile-shop-filters"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filter and sort
+                </span>
+              </button>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {filterChips.map((chip) => (
+                  <button key={chip.key} type="button" onClick={chip.onRemove} className="salt-applied-chip" aria-label={`Remove ${chip.label} filter`}>
+                    <span>{chip.label}</span>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+                {filterChips.length ? (
+                  <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
+                ) : null}
               </div>
 
-              <p className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-center text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground sm:w-auto">
-                <ArrowDownUp className="h-3.5 w-3.5" />
-                Sorted by {sortLabel}
-              </p>
+              {mobileFiltersOpen ? (
+                <aside id="mobile-shop-filters" className="mt-3 border-t border-border/70 pt-3">
+                  <div className="salt-quiet-scroll max-h-[70vh] overflow-y-auto pr-1">{mobileFilterPanelContent}</div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="salt-primary-cta mt-3 h-10 w-full justify-center text-[0.64rem] font-bold uppercase tracking-[0.08em]"
+                  >
+                    View {totalResults.toLocaleString()} results
+                  </button>
+                </aside>
+              ) : null}
             </div>
           </Reveal>
-        </>
-      )}
+
+          {totalResults === 0 ? (
+            <Reveal delayMs={90} className="mt-6">
+              <div className="salt-editorial-shell rounded-[2rem] p-6 text-center sm:p-8">
+                <p className="salt-kicker">No matching products</p>
+                <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">No products match this filter</h2>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Try a broader term, remove one or two filters, or start from a collection entry point.</p>
+                <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+                  <button type="button" onClick={clearFilters} className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto">Reset filters</button>
+                  <Link to="/collections" className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto">Browse collections</Link>
+                </div>
+              </div>
+            </Reveal>
+          ) : (
+            <>
+              <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
+                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4">
+                  {visibleProducts.map((product, index) => (
+                    <Reveal key={product.id} delayMs={index * 35} className="h-full">
+                      <ProductCard product={product} variant="dense" />
+                    </Reveal>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+                {bestInCollection.length > 0 ? (
+                  <Reveal delayMs={120}>
+                    <div className="salt-curation-block rounded-[1.45rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Best in this collection</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        {bestInCollection.map((product) => (
+                          <ProductCard key={`best-${product.id}`} product={product} variant="dense" />
+                        ))}
+                      </div>
+                    </div>
+                  </Reveal>
+                ) : null}
+
+                {underTwentyFive.length > 0 ? (
+                  <Reveal delayMs={140}>
+                    <div className="salt-curation-block rounded-[1.45rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Under $25</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        {underTwentyFive.map((product) => (
+                          <ProductCard key={`budget-${product.id}`} product={product} variant="dense" />
+                        ))}
+                      </div>
+                    </div>
+                  </Reveal>
+                ) : null}
+
+                {mostGifted.length > 0 ? (
+                  <Reveal delayMs={160}>
+                    <div className="salt-curation-block rounded-[1.45rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Most gifted</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        {mostGifted.map((product) => (
+                          <ProductCard key={`gifted-${product.id}`} product={product} variant="dense" />
+                        ))}
+                      </div>
+                    </div>
+                  </Reveal>
+                ) : null}
+
+                {newInCategory.length > 0 ? (
+                  <Reveal delayMs={180}>
+                    <div className="salt-curation-block rounded-[1.45rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">New in this category</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        {newInCategory.map((product) => (
+                          <ProductCard key={`new-${product.id}`} product={product} variant="dense" />
+                        ))}
+                      </div>
+                    </div>
+                  </Reveal>
+                ) : null}
+
+                {pairsWellWith.length > 0 ? (
+                  <Reveal delayMs={200}>
+                    <div className="salt-curation-block rounded-[1.45rem] p-4">
+                      <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Pairs well with</p>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        {pairsWellWith.map((product) => (
+                          <ProductCard key={`pair-${product.id}`} product={product} variant="dense" />
+                        ))}
+                      </div>
+                    </div>
+                  </Reveal>
+                ) : null}
+
+                <Reveal delayMs={220} className="xl:col-span-3">
+                  <article className="salt-editorial-shell rounded-[1.45rem] p-4 sm:p-5">
+                    <p className="text-[0.66rem] font-bold uppercase tracking-[0.14em] text-primary">Editorial micro-pick</p>
+                    <h3 className="mt-2 font-display text-[clamp(1.45rem,2.5vw,2rem)] leading-[0.98]">
+                      Practical gifts under $50 for everyday living
+                    </h3>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                      Start with budget-friendly upgrades, then combine decor, kitchen, and utility products to build a curated checkout mix.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateParams({ max: "50", sort: "discount" }, true)}
+                        className="salt-primary-cta h-10 px-4 text-[0.66rem] font-bold uppercase tracking-[0.08em]"
+                      >
+                        Shop under $50
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/collections")}
+                        className="salt-outline-chip h-10 px-4 py-0 text-[0.66rem]"
+                      >
+                        Browse collection edits
+                      </button>
+                    </div>
+                  </article>
+                </Reveal>
+              </div>
+
+              <Reveal delayMs={180} className="mt-7">
+                <div className="salt-glass-rail flex flex-col items-start gap-3 rounded-[1.55rem] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                    <button type="button" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1} className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"><ChevronLeft className="h-4 w-4" /> Prev</button>
+                    <p className="w-full text-center text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:w-auto sm:text-left">Page {currentPage} of {totalPages}</p>
+                    <button type="button" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages} className="salt-outline-chip h-10 flex-1 gap-1 px-4 py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none">Next <ChevronRight className="h-4 w-4" /></button>
+                  </div>
+                  <p className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background/88 px-3 py-2 text-center text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground sm:w-auto"><ArrowDownUp className="h-3.5 w-3.5" />Sorted by {sortLabel}</p>
+                </div>
+              </Reveal>
+            </>
+          )}
+        </div>
+      </div>
     </section>
   );
 };
 
 export default ShopPage;
+

@@ -28,7 +28,7 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
     : "Shop curated picks";
 
   return (
-    <section className="mx-auto grid w-full max-w-[1340px] gap-4 px-4 sm:gap-6 xl:min-h-[700px] xl:grid-cols-[1.15fr_0.85fr]">
+    <section className="mx-auto grid w-full max-w-[1200px] gap-4 px-4 sm:gap-6 xl:min-h-[700px] xl:grid-cols-[1.15fr_0.85fr]">
       <Reveal className="min-w-0 overflow-hidden">
         <div className="relative isolate flex min-h-[30rem] flex-col overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 sm:min-h-[45rem] sm:p-12 xl:h-full">
           {collectionImage ? (

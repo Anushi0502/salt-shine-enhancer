@@ -6,10 +6,14 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Truck,
   Trash2,
 } from "lucide-react";
+import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
+import SectionHeading from "@/components/storefront/SectionHeading";
+import TrustStrip from "@/components/storefront/TrustStrip";
 import {
   buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
@@ -154,6 +158,12 @@ const CartPage = () => {
         next: checkoutHandoffUrl,
         reason: "checkout",
       });
+  const freeShippingThreshold = 120;
+  const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
+  const freeShippingProgress = Math.min(
+    100,
+    Math.round((Math.min(subtotal, freeShippingThreshold) / freeShippingThreshold) * 100),
+  );
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -210,17 +220,32 @@ const CartPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-5 w-[min(1280px,94vw)] pb-28 sm:mt-6 sm:w-[min(1280px,96vw)] md:pb-10">
+    <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-28 sm:mt-6 sm:w-[min(1200px,96vw)] md:pb-10">
       <Reveal>
-        <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Cart</p>
-            <h1 className="font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">Review your bag</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{itemCount} items ready for checkout.</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="salt-outline-chip text-[0.62rem]">Secure Shopify checkout</span>
-              <span className="hidden salt-outline-chip text-[0.62rem] sm:inline-flex">Live variant validation</span>
-            </div>
+        <InnerBreadcrumbs
+          items={[
+            { label: "Home", to: "/" },
+            { label: "Cart" },
+          ]}
+        />
+      </Reveal>
+
+      <Reveal>
+        <div className="mb-4 mt-3 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+          <div className="w-full">
+            <SectionHeading
+              kicker="Cart"
+              title="Review your bag"
+              description={`${itemCount} item${itemCount === 1 ? "" : "s"} ready for checkout.`}
+            />
+            <TrustStrip
+              className="mt-2"
+              items={[
+                { icon: ShieldCheck, label: "Secure checkout" },
+                { icon: PackageCheck, label: "Live variant validation" },
+                { icon: Truck, label: "Fast US shipping" },
+              ]}
+            />
           </div>
           <button
             type="button"
@@ -321,6 +346,19 @@ const CartPage = () => {
               <span>Total</span>
               <span className="text-primary">{formatMoney(subtotal)}</span>
             </p>
+            <div className="mt-3 rounded-xl border border-border/80 bg-background/88 p-3">
+              <p className="text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Free shipping progress
+              </p>
+              <div className="salt-progress-track mt-2">
+                <span className="salt-progress-fill" style={{ width: `${freeShippingProgress}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {freeShippingRemaining > 0
+                  ? `${formatMoney(freeShippingRemaining)} away from free shipping.`
+                  : "You unlocked free shipping on this order."}
+              </p>
+            </div>
             <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-3">
               <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                 Encrypted payment

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Heart, Sparkles } from "lucide-react";
+import { ArrowUpRight, Heart, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { useCart } from "@/lib/cart";
 import {
+  compareAt,
   conciseTitle,
   formatMoney,
   minPrice,
@@ -9,6 +12,7 @@ import {
   savingsPercent,
 } from "@/lib/formatters";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
+import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
 
 export type ProductCardVariant = "default" | "dense";
@@ -19,17 +23,23 @@ type ProductCardProps = {
 };
 
 const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
+  const { addItem, isAddingItem } = useCart();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
+  const { summary } = useJudgeMeProductRating(product.id);
   const isDense = variant === "dense";
   const sale = savingsPercent(product);
   const min = minPrice(product);
+  const compare = compareAt(product);
   const image = productImage(product);
-  const title = conciseTitle(product.title, isDense ? 54 : 62);
+  const title = conciseTitle(product.title, isDense ? 58 : 64);
   const wishlisted = isWishlisted(product.handle);
-  const badgeLabel = sale > 0 ? `Save ${sale}%` : min <= 25 ? "Under $25" : "SALT pick";
+  const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
+  const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
+  const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
 
   return (
-    <article className="group relative overflow-hidden rounded-[1.3rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_20px_42px_-34px_rgba(22,77,160,0.34)] transition duration-500 hover:-translate-y-0.5 hover:border-[#9bc1ff] hover:shadow-[0_28px_52px_-36px_rgba(22,77,160,0.42)] sm:p-2.5">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 hover:border-[#9bc1ff] hover:shadow-[0_22px_48px_-32px_rgba(22,77,160,0.32)] sm:p-2">
       <button
         type="button"
         onClick={() => {
@@ -42,50 +52,100 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         aria-pressed={wishlisted ? "true" : "false"}
         aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-        className="absolute right-5 top-5 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/90 text-[#214d95] shadow-[0_10px_24px_-18px_rgba(15,23,42,0.58)] transition hover:border-[#90b8ff] hover:text-[#1f63d8]"
+        className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/40 bg-white/90 text-[#214d95] shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition hover:border-[#90b8ff] hover:text-[#1f63d8]"
       >
         <Heart className={`h-4 w-4 ${wishlisted ? "fill-[#1f63d8]/20 text-[#1f63d8]" : ""}`} />
       </button>
 
       <Link
         to={`/products/${product.handle}`}
-        className={`relative isolate block overflow-hidden rounded-[1rem] bg-muted ${isDense ? "aspect-[1.06/1]" : "aspect-square"}`}
+        className="relative isolate block overflow-hidden rounded-[0.9rem] border border-[#bfd6ff]/70 bg-muted"
       >
         {image ? (
           <img
             src={image}
             alt={product.title}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
+            className="aspect-square w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="grid aspect-square w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Image unavailable
           </div>
         )}
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,31,73,0.04)_34%,rgba(10,31,73,0.34)_66%,rgba(10,31,73,0.9)_100%)]" />
-
-        <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full border border-white/20 bg-[rgba(18,48,104,0.72)] px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.11em] text-white">
+        <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border border-white/25 bg-[rgba(18,48,104,0.74)] px-2 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.11em] text-white">
           <Sparkles className="h-3 w-3 text-[#ffe27a]" />
           {badgeLabel}
         </div>
+      </Link>
 
-        <div className="absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4">
-          <p className="line-clamp-2 font-display text-[clamp(1.12rem,2.3vw,1.45rem)] leading-[1.06] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
-            {title}
-          </p>
-          <div className="mt-2 flex items-end gap-2">
-            <p className="font-display text-[1.45rem] leading-none text-[#ffe27a] drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
-              {formatMoney(min)}
-            </p>
+      <div className="mt-2 flex flex-1 flex-col">
+        <p className="line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] text-[#1f4f9b]">
+          {title}
+        </p>
+        <p className="mt-0.5 line-clamp-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          {product.product_type || "Curated pick"}
+        </p>
+
+        {summary && summary.reviewCount > 0 ? (
+          <div className="mt-1 flex items-center gap-1 text-[#f2c100]">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Star
+                key={index}
+                className={`h-3 w-3 ${index < summary.rating ? "fill-current" : ""}`}
+              />
+            ))}
+            <span className="ml-1 text-xs text-muted-foreground">({summary.reviewCount})</span>
+          </div>
+        ) : null}
+
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-display text-[1.2rem] leading-none text-[#1f63d8]">{formatMoney(min)}</p>
+            {compare > min ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                <s>{formatMoney(compare)}</s>
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddingToCart(true);
+                addItem(
+                  {
+                    id: product.id,
+                    handle: product.handle,
+                    title: product.title,
+                    image: image || "",
+                    unitPrice: min,
+                    shopifyVariantId: product.variants[0]?.id,
+                    productType: product.product_type,
+                  },
+                  1,
+                  { openDrawer: true },
+                );
+                setIsAddingToCart(false);
+                toast.success("Added to cart", { description: title });
+              }}
+              className="salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50"
+              disabled={isAddingToCart}
+              aria-label={`Add ${title} to cart`}
+            >
+              <ShoppingBag className="h-3.5 w-3.5" />
+            </button>
+            <Link
+              to={`/products/${product.handle}`}
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#aac8fb] bg-white text-[#1f4f9b] transition hover:border-[#7fb0ff] hover:text-[#1f63d8]"
+              aria-label="View item details"
+            >
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
           </div>
         </div>
-
-        <span className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/28 bg-white/14 text-white/92 opacity-0 transition duration-300 group-hover:opacity-100 sm:bottom-4 sm:right-4">
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </span>
-      </Link>
+      </div>
     </article>
   );
 };

@@ -391,7 +391,7 @@ const HomePage = () => {
                 alt={`${bestSellerCollection?.title || "Best Sellers"} collection`}
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(18,58,128,0.18)_0%,rgba(18,58,128,0.08)_50%,rgba(18,58,128,0.03)_100%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(18,58,128,0.58)_0%,rgba(18,58,128,0.48)_50%,rgba(18,58,128,0.43)_100%)]" />
             </div>
 
             <div className="flex items-center justify-center bg-[linear-gradient(160deg,#f7fbff_0%,#edf5ff_42%,#f8fbff_100%)] px-5 py-8 text-left sm:px-7 sm:py-10 lg:px-11">
@@ -494,7 +494,7 @@ const HomePage = () => {
 
         <Reveal delayMs={160}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
-            <SectionTitle title="Gift Ideas Under $25" />
+            <SectionTitle title="Gift Ideas For Loved Ones" />
             <div className="mt-4 grid grid-cols-1 gap-3.5 min-[620px]:grid-cols-2 sm:mt-5 md:grid-cols-3">
               {giftTiles.map((tile, index) => (
                 <Reveal key={tile.title} delayMs={200 + index * 80}>

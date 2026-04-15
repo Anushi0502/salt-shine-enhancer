@@ -30,6 +30,8 @@ export interface ShopifyProduct {
   variants: ShopifyVariant[];
   images: ShopifyImage[];
   image?: ShopifyImage | null;
+  total_reviews?: number;
+  average_rating?: number;
 }
 
 export interface ShopifyCollection {

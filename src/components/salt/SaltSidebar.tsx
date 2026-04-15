@@ -47,7 +47,7 @@ const SaltSidebar = () => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed top-0 left-0 bottom-0 w-[280px] z-[220] bg-card border-r border-salt-line shadow-deep flex flex-col"
+            className="fixed top-0 left-0 bottom-0 w-[min(280px,85vw)] z-[220] bg-card border-r border-salt-line shadow-deep flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-salt-line">

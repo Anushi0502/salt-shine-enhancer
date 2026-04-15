@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
+import { BadgeCheck, Scale, ShieldCheck } from "lucide-react";
+import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import Reveal from "@/components/storefront/Reveal";
+import SectionHeading from "@/components/storefront/SectionHeading";
+import TrustStrip from "@/components/storefront/TrustStrip";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { sanitizeRichHtml } from "@/lib/formatters";
 import { usePolicyPage } from "@/lib/shopify-data";
@@ -76,14 +80,34 @@ const ShopifyPolicyPageTemplate = ({ policyKey, actions }: ShopifyPolicyPageTemp
   return (
     <section className="mx-auto mt-6 w-[min(1100px,94vw)] pb-8">
       <Reveal>
-        <div className="salt-surface-strong rounded-[1.9rem] p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Legal</p>
-          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.3rem)] leading-[0.95]">{data.title}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            {isArchiveSource
-              ? "Policy content is currently served from the verified Shopify policy baseline."
-              : "Live policy content fetched directly from Shopify."}
-          </p>
+        <InnerBreadcrumbs
+          items={[
+            { label: "Home", to: "/" },
+            { label: "Policies", to: "/policies/privacy-policy" },
+            { label: data.title },
+          ]}
+        />
+      </Reveal>
+
+      <Reveal>
+        <div className="salt-surface-strong mt-3 rounded-[1.9rem] p-5 sm:p-6">
+          <SectionHeading
+            kicker="Legal"
+            title={data.title}
+            description={
+              isArchiveSource
+                ? "Policy content is currently served from the verified Shopify policy baseline."
+                : "Live policy content fetched directly from Shopify."
+            }
+          />
+          <TrustStrip
+            className="mt-3"
+            items={[
+              { icon: ShieldCheck, label: "Secure policy source" },
+              { icon: Scale, label: "Compliance-first content" },
+              { icon: BadgeCheck, label: "Shopify synced" },
+            ]}
+          />
 
           <article
             className="prose prose-sm mt-5 max-w-none rounded-2xl border border-border/70 bg-background/78 p-5 leading-[1.72] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-foreground prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:border prose-table:border-border prose-th:border prose-th:border-border prose-th:bg-muted/40 prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2"

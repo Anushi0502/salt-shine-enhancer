@@ -34,6 +34,18 @@ const TOKEN_ALIASES: Record<string, string[]> = {
   kids: ["kid", "children"],
 };
 
+const PRODUCT_TYPE_ALIASES: Record<string, string> = {
+  "pet assocerries": "pet accessories",
+  "pet assoceries": "pet accessories",
+  "pet accesories": "pet accessories",
+  "pet accessory": "pet accessories",
+  "pet gear": "pet accessories",
+  "home and living": "home living",
+  "home and decor": "home decor",
+  "wellness care": "wellness",
+  "everyday support": "wellness",
+};
+
 function normalize(input?: unknown): string {
   const normalized = (() => {
     if (typeof input === "string") {
@@ -56,6 +68,15 @@ function normalize(input?: unknown): string {
 
   // Remove accents so searches like "cafe" can match "café".
   return normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+export function normalizeProductType(input?: unknown): string {
+  const normalized = normalize(input).replace(/[/&]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  return PRODUCT_TYPE_ALIASES[normalized] || normalized;
 }
 
 function includeToken(haystack: string, needle: string): boolean {
@@ -577,13 +598,13 @@ export function filterProducts(
   },
 ): ShopifyProduct[] {
   const parsedQuery = parseQuery(options.query);
-  const type = normalize(options.productType);
+  const type = normalizeProductType(options.productType);
   const collectionHandle = normalize(options.collection);
   const collections = options.collections || [];
   const collectionProductIds = options.collectionProductIds ?? null;
 
   const baseFiltered = products.filter((product) => {
-    if (type && normalize(product.product_type) !== type) {
+    if (type && normalizeProductType(product.product_type) !== type) {
       return false;
     }
 
@@ -616,6 +637,6 @@ export function filterProducts(
 
 export function uniqueProductTypes(products: ShopifyProduct[]): string[] {
   return Array.from(
-    new Set(products.map((product) => normalize(product.product_type)).filter(Boolean)),
+    new Set(products.map((product) => normalizeProductType(product.product_type)).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
 }

@@ -3,7 +3,11 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { BadgeCheck, ShieldCheck, Truck } from "lucide-react";
+import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import Reveal from "@/components/storefront/Reveal";
+import SectionHeading from "@/components/storefront/SectionHeading";
+import TrustStrip from "@/components/storefront/TrustStrip";
 import { getRuntimeContext } from "@/lib/theme-assets";
 import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { isAuthConfigured } from "@/services/customer-auth";
@@ -166,18 +170,31 @@ const CustomerAccessPage = () => {
   return (
     <section className="mx-auto mt-8 w-[min(760px,94vw)] pb-12 sm:mt-10">
       <Reveal>
-        <div className="salt-panel-shell rounded-[1.8rem] p-5 sm:p-8">
+        <InnerBreadcrumbs
+          items={[
+            { label: "Home", to: "/" },
+            { label: "Account access" },
+          ]}
+        />
+      </Reveal>
+
+      <Reveal>
+        <div className="salt-panel-shell mt-3 rounded-[1.8rem] p-5 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                {content.eyebrow}
-              </p>
-              <h1 className="mt-2 font-display text-[clamp(2.1rem,5vw,3.4rem)] leading-[0.94]">
-                {content.title}
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-                {content.subtitle}
-              </p>
+              <SectionHeading
+                kicker={content.eyebrow}
+                title={content.title}
+                description={content.subtitle}
+              />
+              <TrustStrip
+                className="mt-3"
+                items={[
+                  { icon: ShieldCheck, label: "Secure account session" },
+                  { icon: BadgeCheck, label: "Protected order access" },
+                  { icon: Truck, label: "Checkout handoff preserved" },
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card/75 p-1.5 text-[0.72rem] uppercase tracking-[0.14em]">
               <Link
@@ -339,7 +356,7 @@ const CustomerAccessPage = () => {
                   />
                   <span>
                     By continuing, you agree to the{" "}
-                    <a href={privacyHref} className="underline decoration-primary/40 underline-offset-2">
+                    <a href={termsHref} className="underline decoration-primary/40 underline-offset-2">
                       terms
                     </a>{" "}
                     and acknowledge the{" "}

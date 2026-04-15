@@ -96,7 +96,7 @@ const OrderHistoryPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-6 w-[min(1280px,96vw)] pb-12">
+    <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-12">
       <Reveal>
         <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>

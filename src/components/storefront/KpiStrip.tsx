@@ -25,7 +25,7 @@ const KpiStrip = ({ products, collections, purchasesLast30Days = 0 }: KpiStripPr
   ];
 
   return (
-    <section className="mx-auto mt-8 w-[min(1280px,96vw)]">
+    <section className="mx-auto mt-8 w-[min(1200px,96vw)]">
       <Reveal>
         <div className="salt-panel-shell grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-5">
           {metrics.map((metric) => (

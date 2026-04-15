@@ -27,7 +27,7 @@ const MainFooter = () => {
 
   return (
     <footer className="mt-24 border-t border-[#cadbff] bg-[#f4f8ff] pt-24 sm:mt-32">
-      <div className="mx-auto w-full max-w-[1340px] px-4">
+      <div className="mx-auto w-full max-w-[1200px] px-4">
         <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr_1fr_1.5fr]">
           <div className="flex flex-col items-start">
             <BrandLogo withWordmark size="md" />

@@ -4,10 +4,8 @@ import {
   ArrowLeft,
   BadgeCheck,
   CheckCircle2,
-  ChevronRight,
   History,
   Heart,
-  Leaf,
   Minus,
   PackageCheck,
   Plus,
@@ -19,9 +17,12 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
+import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
+import SectionHeading from "@/components/storefront/SectionHeading";
 import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
+import TrustStrip from "@/components/storefront/TrustStrip";
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +36,7 @@ import {
   compareAt,
   formatMoney,
   isPlausibleComparePrice,
+  minPrice,
   productImage,
   productTagList,
   sanitizeRichHtml,
@@ -248,6 +250,21 @@ const ProductPage = () => {
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
     .slice(0, 4);
+  const completeLookProducts = products
+    .filter(
+      (entry) =>
+        entry.id !== product.id &&
+        entry.product_type !== product.product_type &&
+        productTagList(entry).some((tag) =>
+          productTagList(product)
+            .map((candidate) => candidate.toLowerCase())
+            .includes(tag.toLowerCase()),
+        ),
+    )
+    .slice(0, 4);
+  const oftenBoughtTogetherProducts = products
+    .filter((entry) => entry.id !== product.id && minPrice(entry) <= 50)
+    .slice(0, 4);
 
   const primaryImage = productImage(product) || "";
   const imageSources = (product.images.length
@@ -274,6 +291,24 @@ const ProductPage = () => {
     .map((entry) => products.find((candidate) => candidate.handle === entry))
     .filter((entry): entry is (typeof products)[number] => Boolean(entry))
     .slice(0, 4);
+  const storytellingBlocks = [
+    {
+      title: "Overview",
+      copy: shortDescription || "A curated everyday pick designed to feel practical, giftable, and easy to style.",
+    },
+    {
+      title: "Who It's For",
+      copy: `Great for shoppers browsing ${product.product_type || "daily essentials"} who want reliable quality with cleaner decision support.`,
+    },
+    {
+      title: "Specs Snapshot",
+      copy: `${variants.length} option(s), ${availableVariantsCount} currently available, with pricing from ${formatMoney(lowestVariantPrice)}.`,
+    },
+    {
+      title: "Shipping and Care",
+      copy: "Fast US shipping, tracked fulfillment, and straightforward returns backed by secure checkout.",
+    },
+  ];
 
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
@@ -299,19 +334,16 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-4 w-[min(1280px,94vw)] pb-28 sm:mt-6 sm:w-[min(1280px,96vw)] md:pb-8">
+    <section className="mx-auto mt-4 w-[min(1200px,94vw)] pb-28 sm:mt-6 sm:w-[min(1200px,96vw)] md:pb-8">
       <Reveal>
-        <div className="hidden flex-wrap items-center gap-2 text-xs text-muted-foreground sm:flex">
-          <Link to="/" className="hover:text-primary">
-            Home
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <Link to="/shop" className="hover:text-primary">
-            Shop
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="line-clamp-1">{product.title}</span>
-        </div>
+        <InnerBreadcrumbs
+          className="hidden sm:flex"
+          items={[
+            { label: "Home", to: "/" },
+            { label: "Shop", to: "/shop" },
+            { label: product.title },
+          ]}
+        />
       </Reveal>
 
       <Reveal>
@@ -607,7 +639,7 @@ const ProductPage = () => {
               className="mt-2 salt-button-shine salt-primary-cta h-12 w-full gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
-              {isAvailable ? `Add to cart • ${formatMoney(price * quantity)}` : "Unavailable"}
+              {isAvailable ? `Add to cart - ${formatMoney(price * quantity)}` : "Unavailable"}
             </button>
 
             <button
@@ -666,22 +698,18 @@ const ProductPage = () => {
               </AccordionItem>
             </Accordion>
 
-            <div className="mt-4 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <Truck className="h-3.5 w-3.5" /> Free shipping across the US
-              </p>
-              <p className="flex items-center gap-2">
-                <PackageCheck className="h-3.5 w-3.5" /> Fast fulfillment and tracking
-              </p>
-              <p className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5" /> 30-day returns on eligible items
-              </p>
-              <p className="flex items-center gap-2">
-                <BadgeCheck className="h-3.5 w-3.5" /> Secure payment processing
-              </p>
+            <div className="mt-4 rounded-xl border border-border/80 bg-background p-3">
+              <TrustStrip
+                items={[
+                  { icon: Truck, label: "Free US shipping" },
+                  { icon: PackageCheck, label: "Tracked fulfillment" },
+                  { icon: ShieldCheck, label: "30-day returns" },
+                  { icon: BadgeCheck, label: "Secure payment" },
+                ]}
+              />
               {purchasedLastMonth > 0 ? (
-                <p className="flex items-center gap-2">
-                  <History className="h-3.5 w-3.5" /> {purchasedLastMonth.toLocaleString()} shoppers bought this in the last month
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {purchasedLastMonth.toLocaleString()} shoppers bought this in the last month.
                 </p>
               ) : null}
             </div>
@@ -700,6 +728,27 @@ const ProductPage = () => {
         </Reveal>
       </div>
 
+      <Reveal delayMs={120} className="mt-7">
+        <div className="salt-section-shell rounded-[1.6rem] p-4 sm:p-5">
+          <SectionHeading
+            kicker="Product story"
+            title="Clear details before checkout"
+            description="Use this section to quickly assess fit, value, and practical use before adding to cart."
+          />
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {storytellingBlocks.map((block) => (
+              <article
+                key={block.title}
+                className="rounded-xl border border-border/75 bg-background/88 p-3.5"
+              >
+                <h3 className="text-sm font-semibold text-foreground">{block.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{block.copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
       <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
 
       {relatedProducts.length > 0 ? (
@@ -717,6 +766,46 @@ const ProductPage = () => {
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
                   <ProductCard product={related} variant="dense" />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {completeLookProducts.length > 0 ? (
+        <section className="mt-8">
+          <Reveal>
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Complete the look</p>
+              <h2 className="font-display text-[clamp(1.6rem,2.5vw,2.3rem)]">Pair this with complementary picks</h2>
+            </div>
+          </Reveal>
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+              {completeLookProducts.map((entry, index) => (
+                <Reveal key={entry.id} delayMs={index * 45} className="h-full">
+                  <ProductCard product={entry} variant="dense" />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {oftenBoughtTogetherProducts.length > 0 ? (
+        <section className="mt-8">
+          <Reveal>
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Often bought together</p>
+              <h2 className="font-display text-[clamp(1.6rem,2.5vw,2.3rem)]">Practical add-ons under $50</h2>
+            </div>
+          </Reveal>
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+              {oftenBoughtTogetherProducts.map((entry, index) => (
+                <Reveal key={entry.id} delayMs={index * 40} className="h-full">
+                  <ProductCard product={entry} variant="dense" />
                 </Reveal>
               ))}
             </div>
