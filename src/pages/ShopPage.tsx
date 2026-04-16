@@ -674,16 +674,20 @@ const ShopPage = () => {
       </Reveal>
 
       <Reveal>
-        <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5">
+        <div
+          className={`salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5${
+            selectedCollectionImage ? " salt-editorial-shell--image" : ""
+          }`}
+        >
           <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
           {selectedCollectionImage ? (
             <img
               src={selectedCollectionImage}
               alt={selectedCollectionImageAlt}
-              className="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
+              className="salt-editorial-image"
             />
           ) : null}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.1),transparent_30%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.1),transparent_32%),linear-gradient(160deg,rgba(247,250,255,0.94),rgba(244,248,255,0.9))]" />
+          <div className={`salt-editorial-wash${selectedCollectionImage ? " salt-editorial-wash--image" : ""}`} />
 
           <div className="relative">
             <span className="salt-editorial-pill">

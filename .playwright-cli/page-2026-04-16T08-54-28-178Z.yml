@@ -1,0 +1,680 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Free Shipping on All US Orders
+        - generic [ref=e8]: "|"
+        - generic [ref=e9]: 30-Day Easy Returns
+      - generic [ref=e10]:
+        - link "Go to SALT homepage" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e12]:
+            - generic [ref=e16]: SALT
+            - generic [ref=e17]:
+              - generic [ref=e18]: SALT
+              - generic [ref=e19]: Online Store
+        - navigation [ref=e20]:
+          - link "Shop" [ref=e21] [cursor=pointer]:
+            - /url: /shop
+          - link "Collections" [ref=e22] [cursor=pointer]:
+            - /url: /collections
+          - link "Journal" [ref=e23] [cursor=pointer]:
+            - /url: /blog
+          - link "About" [ref=e24] [cursor=pointer]:
+            - /url: /about
+          - link "Support" [ref=e25] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e26]:
+          - generic [ref=e28]:
+            - img
+            - searchbox "Search products" [ref=e29]
+            - generic: / K
+          - link "Open account" [ref=e30] [cursor=pointer]:
+            - /url: /customer-access?mode=login&next=%2Forder-history&reason=account
+            - img [ref=e31]
+          - link "Open wishlist" [ref=e35] [cursor=pointer]:
+            - /url: /wishlist
+            - img [ref=e36]
+          - button "Open cart with 0 items" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - navigation "Breadcrumb" [ref=e45]:
+          - generic [ref=e46]:
+            - link "Home" [ref=e47] [cursor=pointer]:
+              - /url: /
+            - img [ref=e48]
+          - generic [ref=e50]:
+            - link "Shop" [ref=e51] [cursor=pointer]:
+              - /url: /shop
+            - img [ref=e52]
+          - generic [ref=e55]: Catalog
+        - generic [ref=e57]:
+          - img "All Products" [ref=e58]
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - img [ref=e62]
+              - text: Editorial browse
+            - generic [ref=e64]:
+              - generic [ref=e65]:
+                - heading "Explore the full SALT catalog" [level=2] [ref=e66]
+                - paragraph [ref=e67]: Discover curated picks with cleaner filters, stronger hierarchy, and quicker routes into the catalog.
+              - paragraph [ref=e69]: 545 matched | Showing 1-24
+            - generic [ref=e70]:
+              - generic [ref=e71]:
+                - img [ref=e72]
+                - text: US shipping included
+              - generic [ref=e77]:
+                - img [ref=e78]
+                - text: Secure checkout
+              - generic [ref=e81]:
+                - img [ref=e82]
+                - text: Curated by category
+        - generic [ref=e85]:
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - paragraph [ref=e89]: 545 products
+              - generic [ref=e90]:
+                - generic [ref=e91]:
+                  - img [ref=e92]
+                  - text: Featured
+                - button "Show filters" [ref=e95] [cursor=pointer]:
+                  - img [ref=e96]
+                  - text: Show filters
+            - generic [ref=e98]: No active filters
+          - generic [ref=e100]:
+            - article [ref=e102]:
+              - button "Save The Daily Bloom to wishlist" [ref=e103] [cursor=pointer]:
+                - img [ref=e104]
+              - link "The Daily Bloom New" [ref=e106] [cursor=pointer]:
+                - /url: /products/the-daily-bloom
+                - img "The Daily Bloom" [ref=e109]
+                - generic [ref=e110]:
+                  - img [ref=e111]
+                  - text: New
+              - generic [ref=e113]:
+                - paragraph [ref=e114]: The Daily Bloom
+                - paragraph [ref=e115]: BOOK
+                - generic [ref=e116]:
+                  - paragraph [ref=e118]: $49.99
+                  - generic [ref=e119]:
+                    - button "Add The Daily Bloom to cart" [ref=e120] [cursor=pointer]:
+                      - img [ref=e121]
+                    - link "View item details" [ref=e124] [cursor=pointer]:
+                      - /url: /products/the-daily-bloom
+                      - img [ref=e125]
+            - article [ref=e129]:
+              - button "Save The Living Legacy Planner 2nd Edition to wishlist" [ref=e130] [cursor=pointer]:
+                - img [ref=e131]
+              - link "The Living Legacy Planner 2nd Edition Save 25%" [ref=e133] [cursor=pointer]:
+                - /url: /products/the-living-legacy-planner-2nd-edition
+                - img "The Living Legacy Planner 2nd Edition" [ref=e136]
+                - generic [ref=e137]:
+                  - img [ref=e138]
+                  - text: Save 25%
+              - generic [ref=e140]:
+                - paragraph [ref=e141]: The Living Legacy Planner 2nd Edition
+                - paragraph [ref=e142]: BOOK
+                - generic [ref=e143]:
+                  - generic [ref=e144]:
+                    - paragraph [ref=e145]: $55.99
+                    - paragraph [ref=e146]: $74.95
+                  - generic [ref=e147]:
+                    - button "Add The Living Legacy Planner 2nd Edition to cart" [ref=e148] [cursor=pointer]:
+                      - img [ref=e149]
+                    - link "View item details" [ref=e152] [cursor=pointer]:
+                      - /url: /products/the-living-legacy-planner-2nd-edition
+                      - img [ref=e153]
+            - article [ref=e157]:
+              - button "Save Lightweight Mesh Stuff Sack Storage Bags with Drawstring to wishlist" [ref=e158] [cursor=pointer]:
+                - img [ref=e159]
+              - link "Lightweight Mesh Stuff Sack Storage Bags with Drawstring SALT pick" [ref=e161] [cursor=pointer]:
+                - /url: /products/hodr-mesh-bags-lightweight-mesh-stuff-sack-drawstring-storage-bags-compression-pouches-for-camping-hiking-laundry-grocery
+                - img "Lightweight Mesh Stuff Sack Storage Bags with Drawstring" [ref=e164]
+                - generic [ref=e165]:
+                  - img [ref=e166]
+                  - text: SALT pick
+              - generic [ref=e168]:
+                - paragraph [ref=e169]: Lightweight Mesh Stuff Sack Storage Bags with Drawstring
+                - paragraph [ref=e170]: Curated pick
+                - generic [ref=e171]:
+                  - paragraph [ref=e173]: $29.99
+                  - generic [ref=e174]:
+                    - button "Add Lightweight Mesh Stuff Sack Storage Bags with Drawstring to cart" [ref=e175] [cursor=pointer]:
+                      - img [ref=e176]
+                    - link "View item details" [ref=e179] [cursor=pointer]:
+                      - /url: /products/hodr-mesh-bags-lightweight-mesh-stuff-sack-drawstring-storage-bags-compression-pouches-for-camping-hiking-laundry-grocery
+                      - img [ref=e180]
+            - article [ref=e184]:
+              - button "Save Folding Toilet Portable Outdoor Storage Box Car Toilet… to wishlist" [ref=e185] [cursor=pointer]:
+                - img [ref=e186]
+              - link "Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet SALT pick" [ref=e188] [cursor=pointer]:
+                - /url: /products/folding-toilet-portable-outdoor-storage-box-car-toilet-bucket-collapsible-trash-can-for-self-driving-travel-emergency-toilet
+                - img "Folding Toilet Portable Outdoor Storage Box Car Toilet Bucket Collapsible Trash Can for Self-driving Travel Emergency Toilet" [ref=e191]
+                - generic [ref=e192]:
+                  - img [ref=e193]
+                  - text: SALT pick
+              - generic [ref=e195]:
+                - paragraph [ref=e196]: Folding Toilet Portable Outdoor Storage Box Car Toilet…
+                - paragraph [ref=e197]: Curated pick
+                - generic [ref=e198]:
+                  - paragraph [ref=e200]: $26.99
+                  - generic [ref=e201]:
+                    - button "Add Folding Toilet Portable Outdoor Storage Box Car Toilet… to cart" [ref=e202] [cursor=pointer]:
+                      - img [ref=e203]
+                    - link "View item details" [ref=e206] [cursor=pointer]:
+                      - /url: /products/folding-toilet-portable-outdoor-storage-box-car-toilet-bucket-collapsible-trash-can-for-self-driving-travel-emergency-toilet
+                      - img [ref=e207]
+            - article [ref=e211]:
+              - button "Save Portable Collapsible Silicone Cup with Hanging Loop to wishlist" [ref=e212] [cursor=pointer]:
+                - img [ref=e213]
+              - link "Portable Collapsible Silicone Cup with Hanging Loop SALT pick" [ref=e215] [cursor=pointer]:
+                - /url: /products/outdoors-silicone-folding-cup-with-hanging-hole-creative-water-cup-travel-portable-washing-cup-fashion-travel-silicone-cup
+                - img "Portable Collapsible Silicone Cup with Hanging Loop" [ref=e218]
+                - generic [ref=e219]:
+                  - img [ref=e220]
+                  - text: SALT pick
+              - generic [ref=e222]:
+                - paragraph [ref=e223]: Portable Collapsible Silicone Cup with Hanging Loop
+                - paragraph [ref=e224]: Curated pick
+                - generic [ref=e225]:
+                  - paragraph [ref=e227]: $24.99
+                  - generic [ref=e228]:
+                    - button "Add Portable Collapsible Silicone Cup with Hanging Loop to cart" [ref=e229] [cursor=pointer]:
+                      - img [ref=e230]
+                    - link "View item details" [ref=e233] [cursor=pointer]:
+                      - /url: /products/outdoors-silicone-folding-cup-with-hanging-hole-creative-water-cup-travel-portable-washing-cup-fashion-travel-silicone-cup
+                      - img [ref=e234]
+            - article [ref=e238]:
+              - button "Save Portable Silicone Folding Lunch Bowl Set (3-Pack) with… to wishlist" [ref=e239] [cursor=pointer]:
+                - img [ref=e240]
+              - link "Portable Silicone Folding Lunch Bowl Set (3-Pack) with Lids SALT pick" [ref=e242] [cursor=pointer]:
+                - /url: /products/portable-folding-lunch-box-bowl-sets-silicone-3pcs-set-food-container-outdoor-camping-tableware-set-foldable-salad-bowl-with-lid
+                - img "Portable Silicone Folding Lunch Bowl Set (3-Pack) with Lids" [ref=e245]
+                - generic [ref=e246]:
+                  - img [ref=e247]
+                  - text: SALT pick
+              - generic [ref=e249]:
+                - paragraph [ref=e250]: Portable Silicone Folding Lunch Bowl Set (3-Pack) with…
+                - paragraph [ref=e251]: Curated pick
+                - generic [ref=e252]:
+                  - paragraph [ref=e254]: $34.99
+                  - generic [ref=e255]:
+                    - button "Add Portable Silicone Folding Lunch Bowl Set (3-Pack) with… to cart" [ref=e256] [cursor=pointer]:
+                      - img [ref=e257]
+                    - link "View item details" [ref=e260] [cursor=pointer]:
+                      - /url: /products/portable-folding-lunch-box-bowl-sets-silicone-3pcs-set-food-container-outdoor-camping-tableware-set-foldable-salad-bowl-with-lid
+                      - img [ref=e261]
+            - article [ref=e265]:
+              - button "Save Rechargeable LED Headlamp 250LM with IPX4 Waterproof to wishlist" [ref=e266] [cursor=pointer]:
+                - img [ref=e267]
+              - link "Rechargeable LED Headlamp 250LM with IPX4 Waterproof SALT pick" [ref=e269] [cursor=pointer]:
+                - /url: /products/powerful-led-headlamp-ipx4-waterproof-emergency-head-flashlight-250lm-xpe-led-headlamp-500mah-for-outdoor-fishing-camping-hiking
+                - img "Rechargeable LED Headlamp 250LM with IPX4 Waterproof" [ref=e272]
+                - generic [ref=e273]:
+                  - img [ref=e274]
+                  - text: SALT pick
+              - generic [ref=e276]:
+                - paragraph [ref=e277]: Rechargeable LED Headlamp 250LM with IPX4 Waterproof
+                - paragraph [ref=e278]: Curated pick
+                - generic [ref=e279]:
+                  - paragraph [ref=e281]: $39.99
+                  - generic [ref=e282]:
+                    - button "Add Rechargeable LED Headlamp 250LM with IPX4 Waterproof to cart" [ref=e283] [cursor=pointer]:
+                      - img [ref=e284]
+                    - link "View item details" [ref=e287] [cursor=pointer]:
+                      - /url: /products/powerful-led-headlamp-ipx4-waterproof-emergency-head-flashlight-250lm-xpe-led-headlamp-500mah-for-outdoor-fishing-camping-hiking
+                      - img [ref=e288]
+            - article [ref=e292]:
+              - button "Save Portable Camping Shower Pump with Digital Display &… to wishlist" [ref=e293] [cursor=pointer]:
+                - img [ref=e294]
+              - link "Portable Camping Shower Pump with Digital Display & 6000mAh Battery SALT pick" [ref=e296] [cursor=pointer]:
+                - /url: /products/camping-shower-pump-rv-outdoor-shower-kit-camp-shower-w-full-screen-intelligent-digital-display-adjustable-6000mah-shower-kit
+                - img "Portable Camping Shower Pump with Digital Display & 6000mAh Battery" [ref=e299]
+                - generic [ref=e300]:
+                  - img [ref=e301]
+                  - text: SALT pick
+              - generic [ref=e303]:
+                - paragraph [ref=e304]: Portable Camping Shower Pump with Digital Display &…
+                - paragraph [ref=e305]: Curated pick
+                - generic [ref=e306]:
+                  - paragraph [ref=e308]: $68.99
+                  - generic [ref=e309]:
+                    - button "Add Portable Camping Shower Pump with Digital Display &… to cart" [ref=e310] [cursor=pointer]:
+                      - img [ref=e311]
+                    - link "View item details" [ref=e314] [cursor=pointer]:
+                      - /url: /products/camping-shower-pump-rv-outdoor-shower-kit-camp-shower-w-full-screen-intelligent-digital-display-adjustable-6000mah-shower-kit
+                      - img [ref=e315]
+            - article [ref=e319]:
+              - button "Save Folding Camping Kitchen Table with Adjustable Height &… to wishlist" [ref=e320] [cursor=pointer]:
+                - img [ref=e321]
+              - link "Folding Camping Kitchen Table with Adjustable Height & Storage SALT pick" [ref=e323] [cursor=pointer]:
+                - /url: /products/portable-outdoor-kitchen-station-with-adjustable-height-and-storage-for-camping-picnics-and-glamping-adventures
+                - img "Folding Camping Kitchen Table with Adjustable Height & Storage" [ref=e326]
+                - generic [ref=e327]:
+                  - img [ref=e328]
+                  - text: SALT pick
+              - generic [ref=e330]:
+                - paragraph [ref=e331]: Folding Camping Kitchen Table with Adjustable Height &…
+                - paragraph [ref=e332]: Camping kitchen table
+                - generic [ref=e333]:
+                  - paragraph [ref=e335]: $63.99
+                  - generic [ref=e336]:
+                    - button "Add Folding Camping Kitchen Table with Adjustable Height &… to cart" [ref=e337] [cursor=pointer]:
+                      - img [ref=e338]
+                    - link "View item details" [ref=e341] [cursor=pointer]:
+                      - /url: /products/portable-outdoor-kitchen-station-with-adjustable-height-and-storage-for-camping-picnics-and-glamping-adventures
+                      - img [ref=e342]
+            - article [ref=e346]:
+              - button "Save PET ACCESSORIES Bundle to wishlist" [ref=e347] [cursor=pointer]:
+                - img [ref=e348]
+              - link "PET ACCESSORIES Bundle SALT pick" [ref=e350] [cursor=pointer]:
+                - /url: /products/pet-accessories-bundle
+                - img "PET ACCESSORIES Bundle" [ref=e353]
+                - generic [ref=e354]:
+                  - img [ref=e355]
+                  - text: SALT pick
+              - generic [ref=e357]:
+                - paragraph [ref=e358]: PET ACCESSORIES Bundle
+                - paragraph [ref=e359]: Curated pick
+                - generic [ref=e360]:
+                  - paragraph [ref=e362]: $18.46
+                  - generic [ref=e363]:
+                    - button "Add PET ACCESSORIES Bundle to cart" [ref=e364] [cursor=pointer]:
+                      - img [ref=e365]
+                    - link "View item details" [ref=e368] [cursor=pointer]:
+                      - /url: /products/pet-accessories-bundle
+                      - img [ref=e369]
+            - article [ref=e373]:
+              - button "Save Men's Embroidered Traditional Thobe to wishlist" [ref=e374] [cursor=pointer]:
+                - img [ref=e375]
+              - link "Men's Embroidered Traditional Thobe | Moroccan Boubou Jalabiya Robe SALT pick" [ref=e377] [cursor=pointer]:
+                - /url: /products/mens-embroidered-traditional-thobe-moroccan-boubou-jalabiya-robe
+                - img "Men's Embroidered Traditional Thobe | Moroccan Boubou Jalabiya Robe" [ref=e380]
+                - generic [ref=e381]:
+                  - img [ref=e382]
+                  - text: SALT pick
+              - generic [ref=e384]:
+                - paragraph [ref=e385]: Men's Embroidered Traditional Thobe
+                - paragraph [ref=e386]: ROBE
+                - generic [ref=e387]:
+                  - paragraph [ref=e389]: $49.99
+                  - generic [ref=e390]:
+                    - button "Add Men's Embroidered Traditional Thobe to cart" [ref=e391] [cursor=pointer]:
+                      - img [ref=e392]
+                    - link "View item details" [ref=e395] [cursor=pointer]:
+                      - /url: /products/mens-embroidered-traditional-thobe-moroccan-boubou-jalabiya-robe
+                      - img [ref=e396]
+            - article [ref=e400]:
+              - button "Save Men's Embroidered Islamic Thobe (Jubba/Dishdasha) to wishlist" [ref=e401] [cursor=pointer]:
+                - img [ref=e402]
+              - link "Men's Embroidered Islamic Thobe (Jubba/Dishdasha) | Saudi Arabic Long Sleeve Robe SALT pick" [ref=e404] [cursor=pointer]:
+                - /url: /products/mens-embroidered-islamic-thobe-jubba-dishdasha-saudi-arabic-long-sleeve-robe
+                - img "Men's Embroidered Islamic Thobe (Jubba/Dishdasha) | Saudi Arabic Long Sleeve Robe" [ref=e407]
+                - generic [ref=e408]:
+                  - img [ref=e409]
+                  - text: SALT pick
+              - generic [ref=e411]:
+                - paragraph [ref=e412]: Men's Embroidered Islamic Thobe (Jubba/Dishdasha)
+                - paragraph [ref=e413]: ROBE
+                - generic [ref=e414]:
+                  - paragraph [ref=e416]: $44.99
+                  - generic [ref=e417]:
+                    - button "Add Men's Embroidered Islamic Thobe (Jubba/Dishdasha) to cart" [ref=e418] [cursor=pointer]:
+                      - img [ref=e419]
+                    - link "View item details" [ref=e422] [cursor=pointer]:
+                      - /url: /products/mens-embroidered-islamic-thobe-jubba-dishdasha-saudi-arabic-long-sleeve-robe
+                      - img [ref=e423]
+            - article [ref=e427]:
+              - button "Save Men's Islamic Kaftan Thobe to wishlist" [ref=e428] [cursor=pointer]:
+                - img [ref=e429]
+              - link "Men's Islamic Kaftan Thobe | Dubai Abaya Style Long Sleeve Prayer Dress Save 27%" [ref=e431] [cursor=pointer]:
+                - /url: /products/mens-islamic-kaftan-thobe-dubai-abaya-style-long-sleeve-prayer-dress
+                - img "Men's Islamic Kaftan Thobe | Dubai Abaya Style Long Sleeve Prayer Dress" [ref=e434]
+                - generic [ref=e435]:
+                  - img [ref=e436]
+                  - text: Save 27%
+              - generic [ref=e438]:
+                - paragraph [ref=e439]: Men's Islamic Kaftan Thobe
+                - paragraph [ref=e440]: ROBE
+                - generic [ref=e441]:
+                  - generic [ref=e442]:
+                    - paragraph [ref=e443]: $40.99
+                    - paragraph [ref=e444]: $55.99
+                  - generic [ref=e445]:
+                    - button "Add Men's Islamic Kaftan Thobe to cart" [ref=e446] [cursor=pointer]:
+                      - img [ref=e447]
+                    - link "View item details" [ref=e450] [cursor=pointer]:
+                      - /url: /products/mens-islamic-kaftan-thobe-dubai-abaya-style-long-sleeve-prayer-dress
+                      - img [ref=e451]
+            - article [ref=e455]:
+              - button "Save Men's Embroidered Islamic Thobe to wishlist" [ref=e456] [cursor=pointer]:
+                - img [ref=e457]
+              - link "Men's Embroidered Islamic Thobe | Long-Sleeved Arabic Loose Robe Dress Save 29%" [ref=e459] [cursor=pointer]:
+                - /url: /products/mens-embroidered-islamic-thobe-long-sleeved-arabic-loose-robe-dress
+                - img "Men's Embroidered Islamic Thobe | Long-Sleeved Arabic Loose Robe Dress" [ref=e462]
+                - generic [ref=e463]:
+                  - img [ref=e464]
+                  - text: Save 29%
+              - generic [ref=e466]:
+                - paragraph [ref=e467]: Men's Embroidered Islamic Thobe
+                - paragraph [ref=e468]: ROBE
+                - generic [ref=e469]:
+                  - generic [ref=e470]:
+                    - paragraph [ref=e471]: $46.99
+                    - paragraph [ref=e472]: $65.99
+                  - generic [ref=e473]:
+                    - button "Add Men's Embroidered Islamic Thobe to cart" [ref=e474] [cursor=pointer]:
+                      - img [ref=e475]
+                    - link "View item details" [ref=e478] [cursor=pointer]:
+                      - /url: /products/mens-embroidered-islamic-thobe-long-sleeved-arabic-loose-robe-dress
+                      - img [ref=e479]
+            - article [ref=e483]:
+              - button "Save Weekly Exercise Planner to wishlist" [ref=e484] [cursor=pointer]:
+                - img [ref=e485]
+              - link "Weekly Exercise Planner SALT pick" [ref=e487] [cursor=pointer]:
+                - /url: /products/weekly-exercise-planner
+                - img "Weekly Exercise Planner" [ref=e490]
+                - generic [ref=e491]:
+                  - img [ref=e492]
+                  - text: SALT pick
+              - generic [ref=e494]:
+                - paragraph [ref=e495]: Weekly Exercise Planner
+                - paragraph [ref=e496]: PLANNER
+                - generic [ref=e497]:
+                  - paragraph [ref=e499]: $4.99
+                  - generic [ref=e500]:
+                    - button "Add Weekly Exercise Planner to cart" [ref=e501] [cursor=pointer]:
+                      - img [ref=e502]
+                    - link "View item details" [ref=e505] [cursor=pointer]:
+                      - /url: /products/weekly-exercise-planner
+                      - img [ref=e506]
+            - article [ref=e510]:
+              - button "Save 7 Day Mood Mindfulness Tracker to wishlist" [ref=e511] [cursor=pointer]:
+                - img [ref=e512]
+              - link "7 Day Mood Mindfulness Tracker SALT pick" [ref=e514] [cursor=pointer]:
+                - /url: /products/7-day-mood-mindfulness-tracker
+                - img "7 Day Mood Mindfulness Tracker" [ref=e517]
+                - generic [ref=e518]:
+                  - img [ref=e519]
+                  - text: SALT pick
+              - generic [ref=e521]:
+                - paragraph [ref=e522]: 7 Day Mood Mindfulness Tracker
+                - paragraph [ref=e523]: PLANNER
+                - generic [ref=e524]:
+                  - paragraph [ref=e526]: $4.99
+                  - generic [ref=e527]:
+                    - button "Add 7 Day Mood Mindfulness Tracker to cart" [ref=e528] [cursor=pointer]:
+                      - img [ref=e529]
+                    - link "View item details" [ref=e532] [cursor=pointer]:
+                      - /url: /products/7-day-mood-mindfulness-tracker
+                      - img [ref=e533]
+            - article [ref=e537]:
+              - button "Save 7 Day Sleep Tracker to wishlist" [ref=e538] [cursor=pointer]:
+                - img [ref=e539]
+              - link "7 Day Sleep Tracker SALT pick" [ref=e541] [cursor=pointer]:
+                - /url: /products/7-day-sleep-tracker
+                - img "7 Day Sleep Tracker" [ref=e544]
+                - generic [ref=e545]:
+                  - img [ref=e546]
+                  - text: SALT pick
+              - generic [ref=e548]:
+                - paragraph [ref=e549]: 7 Day Sleep Tracker
+                - paragraph [ref=e550]: PLANNER
+                - generic [ref=e551]:
+                  - paragraph [ref=e553]: $4.99
+                  - generic [ref=e554]:
+                    - button "Add 7 Day Sleep Tracker to cart" [ref=e555] [cursor=pointer]:
+                      - img [ref=e556]
+                    - link "View item details" [ref=e559] [cursor=pointer]:
+                      - /url: /products/7-day-sleep-tracker
+                      - img [ref=e560]
+            - article [ref=e564]:
+              - button "Save 7 Day Health & Medication Tracker to wishlist" [ref=e565] [cursor=pointer]:
+                - img [ref=e566]
+              - link "7 Day Health & Medication Tracker SALT pick" [ref=e568] [cursor=pointer]:
+                - /url: /products/7-day-health-medication-tracker
+                - img "7 Day Health & Medication Tracker" [ref=e571]
+                - generic [ref=e572]:
+                  - img [ref=e573]
+                  - text: SALT pick
+              - generic [ref=e575]:
+                - paragraph [ref=e576]: 7 Day Health & Medication Tracker
+                - paragraph [ref=e577]: PLANNER
+                - generic [ref=e578]:
+                  - paragraph [ref=e580]: $4.99
+                  - generic [ref=e581]:
+                    - button "Add 7 Day Health & Medication Tracker to cart" [ref=e582] [cursor=pointer]:
+                      - img [ref=e583]
+                    - link "View item details" [ref=e586] [cursor=pointer]:
+                      - /url: /products/7-day-health-medication-tracker
+                      - img [ref=e587]
+            - article [ref=e591]:
+              - button "Save Relics of the Century to wishlist" [ref=e592] [cursor=pointer]:
+                - img [ref=e593]
+              - link "Relics of the Century Save 17%" [ref=e595] [cursor=pointer]:
+                - /url: /products/relics-of-the-century
+                - img "Relics of the Century" [ref=e598]
+                - generic [ref=e599]:
+                  - img [ref=e600]
+                  - text: Save 17%
+              - generic [ref=e602]:
+                - paragraph [ref=e603]: Relics of the Century
+                - paragraph [ref=e604]: Curated pick
+                - generic [ref=e605]:
+                  - generic [ref=e606]:
+                    - paragraph [ref=e607]: $19.99
+                    - paragraph [ref=e608]: $23.99
+                  - generic [ref=e609]:
+                    - button "Add Relics of the Century to cart" [ref=e610] [cursor=pointer]:
+                      - img [ref=e611]
+                    - link "View item details" [ref=e614] [cursor=pointer]:
+                      - /url: /products/relics-of-the-century
+                      - img [ref=e615]
+            - article [ref=e619]:
+              - button "Save The Living Legacy Planner 1st Edition to wishlist" [ref=e620] [cursor=pointer]:
+                - img [ref=e621]
+              - link "The Living Legacy Planner 1st Edition Save 17%" [ref=e623] [cursor=pointer]:
+                - /url: /products/the-living-legacy-planner
+                - img "The Living Legacy Planner 1st Edition" [ref=e626]
+                - generic [ref=e627]:
+                  - img [ref=e628]
+                  - text: Save 17%
+              - generic [ref=e630]:
+                - paragraph [ref=e631]: The Living Legacy Planner 1st Edition
+                - paragraph [ref=e632]: BOOK
+                - generic [ref=e633]:
+                  - generic [ref=e634]:
+                    - paragraph [ref=e635]: $28.99
+                    - paragraph [ref=e636]: $34.99
+                  - generic [ref=e637]:
+                    - button "Add The Living Legacy Planner 1st Edition to cart" [ref=e638] [cursor=pointer]:
+                      - img [ref=e639]
+                    - link "View item details" [ref=e642] [cursor=pointer]:
+                      - /url: /products/the-living-legacy-planner
+                      - img [ref=e643]
+            - article [ref=e647]:
+              - button "Save 7 Day Social Hobby Tracker to wishlist" [ref=e648] [cursor=pointer]:
+                - img [ref=e649]
+              - link "7 Day Social Hobby Tracker Save 65%" [ref=e651] [cursor=pointer]:
+                - /url: /products/7-day-social-hobby-tracker
+                - img "7 Day Social Hobby Tracker" [ref=e654]
+                - generic [ref=e655]:
+                  - img [ref=e656]
+                  - text: Save 65%
+              - generic [ref=e658]:
+                - paragraph [ref=e659]: 7 Day Social Hobby Tracker
+                - paragraph [ref=e660]: TRACKER
+                - generic [ref=e661]:
+                  - generic [ref=e662]:
+                    - paragraph [ref=e663]: $5.66
+                    - paragraph [ref=e664]: $15.99
+                  - generic [ref=e665]:
+                    - button "Add 7 Day Social Hobby Tracker to cart" [ref=e666] [cursor=pointer]:
+                      - img [ref=e667]
+                    - link "View item details" [ref=e670] [cursor=pointer]:
+                      - /url: /products/7-day-social-hobby-tracker
+                      - img [ref=e671]
+            - article [ref=e675]:
+              - button "Save Meal Planner to wishlist" [ref=e676] [cursor=pointer]:
+                - img [ref=e677]
+              - link "Meal Planner Save 65%" [ref=e679] [cursor=pointer]:
+                - /url: /products/meal-planner
+                - img "Meal Planner" [ref=e682]
+                - generic [ref=e683]:
+                  - img [ref=e684]
+                  - text: Save 65%
+              - generic [ref=e686]:
+                - paragraph [ref=e687]: Meal Planner
+                - paragraph [ref=e688]: PLANNER
+                - generic [ref=e689]:
+                  - generic [ref=e690]:
+                    - paragraph [ref=e691]: $5.66
+                    - paragraph [ref=e692]: $15.99
+                  - generic [ref=e693]:
+                    - button "Add Meal Planner to cart" [ref=e694] [cursor=pointer]:
+                      - img [ref=e695]
+                    - link "View item details" [ref=e698] [cursor=pointer]:
+                      - /url: /products/meal-planner
+                      - img [ref=e699]
+            - article [ref=e703]:
+              - button "Save Creative Bird LED Wall Sconce with Touch Switch to wishlist" [ref=e704] [cursor=pointer]:
+                - img [ref=e705]
+              - link "Creative Bird LED Wall Sconce with Touch Switch Save 21%" [ref=e707] [cursor=pointer]:
+                - /url: /products/creative-bird-led-wall-sconce-with-touch-switch
+                - img "Creative Bird LED Wall Sconce with Touch Switch" [ref=e710]
+                - generic [ref=e711]:
+                  - img [ref=e712]
+                  - text: Save 21%
+              - generic [ref=e714]:
+                - paragraph [ref=e715]: Creative Bird LED Wall Sconce with Touch Switch
+                - paragraph [ref=e716]: WALL LAMP
+                - generic [ref=e717]:
+                  - generic [ref=e718]:
+                    - paragraph [ref=e719]: $119.99
+                    - paragraph [ref=e720]: $150.99
+                  - generic [ref=e721]:
+                    - button "Add Creative Bird LED Wall Sconce with Touch Switch to cart" [ref=e722] [cursor=pointer]:
+                      - img [ref=e723]
+                    - link "View item details" [ref=e726] [cursor=pointer]:
+                      - /url: /products/creative-bird-led-wall-sconce-with-touch-switch
+                      - img [ref=e727]
+            - article [ref=e731]:
+              - button "Save Minimalist Long Strip LED Wall Lamp to wishlist" [ref=e732] [cursor=pointer]:
+                - img [ref=e733]
+              - link "Minimalist Long Strip LED Wall Lamp Save 23%" [ref=e735] [cursor=pointer]:
+                - /url: /products/minimalist-long-strip-led-wall-lamp
+                - img "Minimalist Long Strip LED Wall Lamp" [ref=e738]
+                - generic [ref=e739]:
+                  - img [ref=e740]
+                  - text: Save 23%
+              - generic [ref=e742]:
+                - paragraph [ref=e743]: Minimalist Long Strip LED Wall Lamp
+                - paragraph [ref=e744]: WALL LAMP
+                - generic [ref=e745]:
+                  - generic [ref=e746]:
+                    - paragraph [ref=e747]: $69.99
+                    - paragraph [ref=e748]: $90.99
+                  - generic [ref=e749]:
+                    - button "Add Minimalist Long Strip LED Wall Lamp to cart" [ref=e750] [cursor=pointer]:
+                      - img [ref=e751]
+                    - link "View item details" [ref=e754] [cursor=pointer]:
+                      - /url: /products/minimalist-long-strip-led-wall-lamp
+                      - img [ref=e755]
+          - generic [ref=e760]:
+            - generic [ref=e762]:
+              - generic [ref=e763]: Page 1 of 23
+              - generic [ref=e764]: "|"
+              - generic [ref=e765]: Showing 1-24 of 545
+            - generic [ref=e768]:
+              - button "Prev" [disabled] [ref=e769]:
+                - img [ref=e770]
+                - text: Prev
+              - button "Next" [ref=e772] [cursor=pointer]:
+                - text: Next
+                - img [ref=e773]
+              - paragraph [ref=e775]:
+                - img [ref=e776]
+                - text: Sorted by Featured
+          - article [ref=e780]:
+            - generic [ref=e781]:
+              - generic [ref=e782]:
+                - paragraph [ref=e783]: Need help narrowing results?
+                - paragraph [ref=e784]: Start with curated routes instead of scrolling the full catalog.
+              - generic [ref=e785]:
+                - link "Browse collections" [ref=e786] [cursor=pointer]:
+                  - /url: /collections
+                - button "Sort newest" [ref=e787] [cursor=pointer]
+                - link "Ask support" [ref=e788] [cursor=pointer]:
+                  - /url: /contact
+    - contentinfo [ref=e789]:
+      - generic [ref=e790]:
+        - generic [ref=e792]:
+          - generic [ref=e793]:
+            - generic [ref=e794]:
+              - generic [ref=e798]: SALT
+              - generic [ref=e799]:
+                - generic [ref=e800]: SALT
+                - generic [ref=e801]: Online Store
+            - paragraph [ref=e802]: A curated lifestyle marketplace for home, kitchen, and gifting. Every piece is selected for quality and utility.
+            - generic [ref=e803]:
+              - generic [ref=e804]: Curated catalog
+              - generic [ref=e805]: Fast shipping
+              - generic [ref=e806]: Easy returns
+            - generic [ref=e807]:
+              - link [ref=e808] [cursor=pointer]:
+                - /url: https://instagram.com/saltonlinestore
+                - img [ref=e809]
+              - link [ref=e812] [cursor=pointer]:
+                - /url: https://www.facebook.com/profile.php?id=61573199456052
+                - img [ref=e813]
+              - link [ref=e815] [cursor=pointer]:
+                - /url: https://youtube.com/@saltonlinestore
+                - img [ref=e816]
+          - generic [ref=e819]:
+            - heading "Shop" [level=3] [ref=e820]
+            - generic [ref=e821]:
+              - link "All Products" [ref=e822] [cursor=pointer]:
+                - /url: /shop
+              - link "Collections" [ref=e823] [cursor=pointer]:
+                - /url: /collections
+              - link "New Arrivals" [ref=e824] [cursor=pointer]:
+                - /url: /shop?sort=newest
+              - link "Sale" [ref=e825] [cursor=pointer]:
+                - /url: /shop?sort=discount
+          - generic [ref=e826]:
+            - heading "Support" [level=3] [ref=e827]
+            - generic [ref=e828]:
+              - link "Contact Us" [ref=e829] [cursor=pointer]:
+                - /url: /contact
+              - link "Order Tracking" [ref=e830] [cursor=pointer]:
+                - /url: /customer-access?mode=login&next=%2Forder-history&reason=orders
+              - link "Shipping" [ref=e831] [cursor=pointer]:
+                - /url: /policies/shipping-policy
+              - link "Returns" [ref=e832] [cursor=pointer]:
+                - /url: /policies/refund-policy
+          - generic [ref=e833]:
+            - heading "The SALT List" [level=3] [ref=e834]
+            - paragraph [ref=e835]: Sign up for curated arrivals, practical edits, and member-only updates.
+            - generic [ref=e837]:
+              - textbox "Email address" [ref=e838]
+              - button "Join" [ref=e839] [cursor=pointer]
+        - generic [ref=e840]:
+          - generic [ref=e842]:
+            - paragraph [ref=e843]: SALT storefront confidence
+            - generic [ref=e844]:
+              - generic [ref=e845]: Secure checkout
+              - generic [ref=e846]: Tracked shipping
+              - generic [ref=e847]: Easy returns
+          - generic [ref=e848]:
+            - generic [ref=e849]: © 2026 SALT ONLINE STORE
+            - generic [ref=e850]:
+              - link "Privacy Policy" [ref=e851] [cursor=pointer]:
+                - /url: /policies/privacy-policy
+              - link "Refund Policy" [ref=e852] [cursor=pointer]:
+                - /url: /policies/refund-policy
+              - link "Shipping Policy" [ref=e853] [cursor=pointer]:
+                - /url: /policies/shipping-policy
