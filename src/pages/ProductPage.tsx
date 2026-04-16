@@ -301,7 +301,7 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-4 w-[min(1200px,94vw)] pb-28 sm:mt-6 sm:w-[min(1200px,96vw)] md:pb-8">
+    <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-8">
       <Reveal>
         <InnerBreadcrumbs
           className="hidden sm:flex"

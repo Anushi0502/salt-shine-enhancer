@@ -168,7 +168,7 @@ const CustomerAccessPage = () => {
   }, [reason]);
 
   return (
-    <section className="mx-auto mt-8 w-[min(760px,94vw)] pb-12 sm:mt-10">
+    <section className="mx-auto mt-8 w-[min(760px,calc(100%-20px))] pb-12 sm:mt-10">
       <Reveal>
         <InnerBreadcrumbs
           items={[

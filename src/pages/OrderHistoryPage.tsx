@@ -71,7 +71,7 @@ const OrderHistoryPage = () => {
 
   if (!entries.length) {
     return (
-      <section className="mx-auto mt-8 w-[min(880px,92vw)] pb-10 text-center">
+      <section className="mx-auto mt-8 w-[min(880px,calc(100%-20px))] pb-10 text-center">
         <Reveal>
           <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -96,7 +96,7 @@ const OrderHistoryPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-6 w-[min(1200px,96vw)] pb-12">
+    <section className="mx-auto mt-6 w-[min(1200px,calc(100%-20px))] pb-12">
       <Reveal>
         <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>

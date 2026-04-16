@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
@@ -668,7 +668,7 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-4 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
+    <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
       <Reveal>
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>

@@ -43,7 +43,7 @@ const WishlistPage = () => {
 
   if (!items.length) {
     return (
-      <section className="mx-auto mt-8 w-[min(920px,94vw)] pb-12 text-center sm:w-[min(920px,92vw)]">
+      <section className="mx-auto mt-8 w-[min(920px,calc(100%-20px))] pb-12 text-center sm:w-[min(920px,calc(100%-20px))]">
         <Reveal>
           <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -68,7 +68,7 @@ const WishlistPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-5 w-[min(1280px,94vw)] pb-10 sm:mt-6 sm:w-[min(1280px,96vw)]">
+    <section className="mx-auto mt-5 w-[min(1280px,calc(100%-20px))] pb-10 sm:mt-6 sm:w-[min(1280px,calc(100%-20px))]">
       <Reveal>
         <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <div>

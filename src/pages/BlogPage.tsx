@@ -45,7 +45,7 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
+      <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
         <Reveal>
           <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
             <p className="salt-kicker">Journal</p>
@@ -82,7 +82,7 @@ const BlogPage = () => {
   ).slice(0, 4);
 
   return (
-    <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
+    <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
       <Reveal>
         <div className="salt-panel-shell relative overflow-hidden rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/65" />
