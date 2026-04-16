@@ -6,6 +6,8 @@ type BrandLogoProps = {
   size?: "sm" | "md" | "lg";
 };
 
+const brandLogoFontFamily = "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
 const emblemSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
   sm: "h-11 w-28 px-2.5",
   md: "h-12 w-32 px-3",
@@ -56,6 +58,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
               "font-black leading-none tracking-[0.17em] text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.42)]",
               markSizeMap[size],
             )}
+            style={{ fontFamily: brandLogoFontFamily }}
           >
             SALT
           </span>
@@ -69,6 +72,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
               "block font-display tracking-[0.08em] text-[hsl(var(--salt-ink))] dark:text-white",
               textSizeMap[size],
             )}
+            style={{ fontFamily: brandLogoFontFamily }}
           >
             SALT
           </span>
@@ -77,6 +81,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
               "block pt-0.5 uppercase tracking-[0.14em] text-[hsl(var(--salt-muted))] dark:text-white/76",
               wordmarkSubtextSizeMap[size],
             )}
+            style={{ fontFamily: brandLogoFontFamily }}
           >
             Online Store
           </span>

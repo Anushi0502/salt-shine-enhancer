@@ -127,7 +127,7 @@ const giftTileConfigs = [
   },
   {
     title: "Fun & Unique Finds",
-    to: "/shop?max=25",
+    to: "/shop?q=unique+gift",
     collectionHandles: ["home-decor", "gifts", "gift"],
     productKeywords: ["unique", "home", "decor", "gift"],
   },
