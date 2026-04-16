@@ -8,6 +8,7 @@ export type CollectionCardVariant = "default" | "hero";
 type CollectionCardEditorialContent = {
   kicker: string;
   headline: string;
+  description?: string;
   primaryAction: {
     to: string;
     label: string;
@@ -39,13 +40,13 @@ const CollectionCard = ({
 
   return (
     <article
-      className={`salt-story-card group relative h-full overflow-hidden border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.42))] shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)] ${isHero ? "rounded-[1.95rem]" : "rounded-[1.8rem]"}`}
+      className={`salt-story-card group relative h-full overflow-hidden border border-[#d6e1f2] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] shadow-[0_24px_58px_-44px_rgba(15,23,42,0.22)] transition duration-500 hover:-translate-y-1 ${isHero ? "rounded-[1.85rem]" : "rounded-[1.5rem]"}`}
     >
       <div
         className={`relative overflow-hidden ${
           isHero
-            ? "aspect-[16/9.25]"
-            : "aspect-[4/4.75] md:aspect-[4/4.2] lg:aspect-[4/3.55] xl:aspect-[4/3.1]"
+            ? "aspect-[16/9.35] min-h-[18rem] sm:min-h-[22rem]"
+            : "aspect-[1/1.08] md:aspect-[1/1.02]"
         }`}
       >
         {image ? (
@@ -68,46 +69,57 @@ const CollectionCard = ({
           </div>
         )}
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.02),rgba(12,20,38,0.05)_20%,rgba(12,20,38,0.18)_58%,rgba(12,20,38,0.52)_100%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/8 to-transparent" />
-
         <div
-          className={`absolute rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] font-semibold uppercase tracking-[0.16em] text-white shadow-[0_16px_36px_-24px_rgba(15,23,42,0.72)] backdrop-blur-md ${isHero ? "right-3 top-3 px-2.5 py-1 text-[0.56rem]" : "right-4 top-4 px-3 py-1 text-[0.62rem]"}`}
-        >
+          className={`absolute inset-0 ${
+            isHero
+              ? "bg-[linear-gradient(90deg,rgba(12,20,38,0.16)_0%,rgba(12,20,38,0.08)_34%,rgba(12,20,38,0.26)_100%)]"
+              : "bg-[linear-gradient(180deg,rgba(12,20,38,0.02),rgba(12,20,38,0.05)_22%,rgba(12,20,38,0.22)_62%,rgba(12,20,38,0.72)_100%)]"
+          }`}
+        />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/10 to-transparent" />
+
+        <div className={`absolute ${isHero ? "right-4 top-4" : "right-4 top-4"}`}>
+          <span className="salt-media-pill px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em]">
           {totalProducts} items
+          </span>
         </div>
       </div>
 
-        <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-3.5 sm:p-4"}`}>
+      <div className={`absolute inset-x-0 bottom-0 ${isHero ? "p-4 sm:p-5" : "p-4"}`}>
         <div
-          className={`border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,247,243,0.88))] shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md ${
+          className={`${
             hasEditorialContent
-              ? "rounded-[1.6rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,247,243,0.94))] px-4 py-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:rounded-[2rem] sm:px-6 sm:py-5 lg:px-7 lg:py-6"
-              : isHero
-                ? "w-full max-w-[min(25.5rem,100%)] rounded-[1.18rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))] sm:w-fit sm:max-w-[min(25.5rem,calc(100%-0.5rem))] sm:p-[1.125rem]"
-                  : "flex min-h-[11.5rem] flex-col rounded-[1.45rem] p-4 dark:bg-[linear-gradient(180deg,rgba(26,33,49,0.96),rgba(16,22,35,0.92))]"
+              ? "max-w-[34rem] rounded-[1.55rem] border border-[#d7e3f6] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(251,252,255,0.9))] px-4 py-4 shadow-[0_26px_58px_-40px_rgba(15,23,42,0.32)] backdrop-blur-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(18,24,37,0.9),rgba(15,21,34,0.84))] sm:px-5 sm:py-5"
+              : "rounded-[1.2rem] bg-gradient-to-t from-[#11223d]/94 via-[#11223d]/76 to-transparent px-0 py-0 text-white"
           }`}
         >
           {hasEditorialContent && editorialContent ? (
-            <div className="flex flex-col items-start gap-4 lg:flex-row lg:flex-nowrap lg:justify-between lg:gap-8">
+            <div className="flex flex-col items-start gap-4">
               <div className="min-w-0 flex-1">
-                <p className="salt-kicker">{editorialContent.kicker}</p>
-                <h3 className="mt-4 max-w-5xl font-display text-[clamp(1.9rem,8vw,4.8rem)] leading-[0.92] tracking-[-0.05em] text-foreground">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#4e73b2] dark:text-[#b9c8eb]">
+                  {editorialContent.kicker}
+                </p>
+                <h3 className="mt-3 max-w-[12ch] font-display text-[clamp(2rem,6vw,4.1rem)] leading-[0.92] tracking-[-0.05em] text-[#183f84] dark:text-white">
                   {editorialContent.headline}
                 </h3>
+                {editorialContent.description ? (
+                  <p className="mt-3 max-w-[42ch] text-sm leading-6 text-[#53698f] dark:text-white/74">
+                    {editorialContent.description}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="flex w-full shrink-0 flex-col gap-2.5 sm:flex-row lg:w-auto lg:justify-end">
+              <div className="flex w-full flex-col gap-2.5 sm:flex-row">
                 <Link
                   to={editorialContent.primaryAction.to}
-                  className="salt-primary-cta h-12 w-full px-6 text-sm font-bold sm:h-14 sm:w-auto sm:px-8 sm:text-[1.05rem]"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#2b67db] px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_18px_36px_-24px_rgba(43,103,219,0.72)] transition hover:bg-[#1e56bf] sm:w-auto"
                 >
                   {editorialContent.primaryAction.label}
                 </Link>
                 {editorialContent.secondaryAction ? (
                   <Link
                     to={editorialContent.secondaryAction.to}
-                    className="salt-outline-chip h-12 w-full px-6 py-0 text-sm sm:h-14 sm:w-auto sm:px-8 sm:text-[1.05rem]"
+                    className="inline-flex h-11 w-full items-center justify-center rounded-full border border-[#c9daf5] bg-white/86 px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#335898] transition hover:border-[#9dbdf1] hover:text-[#1f4ea4] dark:border-white/12 dark:bg-white/6 dark:text-white sm:w-auto"
                   >
                     {editorialContent.secondaryAction.label}
                   </Link>
@@ -116,39 +128,29 @@ const CollectionCard = ({
             </div>
           ) : (
             <>
-              {isHero ? (
-                <p className="text-[0.98rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Collection
-                </p>
-              ) : (
-                <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="p-4 sm:p-4.5">
+                <p className="text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-white/68">
                   Curated edit
                 </p>
-              )}
-              <h3
-                title={collection.title}
-                className={`font-display leading-[0.94] tracking-[-0.035em] text-foreground ${
-                  isHero
-                    ? "mt-1 text-[clamp(1.48rem,2vw,2.2rem)]"
-                    : "mt-2 line-clamp-3 min-h-[4.5rem] text-[1.36rem] sm:min-h-[4.8rem] sm:text-[1.5rem] lg:line-clamp-2 lg:min-h-[3.05rem] lg:text-[1.58rem]"
-                }`}
-              >
-                {collection.title}
-              </h3>
+                <h3
+                  title={collection.title}
+                  className="mt-2 line-clamp-2 font-display text-[1.5rem] leading-[0.96] tracking-[-0.04em] text-white sm:text-[1.66rem]"
+                >
+                  {collection.title}
+                </h3>
 
-              <div className={`flex flex-wrap items-center justify-between gap-3 ${isHero ? "mt-3" : "mt-auto pt-4"}`}>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/68">
+                    {totalProducts} items
+                  </span>
                 <Link
                   to={collectionHref}
-                  className={`salt-showcase-pill hover:border-primary/40 hover:bg-primary hover:text-primary-foreground ${isHero ? "px-3.5 py-2 text-[0.64rem]" : "px-4 py-2 text-[0.7rem]"}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/16 bg-white/10 px-3.5 py-2 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/26 hover:bg-white/16"
                 >
-                  Shop
-                  <ArrowUpRight className="h-3.5 w-3.5" />
+                    Open
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
-                {!isHero ? (
-                  <span className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">
-                    Explore now
-                  </span>
-                ) : null}
+                </div>
               </div>
             </>
           )}
