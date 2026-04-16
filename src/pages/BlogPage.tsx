@@ -83,6 +83,36 @@ const BlogPage = () => {
 
   if (error) {
     return (
+      <section className="mt-3 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
+        <div className="mx-auto w-full max-w-[1200px] px-4">
+          <Reveal>
+            <div className="relative isolate overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.22)] sm:p-8">
+              <div className="relative z-10 max-w-2xl">
+                <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Salt Journal
+                </p>
+                <h1 className="mt-4 font-display text-[clamp(2.2rem,6vw,4rem)] leading-[1.02] tracking-[-0.03em] text-[#1a1a1a]">
+                  Journal unavailable right now.
+                </h1>
+                <p className="mt-4 max-w-xl text-[clamp(1rem,2vw,1.15rem)] leading-relaxed text-[#4a453e]/90">
+                  The Shopify article sync did not return cleanly. Retry the feed or jump back into the catalog.
+                </p>
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => refetch()}
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-primary"
+                  >
+                    Retry feed
+                  </button>
+                  <Link
+                    to="/shop"
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a] transition hover:bg-[#1a1a1a] hover:text-white"
+                  >
+                    Shop catalog
+                  </Link>
+                </div>
       <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
         <Reveal>
           <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
