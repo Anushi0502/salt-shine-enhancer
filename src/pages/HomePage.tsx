@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CreditCard, Headphones, RotateCcw, Sparkles, Star, Truck } from "lucide-react";
+import { CreditCard, Headphones, RotateCcw, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
@@ -34,6 +34,8 @@ type TrustTile = {
 type ReviewTile = {
   quote: string;
 };
+
+const HERO_BANNER_ROTATE_MS = 3500;
 
 const categoryTileConfigs = [
   {
@@ -183,6 +185,14 @@ const featuredBookPriority = [
   },
 ] as const;
 
+const HERO_EXTRA_BANNERS: ImageTile[] = [
+  {
+    title: "SALT Banner",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png?v=1776335459",
+    to: "/products/the-daily-bloom",
+  },
+];
+
 function SectionTitle({ title }: { title: string }) {
   return (
     <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
@@ -324,11 +334,20 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerProducts]);
+  const heroPosterTiles = useMemo<ImageTile[]>(
+    () => [
+      ...HERO_EXTRA_BANNERS,
+      ...bestSellerTiles.slice(0, 3).map((tile) => ({
+        title: tile.title,
+        image: tile.image,
+        to: tile.to,
+      })),
+    ],
+    [bestSellerTiles],
+  );
+  const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
-  const bestSellerCtaLink = bestSellerCollection
-    ? `/shop?collection=${bestSellerCollection.handle}`
-    : "/shop?sort=discount";
   const collectionImageByHandle = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -498,56 +517,70 @@ const HomePage = () => {
 
     return tiles;
   }, [bestSellerHeroImage, collectionImageByHandle, findCollectionProductImage, findProductImageByKeywords]);
+
+  useEffect(() => {
+    if (heroPosterTiles.length <= 1) {
+      setActiveHeroPosterIndex(0);
+      return;
+    }
+
+    setActiveHeroPosterIndex((currentIndex) => currentIndex % heroPosterTiles.length);
+
+    const rotationInterval = window.setInterval(() => {
+      setActiveHeroPosterIndex((currentIndex) => (currentIndex + 1) % heroPosterTiles.length);
+    }, HERO_BANNER_ROTATE_MS);
+
+    return () => {
+      window.clearInterval(rotationInterval);
+    };
+  }, [heroPosterTiles.length]);
+
   return (
     <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
-          <section className="grid items-stretch border-b border-[#dce9ff] lg:grid-cols-[1.02fr_0.98fr]">
-            <div className="relative hidden lg:block lg:min-h-[22rem]">
-              <img
-                src={bestSellerHeroImage}
-                alt={`${bestSellerCollection?.title || "Best Sellers"} collection`}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(18,58,128,0.44)_0%,rgba(18,58,128,0.34)_50%,rgba(18,58,128,0.3)_100%)]" />
-            </div>
-
-            <div className="flex items-stretch justify-start bg-[linear-gradient(160deg,#f7fbff_0%,#edf5ff_42%,#f8fbff_100%)] px-4 py-3 text-left sm:px-6 sm:py-4 lg:px-8 lg:py-6">
-              <div className="relative flex min-h-[18.5rem] w-full max-w-[36rem] flex-col justify-between overflow-hidden rounded-[1.28rem] border border-[#cadeff] bg-[linear-gradient(155deg,#f9fcff_0%,#edf5ff_45%,#f4f8ff_100%)] p-5 shadow-[0_30px_62px_-46px_rgba(22,77,160,0.56)] sm:min-h-[20rem] sm:p-6 lg:min-h-[22rem] lg:p-7">
-                <div className="pointer-events-none absolute left-0 top-9 h-20 w-1 rounded-r-full bg-[#1f63d8]" />
-                <div className="pointer-events-none absolute -right-8 -top-12 h-28 w-28 rounded-full bg-[#f2c100]/16 blur-2xl" />
-                <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe17a] bg-[#fff5ca] px-4 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.74rem]">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Salt best sellers
-                </p>
-                <h1 className="salt-readable-script mt-3 text-[clamp(2.2rem,9vw,3.95rem)] leading-[1.1] text-[#1f4f9b]">
-                  <span className="block text-[0.95em] leading-[1.1] text-[#2b68db]">
-                    Curated Home,
-                  </span>
-                  <span className="block leading-[1.08] text-[#1f4f9b]">
-                    Kitchen & Gifts
-                  </span>
-                  <span className="block leading-[1.08] text-[#173f84]">for Everyday Living</span>
-                </h1>
-                <p className="salt-readable-script-senior mt-2 max-w-[31ch] text-[clamp(1.08rem,2.35vw,1.42rem)] text-[#1e4f9a]">
-                  Thoughtfully selected essentials with clear value, easy use, and everyday comfort.
-                </p>
-                <div className="mt-5 flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <section className="border-b border-[#dce9ff] p-0">
+            <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
+              <div
+                className="flex transition-transform duration-700 ease-in-out"
+                style={{ transform: `translateX(-${activeHeroPosterIndex * 100}%)` }}
+              >
+                {heroPosterTiles.map((tile, index) => (
                   <Link
-                    to={bestSellerCtaLink}
-                    className="inline-flex h-12 items-center justify-center gap-1.5 rounded-[0.78rem] bg-[#1f63d8] px-6 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_14px_30px_-18px_rgba(31,99,216,0.9)] transition hover:bg-[#1d56be] sm:px-7 sm:text-[0.72rem]"
+                    key={`${tile.to}-${index}`}
+                    to={tile.to}
+                    className="group block w-full shrink-0"
+                    aria-label={tile.title}
                   >
-                    Shop now
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <div className="overflow-hidden bg-[#eaf3ff]">
+                      <ResilientImage
+                        src={tile.image}
+                        alt={tile.title}
+                        className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
+                          />
+                        }
+                      />
+                    </div>
                   </Link>
-                  <Link
-                    to="/collections"
-                    className="inline-flex h-12 items-center justify-center rounded-[0.78rem] border border-[#bcd6ff] bg-white/88 px-6 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#1a4fa5] transition hover:-translate-y-[1px] hover:border-[#90b8ff] hover:text-[#133d83] sm:px-7 sm:text-[0.72rem]"
-                  >
-                    Browse collections
-                  </Link>
-                </div>
+                ))}
               </div>
+              {heroPosterTiles.length > 1 ? (
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-2">
+                  {heroPosterTiles.map((tile, index) => (
+                    <span
+                      key={`${tile.to}-dot-${index}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index === activeHeroPosterIndex ? "w-6 bg-white/95" : "w-2 bg-white/55"
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
           </section>
         </Reveal>
@@ -594,14 +627,14 @@ const HomePage = () => {
         <Reveal delayMs={120}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-4 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:mt-5 sm:gap-3.5 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
               {bestSellerTiles.map((tile, index) => (
                 <Reveal key={tile.title} delayMs={160 + index * 70}>
                   <Link
                     to={tile.to}
-                    className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
+                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
                   >
-                    <div className="aspect-[1.05/1] overflow-hidden sm:aspect-[1/0.94]">
+                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
                       <ResilientImage
                         src={tile.image}
                         alt={tile.title}
@@ -615,11 +648,11 @@ const HomePage = () => {
                         }
                       />
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.96))] px-2.5 py-2 text-center text-white">
-                      <p className="font-display text-[0.88rem] leading-tight sm:text-[0.98rem]">
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
                         {tile.title}
                       </p>
-                      <p className="mt-1 text-[0.78rem] font-semibold tracking-[0.04em] text-[#ffe27a]">
+                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
                         {tile.price}
                       </p>
                     </div>

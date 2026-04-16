@@ -19,10 +19,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Kalam", "Source Serif 4", "Georgia", "serif"],
-        serif: ["Kalam", "Source Serif 4", "Georgia", "serif"],
-        display: ["Kalam", "Source Serif 4", "Georgia", "serif"],
-        techno: ["Kalam", "Source Serif 4", "Georgia", "serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        serif: ["Source Serif 4", "Georgia", "serif"],
+        display: ["Source Serif 4", "Georgia", "serif"],
+        techno: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
