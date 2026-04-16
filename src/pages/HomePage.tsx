@@ -457,8 +457,8 @@ const HomePage = () => {
               <div className="relative flex min-h-[18.5rem] w-full max-w-[36rem] flex-col justify-between overflow-hidden rounded-[1.28rem] border border-[#cadeff] bg-[linear-gradient(155deg,#f9fcff_0%,#edf5ff_45%,#f4f8ff_100%)] p-5 shadow-[0_30px_62px_-46px_rgba(22,77,160,0.56)] sm:min-h-[20rem] sm:p-6 lg:min-h-[22rem] lg:p-7">
                 <div className="pointer-events-none absolute left-0 top-9 h-20 w-1 rounded-r-full bg-[#1f63d8]" />
                 <div className="pointer-events-none absolute -right-8 -top-12 h-28 w-28 rounded-full bg-[#f2c100]/16 blur-2xl" />
-                <p className="inline-flex items-center gap-1.5 rounded-full border border-[#ffe17a] bg-[#fff5ca] px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.62rem]">
-                  <Sparkles className="h-3 w-3" />
+                <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe17a] bg-[#fff5ca] px-4 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.74rem]">
+                  <Sparkles className="h-3.5 w-3.5" />
                   Salt best sellers
                 </p>
                 <h1 className="salt-readable-script mt-3 text-[clamp(2.2rem,9vw,3.95rem)] leading-[1.1] text-[#1f4f9b]">

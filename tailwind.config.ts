@@ -19,10 +19,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        serif: ["Source Serif 4", "Georgia", "serif"],
-        display: ["Source Serif 4", "Georgia", "serif"],
-        techno: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Merienda", "Source Serif 4", "Georgia", "serif"],
+        serif: ["Merienda", "Source Serif 4", "Georgia", "serif"],
+        display: ["Merienda", "Source Serif 4", "Georgia", "serif"],
+        techno: ["Merienda", "Source Serif 4", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
