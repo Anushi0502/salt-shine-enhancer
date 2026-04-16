@@ -48,7 +48,7 @@ const MainFooter = () => {
                 <a href="https://instagram.com/saltonlinestore" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
                   <Instagram className="h-4.5 w-4.5" />
                 </a>
-                <a href="https://facebook.com/saltonlinestore" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
+                <a href="https://www.facebook.com/profile.php?id=61573199456052" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
                   <Facebook className="h-4.5 w-4.5" />
                 </a>
                 <a href="https://youtube.com/@saltonlinestore" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
