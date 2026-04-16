@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CreditCard, Headphones, RotateCcw, Sparkles, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
@@ -114,16 +115,16 @@ const fallbackBestSellerTiles: ProductTile[] = [
 
 const giftTileConfigs = [
   {
-    title: "Gifts for Her",
-    to: "/collections/gifts",
-    collectionHandles: ["gifts", "gift"],
-    productKeywords: ["women", "her", "gift", "planner"],
+    title: "Home Decor",
+    to: "/collections/home-decor",
+    collectionHandles: ["home-decor", "home", "decor"],
+    productKeywords: ["home", "decor", "candle", "wall", "vase"],
   },
   {
-    title: "Gifts for Him",
-    to: "/shop?q=men",
+    title: "Gifts",
+    to: "/collections/gifts",
     collectionHandles: ["gifts", "gift"],
-    productKeywords: ["men", "him", "gift", "tool"],
+    productKeywords: ["gift", "present", "planner", "set"],
   },
   {
     title: "Fun & Unique Finds",
@@ -257,16 +258,26 @@ const HomePage = () => {
     bestSellerCollectionHandle,
     Boolean(bestSellerCollectionHandle),
   );
+  const { data: homeDecorIdsPayload } = useCollectionProductIds("home-decor", true);
+  const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
+  const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
   const bestSellerProductIds = useMemo(
     () => bestSellerIdsPayload?.productIds ?? [],
     [bestSellerIdsPayload],
   );
+  const collectionProductIdsByHandle = useMemo(() => {
+    const map = new Map<string, number[]>();
+    map.set("home-decor", homeDecorIdsPayload?.productIds ?? []);
+    map.set("gifts", giftsIdsPayload?.productIds ?? []);
+    map.set("gift", giftIdsPayload?.productIds ?? []);
+    return map;
+  }, [giftIdsPayload, giftsIdsPayload, homeDecorIdsPayload]);
+  const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
     }
 
-    const productById = new Map(products.map((product) => [product.id, product]));
     const bestSellerCandidates =
       bestSellerProductIds.length > 0
         ? bestSellerProductIds
@@ -300,7 +311,7 @@ const HomePage = () => {
     });
 
     return uniqueProducts.slice(0, 8);
-  }, [bestSellerProductIds, products]);
+  }, [bestSellerProductIds, productById, products]);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
     if (!bestSellerProducts.length) {
       return fallbackBestSellerTiles;
@@ -372,6 +383,40 @@ const HomePage = () => {
     },
     [rankedProductsWithImages],
   );
+  const findCollectionProductImage = useCallback(
+    (collectionHandles: string[], usedProductIds?: Set<number>): string | null => {
+      const normalizedHandles = collectionHandles.map((handle) => normalizeHandle(handle)).filter(Boolean);
+
+      for (const handle of normalizedHandles) {
+        const productIds = collectionProductIdsByHandle.get(handle) || [];
+        for (const productId of productIds) {
+          if (usedProductIds?.has(productId)) {
+            continue;
+          }
+
+          const product = productById.get(productId);
+          const image = product ? productImage(product) : null;
+          if (image) {
+            usedProductIds?.add(productId);
+            return image;
+          }
+        }
+      }
+
+      for (const handle of normalizedHandles) {
+        const productIds = collectionProductIdsByHandle.get(handle) || [];
+        const reusedProduct = productIds
+          .map((productId) => productById.get(productId))
+          .find((product): product is ShopifyProduct => Boolean(product && productImage(product)));
+        if (reusedProduct) {
+          return productImage(reusedProduct);
+        }
+      }
+
+      return null;
+    },
+    [collectionProductIdsByHandle, productById],
+  );
 
   const categoryTiles = useMemo<ImageTile[]>(() => {
     const seenHandles = new Set<string>();
@@ -425,8 +470,11 @@ const HomePage = () => {
   const giftTiles = useMemo<ImageTile[]>(() => {
     const usedGiftProductIds = new Set<number>();
 
-    return giftTileConfigs.map((tile) => {
-      const imageFromProduct = findProductImageByKeywords(tile.productKeywords, usedGiftProductIds);
+    const tiles = giftTileConfigs.map((tile) => {
+      const imageFromCollectionProduct = findCollectionProductImage(tile.collectionHandles, usedGiftProductIds);
+      const imageFromProduct = imageFromCollectionProduct
+        ? null
+        : findProductImageByKeywords(tile.productKeywords, usedGiftProductIds);
       const imageFromCollection =
         tile.collectionHandles
           .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
@@ -435,10 +483,21 @@ const HomePage = () => {
       return {
         title: tile.title,
         to: tile.to,
-        image: imageFromProduct || imageFromCollection || bestSellerHeroImage,
+        image: imageFromCollectionProduct || imageFromProduct || imageFromCollection || bestSellerHeroImage,
       };
     });
-  }, [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords]);
+
+    if (tiles.length >= 3) {
+      const swappedTiles = [...tiles];
+      const firstImage = swappedTiles[0].image || bestSellerHeroImage;
+      const thirdImage = swappedTiles[2].image || bestSellerHeroImage;
+      swappedTiles[0] = { ...swappedTiles[0], image: thirdImage };
+      swappedTiles[2] = { ...swappedTiles[2], image: firstImage };
+      return swappedTiles;
+    }
+
+    return tiles;
+  }, [bestSellerHeroImage, collectionImageByHandle, findCollectionProductImage, findProductImageByKeywords]);
   return (
     <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
@@ -506,10 +565,17 @@ const HomePage = () => {
                   >
                     <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
                       <div className="salt-category-scroll-track h-full w-full">
-                        <img
+                        <ResilientImage
                           src={tile.image}
                           alt={tile.title}
                           className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          fallback={
+                            <img
+                              src={bestSellerHeroImage}
+                              alt={tile.title}
+                              className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                            />
+                          }
                         />
                       </div>
                     </div>
@@ -536,10 +602,17 @@ const HomePage = () => {
                     className="group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff]"
                   >
                     <div className="aspect-[1.05/1] overflow-hidden sm:aspect-[1/0.94]">
-                      <img
+                      <ResilientImage
                         src={tile.image}
                         alt={tile.title}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          />
+                        }
                       />
                     </div>
                     <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.96))] px-2.5 py-2 text-center text-white">
@@ -568,10 +641,17 @@ const HomePage = () => {
                     className="group block overflow-hidden border border-[#d2e4ff] bg-white shadow-[0_14px_40px_-32px_rgba(22,77,160,0.24)] transition hover:-translate-y-0.5"
                   >
                     <div className="aspect-[1.4/0.82] overflow-hidden bg-[#edf5ff]">
-                      <img
+                      <ResilientImage
                         src={tile.image}
                         alt={tile.title}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          />
+                        }
                       />
                     </div>
                     <div className="px-4 py-3 text-center">
