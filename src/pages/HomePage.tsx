@@ -189,7 +189,17 @@ const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
     title: "SALT Banner",
     image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png?v=1776335459",
-    to: "/products/the-daily-bloom",
+    to: "/collections/garden-tools",
+  },
+  {
+    title: "SALT Banner 2",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_2.png?v=1776337794",
+    to: "/collections/unique-products",
+  },
+  {
+    title: "SALT Banner 3",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_3.png?v=1776337796",
+    to: "/collections/summer-collection",
   },
 ];
 
@@ -334,17 +344,7 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerProducts]);
-  const heroPosterTiles = useMemo<ImageTile[]>(
-    () => [
-      ...HERO_EXTRA_BANNERS,
-      ...bestSellerTiles.slice(0, 3).map((tile) => ({
-        title: tile.title,
-        image: tile.image,
-        to: tile.to,
-      })),
-    ],
-    [bestSellerTiles],
-  );
+  const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
   const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
@@ -539,7 +539,7 @@ const HomePage = () => {
     <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
-          <section className="border-b border-[#dce9ff] p-0">
+          <section className="border-b border-[#dce9ff] p-[30px]">
             <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
               <div
                 className="flex transition-transform duration-700 ease-in-out"
