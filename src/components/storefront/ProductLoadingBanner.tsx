@@ -81,7 +81,7 @@ const ProductLoadingBanner = ({ imageSrc }: ProductLoadingBannerProps) => {
   }, []);
 
   return (
-    <section className="mx-auto mt-6 w-[min(1280px,94vw)]">
+    <section className="mx-auto mt-6 w-[min(1280px,calc(100%-20px))]">
       <div className="rounded-[2.4rem] border border-[#2b3344] bg-[#171b24] p-3 shadow-[0_50px_140px_-72px_rgba(15,23,42,0.72)] sm:p-4">
         <div className="grid gap-3 lg:grid-cols-[1.18fr_0.82fr]">
           <div className="relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-white/6 bg-[#101520] lg:min-h-[34rem]">

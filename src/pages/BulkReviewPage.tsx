@@ -1020,7 +1020,7 @@ const BulkReviewPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-8 w-[min(1200px,96vw)] pb-12">
+    <section className="mx-auto mt-8 w-[min(1200px,calc(100%-20px))] pb-12">
       <Reveal>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>

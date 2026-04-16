@@ -189,7 +189,7 @@ const CartPage = () => {
 
   if (!items.length) {
     return (
-      <section className="mx-auto mt-8 w-[min(880px,94vw)] pb-10 text-center sm:w-[min(880px,92vw)]">
+      <section className="mx-auto mt-8 w-[min(880px,calc(100%-20px))] pb-10 text-center sm:w-[min(880px,calc(100%-20px))]">
         <Reveal>
           <div className="salt-surface rounded-[2rem] p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -220,7 +220,7 @@ const CartPage = () => {
   }
 
   return (
-    <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-28 sm:mt-6 sm:w-[min(1200px,96vw)] md:pb-10">
+    <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-10">
       <Reveal>
         <InnerBreadcrumbs
           items={[

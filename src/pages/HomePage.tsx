@@ -203,6 +203,57 @@ const HERO_EXTRA_BANNERS: ImageTile[] = [
   },
 ];
 
+const fallbackQuirkyGiftTiles: ProductTile[] = [
+  {
+    title: "Portable LED Night Light",
+    price: "$25.99",
+    image: productTripod,
+    to: "/shop?q=quirky+gifts",
+  },
+  {
+    title: "Laptop Phone Mount",
+    price: "$16.99",
+    image: productLaptopStand,
+    to: "/shop?q=unique+products",
+  },
+  {
+    title: "Living Legacy Planner",
+    price: "$55.99",
+    image: productPortableStand,
+    to: "/shop?q=gift+ideas",
+  },
+  {
+    title: "Daily Bloom Journal",
+    price: "$49.99",
+    image: productDock,
+    to: "/shop?q=book+gift",
+  },
+  {
+    title: "Aroma Diffuser",
+    price: "$35.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4b2af5f653b447a580f6b1509d15acd6I.webp?v=1741589663",
+    to: "/shop?q=home+gift",
+  },
+  {
+    title: "Ceramic Bowl Set",
+    price: "$40.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8652b5fe8d4042aba9342aef6e7b8468m.webp?v=1755687078",
+    to: "/shop?q=unique+kitchen+gift",
+  },
+  {
+    title: "Cozy Home Layer",
+    price: "$29.99",
+    image: collectionApparel,
+    to: "/shop?q=cozy+gift",
+  },
+  {
+    title: "Ceramic Cookware Set",
+    price: "$80.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
+    to: "/shop?q=gift+set",
+  },
+];
+
 function SectionTitle({ title }: { title: string }) {
   return (
     <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
@@ -281,9 +332,23 @@ const HomePage = () => {
   const { data: homeDecorIdsPayload } = useCollectionProductIds("home-decor", true);
   const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
   const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
+  const { data: uniqueProductsIdsPayload } = useCollectionProductIds("unique-products", true);
+  const { data: uniqueFindsIdsPayload } = useCollectionProductIds("unique-finds", true);
   const bestSellerProductIds = useMemo(
     () => bestSellerIdsPayload?.productIds ?? [],
     [bestSellerIdsPayload],
+  );
+  const quirkyGiftProductIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...(uniqueProductsIdsPayload?.productIds ?? []),
+          ...(uniqueFindsIdsPayload?.productIds ?? []),
+          ...(giftsIdsPayload?.productIds ?? []),
+          ...(giftIdsPayload?.productIds ?? []),
+        ]),
+      ),
+    [giftIdsPayload, giftsIdsPayload, uniqueFindsIdsPayload, uniqueProductsIdsPayload],
   );
   const collectionProductIdsByHandle = useMemo(() => {
     const map = new Map<string, number[]>();
@@ -344,10 +409,66 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerProducts]);
-  const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
-  const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
+  const everydayEssentialsTiles = useMemo(() => bestSellerTiles.slice(0, 8), [bestSellerTiles]);
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
+  const quirkyGiftProducts = useMemo(() => {
+    if (!products.length) {
+      return [];
+    }
+
+    const uniqueById = new Set<number>();
+    const quirkyKeywordTokens = ["quirky", "unique", "gift", "novelty", "fun", "decor", "gadget"];
+
+    const collectionMatches = quirkyGiftProductIds
+      .map((productId) => productById.get(productId))
+      .filter((product): product is ShopifyProduct => Boolean(product));
+
+    const keywordMatches = [...products]
+      .map((product) => {
+        const searchText = productSearchText(product);
+        const matchScore = quirkyKeywordTokens.reduce(
+          (score, token) => (searchText.includes(token) ? score + 1 : score),
+          0,
+        );
+        return matchScore > 0 ? { product, matchScore } : null;
+      })
+      .filter((entry): entry is { product: ShopifyProduct; matchScore: number } => Boolean(entry))
+      .sort((left, right) => {
+        const scoreDiff = right.matchScore - left.matchScore;
+        if (scoreDiff !== 0) {
+          return scoreDiff;
+        }
+        return savingsPercent(right.product) - savingsPercent(left.product);
+      })
+      .map((entry) => entry.product);
+
+    const combinedProducts: ShopifyProduct[] = [];
+    [...collectionMatches, ...keywordMatches].forEach((product) => {
+      if (uniqueById.has(product.id)) {
+        return;
+      }
+
+      uniqueById.add(product.id);
+      combinedProducts.push(product);
+    });
+
+    return combinedProducts.slice(0, 8);
+  }, [productById, products, quirkyGiftProductIds]);
+  const quirkyGiftTiles = useMemo<ProductTile[]>(() => {
+    if (!quirkyGiftProducts.length) {
+      return fallbackQuirkyGiftTiles;
+    }
+
+    return quirkyGiftProducts.map((product) => ({
+      title: product.title,
+      price: formatMoney(minPrice(product)),
+      image: productImage(product) || bestSellerHeroImage,
+      to: `/products/${product.handle}`,
+    }));
+  }, [bestSellerHeroImage, quirkyGiftProducts]);
+  const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
+  const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const collectionImageByHandle = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -539,7 +660,7 @@ const HomePage = () => {
     <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
-          <section className="border-b border-[#dce9ff] p-[30px]">
+          <section className="border-b border-[#dce9ff] p-[10px] sm:p-[30px]">
             <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
               <div
                 className="flex transition-transform duration-700 ease-in-out"
@@ -564,7 +685,8 @@ const HomePage = () => {
                             className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
                           />
                         }
-                      />
+                      /> 
+                      
                     </div>
                   </Link>
                 ))}
@@ -702,6 +824,45 @@ const HomePage = () => {
           </section>
         </Reveal>
 
+        <Reveal delayMs={180}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="Quirky Gift Picks" />
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+              {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
+                <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
+                  <Link
+                    to={tile.to}
+                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
+                  >
+                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+                      <ResilientImage
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          />
+                        }
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+                        {tile.title}
+                      </p>
+                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+                        {tile.price}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
         <Reveal delayMs={220}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <div className="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
@@ -750,7 +911,46 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={260}>
+        <Reveal delayMs={240}>
+          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+            <SectionTitle title="Everyday Essentials" />
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+              {everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
+                <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={260 + index * 70}>
+                  <Link
+                    to={tile.to}
+                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
+                  >
+                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+                      <ResilientImage
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          />
+                        }
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+                        {tile.title}
+                      </p>
+                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+                        {tile.price}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={280}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="What Our Customers Are Saying" />
             <div className="mt-5 grid grid-cols-1 gap-3.5 sm:mt-6 md:grid-cols-2 lg:grid-cols-3">

@@ -33,7 +33,7 @@ const panelToneClassMap: Record<StateTone, string> = {
 
 const StateShell = ({ title, subtitle, action, tone, icon, showSkeleton = false }: StateShellProps) => (
   <section
-    className={`mx-auto mt-5 w-[min(1040px,94vw)] rounded-[1.65rem] border p-3.5 text-center shadow-soft sm:mt-6 sm:rounded-[2rem] sm:p-8 ${toneClassMap[tone]}`}
+    className={`mx-auto mt-5 w-[min(1040px,calc(100%-20px))] rounded-[1.65rem] border p-3.5 text-center shadow-soft sm:mt-6 sm:rounded-[2rem] sm:p-8 ${toneClassMap[tone]}`}
   >
     <div className={`salt-panel-shell relative overflow-hidden rounded-[1.35rem] border p-4 sm:rounded-[1.7rem] sm:p-7 ${panelToneClassMap[tone]}`}>
       <div className="pointer-events-none absolute -left-10 -top-8 h-20 w-20 rounded-full bg-primary/12 blur-2xl sm:h-24 sm:w-24" />

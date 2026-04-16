@@ -239,7 +239,7 @@
 
 @layer components {
   .salt-container {
-    @apply w-[min(1240px,94vw)] mx-auto;
+    @apply w-[min(1240px,calc(100%-20px))] mx-auto;
   }
 
   .salt-heading {
@@ -1136,7 +1136,7 @@
   }
 
   .salt-category-scroll-track {
-    animation: salt-category-pan 45s ease-in-out infinite alternate;
+    animation: salt-category-pan 24s ease-in-out infinite alternate;
     will-change: transform;
   }
 
@@ -1152,7 +1152,7 @@
     will-change: transform;
     transform: translate3d(0, 0, 0);
     animation-name: salt-category-carousel-marquee;
-    animation-duration: 280000ms;
+    animation-duration: 90000ms;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: reverse;
@@ -1166,6 +1166,30 @@
     animation-play-state: paused;
   }
 
+  .salt-essentials-carousel {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .salt-essentials-track {
+    display: inline-flex;
+    width: max-content;
+    gap: 0.9rem;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    animation-name: salt-essentials-marquee;
+    animation-duration: 340000ms;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: reverse;
+    animation-play-state: running;
+  }
+
+  .salt-essentials-carousel:hover .salt-essentials-track,
+  .salt-essentials-carousel:focus-within .salt-essentials-track {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .salt-category-scroll-track {
       animation: none;
@@ -1173,6 +1197,11 @@
     }
 
     .salt-category-carousel-track {
+      transform: translate3d(0, 0, 0);
+    }
+
+    .salt-essentials-track {
+      animation: none;
       transform: translate3d(0, 0, 0);
     }
   }
@@ -1214,6 +1243,15 @@
   }
 
   @keyframes salt-category-carousel-marquee {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @keyframes salt-essentials-marquee {
     0% {
       transform: translate3d(0, 0, 0);
     }

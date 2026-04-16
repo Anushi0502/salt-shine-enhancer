@@ -63,7 +63,7 @@ const AboutPage = () => {
   const bodyHtml = sanitizeRichHtml(data?.page.bodyHtml || "");
 
   return (
-    <section className="mx-auto mt-5 w-[min(1100px,94vw)] pb-8 sm:mt-6">
+    <section className="mx-auto mt-5 w-[min(1100px,calc(100%-20px))] pb-8 sm:mt-6">
       <Reveal>
         <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">About SALT</p>

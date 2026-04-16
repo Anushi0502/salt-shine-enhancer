@@ -18,7 +18,7 @@ const ContactPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-5 w-[min(980px,94vw)] pb-8 sm:mt-6">
+    <section className="mx-auto mt-5 w-[min(980px,calc(100%-20px))] pb-8 sm:mt-6">
       <Reveal>
         <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Contact</p>

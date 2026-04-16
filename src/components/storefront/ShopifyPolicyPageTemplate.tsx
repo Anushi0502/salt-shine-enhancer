@@ -78,7 +78,7 @@ const ShopifyPolicyPageTemplate = ({ policyKey, actions }: ShopifyPolicyPageTemp
   const isArchiveSource = String(data.source || "").startsWith("archive:");
 
   return (
-    <section className="mx-auto mt-6 w-[min(1100px,94vw)] pb-8">
+    <section className="mx-auto mt-6 w-[min(1100px,calc(100%-20px))] pb-8">
       <Reveal>
         <InnerBreadcrumbs
           items={[
