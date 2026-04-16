@@ -58,7 +58,7 @@ function compactExcerpt(input: string, maxChars = 168): string {
   const slice = cleaned.slice(0, maxChars - 1);
   const boundary = slice.lastIndexOf(" ");
   const shortened = boundary > 24 ? slice.slice(0, boundary) : slice;
-  return `${shortened.trimEnd()}…`;
+  return `${shortened.trimEnd()}...`;
 }
 
 function matchesPinnedPost(
@@ -113,28 +113,6 @@ const BlogPage = () => {
                     Shop catalog
                   </Link>
                 </div>
-      <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
-        <Reveal>
-          <div className="salt-panel-shell rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
-            <p className="salt-kicker">Journal</p>
-            <div className="salt-section-shell mt-4 rounded-[1.75rem] px-5 py-8 text-center sm:px-7 sm:py-10">
-              <h1 className="font-display text-[clamp(2.1rem,4vw,3.5rem)] leading-[0.94] text-foreground">
-                Blog unavailable
-              </h1>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                Please retry to refresh posts.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => refetch()}
-                  className="salt-primary-cta h-11 px-5 text-sm font-bold"
-                >
-                  Retry
-                </button>
-                <Link to="/shop?sort=newest" className="salt-outline-chip h-11 px-5 py-0 text-sm">
-                  Shop newest
-                </Link>
               </div>
             </div>
           </Reveal>
@@ -159,9 +137,7 @@ const BlogPage = () => {
         "7 essential cookware categories that people ask for & their maintenance tips",
       ]),
     ) ??
-    posts.find(
-      (post) => post.id !== currentIssuePost?.id && post.id !== leadStoryPost?.id,
-    ) ??
+    posts.find((post) => post.id !== currentIssuePost?.id && post.id !== leadStoryPost?.id) ??
     null;
   const pinnedPostIds = new Set(
     [currentIssuePost?.id, leadStoryPost?.id, journalNotesPost?.id].filter(
@@ -181,57 +157,162 @@ const BlogPage = () => {
   ];
 
   return (
-    <section className="mx-auto mt-5 w-[min(1200px,94vw)] pb-8 sm:mt-6 sm:w-[min(1200px,96vw)]">
-      <Reveal>
-        <div className="salt-panel-shell relative overflow-hidden rounded-[1.55rem] p-4 sm:rounded-[1.9rem] sm:p-6">
-          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/65" />
-          <div className="pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog</p>
-          <h1 className="mt-1 font-display text-[clamp(2rem,4vw,3.2rem)] leading-[0.95]">
-            Stories, guides, and seasonal ideas
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Editorial pieces from SALT covering everyday living, gifting, and seasonal inspiration.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link to="/shop" className="salt-primary-cta h-10 px-4 text-[0.66rem] font-bold uppercase tracking-[0.1em]">
-              Shop catalog
-            </Link>
-            <Link to="/collections" className="salt-outline-chip h-10 px-4 py-0 text-[0.66rem] font-bold uppercase tracking-[0.1em]">
-              View collections
-            </Link>
-          </div>
-          <div className="mt-4 hidden gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Live posts</span>
-              <span>{posts.length.toLocaleString()} synced articles</span>
-            </p>
-            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Reading format</span>
-              <span>Short, useful reads</span>
-            </p>
-            <p className="salt-kpi-card salt-metric-card rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              <span className="block font-semibold text-foreground">Goal</span>
-              <span>Easier shopping decisions</span>
-            </p>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {highlightedAuthors.map((author) => (
-              <span key={author} className="salt-outline-chip text-[0.62rem]">
-                <BookOpenText className="mr-1.5 h-3 w-3" />
-                {author}
-              </span>
-            ))}
-            <Link
-              to="/shop?sort=newest"
-              className="salt-outline-chip text-[0.62rem]"
-            >
-              <Sparkles className="mr-1.5 h-3 w-3" />
-              Shop newest arrivals
-            </Link>
-          </div>
-        </div>
-      </Reveal>
+    <section className="mt-3 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 sm:gap-7">
+        <Reveal>
+          <InnerBreadcrumbs items={breadcrumbItems} />
+        </Reveal>
+
+        <Reveal delayMs={40}>
+          <section className="grid gap-4 lg:grid-cols-[1.06fr_0.94fr]">
+            <div className="relative isolate flex min-h-[25rem] flex-col overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.22)] sm:min-h-[28rem] sm:p-8 lg:h-full lg:p-10">
+              {currentIssuePost?.image ? (
+                <>
+                  <img
+                    src={currentIssuePost.image}
+                    alt={currentIssuePost.title}
+                    className="absolute inset-y-0 right-0 h-full w-full object-cover opacity-18 sm:w-[76%] lg:w-[62%]"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,245,240,0.98)_0%,rgba(248,245,240,0.95)_34%,rgba(248,245,240,0.86)_56%,rgba(248,245,240,0.62)_78%,rgba(248,245,240,0.32)_100%)]" />
+                </>
+              ) : null}
+
+              <div className="relative z-10 flex h-full flex-col justify-between">
+                <div className="max-w-[42rem]">
+                  <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.72rem]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Salt Journal
+                  </p>
+                  <h1 className="mt-4 font-display text-[clamp(3.8rem,7vw,6rem)] leading-[1.02] tracking-[-0.04em] text-[#1a1a1a]">
+                    Stories, guides, and seasonal ideas for everyday living.
+                  </h1>
+                </div>
+
+                <div className="mt-8">
+                  
+
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {currentIssuePost ? (
+                      <Link
+                        to={`/blog/${currentIssuePost.handle}`}
+                        className="inline-flex h-12 items-center justify-center rounded-full bg-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-primary"
+                      >
+                        Read latest story
+                      </Link>
+                    ) : null}
+                    <Link
+                      to="/shop"
+                      className="inline-flex h-12 items-center justify-center rounded-full border border-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a] transition hover:bg-[#1a1a1a] hover:text-white"
+                    >
+                      Shop catalog
+                    </Link>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    {highlightedAuthors.map((author) => (
+                      <span
+                        key={author}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/72 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]"
+                      >
+                        <BookOpenText className="h-3.5 w-3.5" />
+                        {author}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {currentIssuePost ? (
+                <Reveal delayMs={80} className="h-full">
+                  <Link
+                    to={`/blog/${currentIssuePost.handle}`}
+                    className="salt-story-card group relative block h-full min-h-[18rem] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(255,255,255,0.48))] shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)] sm:min-h-[22rem]"
+                  >
+                    <ResilientImage
+                      src={currentIssuePost.image}
+                      alt={currentIssuePost.title}
+                      loading="lazy"
+                      fallback={blogImageFallback}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+                    />
+
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.08),rgba(12,20,38,0.12)_24%,rgba(12,20,38,0.2)_54%,rgba(12,20,38,0.62)_100%)]" />
+                    <div className="absolute right-4 top-4 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-3 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                      Current issue
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                      <div className="rounded-[1.35rem] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,247,243,0.9))] p-4 shadow-[0_26px_60px_-38px_rgba(15,23,42,0.46)] backdrop-blur-md">
+                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                          {formattedDate(currentIssuePost.publishedAt)}
+                        </p>
+                        <h2 className="mt-2 font-display text-[1.55rem] leading-[1.08] tracking-[-0.035em] text-foreground sm:text-[1.8rem]">
+                          {conciseTitle(currentIssuePost.title, 74)}
+                        </h2>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-[#1c4b96]">
+                            Open story <ArrowUpRight className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                            <Clock3 className="h-3.5 w-3.5" />
+                            {readingTime(currentIssuePost.contentHtml)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </Reveal>
+              ) : null}
+
+              {journalNotesPost ? (
+                <Reveal delayMs={100} className="h-full">
+                  <Link
+                    to={`/blog/${journalNotesPost.handle}`}
+                    className="salt-story-card group relative block h-full min-h-[18rem] overflow-hidden rounded-[1.75rem] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))] shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.36)] sm:min-h-[22rem]"
+                  >
+                    <ResilientImage
+                      src={journalNotesPost.image}
+                      alt={journalNotesPost.title}
+                      loading="lazy"
+                      fallback={blogImageFallback}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+                    />
+
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.06)_18%,rgba(20,32,55,0.08)_48%,rgba(20,32,55,0.22)_100%)]" />
+                    <div className="absolute right-4 top-4 rounded-full border border-white/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(255,255,255,0.18))] px-3 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#1f56b2] shadow-[0_12px_30px_-22px_rgba(15,23,42,0.45)] backdrop-blur-md">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Star className="h-3.5 w-3.5" />
+                        Cookware guide
+                      </span>
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                      <div className="rounded-[1.35rem] border border-white/45 p-4 shadow-[0_26px_60px_-38px_rgba(15,23,42,0.42)] backdrop-blur-md">
+                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[#5d6f90]">
+                          {formattedDate(journalNotesPost.publishedAt)}
+                        </p>
+                        <h2 className="mt-2 font-display text-[1.55rem] leading-[1.08] tracking-[-0.035em] text-[#172032] sm:text-[1.8rem]">
+                          {conciseTitle(journalNotesPost.title, 76)}
+                        </h2>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-[#1c4b96]">
+                            Open guide <ArrowUpRight className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#5d6f90]">
+                            <Clock3 className="h-3.5 w-3.5" />
+                            {readingTime(journalNotesPost.contentHtml)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </Reveal>
+              ) : null}
+            </div>
+          </section>
+        </Reveal>
 
         {posts.length === 0 ? (
           <Reveal delayMs={100}>
