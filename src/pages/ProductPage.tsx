@@ -262,9 +262,6 @@ const ProductPage = () => {
         ),
     )
     .slice(0, 4);
-  const oftenBoughtTogetherProducts = products
-    .filter((entry) => entry.id !== product.id && minPrice(entry) <= 50)
-    .slice(0, 4);
 
   const primaryImage = productImage(product) || "";
   const imageSources = (product.images.length
@@ -728,26 +725,6 @@ const ProductPage = () => {
         </Reveal>
       </div>
 
-      <Reveal delayMs={120} className="mt-7">
-        <div className="salt-section-shell rounded-[1.6rem] p-4 sm:p-5">
-          <SectionHeading
-            kicker="Product story"
-            title="Clear details before checkout"
-            description="Use this section to quickly assess fit, value, and practical use before adding to cart."
-          />
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {storytellingBlocks.map((block) => (
-              <article
-                key={block.title}
-                className="rounded-xl border border-border/75 bg-background/88 p-3.5"
-              >
-                <h3 className="text-sm font-semibold text-foreground">{block.title}</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">{block.copy}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </Reveal>
 
       <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
 
@@ -793,25 +770,7 @@ const ProductPage = () => {
         </section>
       ) : null}
 
-      {oftenBoughtTogetherProducts.length > 0 ? (
-        <section className="mt-8">
-          <Reveal>
-            <div className="mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Often bought together</p>
-              <h2 className="font-display text-[clamp(1.6rem,2.5vw,2.3rem)]">Practical add-ons under $50</h2>
-            </div>
-          </Reveal>
-          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-              {oftenBoughtTogetherProducts.map((entry, index) => (
-                <Reveal key={entry.id} delayMs={index * 40} className="h-full">
-                  <ProductCard product={entry} variant="dense" />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
+      
 
       {recentlyViewedProducts.length > 0 ? (
         <section className="mt-8">
