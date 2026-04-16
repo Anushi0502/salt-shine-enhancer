@@ -250,18 +250,6 @@ const ProductPage = () => {
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
     .slice(0, 4);
-  const completeLookProducts = products
-    .filter(
-      (entry) =>
-        entry.id !== product.id &&
-        entry.product_type !== product.product_type &&
-        productTagList(entry).some((tag) =>
-          productTagList(product)
-            .map((candidate) => candidate.toLowerCase())
-            .includes(tag.toLowerCase()),
-        ),
-    )
-    .slice(0, 4);
 
   const primaryImage = productImage(product) || "";
   const imageSources = (product.images.length
@@ -288,24 +276,6 @@ const ProductPage = () => {
     .map((entry) => products.find((candidate) => candidate.handle === entry))
     .filter((entry): entry is (typeof products)[number] => Boolean(entry))
     .slice(0, 4);
-  const storytellingBlocks = [
-    {
-      title: "Overview",
-      copy: shortDescription || "A curated everyday pick designed to feel practical, giftable, and easy to style.",
-    },
-    {
-      title: "Who It's For",
-      copy: `Great for shoppers browsing ${product.product_type || "daily essentials"} who want reliable quality with cleaner decision support.`,
-    },
-    {
-      title: "Specs Snapshot",
-      copy: `${variants.length} option(s), ${availableVariantsCount} currently available, with pricing from ${formatMoney(lowestVariantPrice)}.`,
-    },
-    {
-      title: "Shipping and Care",
-      copy: "Fast US shipping, tracked fulfillment, and straightforward returns backed by secure checkout.",
-    },
-  ];
 
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
@@ -749,28 +719,6 @@ const ProductPage = () => {
           </div>
         </section>
       ) : null}
-
-      {completeLookProducts.length > 0 ? (
-        <section className="mt-8">
-          <Reveal>
-            <div className="mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Complete the look</p>
-              <h2 className="font-display text-[clamp(1.6rem,2.5vw,2.3rem)]">Pair this with complementary picks</h2>
-            </div>
-          </Reveal>
-          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
-              {completeLookProducts.map((entry, index) => (
-                <Reveal key={entry.id} delayMs={index * 45} className="h-full">
-                  <ProductCard product={entry} variant="dense" />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      
 
       {recentlyViewedProducts.length > 0 ? (
         <section className="mt-8">
