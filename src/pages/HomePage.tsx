@@ -410,13 +410,6 @@ const HomePage = () => {
     }));
   }, [bestSellerProducts]);
   const everydayEssentialsTiles = useMemo(() => bestSellerTiles.slice(0, 8), [bestSellerTiles]);
-  const everydayEssentialsCarouselTiles = useMemo(
-    () =>
-      everydayEssentialsTiles.length > 1
-        ? [...everydayEssentialsTiles, ...everydayEssentialsTiles]
-        : everydayEssentialsTiles,
-    [everydayEssentialsTiles],
-  );
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
   const quirkyGiftProducts = useMemo(() => {
@@ -474,10 +467,6 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerHeroImage, quirkyGiftProducts]);
-  const quirkyGiftCarouselTiles = useMemo(
-    () => (quirkyGiftTiles.length > 1 ? [...quirkyGiftTiles, ...quirkyGiftTiles] : quirkyGiftTiles),
-    [quirkyGiftTiles],
-  );
   const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
   const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const collectionImageByHandle = useMemo(() => {
@@ -838,41 +827,38 @@ const HomePage = () => {
         <Reveal delayMs={180}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="Quirky Gift Picks" />
-            <div className="salt-category-carousel mt-4 sm:mt-5">
-              <div className="salt-category-carousel-track">
-                {quirkyGiftCarouselTiles.map((tile, index) => (
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+              {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
+                <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
                   <Link
-                    key={`${tile.to}-${tile.title}-${index}`}
                     to={tile.to}
-                    className="group relative block w-[15.75rem] shrink-0 overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] sm:w-[17.4rem] lg:w-[19rem]"
+                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
                   >
-                    <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
-                      <div className="salt-category-scroll-track h-full w-full">
-                        <ResilientImage
-                          src={tile.image}
-                          alt={tile.title}
-                          className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          fallback={
-                            <img
-                              src={bestSellerHeroImage}
-                              alt={tile.title}
-                              className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                            />
-                          }
-                        />
-                      </div>
+                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+                      <ResilientImage
+                        src={tile.image}
+                        alt={tile.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        fallback={
+                          <img
+                            src={bestSellerHeroImage}
+                            alt={tile.title}
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          />
+                        }
+                      />
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0),rgba(8,30,73,0.9))] px-3 py-2.5 text-center">
-                      <p className="line-clamp-2 font-display text-[0.95rem] text-white sm:text-[1.05rem]">
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
                         {tile.title}
                       </p>
-                      <p className="mt-1 text-[1rem] font-extrabold tracking-[0.02em] text-[#ffe36b]">
+                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
                         {tile.price}
                       </p>
                     </div>
                   </Link>
-                ))}
-              </div>
+                </Reveal>
+              ))}
             </div>
           </section>
         </Reveal>
@@ -928,15 +914,14 @@ const HomePage = () => {
         <Reveal delayMs={240}>
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="Everyday Essentials" />
-            <div className="salt-essentials-carousel mt-4 sm:mt-5">
-              <div className="salt-essentials-track">
-                {everydayEssentialsCarouselTiles.map((tile, index) => (
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+              {everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
+                <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={260 + index * 70}>
                   <Link
-                    key={`everyday-essential-${tile.to}-${index}`}
                     to={tile.to}
-                    className="group block w-[12rem] shrink-0 overflow-hidden rounded-[0.95rem] border border-[#cde0ff] bg-white shadow-[0_14px_34px_-28px_rgba(22,77,160,0.24)]"
+                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
                   >
-                    <div className="aspect-[1.04/0.82] overflow-hidden bg-[#edf5ff]">
+                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
                       <ResilientImage
                         src={tile.image}
                         alt={tile.title}
@@ -950,17 +935,17 @@ const HomePage = () => {
                         }
                       />
                     </div>
-                    <div className="px-2.5 py-2 text-center">
-                      <p className="line-clamp-2 text-[0.78rem] font-semibold leading-5 text-[#1d4f97]">
+                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
                         {tile.title}
                       </p>
-                      <p className="mt-1 text-[0.88rem] font-bold text-[#1f63d8]">
+                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
                         {tile.price}
                       </p>
                     </div>
                   </Link>
-                ))}
-              </div>
+                </Reveal>
+              ))}
             </div>
           </section>
         </Reveal>
