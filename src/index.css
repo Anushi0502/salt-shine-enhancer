@@ -253,11 +253,21 @@
   }
 
   .salt-readable-script {
+    font-family: "Source Serif 4", "Merienda", Georgia, serif;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.008em;
+    line-height: 1.16;
+    text-wrap: balance;
+  }
+
+  .salt-readable-script-senior {
     font-family: "Merienda", "Source Serif 4", Georgia, serif;
     font-weight: 600;
-    letter-spacing: 0.012em;
-    line-height: 1.2;
-    text-wrap: balance;
+    font-style: normal;
+    letter-spacing: 0.006em;
+    line-height: 1.44;
+    text-wrap: pretty;
   }
 
   .salt-kicker {
@@ -1069,7 +1079,7 @@
   }
 
   .salt-category-scroll-track {
-    animation: salt-category-pan 12s ease-in-out infinite alternate;
+    animation: salt-category-pan 22s ease-in-out infinite alternate;
     will-change: transform;
   }
 
@@ -1085,11 +1095,18 @@
     will-change: transform;
     transform: translate3d(0, 0, 0);
     animation-name: salt-category-carousel-marquee;
-    animation-duration:49900ms;
+    animation-duration: 120000ms;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: reverse;
     animation-play-state: running;
+  }
+
+  .salt-category-carousel:hover .salt-category-carousel-track,
+  .salt-category-carousel:focus-within .salt-category-carousel-track,
+  .salt-category-carousel:hover .salt-category-scroll-track,
+  .salt-category-carousel:focus-within .salt-category-scroll-track {
+    animation-play-state: paused;
   }
 
   @media (prefers-reduced-motion: reduce) {
