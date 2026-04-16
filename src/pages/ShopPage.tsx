@@ -20,7 +20,7 @@ import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
-import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
@@ -79,17 +79,6 @@ function normalizeCollectionFilter(value: string | null | undefined): string {
 
 function normalizeSearchText(value: string): string {
   return normalizeHandle(value).replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function isBestSellerCollection(handle: string, title: string): boolean {
-  const normalizedHandle = normalizeHandle(handle);
-  const normalizedTitle = String(title || "").trim().toLowerCase();
-
-  if (["appplaza-best-sellers", "best-sellers", "best-seller", "bestsellers", "bestseller"].includes(normalizedHandle)) {
-    return true;
-  }
-
-  return /best[\s-]*sellers?/.test(`${normalizedHandle} ${normalizedTitle}`);
 }
 
 function formatCollectionDescription(input?: string | null): string {
@@ -273,10 +262,17 @@ const ShopPage = () => {
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
-  const bestSellerCollection = collections.find((collection) => isBestSellerCollection(collection.handle, collection.title));
-  const allProductsCollection = collections.find((collection) => normalizeHandle(collection.handle) === "all-products");
-  const previewCollection = selectedCollection || bestSellerCollection || allProductsCollection || null;
-  const selectedCollectionImage = normalizeShopifyAssetUrl(previewCollection?.image?.src);
+  const bannerImageSelection = useMemo(
+    () =>
+      resolveShopBannerImageSelection({
+        collections,
+        selectedCollection,
+        categoryValue: typeFilter,
+      }),
+    [collections, selectedCollection, typeFilter],
+  );
+  const selectedCollectionImage = bannerImageSelection.image;
+  const selectedCollectionImageAlt = bannerImageSelection.collection?.title || selectedCollection?.title || "Collection preview";
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
@@ -683,7 +679,7 @@ const ShopPage = () => {
           {selectedCollectionImage ? (
             <img
               src={selectedCollectionImage}
-              alt={previewCollection?.title || "Collection preview"}
+              alt={selectedCollectionImageAlt}
               className="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
             />
           ) : null}
@@ -925,4 +921,3 @@ const ShopPage = () => {
 };
 
 export default ShopPage;
-
