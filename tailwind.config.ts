@@ -19,10 +19,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Merienda", "Source Serif 4", "Georgia", "serif"],
-        serif: ["Merienda", "Source Serif 4", "Georgia", "serif"],
-        display: ["Merienda", "Source Serif 4", "Georgia", "serif"],
-        techno: ["Merienda", "Source Serif 4", "Georgia", "serif"],
+        sans: ["Kalam", "Source Serif 4", "Georgia", "serif"],
+        serif: ["Kalam", "Source Serif 4", "Georgia", "serif"],
+        display: ["Kalam", "Source Serif 4", "Georgia", "serif"],
+        techno: ["Kalam", "Source Serif 4", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
