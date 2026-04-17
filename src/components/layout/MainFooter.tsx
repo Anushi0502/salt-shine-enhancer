@@ -26,7 +26,7 @@ const MainFooter = () => {
   };
 
   return (
-    <footer className="mt-10 border-t border-[#cadbff] bg-[linear-gradient(180deg,#f4f8ff_0%,#e9f2ff_100%)] sm:mt-14">
+    <footer className="mt-4 border-t border-[#cadbff] bg-[linear-gradient(180deg,#f4f8ff_0%,#e9f2ff_100%)] sm:mt-6">
       <div className="relative w-full overflow-hidden border-b border-[#cadbff]/80 bg-[linear-gradient(140deg,rgba(255,255,255,0.8),rgba(236,245,255,0.95))]">
         <div className="pointer-events-none absolute -left-16 top-6 h-44 w-44 rounded-full bg-[#9fc0f7]/25 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-0 h-56 w-56 rounded-full bg-[#7aa4ef]/20 blur-3xl" />

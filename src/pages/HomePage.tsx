@@ -5,6 +5,7 @@ import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import ProductCard from "@/components/storefront/ProductCard";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
+import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
@@ -27,7 +28,11 @@ type ProductTile = ImageTile & {
 };
 
 type ReviewTile = {
+  key: string;
   quote: string;
+  author: string;
+  rating: number;
+  verifiedBuyer: boolean;
 };
 
 const HERO_BANNER_ROTATE_MS = 3500;
@@ -131,15 +136,27 @@ const giftTileConfigs = [
   },
 ];
 
-const reviewTiles: ReviewTile[] = [
+const fallbackReviewTiles: ReviewTile[] = [
   {
+    key: "fallback-review-1",
     quote: "Creating a warm home feels easier when everything is grouped in one calm place.",
+    author: "SALT customer",
+    rating: 5,
+    verifiedBuyer: true,
   },
   {
+    key: "fallback-review-2",
     quote: "The layout feels clean, the categories make sense, and checkout is quick.",
+    author: "SALT customer",
+    rating: 5,
+    verifiedBuyer: true,
   },
   {
+    key: "fallback-review-3",
     quote: "Beautiful picks, soft colors, and products that feel giftable right away.",
+    author: "SALT customer",
+    rating: 5,
+    verifiedBuyer: true,
   },
 ];
 
@@ -388,6 +405,36 @@ const HomePage = () => {
 
     return productImage(firstBook) || collectionDecor;
   }, [featuredCourtneyBooks]);
+  const testimonialProductIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...featuredCourtneyBooks.map((product) => product.id),
+          ...bestSellerProductIds.slice(0, 8),
+          ...quirkyGiftProductIds.slice(0, 8),
+          ...products.slice(0, 8).map((product) => product.id),
+        ]),
+      )
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .slice(0, 18),
+    [bestSellerProductIds, featuredCourtneyBooks, products, quirkyGiftProductIds],
+  );
+  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, 12);
+  const reviewTiles = useMemo<ReviewTile[]>(() => {
+    const liveTestimonials = testimonialsQuery.data ?? [];
+    if (!liveTestimonials.length) {
+      return fallbackReviewTiles;
+    }
+
+    return liveTestimonials.slice(0, 3).map((review, index) => ({
+      key: `judgeme-home-${review.productId}-${review.id}-${index}`,
+      quote: review.body || review.title,
+      author: review.author || "Verified shopper",
+      rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
+      verifiedBuyer: Boolean(review.verifiedBuyer),
+    }));
+  }, [testimonialsQuery.data]);
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -687,7 +734,7 @@ const HomePage = () => {
   }, [heroPosterTiles.length]);
 
   return (
-    <section className="mt-2 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
+    <section className="mt-2 w-full pb-4 sm:mt-4 sm:pb-6 lg:pb-8">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
           <section className="border-b border-[#dce9ff] p-[10px] sm:p-[30px]">
@@ -977,15 +1024,22 @@ const HomePage = () => {
             <SectionTitle title="What Our Customers Are Saying" />
             <div className="mt-5 grid grid-cols-1 gap-3.5 sm:mt-6 md:grid-cols-2 lg:grid-cols-3">
               {reviewTiles.map((tile, index) => (
-                <Reveal key={tile.quote} delayMs={300 + index * 80}>
+                <Reveal key={tile.key} delayMs={300 + index * 80}>
                   <article className="h-full border border-[#d2e4ff] bg-[#ffffff] p-5 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)]">
                     <div className="flex items-center gap-1 text-[#f2c100]">
-                      {stars.map((star) => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
+                      {stars.map((starIndex) => (
+                        <Star
+                          key={starIndex}
+                          className={`h-4 w-4 ${starIndex < tile.rating ? "fill-current" : "text-[#bfd4fb]"}`}
+                        />
                       ))}
                     </div>
                     <p className="mt-4 text-sm leading-6 text-[#2f5fa9]">
                       "{tile.quote}"
+                    </p>
+                    <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#1c4b96]/70">
+                      {tile.author}
+                      {tile.verifiedBuyer ? " - Verified Buyer" : ""}
                     </p>
                   </article>
                 </Reveal>

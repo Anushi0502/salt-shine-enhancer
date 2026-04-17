@@ -10,6 +10,19 @@ export type JudgeMeReviewSummary = {
   source: "judgeme";
 };
 
+export type JudgeMeTestimonial = {
+  id: string;
+  productId: number;
+  author: string;
+  title: string;
+  body: string;
+  rating: number;
+  createdAtRaw: string;
+  createdAtMs: number;
+  verifiedBuyer: boolean;
+  source: "judgeme";
+};
+
 type JudgeMePreviewResponse = {
   product_external_id?: number;
   badge?: string;
@@ -169,6 +182,51 @@ function parseJudgeMeWidgetSummary(html: string): JudgeMeRawSummary | null {
   };
 }
 
+function parseText(element: Element | null): string {
+  return (element?.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function parseJudgeMeWidgetTestimonials(productId: number, html: string): JudgeMeTestimonial[] {
+  if (!html || typeof DOMParser === "undefined") {
+    return [];
+  }
+
+  const reviewDoc = new DOMParser().parseFromString(html, "text/html");
+  const reviewNodes = Array.from(reviewDoc.querySelectorAll(".jdgm-rev"));
+
+  return reviewNodes
+    .map((node, index) => {
+      const id = node.getAttribute("data-review-id") || `review-${productId}-${index}`;
+      const author = parseText(node.querySelector(".jdgm-rev__author")) || "Verified shopper";
+      const title = parseText(node.querySelector(".jdgm-rev__title")) || "Customer review";
+      const body = parseText(node.querySelector(".jdgm-rev__body p, .jdgm-rev__body"));
+      const rating = Number(node.querySelector(".jdgm-rev__rating")?.getAttribute("data-score") || 0);
+      const createdAtRaw =
+        String(node.querySelector(".jdgm-rev__timestamp")?.getAttribute("data-content") || "").trim() ||
+        parseText(node.querySelector(".jdgm-rev__timestamp"));
+      const parsedDate = new Date(createdAtRaw);
+      const createdAtMs = Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
+      const verifiedFromAttr = String(node.getAttribute("data-verified-buyer") || "").toLowerCase() === "true";
+      const verifiedFromBadge = /verified/i.test(
+        parseText(node.querySelector(".jdgm-rev__buyer-badge, .jdgm-rev__buyer-badge-wrapper")),
+      );
+
+      return {
+        id,
+        productId,
+        author,
+        title,
+        body,
+        rating: Number.isFinite(rating) ? Math.min(5, Math.max(0, rating)) : 0,
+        createdAtRaw,
+        createdAtMs,
+        verifiedBuyer: verifiedFromAttr || verifiedFromBadge,
+        source: "judgeme" as const,
+      };
+    })
+    .filter((review) => review.body || review.title);
+}
+
 function buildSummary(productId: number, badge: JudgeMeRawSummary | null, widget: JudgeMeRawSummary | null): JudgeMeReviewSummary | null {
   if (!badge && !widget) {
     return null;
@@ -233,6 +291,32 @@ async function requestJudgeMeSummary(
   return buildSummary(externalId, badgeSummary, widgetSummary);
 }
 
+async function requestJudgeMeTestimonialsForProduct(
+  shopDomain: string,
+  publicToken: string,
+  productId: number,
+): Promise<JudgeMeTestimonial[]> {
+  const params = new URLSearchParams({
+    public_token: publicToken,
+    api_token: publicToken,
+    shop_domain: shopDomain,
+    external_id: String(productId),
+    page: "1",
+    per_page: "25",
+    t: String(Date.now()),
+  });
+  const endpoint = `https://api.judge.me/api/v1/widgets/product_review?${params.toString()}`;
+
+  const response = await fetch(endpoint, { credentials: "omit" });
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as JudgeMeProductReviewResponse;
+  const widgetHtml = normalizeJudgeMeHtml(String(payload.widget || ""));
+  return parseJudgeMeWidgetTestimonials(productId, widgetHtml);
+}
+
 export async function fetchJudgeMeRatings(productIds: number[]): Promise<Record<number, JudgeMeReviewSummary>> {
   const normalizedIds = Array.from(
     new Set(
@@ -281,6 +365,67 @@ export async function fetchJudgeMeRatings(productIds: number[]): Promise<Record<
   return ratings;
 }
 
+export async function fetchJudgeMeTestimonials(
+  productIds: number[],
+  limit = 6,
+): Promise<JudgeMeTestimonial[]> {
+  const normalizedIds = Array.from(
+    new Set(
+      productIds
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    ),
+  );
+
+  if (!normalizedIds.length || limit <= 0) {
+    return [];
+  }
+
+  const publicToken = getJudgeMePublicToken();
+  if (!publicToken) {
+    return [];
+  }
+
+  const domains = getJudgeMeShopDomains();
+  const seenReviewKeys = new Set<string>();
+  const collected: JudgeMeTestimonial[] = [];
+
+  for (const domain of domains) {
+    for (const productId of normalizedIds) {
+      if (collected.length >= limit) {
+        break;
+      }
+
+      try {
+        const reviews = await requestJudgeMeTestimonialsForProduct(domain, publicToken, productId);
+        reviews.forEach((review) => {
+          if (collected.length >= limit) {
+            return;
+          }
+
+          const reviewKey = `${review.productId}:${review.id}:${review.body.slice(0, 80).toLowerCase()}`;
+          if (seenReviewKeys.has(reviewKey)) {
+            return;
+          }
+
+          seenReviewKeys.add(reviewKey);
+          collected.push(review);
+        });
+      } catch {
+        continue;
+      }
+    }
+
+    if (collected.length >= limit) {
+      break;
+    }
+  }
+
+  return [...collected]
+    .sort((left, right) => right.createdAtMs - left.createdAtMs || right.rating - left.rating)
+    .slice(0, limit);
+}
+
 export function useJudgeMeRatings(productIds: number[]) {
   const normalizedIds = useMemo(
     () =>
@@ -298,6 +443,32 @@ export function useJudgeMeRatings(productIds: number[]) {
     queryKey: ["judgeme-preview-badges", normalizedIds.join(",")],
     queryFn: () => fetchJudgeMeRatings(normalizedIds),
     enabled: normalizedIds.length > 0,
+    staleTime: JUDGEME_STALE_TIME_MS,
+    refetchInterval: JUDGEME_AUTO_REFRESH_MS,
+    refetchIntervalInBackground: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    retry: false,
+  });
+}
+
+export function useJudgeMeTestimonials(productIds: number[], limit = 6) {
+  const normalizedIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productIds
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0),
+        ),
+      ).sort((a, b) => a - b),
+    [productIds],
+  );
+
+  return useQuery({
+    queryKey: ["judgeme-home-testimonials", normalizedIds.join(","), limit],
+    queryFn: () => fetchJudgeMeTestimonials(normalizedIds, limit),
+    enabled: normalizedIds.length > 0 && limit > 0,
     staleTime: JUDGEME_STALE_TIME_MS,
     refetchInterval: JUDGEME_AUTO_REFRESH_MS,
     refetchIntervalInBackground: true,
