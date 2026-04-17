@@ -7,10 +7,12 @@ import type {
   CollectionsPayload,
   ProductsPayload,
   ShopifyCollection,
+  ShopifyImage,
   ShopifyPolicyPayload,
   ShopifyProduct,
+  ShopifyVariant,
 } from "@/types/shopify";
-import { firstImageSrcFromHtml, stripHtml } from "@/lib/formatters";
+import { firstImageSrcFromHtml, polishPlainText, stripHtml } from "@/lib/formatters";
 import {
   getRuntimeContext,
   getShopBaseOrigin,
@@ -468,6 +470,85 @@ function normalizeRichHtml(input: string): string {
     .trim();
 }
 
+function normalizeImageRecord(image: ShopifyImage): ShopifyImage {
+  return {
+    ...image,
+    alt: image.alt == null ? image.alt : polishPlainText(image.alt),
+  };
+}
+
+function normalizeVariantRecord(variant: ShopifyVariant): ShopifyVariant {
+  return {
+    ...variant,
+    title: polishPlainText(variant.title),
+    ...(variant.sku !== undefined ? { sku: polishPlainText(variant.sku) } : {}),
+  };
+}
+
+function normalizeProductRecord(product: ShopifyProduct): ShopifyProduct {
+  return {
+    ...product,
+    title: polishPlainText(product.title),
+    handle: String(product.handle || "").trim(),
+    vendor: polishPlainText(product.vendor),
+    product_type: polishPlainText(product.product_type),
+    body_html: product.body_html ? normalizeRichHtml(product.body_html) : product.body_html,
+    tags: Array.isArray(product.tags)
+      ? product.tags.map((tag) => polishPlainText(tag)).filter(Boolean)
+      : polishPlainText(product.tags),
+    variants: Array.isArray(product.variants) ? product.variants.map(normalizeVariantRecord) : [],
+    images: Array.isArray(product.images) ? product.images.map(normalizeImageRecord) : [],
+    image: product.image ? normalizeImageRecord(product.image) : product.image,
+  };
+}
+
+function normalizeCollectionRecord(collection: ShopifyCollection): ShopifyCollection {
+  return {
+    ...collection,
+    title: polishPlainText(collection.title),
+    handle: String(collection.handle || "").trim(),
+    description: polishPlainText(collection.description),
+    image: collection.image ? normalizeImageRecord(collection.image) : collection.image,
+  };
+}
+
+function normalizeProductsPayload(payload: ProductsPayload): ProductsPayload {
+  const products = Array.isArray(payload.products) ? payload.products.map(normalizeProductRecord) : [];
+  return {
+    ...payload,
+    total: payload.total || products.length,
+    products,
+  };
+}
+
+function normalizeCollectionsPayload(payload: CollectionsPayload): CollectionsPayload {
+  const collections = Array.isArray(payload.collections) ? payload.collections.map(normalizeCollectionRecord) : [];
+  return {
+    ...payload,
+    total: payload.total || collections.length,
+    collections,
+  };
+}
+
+function normalizeAboutPayload(payload: AboutPagePayload): AboutPagePayload {
+  return {
+    ...payload,
+    page: {
+      ...payload.page,
+      title: polishPlainText(payload.page.title) || "About SALT",
+      bodyHtml: normalizeRichHtml(payload.page.bodyHtml || ""),
+    },
+  };
+}
+
+function normalizePolicyPayload(payload: ShopifyPolicyPayload): ShopifyPolicyPayload {
+  return {
+    ...payload,
+    title: polishPlainText(payload.title) || payload.title,
+    bodyHtml: normalizeRichHtml(payload.bodyHtml || ""),
+  };
+}
+
 function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
   const parsed = new DOMParser().parseFromString(atomXml, "application/xml");
   const parserErrors = parsed.getElementsByTagName("parsererror");
@@ -487,8 +568,8 @@ function parseBlogEntriesFromAtom(atomXml: string): BlogPost[] {
       const id = entry.getElementsByTagName("id")[0]?.textContent?.trim() || "";
       const publishedAt = entry.getElementsByTagName("published")[0]?.textContent?.trim() || "";
       const updatedAt = entry.getElementsByTagName("updated")[0]?.textContent?.trim() || "";
-      const title = entry.getElementsByTagName("title")[0]?.textContent?.trim() || "";
-      const author = entry.getElementsByTagName("name")[0]?.textContent?.trim() || "SALT";
+      const title = polishPlainText(entry.getElementsByTagName("title")[0]?.textContent?.trim() || "");
+      const author = polishPlainText(entry.getElementsByTagName("name")[0]?.textContent?.trim() || "SALT");
       const contentRaw = entry.getElementsByTagName("content")[0]?.textContent || "";
       const contentHtml = normalizeRichHtml(contentRaw);
       const linkNode = Array.from(entry.getElementsByTagName("link")).find(
@@ -579,6 +660,10 @@ function normalizeBlogPayload(payload: BlogPostsPayload): BlogPostsPayload {
     posts: (() => {
       const normalizedPosts = (payload.posts || []).map((post) => ({
         ...post,
+        title: polishPlainText(post.title),
+        author: polishPlainText(post.author || "SALT"),
+        excerpt: polishPlainText(post.excerpt || excerptFromHtml(post.contentHtml)),
+        contentHtml: normalizeRichHtml(post.contentHtml || ""),
         image:
           normalizeShopifyAssetUrl(post.image) ||
           normalizeShopifyAssetUrl(firstImageSrcFromHtml(post.contentHtml)) ||

@@ -5,17 +5,10 @@ import {
   isValidShopifyVariantId,
   type CartItem,
 } from "@/lib/cart";
-import { useCustomerAuth } from "@/lib/customer-auth";
-import {
-  clearCustomerOrderHistory,
-  loadCustomerOrderHistory,
-  removeCustomerOrderHistoryEntry,
-  saveCustomerOrderHistoryEntries,
-  saveCustomerOrderHistoryEntry,
-  type CustomerOrderHistoryEntry,
-  type CustomerOrderHistoryItem,
+import type {
+  CustomerOrderHistoryEntry,
+  CustomerOrderHistoryItem,
 } from "@/services/customer-order-history";
-import { isSupabaseConfigured } from "@/services/supabase";
 
 export type DeviceOrderHistoryItem = CustomerOrderHistoryItem;
 
@@ -23,7 +16,6 @@ export type DeviceOrderHistoryEntry = CustomerOrderHistoryEntry;
 
 const ORDER_HISTORY_STORAGE_KEY = "salt-order-history-v1";
 const ORDER_HISTORY_EVENT = "salt-order-history-updated";
-const ORDER_HISTORY_SYNC_USER_KEY = "salt-order-history-cloud-synced-user-v1";
 const ORDER_HISTORY_LIMIT = 120;
 
 function isValidOrderHistoryItem(input: unknown): input is DeviceOrderHistoryItem {
@@ -51,41 +43,6 @@ function sanitizeOrderHistoryItem(item: DeviceOrderHistoryItem): DeviceOrderHist
     title: String(item.title || "").trim(),
     image: String(item.image || "").trim(),
   };
-}
-
-function mergeOrderHistoryEntries(
-  localEntries: DeviceOrderHistoryEntry[],
-  remoteEntries: DeviceOrderHistoryEntry[],
-): DeviceOrderHistoryEntry[] {
-  const merged = new Map<string, DeviceOrderHistoryEntry>();
-
-  remoteEntries.forEach((entry) => {
-    merged.set(entry.id, entry);
-  });
-
-  localEntries.forEach((entry) => {
-    const existing = merged.get(entry.id);
-    if (!existing) {
-      merged.set(entry.id, entry);
-      return;
-    }
-
-    merged.set(entry.id, {
-      ...existing,
-      ...entry,
-      items: entry.items.length ? entry.items : existing.items,
-      itemCount: Math.max(existing.itemCount, entry.itemCount),
-      subtotal: Math.max(existing.subtotal, entry.subtotal),
-      checkoutUrl: entry.checkoutUrl || existing.checkoutUrl,
-      source: entry.source || existing.source,
-      createdAt:
-        new Date(entry.createdAt).getTime() > new Date(existing.createdAt).getTime()
-          ? entry.createdAt
-          : existing.createdAt,
-    });
-  });
-
-  return sanitizeOrderHistoryEntries(Array.from(merged.values()));
 }
 
 function toCartItems(items: DeviceOrderHistoryItem[]): CartItem[] {
@@ -193,27 +150,6 @@ function writeOrderHistoryToStorage(entries: DeviceOrderHistoryEntry[]): void {
   window.dispatchEvent(new CustomEvent(ORDER_HISTORY_EVENT));
 }
 
-function readSyncedOrderHistoryUserId(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return String(window.localStorage.getItem(ORDER_HISTORY_SYNC_USER_KEY) || "").trim();
-}
-
-function writeSyncedOrderHistoryUserId(userId: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  if (!userId) {
-    window.localStorage.removeItem(ORDER_HISTORY_SYNC_USER_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(ORDER_HISTORY_SYNC_USER_KEY, userId);
-}
-
 export function readDeviceOrderHistory(): DeviceOrderHistoryEntry[] {
   return readOrderHistoryFromStorage();
 }
@@ -222,7 +158,6 @@ export function recordDeviceOrderHistory(input: {
   source: "cart" | "buy-now";
   checkoutUrl: string;
   items: CartItem[];
-  userId?: string | null;
 }): DeviceOrderHistoryEntry {
   const items = input.items.map((item) =>
     sanitizeOrderHistoryItem({
@@ -252,14 +187,11 @@ export function recordDeviceOrderHistory(input: {
 
   const current = readOrderHistoryFromStorage();
   writeOrderHistoryToStorage([nextEntry, ...current]);
-  if (input.userId && isSupabaseConfigured()) {
-    void saveCustomerOrderHistoryEntry(input.userId, nextEntry);
-  }
 
   return nextEntry;
 }
 
-export function removeDeviceOrderHistoryEntry(entryId: string, userId?: string | null): void {
+export function removeDeviceOrderHistoryEntry(entryId: string): void {
   const targetId = String(entryId || "").trim();
   if (!targetId) {
     return;
@@ -267,16 +199,10 @@ export function removeDeviceOrderHistoryEntry(entryId: string, userId?: string |
 
   const current = readOrderHistoryFromStorage();
   writeOrderHistoryToStorage(current.filter((entry) => entry.id !== targetId));
-  if (userId && isSupabaseConfigured()) {
-    void removeCustomerOrderHistoryEntry(userId, targetId);
-  }
 }
 
-export function clearDeviceOrderHistory(userId?: string | null): void {
+export function clearDeviceOrderHistory(): void {
   writeOrderHistoryToStorage([]);
-  if (userId && isSupabaseConfigured()) {
-    void clearCustomerOrderHistory(userId);
-  }
 }
 
 export function getDevicePurchasesLast30Days(entries: DeviceOrderHistoryEntry[]): number {
@@ -315,46 +241,11 @@ export function getProductPurchasesLast30Days(
 }
 
 export function useDeviceOrderHistory() {
-  const { isAuthenticated, session } = useCustomerAuth();
-  const userId = session?.user?.id || "";
   const [entries, setEntries] = useState<DeviceOrderHistoryEntry[]>(() => readOrderHistoryFromStorage());
 
   const refresh = useCallback(async () => {
-    const localEntries = readOrderHistoryFromStorage();
-
-    if (!isAuthenticated || !userId || !isSupabaseConfigured()) {
-      setEntries(localEntries);
-      return;
-    }
-
-    const remoteEntries = await loadCustomerOrderHistory(userId);
-    if (!remoteEntries) {
-      setEntries(localEntries);
-      return;
-    }
-
-    const hasMergedGuestHistory = readSyncedOrderHistoryUserId() === userId;
-    if (!hasMergedGuestHistory && localEntries.length > 0) {
-      const mergedEntries = mergeOrderHistoryEntries(localEntries, remoteEntries);
-
-      if (JSON.stringify(mergedEntries) !== JSON.stringify(localEntries)) {
-        writeOrderHistoryToStorage(mergedEntries);
-      }
-      setEntries(mergedEntries);
-      writeSyncedOrderHistoryUserId(userId);
-
-      if (JSON.stringify(mergedEntries) !== JSON.stringify(remoteEntries)) {
-        void saveCustomerOrderHistoryEntries(userId, mergedEntries);
-      }
-      return;
-    }
-
-    if (JSON.stringify(remoteEntries) !== JSON.stringify(localEntries)) {
-      writeOrderHistoryToStorage(remoteEntries);
-    }
-    setEntries(remoteEntries);
-    writeSyncedOrderHistoryUserId(userId);
-  }, [isAuthenticated, userId]);
+    setEntries(readOrderHistoryFromStorage());
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -389,9 +280,9 @@ export function useDeviceOrderHistory() {
       entries,
       purchasesLast30Days: getDevicePurchasesLast30Days(entries),
       refresh,
-      remove: (entryId: string) => removeDeviceOrderHistoryEntry(entryId, userId),
-      clear: () => clearDeviceOrderHistory(userId),
+      remove: (entryId: string) => removeDeviceOrderHistoryEntry(entryId),
+      clear: () => clearDeviceOrderHistory(),
     }),
-    [entries, refresh, userId],
+    [entries, refresh],
   );
 }

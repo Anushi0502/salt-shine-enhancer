@@ -1,10 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronRight, CircleUserRound, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronRight, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { filterProducts } from "@/lib/catalog";
 import { useCart } from "@/lib/cart";
-import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
@@ -107,7 +106,6 @@ const MainHeader = () => {
   const navigate = useNavigate();
   const { itemCount, openCartDrawer } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
-  const { isAuthenticated, logout } = useCustomerAuth();
   const { data: productsData } = useProducts();
   const { data: collectionsData } = useCollections();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -260,28 +258,6 @@ const MainHeader = () => {
   const quickSearchTerms = useMemo(
     () => (recentSearches.length ? recentSearches : trendingSearches).slice(0, 3),
     [recentSearches, trendingSearches],
-  );
-
-  const accountHref = useMemo(
-    () =>
-      isAuthenticated
-        ? "/order-history"
-        : buildCustomerAccessPath({
-            mode: "login",
-            next: "/order-history",
-            reason: "account",
-          }),
-    [isAuthenticated],
-  );
-
-  const signupHref = useMemo(
-    () =>
-      buildCustomerAccessPath({
-        mode: "signup",
-        next: "/order-history",
-        reason: "account",
-      }),
-    [],
   );
 
   useEffect(() => {
@@ -616,10 +592,6 @@ const MainHeader = () => {
             </form>
           ) : null}
 
-          <Link to={accountHref} className={actionButtonClassName} aria-label="Open account">
-            <CircleUserRound className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-          </Link>
-
           <Link to="/wishlist" className={actionButtonClassName} aria-label="Open wishlist">
             <Heart
               className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${
@@ -726,35 +698,6 @@ const MainHeader = () => {
               </button>
             </div>
 
-            {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => {
-                  logout();
-                  closeMobileMenu();
-                }}
-                className="mt-1 inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
-              >
-                Log out
-              </button>
-            ) : (
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                <Link
-                  to={accountHref}
-                  onClick={closeMobileMenu}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
-                >
-                  Login
-                </Link>
-                <Link
-                  to={signupHref}
-                  onClick={closeMobileMenu}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#f0c148] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#1e2432]"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       ) : null}

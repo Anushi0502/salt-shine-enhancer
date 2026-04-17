@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
-import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import {
   compareAt,
   formatMoney,
@@ -82,7 +81,6 @@ const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
-  const { isAuthenticated, session } = useCustomerAuth();
   const { data, isLoading, error, refetch } = useProducts();
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
 
@@ -219,9 +217,7 @@ const ProductPage = () => {
     ? buildShopifyDirectCheckoutUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
   const checkoutHandoffUrl = directCheckoutUrl;
-  const checkoutTargetUrl = isAuthenticated
-    ? checkoutHandoffUrl
-    : buildCustomerAccessPath({ mode: "login", next: checkoutHandoffUrl, reason: "checkout" });
+  const checkoutTargetUrl = checkoutHandoffUrl;
   const devicePurchasesLast30Days = getProductPurchasesLast30Days(
     deviceOrderEntries,
     product.handle,
@@ -556,7 +552,7 @@ const ProductPage = () => {
             <a
               href={checkoutTargetUrl}
               onClick={() => {
-                if (!isAuthenticated || !selectedVariant || !isAvailable) {
+                if (!selectedVariant || !isAvailable) {
                   return;
                 }
 
@@ -587,7 +583,6 @@ const ProductPage = () => {
                       productType: product.product_type,
                     },
                   ],
-                  userId: session?.user?.id,
                 });
               }}
               aria-disabled={isAvailable ? "false" : "true"}
@@ -597,7 +592,7 @@ const ProductPage = () => {
                   : "pointer-events-none opacity-60"
               }`}
             >
-              {isAuthenticated ? "Buy now" : "Login to buy"}
+              Buy now
             </a>
             <button
               type="button"

@@ -7,6 +7,14 @@ const currencyFormatter = new Intl.NumberFormat("en-CA", {
   minimumFractionDigits: 2,
 });
 const MAX_DISPLAY_COMPARE_MULTIPLIER = 12;
+const NAMED_HTML_ENTITY_MAP: Record<string, string> = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+};
 
 function asText(value: unknown): string {
   if (typeof value === "string") {
@@ -20,15 +28,51 @@ function asText(value: unknown): string {
   return String(value);
 }
 
+export function decodeHtmlEntities(input: unknown): string {
+  const raw = asText(input);
+  if (!raw) {
+    return "";
+  }
+
+  const decodedNumeric = raw.replace(/&#(x?[0-9a-f]+);/gi, (_full, code: string) => {
+    const isHex = code.toLowerCase().startsWith("x");
+    const value = Number.parseInt(isHex ? code.slice(1) : code, isHex ? 16 : 10);
+    if (!Number.isFinite(value) || value <= 0) {
+      return _full;
+    }
+
+    try {
+      return String.fromCodePoint(value);
+    } catch {
+      return _full;
+    }
+  });
+
+  const decodedNamed = decodedNumeric.replace(/&([a-z]+);/gi, (full, name: string) => {
+    const replacement = NAMED_HTML_ENTITY_MAP[name.toLowerCase()];
+    return replacement ?? full;
+  });
+
+  return decodedNamed;
+}
+
+export function polishPlainText(input: unknown): string {
+  return decodeHtmlEntities(input)
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
 export function stripHtml(input: unknown): string {
   const text = asText(input);
 
-  return text
+  const stripped = text
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/<[^>]+>/g, " ");
+
+  return polishPlainText(stripped);
 }
 
 export function sanitizeRichHtml(input: unknown): string {

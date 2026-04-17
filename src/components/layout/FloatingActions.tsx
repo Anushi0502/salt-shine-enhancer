@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowUp, ClipboardList, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 
 const SCROLL_VISIBILITY_THRESHOLD = 460;
 
@@ -10,7 +9,6 @@ const FloatingActions = () => {
   const [isVisible, setIsVisible] = useState(false);
   const { itemCount, isDrawerOpen, openCartDrawer } = useCart();
   const { pathname } = useLocation();
-  const { isAuthenticated } = useCustomerAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -31,9 +29,6 @@ const FloatingActions = () => {
     [pathname],
   );
   const showOrderShortcut = useMemo(() => pathname !== "/order-history", [pathname]);
-  const orderHistoryHref = isAuthenticated
-    ? "/order-history"
-    : buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" });
 
   if (!isVisible || isDrawerOpen) {
     return null;
@@ -60,7 +55,7 @@ const FloatingActions = () => {
       ) : null}
       {showOrderShortcut ? (
         <Link
-          to={orderHistoryHref}
+          to="/order-history"
           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border/80 bg-card/92 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-foreground shadow-[0_18px_34px_-28px_rgba(15,23,42,0.24)] transition hover:border-primary/45 hover:text-primary sm:text-[0.68rem]"
           aria-label="Open order history"
         >

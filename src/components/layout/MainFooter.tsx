@@ -2,7 +2,6 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { buildCustomerAccessPath, useCustomerAuth } from "@/lib/customer-auth";
 import {
   getRuntimeContext,
   resolveStorefrontPath,
@@ -15,10 +14,6 @@ const shippingPolicyHref = resolveStorefrontPath(runtimeContext.shippingPolicyUr
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
-  const { isAuthenticated } = useCustomerAuth();
-  const orderHistoryHref = isAuthenticated
-    ? "/order-history"
-    : buildCustomerAccessPath({ mode: "login", next: "/order-history", reason: "orders" });
 
   const onSubscribe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,7 +66,7 @@ const MainFooter = () => {
               <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#1a4d9a]">Support</h3>
               <div className="mt-5 grid gap-3 text-[0.92rem] text-[#2a4f90]/84">
                 <Link to="/contact" className="transition-colors hover:text-[#f2b600]">Contact Us</Link>
-                <Link to={orderHistoryHref} className="transition-colors hover:text-[#f2b600]">Order Tracking</Link>
+                <Link to="/order-history" className="transition-colors hover:text-[#f2b600]">Order Tracking</Link>
                 <a href={shippingPolicyHref} className="transition-colors hover:text-[#f2b600]">Shipping</a>
                 <a href={returnsPolicyHref} className="transition-colors hover:text-[#f2b600]">Returns</a>
               </div>

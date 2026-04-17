@@ -3,14 +3,11 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
-  useRef,
   useMemo,
   useState,
 } from "react";
 import { trackMetaPixelAddToCart } from "@/lib/meta-pixel";
-import { useCustomerAuth } from "@/lib/customer-auth";
 import { getRuntimeContext } from "@/lib/theme-assets";
-import { loadCustomerCart, mergeCartSnapshots, saveCustomerCart } from "@/services/customer-cart";
 
 export type CartItem = {
   id: number;
@@ -256,71 +253,12 @@ export function buildShopifySearchUrl(query: string | null | undefined): string 
 }
 
 export function CartProvider({ children }: PropsWithChildren) {
-  const { isAuthenticated, session } = useCustomerAuth();
   const [items, setItems] = useState<CartItem[]>(readStoredCart);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const hasHydratedRemoteCart = useRef(false);
-  const syncedUserId = session?.user?.id || "";
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !syncedUserId) {
-      hasHydratedRemoteCart.current = false;
-      return;
-    }
-
-    let cancelled = false;
-
-    loadCustomerCart(syncedUserId).then((remoteItems) => {
-      if (cancelled) {
-        return;
-      }
-
-      setItems((current) => {
-        const localItems = sanitizeCartItems(current);
-        const normalizedRemoteItems = sanitizeCartItems(remoteItems || []);
-
-        if (!normalizedRemoteItems.length) {
-          hasHydratedRemoteCart.current = true;
-          if (localItems.length) {
-            void saveCustomerCart(syncedUserId, localItems);
-          }
-          return localItems;
-        }
-
-        const mergedItems = localItems.length
-          ? mergeCartSnapshots(localItems, normalizedRemoteItems)
-          : normalizedRemoteItems;
-
-        hasHydratedRemoteCart.current = true;
-
-        if (JSON.stringify(mergedItems) !== JSON.stringify(normalizedRemoteItems)) {
-          void saveCustomerCart(syncedUserId, mergedItems);
-        }
-
-        return mergedItems;
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, syncedUserId]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !syncedUserId || !hasHydratedRemoteCart.current) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      void saveCustomerCart(syncedUserId, items);
-    }, 350);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [isAuthenticated, items, syncedUserId]);
 
   const value = useMemo<CartContextValue>(() => {
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
