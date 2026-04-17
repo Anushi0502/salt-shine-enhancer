@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CreditCard, Headphones, RotateCcw, Star, Truck } from "lucide-react";
+import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
+import ProductCard from "@/components/storefront/ProductCard";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
@@ -23,12 +24,6 @@ type ImageTile = {
 
 type ProductTile = ImageTile & {
   price: string;
-};
-
-type TrustTile = {
-  title: string;
-  copy: string;
-  icon: typeof Truck;
 };
 
 type ReviewTile = {
@@ -136,29 +131,6 @@ const giftTileConfigs = [
   },
 ];
 
-const trustTiles: TrustTile[] = [
-  {
-    title: "Fast Shipping",
-    copy: "Clear delivery timelines for everyday essentials.",
-    icon: Truck,
-  },
-  {
-    title: "Secure Checkout",
-    copy: "Trusted payments with a smooth, simple flow.",
-    icon: CreditCard,
-  },
-  {
-    title: "Easy Returns",
-    copy: "A 30-day return window to shop with confidence.",
-    icon: RotateCcw,
-  },
-  {
-    title: "Friendly Support",
-    copy: "Quick help when you need product or order guidance.",
-    icon: Headphones,
-  },
-];
-
 const reviewTiles: ReviewTile[] = [
   {
     quote: "Creating a warm home feels easier when everything is grouped in one calm place.",
@@ -183,6 +155,13 @@ const featuredBookPriority = [
     titleIncludes: ["living legacy planner", "second edition"],
     handleIncludes: ["living-legacy-planner", "planner-second-edition", "second-edition"],
   },
+] as const;
+
+const featuredCourtneyBookHandles = [
+  "relics-of-the-century",
+  "the-living-legacy-planner",
+  "living-legacy-planner-second-edition",
+  "daily-bloom-journal",
 ] as const;
 
 const HERO_EXTRA_BANNERS: ImageTile[] = [
@@ -332,6 +311,7 @@ const HomePage = () => {
   const { data: homeDecorIdsPayload } = useCollectionProductIds("home-decor", true);
   const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
   const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
+  const { data: booksIdsPayload } = useCollectionProductIds("books", true);
   const { data: uniqueProductsIdsPayload } = useCollectionProductIds("unique-products", true);
   const { data: uniqueFindsIdsPayload } = useCollectionProductIds("unique-finds", true);
   const bestSellerProductIds = useMemo(
@@ -358,6 +338,56 @@ const HomePage = () => {
     return map;
   }, [giftIdsPayload, giftsIdsPayload, homeDecorIdsPayload]);
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const featuredCourtneyBooks = useMemo(() => {
+    if (!products.length) {
+      return [];
+    }
+
+    const fromBooksCollection = (booksIdsPayload?.productIds ?? [])
+      .map((productId) => productById.get(productId))
+      .filter((product): product is ShopifyProduct => Boolean(product));
+
+    const prioritizedByHandle = featuredCourtneyBookHandles
+      .map((targetHandle) =>
+        products.find((product) => normalizeHandle(product.handle).includes(normalizeHandle(targetHandle))) || null,
+      )
+      .filter((product): product is ShopifyProduct => Boolean(product));
+
+    const keywordFallback = products.filter((product) => {
+      const tokens = new Set(productSearchText(product).split(" ").filter(Boolean));
+      return (
+        tokens.has("book") ||
+        tokens.has("books") ||
+        tokens.has("journal") ||
+        tokens.has("planner") ||
+        tokens.has("legacy") ||
+        tokens.has("relics") ||
+        tokens.has("courtney") ||
+        tokens.has("bloom")
+      );
+    });
+
+    const uniqueBooks: ShopifyProduct[] = [];
+    const seenProductIds = new Set<number>();
+    [...fromBooksCollection, ...prioritizedByHandle, ...keywordFallback].forEach((product) => {
+      if (seenProductIds.has(product.id)) {
+        return;
+      }
+
+      seenProductIds.add(product.id);
+      uniqueBooks.push(product);
+    });
+
+    return uniqueBooks.slice(0, 4);
+  }, [booksIdsPayload, productById, products]);
+  const featuredCourtneyBooksImage = useMemo(() => {
+    const firstBook = featuredCourtneyBooks[0];
+    if (!firstBook) {
+      return collectionDecor;
+    }
+
+    return productImage(firstBook) || collectionDecor;
+  }, [featuredCourtneyBooks]);
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -867,43 +897,35 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <div className="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
               <div className="rounded-[1.15rem] border border-[#d2e4ff] bg-[#f8fbff] p-4 sm:rounded-[1.35rem] sm:p-6">
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#f2b600]">
-                  Our Promise
-                </p>
-                <h2 className="mt-2 font-display text-[clamp(1.6rem,3.5vw,2.6rem)] leading-[1.06] text-[#183f84]">
-                  The SALT Difference
+                <h2 className="font-display text-[clamp(1.6rem,3.5vw,2.6rem)] leading-[1.06] text-[#183f84]">
+                  Our Exclusive Book Collection
                 </h2>
-                <p className="mt-3 max-w-[36ch] text-sm leading-6 text-[#2f5fa9] sm:text-[0.97rem]">
-                  We keep shopping calm and intentional. Each pick is chosen for daily value, quality, and gift-ready simplicity.
-                </p>
 
                 <div className="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
-                  {trustTiles.map((tile, index) => {
-                    const Icon = tile.icon;
-
-                    return (
-                      <Reveal key={tile.title} delayMs={240 + index * 60}>
-                        <div className="rounded-[0.95rem] border border-[#d2e4ff] bg-white p-3.5 sm:p-4">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ffe27a] bg-[#fff8d7] text-[#1f63d8]">
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <p className="mt-2 text-[0.95rem] font-semibold text-[#1c4b96]">
-                            {tile.title}
-                          </p>
-                          <p className="mt-1 text-[0.82rem] leading-5 text-[#2f5fa9]">
-                            {tile.copy}
-                          </p>
+                  {featuredCourtneyBooks.length > 0
+                    ? featuredCourtneyBooks.slice(0, 4).map((product, index) => (
+                        <Reveal key={`featured-courtney-book-${product.id}`} delayMs={240 + index * 60}>
+                          <ProductCard product={product} variant="dense" />
+                        </Reveal>
+                      ))
+                    : Array.from({ length: 4 }, (_, index) => (
+                        <div
+                          key={`featured-courtney-book-placeholder-${index}`}
+                          className="rounded-[1.1rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)]"
+                        >
+                          <div className="aspect-square w-full rounded-[0.9rem] bg-[linear-gradient(135deg,#e8f1ff_0%,#dbe9ff_100%)]" />
+                          <div className="mt-2 h-4 w-4/5 rounded-full bg-[#d7e6ff]" />
+                          <div className="mt-1.5 h-3 w-2/5 rounded-full bg-[#d7e6ff]" />
+                          <div className="mt-2.5 h-5 w-1/3 rounded-full bg-[#c0d8ff]" />
                         </div>
-                      </Reveal>
-                    );
-                  })}
+                      ))}
                 </div>
               </div>
 
               <div className="overflow-hidden rounded-[1.15rem] border border-[#d2e4ff] bg-[#eef5ff] sm:rounded-[1.35rem]">
                 <img
-                  src={collectionDecor}
-                  alt="Styled home wall with decor frames and shelves"
+                  src={featuredCourtneyBooksImage}
+                  alt="Featured Courtney collection product"
                   className="h-full min-h-[17rem] w-full object-cover sm:min-h-[21rem]"
                 />
               </div>
