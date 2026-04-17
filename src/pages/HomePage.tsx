@@ -1060,7 +1060,7 @@ const HomePage = () => {
 
         <Reveal delayMs={220}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(215px,1fr))] gap-3.5 sm:gap-6 lg:gap-7">
+            <div className="mx-auto grid max-w-[980px] grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 sm:gap-6 lg:gap-7">
               {featuredCourtneyBookCards.map((bookCard, index) => (
                 <Reveal key={bookCard.key} delayMs={240 + index * 60}>
                   <OverlayProductCard

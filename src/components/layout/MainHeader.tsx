@@ -372,19 +372,19 @@ const MainHeader = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-[#c6d9ff] bg-[linear-gradient(180deg,rgba(249,252,255,0.96)_0%,rgba(239,246,255,0.96)_100%)] backdrop-blur-[10px] shadow-[0_18px_34px_-30px_rgba(20,58,128,0.55)]">
       <div className="border-b border-[#d7e5ff] bg-[linear-gradient(90deg,rgba(234,243,255,0.85),rgba(241,247,255,0.85))]">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-4 sm:text-[0.72rem]">
+        <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-6 sm:text-[0.72rem] lg:px-8">
           <span>Free Shipping on All US Orders</span>
           <span className="mx-3 text-[#9eb8e8]">|</span>
           <span>30-Day Easy Returns</span>
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4">
-        <Link to="/" className="shrink-0" aria-label="Go to SALT homepage">
-          <BrandLogo withWordmark size="sm" />
+      <div className="flex w-full items-start justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8">
+        <Link to="/" className="shrink-0 self-start" aria-label="Go to SALT homepage">
+          <BrandLogo withWordmark size="md" />
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-center gap-4 lg:flex xl:gap-5">
+        <nav className="hidden min-w-0 flex-1 items-center justify-start gap-3 lg:flex xl:gap-4">
           {primaryNav.map((item) => {
             const active = isNavItemActive(item, location.pathname);
 
@@ -404,9 +404,9 @@ const MainHeader = () => {
           })}
         </nav>
 
-        <div className="flex items-center gap-1.5 min-[420px]:gap-2">
+        <div className="ml-auto flex items-center gap-1.5 min-[420px]:gap-2">
           {showHeaderSearch ? (
-            <form onSubmit={submitSearch} className="relative hidden w-[min(280px,90%)] lg:block xl:w-[min(400px,90%)]">
+            <form onSubmit={submitSearch} className="relative hidden w-[min(320px,42vw)] lg:block xl:w-[min(440px,46vw)]">
               <label className="relative block w-full">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
                 <input
@@ -664,7 +664,7 @@ const MainHeader = () => {
 
       {showHeaderSearch ? (
         <div className="border-t border-[#d7e5ff] px-3 py-2 lg:hidden">
-          <div className="mx-auto max-w-[1120px]">
+          <div className="w-full">
             <form onSubmit={submitSearch}>
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
@@ -690,7 +690,7 @@ const MainHeader = () => {
 
       {mobileOpen ? (
         <div className="border-t border-[#d7e5ff] bg-[#f1f7ff] px-3 py-4 lg:hidden">
-          <div className="mx-auto grid max-w-[1120px] gap-2">
+          <div className="grid w-full gap-2">
             {mobileNav.map((item) => (
               <Link
                 key={item.label}
