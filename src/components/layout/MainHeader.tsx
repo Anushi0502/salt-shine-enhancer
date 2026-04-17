@@ -54,7 +54,7 @@ function isNavItemActive(item: NavItem, pathname: string): boolean {
 }
 
 const actionButtonClassName =
-  "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#d7d1bd] bg-[#fbf8ef] text-[#293244] transition hover:border-[#c8b77a] hover:text-[#111827] sm:h-10 sm:w-10";
+  "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bfd3f8] bg-[linear-gradient(180deg,#ffffff_0%,#eef5ff_100%)] text-[#1f4b97] shadow-[0_8px_16px_-14px_rgba(28,75,150,0.55)] transition duration-200 hover:-translate-y-[1px] hover:border-[#8eb1ef] hover:bg-[#e8f1ff] hover:text-[#143f8e] sm:h-10 sm:w-10";
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
 const DEFAULT_TRENDING_SEARCHES = [
@@ -370,11 +370,11 @@ const MainHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#dbd2bb] bg-[#f4ecd7] shadow-[0_14px_36px_-30px_rgba(37,44,58,0.34)]">
-      <div className="border-b border-[#e5deca]">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#5d6677] sm:px-4 sm:text-[0.72rem]">
+    <header className="sticky top-0 z-50 border-b border-[#c6d9ff] bg-[linear-gradient(180deg,rgba(249,252,255,0.96)_0%,rgba(239,246,255,0.96)_100%)] backdrop-blur-[10px] shadow-[0_18px_34px_-30px_rgba(20,58,128,0.55)]">
+      <div className="border-b border-[#d7e5ff] bg-[linear-gradient(90deg,rgba(234,243,255,0.85),rgba(241,247,255,0.85))]">
+        <div className="mx-auto flex max-w-[1120px] items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-4 sm:text-[0.72rem]">
           <span>Free Shipping on All US Orders</span>
-          <span className="mx-3 text-[#b7bfcf]">|</span>
+          <span className="mx-3 text-[#9eb8e8]">|</span>
           <span>30-Day Easy Returns</span>
         </div>
       </div>
@@ -392,8 +392,10 @@ const MainHeader = () => {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`font-display text-[1rem] leading-none transition xl:text-[1.05rem] ${
-                  active ? "text-[#111827]" : "text-[#202938] hover:text-[#111827]"
+                className={`rounded-full px-3 py-2 font-display text-[0.98rem] leading-none transition-colors xl:text-[1.05rem] ${
+                  active
+                    ? "bg-[#e7f0ff] text-[#15428d] shadow-[inset_0_0_0_1px_rgba(157,190,241,0.7)]"
+                    : "text-[#2a3f66] hover:bg-[#edf4ff] hover:text-[#15428d]"
                 }`}
               >
                 {item.label}
@@ -406,7 +408,7 @@ const MainHeader = () => {
           {showHeaderSearch ? (
             <form onSubmit={submitSearch} className="relative hidden w-[min(280px,90%)] lg:block xl:w-[min(400px,90%)]">
               <label className="relative block w-full">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#626a7a]" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
                 <input
                   type="search"
                   value={searchInput}
@@ -416,7 +418,7 @@ const MainHeader = () => {
                     window.setTimeout(() => setSearchDropdownOpen(false), 120);
                   }}
                   placeholder="Search"
-                  className="h-10 w-full rounded-full border border-[#d9cb97] bg-[#fcfaf3] pl-10 pr-16 text-[0.92rem] text-[#111827] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none placeholder:text-[#6f7380] focus:border-[#cdb575] focus:shadow-[0_0_0_3px_rgba(205,181,117,0.2)]"
+                  className="h-10 w-full rounded-full border border-[#b8cff8] bg-white pl-10 pr-16 text-[0.92rem] text-[#1b2e4f] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:border-[#7ea6ea] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)]"
                   aria-label="Search products"
                 />
                 {searchInput.trim() ? (
@@ -426,25 +428,25 @@ const MainHeader = () => {
                       event.preventDefault();
                       setSearchInput("");
                     }}
-                    className="absolute right-11 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#2f5eaa] transition hover:bg-[#e7edf7]"
+                    className="absolute right-11 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#2f5eaa] transition hover:bg-[#e8f0ff]"
                     aria-label="Clear search"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-[#dbdbd3] bg-[#f7f7f4] px-2 py-0.5 text-[0.62rem] font-semibold text-[#7c8290]">
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-[#c5d7f8] bg-[#eff5ff] px-2 py-0.5 text-[0.62rem] font-semibold text-[#5f78a8]">
                   / K
                 </span>
               </label>
 
               {searchDropdownOpen ? (
                 <div
-                  className="absolute right-0 top-[calc(100%+0.45rem)] z-[80] hidden w-[min(840px,calc(100vw-2rem))] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] gap-1.5 rounded-[0.9rem] border border-[#d5d5cf] bg-[#f8f8f6] p-2 shadow-[0_26px_48px_-40px_rgba(15,23,42,0.48)] lg:grid"
+                  className="absolute right-0 top-[calc(100%+0.45rem)] z-[80] hidden w-[min(840px,calc(100vw-2rem))] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] gap-1.5 rounded-[0.9rem] border border-[#c5d8fc] bg-[#f3f8ff] p-2 shadow-[0_26px_48px_-40px_rgba(20,58,128,0.52)] lg:grid"
                   onMouseDown={(event) => event.preventDefault()}
                 >
-                  <section className="rounded-[0.85rem] border border-[#d6d6cf] bg-[#f6f6f3] p-2">
-                    <div className="flex items-center justify-between border-b border-[#d6d6cf] pb-2">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#c7a536]">Products</p>
+                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
+                    <div className="flex items-center justify-between border-b border-[#d8e6ff] pb-2">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Products</p>
                       <button
                         type="button"
                         onMouseDown={(event) => {
@@ -452,7 +454,7 @@ const MainHeader = () => {
                           setSearchDropdownOpen(false);
                           applySearchQuery(searchInput);
                         }}
-                        className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4f5767] transition hover:text-[#111827]"
+                        className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4f6b9c] transition hover:text-[#1b3f8c]"
                       >
                         Search all
                       </button>
@@ -467,7 +469,7 @@ const MainHeader = () => {
                             key={product.id}
                             to={`/products/${product.handle}`}
                             onClick={() => setSearchDropdownOpen(false)}
-                            className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.75rem] border border-[#d5d5cf] bg-[#f3f3ef] px-2 py-1.5 transition hover:border-[#c3c3bc] hover:bg-[#efefea]"
+                            className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.75rem] border border-[#d2e2ff] bg-[#f9fbff] px-2 py-1.5 transition hover:border-[#aac4ef] hover:bg-[#eef5ff]"
                           >
                             {image ? (
                               <img
@@ -477,21 +479,21 @@ const MainHeader = () => {
                                 loading="lazy"
                               />
                             ) : (
-                              <div className="grid h-10 w-10 place-items-center rounded-[0.65rem] bg-[#e8e8e3] text-[0.42rem] font-bold uppercase tracking-[0.08em] text-[#707786]">
+                              <div className="grid h-10 w-10 place-items-center rounded-[0.65rem] bg-[#eaf2ff] text-[0.42rem] font-bold uppercase tracking-[0.08em] text-[#5d75a2]">
                                 SALT
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="line-clamp-2 text-[0.82rem] font-semibold leading-tight text-[#1d2433]">
+                              <p className="line-clamp-2 text-[0.82rem] font-semibold leading-tight text-[#1c3761]">
                                 {conciseTitle(product.title, 36)}
                               </p>
-                              <p className="mt-0.5 text-[0.5rem] font-semibold uppercase tracking-[0.13em] text-[#687081]">
+                              <p className="mt-0.5 text-[0.5rem] font-semibold uppercase tracking-[0.13em] text-[#5a729d]">
                                 {product.product_type || "Curated pick"}
                               </p>
                             </div>
                             <div className="flex min-h-full flex-col items-end justify-between gap-1.5 text-right">
-                              <p className="text-[0.84rem] font-semibold leading-none text-[#1d2433]">{price}</p>
-                              <span className="inline-flex items-center gap-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#616879]">
+                              <p className="text-[0.84rem] font-semibold leading-none text-[#193764]">{price}</p>
+                              <span className="inline-flex items-center gap-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#496793]">
                                 View
                                 <ChevronRight className="h-3 w-3" />
                               </span>
@@ -501,7 +503,7 @@ const MainHeader = () => {
                       })}
 
                       {hasSearchQuery && !dropdownProducts.length ? (
-                        <div className="rounded-[1rem] border border-dashed border-[#d5d5cf] px-3 py-4 text-sm text-[#616879]">
+                        <div className="rounded-[1rem] border border-dashed border-[#c7daff] px-3 py-4 text-sm text-[#496793]">
                           <p>No product matches this search yet. Try a category shortcut:</p>
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
@@ -517,7 +519,7 @@ const MainHeader = () => {
                                     navigate(entry.to);
                                   }
                                 }}
-                                className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
                               >
                                 {entry.label}
                               </button>
@@ -528,57 +530,57 @@ const MainHeader = () => {
                     </div>
                   </section>
 
-                  <section className="rounded-[0.85rem] border border-[#d6d6cf] bg-[#f6f6f3] p-2">
+                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
                     <div className="flex items-start justify-between">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#c7a536]">Collections</p>
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Collections</p>
                       <button
                         type="button"
                         onMouseDown={(event) => {
                           event.preventDefault();
                           setSearchDropdownOpen(false);
                         }}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#d6d6cf] text-[#7a818f] transition hover:bg-[#efefea] hover:text-[#1d2433]"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#cadbf8] text-[#6a81ab] transition hover:bg-[#ecf3ff] hover:text-[#163f87]"
                         aria-label="Close search"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <div className="mt-3 rounded-[0.8rem] border border-[#d5d5cf] bg-[#f3f3ef] p-2.5">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#596172]">Popular routes</p>
+                    <div className="mt-3 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Popular routes</p>
                       <div className="mt-2.5 grid grid-cols-2 gap-1.5">
                         {popularRoutes.map((route) => (
                           <Link
                             key={route.label}
                             to={route.to}
                             onClick={() => setSearchDropdownOpen(false)}
-                            className="inline-flex items-center justify-between rounded-[0.7rem] border border-transparent bg-[#f8f7f2] px-2 py-1.5 text-[0.74rem] font-medium text-[#1d2433] transition hover:border-[#d7cfb7] hover:bg-[#ecece7]"
+                            className="inline-flex items-center justify-between rounded-[0.7rem] border border-transparent bg-white px-2 py-1.5 text-[0.74rem] font-medium text-[#1c3761] transition hover:border-[#b4cbf1] hover:bg-[#edf4ff]"
                           >
                             <span>{route.label}</span>
-                            <ChevronRight className="h-3 w-3 text-[#2f3748]" />
+                            <ChevronRight className="h-3 w-3 text-[#345f9b]" />
                           </Link>
                         ))}
                       </div>
                     </div>
 
-                    <div className="mt-1.5 rounded-[0.8rem] border border-[#d5d5cf] bg-[#f3f3ef] p-2.5">
+                    <div className="mt-1.5 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#596172]">Quick picks</p>
-                        <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#7a818f]">
+                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Quick picks</p>
+                        <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#667ea8]">
                           {recentSearches.length ? "Recent first" : "Trending first"}
                         </p>
                       </div>
 
                       {quickCategoryLinks.length ? (
                         <div className="mt-2.5">
-                          <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#7a818f]">Categories</p>
+                          <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">Categories</p>
                           <div className="mt-1.5 flex flex-wrap gap-1">
                             {quickCategoryLinks.map((entry) => (
                               <Link
                                 key={`${entry.label}-${entry.to}`}
                                 to={entry.to}
                                 onClick={() => setSearchDropdownOpen(false)}
-                                className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
                               >
                                 {entry.label}
                               </Link>
@@ -588,7 +590,7 @@ const MainHeader = () => {
                       ) : null}
 
                       <div className={quickCategoryLinks.length ? "mt-2.5" : "mt-3"}>
-                        <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#7a818f]">
+                        <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">
                           {recentSearches.length ? "Recent searches" : "Trending searches"}
                         </p>
                         <div className="mt-1.5 flex flex-wrap gap-1">
@@ -600,7 +602,7 @@ const MainHeader = () => {
                                 event.preventDefault();
                                 runQuickSearch(term);
                               }}
-                              className="rounded-full border border-[#d3cab0] bg-[#faf7ef] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#4a5263] transition hover:border-[#bfa766] hover:text-[#1d2433]"
+                              className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
                             >
                               {term}
                             </button>
@@ -661,22 +663,22 @@ const MainHeader = () => {
       </div>
 
       {showHeaderSearch ? (
-        <div className="border-t border-[#e5deca] px-3 py-2 lg:hidden">
+        <div className="border-t border-[#d7e5ff] px-3 py-2 lg:hidden">
           <div className="mx-auto max-w-[1120px]">
             <form onSubmit={submitSearch}>
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#626a7a]" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
                 <input
                   type="search"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search"
-                  className="h-10 w-full rounded-full border border-[#d9cb97] bg-[#fcfaf3] pl-10 pr-24 text-sm text-[#111827] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none placeholder:text-[#6f7380] focus:border-[#cdb575] focus:shadow-[0_0_0_3px_rgba(205,181,117,0.2)]"
+                  className="h-10 w-full rounded-full border border-[#b8cff8] bg-white pl-10 pr-24 text-sm text-[#1b2e4f] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:border-[#7ea6ea] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)]"
                   aria-label="Search products"
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full bg-[#2d3a52] px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#1e293b]"
+                  className="absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full bg-[#1d4faa] px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#153f8b]"
                 >
                   Search
                 </button>
@@ -687,17 +689,17 @@ const MainHeader = () => {
       ) : null}
 
       {mobileOpen ? (
-        <div className="border-t border-[#e5deca] bg-[#f7f1df] px-3 py-4 lg:hidden">
+        <div className="border-t border-[#d7e5ff] bg-[#f1f7ff] px-3 py-4 lg:hidden">
           <div className="mx-auto grid max-w-[1120px] gap-2">
             {mobileNav.map((item) => (
               <Link
                 key={item.label}
                 to={item.to}
                 onClick={closeMobileMenu}
-                className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#d7d1bd] bg-[#fbf8ef] px-4 font-display text-[1rem] transition ${
+                className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 font-display text-[1rem] transition ${
                   isNavItemActive(item, location.pathname)
-                    ? "text-[#111827]"
-                    : "text-[#2b3344] hover:border-[#c8b77a] hover:text-[#111827]"
+                    ? "border-[#98b8ef] bg-[#e7f0ff] text-[#153f8d]"
+                    : "text-[#2a3f66] hover:border-[#9ab9ee] hover:text-[#153f8d]"
                 }`}
               >
                 {item.label}
@@ -708,7 +710,7 @@ const MainHeader = () => {
               <Link
                 to="/wishlist"
                 onClick={closeMobileMenu}
-                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#d7d1bd] bg-[#fbf8ef] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2b3344]"
+                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
               >
                 Wishlist
               </Link>
@@ -718,7 +720,7 @@ const MainHeader = () => {
                   closeMobileMenu();
                   openCartDrawer();
                 }}
-                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#2d3a52] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
+                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#1d4faa] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
               >
                 Cart ({itemCount})
               </button>
@@ -731,7 +733,7 @@ const MainHeader = () => {
                   logout();
                   closeMobileMenu();
                 }}
-                className="mt-1 inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#d7d1bd] bg-[#fbf8ef] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2b3344]"
+                className="mt-1 inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
               >
                 Log out
               </button>
@@ -740,14 +742,14 @@ const MainHeader = () => {
                 <Link
                   to={accountHref}
                   onClick={closeMobileMenu}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#d7d1bd] bg-[#fbf8ef] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2b3344]"
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
                 >
                   Login
                 </Link>
                 <Link
                   to={signupHref}
                   onClick={closeMobileMenu}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#c9a73a] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#1e2432]"
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#f0c148] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#1e2432]"
                 >
                   Sign Up
                 </Link>

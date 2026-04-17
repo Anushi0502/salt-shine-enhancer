@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
-import ProductCard from "@/components/storefront/ProductCard";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
@@ -181,6 +180,29 @@ const featuredCourtneyBookHandles = [
   "daily-bloom-journal",
 ] as const;
 
+const featuredCourtneyBookFallbackMeta = [
+  {
+    handle: "relics-of-the-century",
+    title: "Relics of the Century",
+    price: "$19.99",
+  },
+  {
+    handle: "the-living-legacy-planner",
+    title: "The Living Legacy Planner 1st Edition",
+    price: "$28.99",
+  },
+  {
+    handle: "living-legacy-planner-second-edition",
+    title: "The Living Legacy Planner 2nd Edition",
+    price: "$55.99",
+  },
+  {
+    handle: "daily-bloom-journal",
+    title: "The Daily Bloom",
+    price: "$49.99",
+  },
+] as const;
+
 const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
     title: "SALT Banner",
@@ -259,6 +281,55 @@ function SectionTitle({ title }: { title: string }) {
       </h2>
       <span className="h-px bg-[#bfd4fb]" />
     </div>
+  );
+}
+
+function OverlayProductCard({
+  title,
+  image,
+  to,
+  price,
+  fallbackImage,
+  className = "",
+}: {
+  title: string;
+  image: string;
+  to: string;
+  price: string;
+  fallbackImage: string;
+  className?: string;
+}) {
+  const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
+  const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
+
+  return (
+    <Link
+      to={to}
+      className={`group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${className}`.trim()}
+    >
+      <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+        <ResilientImage
+          src={imageSrc}
+          alt={title}
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          fallback={
+            <img
+              src={fallbackSrc}
+              alt={title}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+            />
+          }
+        />
+      </div>
+      <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+        <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+          {title}
+        </p>
+        <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+          {price}
+        </p>
+      </div>
+    </Link>
   );
 }
 
@@ -397,7 +468,7 @@ const HomePage = () => {
 
     return uniqueBooks.slice(0, 4);
   }, [booksIdsPayload, productById, products]);
-  const featuredCourtneyBooksImage = useMemo(() => {
+  const featuredCourtneyBookFallbackImage = useMemo(() => {
     const firstBook = featuredCourtneyBooks[0];
     if (!firstBook) {
       return collectionDecor;
@@ -405,6 +476,59 @@ const HomePage = () => {
 
     return productImage(firstBook) || collectionDecor;
   }, [featuredCourtneyBooks]);
+  const featuredCourtneyBookCards = useMemo(() => {
+    const cards = featuredCourtneyBooks.slice(0, 4).map((product) => ({
+      key: `featured-courtney-book-${product.id}`,
+      title: product.title,
+      to: `/products/${product.handle}`,
+      price: formatMoney(minPrice(product)),
+      image: productImage(product) || featuredCourtneyBookFallbackImage,
+    }));
+    const seenPaths = new Set(cards.map((card) => card.to));
+
+    featuredCourtneyBookFallbackMeta.forEach((fallbackBook) => {
+      if (cards.length >= 4) {
+        return;
+      }
+
+      const preferredPath = `/products/${fallbackBook.handle}`;
+      const preferredProduct = products.find((product) =>
+        normalizeHandle(product.handle).includes(normalizeHandle(fallbackBook.handle)),
+      );
+
+      if (preferredProduct) {
+        const preferredProductPath = `/products/${preferredProduct.handle}`;
+        if (seenPaths.has(preferredProductPath)) {
+          return;
+        }
+
+        seenPaths.add(preferredProductPath);
+        cards.push({
+          key: `featured-courtney-book-${preferredProduct.id}`,
+          title: preferredProduct.title,
+          to: preferredProductPath,
+          price: formatMoney(minPrice(preferredProduct)),
+          image: productImage(preferredProduct) || featuredCourtneyBookFallbackImage,
+        });
+        return;
+      }
+
+      if (seenPaths.has(preferredPath)) {
+        return;
+      }
+
+      seenPaths.add(preferredPath);
+      cards.push({
+        key: `featured-courtney-book-fallback-${fallbackBook.handle}`,
+        title: fallbackBook.title,
+        to: preferredPath,
+        price: fallbackBook.price,
+        image: featuredCourtneyBookFallbackImage,
+      });
+    });
+
+    return cards.slice(0, 4);
+  }, [featuredCourtneyBookFallbackImage, featuredCourtneyBooks, products]);
   const testimonialProductIds = useMemo(
     () =>
       Array.from(
@@ -824,48 +948,42 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={120}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
-              {bestSellerTiles.map((tile, index) => (
-                <Reveal key={tile.title} delayMs={160 + index * 70}>
-                  <Link
-                    to={tile.to}
-                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
-                  >
-                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
-                      <ResilientImage
-                        src={tile.image}
-                        alt={tile.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                        fallback={
-                          <img
-                            src={bestSellerHeroImage}
-                            alt={tile.title}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          />
-                        }
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+              {bestSellerProducts.length > 0
+                ? bestSellerProducts.slice(0, 8).map((product, index) => (
+                    <Reveal key={`best-seller-product-${product.id}`} delayMs={160 + index * 70}>
+                      <OverlayProductCard
+                        title={product.title}
+                        image={productImage(product) || bestSellerHeroImage}
+                        to={`/products/${product.handle}`}
+                        price={formatMoney(minPrice(product))}
+                        fallbackImage={bestSellerHeroImage}
+                        className="mx-auto w-[calc(100%-15px)]"
                       />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
-                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
-                        {tile.title}
-                      </p>
-                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
-                        {tile.price}
-                      </p>
-                    </div>
-                  </Link>
-                </Reveal>
-              ))}
+                    </Reveal>
+                  ))
+                : bestSellerTiles.map((tile, index) => (
+                    <Reveal key={tile.title} delayMs={160 + index * 70}>
+                      <OverlayProductCard
+                        title={tile.title}
+                        image={tile.image}
+                        to={tile.to}
+                        price={tile.price}
+                        fallbackImage={bestSellerHeroImage}
+                        className="mx-auto w-[calc(100%-15px)]"
+                      />
+                    </Reveal>
+                  ))}
             </div>
           </section>
         </Reveal>
 
         <Reveal delayMs={160}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Gift Ideas For Loved Ones" />
-            <div className="mt-4 grid grid-cols-1 gap-3.5 min-[620px]:grid-cols-2 sm:mt-5 md:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-5 min-[620px]:grid-cols-2 sm:mt-5 md:grid-cols-3">
               {giftTiles.map((tile, index) => (
                 <Reveal key={tile.title} delayMs={200 + index * 80}>
                   <Link
@@ -902,9 +1020,9 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={180}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Quirky Gift Picks" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
               {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
                   <Link
@@ -941,86 +1059,58 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={220}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
-            <div className="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
-              <div className="rounded-[1.15rem] border border-[#d2e4ff] bg-[#f8fbff] p-4 sm:rounded-[1.35rem] sm:p-6">
-                <h2 className="font-display text-[clamp(1.6rem,3.5vw,2.6rem)] leading-[1.06] text-[#183f84]">
-                  Our Exclusive Book Collection
-                </h2>
-
-                <div className="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
-                  {featuredCourtneyBooks.length > 0
-                    ? featuredCourtneyBooks.slice(0, 4).map((product, index) => (
-                        <Reveal key={`featured-courtney-book-${product.id}`} delayMs={240 + index * 60}>
-                          <ProductCard product={product} variant="dense" />
-                        </Reveal>
-                      ))
-                    : Array.from({ length: 4 }, (_, index) => (
-                        <div
-                          key={`featured-courtney-book-placeholder-${index}`}
-                          className="rounded-[1.1rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)]"
-                        >
-                          <div className="aspect-square w-full rounded-[0.9rem] bg-[linear-gradient(135deg,#e8f1ff_0%,#dbe9ff_100%)]" />
-                          <div className="mt-2 h-4 w-4/5 rounded-full bg-[#d7e6ff]" />
-                          <div className="mt-1.5 h-3 w-2/5 rounded-full bg-[#d7e6ff]" />
-                          <div className="mt-2.5 h-5 w-1/3 rounded-full bg-[#c0d8ff]" />
-                        </div>
-                      ))}
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[1.15rem] border border-[#d2e4ff] bg-[#eef5ff] sm:rounded-[1.35rem]">
-                <img
-                  src={featuredCourtneyBooksImage}
-                  alt="Featured Courtney collection product"
-                  className="h-full min-h-[17rem] w-full object-cover sm:min-h-[21rem]"
-                />
-              </div>
-            </div>
-          </section>
-        </Reveal>
-
-        <Reveal delayMs={240}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
-            <SectionTitle title="Everyday Essentials" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-4 lg:grid-cols-4 lg:gap-5">
-              {everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
-                <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={260 + index * 70}>
-                  <Link
-                    to={tile.to}
-                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
-                  >
-                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
-                      <ResilientImage
-                        src={tile.image}
-                        alt={tile.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                        fallback={
-                          <img
-                            src={bestSellerHeroImage}
-                            alt={tile.title}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          />
-                        }
-                      />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
-                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
-                        {tile.title}
-                      </p>
-                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
-                        {tile.price}
-                      </p>
-                    </div>
-                  </Link>
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(215px,1fr))] gap-3.5 sm:gap-6 lg:gap-7">
+              {featuredCourtneyBookCards.map((bookCard, index) => (
+                <Reveal key={bookCard.key} delayMs={240 + index * 60}>
+                  <OverlayProductCard
+                    title={bookCard.title}
+                    image={bookCard.image}
+                    to={bookCard.to}
+                    price={bookCard.price}
+                    fallbackImage={featuredCourtneyBookFallbackImage}
+                  />
                 </Reveal>
               ))}
             </div>
           </section>
         </Reveal>
 
+        <Reveal delayMs={240}>
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+            <SectionTitle title="Everyday Essentials" />
+            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+              {bestSellerProducts.length > 0
+                ? bestSellerProducts.slice(0, 8).map((product, index) => (
+                    <Reveal key={`everyday-essential-product-${product.id}`} delayMs={260 + index * 70}>
+                      <OverlayProductCard
+                        title={product.title}
+                        image={productImage(product) || bestSellerHeroImage}
+                        to={`/products/${product.handle}`}
+                        price={formatMoney(minPrice(product))}
+                        fallbackImage={bestSellerHeroImage}
+                        className="mx-auto w-[calc(100%-15px)]"
+                      />
+                    </Reveal>
+                  ))
+                : everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
+                    <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={260 + index * 70}>
+                      <OverlayProductCard
+                        title={tile.title}
+                        image={tile.image}
+                        to={tile.to}
+                        price={tile.price}
+                        fallbackImage={bestSellerHeroImage}
+                        className="mx-auto w-[calc(100%-15px)]"
+                      />
+                    </Reveal>
+                  ))}
+            </div>
+          </section>
+        </Reveal>
+
         <Reveal delayMs={280}>
-          <section className="border-t border-[#dce9ff] px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
+          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="What Our Customers Are Saying" />
             <div className="mt-5 grid grid-cols-1 gap-3.5 sm:mt-6 md:grid-cols-2 lg:grid-cols-3">
               {reviewTiles.map((tile, index) => (
