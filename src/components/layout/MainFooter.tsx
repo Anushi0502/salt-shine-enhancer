@@ -26,14 +26,14 @@ const MainFooter = () => {
   };
 
   return (
-    <footer className="mt-10 border-t border-[#cadbff] bg-[#f4f8ff] pt-10 sm:mt-14 sm:pt-12">
-      <div className="mx-auto w-full max-w-[1200px] px-4">
-        <div className="relative overflow-hidden rounded-[1.9rem] border border-[#c7d9fb] bg-[linear-gradient(145deg,rgba(255,255,255,0.76),rgba(238,246,255,0.92))] p-6 shadow-[0_30px_55px_-44px_rgba(26,77,154,0.55)] sm:p-8">
-          <div className="pointer-events-none absolute -left-16 top-8 h-36 w-36 rounded-full bg-[#9fc0f7]/22 blur-3xl" />
-          <div className="pointer-events-none absolute -right-14 -top-10 h-44 w-44 rounded-full bg-[#7aa4ef]/20 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-[#f2d37b]/20 blur-2xl" />
+    <footer className="mt-10 border-t border-[#cadbff] bg-[linear-gradient(180deg,#f4f8ff_0%,#e9f2ff_100%)] sm:mt-14">
+      <div className="relative w-full overflow-hidden border-b border-[#cadbff]/80 bg-[linear-gradient(140deg,rgba(255,255,255,0.8),rgba(236,245,255,0.95))]">
+        <div className="pointer-events-none absolute -left-16 top-6 h-44 w-44 rounded-full bg-[#9fc0f7]/25 blur-3xl" />
+        <div className="pointer-events-none absolute right-0 top-0 h-56 w-56 rounded-full bg-[#7aa4ef]/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-[#f2d37b]/18 blur-3xl" />
 
-          <div className="relative grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1.55fr]">
+        <div className="relative mx-auto w-full max-w-[1360px] px-4 py-10 sm:px-6 sm:py-12 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1.55fr]">
             <div className="flex flex-col items-start">
               <BrandLogo withWordmark size="md" />
               <p className="mt-5 max-w-sm text-[0.96rem] leading-7 text-[#2a4f90]/84">
@@ -77,7 +77,7 @@ const MainFooter = () => {
               </div>
             </div>
 
-            <div className="rounded-[1.15rem] border border-[#bfd3f8] bg-white/70 p-4 sm:p-5">
+            <div className="rounded-[1.25rem] border border-[#b7cdf5] bg-white/82 p-4 shadow-[0_20px_34px_-28px_rgba(26,77,154,0.46)] backdrop-blur-[2px] sm:p-5">
               <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#1a4d9a]">The SALT List</h3>
               <p className="mt-3 text-[0.93rem] leading-6 text-[#2a4f90]/82">
                 Sign up for curated arrivals, practical edits, and member-only updates.
@@ -104,26 +104,28 @@ const MainFooter = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="mt-12 border-t border-[#cadbff] py-12 sm:mt-14 sm:py-14">
-          <div className="rounded-[1.25rem] border border-[#c5d7fb] bg-[linear-gradient(140deg,rgba(255,255,255,0.72),rgba(239,246,255,0.9))] px-5 py-4 shadow-[0_24px_42px_-38px_rgba(26,77,154,0.45)] sm:px-7 sm:py-5">
-            <div className="flex flex-col items-start justify-between gap-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-[#2a4f90]/80 md:flex-row md:items-center">
-              <p>SALT storefront confidence</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-[#b7cdf5] bg-white/80 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Secure checkout</span>
-                <span className="rounded-full border border-[#b7cdf5] bg-white/80 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Tracked shipping</span>
-                <span className="rounded-full border border-[#b7cdf5] bg-white/80 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Easy returns</span>
-              </div>
+      <div className="w-full border-b border-[#cadbff]/70 bg-[linear-gradient(140deg,rgba(255,255,255,0.7),rgba(236,245,255,0.92))]">
+        <div className="mx-auto w-full max-w-[1360px] px-4 py-6 sm:px-6 sm:py-7 lg:px-10">
+          <div className="flex flex-col items-start justify-between gap-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-[#2a4f90]/80 md:flex-row md:items-center">
+            <p>SALT storefront confidence</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-[#b7cdf5] bg-white/85 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Secure checkout</span>
+              <span className="rounded-full border border-[#b7cdf5] bg-white/85 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Tracked shipping</span>
+              <span className="rounded-full border border-[#b7cdf5] bg-white/85 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Easy returns</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="mt-6 flex flex-col items-center justify-between gap-6 text-[0.78rem] font-bold uppercase tracking-[0.16em] text-[#2a4f90]/78 md:flex-row">
-            <span>&copy; {new Date().getFullYear()} SALT ONLINE STORE</span>
-            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
-              <a href={privacyPolicyHref} className="transition-colors hover:text-[#f2b600]">Privacy Policy</a>
-              <a href={returnsPolicyHref} className="transition-colors hover:text-[#f2b600]">Refund Policy</a>
-              <a href={shippingPolicyHref} className="transition-colors hover:text-[#f2b600]">Shipping Policy</a>
-            </div>
+      <div className="w-full">
+        <div className="mx-auto flex w-full max-w-[1360px] flex-col items-center justify-between gap-6 px-4 py-6 text-[0.78rem] font-bold uppercase tracking-[0.16em] text-[#2a4f90]/78 sm:px-6 lg:flex-row lg:px-10">
+          <span>&copy; {new Date().getFullYear()} SALT ONLINE STORE</span>
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+            <a href={privacyPolicyHref} className="transition-colors hover:text-[#f2b600]">Privacy Policy</a>
+            <a href={returnsPolicyHref} className="transition-colors hover:text-[#f2b600]">Refund Policy</a>
+            <a href={shippingPolicyHref} className="transition-colors hover:text-[#f2b600]">Shipping Policy</a>
           </div>
         </div>
       </div>
