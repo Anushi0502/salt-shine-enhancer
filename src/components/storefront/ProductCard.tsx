@@ -50,7 +50,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           className="group relative block h-full overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
         >
           {image ? (
-            <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+            <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1.2/1.4]">
               <img
                 src={image}
                 alt={product.title}
@@ -79,8 +79,6 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
                     <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
                     {formattedRating}
                   </span>
-                  <span className="text-white/40">•</span>
-                  <span>{summary?.reviewCount ?? 0} {reviewLabel}</span>
                 </>
               ) : null}
             </div>

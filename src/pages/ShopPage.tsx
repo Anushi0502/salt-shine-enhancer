@@ -777,7 +777,7 @@ const ShopPage = () => {
                 {hasActiveFilters ? (
                   <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
                 ) : (
-                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-2 py-[0.18rem] text-[0.52rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-2.5 py-0.5 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                     No active filters
                   </span>
                 )}

@@ -726,66 +726,8 @@ const CollectionsPage = () => {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.1),transparent_30%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.1),transparent_32%),linear-gradient(160deg,rgba(247,250,255,0.94),rgba(244,248,255,0.9))]" />
 
           <div className="relative">
-            <span className="salt-editorial-pill">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Collections, redesigned
-            </span>
-            <SectionHeading
-              className="mt-3"
-              title={
-                query.trim()
-                  ? `Collection results for “${query.trim()}”`
-                  : themeFilter === "all"
-                    ? "Browse collections like the shop page"
-                    : `Explore ${selectedTheme.label}`
-              }
-              description={
-                query.trim()
-                  ? "Search collection names and browse with the same structured rhythm, filtering, and merchandising logic used in the shop catalog."
-                  : themeFilter === "all"
-                    ? selectedTheme.description
-                    : formatCollectionDescription(previewCollection?.description) || selectedTheme.description
-              }
-              action={
-                <p className="salt-editorial-meta">
-                  {totalResults.toLocaleString()} collections | {filteredProductTotal.toLocaleString()} products inside results
-                </p>
-              }
-            />
-            <TrustStrip
-              className="mt-4"
-              items={[
-                { icon: Truck, label: "US shipping included" },
-                { icon: ShieldCheck, label: "Secure checkout" },
-                { icon: Sparkles, label: "Shop-first layout" },
-              ]}
-            />
-
-            <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              {themeConfigs.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => updateParams({ theme: theme.id === "all" ? null : theme.id }, true)}
-                  className={
-                    theme.id === themeFilter
-                      ? "salt-primary-cta inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
-                      : "salt-outline-chip inline-flex h-9 shrink-0 items-center gap-1.5 px-3 py-0 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
-                  }
-                >
-                  <theme.Icon className="h-3.5 w-3.5" />
-                  {theme.label}
-                  <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[0.56rem] leading-none text-current">
-                    {themeCounts[theme.id].toLocaleString()}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      {!hasActiveFilters && leadCollection ? (
+            
+            {!hasActiveFilters && leadCollection ? (
         <Reveal delayMs={70}>
           <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
@@ -807,11 +749,11 @@ const CollectionsPage = () => {
               />
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                {supportCollections.slice(0, 3).map((collection) => (
+                {supportCollections.slice(0, 4).map((collection) => (
                   <Link
                     key={collection.id}
                     to={`/shop?collection=${collection.handle}`}
-                    className="salt-search-hit min-h-[92px] rounded-[1rem] px-3 py-3"
+                    className="salt-search-hit min-h-[85px] rounded-[1rem] px-3 py-3"
                   >
                     {collection.imageSrc ? (
                       <img
@@ -841,6 +783,11 @@ const CollectionsPage = () => {
           </div>
         </Reveal>
       ) : null}
+          </div>
+        </div>
+      </Reveal>
+
+      
 
       <div
         className={
@@ -1141,4 +1088,3 @@ const CollectionsPage = () => {
 };
 
 export default CollectionsPage;
-
