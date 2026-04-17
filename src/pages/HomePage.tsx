@@ -1060,7 +1060,10 @@ const HomePage = () => {
 
         <Reveal delayMs={220}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
+            <h2 className="font-display text-[clamp(1.45rem,2.6vw,2.05rem)] leading-[1.08] text-[#183f84]">
+              Our Exclusive Book Collection
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
               <div className="grid grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 sm:gap-6 lg:gap-7">
                 {featuredCourtneyBookCards.map((bookCard, index) => (
                   <Reveal key={bookCard.key} delayMs={240 + index * 60}>
