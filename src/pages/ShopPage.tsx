@@ -697,8 +697,7 @@ const ShopPage = () => {
             <SectionHeading
               className="mt-3"
               title={selectedCollection?.title || "Explore the full SALT catalog"}
-              description={formatCollectionDescription(selectedCollection?.description)}
-              action={<p className="salt-editorial-meta">{totalResults.toLocaleString()} matched | Showing {totalResults === 0 ? 0 : startIndex + 1}-{endIndex}</p>}
+              action={''}
             />
             <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
           </div>
