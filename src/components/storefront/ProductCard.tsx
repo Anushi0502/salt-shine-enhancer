@@ -38,6 +38,9 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
   const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
   const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
+  const hasReviews = Boolean(summary && summary.reviewCount > 0);
+  const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
+  const reviewLabel = summary?.reviewCount === 1 ? "review" : "reviews";
 
   if (isShop) {
     return (
@@ -65,9 +68,22 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             <h3 className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
               {title}
             </h3>
-            <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
-              {formatMoney(min)}
-            </p>
+            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]">
+              <span className="text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+                {formatMoney(min)}
+              </span>
+              {hasReviews ? (
+                <>
+                  <span className="text-white/40">•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
+                    {formattedRating}
+                  </span>
+                  <span className="text-white/40">•</span>
+                  <span>{summary?.reviewCount ?? 0} {reviewLabel}</span>
+                </>
+              ) : null}
+            </div>
           </div>
         </Link>
       </article>

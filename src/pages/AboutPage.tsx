@@ -309,7 +309,7 @@ const AboutPage = () => {
                         to="/blog"
                         className="inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
                       >
-                        Read the journal
+                        Read the blogs
                       </Link>
                     </div>
                   </div>
@@ -443,7 +443,7 @@ const AboutPage = () => {
                     Next stop
                   </p>
                   <h3 className="mt-3 font-display text-[1.9rem] leading-[0.98] tracking-[-0.04em] text-[#123569] sm:text-[2.35rem]">
-                    Browse the catalog, read the journal, or talk to the team directly.
+                    Browse the catalog, read the blogs, or talk to the team directly.
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-[#59719b]">
                     The storefront, editorial pages, and support flows are designed to feel like one connected experience.
@@ -461,7 +461,7 @@ const AboutPage = () => {
                     to="/blog"
                     className="inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
                   >
-                    Read the journal
+                    Read the blogs
                   </Link>
                   <Link
                     to="/contact"

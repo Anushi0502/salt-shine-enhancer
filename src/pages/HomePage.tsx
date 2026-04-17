@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeTestimonials } from "@/lib/judgeme";
+import { useJudgeMeProductRating, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
@@ -24,6 +24,7 @@ type ImageTile = {
 
 type ProductTile = ImageTile & {
   price: string;
+  productId?: number;
 };
 
 type ReviewTile = {
@@ -289,6 +290,7 @@ function OverlayProductCard({
   image,
   to,
   price,
+  productId,
   fallbackImage,
   className = "",
 }: {
@@ -296,11 +298,16 @@ function OverlayProductCard({
   image: string;
   to: string;
   price: string;
+  productId?: number;
   fallbackImage: string;
   className?: string;
 }) {
+  const { summary } = useJudgeMeProductRating(productId);
   const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
   const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
+  const hasReviews = Boolean(summary && summary.reviewCount > 0);
+  const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
+  const reviewLabel = summary?.reviewCount === 1 ? "review" : "reviews";
 
   return (
     <Link
@@ -325,9 +332,22 @@ function OverlayProductCard({
         <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
           {title}
         </p>
-        <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
-          {price}
-        </p>
+        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]">
+          <span className="text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+            {price}
+          </span>
+          {hasReviews ? (
+            <>
+              <span className="text-white/40">•</span>
+              <span className="inline-flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
+                {formattedRating}
+              </span>
+              <span className="text-white/40">•</span>
+              <span>{summary?.reviewCount ?? 0} {reviewLabel}</span>
+            </>
+          ) : null}
+        </div>
       </div>
     </Link>
   );
@@ -479,6 +499,7 @@ const HomePage = () => {
   const featuredCourtneyBookCards = useMemo(() => {
     const cards = featuredCourtneyBooks.slice(0, 4).map((product) => ({
       key: `featured-courtney-book-${product.id}`,
+      productId: product.id,
       title: product.title,
       to: `/products/${product.handle}`,
       price: formatMoney(minPrice(product)),
@@ -505,6 +526,7 @@ const HomePage = () => {
         seenPaths.add(preferredProductPath);
         cards.push({
           key: `featured-courtney-book-${preferredProduct.id}`,
+          productId: preferredProduct.id,
           title: preferredProduct.title,
           to: preferredProductPath,
           price: formatMoney(minPrice(preferredProduct)),
@@ -529,6 +551,26 @@ const HomePage = () => {
 
     return cards.slice(0, 4);
   }, [featuredCourtneyBookFallbackImage, featuredCourtneyBooks, products]);
+  const dailyBloomFeatureCard = useMemo(() => {
+    const matchedCard = featuredCourtneyBookCards.find(
+      (card) =>
+        /daily bloom/i.test(card.title) ||
+        card.to.includes("daily-bloom"),
+    );
+
+    if (matchedCard) {
+      return matchedCard;
+    }
+
+    return {
+      key: "featured-courtney-book-daily-bloom-fallback",
+      title: "The Daily Bloom",
+      to: "/products/daily-bloom-journal",
+      price: "$49.99",
+      image: featuredCourtneyBookFallbackImage,
+    };
+  }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
+  const { summary: dailyBloomFeatureSummary } = useJudgeMeProductRating(dailyBloomFeatureCard.productId);
   const testimonialProductIds = useMemo(
     () =>
       Array.from(
@@ -604,6 +646,7 @@ const HomePage = () => {
     }
 
     return bestSellerProducts.map((product) => ({
+      productId: product.id,
       title: product.title,
       price: formatMoney(minPrice(product)),
       image: productImage(product) || heroMain,
@@ -662,6 +705,7 @@ const HomePage = () => {
     }
 
     return quirkyGiftProducts.map((product) => ({
+      productId: product.id,
       title: product.title,
       price: formatMoney(minPrice(product)),
       image: productImage(product) || bestSellerHeroImage,
@@ -959,6 +1003,7 @@ const HomePage = () => {
                         image={productImage(product) || bestSellerHeroImage}
                         to={`/products/${product.handle}`}
                         price={formatMoney(minPrice(product))}
+                        productId={product.id}
                         fallbackImage={bestSellerHeroImage}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
@@ -971,6 +1016,7 @@ const HomePage = () => {
                         image={tile.image}
                         to={tile.to}
                         price={tile.price}
+                        productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
@@ -1025,33 +1071,15 @@ const HomePage = () => {
             <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
               {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
-                  <Link
+                  <OverlayProductCard
+                    title={tile.title}
+                    image={tile.image}
                     to={tile.to}
-                    className="group relative mx-auto block w-[calc(100%-15px)] overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
-                  >
-                    <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
-                      <ResilientImage
-                        src={tile.image}
-                        alt={tile.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                        fallback={
-                          <img
-                            src={bestSellerHeroImage}
-                            alt={tile.title}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          />
-                        }
-                      />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
-                      <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
-                        {tile.title}
-                      </p>
-                      <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
-                        {tile.price}
-                      </p>
-                    </div>
-                  </Link>
+                    price={tile.price}
+                    productId={tile.productId}
+                    fallbackImage={bestSellerHeroImage}
+                    className="mx-auto w-[calc(100%-15px)]"
+                  />
                 </Reveal>
               ))}
             </div>
@@ -1059,28 +1087,71 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={220}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
-            <h2 className="font-display text-[clamp(1.45rem,2.6vw,2.05rem)] leading-[1.08] text-[#183f84]">
-              Our Exclusive Book Collection
-            </h2>
-            <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
-              <div className="grid grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 sm:gap-6 lg:gap-7">
-                {featuredCourtneyBookCards.map((bookCard, index) => (
-                  <Reveal key={bookCard.key} delayMs={240 + index * 60}>
-                    <OverlayProductCard
-                      title={bookCard.title}
-                      image={bookCard.image}
-                      to={bookCard.to}
-                      price={bookCard.price}
-                      fallbackImage={featuredCourtneyBookFallbackImage}
-                    />
-                  </Reveal>
-                ))}
+          <section className="border-t border-[#dce9ff] px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8 lg:items-start">
+              <div className="space-y-5 sm:space-y-6">
+                <h2 className="text-left font-display text-[clamp(1.45rem,2.6vw,2.05rem)] leading-[1.08] text-[#183f84]">
+                  Our Exclusive Book Collection
+                </h2>
+                <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 sm:gap-5 lg:gap-6">
+                  {featuredCourtneyBookCards.map((bookCard, index) => (
+                    <Reveal key={bookCard.key} delayMs={240 + index * 60}>
+                      <OverlayProductCard
+                        title={bookCard.title}
+                        image={bookCard.image}
+                        to={bookCard.to}
+                        price={bookCard.price}
+                        productId={bookCard.productId}
+                        fallbackImage={featuredCourtneyBookFallbackImage}
+                      />
+                    </Reveal>
+                  ))}
+                </div>
               </div>
-              <div
-                className="hidden h-full rounded-[1.15rem] border border-[#d2e4ff] bg-[linear-gradient(180deg,#f9fcff_0%,#edf5ff_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] lg:block"
-                aria-hidden="true"
-              />
+
+              <Reveal delayMs={320}>
+                <Link
+                  to={dailyBloomFeatureCard.to}
+                  className="group relative hidden h-full min-h-[38rem] overflow-hidden rounded-[1.15rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] lg:block"
+                >
+                  <ResilientImage
+                    src={dailyBloomFeatureCard.image}
+                    alt={dailyBloomFeatureCard.title}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                    fallback={
+                      <img
+                        src={featuredCourtneyBookFallbackImage}
+                        alt={dailyBloomFeatureCard.title}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                      />
+                    }
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-4 py-4 text-center text-white sm:px-5">
+                    <p className="line-clamp-2 font-display text-[1.12rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.24rem]">
+                      {dailyBloomFeatureCard.title}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.82rem] font-semibold text-white/92 sm:text-[0.92rem]">
+                      <span className="text-[1.5rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.7rem]">
+                        {dailyBloomFeatureCard.price}
+                      </span>
+                      {dailyBloomFeatureSummary && dailyBloomFeatureSummary.reviewCount > 0 ? (
+                        <>
+                          <span className="text-white/40">•</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-[#f2c100] text-[#f2c100]" />
+                            {dailyBloomFeatureSummary.rating.toFixed(1)}
+                          </span>
+                          <span className="text-white/40">•</span>
+                          <span>
+                            {dailyBloomFeatureSummary.reviewCount}{" "}
+                            {dailyBloomFeatureSummary.reviewCount === 1 ? "review" : "reviews"}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </Link>
+              </Reveal>
             </div>
           </section>
         </Reveal>
@@ -1097,6 +1168,7 @@ const HomePage = () => {
                         image={productImage(product) || bestSellerHeroImage}
                         to={`/products/${product.handle}`}
                         price={formatMoney(minPrice(product))}
+                        productId={product.id}
                         fallbackImage={bestSellerHeroImage}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
@@ -1109,6 +1181,7 @@ const HomePage = () => {
                         image={tile.image}
                         to={tile.to}
                         price={tile.price}
+                        productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
                         className="mx-auto w-[calc(100%-15px)]"
                       />

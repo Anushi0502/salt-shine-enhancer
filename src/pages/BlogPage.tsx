@@ -90,10 +90,10 @@ const BlogPage = () => {
               <div className="relative z-10 max-w-2xl">
                 <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Salt Journal
+                  Salt Blogs
                 </p>
                 <h1 className="mt-4 font-display text-[clamp(2.2rem,6vw,4rem)] leading-[1.02] tracking-[-0.03em] text-[#1a1a1a]">
-                  Journal unavailable right now.
+                  Blogs unavailable right now.
                 </h1>
                 <p className="mt-4 max-w-xl text-[clamp(1rem,2vw,1.15rem)] leading-relaxed text-[#4a453e]/90">
                   The Shopify article sync did not return cleanly. Retry the feed or jump back into the catalog.
@@ -153,7 +153,7 @@ const BlogPage = () => {
     : 0;
   const breadcrumbItems = [
     { label: "Home", to: "/" },
-    { label: "Journal" },
+    { label: "Blogs" },
   ];
 
   return (
@@ -181,7 +181,7 @@ const BlogPage = () => {
                 <div className="max-w-[42rem]">
                   <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.72rem]">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Salt Journal
+                    Salt Blogs
                   </p>
                   <h1 className="mt-4 font-display text-[clamp(3.2rem,7vw,5rem)] leading-[1.02] tracking-[-0.04em] text-[#1a1a1a]">
                     Stories, guides, and seasonal ideas for everyday living.

@@ -25,7 +25,7 @@ const primaryNav: NavItem[] = [
     to: "/collections",
   },
   {
-    label: "Journal",
+    label: "Blogs",
     to: "/blog",
   },
   {
