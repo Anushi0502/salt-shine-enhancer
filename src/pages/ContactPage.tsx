@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { BadgeCheck, Clock3, Mail, MessageSquareMore, PackageSearch, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Clock3, PackageSearch, ShieldCheck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { Link } from "react-router-dom";
 import { getRuntimeContext } from "@/lib/theme-assets";
@@ -26,39 +26,9 @@ const ContactPage = () => {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Reach the SALT support team for delivery questions, product advice, or returns.
           </p>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <a
-              href={`mailto:${supportEmail}`}
-              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
-            >
-              Email support
-            </a>
-            <a
-              href={contactPolicyHref}
-              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
-            >
-              Contact policy
-            </a>
-            <Link
-              to="/blog"
-              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
-            >
-              Help guides
-            </Link>
-          </div>
-
+          
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.04fr_0.96fr]">
             <div>
-              <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {supportTopics.map((topic) => (
-                  <span
-                    key={topic}
-                    className="salt-outline-chip px-3 py-1.5 text-[0.66rem]"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
 
               <form onSubmit={onSubmit} className="salt-section-shell grid gap-3 rounded-2xl border border-border/70 p-3.5 sm:p-4">
                 <input
@@ -96,6 +66,27 @@ const ContactPage = () => {
             </div>
 
             <div className="space-y-3">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <a
+              href={`mailto:${supportEmail}`}
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
+            >
+              Email support
+            </a>
+            <a
+              href={contactPolicyHref}
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
+            >
+              Contact policy
+            </a>
+            <Link
+              to="/blog"
+              className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
+            >
+              Help guides
+            </Link>
+          </div>
+
               <div className="salt-section-shell rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-background to-salt-blue/10 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">Support quality</p>
                 <h2 className="mt-1 font-display text-[clamp(1.2rem,2.2vw,1.8rem)] leading-tight">
@@ -117,35 +108,6 @@ const ContactPage = () => {
                 </div>
               </div>
 
-              <div className="salt-ambient-card rounded-2xl border border-border p-4 text-xs text-muted-foreground">
-                <p className="font-semibold text-foreground">Before you message us:</p>
-                <ul className="mt-2 space-y-1">
-                  <li>Include your order number for the fastest support response.</li>
-                  <li>Attach product or shipping screenshots when helpful.</li>
-                  <li>Use the same email address used at checkout for quicker verification.</li>
-                </ul>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="salt-kpi-card salt-metric-card rounded-xl border border-border p-3 text-xs text-muted-foreground">
-                  <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                    <MessageSquareMore className="h-4 w-4 text-primary" /> Response time
-                  </p>
-                  <p className="mt-1">Within 24 business hours</p>
-                </div>
-                <div className="salt-kpi-card salt-metric-card rounded-xl border border-border p-3 text-xs text-muted-foreground">
-                  <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                    <PackageSearch className="h-4 w-4 text-primary" /> Order support
-                  </p>
-                  <p className="mt-1">Tracking and delivery help</p>
-                </div>
-                <div className="salt-kpi-card salt-metric-card rounded-xl border border-border p-3 text-xs text-muted-foreground">
-                  <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                    <Mail className="h-4 w-4 text-primary" /> Direct email
-                  </p>
-                  <p className="mt-1">{supportEmail}</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
