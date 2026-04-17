@@ -15,7 +15,7 @@ import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
 
-export type ProductCardVariant = "default" | "dense";
+export type ProductCardVariant = "default" | "dense" | "shop";
 
 type ProductCardProps = {
   product: ShopifyProduct;
@@ -23,20 +23,56 @@ type ProductCardProps = {
 };
 
 const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
-  const { addItem, isAddingItem } = useCart();
+  const { addItem } = useCart();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
   const { summary } = useJudgeMeProductRating(product.id);
   const isDense = variant === "dense";
+  const isShop = variant === "shop";
   const sale = savingsPercent(product);
   const min = minPrice(product);
   const compare = compareAt(product);
   const image = productImage(product);
-  const title = conciseTitle(product.title, isDense ? 58 : 64);
+  const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
   const wishlisted = isWishlisted(product.handle);
   const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
   const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
   const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
+
+  if (isShop) {
+    return (
+      <article className="h-full">
+        <Link
+          to={`/products/${product.handle}`}
+          className="group relative block h-full overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
+        >
+          {image ? (
+            <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+              <img
+                src={image}
+                alt={product.title}
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+              />
+            </div>
+          ) : (
+            <div className="grid aspect-[1.04/0.93] w-full place-items-center bg-[linear-gradient(180deg,#dce8fb_0%,#c6dafd_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#31538c] sm:aspect-[1/0.9]">
+              Image unavailable
+            </div>
+          )}
+
+          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
+            <h3 className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+              {title}
+            </h3>
+            <p className="mt-1.5 text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+              {formatMoney(min)}
+            </p>
+          </div>
+        </Link>
+      </article>
+    );
+  }
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 hover:border-[#9bc1ff] hover:shadow-[0_22px_48px_-32px_rgba(22,77,160,0.32)] sm:p-2">

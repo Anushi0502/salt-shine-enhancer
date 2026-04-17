@@ -44,7 +44,7 @@ const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
   const { data: productsPayload } = useProducts();
 
-  const recommendedProducts = (productsPayload?.products || []).slice(0, 4);
+  const recommendedProducts = (productsPayload?.products || []).slice(0, 5);
   const catalogLookup = useMemo(() => {
     const byHandle = new Map<string, { variantId: number; handle: string }>();
     const byTitle = new Map<string, { variantId: number; handle: string }>();
@@ -459,10 +459,10 @@ const CartPage = () => {
             </div>
           </Reveal>
           <div className="salt-section-shell rounded-[1.7rem] p-4">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recommendedProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 60} className="h-full">
-                  <ProductCard product={product} variant="dense" />
+                  <ProductCard product={product} variant="shop" />
                 </Reveal>
               ))}
             </div>

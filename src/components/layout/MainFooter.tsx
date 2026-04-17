@@ -31,15 +31,7 @@ const MainFooter = () => {
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1.55fr]">
             <div className="flex flex-col items-start">
               <BrandLogo withWordmark size="md" />
-              <p className="mt-5 max-w-sm text-[0.96rem] leading-7 text-[#2a4f90]/84">
-                A curated lifestyle marketplace for home, kitchen, and gifting. Every piece is selected for quality and utility.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                <span className="rounded-full border border-[#b8cef5] bg-white/85 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.11em] text-[#1a4d9a]">Curated catalog</span>
-                <span className="rounded-full border border-[#b8cef5] bg-white/85 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.11em] text-[#1a4d9a]">Fast shipping</span>
-                <span className="rounded-full border border-[#b8cef5] bg-white/85 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.11em] text-[#1a4d9a]">Easy returns</span>
-              </div>
-              <div className="mt-6 flex gap-3">
+              <div className="mt-5 ml-[-0.45rem] flex gap-3">
                 <a href="https://instagram.com/saltonlinestore" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
                   <Instagram className="h-4.5 w-4.5" />
                 </a>

@@ -77,7 +77,7 @@ const WishlistPage = () => {
             <p className="mt-2 text-sm text-muted-foreground">{itemCount} saved items across your SALT browsing session.</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="salt-outline-chip text-[0.62rem]">Persistent on this device</span>
-              <span className="salt-outline-chip text-[0.62rem]">Tap the heart to remove items</span>
+              <span className="salt-outline-chip text-[0.62rem]">Use remove to clear saved items</span>
               {unresolvedCount > 0 ? (
                 <span className="salt-outline-chip text-[0.62rem]">{unresolvedCount} saved item{unresolvedCount === 1 ? "" : "s"} may need a catalog refresh</span>
               ) : null}
@@ -100,11 +100,20 @@ const WishlistPage = () => {
       </Reveal>
 
       <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
           {savedEntries.map(({ item, product }, index) => (
             <Reveal key={`${item.handle}-${item.id}`} delayMs={index * 45} className="h-full">
               {product ? (
-                <ProductCard product={product} variant="dense" />
+                <div className="flex h-full flex-col gap-2">
+                  <ProductCard product={product} variant="shop" />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.handle)}
+                    className="inline-flex h-10 items-center justify-center rounded-[0.95rem] border border-border/75 bg-card px-4 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-primary/40 hover:text-primary"
+                  >
+                    Remove
+                  </button>
+                </div>
               ) : (
                 <article className="salt-story-card flex h-full flex-col overflow-hidden rounded-[1.65rem] border border-border/75">
                   <div className="relative aspect-[4/4.8] overflow-hidden bg-muted">

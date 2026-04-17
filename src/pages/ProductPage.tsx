@@ -245,7 +245,7 @@ const ProductPage = () => {
 
   const relatedProducts = products
     .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
-    .slice(0, 4);
+    .slice(0, 5);
 
   const primaryImage = productImage(product) || "";
   const imageSources = (product.images.length
@@ -271,7 +271,7 @@ const ProductPage = () => {
     .filter((entry) => entry !== product.handle)
     .map((entry) => products.find((candidate) => candidate.handle === entry))
     .filter((entry): entry is (typeof products)[number] => Boolean(entry))
-    .slice(0, 4);
+    .slice(0, 5);
 
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
@@ -704,10 +704,10 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
-                  <ProductCard product={related} variant="dense" />
+                  <ProductCard product={related} variant="shop" />
                 </Reveal>
               ))}
             </div>
@@ -728,10 +728,10 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55} className="h-full">
-                  <ProductCard product={entry} variant="dense" />
+                  <ProductCard product={entry} variant="shop" />
                 </Reveal>
               ))}
             </div>

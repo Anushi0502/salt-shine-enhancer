@@ -39,7 +39,7 @@ const priceRangeOptions = [
   { value: "100-plus", label: "$100+", min: 100, max: null },
 ] as const;
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -777,7 +777,7 @@ const ShopPage = () => {
                 {hasActiveFilters ? (
                   <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
                 ) : (
-                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-2 py-[0.18rem] text-[0.52rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
                     No active filters
                   </span>
                 )}
@@ -840,10 +840,10 @@ const ShopPage = () => {
           ) : (
             <>
               <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4">
+                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-7">
                   {visibleProducts.map((product, index) => (
                     <Reveal key={product.id} delayMs={index * 35} className="h-full">
-                      <ProductCard product={product} variant="dense" />
+                      <ProductCard product={product} variant="shop" />
                     </Reveal>
                   ))}
                 </div>
