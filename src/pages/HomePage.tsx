@@ -1060,18 +1060,24 @@ const HomePage = () => {
 
         <Reveal delayMs={220}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
-            <div className="mx-auto grid max-w-[980px] grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 sm:gap-6 lg:gap-7">
-              {featuredCourtneyBookCards.map((bookCard, index) => (
-                <Reveal key={bookCard.key} delayMs={240 + index * 60}>
-                  <OverlayProductCard
-                    title={bookCard.title}
-                    image={bookCard.image}
-                    to={bookCard.to}
-                    price={bookCard.price}
-                    fallbackImage={featuredCourtneyBookFallbackImage}
-                  />
-                </Reveal>
-              ))}
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
+              <div className="grid grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 sm:gap-6 lg:gap-7">
+                {featuredCourtneyBookCards.map((bookCard, index) => (
+                  <Reveal key={bookCard.key} delayMs={240 + index * 60}>
+                    <OverlayProductCard
+                      title={bookCard.title}
+                      image={bookCard.image}
+                      to={bookCard.to}
+                      price={bookCard.price}
+                      fallbackImage={featuredCourtneyBookFallbackImage}
+                    />
+                  </Reveal>
+                ))}
+              </div>
+              <div
+                className="hidden h-full rounded-[1.15rem] border border-[#d2e4ff] bg-[linear-gradient(180deg,#f9fcff_0%,#edf5ff_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] lg:block"
+                aria-hidden="true"
+              />
             </div>
           </section>
         </Reveal>
