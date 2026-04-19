@@ -64,19 +64,19 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             </div>
           )}
 
-          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
-            <h3 className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-2.5 py-2 text-center text-white sm:px-3 sm:py-[0.6rem]">
+            <h3 className="line-clamp-2 font-display text-[0.88rem] font-semibold leading-[1.12] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem]">
               {title}
             </h3>
-            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]">
-              <span className="text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+            <div className="mt-1.25 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[0.7rem] font-semibold text-white/92 sm:text-[0.78rem]">
+              <span className="text-[1.08rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.2rem]">
                 {formatMoney(min)}
               </span>
               {hasReviews ? (
                 <>
                   <span className="text-white/40">•</span>
                   <span className="inline-flex items-center gap-1">
-                    <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
+                    <Star className="h-3 w-3 fill-[#f2c100] text-[#f2c100]" />
                     {formattedRating}
                   </span>
                   <span className="text-white/40">•</span>

@@ -39,7 +39,7 @@ const priceRangeOptions = [
   { value: "100-plus", label: "$100+", min: 100, max: null },
 ] as const;
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 36;
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -668,7 +668,7 @@ const ShopPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
+    <section className="mt-4 w-full px-3 pb-8 sm:mt-6 sm:px-4 lg:px-5 xl:px-6">
       <Reveal>
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
@@ -740,29 +740,29 @@ const ShopPage = () => {
         ) : null}
 
         <div className={desktopFiltersVisible ? "lg:col-start-2" : "lg:col-start-1"}>
-          <Reveal delayMs={78} className="mb-3 hidden lg:block">
-            <div className="salt-filter-shell sticky top-24 z-20 rounded-[1.05rem] p-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+          <Reveal delayMs={78} className="mb-2 hidden lg:block">
+            <div className="salt-filter-shell sticky top-24 z-20 rounded-[0.9rem] px-2 py-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                   {totalResults.toLocaleString()} products
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    <ArrowDownUp className="h-3.5 w-3.5" /> {sortLabel}
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-1.5 py-[0.2rem] text-[0.52rem] font-bold uppercase tracking-[0.07em] leading-none text-muted-foreground">
+                    <ArrowDownUp className="h-2.5 w-2.5" /> {sortLabel}
                   </span>
                   <button
                     type="button"
                     onClick={() => setDesktopFiltersVisible((current) => !current)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-4 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white shadow-[0_16px_30px_-20px_rgba(21,71,154,0.72)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_20px_34px_-22px_rgba(21,71,154,0.78)]"
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-2.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-white shadow-[0_12px_22px_-18px_rgba(21,71,154,0.62)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_16px_26px_-20px_rgba(21,71,154,0.7)]"
                     aria-controls="desktop-shop-filters"
                     aria-expanded={desktopFiltersVisible}
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    <SlidersHorizontal className="h-2.5 w-2.5" />
                     {desktopFiltersVisible ? "Hide filters" : "Show filters"}
                   </button>
                 </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1 flex flex-wrap gap-1">
                 {desktopToolbarChips.map((chip) => (
                   <button key={`toolbar-${chip.key}`} type="button" onClick={chip.onRemove} className="salt-applied-chip" aria-label={`Remove ${chip.label} filter`}>
                     <span>{chip.label}</span>
@@ -777,7 +777,7 @@ const ShopPage = () => {
                 {hasActiveFilters ? (
                   <button type="button" onClick={clearFilters} className="salt-editorial-action h-8 px-3 text-[0.62rem]">Clear all filters</button>
                 ) : (
-                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-2 py-[0.18rem] text-[0.52rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-1.5 py-[0.08rem] text-[0.42rem] font-bold uppercase tracking-[0.06em] leading-none text-muted-foreground">
                     No active filters
                   </span>
                 )}
@@ -839,10 +839,14 @@ const ShopPage = () => {
             </Reveal>
           ) : (
             <>
-              <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5 xl:gap-7">
+              <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5">
+                <div className="grid gap-x-5 gap-y-7 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-6 xl:gap-x-7 xl:gap-y-10">
                   {visibleProducts.map((product, index) => (
-                    <Reveal key={product.id} delayMs={index * 35} className="h-full">
+                    <Reveal
+                      key={product.id}
+                      delayMs={index * 35}
+                      className="mx-auto h-full w-full max-w-[11.4rem] sm:max-w-[11.8rem] lg:max-w-[12.1rem] xl:max-w-[12.35rem]"
+                    >
                       <ProductCard product={product} variant="shop" />
                     </Reveal>
                   ))}

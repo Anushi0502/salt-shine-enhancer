@@ -158,7 +158,7 @@ const BlogPage = () => {
 
   return (
     <section className="mt-3 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 sm:gap-7">
+      <div className="flex w-full flex-col gap-6 px-3 sm:gap-7 sm:px-4 lg:px-5 xl:px-6">
         <Reveal>
           <InnerBreadcrumbs items={breadcrumbItems} />
         </Reveal>
@@ -177,20 +177,40 @@ const BlogPage = () => {
                 </>
               ) : null}
 
-              <div className="relative z-10 flex h-full flex-col justify-between">
+              <div className="relative z-10 flex h-full flex-col">
                 <div className="max-w-[42rem]">
                   <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.72rem]">
                     <Sparkles className="h-3.5 w-3.5" />
                     Salt Blogs
                   </p>
-                  <h1 className="mt-4 font-display text-[clamp(3.2rem,7vw,5rem)] leading-[1.02] tracking-[-0.04em] text-[#1a1a1a]">
+                  <h1 className="mt-4 font-display text-[clamp(2.4rem,5.2vw,3.9rem)] leading-[1.04] tracking-[-0.03em] text-[#1a1a1a]">
                     Stories, guides, and seasonal ideas for everyday living.
                   </h1>
+                  <p className="mt-4 max-w-[36rem] text-[0.96rem] leading-7 text-[#4a5f86] sm:text-[1.02rem]">
+                    {compactExcerpt(
+                      currentIssuePost?.excerpt || currentIssuePost?.contentHtml || "Discover the newest guides, seasonal notes, and practical home stories from SALT.",
+                      152,
+                    )}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      Avg {averageReadMinutes} min read
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
+                      <BookOpenText className="h-3.5 w-3.5" />
+                      {posts.length} stories live
+                    </span>
+                    {currentIssuePost?.author ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {currentIssuePost.author}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-8">
-                  
-
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                     {currentIssuePost ? (
                       <Link
@@ -347,7 +367,7 @@ const BlogPage = () => {
 
                       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
                         
-                        <h2 className="mt-3 max-w-4xl font-display text-[clamp(2rem,4vw,3.5rem)] leading-[1.02] tracking-[-0.04em] text-white drop-shadow-[0_12px_32px_rgba(15,23,42,0.55)]">
+                        <h2 className="mt-3 max-w-4xl font-display text-[clamp(1.55rem,3vw,2.6rem)] leading-[1.06] tracking-[-0.03em] text-white drop-shadow-[0_10px_28px_rgba(15,23,42,0.55)]">
                           {leadStoryPost.title}
                         </h2>
 
@@ -382,59 +402,51 @@ const BlogPage = () => {
               <Reveal delayMs={120}>
                 <section>
                   <SectionTitle title="Latest Dispatches" />
-                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-5 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {latestPosts.map((post, index) => (
                       <article
                         key={post.id}
-                        className="salt-story-card group relative flex min-h-[28rem] overflow-hidden rounded-[1.7rem] border border-white/8 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)]"
+                        className="group self-start overflow-hidden border border-[#d2e4ff] bg-white shadow-[0_14px_40px_-32px_rgba(22,77,160,0.24)] transition hover:-translate-y-0.5"
                       >
                         <Link
                           to={`/blog/${post.handle}`}
-                          className="absolute inset-0 block overflow-hidden bg-[#eef2f8]"
+                          className="block"
                         >
-                          <ResilientImage
-                            src={post.image}
-                            alt={post.title}
-                            loading="lazy"
-                            fallback={blogImageFallback}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                          />
-                        </Link>
-
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,14,28,0.08)_0%,rgba(8,14,28,0.14)_24%,rgba(8,14,28,0.34)_58%,rgba(8,14,28,0.84)_100%)]" />
-
-                        <div className="relative z-10 flex h-full w-full flex-col justify-between p-5">
-                          <div className="flex items-center justify-between gap-3">
-                            
-                            <span className="inline-flex items-center gap-1 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white">
-                              <Clock3 className="h-3.5 w-3.5" />
-                              {readingTime(post.contentHtml)}
-                            </span>
-                          </div>
-
-                          <div className="mt-auto">
-                            <h3 className="mt-3 font-display text-[1.7rem] leading-[1.1] tracking-[-0.035em] text-white drop-shadow-[0_8px_24px_rgba(15,23,42,0.55)]">
-                              <Link to={`/blog/${post.handle}`} className="transition group-hover:text-white">
-                                {conciseTitle(post.title, 74)}
-                              </Link>
-                            </h3>
-
-                           
-
-                            <div className="mt-5 flex items-center justify-between gap-3">
-                              <div className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white">
-                                <p>{formattedDate(post.publishedAt)}</p>
-                                <p className="mt-1">{post.author || "SALT"}</p>
-                              </div>
-
-                              <Link
-                                to={`/blog/${post.handle}`}
-                                className="inline-flex h-10 items-center justify-center rounded-full border border-white/34 px-4 text-[0.66rem] font-bold uppercase tracking-[0.14em] text-white transition hover:border-white hover:text-white"
-                              >
-                                Read
-                              </Link>
+                          <div className="relative aspect-[1.4/0.82] overflow-hidden bg-[#edf5ff]">
+                            <ResilientImage
+                              src={post.image}
+                              alt={post.title}
+                              loading="lazy"
+                              fallback={blogImageFallback}
+                              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                            />
+                            <div className="absolute left-3 top-3">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
+                                <Clock3 className="h-3 w-3" />
+                                {readingTime(post.contentHtml)}
+                              </span>
                             </div>
                           </div>
+                        </Link>
+
+                        <div className="px-4 py-3 text-center sm:px-5 sm:py-4">
+                          <h3 className="mx-auto max-w-[20ch] font-display text-[1rem] leading-[1.16] text-[#1c4b96] sm:text-[1.08rem]">
+                            <Link to={`/blog/${post.handle}`} className="transition hover:text-[#163f82]">
+                              {conciseTitle(post.title, 68)}
+                            </Link>
+                          </h3>
+
+                          <div className="mt-2 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#4f6fa6]">
+                            <p>{formattedDate(post.publishedAt)}</p>
+                            <p className="mt-1">{post.author || "SALT"}</p>
+                          </div>
+
+                          <Link
+                            to={`/blog/${post.handle}`}
+                            className="mt-3 inline-flex h-9 items-center justify-center bg-[#f2b600] px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#d7a200]"
+                          >
+                            Read Now
+                          </Link>
                         </div>
                       </article>
                     ))}

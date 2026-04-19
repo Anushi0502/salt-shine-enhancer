@@ -9,20 +9,16 @@ import {
   Grid2X2,
   Home,
   Search,
-  ShieldCheck,
   Shirt,
   SlidersHorizontal,
   Sparkles,
   Stethoscope,
-  Truck,
   UtensilsCrossed,
   X,
 } from "lucide-react";
 import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import CollectionCard from "@/components/storefront/CollectionCard";
 import Reveal from "@/components/storefront/Reveal";
-import SectionHeading from "@/components/storefront/SectionHeading";
-import TrustStrip from "@/components/storefront/TrustStrip";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import { useCollections } from "@/lib/shopify-data";
@@ -128,6 +124,22 @@ const sizeOptions: Array<{
 ];
 
 const PAGE_SIZE = 12;
+const LEGACY_PLANNER_BANNER_IMAGE =
+  "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/7.png?v=1772179925";
+const DEFAULT_COLLECTION_GRID_HANDLES = [
+  "garden-tools",
+  "cookware",
+  "home-decor",
+  "personal-care",
+  "shopping-bags-jute-bags",
+  "pet-assocerries",
+  "unique-products",
+  "trousers",
+  "candles",
+  "medical-accessories",
+  "women-wear",
+  "men-collection",
+] as const;
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -416,7 +428,6 @@ const CollectionsPage = () => {
   const selectedTheme = themeConfigs.find((theme) => theme.id === themeFilter) || themeConfigs[0];
   const previewCollection =
     visibleCollections[0] || filteredCollections[0] || highlightedCollections[0] || null;
-  const previewImage = previewCollection?.imageSrc || null;
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
 
   if (isLoading) {
@@ -527,9 +538,36 @@ const CollectionsPage = () => {
   const desktopToolbarChips = filterChips.slice(0, 3);
   const hiddenDesktopChipCount = Math.max(0, filterChips.length - desktopToolbarChips.length);
   const leadCollection = highlightedCollections[0] || previewCollection;
+  const spotlightImageSrc =
+    leadCollection && isBestSellerCollection(leadCollection.handle, leadCollection.title)
+      ? LEGACY_PLANNER_BANNER_IMAGE
+      : leadCollection?.imageSrc || null;
   const supportCollections = highlightedCollections.filter(
     (collection) => !leadCollection || collection.id !== leadCollection.id,
   );
+  const displayCollections = useMemo(() => {
+    const shouldUseCuratedDefaultGrid =
+      !query.trim() &&
+      themeFilter === "all" &&
+      sizeFilter === "all" &&
+      sort === "featured" &&
+      currentPage === 1;
+
+    if (!shouldUseCuratedDefaultGrid) {
+      return visibleCollections;
+    }
+
+    const byHandle = new Map(
+      filteredCollections.map((collection) => [normalizeHandle(collection.handle), collection]),
+    );
+    const curated = DEFAULT_COLLECTION_GRID_HANDLES.map((handle) => byHandle.get(handle)).filter(
+      (collection): collection is DecoratedCollection => Boolean(collection),
+    );
+    const seen = new Set(curated.map((collection) => collection.id));
+    const fallback = filteredCollections.filter((collection) => !seen.has(collection.id));
+
+    return [...curated, ...fallback].slice(0, PAGE_SIZE);
+  }, [currentPage, filteredCollections, query, sizeFilter, sort, themeFilter, visibleCollections]);
 
   const sidebarFilterPanelContent = (
     <div className="mt-2 grid gap-2">
@@ -703,7 +741,7 @@ const CollectionsPage = () => {
   );
 
   return (
-    <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-8 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))]">
+    <section className="mt-4 w-full px-3 pb-8 sm:mt-6 sm:px-4 lg:px-5 xl:px-6">
       <Reveal>
         <InnerBreadcrumbs
           items={[
@@ -715,71 +753,94 @@ const CollectionsPage = () => {
 
       <Reveal>
         <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5">
-          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
-          {previewImage ? (
-            <img
-              src={previewImage}
-              alt={previewCollection?.title || "Collection preview"}
-              className="absolute inset-0 h-full w-full object-cover opacity-[0.12]"
-            />
-          ) : null}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,hsl(var(--primary)/0.1),transparent_30%),radial-gradient(circle_at_88%_14%,hsl(var(--salt-gold)/0.1),transparent_32%),linear-gradient(160deg,rgba(247,250,255,0.94),rgba(244,248,255,0.9))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_18%,rgba(46,109,255,0.1),transparent_28%),radial-gradient(circle_at_88%_16%,rgba(244,190,48,0.12),transparent_30%),linear-gradient(165deg,rgba(249,252,255,0.98),rgba(241,247,255,0.92))]" />
 
           <div className="relative">
-            <span className="salt-editorial-pill">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Collections, redesigned
-            </span>
-            <SectionHeading
-              className="mt-3"
-              title={
-                query.trim()
-                  ? `Collection results for “${query.trim()}”`
-                  : themeFilter === "all"
-                    ? "Browse collections like the shop page"
-                    : `Explore ${selectedTheme.label}`
-              }
-              description={
-                query.trim()
-                  ? "Search collection names and browse with the same structured rhythm, filtering, and merchandising logic used in the shop catalog."
-                  : themeFilter === "all"
-                    ? selectedTheme.description
-                    : formatCollectionDescription(previewCollection?.description) || selectedTheme.description
-              }
-              action={
-                <p className="salt-editorial-meta">
-                  {totalResults.toLocaleString()} collections | {filteredProductTotal.toLocaleString()} products inside results
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start lg:gap-6">
+              <div className="max-w-3xl">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#2b63ca]">
+                  Collection directory
                 </p>
-              }
-            />
-            <TrustStrip
-              className="mt-4"
-              items={[
-                { icon: Truck, label: "US shipping included" },
-                { icon: ShieldCheck, label: "Secure checkout" },
-                { icon: Sparkles, label: "Shop-first layout" },
-              ]}
-            />
+                <h1 className="mt-3 font-display text-[clamp(2.15rem,4.8vw,3.5rem)] leading-[0.98] tracking-[-0.04em] text-[#173a74]">
+                  {query.trim()
+                    ? `Collection results for "${query.trim()}"`
+                    : themeFilter === "all"
+                      ? "Browse collections"
+                      : `Explore ${selectedTheme.label}`}
+                </h1>
+                {query.trim() || themeFilter !== "all" ? (
+                  <p className="mt-3 max-w-2xl text-[0.96rem] leading-7 text-[#56719d]">
+                    {query.trim()
+                      ? "Search collection names and browse with the same structured filtering and merchandising logic used across the shop catalog."
+                      : formatCollectionDescription(previewCollection?.description) || selectedTheme.description}
+                  </p>
+                ) : null}
 
-            <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              {themeConfigs.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => updateParams({ theme: theme.id === "all" ? null : theme.id }, true)}
-                  className={
-                    theme.id === themeFilter
-                      ? "salt-primary-cta inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
-                      : "salt-outline-chip inline-flex h-9 shrink-0 items-center gap-1.5 px-3 py-0 text-[0.62rem] font-bold uppercase tracking-[0.08em]"
-                  }
-                >
-                  <theme.Icon className="h-3.5 w-3.5" />
-                  {theme.label}
-                  <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[0.56rem] leading-none text-current">
-                    {themeCounts[theme.id].toLocaleString()}
-                  </span>
-                </button>
-              ))}
+                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#60789f]">
+                  <span>US shipping included</span>
+                  <span className="h-1 w-1 rounded-full bg-[#9db7e4]" />
+                  <span>Secure checkout</span>
+                  <span className="h-1 w-1 rounded-full bg-[#9db7e4]" />
+                  <span>Structured browsing</span>
+                </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border border-[#d7e5ff] bg-white/82 p-4 shadow-[0_18px_34px_-30px_rgba(28,75,150,0.24)] backdrop-blur-sm">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#6a81a7]">
+                  Inside these results
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[1.35rem] font-black leading-none text-[#17428a]">
+                      {totalResults.toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6a81a7]">
+                      Collections
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[1.35rem] font-black leading-none text-[#17428a]">
+                      {filteredProductTotal.toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6a81a7]">
+                      Products
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 border-t border-[#e4ecff] pt-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#5c76a2]">
+                  <span>{selectedTheme.label}</span>
+                  <span className="mx-2 text-[#b5c6e6]">|</span>
+                  <span>{sortLabel}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-[1.15rem] border border-[#d6e4ff] bg-white/78 p-2 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.24)]">
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+                {themeConfigs.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => updateParams({ theme: theme.id === "all" ? null : theme.id }, true)}
+                    className={
+                      theme.id === themeFilter
+                        ? "inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#1f63d8] px-3.5 text-[0.78rem] font-semibold text-white shadow-[0_14px_28px_-22px_rgba(31,99,216,0.55)]"
+                        : "inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.78rem] font-medium text-[#355c98] transition hover:bg-[#edf4ff] hover:text-[#1d4d9d]"
+                    }
+                  >
+                    {theme.label}
+                    <span
+                      className={
+                        theme.id === themeFilter
+                          ? "rounded-full bg-white/18 px-1.5 py-0.5 text-[0.62rem] leading-none text-white"
+                          : "rounded-full bg-[#e7f0ff] px-1.5 py-0.5 text-[0.62rem] leading-none text-[#4d70a9]"
+                      }
+                    >
+                      {themeCounts[theme.id].toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -787,11 +848,12 @@ const CollectionsPage = () => {
 
       {!hasActiveFilters && leadCollection ? (
         <Reveal delayMs={70}>
-          <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
+          <div className="salt-section-shell mt-4 rounded-[1.35rem] p-2.5 sm:mt-5 sm:rounded-[1.6rem] sm:p-3">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.22fr)_minmax(260px,0.78fr)] lg:items-stretch">
               <CollectionCard
                 collection={leadCollection}
                 variant="hero"
+                imageSrc={spotlightImageSrc}
                 editorialContent={{
                   kicker: "Collection spotlight",
                   headline: leadCollection.title,
@@ -811,25 +873,25 @@ const CollectionsPage = () => {
                   <Link
                     key={collection.id}
                     to={`/shop?collection=${collection.handle}`}
-                    className="salt-search-hit min-h-[92px] rounded-[1rem] px-3 py-3"
+                    className="salt-search-hit min-h-[84px] rounded-[0.95rem] px-3 py-2.5"
                   >
                     {collection.imageSrc ? (
                       <img
                         src={collection.imageSrc}
                         alt={collection.title}
-                        className="h-14 w-14 rounded-[0.85rem] object-cover"
+                        className="h-12 w-12 rounded-[0.8rem] object-cover"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="grid h-14 w-14 place-items-center rounded-[0.85rem] bg-muted text-[0.5rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                      <div className="grid h-12 w-12 place-items-center rounded-[0.8rem] bg-muted text-[0.46rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                         SALT
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[0.92rem] font-semibold leading-5 text-foreground">
+                      <p className="line-clamp-2 text-[0.86rem] font-semibold leading-5 text-foreground">
                         {collection.title}
                       </p>
-                      <p className="mt-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      <p className="mt-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                         {collection.products_count.toLocaleString()} items
                       </p>
                     </div>
@@ -899,30 +961,30 @@ const CollectionsPage = () => {
         ) : null}
 
         <div className={desktopFiltersVisible ? "lg:col-start-2" : "lg:col-start-1"}>
-          <Reveal delayMs={78} className="mb-3 hidden lg:block">
-            <div className="salt-filter-shell sticky top-24 z-20 rounded-[1.05rem] p-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+          <Reveal delayMs={78} className="mb-2 hidden lg:block">
+            <div className="salt-filter-shell sticky top-24 z-20 rounded-[0.9rem] px-2 py-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                   {totalResults.toLocaleString()} collections
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                    <ArrowDownUp className="h-3.5 w-3.5" /> {sortLabel}
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/75 bg-background px-1.5 py-[0.2rem] text-[0.52rem] font-bold uppercase tracking-[0.07em] leading-none text-muted-foreground">
+                    <ArrowDownUp className="h-2.5 w-2.5" /> {sortLabel}
                   </span>
                   <button
                     type="button"
                     onClick={() => setDesktopFiltersVisible((current) => !current)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-4 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-white shadow-[0_16px_30px_-20px_rgba(21,71,154,0.72)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_20px_34px_-22px_rgba(21,71,154,0.78)]"
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-2.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-white shadow-[0_12px_22px_-18px_rgba(21,71,154,0.62)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_16px_26px_-20px_rgba(21,71,154,0.7)]"
                     aria-controls="desktop-collection-filters"
                     aria-expanded={desktopFiltersVisible}
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    <SlidersHorizontal className="h-2.5 w-2.5" />
                     {desktopFiltersVisible ? "Hide filters" : "Show filters"}
                   </button>
                 </div>
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1 flex flex-wrap gap-1">
                 {desktopToolbarChips.map((chip) => (
                   <button
                     key={`toolbar-${chip.key}`}
@@ -949,7 +1011,7 @@ const CollectionsPage = () => {
                     Clear all filters
                   </button>
                 ) : (
-                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="inline-flex items-center rounded-full border border-dashed border-border/70 bg-background px-1.5 py-[0.08rem] text-[0.42rem] font-bold uppercase tracking-[0.06em] leading-none text-muted-foreground">
                     No active filters
                   </span>
                 )}
@@ -1044,14 +1106,12 @@ const CollectionsPage = () => {
             </Reveal>
           ) : (
             <>
-              <div className="salt-section-shell mt-5 rounded-[1.55rem] p-3 sm:mt-6 sm:rounded-[2rem] sm:p-4">
-                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 xl:grid-cols-4">
-                  {visibleCollections.map((collection, index) => (
-                    <Reveal key={collection.id} delayMs={index * 35} className="h-full">
-                      <CollectionCard collection={collection} />
-                    </Reveal>
-                  ))}
-                </div>
+              <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+                {displayCollections.map((collection, index) => (
+                  <Reveal key={collection.id} delayMs={index * 35} className="h-full">
+                    <CollectionCard collection={collection} />
+                  </Reveal>
+                ))}
               </div>
 
               <Reveal delayMs={180} className="mt-7">

@@ -16,6 +16,10 @@ type NavItem = {
 
 const primaryNav: NavItem[] = [
   {
+    label: "Home",
+    to: "/",
+  },
+  {
     label: "Shop",
     to: "/shop",
     isActive: (pathname) => pathname === "/shop" || pathname.startsWith("/search"),
@@ -27,10 +31,6 @@ const primaryNav: NavItem[] = [
   {
     label: "Blogs",
     to: "/blog",
-  },
-  {
-    label: "About",
-    to: "/about",
   },
   {
     label: "Support",
