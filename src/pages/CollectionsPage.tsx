@@ -545,14 +545,14 @@ const CollectionsPage = () => {
   const supportCollections = highlightedCollections.filter(
     (collection) => !leadCollection || collection.id !== leadCollection.id,
   );
-  const displayCollections = useMemo(() => {
-    const shouldUseCuratedDefaultGrid =
-      !query.trim() &&
-      themeFilter === "all" &&
-      sizeFilter === "all" &&
-      sort === "featured" &&
-      currentPage === 1;
+  const shouldUseCuratedDefaultGrid =
+    !query.trim() &&
+    themeFilter === "all" &&
+    sizeFilter === "all" &&
+    sort === "featured" &&
+    currentPage === 1;
 
+  const displayCollections = (() => {
     if (!shouldUseCuratedDefaultGrid) {
       return visibleCollections;
     }
@@ -567,7 +567,7 @@ const CollectionsPage = () => {
     const fallback = filteredCollections.filter((collection) => !seen.has(collection.id));
 
     return [...curated, ...fallback].slice(0, PAGE_SIZE);
-  }, [currentPage, filteredCollections, query, sizeFilter, sort, themeFilter, visibleCollections]);
+  })();
 
   const sidebarFilterPanelContent = (
     <div className="mt-2 grid gap-2">
@@ -869,7 +869,7 @@ const CollectionsPage = () => {
               />
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                {supportCollections.slice(0, 3).map((collection) => (
+                {supportCollections.slice(0, 4).map((collection) => (
                   <Link
                     key={collection.id}
                     to={`/shop?collection=${collection.handle}`}
@@ -1201,4 +1201,3 @@ const CollectionsPage = () => {
 };
 
 export default CollectionsPage;
-

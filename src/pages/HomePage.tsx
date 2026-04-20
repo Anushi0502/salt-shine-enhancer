@@ -314,7 +314,7 @@ function OverlayProductCard({
       to={to}
       className={`group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${className}`.trim()}
     >
-      <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+      <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]">
         <ResilientImage
           src={imageSrc}
           alt={title}
