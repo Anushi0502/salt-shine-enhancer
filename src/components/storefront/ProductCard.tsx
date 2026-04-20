@@ -40,7 +40,6 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
   const hasReviews = Boolean(summary && summary.reviewCount > 0);
   const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
-  const reviewLabel = summary?.reviewCount === 1 ? "review" : "reviews";
 
   if (isShop) {
     return (
@@ -150,7 +149,6 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
                 className={`h-3 w-3 ${index < summary.rating ? "fill-current" : ""}`}
               />
             ))}
-            <span className="ml-1 text-xs text-muted-foreground">({summary.reviewCount})</span>
           </div>
         ) : null}
 

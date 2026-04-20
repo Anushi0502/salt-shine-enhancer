@@ -28,7 +28,7 @@ const MainFooter = () => {
         <div className="pointer-events-none absolute -bottom-12 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-[#f2d37b]/18 blur-3xl" />
 
         <div className="relative mx-auto w-full max-w-[1360px] px-4 py-10 sm:px-6 sm:py-12 lg:px-10">
-          <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1.55fr]">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1.45fr]">
             <div className="flex flex-col items-start">
               <BrandLogo withWordmark size="md" />
               <div className="mt-5 ml-[-0.45rem] flex gap-3">
@@ -41,6 +41,16 @@ const MainFooter = () => {
                 <a href="https://youtube.com/@saltonlinestore" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bdd2f7] bg-white/85 text-[#1a4d9a] transition hover:border-[#98b8ee] hover:text-[#f2b600]">
                   <Youtube className="h-4.5 w-4.5" />
                 </a>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#1a4d9a]">About</h3>
+              <div className="mt-5 grid gap-3 text-[0.92rem] text-[#2a4f90]/84">
+                <Link to="/about" className="transition-colors hover:text-[#f2b600]">About Us</Link>
+                <Link to="/about" className="transition-colors hover:text-[#f2b600]">Our Story</Link>
+                <Link to="/blog" className="transition-colors hover:text-[#f2b600]">Blogs</Link>
+                <Link to="/contact" className="transition-colors hover:text-[#f2b600]">Get in Touch</Link>
               </div>
             </div>
 

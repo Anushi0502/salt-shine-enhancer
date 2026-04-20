@@ -307,7 +307,6 @@ function OverlayProductCard({
   const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
   const hasReviews = Boolean(summary && summary.reviewCount > 0);
   const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
-  const reviewLabel = summary?.reviewCount === 1 ? "review" : "reviews";
 
   return (
     <Link
@@ -338,13 +337,11 @@ function OverlayProductCard({
           </span>
           {hasReviews ? (
             <>
-              <span className="text-white/40">•</span>
+              <span className="text-white/40">·</span>
               <span className="inline-flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
                 {formattedRating}
               </span>
-              <span className="text-white/40">•</span>
-              <span>{summary?.reviewCount ?? 0} {reviewLabel}</span>
             </>
           ) : null}
         </div>
@@ -1136,15 +1133,10 @@ const HomePage = () => {
                       </span>
                       {dailyBloomFeatureSummary && dailyBloomFeatureSummary.reviewCount > 0 ? (
                         <>
-                          <span className="text-white/40">•</span>
+                          <span className="text-white/40">·</span>
                           <span className="inline-flex items-center gap-1">
                             <Star className="h-4 w-4 fill-[#f2c100] text-[#f2c100]" />
                             {dailyBloomFeatureSummary.rating.toFixed(1)}
-                          </span>
-                          <span className="text-white/40">•</span>
-                          <span>
-                            {dailyBloomFeatureSummary.reviewCount}{" "}
-                            {dailyBloomFeatureSummary.reviewCount === 1 ? "review" : "reviews"}
                           </span>
                         </>
                       ) : null}
@@ -1225,4 +1217,5 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
 

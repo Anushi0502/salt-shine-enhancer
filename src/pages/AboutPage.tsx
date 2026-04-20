@@ -277,7 +277,7 @@ const AboutPage = () => {
                       About SALT
                     </span>
 
-                    <h1 className="mt-5 max-w-[12ch] font-display text-[clamp(3rem,7vw,5.8rem)] leading-[0.86] tracking-[-0.065em] text-[#0f2d63]">
+                    <h1 className="mt-5 max-w-[12ch] font-display text-[clamp(2.35rem,5.4vw,4.45rem)] leading-[0.9] tracking-[-0.055em] text-[#0f2d63]">
                       {title}
                     </h1>
                     <p className="mt-4 max-w-[58ch] text-[15px] leading-7 text-[#506a98] sm:text-[1.06rem]">

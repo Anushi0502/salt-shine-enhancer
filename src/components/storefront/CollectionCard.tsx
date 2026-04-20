@@ -103,8 +103,8 @@ const CollectionCard = ({
             </div>
           )}
 
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,22,48,0.56)_0%,rgba(10,22,48,0.24)_36%,rgba(10,22,48,0.08)_58%,rgba(10,22,48,0.28)_100%)]" />
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-[46%] bg-[linear-gradient(90deg,rgba(10,22,48,0.24),transparent)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,22,48,0.34)_0%,rgba(10,22,48,0.14)_34%,rgba(10,22,48,0.06)_58%,rgba(10,22,48,0.22)_100%)]" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-[46%] bg-[linear-gradient(90deg,rgba(10,22,48,0.16),transparent)]" />
 
           <div className="absolute right-3 top-3">
             <span className="salt-media-pill px-2 py-[0.35rem] text-[0.52rem] font-semibold uppercase tracking-[0.16em]">
@@ -113,16 +113,18 @@ const CollectionCard = ({
           </div>
 
           <div className="absolute bottom-2 left-2 right-2 z-10 sm:bottom-3 sm:left-3 sm:right-3">
-            <div className="max-w-[18.5rem] rounded-[1rem] border border-white/16 bg-[linear-gradient(180deg,rgba(15,24,42,0.6),rgba(10,18,34,0.68))] px-3 py-2.5 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.24)] backdrop-blur-md">
+            <div className="max-w-[18.5rem] rounded-[1rem] border border-white/14 bg-[linear-gradient(180deg,rgba(14,24,43,0.22),rgba(10,18,34,0.34))] px-3 py-2.5 shadow-[0_22px_44px_-30px_rgba(15,23,42,0.42)] backdrop-blur-xl">
               <span className="block h-[2px] w-10 rounded-full bg-[linear-gradient(90deg,#f0c24c_0%,#2b67db_100%)]" />
-              <p className="mt-2 text-[0.5rem] font-semibold uppercase tracking-[0.14em] text-[#c3d5fb]">
+              <p className="mt-2 text-[0.5rem] font-semibold uppercase tracking-[0.14em] text-white/72">
                 {editorialContent.kicker}
               </p>
               <h3 className="mt-1 line-clamp-2 max-w-[14ch] font-display text-[clamp(1.18rem,2.4vw,1.95rem)] leading-[0.94] tracking-[-0.04em] text-white">
-                {editorialContent.headline}
+                <span className="box-decoration-clone rounded-[0.35rem] bg-[linear-gradient(90deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))] px-2 py-1 [text-shadow:0_4px_16px_rgba(0,0,0,0.46)]">
+                  {editorialContent.headline}
+                </span>
               </h3>
               {editorialContent.description ? (
-                <p className="mt-1.5 line-clamp-2 max-w-[30ch] text-[0.68rem] leading-[1.05rem] text-white/76">
+                <p className="mt-1.5 line-clamp-2 max-w-[30ch] text-[0.68rem] leading-[1.05rem] text-white/72">
                   {editorialContent.description}
                 </p>
               ) : null}
