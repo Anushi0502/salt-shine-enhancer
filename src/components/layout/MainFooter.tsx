@@ -106,7 +106,7 @@ const MainFooter = () => {
       <div className="w-full border-b border-[#cadbff]/70 bg-[linear-gradient(140deg,rgba(255,255,255,0.7),rgba(236,245,255,0.92))]">
         <div className="mx-auto w-full max-w-[1360px] px-4 py-6 sm:px-6 sm:py-7 lg:px-10">
           <div className="flex flex-col items-start justify-between gap-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-[#2a4f90]/80 md:flex-row md:items-center">
-            <p>SALT storefront confidence</p>
+            
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-[#b7cdf5] bg-white/85 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Secure checkout</span>
               <span className="rounded-full border border-[#b7cdf5] bg-white/85 px-3 py-1 text-[0.62rem] tracking-[0.12em] text-[#1a4d9a]">Tracked shipping</span>
