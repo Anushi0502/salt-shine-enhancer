@@ -295,7 +295,7 @@ function extractPolicyContent(rawHtml: string, fallbackTitle: string): { title: 
   const parsed = new DOMParser().parseFromString(rawHtml, "text/html");
 
   const title =
-    parsed.querySelector(".shopify-policy__title h1, h1")?.textContent?.trim() ||
+    polishPlainText(parsed.querySelector(".shopify-policy__title h1, h1")?.textContent?.trim()) ||
     fallbackTitle;
 
   const bodyNode =
@@ -738,7 +738,7 @@ async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
         };
       };
 
-      return {
+      return normalizeAboutPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         page: {
@@ -749,7 +749,7 @@ async function fetchAboutPageFromLive(): Promise<AboutPagePayload> {
           publishedAt: payload.page.published_at || "",
           updatedAt: payload.page.updated_at || "",
         },
-      };
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${endpoint} -> ${message}`);
@@ -834,12 +834,12 @@ async function fetchProductsFromCache(): Promise<ProductsPayload> {
     throw new Error("Cached product payload is empty");
   }
 
-  return {
+  return normalizeProductsPayload({
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: `cache:${payload.source || PRODUCTS_DATA_PATH}`,
     total: payload.total || products.length,
     products,
-  };
+  });
 }
 
 async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
@@ -850,17 +850,25 @@ async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
     throw new Error("Cached collections payload is empty");
   }
 
-  return {
+  return normalizeCollectionsPayload({
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: `cache:${payload.source || COLLECTIONS_DATA_PATH}`,
     total: payload.total || collections.length,
     collections,
-  };
+  });
 }
 
 async function fetchCollectionProductsMapFromCache(): Promise<CollectionProductsPayload> {
   const payload = await fetchJson<CollectionProductsPayload>(cacheBustedPath(COLLECTION_PRODUCTS_DATA_PATH));
-  const collections = payload.collections || {};
+  const collections = Object.fromEntries(
+    Object.entries(payload.collections || {}).map(([handle, entry]) => [
+      handle,
+      {
+        title: polishPlainText(entry?.title || handle),
+        productIds: Array.isArray(entry?.productIds) ? entry.productIds : [],
+      },
+    ]),
+  );
   const totalCollections = Object.keys(collections).length;
 
   if (!totalCollections) {
@@ -905,11 +913,11 @@ async function fetchAboutPageFromCache(): Promise<AboutPagePayload> {
     throw new Error("Cached about payload is empty");
   }
 
-  return {
+  return normalizeAboutPayload({
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: `cache:${payload.source || ABOUT_DATA_PATH}`,
     page: payload.page,
-  };
+  });
 }
 
 async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Promise<ShopifyPolicyPayload> {
@@ -937,13 +945,13 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
         continue;
       }
 
-      return {
+      return normalizePolicyPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         path: normalizedPath,
         title: parsed.title || fallbackTitle,
         bodyHtml: parsed.bodyHtml,
-      };
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${endpoint} -> ${message}`);
@@ -964,12 +972,12 @@ export async function loadProducts(): Promise<ProductsPayload> {
   for (const base of getLiveCatalogBases()) {
     try {
       const products = await fetchAllProductsFromLive(base);
-      return {
+      return normalizeProductsPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         total: products.length,
         products,
-      };
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
@@ -995,12 +1003,12 @@ export async function loadCollections(): Promise<CollectionsPayload> {
   for (const base of getLiveCatalogBases()) {
     try {
       const collections = await fetchAllCollectionsFromLive(base);
-      return {
+      return normalizeCollectionsPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         total: collections.length,
         collections,
-      };
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
@@ -1031,7 +1039,7 @@ export async function loadCollectionProductsMap(): Promise<CollectionProductsPay
         return [
           collection.handle,
           {
-            title: collection.title,
+            title: polishPlainText(collection.title),
             productIds,
           },
         ] as const;
@@ -1141,7 +1149,7 @@ export async function loadPolicyPage(path: string, fallbackTitle: string): Promi
   } catch (error) {
     const archived = buildArchivedPolicyPayload(path, fallbackTitle);
     if (archived) {
-      return archived;
+      return normalizePolicyPayload(archived);
     }
 
     const message = error instanceof Error ? error.message : "Unknown live policy error";

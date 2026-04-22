@@ -1166,6 +1166,30 @@
     animation-play-state: paused;
   }
 
+  .salt-review-carousel {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .salt-review-carousel-track {
+    display: inline-flex;
+    width: max-content;
+    gap: 0.875rem;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    animation-name: salt-category-carousel-marquee;
+    animation-duration: 250000ms;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: reverse;
+    animation-play-state: running;
+  }
+
+  .salt-review-carousel:hover .salt-review-carousel-track,
+  .salt-review-carousel:focus-within .salt-review-carousel-track {
+    animation-play-state: paused;
+  }
+
   .salt-essentials-carousel {
     overflow: hidden;
     width: 100%;
@@ -1197,6 +1221,11 @@
     }
 
     .salt-category-carousel-track {
+      transform: translate3d(0, 0, 0);
+    }
+
+    .salt-review-carousel-track {
+      animation: none;
       transform: translate3d(0, 0, 0);
     }
 

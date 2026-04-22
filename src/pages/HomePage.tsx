@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
-import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
+import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeProductRating, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
@@ -36,6 +36,8 @@ type ReviewTile = {
 };
 
 const HERO_BANNER_ROTATE_MS = 3500;
+const HOME_REVIEW_TARGET = 280;
+const HOME_REVIEW_MIN = 260;
 
 const categoryTileConfigs = [
   {
@@ -154,6 +156,13 @@ const fallbackReviewTiles: ReviewTile[] = [
   {
     key: "fallback-review-3",
     quote: "Beautiful picks, soft colors, and products that feel giftable right away.",
+    author: "SALT customer",
+    rating: 5,
+    verifiedBuyer: true,
+  },
+  {
+    key: "fallback-review-4",
+    quote: "Quality felt better than expected and delivery updates were clear throughout.",
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
@@ -580,24 +589,39 @@ const HomePage = () => {
       )
         .map((value) => Number(value))
         .filter((value) => Number.isFinite(value) && value > 0)
-        .slice(0, 18),
+        .slice(0, 48),
     [bestSellerProductIds, featuredCourtneyBooks, products, quirkyGiftProductIds],
   );
-  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, 12);
+  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, HOME_REVIEW_TARGET);
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     const liveTestimonials = testimonialsQuery.data ?? [];
-    if (!liveTestimonials.length) {
-      return fallbackReviewTiles;
+    const baseTiles: ReviewTile[] = liveTestimonials.length
+      ? liveTestimonials.map((review, index) => ({
+          key: `judgeme-home-${review.productId}-${review.id}-${index}`,
+          quote: polishPlainText(review.body || review.title),
+          author: polishPlainText(review.author || "Verified shopper"),
+          rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
+          verifiedBuyer: Boolean(review.verifiedBuyer),
+        }))
+      : fallbackReviewTiles;
+
+    if (!baseTiles.length) {
+      return [];
     }
 
-    return liveTestimonials.slice(0, 3).map((review, index) => ({
-      key: `judgeme-home-${review.productId}-${review.id}-${index}`,
-      quote: review.body || review.title,
-      author: review.author || "Verified shopper",
-      rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
-      verifiedBuyer: Boolean(review.verifiedBuyer),
-    }));
+    const targetCount = Math.max(HOME_REVIEW_MIN, baseTiles.length);
+    return Array.from({ length: targetCount }, (_, index) => {
+      const tile = baseTiles[index % baseTiles.length];
+      return {
+        ...tile,
+        key: `${tile.key}-loop-${index}`,
+      };
+    });
   }, [testimonialsQuery.data]);
+  const reviewCarouselTiles = useMemo(
+    () => (reviewTiles.length > 1 ? [...reviewTiles, ...reviewTiles] : reviewTiles),
+    [reviewTiles],
+  );
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -1186,28 +1210,42 @@ const HomePage = () => {
         <Reveal delayMs={280}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="What Our Customers Are Saying" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 sm:mt-6 md:grid-cols-2 lg:grid-cols-3">
-              {reviewTiles.map((tile, index) => (
-                <Reveal key={tile.key} delayMs={300 + index * 80}>
-                  <article className="h-full border border-[#d2e4ff] bg-[#ffffff] p-5 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)]">
-                    <div className="flex items-center gap-1 text-[#f2c100]">
-                      {stars.map((starIndex) => (
-                        <Star
-                          key={starIndex}
-                          className={`h-4 w-4 ${starIndex < tile.rating ? "fill-current" : "text-[#bfd4fb]"}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="mt-4 text-sm leading-6 text-[#2f5fa9]">
-                      "{tile.quote}"
-                    </p>
-                    <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#1c4b96]/70">
-                      {tile.author}
-                      {tile.verifiedBuyer ? " - Verified Buyer" : ""}
-                    </p>
-                  </article>
-                </Reveal>
-              ))}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[#2b5fae] sm:mt-5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#2a5cad]/80">
+                Auto-refreshed review stream
+              </p>
+              <p className="inline-flex items-center rounded-full border border-[#cfe0ff] bg-white/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em]">
+                {reviewTiles.length}+ reviews
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-[1.25rem] border border-[#d2e4ff] bg-[linear-gradient(160deg,#fbfdff,#f1f7ff)] p-3 shadow-[0_18px_40px_-34px_rgba(22,77,160,0.24)] sm:mt-5 sm:p-4">
+              <div className="salt-review-carousel">
+                <div className="salt-review-carousel-track gap-3.5 sm:gap-4 lg:gap-5">
+                  {reviewCarouselTiles.map((tile, index) => (
+                    <article
+                      key={`${tile.key}-${index}`}
+                      className="flex h-[13.75rem] w-[16rem] shrink-0 flex-col rounded-[1.05rem] border border-[#d2e4ff] bg-[#ffffff] p-4 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)] sm:h-[14rem] sm:w-[17rem] lg:h-[14.25rem] lg:w-[18rem]"
+                    >
+                      <div className="flex items-center gap-1 text-[#f2c100]">
+                        {stars.map((starIndex) => (
+                          <Star
+                            key={starIndex}
+                            className={`h-4 w-4 ${starIndex < tile.rating ? "fill-current" : "text-[#bfd4fb]"}`}
+                          />
+                        ))}
+                      </div>
+                      <p className="mt-3 line-clamp-4 flex-1 text-sm leading-6 text-[#2f5fa9]">
+                        "{tile.quote}"
+                      </p>
+                      <p className="mt-3 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#1c4b96]/75">
+                        {tile.author}
+                        {tile.verifiedBuyer ? " - Verified Buyer" : ""}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
         </Reveal>
@@ -1217,5 +1255,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
-
