@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-
+ 
 type RevealProps = PropsWithChildren<{
   delayMs?: number;
   className?: string;
