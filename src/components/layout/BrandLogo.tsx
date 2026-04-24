@@ -7,35 +7,24 @@ type BrandLogoProps = {
 };
 
 const brandLogoFontFamily = "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+const brandMarkSrc = "/brand/salt-logo.png";
 
-const emblemSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "h-11 w-28 px-2.5",
-  md: "h-12 w-32 px-3",
-  lg: "h-14 w-36 px-3.5",
+const shellSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
+  sm: "h-11 w-28 px-2.5 rounded-[1rem]",
+  md: "h-12 w-32 px-3 rounded-[1.05rem]",
+  lg: "h-14 w-36 px-3.5 rounded-[1.2rem]",
 };
 
 const textSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "text-lg",
-  md: "text-2xl",
-  lg: "text-3xl",
-};
-
-const markSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "text-[1.35rem]",
-  md: "text-[1.55rem]",
-  lg: "text-[1.82rem]",
-};
-
-const microLabelSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "text-[0.42rem]",
-  md: "text-[0.45rem]",
-  lg: "text-[0.5rem]",
+  sm: "text-[1.55rem]",
+  md: "text-[2rem]",
+  lg: "text-[2.45rem]",
 };
 
 const wordmarkSubtextSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
-  sm: "text-[0.7rem]",
-  md: "text-[0.82rem]",
-  lg: "text-[0.92rem]",
+  sm: "text-[0.72rem] tracking-[0.16em]",
+  md: "text-[0.82rem] tracking-[0.18em]",
+  lg: "text-[0.95rem] tracking-[0.2em]",
 };
 
 const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoProps) => {
@@ -43,33 +32,25 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn(
-          "relative inline-flex items-center overflow-hidden rounded-full border border-border/70 bg-[linear-gradient(135deg,#1e3a6e_0%,#2b508a_45%,#3b64b4_100%)] shadow-soft",
-          emblemSizeMap[size],
+          "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-white/18 bg-[linear-gradient(145deg,#18345f_0%,#274f90_46%,#1f3c6f_100%)] shadow-[0_18px_42px_-26px_rgba(8,20,42,0.65)] ring-1 ring-black/6",
+          shellSizeMap[size],
         )}
       >
-        <span className="absolute inset-[1px] rounded-full bg-[linear-gradient(126deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_38%,rgba(0,0,0,0.15)_100%)]" />
-        <span className="pointer-events-none absolute left-3 top-[0.34rem] h-[2px] w-[38%] rounded-full bg-white/75" />
-        <span className="pointer-events-none absolute left-3 bottom-[0.34rem] h-[2px] w-[31%] rounded-full bg-[#f0d249]/90" />
-        <span className="pointer-events-none absolute right-3 top-[0.34rem] h-[2px] w-[34%] rounded-full bg-[#f0d249]/90" />
-        <span className="pointer-events-none absolute right-3 bottom-[0.34rem] h-[2px] w-[28%] rounded-full bg-[#f0d249]/70" />
-        <span className="relative z-[1] flex w-full items-center justify-between">
-          <span
-            className={cn(
-              "font-black leading-none tracking-[0.17em] text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.42)]",
-              markSizeMap[size],
-            )}
-            style={{ fontFamily: brandLogoFontFamily }}
-          >
-            SALT
-          </span>
-        </span>
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0)_45%)]" />
+        <img
+          src={brandMarkSrc}
+          alt="SALT Online Store"
+          className="relative z-[1] h-full w-full object-fill drop-shadow-[0_6px_12px_rgba(0,0,0,0.2)]"
+          loading="eager"
+          decoding="async"
+        />
       </span>
 
       {withWordmark ? (
         <span className="leading-none">
           <span
             className={cn(
-              "block font-display tracking-[0.08em] text-[hsl(var(--salt-ink))] dark:text-white",
+              "block font-display leading-none tracking-[0.06em] text-[hsl(var(--salt-ink))] dark:text-white",
               textSizeMap[size],
             )}
             style={{ fontFamily: brandLogoFontFamily }}
@@ -78,7 +59,7 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
           </span>
           <span
             className={cn(
-              "block pt-0.5 uppercase tracking-[0.14em] text-[hsl(var(--salt-muted))] dark:text-white/76",
+              "block pt-1 uppercase text-[hsl(var(--salt-muted))] dark:text-white/72",
               wordmarkSubtextSizeMap[size],
             )}
             style={{ fontFamily: brandLogoFontFamily }}

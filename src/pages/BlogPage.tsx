@@ -1,31 +1,18 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, BookOpenText, Clock3, Sparkles, Star } from "lucide-react";
-import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
+import { ArrowRight, BookOpenText, Clock3, Newspaper, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
-import { LoadingState } from "@/components/storefront/LoadState";
+import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
-import { conciseTitle, readingTime } from "@/lib/formatters";
+import { readingTime } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
 
 const blogImageFallback = (
-  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.18),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.18),transparent_40%),#f3eee4] px-6 text-center">
-    <p className="text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#4c5d7e]">
+  <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
+    <p className="text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
       Image unavailable
     </p>
   </div>
 );
-
-function SectionTitle({ title }: { title: string }) {
-  return (
-    <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
-      <span className="h-px bg-[#bfd4fb]" />
-      <h2 className="font-display text-[clamp(1.12rem,3.15vw,1.65rem)] leading-none text-[#1c4b96]">
-        {title}
-      </h2>
-      <span className="h-px bg-[#bfd4fb]" />
-    </div>
-  );
-}
 
 function formattedDate(value: string): string {
   if (!value) {
@@ -44,31 +31,6 @@ function formattedDate(value: string): string {
   });
 }
 
-function readingMinutes(input: string): number {
-  const match = readingTime(input).match(/\d+/);
-  return Number(match?.[0] || 0);
-}
-
-function compactExcerpt(input: string, maxChars = 168): string {
-  const cleaned = String(input || "").replace(/\s+/g, " ").trim();
-  if (cleaned.length <= maxChars) {
-    return cleaned;
-  }
-
-  const slice = cleaned.slice(0, maxChars - 1);
-  const boundary = slice.lastIndexOf(" ");
-  const shortened = boundary > 24 ? slice.slice(0, boundary) : slice;
-  return `${shortened.trimEnd()}...`;
-}
-
-function matchesPinnedPost(
-  post: { handle?: string | null; title?: string | null },
-  needles: string[],
-): boolean {
-  const haystack = `${post.handle || ""} ${post.title || ""}`.toLowerCase();
-  return needles.some((needle) => haystack.includes(needle.toLowerCase()));
-}
-
 const BlogPage = () => {
   const { data, isLoading, error, refetch } = useBlogPosts();
 
@@ -83,380 +45,275 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <section className="mt-3 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
-        <div className="mx-auto w-full max-w-[1200px] px-4">
-          <Reveal>
-            <div className="relative isolate overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.22)] sm:p-8">
-              <div className="relative z-10 max-w-2xl">
-                <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2]">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Salt Blogs
-                </p>
-                <h1 className="mt-4 font-display text-[clamp(2.2rem,6vw,4rem)] leading-[1.02] tracking-[-0.03em] text-[#1a1a1a]">
-                  Blogs unavailable right now.
-                </h1>
-                <p className="mt-4 max-w-xl text-[clamp(1rem,2vw,1.15rem)] leading-relaxed text-[#4a453e]/90">
-                  The Shopify article sync did not return cleanly. Retry the feed or jump back into the catalog.
-                </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    type="button"
-                    onClick={() => refetch()}
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-primary"
-                  >
-                    Retry feed
-                  </button>
-                  <Link
-                    to="/shop"
-                    className="inline-flex h-12 items-center justify-center rounded-full border border-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a] transition hover:bg-[#1a1a1a] hover:text-white"
-                  >
-                    Shop catalog
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      <ErrorState
+        title="Blog unavailable"
+        subtitle="Please retry to refresh posts."
+        action={
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            Retry
+          </button>
+        }
+      />
     );
   }
 
   const posts = data?.posts || [];
-  const currentIssuePost = posts[0] ?? null;
-  const leadStoryPost =
-    posts.find((post) =>
-      matchesPinnedPost(post, [
-        "know-how-to-use-specific-gardening-tools-for-your-lawn-and-home-yards-care",
-        "know how to use specific gardening tools for your lawn & yards care",
-      ]),
-    ) ?? currentIssuePost;
-  const journalNotesPost =
-    posts.find((post) =>
-      matchesPinnedPost(post, [
-        "7-essential-cookware-categories-that-people-ask-for-their-maintenance-tips",
-        "7 essential cookware categories that people ask for & their maintenance tips",
-      ]),
-    ) ??
-    posts.find((post) => post.id !== currentIssuePost?.id && post.id !== leadStoryPost?.id) ??
-    null;
-  const pinnedPostIds = new Set(
-    [currentIssuePost?.id, leadStoryPost?.id, journalNotesPost?.id].filter(
-      (id): id is string => Boolean(id),
-    ),
-  );
-  const latestPosts = posts.filter((post) => !pinnedPostIds.has(post.id)).slice(0, 5);
+  const [featuredPost, ...remainingPosts] = posts;
   const highlightedAuthors = Array.from(
     new Set(posts.map((post) => post.author).filter((author): author is string => Boolean(author))),
-  ).slice(0, 4);
-  const averageReadMinutes = posts.length
-    ? Math.max(1, Math.round(posts.reduce((sum, post) => sum + readingMinutes(post.contentHtml), 0) / posts.length))
-    : 0;
-  const breadcrumbItems = [
-    { label: "Home", to: "/" },
-    { label: "Blogs" },
-  ];
+  ).slice(0, 5);
+  const latestPosts = remainingPosts.slice(0, 6);
 
   return (
-    <section className="mt-3 w-full pb-10 sm:mt-4 sm:pb-14 lg:pb-20">
-      <div className="flex w-full flex-col gap-6 px-3 sm:gap-7 sm:px-4 lg:px-5 xl:px-6">
-        <Reveal>
-          <InnerBreadcrumbs items={breadcrumbItems} />
-        </Reveal>
+    <section className="mx-auto mt-8 w-[min(1240px,96vw)] pb-8">
+      <Reveal>
+        <div className="salt-panel-shell rounded-[2.2rem] p-6 sm:p-8 lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Editorial</p>
+              <h1 className="mt-2 max-w-[10ch] font-display text-[clamp(2.2rem,4.9vw,4.4rem)] leading-[0.9] tracking-[-0.045em] text-foreground">
+                Stories that help discovery feel informed, not accidental.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.98rem]">
+                SALT editorial supports the storefront with practical guidance, seasonal inspiration, and product-led storytelling so shoppers can move from curiosity into confident buying faster.
+              </p>
 
-        <Reveal delayMs={40}>
-          <section className="grid gap-4 lg:grid-cols-[1.06fr_0.94fr]">
-            <div className="relative isolate flex min-h-[25rem] flex-col overflow-hidden rounded-[2rem] bg-[#f8f5f0] p-6 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.22)] sm:min-h-[28rem] sm:p-8 lg:h-full lg:p-10">
-              {currentIssuePost?.image ? (
-                <>
-                  <img
-                    src={currentIssuePost.image}
-                    alt={currentIssuePost.title}
-                    className="absolute inset-y-0 right-0 h-full w-full object-cover opacity-18 sm:w-[76%] lg:w-[62%]"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,245,240,0.98)_0%,rgba(248,245,240,0.95)_34%,rgba(248,245,240,0.86)_56%,rgba(248,245,240,0.62)_78%,rgba(248,245,240,0.32)_100%)]" />
-                </>
-              ) : null}
-
-              <div className="relative z-10 flex h-full flex-col">
-                <div className="max-w-[42rem]">
-                  <p className="inline-flex items-center gap-2 rounded-full border border-[#ffe4a3] bg-[#fff6db] px-4 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#1f56b2] sm:text-[0.72rem]">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Salt Blogs
-                  </p>
-                  <h1 className="mt-4 font-display text-[clamp(2.4rem,5.2vw,3.9rem)] leading-[1.04] tracking-[-0.03em] text-[#1a1a1a]">
-                    Stories, guides, and seasonal ideas for everyday living.
-                  </h1>
-                  <p className="mt-4 max-w-[36rem] text-[0.96rem] leading-7 text-[#4a5f86] sm:text-[1.02rem]">
-                    {compactExcerpt(
-                      currentIssuePost?.excerpt || currentIssuePost?.contentHtml || "Discover the newest guides, seasonal notes, and practical home stories from SALT.",
-                      152,
-                    )}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
-                      <Clock3 className="h-3.5 w-3.5" />
-                      Avg {averageReadMinutes} min read
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
-                      <BookOpenText className="h-3.5 w-3.5" />
-                      {posts.length} stories live
-                    </span>
-                    {currentIssuePost?.author ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/78 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        {currentIssuePost.author}
-                      </span>
-                    ) : null}
-                  </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="salt-kpi-card rounded-[1.15rem] border border-border/70 px-4 py-3.5">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Live posts</p>
+                  <p className="mt-2 font-display text-3xl text-foreground">{posts.length.toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Synced from Shopify content</p>
                 </div>
-
-                <div className="mt-8">
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {currentIssuePost ? (
-                      <Link
-                        to={`/blog/${currentIssuePost.handle}`}
-                        className="inline-flex h-12 items-center justify-center rounded-full bg-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-primary"
-                      >
-                        Read latest story
-                      </Link>
-                    ) : null}
-                    <Link
-                      to="/shop"
-                      className="inline-flex h-12 items-center justify-center rounded-full border border-[#1a1a1a] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-[#1a1a1a] transition hover:bg-[#1a1a1a] hover:text-white"
-                    >
-                      Shop catalog
-                    </Link>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-2.5">
-                    {highlightedAuthors.map((author) => (
-                      <span
-                        key={author}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#bcd6ff] bg-white/72 px-3.5 py-2 text-[0.68rem] font-semibold text-[#1f4f9b]"
-                      >
-                        <BookOpenText className="h-3.5 w-3.5" />
-                        {author}
-                      </span>
-                    ))}
-                  </div>
+                <div className="salt-kpi-card rounded-[1.15rem] border border-border/70 px-4 py-3.5">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Best format</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">Practical short reads</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Shopping adjacent, easy to scan</p>
                 </div>
+                <div className="salt-kpi-card rounded-[1.15rem] border border-border/70 px-4 py-3.5">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Main outcome</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">Trust before purchase</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Content that reduces hesitation</p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {highlightedAuthors.map((author) => (
+                  <span key={author} className="salt-outline-chip text-[0.62rem]">
+                    <BookOpenText className="mr-1.5 h-3 w-3" />
+                    {author}
+                  </span>
+                ))}
+                <Link
+                  to="/shop?sort=newest"
+                  className="salt-outline-chip text-[0.62rem]"
+                >
+                  <Sparkles className="mr-1.5 h-3 w-3" />
+                  Shop newest arrivals
+                </Link>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              {currentIssuePost ? (
-                <Reveal delayMs={80} className="h-full">
-                  <Link
-                    to={`/blog/${currentIssuePost.handle}`}
-                    className="salt-story-card group relative block h-full min-h-[18rem] overflow-hidden rounded-[1.75rem] border border-white/10 shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.38)] sm:min-h-[22rem]"
-                  >
-                    <ResilientImage
-                      src={currentIssuePost.image}
-                      alt={currentIssuePost.title}
-                      loading="lazy"
-                      fallback={blogImageFallback}
-                      className="absolute inset-0 h-auto w-full object-cover transition duration-700 group-hover:scale-[1.06]"
-                    />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(160deg,hsl(var(--card)/0.98),hsl(var(--card)/0.92))] p-5 shadow-soft">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Editorial role</p>
+                    <h2 className="mt-2 font-display text-[clamp(1.45rem,2.6vw,2.1rem)] leading-[0.95] text-foreground">
+                      The blog should help shoppers decide faster, not just fill space.
+                    </h2>
+                  </div>
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+                    <Newspaper className="h-5 w-5" />
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  These stories are part of the commerce system: they build product confidence, improve category clarity, and create warmer entry points into the catalog.
+                </p>
+              </div>
 
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.08),rgba(12,20,38,0.12)_24%,rgba(12,20,38,0.2)_54%,rgba(12,20,38,0.62)_100%)]" />
-                    <div className="absolute right-4 top-4 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-3 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                      Current issue
-                    </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-border/70 bg-background/90 p-4 shadow-soft">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Content mix</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">Guides + inspiration</p>
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">Short reads that support buying intent.</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-border/70 bg-background/90 p-4 shadow-soft">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Sync model</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">Shopify-connected</p>
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">Live posts surface automatically inside the storefront.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Reveal>
 
-                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                      <div className="p-1">
-                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white">
-                          {formattedDate(currentIssuePost.publishedAt)}
-                        </p>
-                        <h2 className="mt-2 font-display text-[1.55rem] leading-[1.08] tracking-[-0.035em] text-white drop-shadow-[0_8px_24px_rgba(15,23,42,0.55)] sm:text-[1.5rem]">
-                          {conciseTitle(currentIssuePost.title, 74)}
-                        </h2>
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white">
-                            Open story <ArrowUpRight className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {readingTime(currentIssuePost.contentHtml)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </Reveal>
-              ) : null}
-
-              {journalNotesPost ? (
-                <Reveal delayMs={100} className="h-full">
-                  <Link
-                    to={`/blog/${journalNotesPost.handle}`}
-                    className="salt-story-card group relative block h-full min-h-[18rem] overflow-hidden rounded-[1.75rem] border border-white/18 shadow-[0_26px_80px_-52px_rgba(15,23,42,0.28)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_36px_100px_-56px_rgba(15,23,42,0.36)] sm:min-h-[22rem]"
-                  >
-                    <ResilientImage
-                      src={journalNotesPost.image}
-                      alt={journalNotesPost.title}
-                      loading="lazy"
-                      fallback={blogImageFallback}
-                      className="absolute inset-0 h-auto w-full object-cover transition duration-700 group-hover:scale-[1.06]"
-                    />
-
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,20,38,0.08),rgba(12,20,38,0.12)_24%,rgba(12,20,38,0.2)_54%,rgba(12,20,38,0.62)_100%)]" />
-                    <div className="absolute right-4 top-4 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-3 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                      <span className="inline-flex items-center gap-1.5">
-                        Cookware guide
+      {posts.length === 0 ? (
+        <Reveal delayMs={80} className="mt-6">
+          <div className="salt-surface rounded-3xl p-10 text-center">
+            <h2 className="font-display text-3xl">No blog posts yet</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              New posts from Shopify will appear here automatically.
+            </p>
+          </div>
+        </Reveal>
+      ) : (
+        <>
+          {featuredPost ? (
+            <Reveal delayMs={60} className="mt-6">
+              <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.06fr_0.94fr]">
+                <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
+                  <ResilientImage
+                    src={featuredPost.image}
+                    alt={featuredPost.title}
+                    loading="lazy"
+                    fallback={blogImageFallback}
+                    className="h-full min-h-[18rem] w-full object-cover transition-transform duration-500 hover:scale-[1.04] lg:min-h-[30rem]"
+                  />
+                </Link>
+                <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-9">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Featured story</p>
+                    <h2 className="mt-3 font-display text-[clamp(2rem,3.3vw,3.35rem)] leading-[0.96] tracking-[-0.04em] text-foreground">
+                      <Link to={`/blog/${featuredPost.handle}`} className="hover:text-primary">
+                        {featuredPost.title}
+                      </Link>
+                    </h2>
+                    <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-[0.98rem]">
+                      {featuredPost.excerpt}
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <span>{formattedDate(featuredPost.publishedAt)}</span>
+                      <span>•</span>
+                      <span>{featuredPost.author || "SALT"}</span>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Clock3 className="h-3.5 w-3.5" /> {readingTime(featuredPost.contentHtml)}
                       </span>
                     </div>
+                  </div>
 
-                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                      <div className="p-1">
-                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white">
-                          {formattedDate(journalNotesPost.publishedAt)}
-                        </p>
-                        <h2 className="mt-2 font-display text-[1.5rem] leading-[1.08] tracking-[-0.035em] text-white drop-shadow-[0_8px_24px_rgba(15,23,42,0.55)] sm:text-[1.5rem]">
-                          {conciseTitle(journalNotesPost.title, 76)}
-                        </h2>
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white">
-                            Open guide <ArrowUpRight className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {readingTime(journalNotesPost.contentHtml)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </Reveal>
-              ) : null}
-            </div>
-          </section>
-        </Reveal>
-
-        {posts.length === 0 ? (
-          <Reveal delayMs={100}>
-            <div className="overflow-hidden rounded-[1.8rem] border border-[#cadeff] bg-[linear-gradient(155deg,#f9fcff_0%,#edf5ff_45%,#f4f8ff_100%)] p-8 text-center shadow-[0_20px_60px_-44px_rgba(22,77,160,0.3)]">
-              <h2 className="font-display text-[clamp(1.8rem,4vw,2.7rem)] leading-[1.02] text-[#1a4d9a]">
-                No blog posts yet
-              </h2>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#355a96]">
-                New Shopify articles will appear here automatically when the feed updates.
-              </p>
-            </div>
-          </Reveal>
-        ) : (
-          <>
-            {leadStoryPost ? (
-              <Reveal delayMs={90}>
-                <section>
-                  <SectionTitle title="Featured Story" />
-                  <article className="mt-5">
+                  <div className="mt-6 flex flex-wrap gap-2">
                     <Link
-                      to={`/blog/${leadStoryPost.handle}`}
-                      className="group relative block min-h-[26rem] overflow-hidden rounded-[2rem] shadow-[0_24px_80px_-52px_rgba(15,23,42,0.24)] sm:min-h-[30rem]"
+                      to={`/blog/${featuredPost.handle}`}
+                      className="salt-primary-cta h-11 gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em]"
                     >
-                      <ResilientImage
-                        src={leadStoryPost.image}
-                        alt={leadStoryPost.title}
-                        loading="lazy"
-                        fallback={blogImageFallback}
-                        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                      />
-
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,14,28,0.04)_0%,rgba(8,14,28,0.12)_22%,rgba(8,14,28,0.28)_52%,rgba(8,14,28,0.82)_100%)]" />
-
-                      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 lg:p-10">
-                        
-                        <h2 className="mt-3 max-w-4xl font-display text-[clamp(1.55rem,3vw,2.6rem)] leading-[1.06] tracking-[-0.03em] text-white drop-shadow-[0_10px_28px_rgba(15,23,42,0.55)]">
-                          {leadStoryPost.title}
-                        </h2>
-
-                        <div className="mt-7 flex flex-wrap items-center gap-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white">
-                          <span>{formattedDate(leadStoryPost.publishedAt)}</span>
-                          <span className="text-white">|</span>
-                          <span>{leadStoryPost.author || "SALT"}</span>
-                          <span className="text-white">|</span>
-                          <span className="inline-flex items-center gap-1">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {readingTime(leadStoryPost.contentHtml)}
-                          </span>
-                        </div>
-
-                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-                          <span className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#1f63d8] px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white transition group-hover:bg-[#1d56be]">
-                            Read the full story
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="inline-flex h-12 items-center justify-center rounded-full border border-white/34 px-7 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-white/90 transition group-hover:border-white/52">
-                            Browse collections
-                          </span>
-                        </div>
-                      </div>
+                      Read featured story <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
-                  </article>
-                </section>
+                    <Link
+                      to="/shop?sort=newest"
+                      className="salt-outline-chip h-11 px-5 py-0 text-xs"
+                    >
+                      Shop newest products
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          ) : null}
+
+          {latestPosts.length > 0 ? (
+            <section className="mt-8">
+              <Reveal>
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Latest dispatches</p>
+                    <h2 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.7rem)] leading-[0.96] text-foreground">
+                      Fresh stories from the storefront
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+                      Recent posts designed to keep the brand useful, current, and easier to shop with context.
+                    </p>
+                  </div>
+                  <Link
+                    to="/shop"
+                    className="salt-outline-chip h-11 px-5 py-0 text-xs font-bold uppercase tracking-[0.08em]"
+                  >
+                    Browse products <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                  </Link>
+                </div>
               </Reveal>
-            ) : null}
 
-            {latestPosts.length > 0 ? (
-              <Reveal delayMs={120}>
-                <section>
-                  <SectionTitle title="Latest Dispatches" />
-                  <div className="mt-5 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {latestPosts.map((post, index) => (
-                      <article
-                        key={post.id}
-                        className="group self-start overflow-hidden border border-[#d2e4ff] bg-white shadow-[0_14px_40px_-32px_rgba(22,77,160,0.24)] transition hover:-translate-y-0.5"
-                      >
-                        <Link
-                          to={`/blog/${post.handle}`}
-                          className="block"
-                        >
-                          <div className="relative aspect-[1.4/0.82] overflow-hidden bg-[#edf5ff]">
-                            <ResilientImage
-                              src={post.image}
-                              alt={post.title}
-                              loading="lazy"
-                              fallback={blogImageFallback}
-                              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                            />
-                            <div className="absolute left-3 top-3">
-                              <span className="inline-flex items-center gap-1 rounded-full border border-white/18 bg-[linear-gradient(180deg,rgba(28,39,67,0.82),rgba(18,27,47,0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-md">
-                                <Clock3 className="h-3 w-3" />
-                                {readingTime(post.contentHtml)}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {latestPosts.map((post, index) => (
+                  <Reveal key={post.id} delayMs={index * 70}>
+                    <article className="salt-card-hover salt-metric-card flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
+                      <Link to={`/blog/${post.handle}`} className="block overflow-hidden bg-muted">
+                        <ResilientImage
+                          src={post.image}
+                          alt={post.title}
+                          loading="lazy"
+                          fallback={<div className="aspect-[16/10] w-full">{blogImageFallback}</div>}
+                          className="aspect-[16/10] w-full object-cover transition-transform duration-500 hover:scale-[1.05]"
+                        />
+                      </Link>
 
-                        <div className="px-4 py-3 text-center sm:px-5 sm:py-4">
-                          <h3 className="mx-auto max-w-[20ch] font-display text-[1rem] leading-[1.16] text-[#1c4b96] sm:text-[1.08rem]">
-                            <Link to={`/blog/${post.handle}`} className="transition hover:text-[#163f82]">
-                              {conciseTitle(post.title, 68)}
-                            </Link>
-                          </h3>
-
-                          <div className="mt-2 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#4f6fa6]">
-                            <p>{formattedDate(post.publishedAt)}</p>
-                            <p className="mt-1">{post.author || "SALT"}</p>
-                          </div>
-
+                      <div className="flex h-full flex-col p-5">
+                        <div className="flex flex-wrap items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                          <span>{formattedDate(post.publishedAt)}</span>
+                          <span>•</span>
+                          <span>{post.author || "SALT"}</span>
+                        </div>
+                        <h3 className="mt-3 line-clamp-3 font-display text-[1.55rem] leading-[1.02] text-foreground">
+                          <Link to={`/blog/${post.handle}`} className="hover:text-primary">
+                            {post.title}
+                          </Link>
+                        </h3>
+                        <p className="mt-3 line-clamp-4 text-sm leading-7 text-muted-foreground">{post.excerpt}</p>
+                        <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Clock3 className="h-3.5 w-3.5" /> {readingTime(post.contentHtml)}
+                          </span>
                           <Link
                             to={`/blog/${post.handle}`}
-                            className="mt-3 inline-flex h-9 items-center justify-center bg-[#f2b600] px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#d7a200]"
+                            className="inline-flex items-center gap-1 font-bold uppercase tracking-[0.1em] text-primary"
                           >
-                            Read Now
+                            Read <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
                         </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              </Reveal>
-            ) : null}
-          </>
-        )}
-      </div>
+                      </div>
+                    </article>
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <Reveal delayMs={140}>
+            <div className="salt-panel-shell mt-10 rounded-[2rem] p-6 sm:p-8">
+              <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Commerce + content</p>
+                  <h2 className="mt-2 font-display text-[clamp(1.7rem,2.8vw,2.5rem)] leading-[0.96] text-foreground">
+                    Editorial should always route back into the catalog cleanly.
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+                    Good storefront content does not compete with the shop. It strengthens category understanding, creates trust, and gives customers another high-quality path into the products they are most likely to buy.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  <Link
+                    to="/shop"
+                    className="salt-primary-cta h-11 px-5 text-xs font-bold uppercase tracking-[0.08em]"
+                  >
+                    Shop all products
+                  </Link>
+                  <Link
+                    to="/collections"
+                    className="salt-outline-chip h-11 px-5 py-0 text-xs"
+                  >
+                    Explore collections
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </>
+      )}
     </section>
   );
 };
