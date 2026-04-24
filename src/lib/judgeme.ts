@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
+import { polishPlainText } from "@/lib/formatters";
 
 export type JudgeMeReviewSummary = {
   productId: number;
@@ -183,7 +184,42 @@ function parseJudgeMeWidgetSummary(html: string): JudgeMeRawSummary | null {
 }
 
 function parseText(element: Element | null): string {
-  return (element?.textContent || "").replace(/\s+/g, " ").trim();
+  return polishPlainText(element?.textContent || "");
+}
+
+export function buildJudgeMeReviewFingerprint(
+  review: Pick<JudgeMeTestimonial, "author" | "title" | "body">,
+): string {
+  const author = polishPlainText(review.author || "").toLowerCase();
+  const title = polishPlainText(review.title || "").toLowerCase();
+  const body = polishPlainText(review.body || "").toLowerCase();
+
+  return [author, title, body].filter(Boolean).join("|");
+}
+
+export function normalizeJudgeMeReview(review: JudgeMeTestimonial): JudgeMeTestimonial {
+  return {
+    ...review,
+    author: polishPlainText(review.author || "Verified shopper") || "Verified shopper",
+    title: polishPlainText(review.title || "Customer review") || "Customer review",
+    body: polishPlainText(review.body),
+  };
+}
+
+export function dedupeJudgeMeTestimonials(reviews: JudgeMeTestimonial[]): JudgeMeTestimonial[] {
+  const seenReviewKeys = new Set<string>();
+
+  return reviews.reduce<JudgeMeTestimonial[]>((uniqueReviews, review) => {
+    const normalizedReview = normalizeJudgeMeReview(review);
+    const reviewKey = buildJudgeMeReviewFingerprint(normalizedReview) || `${review.productId}:${review.id}`;
+    if (seenReviewKeys.has(reviewKey)) {
+      return uniqueReviews;
+    }
+
+    seenReviewKeys.add(reviewKey);
+    uniqueReviews.push(normalizedReview);
+    return uniqueReviews;
+  }, []);
 }
 
 function parseJudgeMeWidgetTestimonials(productId: number, html: string): JudgeMeTestimonial[] {
@@ -214,9 +250,9 @@ function parseJudgeMeWidgetTestimonials(productId: number, html: string): JudgeM
       return {
         id,
         productId,
-        author,
-        title,
-        body,
+        author: polishPlainText(author || "Verified shopper") || "Verified shopper",
+        title: polishPlainText(title || "Customer review") || "Customer review",
+        body: polishPlainText(body),
         rating: Number.isFinite(rating) ? Math.min(5, Math.max(0, rating)) : 0,
         createdAtRaw,
         createdAtMs,
@@ -397,13 +433,16 @@ export async function fetchJudgeMeTestimonials(
       }
 
       try {
-        const reviews = await requestJudgeMeTestimonialsForProduct(domain, publicToken, productId);
+        const reviews = dedupeJudgeMeTestimonials(
+          await requestJudgeMeTestimonialsForProduct(domain, publicToken, productId),
+        );
+
         reviews.forEach((review) => {
           if (collected.length >= limit) {
             return;
           }
 
-          const reviewKey = `${review.productId}:${review.id}:${review.body.slice(0, 80).toLowerCase()}`;
+          const reviewKey = buildJudgeMeReviewFingerprint(review) || `${review.productId}:${review.id}`;
           if (seenReviewKeys.has(reviewKey)) {
             return;
           }

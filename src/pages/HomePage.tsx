@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
@@ -20,6 +20,7 @@ type ImageTile = {
   title: string;
   image: string;
   to: string;
+  alt?: string;
 };
 
 type ProductTile = ImageTile & {
@@ -37,7 +38,7 @@ type ReviewTile = {
 
 const HERO_BANNER_ROTATE_MS = 3500;
 const HOME_REVIEW_TARGET = 280;
-const HOME_REVIEW_MIN = 260;
+const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
 
 const categoryTileConfigs = [
   {
@@ -215,19 +216,22 @@ const featuredCourtneyBookFallbackMeta = [
 
 const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
-    title: "SALT Banner",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png?v=1776335459",
+    title: "Garden Tools",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png",
     to: "/collections/garden-tools",
+    alt: "Spring garden tools collection banner with gloves, raised beds, planters, and outdoor decor.",
   },
   {
-    title: "SALT Banner 2",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_2.png?v=1776337794",
+    title: "Unique Finds",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_2.png",
     to: "/collections/unique-products",
+    alt: "Unique home decor and gift collection banner featuring distinctive statement pieces.",
   },
   {
-    title: "SALT Banner 3",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_3.png?v=1776337796",
+    title: "Summer Collection",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_3.png",
     to: "/collections/summer-collection",
+    alt: "Summer collection banner featuring seasonal lifestyle, outdoor, and home essentials.",
   },
 ];
 
@@ -282,6 +286,57 @@ const fallbackQuirkyGiftTiles: ProductTile[] = [
   },
 ];
 
+const fallbackEverydayEssentialTiles: ProductTile[] = [
+  {
+    title: "Mini Soil Moisture Meter",
+    price: "$40.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0176d58c74d34f50afa5a85504cabab7R.webp?v=1741351238",
+    to: "/products/mini-soil-moisture-meter-gardening-water-analyzer-tool",
+  },
+  {
+    title: "Stainless Steel Garden Trowel",
+    price: "$24.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa4903cd34f2d4065a0126d44b58be35dd.webp?v=1741351238",
+    to: "/products/stainless-steel-garden-trowel-heavy-duty-hand-shovel",
+  },
+  {
+    title: "Professional Grafting Shears",
+    price: "$34.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5eb8f84cdefb43b4879bff3612c27e51e.webp?v=1741347257",
+    to: "/products/professional-grafting-shears-fruit-tree-pruning-tool-set",
+  },
+  {
+    title: "High-Pressure Foam Lance Water Gun",
+    price: "$34.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf57de253c9f64fb0a3583594df791d061.webp?v=1741094049",
+    to: "/products/portable-auto-foam-lance-water-gun-high-pressure-3-grade-nozzle-jet-car-washer-sprayer-cleaning-tool-automobile-garden-wash-tool",
+  },
+  {
+    title: "8-in-1 Dog Shower Sprayer",
+    price: "$39.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S08b63989913d4ad19d98062e9e54cebfS.webp?v=1741065549",
+    to: "/products/8-in-1-dog-shower-sprayer-high-pressure-pet-bath-garden-tool",
+  },
+  {
+    title: "Hollow Hoe Handheld Weeding Rake",
+    price: "$29.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sda66216eefe84eeabb7ccc13ffd220235.webp?v=1741347256",
+    to: "/products/hollow-hoe-handheld-weeding-rake-perfect-for-planting-loosening-soil",
+  },
+  {
+    title: "Adjustable Beverage Bottle Sprayer",
+    price: "$24.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd8c5e214b90c4a41adf8d0456f809670p.webp?v=1741070097",
+    to: "/products/adjustable-beverage-bottle-sprayer-gardening-watering-tool",
+  },
+  {
+    title: "Garden Water Nozzle",
+    price: "$29.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S389aefb33b994d24b48805e9ed82ea34s.webp?v=1741065546",
+    to: "/products/garden-water-nozzle-car-wash-yard-sprayer-multifunctional-tool",
+  },
+];
+
 function SectionTitle({ title }: { title: string }) {
   return (
     <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
@@ -302,6 +357,7 @@ function OverlayProductCard({
   productId,
   fallbackImage,
   className = "",
+  imageAlt,
 }: {
   title: string;
   image: string;
@@ -310,12 +366,14 @@ function OverlayProductCard({
   productId?: number;
   fallbackImage: string;
   className?: string;
+  imageAlt?: string;
 }) {
   const { summary } = useJudgeMeProductRating(productId);
   const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
   const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
   const hasReviews = Boolean(summary && summary.reviewCount > 0);
   const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
+  const resolvedAlt = imageAlt || `${title} product image from SALT Online Store`;
 
   return (
     <Link
@@ -325,12 +383,12 @@ function OverlayProductCard({
       <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]">
         <ResilientImage
           src={imageSrc}
-          alt={title}
+          alt={resolvedAlt}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
           fallback={
             <img
               src={fallbackSrc}
-              alt={title}
+              alt={resolvedAlt}
               className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
             />
           }
@@ -406,6 +464,26 @@ function findBestSellerCollection(collections: ShopifyCollection[]): ShopifyColl
 function productSearchText(product: ShopifyProduct): string {
   const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
   return normalizeText(`${product.title} ${product.product_type} ${tags}`);
+}
+
+function buildCollectionImageAltText(title: string, contextLabel: string): string {
+  const normalizedTitle = polishPlainText(title) || "Collection";
+  const normalizedContext = polishPlainText(contextLabel).toLowerCase();
+  return `${normalizedTitle} collection image featured in SALT ${normalizedContext}.`;
+}
+
+function buildProductImageAltText(title: string, contextLabel: string): string {
+  const normalizedTitle = polishPlainText(title) || "Product";
+  const normalizedContext = polishPlainText(contextLabel).toLowerCase();
+  return `${normalizedTitle} product photo featured in SALT ${normalizedContext}.`;
+}
+
+function buildBannerImageAltText(tile: ImageTile): string {
+  if (tile.alt) {
+    return tile.alt;
+  }
+
+  return `${polishPlainText(tile.title) || "SALT"} homepage banner image.`;
 }
 
 const HomePage = () => {
@@ -593,6 +671,7 @@ const HomePage = () => {
     [bestSellerProductIds, featuredCourtneyBooks, products, quirkyGiftProductIds],
   );
   const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, HOME_REVIEW_TARGET);
+  const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     const liveTestimonials = testimonialsQuery.data ?? [];
     const baseTiles: ReviewTile[] = liveTestimonials.length
@@ -609,19 +688,17 @@ const HomePage = () => {
       return [];
     }
 
-    const targetCount = Math.max(HOME_REVIEW_MIN, baseTiles.length);
-    return Array.from({ length: targetCount }, (_, index) => {
-      const tile = baseTiles[index % baseTiles.length];
-      return {
-        ...tile,
-        key: `${tile.key}-loop-${index}`,
-      };
+    const seenTiles = new Set<string>();
+    return baseTiles.filter((tile) => {
+      const fingerprint = `${tile.author.toLowerCase()}|${tile.quote.toLowerCase()}`;
+      if (seenTiles.has(fingerprint)) {
+        return false;
+      }
+
+      seenTiles.add(fingerprint);
+      return true;
     });
   }, [testimonialsQuery.data]);
-  const reviewCarouselTiles = useMemo(
-    () => (reviewTiles.length > 1 ? [...reviewTiles, ...reviewTiles] : reviewTiles),
-    [reviewTiles],
-  );
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -674,9 +751,130 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerProducts]);
-  const everydayEssentialsTiles = useMemo(() => bestSellerTiles.slice(0, 8), [bestSellerTiles]);
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
+  const everydayEssentialProducts = useMemo(() => {
+    if (!products.length) {
+      return [];
+    }
+
+    const excludedProductIds = new Set<number>([
+      ...bestSellerProducts.map((product) => product.id),
+      ...featuredCourtneyBooks.map((product) => product.id),
+    ]);
+
+    const practicalTokens = [
+      "garden",
+      "tool",
+      "tools",
+      "watering",
+      "water",
+      "sprayer",
+      "shower",
+      "pruning",
+      "shears",
+      "soil",
+      "moisture",
+      "clean",
+      "cleaner",
+      "kitchen",
+      "cookware",
+      "storage",
+      "organizer",
+      "bottle",
+      "pet",
+      "home",
+      "care",
+    ];
+    const blockedTokens = [
+      "book",
+      "books",
+      "journal",
+      "planner",
+      "legacy",
+      "bloom",
+      "relics",
+      "gift",
+      "gifts",
+      "dress",
+      "shirt",
+      "apparel",
+      "fashion",
+    ];
+
+    const rankedProducts = products
+      .map((product) => {
+        if (excludedProductIds.has(product.id)) {
+          return null;
+        }
+
+        const search = productSearchText(product);
+        if (!search) {
+          return null;
+        }
+
+        const matchesBlockedToken = blockedTokens.some((token) => search.includes(token));
+        if (matchesBlockedToken) {
+          return null;
+        }
+
+        const practicalScore = practicalTokens.reduce(
+          (score, token) => (search.includes(token) ? score + 1 : score),
+          0,
+        );
+        const price = minPrice(product);
+        const priceScore = price > 0 && price <= 50 ? 2 : price > 0 && price <= 90 ? 1 : 0;
+        const imageScore = productImage(product) ? 1 : 0;
+        const freshnessScore = new Date(product.published_at || product.created_at || "1970-01-01").getTime();
+
+        return {
+          product,
+          practicalScore,
+          rankScore: practicalScore * 3 + priceScore + imageScore,
+          price: price > 0 ? price : Number.MAX_SAFE_INTEGER,
+          freshnessScore,
+        };
+      })
+      .filter(
+        (
+          entry,
+        ): entry is {
+          product: ShopifyProduct;
+          practicalScore: number;
+          rankScore: number;
+          price: number;
+          freshnessScore: number;
+        } => Boolean(entry) && entry.practicalScore > 0,
+      )
+      .sort((left, right) => {
+        const scoreDiff = right.rankScore - left.rankScore;
+        if (scoreDiff !== 0) {
+          return scoreDiff;
+        }
+
+        const priceDiff = left.price - right.price;
+        if (priceDiff !== 0) {
+          return priceDiff;
+        }
+
+        return right.freshnessScore - left.freshnessScore;
+      });
+
+    return rankedProducts.slice(0, 8).map((entry) => entry.product);
+  }, [bestSellerProducts, featuredCourtneyBooks, products]);
+  const everydayEssentialsTiles = useMemo<ProductTile[]>(() => {
+    if (!everydayEssentialProducts.length) {
+      return fallbackEverydayEssentialTiles;
+    }
+
+    return everydayEssentialProducts.map((product) => ({
+      productId: product.id,
+      title: product.title,
+      price: formatMoney(minPrice(product)),
+      image: productImage(product) || bestSellerHeroImage,
+      to: `/products/${product.handle}`,
+    }));
+  }, [bestSellerHeroImage, everydayEssentialProducts]);
   const quirkyGiftProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -922,6 +1120,59 @@ const HomePage = () => {
     };
   }, [heroPosterTiles.length]);
 
+  useEffect(() => {
+    const carousel = reviewCarouselRef.current;
+    if (!carousel || reviewTiles.length <= 1 || typeof window === "undefined") {
+      return;
+    }
+
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motionQuery.matches) {
+      return;
+    }
+
+    let animationFrameId = 0;
+    let lastFrameAt = 0;
+    let isPaused = false;
+
+    const handleMouseEnter = () => {
+      isPaused = true;
+    };
+
+    const handleMouseLeave = () => {
+      isPaused = false;
+    };
+
+    const tick = (frameAt: number) => {
+      if (!lastFrameAt) {
+        lastFrameAt = frameAt;
+      }
+
+      const elapsed = frameAt - lastFrameAt;
+      lastFrameAt = frameAt;
+
+      if (!isPaused) {
+        const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
+        if (maxScrollLeft > 0) {
+          const nextScrollLeft = carousel.scrollLeft + elapsed * HOME_REVIEW_SCROLL_PX_PER_MS;
+          carousel.scrollLeft = nextScrollLeft >= maxScrollLeft ? 0 : nextScrollLeft;
+        }
+      }
+
+      animationFrameId = window.requestAnimationFrame(tick);
+    };
+
+    carousel.addEventListener("mouseenter", handleMouseEnter);
+    carousel.addEventListener("mouseleave", handleMouseLeave);
+    animationFrameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      carousel.removeEventListener("mouseenter", handleMouseEnter);
+      carousel.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, [reviewTiles.length]);
+
   return (
     <section className="mt-2 w-full pb-4 sm:mt-4 sm:pb-6 lg:pb-8">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
@@ -937,17 +1188,17 @@ const HomePage = () => {
                     key={`${tile.to}-${index}`}
                     to={tile.to}
                     className="group block w-full shrink-0"
-                    aria-label={tile.title}
+                    aria-label={buildBannerImageAltText(tile)}
                   >
                     <div className="overflow-hidden bg-[#eaf3ff]">
                       <ResilientImage
                         src={tile.image}
-                        alt={tile.title}
+                        alt={buildBannerImageAltText(tile)}
                         className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
                         fallback={
                           <img
                             src={bestSellerHeroImage}
-                            alt={tile.title}
+                            alt={buildBannerImageAltText(tile)}
                             className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
                           />
                         }
@@ -988,12 +1239,12 @@ const HomePage = () => {
                       <div className="salt-category-scroll-track h-full w-full">
                         <ResilientImage
                           src={tile.image}
-                          alt={tile.title}
+                          alt={buildCollectionImageAltText(tile.title, "shop by category")}
                           className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                           fallback={
                             <img
                               src={bestSellerHeroImage}
-                              alt={tile.title}
+                              alt={buildCollectionImageAltText(tile.title, "shop by category")}
                               className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                             />
                           }
@@ -1026,6 +1277,7 @@ const HomePage = () => {
                         price={formatMoney(minPrice(product))}
                         productId={product.id}
                         fallbackImage={bestSellerHeroImage}
+                        imageAlt={buildProductImageAltText(product.title, "best sellers")}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
                     </Reveal>
@@ -1039,6 +1291,7 @@ const HomePage = () => {
                         price={tile.price}
                         productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
+                        imageAlt={buildProductImageAltText(tile.title, "best sellers")}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
                     </Reveal>
@@ -1060,12 +1313,12 @@ const HomePage = () => {
                     <div className="aspect-[1.4/0.82] overflow-hidden bg-[#edf5ff]">
                       <ResilientImage
                         src={tile.image}
-                        alt={tile.title}
+                        alt={buildCollectionImageAltText(tile.title, "gift ideas")}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                         fallback={
                           <img
                             src={bestSellerHeroImage}
-                            alt={tile.title}
+                            alt={buildCollectionImageAltText(tile.title, "gift ideas")}
                             className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                           />
                         }
@@ -1099,6 +1352,7 @@ const HomePage = () => {
                     price={tile.price}
                     productId={tile.productId}
                     fallbackImage={bestSellerHeroImage}
+                    imageAlt={buildProductImageAltText(tile.title, "quirky gift picks")}
                     className="mx-auto w-[calc(100%-15px)]"
                   />
                 </Reveal>
@@ -1124,6 +1378,7 @@ const HomePage = () => {
                         price={bookCard.price}
                         productId={bookCard.productId}
                         fallbackImage={featuredCourtneyBookFallbackImage}
+                        imageAlt={buildProductImageAltText(bookCard.title, "exclusive book collection")}
                       />
                     </Reveal>
                   ))}
@@ -1137,12 +1392,12 @@ const HomePage = () => {
                 >
                   <ResilientImage
                     src={dailyBloomFeatureCard.image}
-                    alt={dailyBloomFeatureCard.title}
+                    alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                     fallback={
                       <img
                         src={featuredCourtneyBookFallbackImage}
-                        alt={dailyBloomFeatureCard.title}
+                        alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                       />
                     }
@@ -1176,8 +1431,8 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Everyday Essentials" />
             <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
-              {bestSellerProducts.length > 0
-                ? bestSellerProducts.slice(0, 8).map((product, index) => (
+              {everydayEssentialProducts.length > 0
+                ? everydayEssentialProducts.slice(0, 8).map((product, index) => (
                     <Reveal key={`everyday-essential-product-${product.id}`} delayMs={260 + index * 70}>
                       <OverlayProductCard
                         title={product.title}
@@ -1186,6 +1441,7 @@ const HomePage = () => {
                         price={formatMoney(minPrice(product))}
                         productId={product.id}
                         fallbackImage={bestSellerHeroImage}
+                        imageAlt={buildProductImageAltText(product.title, "everyday essentials")}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
                     </Reveal>
@@ -1199,6 +1455,7 @@ const HomePage = () => {
                         price={tile.price}
                         productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
+                        imageAlt={buildProductImageAltText(tile.title, "everyday essentials")}
                         className="mx-auto w-[calc(100%-15px)]"
                       />
                     </Reveal>
@@ -1215,14 +1472,14 @@ const HomePage = () => {
                 Auto-refreshed review stream
               </p>
               <p className="inline-flex items-center rounded-full border border-[#cfe0ff] bg-white/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em]">
-                {reviewTiles.length}+ reviews
+                {reviewTiles.length} reviews
               </p>
             </div>
 
             <div className="mt-4 rounded-[1.25rem] border border-[#d2e4ff] bg-[linear-gradient(160deg,#fbfdff,#f1f7ff)] p-3 shadow-[0_18px_40px_-34px_rgba(22,77,160,0.24)] sm:mt-5 sm:p-4">
-              <div className="salt-review-carousel">
+              <div ref={reviewCarouselRef} className="salt-review-carousel">
                 <div className="salt-review-carousel-track gap-3.5 sm:gap-4 lg:gap-5">
-                  {reviewCarouselTiles.map((tile, index) => (
+                  {reviewTiles.map((tile, index) => (
                     <article
                       key={`${tile.key}-${index}`}
                       className="flex h-[13.75rem] w-[16rem] shrink-0 flex-col rounded-[1.05rem] border border-[#d2e4ff] bg-[#ffffff] p-4 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)] sm:h-[14rem] sm:w-[17rem] lg:h-[14.25rem] lg:w-[18rem]"

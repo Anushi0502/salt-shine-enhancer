@@ -15,6 +15,13 @@ const NAMED_HTML_ENTITY_MAP: Record<string, string> = {
   quot: '"',
   apos: "'",
 };
+const COMMON_MOJIBAKE_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/â€™|â€˜/g, "'"],
+  [/â€œ|â€|â€|â€�/g, '"'],
+  [/â€“|â€”/g, "-"],
+  [/â€¦/g, "..."],
+  [/Â/g, " "],
+];
 
 function asText(value: unknown): string {
   if (typeof value === "string") {
@@ -56,8 +63,25 @@ export function decodeHtmlEntities(input: unknown): string {
   return decodedNamed;
 }
 
+export function repairCommonEncodingArtifacts(input: unknown): string {
+  const raw = asText(input);
+  if (!raw) {
+    return "";
+  }
+
+  const repaired = COMMON_MOJIBAKE_REPLACEMENTS.reduce(
+    (value, [pattern, replacement]) => value.replace(pattern, replacement),
+    raw,
+  );
+
+  return repaired
+    .replace(/([A-Za-z])�(s|t|re|ve|ll|d|m)\b/g, "$1'$2")
+    .replace(/([A-Za-z])�([A-Za-z])/g, "$1 $2")
+    .replace(/�/g, " ");
+}
+
 export function polishPlainText(input: unknown): string {
-  return decodeHtmlEntities(input)
+  return repairCommonEncodingArtifacts(decodeHtmlEntities(input))
     .replace(/\u00a0/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
