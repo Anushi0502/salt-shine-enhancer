@@ -785,35 +785,7 @@ const CollectionsPage = () => {
                 </div>
               </div>
 
-              <div className="rounded-[1.2rem] border border-[#d7e5ff] bg-white/82 p-4 shadow-[0_18px_34px_-30px_rgba(28,75,150,0.24)] backdrop-blur-sm">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#6a81a7]">
-                  Inside these results
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-[1.35rem] font-black leading-none text-[#17428a]">
-                      {totalResults.toLocaleString()}
-                    </p>
-                    <p className="mt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6a81a7]">
-                      Collections
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[1.35rem] font-black leading-none text-[#17428a]">
-                      {filteredProductTotal.toLocaleString()}
-                    </p>
-                    <p className="mt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-[#6a81a7]">
-                      Products
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 border-t border-[#e4ecff] pt-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#5c76a2]">
-                  <span>{selectedTheme.label}</span>
-                  <span className="mx-2 text-[#b5c6e6]">|</span>
-                  <span>{sortLabel}</span>
-                </div>
-              </div>
-            </div>
+                          </div>
 
             <div className="mt-6 rounded-[1.15rem] border border-[#d6e4ff] bg-white/78 p-2 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.24)]">
               <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">

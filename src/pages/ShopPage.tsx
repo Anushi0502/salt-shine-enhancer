@@ -690,10 +690,6 @@ const ShopPage = () => {
           <div className={`salt-editorial-wash${selectedCollectionImage ? " salt-editorial-wash--image" : ""}`} />
 
           <div className="relative">
-            <span className="salt-editorial-pill">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              {selectedCollection ? "Collection spotlight" : "Editorial browse"}
-            </span>
             <SectionHeading
               className="mt-3"
               title={selectedCollection?.title || "Explore the full SALT catalog"}

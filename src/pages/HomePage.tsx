@@ -221,7 +221,7 @@ const featuredCourtneyBookFallbackMeta = [
 const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
     title: "Garden Tools",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png?v=1777028872",
     to: "/collections/garden-tools",
     alt: "Spring garden tools collection banner with gloves, raised beds, planters, and outdoor decor.",
   },
