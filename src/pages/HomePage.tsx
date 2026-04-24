@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeProductRating, useJudgeMeTestimonials } from "@/lib/judgeme";
+import { useJudgeMeProductRating, useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
@@ -38,6 +38,7 @@ type ReviewTile = {
 
 const HERO_BANNER_ROTATE_MS = 3500;
 const HOME_REVIEW_TARGET = 280;
+const HOME_REVIEW_FETCH_LIMIT = 48;
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
 
 const categoryTileConfigs = [
@@ -121,18 +122,21 @@ const fallbackBestSellerTiles: ProductTile[] = [
 const giftTileConfigs = [
   {
     title: "Home Decor",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/home_decor.png",
     to: "/collections/home-decor",
     collectionHandles: ["home-decor", "home", "decor"],
     productKeywords: ["home", "decor", "candle", "wall", "vase"],
   },
   {
     title: "Gifts",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/gifts.png",
     to: "/collections/gifts",
     collectionHandles: ["gifts", "gift"],
     productKeywords: ["gift", "present", "planner", "set"],
   },
   {
     title: "Fun & Unique Finds",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/unique_gifts.png",
     to: "/shop?q=unique+gift",
     collectionHandles: ["home-decor", "gifts", "gift"],
     productKeywords: ["unique", "home", "decor", "gift"],
@@ -655,50 +659,6 @@ const HomePage = () => {
     };
   }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
   const { summary: dailyBloomFeatureSummary } = useJudgeMeProductRating(dailyBloomFeatureCard.productId);
-  const testimonialProductIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...featuredCourtneyBooks.map((product) => product.id),
-          ...bestSellerProductIds.slice(0, 8),
-          ...quirkyGiftProductIds.slice(0, 8),
-          ...products.slice(0, 8).map((product) => product.id),
-        ]),
-      )
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value) && value > 0)
-        .slice(0, 48),
-    [bestSellerProductIds, featuredCourtneyBooks, products, quirkyGiftProductIds],
-  );
-  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, HOME_REVIEW_TARGET);
-  const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
-  const reviewTiles = useMemo<ReviewTile[]>(() => {
-    const liveTestimonials = testimonialsQuery.data ?? [];
-    const baseTiles: ReviewTile[] = liveTestimonials.length
-      ? liveTestimonials.map((review, index) => ({
-          key: `judgeme-home-${review.productId}-${review.id}-${index}`,
-          quote: polishPlainText(review.body || review.title),
-          author: polishPlainText(review.author || "Verified shopper"),
-          rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
-          verifiedBuyer: Boolean(review.verifiedBuyer),
-        }))
-      : fallbackReviewTiles;
-
-    if (!baseTiles.length) {
-      return [];
-    }
-
-    const seenTiles = new Set<string>();
-    return baseTiles.filter((tile) => {
-      const fingerprint = `${tile.author.toLowerCase()}|${tile.quote.toLowerCase()}`;
-      if (seenTiles.has(fingerprint)) {
-        return false;
-      }
-
-      seenTiles.add(fingerprint);
-      return true;
-    });
-  }, [testimonialsQuery.data]);
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -931,6 +891,116 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerHeroImage, quirkyGiftProducts]);
+  const testimonialCandidateProductIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...featuredCourtneyBooks.map((product) => product.id),
+          ...bestSellerProducts.map((product) => product.id),
+          ...everydayEssentialProducts.map((product) => product.id),
+          ...quirkyGiftProducts.map((product) => product.id),
+          ...bestSellerProductIds.slice(0, 24),
+          ...quirkyGiftProductIds.slice(0, 24),
+          ...products.slice(0, 120).map((product) => product.id),
+        ]),
+      )
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .slice(0, 160),
+    [
+      bestSellerProductIds,
+      bestSellerProducts,
+      everydayEssentialProducts,
+      featuredCourtneyBooks,
+      products,
+      quirkyGiftProductIds,
+      quirkyGiftProducts,
+    ],
+  );
+  const homepageRatingsQuery = useJudgeMeRatings(testimonialCandidateProductIds);
+  const testimonialProductIds = useMemo(() => {
+    const ratedIds = Object.values(homepageRatingsQuery.data ?? {})
+      .filter((summary) => summary.reviewCount > 0)
+      .sort((left, right) => {
+        const reviewDiff = right.reviewCount - left.reviewCount;
+        if (reviewDiff !== 0) {
+          return reviewDiff;
+        }
+
+        return right.rating - left.rating;
+      })
+      .map((summary) => summary.productId);
+
+    return Array.from(
+      new Set([
+        ...ratedIds,
+        ...featuredCourtneyBooks.map((product) => product.id),
+        ...bestSellerProducts.map((product) => product.id),
+        ...everydayEssentialProducts.map((product) => product.id),
+        ...quirkyGiftProducts.map((product) => product.id),
+        ...testimonialCandidateProductIds,
+      ]),
+    ).slice(0, 120);
+  }, [
+    bestSellerProducts,
+    everydayEssentialProducts,
+    featuredCourtneyBooks,
+    homepageRatingsQuery.data,
+    quirkyGiftProducts,
+    testimonialCandidateProductIds,
+  ]);
+  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, HOME_REVIEW_FETCH_LIMIT);
+  const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
+  const reviewTiles = useMemo<ReviewTile[]>(() => {
+    const liveTestimonials = testimonialsQuery.data ?? [];
+    const baseTiles: ReviewTile[] = liveTestimonials.length
+      ? liveTestimonials.map((review, index) => ({
+          key: `judgeme-home-${review.productId}-${review.id}-${index}`,
+          quote: polishPlainText(review.body || review.title),
+          author: polishPlainText(review.author || "Verified shopper"),
+          rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
+          verifiedBuyer: Boolean(review.verifiedBuyer),
+        }))
+      : fallbackReviewTiles;
+
+    if (!baseTiles.length) {
+      return [];
+    }
+
+    const seenTiles = new Set<string>();
+    return baseTiles.filter((tile) => {
+      const fingerprint = `${tile.author.toLowerCase()}|${tile.quote.toLowerCase()}`;
+      if (seenTiles.has(fingerprint)) {
+        return false;
+      }
+
+      seenTiles.add(fingerprint);
+      return true;
+    });
+  }, [testimonialsQuery.data]);
+  const reviewLoopCopies = useMemo(() => {
+    if (reviewTiles.length >= 10) {
+      return 2;
+    }
+
+    if (reviewTiles.length >= 5) {
+      return 3;
+    }
+
+    return 4;
+  }, [reviewTiles.length]);
+  const reviewTrackTiles = useMemo<ReviewTile[]>(() => {
+    if (!reviewTiles.length) {
+      return [];
+    }
+
+    return Array.from({ length: reviewLoopCopies }, (_, copyIndex) =>
+      reviewTiles.map((tile, tileIndex) => ({
+        ...tile,
+        key: `${tile.key}-loop-${copyIndex}-${tileIndex}`,
+      })),
+    ).flat();
+  }, [reviewLoopCopies, reviewTiles]);
   const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
   const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const collectionImageByHandle = useMemo(() => {
@@ -1075,6 +1145,7 @@ const HomePage = () => {
     const usedGiftProductIds = new Set<number>();
 
     const tiles = giftTileConfigs.map((tile) => {
+      const curatedImage = tile.image || null;
       const imageFromCollectionProduct = findCollectionProductImage(tile.collectionHandles, usedGiftProductIds);
       const imageFromProduct = imageFromCollectionProduct
         ? null
@@ -1087,18 +1158,14 @@ const HomePage = () => {
       return {
         title: tile.title,
         to: tile.to,
-        image: imageFromCollectionProduct || imageFromProduct || imageFromCollection || bestSellerHeroImage,
+        image:
+          curatedImage ||
+          imageFromCollectionProduct ||
+          imageFromProduct ||
+          imageFromCollection ||
+          bestSellerHeroImage,
       };
     });
-
-    if (tiles.length >= 3) {
-      const swappedTiles = [...tiles];
-      const firstImage = swappedTiles[0].image || bestSellerHeroImage;
-      const thirdImage = swappedTiles[2].image || bestSellerHeroImage;
-      swappedTiles[0] = { ...swappedTiles[0], image: thirdImage };
-      swappedTiles[2] = { ...swappedTiles[2], image: firstImage };
-      return swappedTiles;
-    }
 
     return tiles;
   }, [bestSellerHeroImage, collectionImageByHandle, findCollectionProductImage, findProductImageByKeywords]);
@@ -1153,9 +1220,10 @@ const HomePage = () => {
 
       if (!isPaused) {
         const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
-        if (maxScrollLeft > 0) {
+        const loopWidth = reviewLoopCopies > 1 ? carousel.scrollWidth / reviewLoopCopies : maxScrollLeft;
+        if (maxScrollLeft > 0 && loopWidth > 0) {
           const nextScrollLeft = carousel.scrollLeft + elapsed * HOME_REVIEW_SCROLL_PX_PER_MS;
-          carousel.scrollLeft = nextScrollLeft >= maxScrollLeft ? 0 : nextScrollLeft;
+          carousel.scrollLeft = nextScrollLeft >= loopWidth ? nextScrollLeft - loopWidth : nextScrollLeft;
         }
       }
 
@@ -1171,7 +1239,7 @@ const HomePage = () => {
       carousel.removeEventListener("mouseenter", handleMouseEnter);
       carousel.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, [reviewTiles.length]);
+  }, [reviewLoopCopies, reviewTiles.length]);
 
   return (
     <section className="mt-2 w-full pb-4 sm:mt-4 sm:pb-6 lg:pb-8">
@@ -1479,7 +1547,7 @@ const HomePage = () => {
             <div className="mt-4 rounded-[1.25rem] border border-[#d2e4ff] bg-[linear-gradient(160deg,#fbfdff,#f1f7ff)] p-3 shadow-[0_18px_40px_-34px_rgba(22,77,160,0.24)] sm:mt-5 sm:p-4">
               <div ref={reviewCarouselRef} className="salt-review-carousel">
                 <div className="salt-review-carousel-track gap-3.5 sm:gap-4 lg:gap-5">
-                  {reviewTiles.map((tile, index) => (
+                  {reviewTrackTiles.map((tile, index) => (
                     <article
                       key={`${tile.key}-${index}`}
                       className="flex h-[13.75rem] w-[16rem] shrink-0 flex-col rounded-[1.05rem] border border-[#d2e4ff] bg-[#ffffff] p-4 text-[#1c4b96] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.2)] sm:h-[14rem] sm:w-[17rem] lg:h-[14.25rem] lg:w-[18rem]"

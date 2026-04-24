@@ -32,11 +32,10 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn(
-          "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-white/18 bg-[linear-gradient(145deg,#18345f_0%,#274f90_46%,#1f3c6f_100%)] shadow-[0_18px_42px_-26px_rgba(8,20,42,0.65)] ring-1 ring-black/6",
+          "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-white/18 ",
           shellSizeMap[size],
         )}
       >
-        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0)_45%)]" />
         <img
           src={brandMarkSrc}
           alt="SALT Online Store"
@@ -46,28 +45,6 @@ const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoPr
         />
       </span>
 
-      {withWordmark ? (
-        <span className="leading-none">
-          <span
-            className={cn(
-              "block font-display leading-none tracking-[0.06em] text-[hsl(var(--salt-ink))] dark:text-white",
-              textSizeMap[size],
-            )}
-            style={{ fontFamily: brandLogoFontFamily }}
-          >
-            SALT
-          </span>
-          <span
-            className={cn(
-              "block pt-1 uppercase text-[hsl(var(--salt-muted))] dark:text-white/72",
-              wordmarkSubtextSizeMap[size],
-            )}
-            style={{ fontFamily: brandLogoFontFamily }}
-          >
-            Online Store
-          </span>
-        </span>
-      ) : null}
     </span>
   );
 };
