@@ -1536,9 +1536,6 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="What Our Customers Are Saying" />
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[#2b5fae] sm:mt-5">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#2a5cad]/80">
-                Auto-refreshed review stream
-              </p>
               <p className="inline-flex items-center rounded-full border border-[#cfe0ff] bg-white/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em]">
                 {reviewTiles.length} reviews
               </p>

@@ -1,0 +1,243 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Free Shipping on All US Orders
+        - generic [ref=e8]: "|"
+        - generic [ref=e9]: 30-Day Easy Returns
+      - generic [ref=e10]:
+        - link "Go to SALT homepage" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - img "SALT Online Store" [ref=e13]
+        - navigation [ref=e14]:
+          - link "Home" [ref=e15] [cursor=pointer]:
+            - /url: /
+          - link "Shop" [ref=e16] [cursor=pointer]:
+            - /url: /shop
+          - link "Collections" [ref=e17] [cursor=pointer]:
+            - /url: /collections
+          - link "Blogs" [ref=e18] [cursor=pointer]:
+            - /url: /blog
+          - link "Support" [ref=e19] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e20]:
+          - generic [ref=e22]:
+            - img
+            - searchbox "Search products" [ref=e23]
+            - generic: / K
+          - link "Open wishlist" [ref=e24] [cursor=pointer]:
+            - /url: /wishlist
+            - img [ref=e25]
+          - button "Open cart with 0 items" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+    - main [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e34]:
+          - paragraph [ref=e35]: Blog
+          - heading "Insights and Stories" [level=1] [ref=e36]
+          - paragraph [ref=e37]: Posts synced from Shopify to keep home, garden, style, and product education current.
+          - generic [ref=e38]:
+            - paragraph [ref=e39]:
+              - generic [ref=e40]: Live posts
+              - generic [ref=e41]: 6 synced articles
+            - paragraph [ref=e42]:
+              - generic [ref=e43]: Reading format
+              - text: Short actionable guides and trend roundups
+            - paragraph [ref=e44]:
+              - generic [ref=e45]: Goal
+              - text: Move inspiration to confident purchases
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - img [ref=e48]
+              - text: Courtney Jones
+            - link "Shop newest arrivals" [ref=e50] [cursor=pointer]:
+              - /url: /shop?sort=newest
+              - img [ref=e51]
+              - text: Shop newest arrivals
+        - article [ref=e54]:
+          - 'link "Home Harmony: Captures the essence of balance and well curated spaces" [ref=e55] [cursor=pointer]':
+            - /url: /blog/home-harmony-captures-the-essence-of-balance-and-well-curated-spaces
+            - 'img "Home Harmony: Captures the essence of balance and well curated spaces" [ref=e56]'
+          - generic [ref=e57]:
+            - paragraph [ref=e58]: Featured post
+            - 'heading "Home Harmony: Captures the essence of balance and well curated spaces" [level=2] [ref=e59]':
+              - 'link "Home Harmony: Captures the essence of balance and well curated spaces" [ref=e60] [cursor=pointer]':
+                - /url: /blog/home-harmony-captures-the-essence-of-balance-and-well-curated-spaces
+            - paragraph [ref=e61]: Add a Statement Mirror When it comes to easy yet impactful home updates, a statement mirror is your secret weapon. While mirrors are often thought of as purely functional, the right mirror can do so much more. It has th…
+            - generic [ref=e62]:
+              - generic [ref=e63]: August 28, 2025
+              - generic [ref=e64]: •
+              - generic [ref=e65]: Courtney Jones
+              - generic [ref=e66]: •
+              - generic [ref=e67]:
+                - img [ref=e68]
+                - text: 7 min read
+            - link "Read featured story" [ref=e71] [cursor=pointer]:
+              - /url: /blog/home-harmony-captures-the-essence-of-balance-and-well-curated-spaces
+              - text: Read featured story
+              - img [ref=e72]
+        - generic [ref=e74]:
+          - article [ref=e76]:
+            - link "Know how to use specific Gardening Tools for your Lawn & Yards care" [ref=e77] [cursor=pointer]:
+              - /url: /blog/know-how-to-use-specific-gardening-tools-for-your-lawn-and-home-yards-care
+              - img "Know how to use specific Gardening Tools for your Lawn & Yards care" [ref=e78]
+            - generic [ref=e79]:
+              - paragraph [ref=e80]: August 6, 2025
+              - heading "Know how to use specific Gardening Tools for your Lawn & Yards care" [level=2] [ref=e81]:
+                - link "Know how to use specific Gardening Tools for your Lawn & Yards care" [ref=e82] [cursor=pointer]:
+                  - /url: /blog/know-how-to-use-specific-gardening-tools-for-your-lawn-and-home-yards-care
+              - paragraph [ref=e83]: "🌿The Hori‑Hori Knife: Your Swiss‑Army Tool for the Home Garden Two blades, one tool: One beveled edge slices cleanly through roots and small stems, while the opposite serrated side saws through compacted soil, taproots…"
+              - generic [ref=e84]:
+                - generic [ref=e85]: Courtney Jones
+                - generic [ref=e86]:
+                  - img [ref=e87]
+                  - text: 7 min read
+              - link "Read post" [ref=e91] [cursor=pointer]:
+                - /url: /blog/know-how-to-use-specific-gardening-tools-for-your-lawn-and-home-yards-care
+                - text: Read post
+                - img [ref=e92]
+          - article [ref=e95]:
+            - link "7 Essential Cookware Categories that People Ask For & their maintenance tips" [ref=e96] [cursor=pointer]:
+              - /url: /blog/7-essential-cookware-categories-that-people-ask-for-their-maintenance-tips
+              - img "7 Essential Cookware Categories that People Ask For & their maintenance tips" [ref=e97]
+            - generic [ref=e98]:
+              - paragraph [ref=e99]: June 27, 2025
+              - heading "7 Essential Cookware Categories that People Ask For & their maintenance tips" [level=2] [ref=e100]:
+                - link "7 Essential Cookware Categories that People Ask For & their maintenance tips" [ref=e101] [cursor=pointer]:
+                  - /url: /blog/7-essential-cookware-categories-that-people-ask-for-their-maintenance-tips
+              - paragraph [ref=e102]: For clear visibility while cooking, a snug-fitting tempered glass lid is ideal; its transparency allows you to monitor simmering or steaming without lifting the lid, preserving heat and moisture while preventing overco…
+              - generic [ref=e103]:
+                - generic [ref=e104]: Courtney Jones
+                - generic [ref=e105]:
+                  - img [ref=e106]
+                  - text: 4 min read
+              - link "Read post" [ref=e110] [cursor=pointer]:
+                - /url: /blog/7-essential-cookware-categories-that-people-ask-for-their-maintenance-tips
+                - text: Read post
+                - img [ref=e111]
+          - article [ref=e114]:
+            - link "Recommended Tools for Every Gardener" [ref=e115] [cursor=pointer]:
+              - /url: /blog/recommended-tools-for-every-gardener
+              - img "Recommended Tools for Every Gardener" [ref=e116]
+            - generic [ref=e117]:
+              - paragraph [ref=e118]: March 7, 2025
+              - heading "Recommended Tools for Every Gardener" [level=2] [ref=e119]:
+                - link "Recommended Tools for Every Gardener" [ref=e120] [cursor=pointer]:
+                  - /url: /blog/recommended-tools-for-every-gardener
+              - paragraph [ref=e121]: Recommended Tools for Every Gardener Become A Gardener With The Right Equipment At Hand Gardening is a fun as well as a rewarding hobby. Regardless of whether you have a large garden or just small succulent pots on your…
+              - generic [ref=e122]:
+                - generic [ref=e123]: Courtney Jones
+                - generic [ref=e124]:
+                  - img [ref=e125]
+                  - text: 3 min read
+              - link "Read post" [ref=e129] [cursor=pointer]:
+                - /url: /blog/recommended-tools-for-every-gardener
+                - text: Read post
+                - img [ref=e130]
+          - article [ref=e133]:
+            - 'link "Discover the Ultimate Guide for seniors: Embrace the Living Legacy Planner" [ref=e134] [cursor=pointer]':
+              - /url: /blog/discover-the-ultimate-guide-for-seniors-embrace-the-living-legacy-planner
+              - 'img "Discover the Ultimate Guide for seniors: Embrace the Living Legacy Planner" [ref=e135]'
+            - generic [ref=e136]:
+              - paragraph [ref=e137]: December 2, 2024
+              - 'heading "Discover the Ultimate Guide for seniors: Embrace the Living Legacy Planner" [level=2] [ref=e138]':
+                - 'link "Discover the Ultimate Guide for seniors: Embrace the Living Legacy Planner" [ref=e139] [cursor=pointer]':
+                  - /url: /blog/discover-the-ultimate-guide-for-seniors-embrace-the-living-legacy-planner
+              - paragraph [ref=e140]: As we journey through life, we often reflect on things we have done, our values and treasures and Memories. Many seniors also tend to worry about things they have not yet done but intended to. Things like planning for t…
+              - generic [ref=e141]:
+                - generic [ref=e142]: Courtney Jones
+                - generic [ref=e143]:
+                  - img [ref=e144]
+                  - text: 7 min read
+              - link "Read post" [ref=e148] [cursor=pointer]:
+                - /url: /blog/discover-the-ultimate-guide-for-seniors-embrace-the-living-legacy-planner
+                - text: Read post
+                - img [ref=e149]
+          - article [ref=e152]:
+            - 'link "Buy the Essential Guide for seniors: The Living Legacy Planner book" [ref=e153] [cursor=pointer]':
+              - /url: /blog/buy-the-essential-guide-for-seniors-the-living-legacy-planner-book
+              - 'img "Buy the Essential Guide for seniors: The Living Legacy Planner book" [ref=e154]'
+            - generic [ref=e155]:
+              - paragraph [ref=e156]: November 24, 2024
+              - 'heading "Buy the Essential Guide for seniors: The Living Legacy Planner book" [level=2] [ref=e157]':
+                - 'link "Buy the Essential Guide for seniors: The Living Legacy Planner book" [ref=e158] [cursor=pointer]':
+                  - /url: /blog/buy-the-essential-guide-for-seniors-the-living-legacy-planner-book
+              - paragraph [ref=e159]: Life is a journey, and as we age, planning for the future becomes increasingly important. Whether it’s managing healthcare preferences, organizing finances, or nothing all your likes and dislikes to aid a future caregiv…
+              - generic [ref=e160]:
+                - generic [ref=e161]: Courtney Jones
+                - generic [ref=e162]:
+                  - img [ref=e163]
+                  - text: 7 min read
+              - link "Read post" [ref=e167] [cursor=pointer]:
+                - /url: /blog/buy-the-essential-guide-for-seniors-the-living-legacy-planner-book
+                - text: Read post
+                - img [ref=e168]
+    - contentinfo [ref=e170]:
+      - generic [ref=e173]:
+        - generic [ref=e174]:
+          - img "SALT Online Store" [ref=e176]
+          - generic [ref=e177]:
+            - link [ref=e178] [cursor=pointer]:
+              - /url: https://instagram.com/saltonlinestore
+              - img [ref=e179]
+            - link [ref=e182] [cursor=pointer]:
+              - /url: https://www.facebook.com/profile.php?id=61573199456052
+              - img [ref=e183]
+            - link [ref=e185] [cursor=pointer]:
+              - /url: https://youtube.com/@saltonlinestore
+              - img [ref=e186]
+        - generic [ref=e189]:
+          - heading "About" [level=3] [ref=e190]
+          - generic [ref=e191]:
+            - link "About Us" [ref=e192] [cursor=pointer]:
+              - /url: /about
+            - link "Our Story" [ref=e193] [cursor=pointer]:
+              - /url: /about
+            - link "Blogs" [ref=e194] [cursor=pointer]:
+              - /url: /blog
+            - link "Get in Touch" [ref=e195] [cursor=pointer]:
+              - /url: /contact
+        - generic [ref=e196]:
+          - heading "Shop" [level=3] [ref=e197]
+          - generic [ref=e198]:
+            - link "All Products" [ref=e199] [cursor=pointer]:
+              - /url: /shop
+            - link "Collections" [ref=e200] [cursor=pointer]:
+              - /url: /collections
+            - link "New Arrivals" [ref=e201] [cursor=pointer]:
+              - /url: /shop?sort=newest
+            - link "Sale" [ref=e202] [cursor=pointer]:
+              - /url: /shop?sort=discount
+        - generic [ref=e203]:
+          - heading "Support" [level=3] [ref=e204]
+          - generic [ref=e205]:
+            - link "Contact Us" [ref=e206] [cursor=pointer]:
+              - /url: /contact
+            - link "Order Tracking" [ref=e207] [cursor=pointer]:
+              - /url: /order-history
+            - link "Shipping" [ref=e208] [cursor=pointer]:
+              - /url: /policies/shipping-policy
+            - link "Returns" [ref=e209] [cursor=pointer]:
+              - /url: /policies/refund-policy
+        - generic [ref=e210]:
+          - heading "The SALT List" [level=3] [ref=e211]
+          - paragraph [ref=e212]: Sign up for curated arrivals, practical edits, and member-only updates.
+          - generic [ref=e214]:
+            - textbox "Email address" [ref=e215]
+            - button "Join" [ref=e216] [cursor=pointer]
+      - generic [ref=e220]:
+        - generic [ref=e221]: Secure checkout
+        - generic [ref=e222]: Tracked shipping
+        - generic [ref=e223]: Easy returns
+      - generic [ref=e225]:
+        - generic [ref=e226]: © 2026 SALT ONLINE STORE
+        - generic [ref=e227]:
+          - link "Privacy Policy" [ref=e228] [cursor=pointer]:
+            - /url: /policies/privacy-policy
+          - link "Refund Policy" [ref=e229] [cursor=pointer]:
+            - /url: /policies/refund-policy
+          - link "Shipping Policy" [ref=e230] [cursor=pointer]:
+            - /url: /policies/shipping-policy
