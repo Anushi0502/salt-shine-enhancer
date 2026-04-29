@@ -99,7 +99,7 @@ const themeConfigs: ThemeConfig[] = [
     description:
       "Giftable finds, pets, accessories, toys, unique edits, and collections that broaden discovery.",
     Icon: Gift,
-    keywords: ["gift", "pet", "bag", "hair", "unique", "toy", "digital"],
+    keywords: ["gifts", "pet", "bag", "hair", "unique", "toy", "digital"],
   },
 ];
 
@@ -198,6 +198,9 @@ function isSummerCollection(handle: string, title: string): boolean {
 function getCollectionTheme(collection: ShopifyCollection): BaseCollectionTheme {
   const searchText = normalizeSearchText(`${collection.title} ${collection.handle} ${collection.description}`);
 
+  if (themeConfigs.find((theme) => theme.id === "gifts")?.keywords.some((keyword) => searchText.includes(keyword))) {
+    return "gifts";
+  }
   if (themeConfigs.find((theme) => theme.id === "fashion")?.keywords.some((keyword) => searchText.includes(keyword))) {
     return "fashion";
   }
@@ -213,8 +216,6 @@ function getCollectionTheme(collection: ShopifyCollection): BaseCollectionTheme 
   if (themeConfigs.find((theme) => theme.id === "wellness")?.keywords.some((keyword) => searchText.includes(keyword))) {
     return "wellness";
   }
-
-  return "gifts";
 }
 
 function formatCollectionDescription(input?: string | null): string {
