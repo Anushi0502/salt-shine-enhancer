@@ -59,7 +59,7 @@ const themeConfigs: ThemeConfig[] = [
     description:
       "Jump straight into the highest-traffic, storefront-driving collections and campaign routes.",
     Icon: Sparkles,
-    keywords: ["best", "arrival", "summer", "all products"],
+    keywords: ["best", "arrival", "all products"],
   },
   {
     id: "fashion",
@@ -67,7 +67,7 @@ const themeConfigs: ThemeConfig[] = [
     description:
       "Apparel-led collections for dresses, layers, tops, trousers, and wearable seasonal edits.",
     Icon: Shirt,
-    keywords: ["women", "men", "dress", "jeans", "shirt", "trouser", "robe", "wear", "kaftan", "coat", "jacket", "thermal"],
+    keywords: ["women","summer" , "men", "dress", "jeans", "shirt", "trouser", "robe", "wear", "kaftan", "coat", "jacket", "thermal"],
   },
   {
     id: "home",
@@ -99,7 +99,7 @@ const themeConfigs: ThemeConfig[] = [
     description:
       "Giftable finds, pets, accessories, toys, unique edits, and collections that broaden discovery.",
     Icon: Gift,
-    keywords: ["gifts", "pet", "bag", "hair", "unique", "toy", "digital"],
+    keywords: ["gifts", "pet", "books", "bag", "hair", "unique", "toy", "digital"],
   },
 ];
 
@@ -271,8 +271,7 @@ const CollectionsPage = () => {
           imageSrc: normalizeShopifyAssetUrl(collection.image?.src),
           isFeatured:
             isBestSellerCollection(collection.handle, collection.title) ||
-            isNewArrivalCollection(collection.handle, collection.title) ||
-            isSummerCollection(collection.handle, collection.title),
+            isNewArrivalCollection(collection.handle, collection.title) ,
           searchText: normalizeSearchText(
             `${collection.title} ${collection.handle} ${collection.description}`,
           ),
