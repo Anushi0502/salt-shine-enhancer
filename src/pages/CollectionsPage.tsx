@@ -40,9 +40,17 @@ type ThemeConfig = {
 type DecoratedCollection = ShopifyCollection & {
   imageSrc: string | null;
   isFeatured: boolean;
+  isPinnedFeatured: boolean;
   searchText: string;
   theme: BaseCollectionTheme;
 };
+
+const PINNED_FEATURED_COLLECTION_HANDLES = new Set([
+  "garden-tools",
+  "pet-assocerries",
+  "unique-products",
+  "books",
+]);
 
 const themeConfigs: ThemeConfig[] = [
   {
@@ -195,6 +203,10 @@ function isSummerCollection(handle: string, title: string): boolean {
   return /(summer|sunny|vacation|beach)/.test(`${normalizeHandle(handle)} ${normalizeHandle(title)}`);
 }
 
+function isPinnedFeaturedCollection(handle: string): boolean {
+  return PINNED_FEATURED_COLLECTION_HANDLES.has(normalizeHandle(handle));
+}
+
 function getCollectionTheme(collection: ShopifyCollection): BaseCollectionTheme {
   const searchText = normalizeSearchText(`${collection.title} ${collection.handle} ${collection.description}`);
 
@@ -266,17 +278,23 @@ const CollectionsPage = () => {
           (collection) =>
             collection.products_count > 0 && normalizeHandle(collection.handle) !== "all-products",
         )
-        .map((collection) => ({
-          ...collection,
-          imageSrc: normalizeShopifyAssetUrl(collection.image?.src),
-          isFeatured:
-            isBestSellerCollection(collection.handle, collection.title) ||
-            isNewArrivalCollection(collection.handle, collection.title) ,
-          searchText: normalizeSearchText(
-            `${collection.title} ${collection.handle} ${collection.description}`,
-          ),
-          theme: getCollectionTheme(collection),
-        })),
+        .map((collection) => {
+          const isPinnedFeatured = isPinnedFeaturedCollection(collection.handle);
+
+          return {
+            ...collection,
+            imageSrc: normalizeShopifyAssetUrl(collection.image?.src),
+            isFeatured:
+              isPinnedFeatured ||
+              isBestSellerCollection(collection.handle, collection.title) ||
+              isNewArrivalCollection(collection.handle, collection.title),
+            isPinnedFeatured,
+            searchText: normalizeSearchText(
+              `${collection.title} ${collection.handle} ${collection.description}`,
+            ),
+            theme: getCollectionTheme(collection),
+          };
+        }),
     [rawCollections],
   );
 
@@ -285,7 +303,9 @@ const CollectionsPage = () => {
       collections.reduce(
         (accumulator, collection) => {
           accumulator.all += 1;
-          accumulator[collection.theme] += 1;
+          if (!collection.isPinnedFeatured) {
+            accumulator[collection.theme] += 1;
+          }
           if (collection.isFeatured) {
             accumulator.featured += 1;
           }
@@ -363,6 +383,10 @@ const CollectionsPage = () => {
 
     const next = collections.filter((collection) => {
       if (themeFilter === "featured" && !collection.isFeatured) {
+        return false;
+      }
+
+      if (themeFilter !== "all" && themeFilter !== "featured" && collection.isPinnedFeatured) {
         return false;
       }
 
@@ -1173,4 +1197,3 @@ const CollectionsPage = () => {
 };
 
 export default CollectionsPage;
-
