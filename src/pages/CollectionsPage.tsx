@@ -199,10 +199,6 @@ function isNewArrivalCollection(handle: string, title: string): boolean {
   return /new[\s-]*arrivals?/.test(`${normalizeHandle(handle)} ${normalizeHandle(title)}`);
 }
 
-function isSummerCollection(handle: string, title: string): boolean {
-  return /(summer|sunny|vacation|beach)/.test(`${normalizeHandle(handle)} ${normalizeHandle(title)}`);
-}
-
 function isPinnedFeaturedCollection(handle: string): boolean {
   return PINNED_FEATURED_COLLECTION_HANDLES.has(normalizeHandle(handle));
 }
@@ -286,8 +282,7 @@ const CollectionsPage = () => {
             imageSrc: normalizeShopifyAssetUrl(collection.image?.src),
             isFeatured:
               isPinnedFeatured ||
-              isBestSellerCollection(collection.handle, collection.title) ||
-              isNewArrivalCollection(collection.handle, collection.title),
+              isBestSellerCollection(collection.handle, collection.title),
             isPinnedFeatured,
             searchText: normalizeSearchText(
               `${collection.title} ${collection.handle} ${collection.description}`,
@@ -328,7 +323,6 @@ const CollectionsPage = () => {
     const manual = [
       collections.find((collection) => isBestSellerCollection(collection.handle, collection.title)),
       collections.find((collection) => isNewArrivalCollection(collection.handle, collection.title)),
-      collections.find((collection) => isSummerCollection(collection.handle, collection.title)),
       ...collections,
     ].filter((collection): collection is DecoratedCollection => Boolean(collection));
 
