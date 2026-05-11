@@ -21,7 +21,7 @@ const primaryNav: NavItem[] = [
   },
   {
     label: "Shop",
-    to: "/shop",
+    to: "/shop?collection=all-products",
     isActive: (pathname) => pathname === "/shop" || pathname.startsWith("/search"),
   },
   {

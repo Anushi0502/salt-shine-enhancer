@@ -70,7 +70,7 @@ function normalizeHandle(value: string | null | undefined): string {
 function normalizeCollectionFilter(value: string | null | undefined): string {
   const normalized = normalizeHandle(value);
 
-  if (!normalized || normalized === "all" || normalized === "all-products") {
+  if (!normalized || normalized === "all") {
     return "";
   }
 

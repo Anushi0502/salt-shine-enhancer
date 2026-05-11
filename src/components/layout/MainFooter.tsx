@@ -57,7 +57,7 @@ const MainFooter = () => {
             <div>
               <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#1a4d9a]">Shop</h3>
               <div className="mt-5 grid gap-3 text-[0.92rem] text-[#2a4f90]/84">
-                <Link to="/shop" className="transition-colors hover:text-[#f2b600]">All Products</Link>
+                <Link to="/shop?collection=all-products" className="transition-colors hover:text-[#f2b600]">All Products</Link>
                 <Link to="/collections" className="transition-colors hover:text-[#f2b600]">Collections</Link>
                 <Link to="/shop?sort=newest" className="transition-colors hover:text-[#f2b600]">New Arrivals</Link>
                 <Link to="/shop?sort=discount" className="transition-colors hover:text-[#f2b600]">Sale</Link>
