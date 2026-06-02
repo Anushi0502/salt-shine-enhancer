@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
+import type { MouseEvent } from "react";
 import {
   buildShopifyCheckoutUrl,
   isValidShopifyVariantId,
@@ -9,6 +10,7 @@ import {
 import { formatMoney, productImage } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
+import { openExternalUrl } from "@/lib/mobile";
 import { useProducts } from "@/lib/shopify-data";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -46,6 +48,23 @@ const CartDrawer = () => {
   const checkoutUrl = buildShopifyCheckoutUrl(items);
   const checkoutTargetUrl = checkoutUrl;
   const canCheckout = items.length > 0 && invalidItemCount === 0;
+
+  const handleCheckoutClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    if (!canCheckout) {
+      return;
+    }
+
+    trackMetaPixelInitiateCheckout(items);
+    recordDeviceOrderHistory({
+      source: "cart",
+      checkoutUrl,
+      items,
+    });
+
+    void openExternalUrl(checkoutTargetUrl);
+  };
 
   return (
     <Sheet open={isDrawerOpen} onOpenChange={(open) => (open ? undefined : closeCartDrawer())}>
@@ -280,14 +299,7 @@ const CartDrawer = () => {
               {canCheckout ? (
                 <a
                   href={checkoutTargetUrl}
-                  onClick={() => {
-                    trackMetaPixelInitiateCheckout(items);
-                    recordDeviceOrderHistory({
-                      source: "cart",
-                      checkoutUrl,
-                      items,
-                    });
-                  }}
+                  onClick={handleCheckoutClick}
                   className="salt-primary-cta h-12 justify-center px-5 text-sm font-semibold uppercase tracking-[0.12em]"
                 >
                   Continue to checkout

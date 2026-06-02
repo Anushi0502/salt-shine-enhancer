@@ -1,6 +1,6 @@
 # SALT Online Store (React Storefront)
 
-SALT Online Store is a production‑ready, Shopify‑backed ecommerce experience built in React/Vite and deployed both as a standalone web app and as a Shopify theme bundle. It prioritizes conversion with fast discovery, curated collections, premium product cards, real‑time inventory/checkout handoff, and integrated reviews, while maintaining strict UI/UX consistency across light and dark themes. The codebase includes automated sync tooling to generate Shopify assets, robust SEO metadata (canonical, Open Graph, structured data, sitemap/robots), and official SALT branding and favicon support for strong search visibility.
+SALT Online Store is a production‑ready, Shopify‑backed ecommerce experience built in React/Vite and deployed both as a standalone web app and as a Shopify theme bundle. It prioritizes conversion with fast discovery, curated collections, premium product cards, real‑time checkout handoff, and integrated reviews, while maintaining strict UI/UX consistency across light and dark themes. The codebase includes automated sync tooling to generate Shopify assets, robust SEO metadata (canonical, Open Graph, structured data, sitemap/robots), and official SALT branding and favicon support for strong search visibility.
 
 ## What this app does
 
@@ -10,6 +10,7 @@ SALT Online Store is a production‑ready, Shopify‑backed ecommerce experience
 - Uses Judge.me for ratings/reviews and review submission.
 - Includes `/bulk-review` admin route for CSV/XLSX bulk review upload to Judge.me.
 - Builds a Shopify theme package (`shopify-theme/`) from this app bundle.
+- Stores cart and order-history state locally on the device/browser. No Supabase backend is used.
 
 ## Stack
 
@@ -54,6 +55,7 @@ Use `.env.local` for local development.
 - `VITE_JUDGEME_SHOP_DOMAIN`: Judge.me shop domain.
 - `VITE_JUDGEME_PUBLIC_TOKEN`: Judge.me public token.
 - `VITE_JUDGEME_PRIVATE_TOKEN`: optional Judge.me private token for native bulk write mode.
+- `VITE_ONESIGNAL_APP_ID`: optional OneSignal app ID for native push notifications.
 - `VITE_ENABLE_SHOPIFY_INBOX`: optional chat toggle.
 - `VITE_ENABLE_MOOSEDESK`: optional chat toggle.
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import {
   stripHtml,
 } from "@/lib/formatters";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
 import {
   getProductPurchasesLast30Days,
@@ -265,6 +266,45 @@ const ProductPage = () => {
     toast.success(nextSaved ? "Saved to wishlist" : "Removed from wishlist", {
       description: product.title,
     });
+  };
+
+  const handleBuyNowClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    if (!selectedVariant || !isAvailable) {
+      return;
+    }
+
+    trackMetaPixelInitiateCheckout([
+      {
+        id: selectedVariant.id,
+        shopifyVariantId: selectedVariant.id,
+        handle: product.handle,
+        title: `${product.title} (${selectedVariant.title})`,
+        unitPrice: price,
+        quantity: selectedQuantity,
+        productType: product.product_type,
+      },
+    ]);
+
+    recordDeviceOrderHistory({
+      source: "buy-now",
+      checkoutUrl: checkoutHandoffUrl,
+      items: [
+        {
+          id: selectedVariant.id,
+          shopifyVariantId: selectedVariant.id,
+          handle: product.handle,
+          title: `${product.title} (${selectedVariant.title})`,
+          image: activeImage || primaryImage,
+          unitPrice: price,
+          quantity: selectedQuantity,
+          productType: product.product_type,
+        },
+      ],
+    });
+
+    void openExternalUrl(checkoutTargetUrl);
   };
 
   const recentlyViewedProducts = recentHandles
@@ -551,40 +591,7 @@ const ProductPage = () => {
 
             <a
               href={checkoutTargetUrl}
-              onClick={() => {
-                if (!selectedVariant || !isAvailable) {
-                  return;
-                }
-
-                trackMetaPixelInitiateCheckout([
-                  {
-                    id: selectedVariant.id,
-                    shopifyVariantId: selectedVariant.id,
-                    handle: product.handle,
-                    title: `${product.title} (${selectedVariant.title})`,
-                    unitPrice: price,
-                    quantity: selectedQuantity,
-                    productType: product.product_type,
-                  },
-                ]);
-
-                recordDeviceOrderHistory({
-                  source: "buy-now",
-                  checkoutUrl: checkoutHandoffUrl,
-                  items: [
-                    {
-                      id: selectedVariant.id,
-                      shopifyVariantId: selectedVariant.id,
-                      handle: product.handle,
-                      title: `${product.title} (${selectedVariant.title})`,
-                      image: activeImage || primaryImage,
-                      unitPrice: price,
-                      quantity: selectedQuantity,
-                      productType: product.product_type,
-                    },
-                  ],
-                });
-              }}
+              onClick={handleBuyNowClick}
               aria-disabled={isAvailable ? "false" : "true"}
               className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#f3d45d] bg-[linear-gradient(135deg,#ffe071_0%,#f6cf3e_38%,#dda611_100%)] px-5 text-base font-semibold text-[#1c2233] shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_18px_34px_-24px_rgba(221,166,17,0.68)] transition ${
                 isAvailable
@@ -704,7 +711,7 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
                   <ProductCard product={related} variant="shop" />
@@ -728,7 +735,7 @@ const ProductPage = () => {
             </div>
           </Reveal>
           <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55} className="h-full">
                   <ProductCard product={entry} variant="shop" />

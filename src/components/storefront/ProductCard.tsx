@@ -63,12 +63,12 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             </div>
           )}
 
-          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-2.5 py-2 text-center text-white sm:px-3 sm:py-[0.6rem]">
-            <h3 className="line-clamp-2 font-display text-[0.88rem] font-semibold leading-[1.12] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem]">
+          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-2 py-1.5 text-center text-white sm:px-3 sm:py-[0.6rem]">
+            <h3 className="line-clamp-2 font-display text-[0.7rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem] sm:leading-[1.12]">
               {title}
             </h3>
-            <div className="mt-1.25 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[0.7rem] font-semibold text-white/92 sm:text-[0.78rem]">
-              <span className="text-[1.08rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.2rem]">
+            <div className="mt-1.25 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 text-[0.58rem] font-semibold text-white/92 sm:gap-x-1.5 sm:gap-y-1 sm:text-[0.78rem]">
+              <span className="text-[0.96rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.2rem]">
                 {formatMoney(min)}
               </span>
               {hasReviews ? (

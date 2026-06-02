@@ -5,13 +5,28 @@ import {
   isValidShopifyVariantId,
   type CartItem,
 } from "@/lib/cart";
-import type {
-  CustomerOrderHistoryEntry,
-  CustomerOrderHistoryItem,
-} from "@/services/customer-order-history";
+
+export type CustomerOrderHistoryItem = {
+  id: number;
+  handle: string;
+  title: string;
+  image: string;
+  unitPrice: number;
+  quantity: number;
+  shopifyVariantId?: number;
+};
+
+export type CustomerOrderHistoryEntry = {
+  id: string;
+  createdAt: string;
+  source: "cart" | "buy-now";
+  checkoutUrl: string;
+  itemCount: number;
+  subtotal: number;
+  items: CustomerOrderHistoryItem[];
+};
 
 export type DeviceOrderHistoryItem = CustomerOrderHistoryItem;
-
 export type DeviceOrderHistoryEntry = CustomerOrderHistoryEntry;
 
 const ORDER_HISTORY_STORAGE_KEY = "salt-order-history-v1";

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   Minus,
@@ -22,6 +22,7 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
@@ -178,6 +179,23 @@ const CartPage = () => {
       replaceItems(checkoutItems);
     }
   }, [autoRecoveredCount, checkoutItems, items, replaceItems]);
+
+  const handleCheckoutClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    if (hasUnresolvedCheckoutItems) {
+      return;
+    }
+
+    trackMetaPixelInitiateCheckout(checkoutItems);
+    recordDeviceOrderHistory({
+      source: "cart",
+      checkoutUrl: checkoutHandoffUrl,
+      items: checkoutItems,
+    });
+
+    void openExternalUrl(checkoutTargetUrl);
+  };
 
   if (!items.length) {
     return (
@@ -404,14 +422,7 @@ const CartPage = () => {
 
             <a
               href={checkoutTargetUrl}
-              onClick={() => {
-                trackMetaPixelInitiateCheckout(checkoutItems);
-                recordDeviceOrderHistory({
-                  source: "cart",
-                  checkoutUrl: checkoutHandoffUrl,
-                  items: checkoutItems,
-                });
-              }}
+              onClick={handleCheckoutClick}
               aria-disabled={hasUnresolvedCheckoutItems}
                 className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
                 hasUnresolvedCheckoutItems
@@ -459,7 +470,7 @@ const CartPage = () => {
             </div>
           </Reveal>
           <div className="salt-section-shell rounded-[1.7rem] p-4">
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recommendedProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 60} className="h-full">
                   <ProductCard product={product} variant="shop" />
@@ -480,14 +491,7 @@ const CartPage = () => {
           </div>
           <a
             href={checkoutTargetUrl}
-            onClick={() => {
-              trackMetaPixelInitiateCheckout(checkoutItems);
-              recordDeviceOrderHistory({
-                source: "cart",
-                checkoutUrl: checkoutHandoffUrl,
-                items: checkoutItems,
-              });
-            }}
+            onClick={handleCheckoutClick}
             aria-disabled={hasUnresolvedCheckoutItems}
             className={`salt-button-shine salt-primary-cta inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] ${
               hasUnresolvedCheckoutItems

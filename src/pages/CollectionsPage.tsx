@@ -447,6 +447,29 @@ const CollectionsPage = () => {
   const previewCollection =
     visibleCollections[0] || filteredCollections[0] || highlightedCollections[0] || null;
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
+  const displayCollections = useMemo(() => {
+    const shouldUseCuratedDefaultGrid =
+      !query.trim() &&
+      themeFilter === "all" &&
+      sizeFilter === "all" &&
+      sort === "featured" &&
+      currentPage === 1;
+
+    if (!shouldUseCuratedDefaultGrid) {
+      return visibleCollections;
+    }
+
+    const byHandle = new Map(
+      filteredCollections.map((collection) => [normalizeHandle(collection.handle), collection]),
+    );
+    const curated = DEFAULT_COLLECTION_GRID_HANDLES.map((handle) => byHandle.get(handle)).filter(
+      (collection): collection is DecoratedCollection => Boolean(collection),
+    );
+    const seen = new Set(curated.map((collection) => collection.id));
+    const fallback = filteredCollections.filter((collection) => !seen.has(collection.id));
+
+    return [...curated, ...fallback].slice(0, PAGE_SIZE);
+  }, [currentPage, filteredCollections, query, sizeFilter, sort, themeFilter, visibleCollections]);
 
   if (isLoading) {
     return (
@@ -563,29 +586,6 @@ const CollectionsPage = () => {
   const supportCollections = highlightedCollections.filter(
     (collection) => !leadCollection || collection.id !== leadCollection.id,
   );
-  const displayCollections = useMemo(() => {
-    const shouldUseCuratedDefaultGrid =
-      !query.trim() &&
-      themeFilter === "all" &&
-      sizeFilter === "all" &&
-      sort === "featured" &&
-      currentPage === 1;
-
-    if (!shouldUseCuratedDefaultGrid) {
-      return visibleCollections;
-    }
-
-    const byHandle = new Map(
-      filteredCollections.map((collection) => [normalizeHandle(collection.handle), collection]),
-    );
-    const curated = DEFAULT_COLLECTION_GRID_HANDLES.map((handle) => byHandle.get(handle)).filter(
-      (collection): collection is DecoratedCollection => Boolean(collection),
-    );
-    const seen = new Set(curated.map((collection) => collection.id));
-    const fallback = filteredCollections.filter((collection) => !seen.has(collection.id));
-
-    return [...curated, ...fallback].slice(0, PAGE_SIZE);
-  }, [currentPage, filteredCollections, query, sizeFilter, sort, themeFilter, visibleCollections]);
 
   const sidebarFilterPanelContent = (
     <div className="mt-2 grid gap-2">
@@ -1096,7 +1096,7 @@ const CollectionsPage = () => {
             </Reveal>
           ) : (
             <>
-              <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+              <div className="mt-5 grid grid-cols-4 gap-2 sm:mt-6 sm:gap-x-5 sm:gap-y-7 lg:grid-cols-6 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-6 xl:gap-x-7 xl:gap-y-10">
                 {displayCollections.map((collection, index) => (
                   <Reveal key={collection.id} delayMs={index * 35} className="h-full">
                     <CollectionCard collection={collection} />

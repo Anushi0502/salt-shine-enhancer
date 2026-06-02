@@ -100,7 +100,7 @@ const WishlistPage = () => {
       </Reveal>
 
       <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
           {savedEntries.map(({ item, product }, index) => (
             <Reveal key={`${item.handle}-${item.id}`} delayMs={index * 45} className="h-full">
               {product ? (

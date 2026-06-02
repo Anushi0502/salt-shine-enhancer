@@ -836,7 +836,7 @@ const ShopPage = () => {
           ) : (
             <>
               <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5">
-                <div className="grid gap-x-5 gap-y-7 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-6 xl:gap-x-7 xl:gap-y-10">
+                <div className="grid grid-cols-4 gap-2 sm:gap-x-5 sm:gap-y-7 lg:grid-cols-6 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-6 xl:gap-x-7 xl:gap-y-10">
                   {visibleProducts.map((product, index) => (
                     <Reveal
                       key={product.id}

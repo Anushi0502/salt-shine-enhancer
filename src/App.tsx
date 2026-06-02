@@ -6,7 +6,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 import SiteShell from "@/components/layout/SiteShell";
+import NotificationBootstrap from "@/components/integrations/NotificationBootstrap";
 import { CartProvider } from "@/lib/cart";
+import { isNativeApp } from "@/lib/mobile";
 import { ThemeProvider } from "@/lib/theme";
 import { WishlistProvider } from "@/lib/wishlist";
 import HomePage from "@/pages/HomePage";
@@ -52,6 +54,7 @@ const App = () => (
             <BrowserRouter>
               <ScrollToTop />
               <MetaPixelTracker />
+              <NotificationBootstrap />
               <Routes>
                 <Route element={<SiteShell />}>
                   <Route path="/" element={<HomePage />} />
@@ -72,7 +75,10 @@ const App = () => (
                   <Route path="/blogs/:blogHandle" element={<BlogPage />} />
                   <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
                   <Route path="/order-history" element={<OrderHistoryPage />} />
-                  <Route path="/bulk-review" element={<BulkReviewPage />} />
+                  <Route
+                    path="/bulk-review"
+                    element={isNativeApp() ? <Navigate to="/shop" replace /> : <BulkReviewPage />}
+                  />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/pages/contact" element={<ContactPage />} />
                   <Route path="/customer-access" element={<Navigate to="/" replace />} />

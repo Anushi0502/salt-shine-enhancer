@@ -1334,7 +1334,7 @@ const HomePage = () => {
         <Reveal delayMs={120}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
               {bestSellerProducts.length > 0
                 ? bestSellerProducts.slice(0, 8).map((product, index) => (
                     <Reveal key={`best-seller-product-${product.id}`} delayMs={160 + index * 70}>
@@ -1371,7 +1371,7 @@ const HomePage = () => {
         <Reveal delayMs={160}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Gift Ideas For Loved Ones" />
-            <div className="mt-4 grid grid-cols-1 gap-5 min-[620px]:grid-cols-2 sm:mt-5 md:grid-cols-3">
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:gap-5">
               {giftTiles.map((tile, index) => (
                 <Reveal key={tile.title} delayMs={200 + index * 80}>
                   <Link
@@ -1392,11 +1392,11 @@ const HomePage = () => {
                         }
                       />
                     </div>
-                    <div className="px-4 py-3 text-center">
-                      <p className="font-display text-[1rem] text-[#1c4b96] sm:text-[1.02rem]">
+                    <div className="px-2 py-2 text-center sm:px-4 sm:py-3">
+                      <p className="font-display text-[0.76rem] leading-[1.08] text-[#1c4b96] sm:text-[1rem] sm:leading-normal">
                         {tile.title}
                       </p>
-                      <span className="mt-3 inline-flex h-9 items-center justify-center bg-[#f2b600] px-5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white transition group-hover:bg-[#d7a200]">
+                      <span className="mt-2 inline-flex h-7 items-center justify-center bg-[#f2b600] px-2.5 text-[0.52rem] font-semibold uppercase tracking-[0.1em] text-white transition group-hover:bg-[#d7a200] sm:mt-3 sm:h-9 sm:px-5 sm:text-[0.68rem] sm:tracking-[0.14em]">
                         Shop Now
                       </span>
                     </div>
@@ -1410,7 +1410,7 @@ const HomePage = () => {
         <Reveal delayMs={180}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Quirky Gift Picks" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
               {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
                   <OverlayProductCard
@@ -1436,7 +1436,7 @@ const HomePage = () => {
                 <h2 className="text-left font-display text-[clamp(1.45rem,2.6vw,2.05rem)] leading-[1.08] text-[#183f84]">
                   Our Exclusive Book Collection
                 </h2>
-                <div className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 sm:gap-5 lg:gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-6">
                   {featuredCourtneyBookCards.map((bookCard, index) => (
                     <Reveal key={bookCard.key} delayMs={240 + index * 60}>
                       <OverlayProductCard
@@ -1498,7 +1498,7 @@ const HomePage = () => {
         <Reveal delayMs={240}>
           <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
             <SectionTitle title="Everyday Essentials" />
-            <div className="mt-5 grid grid-cols-1 gap-3.5 min-[430px]:grid-cols-2 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
               {everydayEssentialProducts.length > 0
                 ? everydayEssentialProducts.slice(0, 8).map((product, index) => (
                     <Reveal key={`everyday-essential-product-${product.id}`} delayMs={260 + index * 70}>

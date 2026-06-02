@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, ClipboardList, History, RotateCcw, Search, Trash2 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { useCart } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { openExternalUrl } from "@/lib/mobile";
+import { getPushNotificationsEnabled, setPushNotificationsEnabled } from "@/lib/notifications";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
-import { useDeviceOrderHistory } from "@/lib/order-history";
+import { useDeviceOrderHistory, type DeviceOrderHistoryEntry } from "@/lib/order-history";
+import { Switch } from "@/components/ui/switch";
 
 function formatTimestamp(value: string): string {
   const date = new Date(value);
@@ -27,6 +30,25 @@ const OrderHistoryPage = () => {
   const { replaceItems } = useCart();
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "cart" | "buy-now">("all");
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    void getPushNotificationsEnabled().then((enabled) => {
+      if (!active) {
+        return;
+      }
+
+      setPushEnabled(enabled);
+      setPushLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const totalSpent = useMemo(
     () => entries.reduce((sum, entry) => sum + entry.subtotal, 0),
@@ -58,6 +80,55 @@ const OrderHistoryPage = () => {
     [filteredEntries],
   );
 
+  const handleCheckoutAgain = (
+    event: MouseEvent<HTMLAnchorElement>,
+    checkoutUrl: string,
+    items: DeviceOrderHistoryEntry["items"],
+  ) => {
+    event.preventDefault();
+    trackMetaPixelInitiateCheckout(items);
+    void openExternalUrl(checkoutUrl);
+  };
+
+  const pushPreferenceCard = (
+    <Reveal>
+      <div className="salt-panel-shell mb-4 rounded-2xl p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Notifications</p>
+            <h2 className="mt-1 font-display text-2xl">Device push updates</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              Keep notifications local to this device. On Android, push requests are handled through the app
+              runtime when OneSignal is configured.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {pushLoading ? "Loading preference" : pushEnabled ? "Enabled on this device" : "Disabled on this device"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {pushLoading
+                  ? "Checking stored preference."
+                  : "Toggle to store your push preference locally."}
+              </p>
+            </div>
+            <Switch
+              checked={pushEnabled}
+              onCheckedChange={(next) => {
+                setPushEnabled(next);
+                void setPushNotificationsEnabled(next).then((resolved) => {
+                  setPushEnabled(resolved);
+                });
+              }}
+              disabled={pushLoading}
+            />
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+
   if (!entries.length) {
     return (
       <section className="mx-auto mt-8 w-[min(880px,calc(100%-20px))] pb-10 text-center">
@@ -80,6 +151,9 @@ const OrderHistoryPage = () => {
             </div>
           </div>
         </Reveal>
+        <div className="mx-auto mt-4 w-full text-left sm:w-[min(1200px,calc(100%-20px))]">
+          {pushPreferenceCard}
+        </div>
       </section>
     );
   }
@@ -106,6 +180,8 @@ const OrderHistoryPage = () => {
           </button>
         </div>
       </Reveal>
+
+      {pushPreferenceCard}
 
       <Reveal>
         <div className="salt-panel-shell mb-4 rounded-2xl p-4">
@@ -205,7 +281,7 @@ const OrderHistoryPage = () => {
                   </button>
                   <a
                     href={entry.checkoutUrl}
-                    onClick={() => trackMetaPixelInitiateCheckout(entry.items)}
+                    onClick={(event) => handleCheckoutAgain(event, entry.checkoutUrl, entry.items)}
                     className="salt-primary-cta h-10 w-full px-4 text-xs font-bold sm:w-auto"
                   >
                     Checkout again <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />

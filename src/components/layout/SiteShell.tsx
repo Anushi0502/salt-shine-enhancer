@@ -4,10 +4,12 @@ import ChatBootstrap from "@/components/integrations/ChatBootstrap";
 import MainFooter from "@/components/layout/MainFooter";
 import MainHeader from "@/components/layout/MainHeader";
 import CartDrawer from "@/components/storefront/CartDrawer";
+import { isNativeApp } from "@/lib/mobile";
 
 const SiteShell = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const hideFooter = isNativeApp();
 
   return (
     <div
@@ -23,7 +25,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       <main id="main-content" className="relative">
         {children || <Outlet />}
       </main>
-      <MainFooter />
+      {hideFooter ? null : <MainFooter />}
     </div>
   );
 };

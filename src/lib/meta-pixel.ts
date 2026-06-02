@@ -94,7 +94,13 @@ export function ensureMetaPixel(): boolean {
   window.__saltMetaPixelBootstrapped = true;
 
   ((f: Window, d: Document, tagName: string, scriptUrl: string) => {
-    let n: ((...args: unknown[]) => void) & {
+    const n = function (...args: unknown[]) {
+      if (n.callMethod) {
+        n.callMethod(...args);
+      } else {
+        n.queue?.push(args);
+      }
+    } as ((...args: unknown[]) => void) & {
       callMethod?: (...args: unknown[]) => void;
       push?: (...args: unknown[]) => number;
       loaded?: boolean;
@@ -105,14 +111,6 @@ export function ensureMetaPixel(): boolean {
     if (f.fbq) {
       return;
     }
-
-    n = function (...args: unknown[]) {
-      if (n.callMethod) {
-        n.callMethod(...args);
-      } else {
-        n.queue?.push(args);
-      }
-    };
 
     if (!f._fbq) {
       f._fbq = n;
