@@ -1,18 +1,30 @@
+import { LocalNotifications, type ActionPerformed, type LocalNotificationSchema } from "@capacitor/local-notifications";
 import OneSignal, { LogLevel } from "@onesignal/capacitor-plugin";
-import { getShopBaseOrigin } from "@/lib/theme-assets";
+import { buildWeeklyNotificationPlan, getWeeklyNotificationWeekKey, parseWeeklyNotificationPlan, serializeWeeklyNotificationPlan, type WeeklyNotificationPlan } from "@/lib/notification-schedule";
 import {
   emitAppRoute,
+  getNativePlatform,
   isNativeApp,
   normalizeAppRoute,
   openExternalUrl,
   readBooleanPreference,
+  readTextPreference,
+  removePreference,
   writeBooleanPreference,
+  writeTextPreference,
 } from "@/lib/mobile";
+import { getShopBaseOrigin } from "@/lib/theme-assets";
 
 const PUSH_PREFERENCE_KEY = "salt-push-notifications-enabled";
+const WEEKLY_NOTIFICATION_PLAN_KEY = "salt-weekly-notification-plan";
+const WEEKLY_NOTIFICATION_CHANNEL_ID = "salt-weekly-notifications";
+const WEEKLY_NOTIFICATION_KIND = "salt-weekly-notification";
 const ONE_SIGNAL_APP_ID = String(import.meta.env.VITE_ONESIGNAL_APP_ID || "").trim();
 
 let initPromise: Promise<void> | null = null;
+let syncPromise: Promise<boolean> | null = null;
+let notificationChannelPromise: Promise<void> | null = null;
+let localNotificationListenersRegistered = false;
 
 type NotificationPayload = Record<string, unknown> & {
   notification?: Record<string, unknown>;
@@ -22,6 +34,20 @@ type NotificationTarget =
   | { kind: "route"; value: string }
   | { kind: "external"; value: string }
   | null;
+
+type WeeklyNotificationExtra = {
+  kind: string;
+  weekKey?: string;
+  route?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function readString(input: unknown): string {
+  return typeof input === "string" ? input.trim() : "";
+}
 
 function getPushSubscriptionApi(): { optIn?: () => Promise<void> | void; optOut?: () => Promise<void> | void } | null {
   const plugin = OneSignal as unknown as {
@@ -38,10 +64,6 @@ function getPushSubscriptionApi(): { optIn?: () => Promise<void> | void; optOut?
   };
 
   return plugin.User?.pushSubscription || plugin.User?.PushSubscription || null;
-}
-
-function readString(input: unknown): string {
-  return typeof input === "string" ? input.trim() : "";
 }
 
 function parseUrlCandidate(raw: string): NotificationTarget {
@@ -84,7 +106,7 @@ function parseUrlCandidate(raw: string): NotificationTarget {
   }
 }
 
-function resolveNotificationTarget(payload: NotificationPayload | null | undefined): NotificationTarget {
+function resolveNotificationTarget(payload: NotificationPayload | ActionPerformed | null | undefined): NotificationTarget {
   if (!payload) {
     return null;
   }
@@ -92,11 +114,14 @@ function resolveNotificationTarget(payload: NotificationPayload | null | undefin
   const notification = (payload.notification && typeof payload.notification === "object"
     ? payload.notification
     : payload) as Record<string, unknown>;
-  const additionalData = (notification.additionalData && typeof notification.additionalData === "object"
+
+  const additionalData = isRecord(notification.additionalData)
     ? notification.additionalData
-    : notification.data && typeof notification.data === "object"
+    : isRecord(notification.data)
       ? notification.data
-      : {}) as Record<string, unknown>;
+      : isRecord(notification.extra)
+        ? notification.extra
+        : {};
 
   const candidate =
     readString(additionalData.deep_link) ||
@@ -118,57 +143,67 @@ function resolveNotificationTarget(payload: NotificationPayload | null | undefin
   return parseUrlCandidate(candidate);
 }
 
-async function applyPushSubscription(enabled: boolean): Promise<void> {
-  if (!isNativeApp() || !ONE_SIGNAL_APP_ID) {
+function isWeeklyNotificationExtra(value: unknown): value is WeeklyNotificationExtra {
+  return isRecord(value) && value.kind === WEEKLY_NOTIFICATION_KIND;
+}
+
+function notificationExtraForRoute(route: string, weekKey: string): WeeklyNotificationExtra {
+  return {
+    kind: WEEKLY_NOTIFICATION_KIND,
+    weekKey,
+    route,
+  };
+}
+
+async function ensureNativeNotificationChannel(): Promise<void> {
+  if (!isNativeApp() || getNativePlatform() !== "android") {
     return;
   }
 
-  const subscription = getPushSubscriptionApi();
-  if (!subscription) {
+  if (!notificationChannelPromise) {
+    notificationChannelPromise = (async () => {
+      try {
+        await LocalNotifications.createChannel({
+          id: WEEKLY_NOTIFICATION_CHANNEL_ID,
+          name: "SALT weekly notifications",
+          description: "Random weekly reminders and updates from the store",
+          importance: 4,
+          visibility: 1,
+        });
+      } catch {
+        // Channel creation is best-effort. The schedule still works with the platform default.
+      }
+    })();
+  }
+
+  await notificationChannelPromise;
+}
+
+async function installNotificationListeners(): Promise<void> {
+  if (localNotificationListenersRegistered) {
     return;
   }
 
-  if (enabled) {
-    await subscription.optIn?.();
-  } else {
-    await subscription.optOut?.();
-  }
-}
+  localNotificationListenersRegistered = true;
 
-export async function getPushNotificationsEnabled(): Promise<boolean> {
-  return readBooleanPreference(PUSH_PREFERENCE_KEY, false);
-}
-
-export async function setPushNotificationsEnabled(enabled: boolean): Promise<boolean> {
-  const desired = Boolean(enabled);
-  if (!isNativeApp() || !ONE_SIGNAL_APP_ID) {
-    await writeBooleanPreference(PUSH_PREFERENCE_KEY, desired);
-    return desired;
-  }
-
-  if (desired) {
-    const accepted = await initializePushNotifications({ promptForPermission: true });
-    if (!accepted) {
-      await writeBooleanPreference(PUSH_PREFERENCE_KEY, false);
-      await applyPushSubscription(false);
-      return false;
+  await LocalNotifications.addListener("localNotificationActionPerformed", (event) => {
+    const target = resolveNotificationTarget(event);
+    if (!target) {
+      return;
     }
 
-    await writeBooleanPreference(PUSH_PREFERENCE_KEY, true);
-    await applyPushSubscription(true);
-    return true;
-  }
+    if (target.kind === "route") {
+      emitAppRoute(target.value);
+      return;
+    }
 
-  await writeBooleanPreference(PUSH_PREFERENCE_KEY, false);
-  await applyPushSubscription(false);
-  return false;
+    void openExternalUrl(target.value);
+  });
 }
 
-export async function initializePushNotifications(options?: {
-  promptForPermission?: boolean;
-}): Promise<boolean> {
-  if (!isNativeApp() || !ONE_SIGNAL_APP_ID) {
-    return readBooleanPreference(PUSH_PREFERENCE_KEY, false);
+async function ensureNotificationRuntimeInitialized(): Promise<void> {
+  if (!isNativeApp()) {
+    return;
   }
 
   if (!initPromise) {
@@ -177,7 +212,6 @@ export async function initializePushNotifications(options?: {
         Debug?: { setLogLevel?: (level: LogLevel) => void };
         initialize?: (appId: string) => void;
         Notifications?: {
-          requestPermission?: (fallbackToSettings?: boolean) => Promise<boolean>;
           addClickListener?: (listener: (event: unknown) => void) => void;
         };
       };
@@ -186,39 +220,195 @@ export async function initializePushNotifications(options?: {
         plugin.Debug?.setLogLevel?.(LogLevel.Verbose);
       }
 
-      plugin.initialize?.(ONE_SIGNAL_APP_ID);
-      plugin.Notifications?.addClickListener?.((event: unknown) => {
-        const target = resolveNotificationTarget(event as NotificationPayload);
-        if (!target) {
-          return;
-        }
+      if (ONE_SIGNAL_APP_ID) {
+        plugin.initialize?.(ONE_SIGNAL_APP_ID);
+        plugin.Notifications?.addClickListener?.((event: unknown) => {
+          const target = resolveNotificationTarget(event as NotificationPayload);
+          if (!target) {
+            return;
+          }
 
-        if (target.kind === "route") {
-          emitAppRoute(target.value);
-          return;
-        }
+          if (target.kind === "route") {
+            emitAppRoute(target.value);
+            return;
+          }
 
-        void openExternalUrl(target.value);
-      });
+          void openExternalUrl(target.value);
+        });
+      }
+
+      await ensureNativeNotificationChannel();
+      await installNotificationListeners();
     })();
   }
 
   await initPromise;
+}
 
-  if (options?.promptForPermission) {
-    const plugin = OneSignal as unknown as {
-      Notifications?: {
-        requestPermission?: (fallbackToSettings?: boolean) => Promise<boolean>;
-      };
-    };
+async function requestLocalNotificationPermission(promptForPermission: boolean): Promise<boolean> {
+  try {
+    const status = await LocalNotifications.checkPermissions();
+    if (status.display === "granted") {
+      return true;
+    }
 
-    const accepted = await plugin.Notifications?.requestPermission?.(false);
-    return Boolean(accepted);
+    if (!promptForPermission) {
+      return false;
+    }
+
+    const requested = await LocalNotifications.requestPermissions();
+    return requested.display === "granted";
+  } catch {
+    return false;
+  }
+}
+
+async function cancelWeeklyNotifications(options?: { keepIds?: Set<number> }): Promise<void> {
+  if (!isNativeApp()) {
+    return;
   }
 
+  try {
+    const pending = await LocalNotifications.getPending();
+    const notifications = pending.notifications
+      .filter((notification) => isWeeklyNotificationExtra(notification.extra))
+      .filter((notification) => !options?.keepIds?.has(notification.id))
+      .map((notification) => ({ id: notification.id }));
+
+    if (notifications.length) {
+      await LocalNotifications.cancel({ notifications });
+    }
+  } catch {
+    // Best effort cleanup. The next sync can overwrite the remaining schedule.
+  }
+}
+
+async function loadStoredWeeklyNotificationPlan(): Promise<WeeklyNotificationPlan | null> {
+  const rawPlan = await readTextPreference(WEEKLY_NOTIFICATION_PLAN_KEY);
+  return parseWeeklyNotificationPlan(rawPlan);
+}
+
+async function persistWeeklyNotificationPlan(plan: WeeklyNotificationPlan): Promise<void> {
+  await writeTextPreference(WEEKLY_NOTIFICATION_PLAN_KEY, serializeWeeklyNotificationPlan(plan));
+}
+
+function shouldReuseStoredPlan(plan: WeeklyNotificationPlan | null, currentWeekKey: string, now: Date): plan is WeeklyNotificationPlan {
+  if (!plan || plan.weekKey !== currentWeekKey || plan.notifications.length === 0) {
+    return false;
+  }
+
+  return plan.notifications.every((notification) => notification.scheduledAt.getTime() > now.getTime());
+}
+
+async function scheduleWeeklyNotificationPlan(plan: WeeklyNotificationPlan): Promise<void> {
+  const notifications: LocalNotificationSchema[] = plan.notifications.map((notification) => ({
+    id: notification.id,
+    title: notification.title,
+    body: notification.body,
+    schedule: {
+      at: notification.scheduledAt,
+      allowWhileIdle: true,
+    },
+    channelId: WEEKLY_NOTIFICATION_CHANNEL_ID,
+    extra: notificationExtraForRoute(notification.route, plan.weekKey),
+  }));
+
+  await LocalNotifications.schedule({ notifications });
+}
+
+export async function getPushNotificationsEnabled(): Promise<boolean> {
   return readBooleanPreference(PUSH_PREFERENCE_KEY, false);
 }
 
-export async function loadPushNotificationsEnabled(): Promise<boolean> {
-  return getPushNotificationsEnabled();
+export async function syncWeeklyNotifications(options?: { now?: Date }): Promise<boolean> {
+  if (!isNativeApp()) {
+    return false;
+  }
+
+  if (!syncPromise) {
+    syncPromise = (async () => {
+      try {
+        await ensureNotificationRuntimeInitialized();
+
+        const desired = await readBooleanPreference(PUSH_PREFERENCE_KEY, false);
+        if (!desired) {
+          await cancelWeeklyNotifications();
+          await removePreference(WEEKLY_NOTIFICATION_PLAN_KEY);
+          return false;
+        }
+
+        const permissionAccepted = await requestLocalNotificationPermission(false);
+        if (!permissionAccepted) {
+          await writeBooleanPreference(PUSH_PREFERENCE_KEY, false);
+          await cancelWeeklyNotifications();
+          await removePreference(WEEKLY_NOTIFICATION_PLAN_KEY);
+          return false;
+        }
+
+        const now = options?.now ? new Date(options.now) : new Date();
+        const weekKey = getWeeklyNotificationWeekKey(now);
+        const storedPlan = await loadStoredWeeklyNotificationPlan();
+        const plan = shouldReuseStoredPlan(storedPlan, weekKey, now)
+          ? storedPlan
+          : buildWeeklyNotificationPlan({ now, count: 3, random: Math.random });
+
+        await scheduleWeeklyNotificationPlan(plan);
+        await cancelWeeklyNotifications({ keepIds: new Set(plan.notifications.map((notification) => notification.id)) });
+        await persistWeeklyNotificationPlan(plan);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        syncPromise = null;
+      }
+    })();
+  }
+
+  return syncPromise;
+}
+
+export async function setPushNotificationsEnabled(enabled: boolean): Promise<boolean> {
+  const desired = Boolean(enabled);
+
+  if (!isNativeApp()) {
+    await writeBooleanPreference(PUSH_PREFERENCE_KEY, desired);
+    return desired;
+  }
+
+  await ensureNotificationRuntimeInitialized();
+
+  if (desired) {
+    const accepted = await requestLocalNotificationPermission(true);
+    if (!accepted) {
+      await writeBooleanPreference(PUSH_PREFERENCE_KEY, false);
+      await cancelWeeklyNotifications();
+      await removePreference(WEEKLY_NOTIFICATION_PLAN_KEY);
+      return false;
+    }
+
+    await writeBooleanPreference(PUSH_PREFERENCE_KEY, true);
+    await syncWeeklyNotifications();
+    return true;
+  }
+
+  await writeBooleanPreference(PUSH_PREFERENCE_KEY, false);
+  await cancelWeeklyNotifications();
+  await removePreference(WEEKLY_NOTIFICATION_PLAN_KEY);
+  return false;
+}
+
+export async function initializePushNotifications(options?: {
+  promptForPermission?: boolean;
+}): Promise<boolean> {
+  if (!isNativeApp()) {
+    return readBooleanPreference(PUSH_PREFERENCE_KEY, false);
+  }
+
+  await ensureNotificationRuntimeInitialized();
+
+  if (options?.promptForPermission) {
+    return requestLocalNotificationPermission(true);
+  }
+
+  return readBooleanPreference(PUSH_PREFERENCE_KEY, false);
 }

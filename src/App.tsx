@@ -18,6 +18,7 @@ import ProductPage from "@/pages/ProductPage";
 import ProductReviewsPage from "@/pages/ProductReviewsPage";
 import CartPage from "@/pages/CartPage";
 import WishlistPage from "@/pages/WishlistPage";
+import RecentlyViewedPage from "@/pages/RecentlyViewedPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import BlogPage from "@/pages/BlogPage";
@@ -68,6 +69,7 @@ const App = () => (
                   <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/pages/about-us" element={<AboutPage />} />
                   <Route path="/blog" element={<BlogPage />} />

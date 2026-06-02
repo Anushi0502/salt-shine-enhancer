@@ -5,6 +5,7 @@ import BrandLogo from "@/components/layout/BrandLogo";
 import { filterProducts } from "@/lib/catalog";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
+import { isNativeApp } from "@/lib/mobile";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 
@@ -112,6 +113,7 @@ const MainHeader = () => {
   const [searchInput, setSearchInput] = useState("");
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const nativeApp = isNativeApp();
   const showHeaderSearch = true;
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData?.products]);
   const allCollections = useMemo(
@@ -241,7 +243,7 @@ const MainHeader = () => {
   );
   const popularRoutes = useMemo(
     () => [
-      { label: "All Products", to: "/shop" },
+      { label: "All Products", to: "/shop?collection=all-products" },
       {
         label: "Best Sellers",
         to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/shop?sort=featured",
@@ -325,7 +327,7 @@ const MainHeader = () => {
   const applySearchQuery = (value: string) => {
     const normalizedQuery = value.trim();
     if (!normalizedQuery) {
-      navigate("/shop");
+      navigate("/shop?collection=all-products");
       return;
     }
 
@@ -360,7 +362,11 @@ const MainHeader = () => {
           <BrandLogo withWordmark size="md" />
         </Link>
 
-        <nav className="hidden min-w-0 flex-1 items-center justify-start gap-3 lg:flex xl:gap-4">
+        <nav
+          className={`hidden min-w-0 flex-1 items-center justify-start gap-3 xl:gap-4 ${
+            nativeApp ? "" : "lg:flex"
+          }`}
+        >
           {primaryNav.map((item) => {
             const active = isNavItemActive(item, location.pathname);
 
@@ -592,38 +598,42 @@ const MainHeader = () => {
             </form>
           ) : null}
 
-          <Link to="/wishlist" className={actionButtonClassName} aria-label="Open wishlist">
-            <Heart
-              className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${
-                wishlistCount > 0 ? "fill-[#f2b600] text-[#f2b600]" : ""
-              }`}
-            />
-            {wishlistCount > 0 ? (
-              <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#f2b600] text-[0.58rem] font-bold text-[#153a80]">
-                {wishlistCount}
-              </span>
-            ) : null}
-          </Link>
+          {!nativeApp ? (
+            <>
+              <Link to="/wishlist" className={actionButtonClassName} aria-label="Open wishlist">
+                <Heart
+                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${
+                    wishlistCount > 0 ? "fill-[#f2b600] text-[#f2b600]" : ""
+                  }`}
+                />
+                {wishlistCount > 0 ? (
+                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#f2b600] text-[0.58rem] font-bold text-[#153a80]">
+                    {wishlistCount}
+                  </span>
+                ) : null}
+              </Link>
 
-          <button
-            type="button"
-            onClick={openCartDrawer}
-            className={actionButtonClassName}
-            aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
-          >
-            <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-            {itemCount > 0 ? (
-              <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#225ed6] text-[0.58rem] font-bold text-white">
-                {itemCount}
-              </span>
-            ) : null}
-          </button>
+              <button
+                type="button"
+                onClick={openCartDrawer}
+                className={actionButtonClassName}
+                aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
+              >
+                <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                {itemCount > 0 ? (
+                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#225ed6] text-[0.58rem] font-bold text-white">
+                    {itemCount}
+                  </span>
+                ) : null}
+              </button>
+            </>
+          ) : null}
 
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
             className={`${actionButtonClassName} lg:hidden`}
-            aria-label="Toggle navigation menu"
+            aria-label={nativeApp ? "Open browse menu" : "Toggle navigation menu"}
           >
             {mobileOpen ? (
               <X className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
@@ -662,43 +672,106 @@ const MainHeader = () => {
 
       {mobileOpen ? (
         <div className="border-t border-[#d7e5ff] bg-[#f1f7ff] px-3 py-4 lg:hidden">
-          <div className="grid w-full gap-2">
-            {mobileNav.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                onClick={closeMobileMenu}
-                className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 font-display text-[1rem] transition ${
-                  isNavItemActive(item, location.pathname)
-                    ? "border-[#98b8ef] bg-[#e7f0ff] text-[#153f8d]"
-                    : "text-[#2a3f66] hover:border-[#9ab9ee] hover:text-[#153f8d]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          {nativeApp ? (
+            <div className="grid w-full gap-3">
+              <div className="rounded-[1.35rem] border border-[#c6d8f9] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(242,247,255,0.98))] p-3 shadow-[0_22px_42px_-32px_rgba(20,58,128,0.42)]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#d6e4fb] pb-2.5">
+                  <div>
+                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Browse</p>
+                    <p className="mt-1 text-sm text-[#59729f]">
+                      Wishlist, cart, order history, and recent products stay in the app drawer.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#cadbf8] text-[#6a81ab] transition hover:bg-[#ecf3ff] hover:text-[#163f87]"
+                    aria-label="Close browse menu"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-            <div className="mt-1 grid grid-cols-2 gap-2">
-              <Link
-                to="/wishlist"
-                onClick={closeMobileMenu}
-                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
-              >
-                Wishlist
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  closeMobileMenu();
-                  openCartDrawer();
-                }}
-                className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#1d4faa] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
-              >
-                Cart ({itemCount})
-              </button>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link
+                    to="/wishlist"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  >
+                    Wishlist
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      openCartDrawer();
+                    }}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  >
+                    Cart ({itemCount})
+                  </button>
+                  <Link
+                    to="/order-history"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  >
+                    Order history
+                  </Link>
+                  <Link
+                    to="/recently-viewed"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  >
+                    Recently viewed
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-[1.1rem] border border-dashed border-[#c5d8fc] bg-[#f8fbff] px-4 py-3 text-left text-sm leading-6 text-[#59729f]">
+                <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">App shortcuts</p>
+                <p className="mt-1">
+                  Home, Shop, Collections, Blogs, and Support live in the bottom bar for faster app navigation.
+                </p>
+              </div>
             </div>
+          ) : (
+            <div className="grid w-full gap-2">
+              {mobileNav.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  onClick={closeMobileMenu}
+                  className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 font-display text-[1rem] transition ${
+                    isNavItemActive(item, location.pathname)
+                      ? "border-[#98b8ef] bg-[#e7f0ff] text-[#153f8d]"
+                      : "text-[#2a3f66] hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
 
-          </div>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <Link
+                  to="/wishlist"
+                  onClick={closeMobileMenu}
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
+                >
+                  Wishlist
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    openCartDrawer();
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#1d4faa] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
+                >
+                  Cart ({itemCount})
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
     </header>

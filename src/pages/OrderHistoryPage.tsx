@@ -96,10 +96,10 @@ const OrderHistoryPage = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Notifications</p>
-            <h2 className="mt-1 font-display text-2xl">Device push updates</h2>
+            <h2 className="mt-1 font-display text-2xl">Weekly device reminders</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Keep notifications local to this device. On Android, push requests are handled through the app
-              runtime when OneSignal is configured.
+              Turn this on to queue randomized reminder notifications for this device during the week.
+              When the app is running natively, the scheduler will keep them refreshed automatically.
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
@@ -110,7 +110,7 @@ const OrderHistoryPage = () => {
               <p className="text-xs text-muted-foreground">
                 {pushLoading
                   ? "Checking stored preference."
-                  : "Toggle to store your push preference locally."}
+                  : "Toggle to schedule weekly reminders locally."}
               </p>
             </div>
             <Switch

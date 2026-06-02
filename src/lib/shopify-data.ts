@@ -19,6 +19,7 @@ import {
   normalizeShopifyAssetUrl,
   resolveThemeAsset,
 } from "@/lib/theme-assets";
+import { isNativeApp } from "@/lib/mobile";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
 
 const runtimeContext = getRuntimeContext();
@@ -44,12 +45,22 @@ const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
 const ABOUT_DATA_PATH = "/data/about.json";
 const BLOG_POSTS_DATA_PATH = "/data/blog-posts.json";
 const LIVE_STALE_TIME_MS = 0;
-const LIVE_PRODUCTS_REFRESH_MS = 60 * 1000;
-const LIVE_CONTENT_REFRESH_MS = 5 * 60 * 1000;
-const LIVE_COLLECTION_MAP_REFRESH_MS = 10 * 60 * 1000;
+const LIVE_PRODUCTS_REFRESH_MS = isNativeApp() ? 30 * 1000 : 60 * 1000;
+const LIVE_CONTENT_REFRESH_MS = isNativeApp() ? 2 * 60 * 1000 : 5 * 60 * 1000;
+const LIVE_COLLECTION_MAP_REFRESH_MS = isNativeApp() ? 2 * 60 * 1000 : 10 * 60 * 1000;
 const LIVE_QUERY_MAX_RETRIES = 4;
 const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
 const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
+
+export const LIVE_SHOPIFY_QUERY_PREFIXES = [
+  "products",
+  "collections",
+  "collection-products",
+  "collection-products-by-handle",
+  "about-page",
+  "blog-posts",
+  "policy-page",
+] as const;
 
 type CollectionProductIdsPayload = {
   generatedAt: string;
@@ -1125,20 +1136,20 @@ export async function loadAboutPage(): Promise<AboutPagePayload> {
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {
   try {
-    const cached = await fetchBlogPostsFromCache();
-    return {
-      ...cached,
-      source: `cache:${cached.source}`,
-    };
-  } catch (cacheError) {
-    const cacheMessage =
-      cacheError instanceof Error ? cacheError.message : "Unknown cached blog error";
+    return await fetchBlogPostsFromLive();
+  } catch (liveError) {
+    const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live blog error";
 
     try {
-      return await fetchBlogPostsFromLive();
-    } catch (liveError) {
-      const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live blog error";
-      throw new Error(`Cached blog fallback failed: ${cacheMessage}. Live blog fetch failed: ${liveMessage}`);
+      const cached = await fetchBlogPostsFromCache();
+      return {
+        ...cached,
+        source: `cache:${cached.source}`,
+      };
+    } catch (cacheError) {
+      const cacheMessage =
+        cacheError instanceof Error ? cacheError.message : "Unknown cached blog error";
+      throw new Error(`Live blog fetch failed: ${liveMessage}. Cached blog fallback failed: ${cacheMessage}`);
     }
   }
 }
@@ -1164,6 +1175,7 @@ export function useProducts() {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1177,6 +1189,7 @@ export function useCollections() {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1190,6 +1203,7 @@ export function useCollectionProductsMap() {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1206,6 +1220,7 @@ export function useCollectionProductIds(handle: string, enabled = true) {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1219,6 +1234,7 @@ export function useAboutPage() {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1231,8 +1247,9 @@ export function useBlogPosts() {
     queryFn: loadBlogPosts,
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnMount: "always",
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1246,6 +1263,7 @@ export function usePolicyPage(path: string, fallbackTitle: string) {
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
     refetchInterval: LIVE_CONTENT_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,

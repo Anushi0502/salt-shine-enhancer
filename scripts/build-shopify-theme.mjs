@@ -61,7 +61,7 @@ async function writeThemeScaffold() {
 <html lang="{{ request.locale.iso_code }}">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=768,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#1e3a6e">
     <title>{{ page_title }}</title>
     <script>

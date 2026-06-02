@@ -119,6 +119,15 @@ export async function writeBooleanPreference(key: string, value: boolean): Promi
   await Preferences.set({ key, value: value ? "true" : "false" });
 }
 
+export async function readTextPreference(key: string): Promise<string | null> {
+  const { value } = await Preferences.get({ key });
+  return value ?? null;
+}
+
+export async function writeTextPreference(key: string, value: string): Promise<void> {
+  await Preferences.set({ key, value: String(value) });
+}
+
 export async function removePreference(key: string): Promise<void> {
   await Preferences.remove({ key });
 }
@@ -131,4 +140,3 @@ export async function observeAppUrlOpen(
     handler(route, event.url);
   });
 }
-

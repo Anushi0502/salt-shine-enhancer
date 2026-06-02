@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import ChatBootstrap from "@/components/integrations/ChatBootstrap";
 import MainFooter from "@/components/layout/MainFooter";
 import MainHeader from "@/components/layout/MainHeader";
+import NativeAppBottomBar from "@/components/layout/NativeAppBottomBar";
 import CartDrawer from "@/components/storefront/CartDrawer";
 import { isNativeApp } from "@/lib/mobile";
 
@@ -22,9 +23,13 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       <MainHeader />
       <ChatBootstrap />
       <CartDrawer />
-      <main id="main-content" className="relative">
+      <main
+        id="main-content"
+        className={`relative ${hideFooter ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : ""}`}
+      >
         {children || <Outlet />}
       </main>
+      <NativeAppBottomBar />
       {hideFooter ? null : <MainFooter />}
     </div>
   );

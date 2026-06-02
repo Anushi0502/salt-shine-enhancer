@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
   ChevronLeft,
@@ -40,6 +40,7 @@ const priceRangeOptions = [
 ] as const;
 
 const PAGE_SIZE = 36;
+const DEFAULT_COLLECTION_HANDLE = "all-products";
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -118,11 +119,13 @@ function formatTypeLabel(value: string): string {
 }
 
 const ShopPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { handle: routeCollectionHandle } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
-  const collectionHandle = normalizeCollectionFilter(searchParams.get("collection"));
+  const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
+  const collectionHandle = currentCollectionParam || DEFAULT_COLLECTION_HANDLE;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
   const page = asPositiveInt(searchParams.get("page"), 1);
@@ -160,6 +163,20 @@ const ShopPage = () => {
 
     setSearchParams(next, { replace: true });
   }, [routeCollectionHandle, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (location.pathname !== "/shop") {
+      return;
+    }
+
+    if (currentCollectionParam) {
+      return;
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.set("collection", DEFAULT_COLLECTION_HANDLE);
+    setSearchParams(next, { replace: true });
+  }, [currentCollectionParam, location.pathname, searchParams, setSearchParams]);
 
   const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
   const { data: collectionsPayload, isLoading: collectionsLoading, error: collectionsError, refetch: refetchCollections } = useCollections();

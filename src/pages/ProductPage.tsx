@@ -44,6 +44,7 @@ import {
 } from "@/lib/formatters";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
 import { openExternalUrl } from "@/lib/mobile";
+import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
 import {
   getProductPurchasesLast30Days,
@@ -52,8 +53,6 @@ import {
 } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
-
-const RECENTLY_VIEWED_KEY = "salt-recently-viewed-handles";
 
 function displayVariantTitle(title?: string): string {
   const normalized = (title || "").trim();
@@ -132,23 +131,7 @@ const ProductPage = () => {
       return;
     }
 
-    let existing: string[] = [];
-    const raw = window.localStorage.getItem(RECENTLY_VIEWED_KEY);
-
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as unknown;
-        if (Array.isArray(parsed)) {
-          existing = parsed.filter((value): value is string => typeof value === "string");
-        }
-      } catch {
-        existing = [];
-      }
-    }
-
-    const next = [product.handle, ...existing.filter((handle) => handle !== product.handle)].slice(0, 12);
-    window.localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
-    setRecentHandles(next);
+    setRecentHandles(rememberRecentlyViewedHandle(product.handle));
   }, [product]);
 
   useEffect(() => {

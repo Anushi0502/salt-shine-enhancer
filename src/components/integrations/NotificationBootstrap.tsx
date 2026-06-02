@@ -1,11 +1,14 @@
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { App } from "@capacitor/app";
-import { initializePushNotifications } from "@/lib/notifications";
+import { initializePushNotifications, syncWeeklyNotifications } from "@/lib/notifications";
 import { isNativeApp, MOBILE_ROUTE_EVENT, normalizeAppRoute } from "@/lib/mobile";
+import { LIVE_SHOPIFY_QUERY_PREFIXES } from "@/lib/shopify-data";
 
 const NotificationBootstrap = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isNativeApp()) {
@@ -13,6 +16,7 @@ const NotificationBootstrap = () => {
     }
 
     void initializePushNotifications();
+    void syncWeeklyNotifications();
 
     const appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
       const route = normalizeAppRoute(event.url);
@@ -35,11 +39,25 @@ const NotificationBootstrap = () => {
 
     window.addEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);
 
+    const appStateListener = App.addListener("appStateChange", (event) => {
+      if (!event.isActive) {
+        return;
+      }
+
+      void Promise.all(
+        LIVE_SHOPIFY_QUERY_PREFIXES.map((queryKey) =>
+          queryClient.refetchQueries({ queryKey: [queryKey], type: "active" }),
+        ),
+      );
+      void syncWeeklyNotifications();
+    });
+
     return () => {
       void appUrlOpenListener.then((handle) => handle.remove());
+      void appStateListener.then((handle) => handle.remove());
       window.removeEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);
     };
-  }, [navigate]);
+  }, [navigate, queryClient]);
 
   return null;
 };
