@@ -44,71 +44,76 @@ const shouldLoadVercelTelemetry = (() => {
   return false;
 })();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <WishlistProvider>
-        <CartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ScrollToTop />
-              <MetaPixelTracker />
-              <NotificationBootstrap />
-              <Routes>
-                <Route element={<SiteShell />}>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/search" element={<ShopPage />} />
-                  <Route path="/collections" element={<CollectionsPage />} />
-                  <Route path="/collections/:handle" element={<ShopPage />} />
-                  <Route path="/product/:handle" element={<ProductPage />} />
-                  <Route path="/products/:handle" element={<ProductPage />} />
-                  <Route path="/product/:handle/reviews" element={<ProductReviewsPage />} />
-                  <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/wishlist" element={<WishlistPage />} />
-                  <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/pages/about-us" element={<AboutPage />} />
-                  <Route path="/blog" element={<BlogPage />} />
-                  <Route path="/blog/:handle" element={<BlogPostPage />} />
-                  <Route path="/blogs/:blogHandle" element={<BlogPage />} />
-                  <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
-                  <Route path="/order-history" element={<OrderHistoryPage />} />
-                  <Route
-                    path="/bulk-review"
-                    element={isNativeApp() ? <Navigate to="/shop" replace /> : <BulkReviewPage />}
-                  />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/pages/contact" element={<ContactPage />} />
-                  <Route path="/customer-access" element={<Navigate to="/" replace />} />
-                  <Route path="/login" element={<Navigate to="/" replace />} />
-                  <Route path="/signup" element={<Navigate to="/" replace />} />
-                  <Route path="/register" element={<Navigate to="/" replace />} />
-                  <Route path="/policies/contact-information" element={<ContactInformationPolicyPage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                  <Route path="/refund-policy" element={<RefundPolicyPage />} />
-                  <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
-                  <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
-                  <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
-                  <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
-                  <Route path="/account/orders" element={<OrderHistoryPage />} />
-                  <Route path="/account/*" element={<ShopAuthBridgePage />} />
-                  <Route path="/customer_authentication/*" element={<ShopAuthBridgePage />} />
-                  <Route path="/services/login_with_shop/*" element={<ShopAuthBridgePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
-            {shouldLoadVercelTelemetry ? <SpeedInsights /> : null}
-            {shouldLoadVercelTelemetry ? <Analytics /> : null}
-          </TooltipProvider>
-        </CartProvider>
-      </WishlistProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <WishlistProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <ScrollToTop />
+                <MetaPixelTracker />
+                <NotificationBootstrap />
+                <Routes>
+                  <Route element={<SiteShell />}>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/search" element={<ShopPage />} />
+                    <Route path="/collections" element={<CollectionsPage />} />
+                    <Route path="/collections/:handle" element={<ShopPage />} />
+                    <Route path="/product/:handle" element={<ProductPage />} />
+                    <Route path="/products/:handle" element={<ProductPage />} />
+                    <Route path="/product/:handle/reviews" element={<ProductReviewsPage />} />
+                    <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/wishlist" element={<WishlistPage />} />
+                    <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/pages/about-us" element={<AboutPage />} />
+                    <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/blog/:handle" element={<BlogPostPage />} />
+                    <Route path="/blogs/:blogHandle" element={<BlogPage />} />
+                    <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
+                    <Route path="/order-history" element={<OrderHistoryPage />} />
+                    <Route
+                      path="/bulk-review"
+                      element={isNativeApp() ? <Navigate to="/shop" replace /> : <BulkReviewPage />}
+                    />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/pages/contact" element={<ContactPage />} />
+                    <Route path="/customer-access" element={<Navigate to="/" replace />} />
+                    <Route path="/login" element={<Navigate to="/" replace />} />
+                    <Route path="/signup" element={<Navigate to="/" replace />} />
+                    <Route path="/register" element={<Navigate to="/" replace />} />
+                    <Route
+                      path="/policies/contact-information"
+                      element={<ContactInformationPolicyPage />}
+                    />
+                    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                    <Route path="/refund-policy" element={<RefundPolicyPage />} />
+                    <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+                    <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
+                    <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
+                    <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
+                    <Route path="/account/orders" element={<OrderHistoryPage />} />
+                    <Route path="/account/*" element={<ShopAuthBridgePage />} />
+                    <Route path="/customer_authentication/*" element={<ShopAuthBridgePage />} />
+                    <Route path="/services/login_with_shop/*" element={<ShopAuthBridgePage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+              {shouldLoadVercelTelemetry ? <SpeedInsights /> : null}
+              {shouldLoadVercelTelemetry ? <Analytics /> : null}
+            </TooltipProvider>
+          </CartProvider>
+        </WishlistProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

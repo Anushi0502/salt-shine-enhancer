@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type {
   AboutPagePayload,
   BlogPost,
@@ -20,6 +21,7 @@ import {
   resolveThemeAsset,
 } from "@/lib/theme-assets";
 import { isNativeApp } from "@/lib/mobile";
+import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
 
 const runtimeContext = getRuntimeContext();
@@ -38,7 +40,6 @@ const BLOG_HANDLES = Array.from(
   ),
 );
 const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
-const LOCAL_SHOPIFY_PROXY_PATH = "/__salt_shopify";
 const PRODUCTS_DATA_PATH = "/data/products.json";
 const COLLECTIONS_DATA_PATH = "/data/collections.json";
 const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
@@ -62,6 +63,34 @@ export const LIVE_SHOPIFY_QUERY_PREFIXES = [
   "policy-page",
 ] as const;
 
+type LiveShopifyPrimeQuery = {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<unknown>;
+};
+
+export const LIVE_SHOPIFY_PRIME_QUERIES = [
+  {
+    queryKey: ["products", DATA_MODE],
+    queryFn: loadProducts,
+  },
+  {
+    queryKey: ["collections", DATA_MODE],
+    queryFn: loadCollections,
+  },
+  {
+    queryKey: ["collection-products", DATA_MODE],
+    queryFn: loadCollectionProductsMap,
+  },
+  {
+    queryKey: ["about-page", DATA_MODE, ABOUT_HANDLE],
+    queryFn: loadAboutPage,
+  },
+  {
+    queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
+    queryFn: loadBlogPosts,
+  },
+] satisfies ReadonlyArray<LiveShopifyPrimeQuery>;
+
 type CollectionProductIdsPayload = {
   generatedAt: string;
   source: string;
@@ -82,6 +111,23 @@ function normalizeBaseUrl(input: string | undefined | null): string | null {
     return `${url.protocol}//${url.host}`;
   } catch {
     return null;
+  }
+}
+
+export async function primeLiveShopifyData(queryClient: Pick<QueryClient, "fetchQuery">): Promise<void> {
+  const results = await Promise.allSettled(
+    LIVE_SHOPIFY_PRIME_QUERIES.map((query) =>
+      queryClient.fetchQuery({
+        queryKey: query.queryKey,
+        queryFn: query.queryFn,
+        staleTime: LIVE_STALE_TIME_MS,
+      }),
+    ),
+  );
+
+  const failures = results.filter((result) => result.status === "rejected");
+  if (failures.length > 0) {
+    console.warn(`Live Shopify priming finished with ${failures.length} failed request(s)`);
   }
 }
 
@@ -159,107 +205,44 @@ function isLikelyLocalRuntimeHost(hostname: string): boolean {
 
 function getLiveBlogBases(): string[] {
   if (typeof window === "undefined") {
-    const shopBase = requireShopBase();
-    return [shopBase];
+    return [requireShopBase()];
   }
 
-  const browserOrigin = window.location.origin;
-  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
-  const browserBase = normalizeBaseUrl(browserOrigin);
-  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
-  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
-  const bases: string[] = [];
-
-  const shouldUseProxy =
-    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
-
-  if (shouldUseProxy) {
-    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-  }
-
-  if (!isLocalHost && canonicalBase) {
-    bases.push(canonicalBase);
-  }
-
-  if (browserBase) {
-    bases.push(browserBase);
-  }
-
-  if (brandedBase && brandedBase !== browserBase) {
-    bases.push(brandedBase);
-  }
-
-  return Array.from(new Set(bases.filter(Boolean)));
+  return buildLiveShopifyBaseCandidates({
+    browserOrigin: window.location.origin,
+    shopBaseOrigin: SHOP_BASE_ORIGIN,
+    shopApiBase: SHOP_API_BASE,
+    native: isNativeApp(),
+    localHost: isLikelyLocalRuntimeHost(window.location.hostname),
+  });
 }
 
 function getLiveCatalogBases(): string[] {
   if (typeof window === "undefined") {
-    const shopBase = requireShopBase();
-    return [shopBase];
+    return [requireShopBase()];
   }
 
-  const browserOrigin = window.location.origin;
-  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
-  const browserBase = normalizeBaseUrl(browserOrigin);
-  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
-  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
-  const bases: string[] = [];
-
-  const shouldUseProxy =
-    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
-
-  if (shouldUseProxy) {
-    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-  }
-
-  if (!isLocalHost && canonicalBase) {
-    bases.push(canonicalBase);
-  }
-
-  if (browserBase) {
-    bases.push(browserBase);
-  }
-
-  if (brandedBase && brandedBase !== browserBase) {
-    bases.push(brandedBase);
-  }
-
-  return Array.from(new Set(bases.filter(Boolean)));
+  return buildLiveShopifyBaseCandidates({
+    browserOrigin: window.location.origin,
+    shopBaseOrigin: SHOP_BASE_ORIGIN,
+    shopApiBase: SHOP_API_BASE,
+    native: isNativeApp(),
+    localHost: isLikelyLocalRuntimeHost(window.location.hostname),
+  });
 }
 
 function getLivePolicyBases(): string[] {
   if (typeof window === "undefined") {
-    const shopBase = requireShopBase();
-    return [shopBase];
+    return [requireShopBase()];
   }
 
-  const browserOrigin = window.location.origin;
-  const isLocalHost = isLikelyLocalRuntimeHost(window.location.hostname);
-  const browserBase = normalizeBaseUrl(browserOrigin);
-  const brandedBase = normalizeBaseUrl(SHOP_BASE_ORIGIN);
-  const canonicalBase = normalizeBaseUrl(SHOP_API_BASE);
-  const bases: string[] = [];
-
-  const shouldUseProxy =
-    isLocalHost || Boolean(browserBase && canonicalBase && browserBase !== canonicalBase);
-
-  if (shouldUseProxy) {
-    bases.push(`${browserOrigin}${LOCAL_SHOPIFY_PROXY_PATH}`);
-  }
-
-  if (!isLocalHost && canonicalBase) {
-    bases.push(canonicalBase);
-  }
-
-  if (browserBase) {
-    bases.push(browserBase);
-  }
-
-  if (brandedBase && brandedBase !== browserBase) {
-    bases.push(brandedBase);
-  }
-
-  return Array.from(new Set(bases.filter(Boolean)));
+  return buildLiveShopifyBaseCandidates({
+    browserOrigin: window.location.origin,
+    shopBaseOrigin: SHOP_BASE_ORIGIN,
+    shopApiBase: SHOP_API_BASE,
+    native: isNativeApp(),
+    localHost: isLikelyLocalRuntimeHost(window.location.hostname),
+  });
 }
 
 function normalizePolicyRoute(input: string): string {
@@ -1173,6 +1156,7 @@ export function useProducts() {
     queryKey: ["products", DATA_MODE],
     queryFn: loadProducts,
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
@@ -1187,6 +1171,7 @@ export function useCollections() {
     queryKey: ["collections", DATA_MODE],
     queryFn: loadCollections,
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
@@ -1201,6 +1186,7 @@ export function useCollectionProductsMap() {
     queryKey: ["collection-products", DATA_MODE],
     queryFn: loadCollectionProductsMap,
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
@@ -1218,6 +1204,7 @@ export function useCollectionProductIds(handle: string, enabled = true) {
     queryFn: () => loadCollectionProductIds(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
@@ -1232,6 +1219,7 @@ export function useAboutPage() {
     queryKey: ["about-page", DATA_MODE, ABOUT_HANDLE],
     queryFn: loadAboutPage,
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
@@ -1261,6 +1249,7 @@ export function usePolicyPage(path: string, fallbackTitle: string) {
     queryKey: ["policy-page", DATA_MODE, path],
     queryFn: () => loadPolicyPage(path, fallbackTitle),
     staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,

@@ -20,18 +20,41 @@ const blogHandles = Array.from(
   ),
 );
 const outDir = resolve(process.cwd(), "public", "data");
+const productsPath = resolve(outDir, "products.json");
+const collectionsPath = resolve(outDir, "collections.json");
+const collectionProductsPath = resolve(outDir, "collection-products.json");
+const aboutPath = resolve(outDir, "about.json");
+const blogPostsPath = resolve(outDir, "blog-posts.json");
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-async function fetchJsonUrl(url) {
+async function fetchJsonUrl(url, { attempt = 0, maxAttempts = 5 } = {}) {
   const response = await fetch(url);
 
   if (!response.ok) {
+    if (response.status === 429 && attempt < maxAttempts - 1) {
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfterSeconds = Number(retryAfterHeader);
+      const backoffDelay =
+        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? Math.min(retryAfterSeconds * 1000, 30_000)
+          : Math.min(1000 * 2 ** attempt + Math.floor(Math.random() * 400), 30_000);
+
+      process.stdout.write(
+        `Rate limited on ${url}; retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(backoffDelay);
+      return fetchJsonUrl(url, { attempt: attempt + 1, maxAttempts });
+    }
+
     throw new Error(`Request failed (${response.status}) for ${url}`);
   }
 
   return response.json();
 }
 
-async function fetchAdminJson(path) {
+async function fetchAdminJson(path, { attempt = 0, maxAttempts = 5 } = {}) {
   if (!adminAccessToken) {
     throw new Error("Shopify Admin API token not configured");
   }
@@ -47,6 +70,20 @@ async function fetchAdminJson(path) {
   });
 
   if (!response.ok) {
+    if (response.status === 429 && attempt < maxAttempts - 1) {
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfterSeconds = Number(retryAfterHeader);
+      const delayMs =
+        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? Math.min(retryAfterSeconds * 1000, 30_000)
+          : Math.min(1500 * 2 ** attempt + Math.floor(Math.random() * 400), 30_000);
+      process.stdout.write(
+        `Rate limited on ${url}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+      return fetchAdminJson(path, { attempt: attempt + 1, maxAttempts });
+    }
+
     throw new Error(`Admin request failed (${response.status}) for ${url}`);
   }
 
@@ -390,14 +427,11 @@ async function main() {
   }
 
   await mkdir(outDir, { recursive: true });
-  await writeFile(resolve(outDir, "products.json"), JSON.stringify(productPayload));
-  await writeFile(resolve(outDir, "collections.json"), JSON.stringify(collectionPayload));
-  await writeFile(
-    resolve(outDir, "collection-products.json"),
-    JSON.stringify(collectionProductMap),
-  );
-  await writeFile(resolve(outDir, "about.json"), JSON.stringify(aboutPayload));
-  await writeFile(resolve(outDir, "blog-posts.json"), JSON.stringify(blogPayload));
+  await writeFile(productsPath, JSON.stringify(productPayload));
+  await writeFile(collectionsPath, JSON.stringify(collectionPayload));
+  await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
+  await writeFile(aboutPath, JSON.stringify(aboutPayload));
+  await writeFile(blogPostsPath, JSON.stringify(blogPayload));
 
   process.stdout.write(`Saved ${productPayload.total} products to public/data/products.json\n`);
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);

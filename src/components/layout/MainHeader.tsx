@@ -727,12 +727,6 @@ const MainHeader = () => {
                 </div>
               </div>
 
-              <div className="rounded-[1.1rem] border border-dashed border-[#c5d8fc] bg-[#f8fbff] px-4 py-3 text-left text-sm leading-6 text-[#59729f]">
-                <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">App shortcuts</p>
-                <p className="mt-1">
-                  Home, Shop, Collections, Blogs, and Support live in the bottom bar for faster app navigation.
-                </p>
-              </div>
             </div>
           ) : (
             <div className="grid w-full gap-2">

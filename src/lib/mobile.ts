@@ -2,6 +2,7 @@ import { App, type PluginListenerHandle } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
+import { SplashScreen } from "@capacitor/splash-screen";
 
 export const MOBILE_ROUTE_EVENT = "salt:navigate-route";
 
@@ -139,4 +140,16 @@ export async function observeAppUrlOpen(
     const route = normalizeAppRoute(event.url);
     handler(route, event.url);
   });
+}
+
+export async function hideNativeLaunchSplash(): Promise<void> {
+  if (!isNativeApp()) {
+    return;
+  }
+
+  try {
+    await SplashScreen.hide({ fadeOutDuration: 260 });
+  } catch {
+    // Ignore splash errors so the app can continue rendering.
+  }
 }

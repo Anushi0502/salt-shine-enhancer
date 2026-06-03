@@ -3,9 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { App } from "@capacitor/app";
 import { initializePushNotifications, syncWeeklyNotifications } from "@/lib/notifications";
-import { isNativeApp, MOBILE_ROUTE_EVENT, normalizeAppRoute } from "@/lib/mobile";
-import { LIVE_SHOPIFY_QUERY_PREFIXES } from "@/lib/shopify-data";
-
+import {
+  hideNativeLaunchSplash,
+  isNativeApp,
+  MOBILE_ROUTE_EVENT,
+  normalizeAppRoute,
+} from "@/lib/mobile";
+import { LIVE_SHOPIFY_QUERY_PREFIXES, primeLiveShopifyData } from "@/lib/shopify-data";
 const NotificationBootstrap = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -17,6 +21,9 @@ const NotificationBootstrap = () => {
 
     void initializePushNotifications();
     void syncWeeklyNotifications();
+    void primeLiveShopifyData(queryClient).finally(() => {
+      void hideNativeLaunchSplash();
+    });
 
     const appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
       const route = normalizeAppRoute(event.url);

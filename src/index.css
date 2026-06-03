@@ -2200,6 +2200,28 @@
     }
   }
 
+  @keyframes salt-loading-drift {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-4px) scale(1.015);
+    }
+  }
+
+  @keyframes salt-loading-bar {
+    0% {
+      transform: translateX(-55%);
+    }
+    50% {
+      transform: translateX(125%);
+    }
+    100% {
+      transform: translateX(-55%);
+    }
+  }
+
   @keyframes sweep {
     0% {
       transform: translateX(-60%) rotate(17deg);
