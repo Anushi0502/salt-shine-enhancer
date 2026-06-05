@@ -62,7 +62,7 @@ const NativeAppBottomBar = () => {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3"
       data-native-app-bottom-bar
     >
-      <nav className="pointer-events-auto mx-auto flex w-full max-w-[32rem] items-stretch gap-1 rounded-[1.55rem] border border-[#d6e5fb] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(235,243,255,0.97)_100%)] px-1.5 py-1.5 shadow-[0_-18px_40px_-30px_rgba(20,58,128,0.45)] backdrop-blur-xl">
+      <nav className="pointer-events-auto mx-auto flex w-full max-w-[32rem] items-stretch gap-1 rounded-[1.55rem] border border-[#ddd4c7] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,246,240,0.97)_100%)] px-1.5 py-1.5 shadow-[0_-18px_40px_-30px_rgba(17,17,17,0.22)] backdrop-blur-xl">
         {navItems.map((item) => {
           const active = isActiveNavItem(item, location.pathname);
           const Icon = item.icon;
@@ -73,8 +73,8 @@ const NativeAppBottomBar = () => {
               to={item.to}
               className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 rounded-[1.1rem] px-1 text-center transition ${
                 active
-                  ? "bg-[#e8f1ff] text-[#14418e] shadow-[inset_0_0_0_1px_rgba(145,179,237,0.9)]"
-                  : "text-[#53688f] hover:bg-[#f6f9ff] hover:text-[#15438d]"
+                  ? "bg-[#171717] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                  : "text-[#5f574d] hover:bg-[#f6f0e8] hover:text-[#d61f26]"
               }`}
               aria-current={active ? "page" : undefined}
             >

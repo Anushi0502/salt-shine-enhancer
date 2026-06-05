@@ -11,6 +11,16 @@ import {
   normalizeAppRoute,
 } from "@/lib/mobile";
 import { LIVE_SHOPIFY_QUERY_PREFIXES, primeLiveShopifyData } from "@/lib/shopify-data";
+
+async function refreshLiveShopifyData(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await primeLiveShopifyData(queryClient);
+  await Promise.all(
+    LIVE_SHOPIFY_QUERY_PREFIXES.map((queryKey) =>
+      queryClient.refetchQueries({ queryKey: [queryKey], type: "active" }),
+    ),
+  );
+}
+
 const NotificationBootstrap = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -64,15 +74,11 @@ const NotificationBootstrap = () => {
     window.addEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);
 
     const appStateListener = App.addListener("appStateChange", (event) => {
-      if (!event.isActive) {
+      if (!event.isActive || !launchCompleted) {
         return;
       }
 
-      void Promise.all(
-        LIVE_SHOPIFY_QUERY_PREFIXES.map((queryKey) =>
-          queryClient.refetchQueries({ queryKey: [queryKey], type: "active" }),
-        ),
-      );
+      void refreshLiveShopifyData(queryClient).catch(() => undefined);
       void syncWeeklyNotifications();
     });
 

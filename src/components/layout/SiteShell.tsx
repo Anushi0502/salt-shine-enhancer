@@ -10,15 +10,30 @@ import { isNativeApp } from "@/lib/mobile";
 const SiteShell = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-  const hideFooter = isNativeApp();
+  const nativeApp = isNativeApp();
+  const hideFooter = nativeApp;
 
   return (
     <div
       data-page-context={isHomePage ? "home" : "inner"}
-      className={`site-shell relative min-h-screen overflow-x-clip bg-[#eef5ff] ${isHomePage ? "is-homepage" : "is-inner-page"}`}
+      className={`site-shell relative min-h-screen overflow-x-clip ${
+        nativeApp ? "native-ajio-shell bg-[#f6f2eb]" : "bg-[#eef5ff]"
+      } ${isHomePage ? "is-homepage" : "is-inner-page"}`}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[36rem] bg-[radial-gradient(circle_at_top,rgba(255,242,191,0.42),transparent_52%),radial-gradient(circle_at_90%_20%,rgba(93,138,237,0.24),transparent_30%)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[28rem] bg-[linear-gradient(180deg,transparent,rgba(199,222,255,0.52))]" />
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 -z-10 ${
+          nativeApp
+            ? "h-[32rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.7),transparent_48%),radial-gradient(circle_at_12%_18%,rgba(214,31,38,0.08),transparent_24%),radial-gradient(circle_at_88%_20%,rgba(17,17,17,0.12),transparent_26%)]"
+            : "h-[36rem] bg-[radial-gradient(circle_at_top,rgba(255,242,191,0.42),transparent_52%),radial-gradient(circle_at_90%_20%,rgba(93,138,237,0.24),transparent_30%)]"
+        }`}
+      />
+      <div
+        className={`pointer-events-none absolute inset-x-0 bottom-0 -z-10 ${
+          nativeApp
+            ? "h-[28rem] bg-[linear-gradient(180deg,transparent,rgba(17,17,17,0.04))]"
+            : "h-[28rem] bg-[linear-gradient(180deg,transparent,rgba(199,222,255,0.52))]"
+        }`}
+      />
 
       <MainHeader />
       <ChatBootstrap />

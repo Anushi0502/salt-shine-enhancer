@@ -44,7 +44,7 @@ const CollectionCard = ({
       <article className="h-full">
         <Link
           to={collectionHref}
-          className="group relative block h-full overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
+          className="salt-story-card group relative block h-full overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
         >
           <div className="relative overflow-hidden">
             {image ? (

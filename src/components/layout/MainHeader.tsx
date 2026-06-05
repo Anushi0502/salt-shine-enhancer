@@ -49,9 +49,6 @@ function isNavItemActive(item: NavItem, pathname: string): boolean {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
-const actionButtonClassName =
-  "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bfd3f8] bg-[linear-gradient(180deg,#ffffff_0%,#eef5ff_100%)] text-[#1f4b97] shadow-[0_8px_16px_-14px_rgba(28,75,150,0.55)] transition duration-200 hover:-translate-y-[1px] hover:border-[#8eb1ef] hover:bg-[#e8f1ff] hover:text-[#143f8e] sm:h-10 sm:w-10";
-
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
 const DEFAULT_TRENDING_SEARCHES = [
   "Gifts",
@@ -110,6 +107,9 @@ const MainHeader = () => {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const nativeApp = isNativeApp();
+  const actionButtonClassName = nativeApp
+    ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/18 hover:bg-white/12 hover:text-white sm:h-10 sm:w-10"
+    : "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bfd3f8] bg-[linear-gradient(180deg,#ffffff_0%,#eef5ff_100%)] text-[#1f4b97] shadow-[0_8px_16px_-14px_rgba(28,75,150,0.55)] transition duration-200 hover:-translate-y-[1px] hover:border-[#8eb1ef] hover:bg-[#e8f1ff] hover:text-[#143f8e] sm:h-10 sm:w-10";
   const showHeaderSearch = true;
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData?.products]);
   const allCollections = useMemo(
@@ -344,16 +344,24 @@ const MainHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#c6d9ff] bg-[linear-gradient(180deg,rgba(249,252,255,0.96)_0%,rgba(239,246,255,0.96)_100%)] backdrop-blur-[10px] shadow-[0_18px_34px_-30px_rgba(20,58,128,0.55)]">
-      <div className="border-b border-[#d7e5ff] bg-[linear-gradient(90deg,rgba(234,243,255,0.85),rgba(241,247,255,0.85))]">
-        <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-6 sm:text-[0.72rem] lg:px-8">
-          <span>Free Shipping on All US Orders</span>
-          <span className="mx-3 text-[#9eb8e8]">|</span>
-          <span>30-Day Easy Returns</span>
+    <header
+      className={`sticky top-0 z-50 backdrop-blur-[10px] ${
+        nativeApp
+          ? "border-b border-white/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98)_0%,rgba(21,21,21,0.96)_100%)] shadow-[0_22px_42px_-34px_rgba(0,0,0,0.62)]"
+          : "border-b border-[#c6d9ff] bg-[linear-gradient(180deg,rgba(249,252,255,0.96)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_18px_34px_-30px_rgba(20,58,128,0.55)]"
+      }`}
+    >
+      {nativeApp ? null : (
+        <div className="border-b border-[#d7e5ff] bg-[linear-gradient(90deg,rgba(234,243,255,0.85),rgba(241,247,255,0.85))]">
+          <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-6 sm:text-[0.72rem] lg:px-8">
+            <span>Free Shipping on All US Orders</span>
+            <span className="mx-3 text-[#9eb8e8]">|</span>
+            <span>30-Day Easy Returns</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex w-full items-start justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8">
+      <div className={`flex w-full items-start justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8 ${nativeApp ? "text-white" : ""}`}>
         <Link to="/" className="shrink-0 self-start" aria-label="Go to SALT homepage">
           <BrandLogo withWordmark size="md" />
         </Link>
@@ -372,8 +380,12 @@ const MainHeader = () => {
                 to={item.to}
                 className={`rounded-full px-3 py-2 font-display text-[0.98rem] leading-none transition-colors xl:text-[1.05rem] ${
                   active
-                    ? "bg-[#e7f0ff] text-[#15428d] shadow-[inset_0_0_0_1px_rgba(157,190,241,0.7)]"
-                    : "text-[#2a3f66] hover:bg-[#edf4ff] hover:text-[#15428d]"
+                    ? nativeApp
+                      ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+                      : "bg-[#e7f0ff] text-[#15428d] shadow-[inset_0_0_0_1px_rgba(157,190,241,0.7)]"
+                    : nativeApp
+                      ? "text-white/74 hover:bg-white/8 hover:text-white"
+                      : "text-[#2a3f66] hover:bg-[#edf4ff] hover:text-[#15428d]"
                 }`}
               >
                 {item.label}
@@ -641,22 +653,36 @@ const MainHeader = () => {
       </div>
 
       {showHeaderSearch ? (
-        <div className="border-t border-[#d7e5ff] px-3 py-2 lg:hidden">
+        <div
+          className={`border-t px-3 py-2 lg:hidden ${
+            nativeApp ? "border-white/10 bg-[#121212]" : "border-[#d7e5ff] bg-transparent"
+          }`}
+        >
           <div className="w-full">
             <form onSubmit={submitSearch}>
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
+                <Search
+                  className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
+                    nativeApp ? "text-[#847b70]" : "text-[#5e78a6]"
+                  }`}
+                />
                 <input
                   type="search"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search"
-                  className="h-10 w-full rounded-full border border-[#b8cff8] bg-white pl-10 pr-24 text-sm text-[#1b2e4f] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:border-[#7ea6ea] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)]"
+                  className={`h-10 w-full rounded-full pl-10 pr-24 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)] ${
+                    nativeApp
+                      ? "border border-[#e0d7cc] bg-[#fffdf8] text-[#121212] placeholder:text-[#82796c] focus:border-[#d61f26] focus:shadow-[0_0_0_3px_rgba(214,31,38,0.12)]"
+                      : "border border-[#b8cff8] bg-white text-[#1b2e4f] focus:border-[#7ea6ea]"
+                  }`}
                   aria-label="Search products"
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full bg-[#1d4faa] px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#153f8b]"
+                  className={`absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition ${
+                    nativeApp ? "bg-[#151515] hover:bg-[#d61f26]" : "bg-[#1d4faa] hover:bg-[#153f8b]"
+                  }`}
                 >
                   Search
                 </button>
@@ -667,21 +693,21 @@ const MainHeader = () => {
       ) : null}
 
       {mobileOpen ? (
-        <div className="border-t border-[#d7e5ff] bg-[#f1f7ff] px-3 py-4 lg:hidden">
+        <div className={`border-t px-3 py-4 lg:hidden ${nativeApp ? "border-white/10 bg-[#f6f1e8]" : "border-[#d7e5ff] bg-[#f1f7ff]"}`}>
           {nativeApp ? (
             <div className="grid w-full gap-3">
-              <div className="rounded-[1.35rem] border border-[#c6d8f9] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(242,247,255,0.98))] p-3 shadow-[0_22px_42px_-32px_rgba(20,58,128,0.42)]">
-                <div className="flex items-center justify-between gap-3 border-b border-[#d6e4fb] pb-2.5">
+              <div className="rounded-[1.35rem] border border-[#ddd5c9] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] p-3 shadow-[0_22px_42px_-32px_rgba(17,17,17,0.18)]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#e6ded2] pb-2.5">
                   <div>
-                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Browse</p>
-                    <p className="mt-1 text-sm text-[#59729f]">
+                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#171717]">Browse</p>
+                    <p className="mt-1 text-sm text-[#6f6659]">
                       Wishlist, cart, order history, and recent products stay in the app drawer.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={closeMobileMenu}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#cadbf8] text-[#6a81ab] transition hover:bg-[#ecf3ff] hover:text-[#163f87]"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d9d0c5] text-[#6d655a] transition hover:bg-[#f6f0e8] hover:text-[#171717]"
                     aria-label="Close browse menu"
                   >
                     <X className="h-4 w-4" />
@@ -692,7 +718,7 @@ const MainHeader = () => {
                   <Link
                     to="/wishlist"
                     onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
                   >
                     Wishlist
                   </Link>
@@ -702,21 +728,21 @@ const MainHeader = () => {
                       closeMobileMenu();
                       openCartDrawer();
                     }}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
                   >
                     Cart ({itemCount})
                   </button>
                   <Link
                     to="/order-history"
                     onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
                   >
                     Order history
                   </Link>
                   <Link
                     to="/recently-viewed"
                     onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66] transition hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
                   >
                     Recently viewed
                   </Link>

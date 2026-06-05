@@ -36,6 +36,7 @@ import {
   formatMoney,
   isPlausibleComparePrice,
   minPrice,
+  productBenefitText,
   productImage,
   productTagList,
   sanitizeRichHtml,
@@ -43,6 +44,7 @@ import {
   stripHtml,
 } from "@/lib/formatters";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
@@ -77,12 +79,126 @@ function variantOptionTokens(title?: string): string[] {
   return parts.slice(0, 3);
 }
 
+type ProductSpecPair = {
+  label: string;
+  value: string;
+};
+
+function normalizeProductBodyText(input: string): string {
+  return input
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n");
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return values.filter((value, index) => values.findIndex((entry) => entry === value) === index);
+}
+
+function extractProductBullets(bodyHtml: string, fallback: string): string[] {
+  const bodyText = normalizeProductBodyText(bodyHtml);
+  const sentences = stripHtml(bodyHtml)
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const candidates = uniqueStrings(
+    [
+      ...bodyText
+        .split(/\n+/)
+        .map((line) => line.replace(/^[-•\u2022]+\s*/, "").trim())
+        .filter(Boolean),
+      ...sentences,
+    ]
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter((line) => line.length >= 36 && line.length <= 170)
+      .filter(
+        (line) =>
+          !/^(description|specifications?|details|notes?|features?)$/i.test(line) &&
+          !/^https?:\/\//i.test(line),
+      ),
+  );
+
+  if (candidates.length > 0) {
+    return candidates.slice(0, 3);
+  }
+
+  if (fallback) {
+    return [fallback];
+  }
+
+  return [];
+}
+
+function extractProductSpecs(bodyHtml: string, productType: string, variantCount: number): ProductSpecPair[] {
+  const lines = normalizeProductBodyText(bodyHtml)
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const specs: ProductSpecPair[] = [];
+  const seen = new Set<string>();
+
+  const addSpec = (label: string, value: string) => {
+    const normalizedLabel = label.replace(/\s+/g, " ").trim();
+    const normalizedValue = value.replace(/\s+/g, " ").trim();
+    if (!normalizedLabel || !normalizedValue) {
+      return;
+    }
+
+    const key = `${normalizedLabel.toLowerCase()}:${normalizedValue.toLowerCase()}`;
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    specs.push({ label: normalizedLabel, value: normalizedValue });
+  };
+
+  for (const line of lines) {
+    if (specs.length >= 4) {
+      break;
+    }
+
+    const match = line.match(/^([A-Za-z][A-Za-z\s/&()-]{1,45})\s*:\s*(.+)$/);
+    if (!match) {
+      continue;
+    }
+
+    const label = match[1].trim();
+    const value = match[2].trim();
+    if (/^(description|specifications?|details|notes?|features?)$/i.test(label) || value.length < 2) {
+      continue;
+    }
+
+    addSpec(label, value);
+  }
+
+  if (!specs.length && productType) {
+    addSpec("Category", productType);
+  }
+
+  if (specs.length < 4) {
+    addSpec("Options", `${variantCount} ${variantCount === 1 ? "option" : "options"}`);
+  }
+
+  if (specs.length < 4) {
+    addSpec("Format", "Live Shopify detail");
+  }
+
+  return specs.slice(0, 4);
+}
+
 const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   const { data, isLoading, error, refetch } = useProducts();
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
+  const nativeApp = isNativeApp();
 
   const products = data?.products || [];
   const product = products.find((entry) => entry.handle === handle);
@@ -240,7 +356,9 @@ const ProductPage = () => {
     product.product_type ? `${product.product_type} essential` : "Curated essential",
     ...productTagList(product).slice(0, 2),
   ];
-  const shortDescription = stripHtml(product.body_html);
+  const productSummary = productBenefitText(product, 170);
+  const detailBullets = extractProductBullets(product.body_html, productSummary);
+  const productSpecs = extractProductSpecs(product.body_html, product.product_type || "", variants.length);
   const wishlisted = isWishlisted(product.handle);
 
   const toggleWishlistState = () => {
@@ -428,6 +546,63 @@ const ProductPage = () => {
                 {isAvailable ? "In stock" : "Out of stock"}
               </p>
             </div>
+
+            {nativeApp ? (
+              <div className="mt-4 space-y-3">
+                <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.35)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Quick view</p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">What shoppers notice first</h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                      {detailBullets.length > 0 ? `${detailBullets.length} highlights` : "Live summary"}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{productSummary}</p>
+                  {detailBullets.length > 0 ? (
+                    <ul className="mt-3 space-y-2">
+                      {detailBullets.slice(0, 3).map((bullet, index) => (
+                        <li key={`${bullet}-${index}`} className="flex gap-2 text-sm leading-6 text-foreground/90">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <span className="line-clamp-3">{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </section>
+
+                <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Specifications</p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">At a glance</h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                      {productSpecs.length > 0 ? `${productSpecs.length} notes` : "Live catalog"}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {productSpecs.length > 0 ? (
+                      productSpecs.map((spec) => (
+                        <div key={`${spec.label}-${spec.value}`} className="rounded-xl border border-border/75 bg-background px-3 py-2.5">
+                          <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                            {spec.label}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-foreground">
+                            {spec.value}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-3 py-3 text-sm leading-6 text-muted-foreground sm:col-span-2">
+                        More live detail appears below in the description accordion, while the app keeps the purchase summary compact.
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : null}
 
             {variants.length > 0 ? (
               <div className="salt-section-shell mt-4 rounded-[1.2rem] border border-border/75 p-3 sm:mt-5 sm:rounded-2xl sm:p-3.5">

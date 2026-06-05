@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Heart, ShoppingBag, Sparkles, Star } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { isNativeApp } from "@/lib/mobile";
 import {
   compareAt,
   conciseTitle,
@@ -27,6 +28,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
   const { summary } = useJudgeMeProductRating(product.id);
+  const nativeApp = isNativeApp();
   const isDense = variant === "dense";
   const isShop = variant === "shop";
   const sale = savingsPercent(product);
@@ -46,7 +48,11 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
       <article className="h-full">
         <Link
           to={`/products/${product.handle}`}
-          className="group relative block h-full overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]"
+          className={`group relative block h-full overflow-hidden shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${
+            nativeApp
+              ? "border border-[#ded6ca] bg-[#ffffff]"
+              : "border border-[#d2e4ff] bg-[#eef5ff]"
+          }`}
         >
           {image ? (
             <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1.2/1.4]">
@@ -63,7 +69,13 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             </div>
           )}
 
-          <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-2 py-1.5 text-center text-white sm:px-3 sm:py-[0.6rem]">
+          <div
+            className={`absolute inset-x-0 bottom-0 px-2 py-1.5 text-center sm:px-3 sm:py-[0.6rem] ${
+              nativeApp
+                ? "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(15,15,15,0.92)_44%,rgba(15,15,15,0.98))] text-white"
+                : "bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] text-white"
+            }`}
+          >
             <h3 className="line-clamp-2 font-display text-[0.7rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem] sm:leading-[1.12]">
               {title}
             </h3>
@@ -88,7 +100,13 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   }
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] border border-[#c7dcff] bg-[#eef5ff] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 hover:border-[#9bc1ff] hover:shadow-[0_22px_48px_-32px_rgba(22,77,160,0.32)] sm:p-2">
+    <article
+      className={`group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 sm:p-2 ${
+        nativeApp
+          ? "border border-[#ded6ca] bg-[#ffffff] hover:border-[#c8beb2] hover:shadow-[0_22px_48px_-32px_rgba(17,17,17,0.16)]"
+          : "border border-[#c7dcff] bg-[#eef5ff] hover:border-[#9bc1ff] hover:shadow-[0_22px_48px_-32px_rgba(22,77,160,0.32)]"
+      }`}
+    >
       <button
         type="button"
         onClick={() => {
@@ -101,14 +119,20 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         aria-pressed={wishlisted ? "true" : "false"}
         aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-        className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/40 bg-white/90 text-[#214d95] shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition hover:border-[#90b8ff] hover:text-[#1f63d8]"
+        className={`absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
+          nativeApp
+            ? "border-[#ded6ca] bg-white/96 text-[#151515] hover:border-[#c8beb2] hover:text-[#d61f26]"
+            : "border-white/40 bg-white/90 text-[#214d95] hover:border-[#90b8ff] hover:text-[#1f63d8]"
+        }`}
       >
-        <Heart className={`h-4 w-4 ${wishlisted ? "fill-[#1f63d8]/20 text-[#1f63d8]" : ""}`} />
+        <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-[#d61f26]/16 text-[#d61f26]" : "fill-[#1f63d8]/20 text-[#1f63d8]") : ""}`} />
       </button>
 
       <Link
         to={`/products/${product.handle}`}
-        className="relative isolate block overflow-hidden rounded-[0.9rem] border border-[#bfd6ff]/70 bg-muted"
+        className={`relative isolate block overflow-hidden rounded-[0.9rem] bg-muted ${
+          nativeApp ? "border border-[#ded6ca]" : "border border-[#bfd6ff]/70"
+        }`}
       >
         {image ? (
           <div className="aspect-square w-full overflow-hidden">
@@ -127,14 +151,20 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
           </div>
         )}
 
-        <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border border-white/25 bg-[rgba(18,48,104,0.74)] px-2 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.11em] text-white">
-          <Sparkles className="h-3 w-3 text-[#ffe27a]" />
+        <div
+          className={`absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.11em] ${
+            nativeApp
+              ? "border-[#121212]/10 bg-[rgba(17,17,17,0.9)] text-white"
+              : "border-white/25 bg-[rgba(18,48,104,0.74)] text-white"
+          }`}
+        >
+          <Sparkles className={`h-3 w-3 ${nativeApp ? "text-white" : "text-[#ffe27a]"}`} />
           {badgeLabel}
         </div>
       </Link>
 
       <div className="mt-2 flex flex-1 flex-col">
-        <p className="line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] text-[#1f4f9b]">
+        <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-[#131313]" : "text-[#1f4f9b]"}`}>
           {title}
         </p>
         <p className="mt-0.5 line-clamp-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -154,7 +184,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
 
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-display text-[1.2rem] leading-none text-[#1f63d8]">{formatMoney(min)}</p>
+            <p className={`font-display text-[1.2rem] leading-none ${nativeApp ? "text-[#111111]" : "text-[#1f63d8]"}`}>{formatMoney(min)}</p>
             {compare > min ? (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 <s>{formatMoney(compare)}</s>
@@ -182,7 +212,9 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
                 setIsAddingToCart(false);
                 toast.success("Added to cart", { description: title });
               }}
-              className="salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50"
+              className={`salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50 ${
+                nativeApp ? "bg-[#151515] hover:bg-[#d61f26]" : ""
+              }`}
               disabled={isAddingToCart}
               aria-label={`Add ${title} to cart`}
             >
@@ -190,7 +222,11 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
             </button>
             <Link
               to={`/products/${product.handle}`}
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#aac8fb] bg-white text-[#1f4f9b] transition hover:border-[#7fb0ff] hover:text-[#1f63d8]"
+              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white transition ${
+                nativeApp
+                  ? "border-[#ded6ca] text-[#151515] hover:border-[#c8beb2] hover:text-[#d61f26]"
+                  : "border-[#aac8fb] text-[#1f4f9b] hover:border-[#7fb0ff] hover:text-[#1f63d8]"
+              }`}
               aria-label="View item details"
             >
               <ArrowUpRight className="h-3 w-3" />

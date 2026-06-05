@@ -21,7 +21,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         serif: ["Source Serif 4", "Georgia", "serif"],
-        display: ["Source Serif 4", "Georgia", "serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
         techno: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
