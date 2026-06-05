@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 import SiteShell from "@/components/layout/SiteShell";
+import NativeAppLaunchBanner from "@/components/layout/NativeAppLaunchBanner";
 import NotificationBootstrap from "@/components/integrations/NotificationBootstrap";
 import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
@@ -53,6 +54,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <NativeAppLaunchBanner />
               <BrowserRouter>
                 <ScrollToTop />
                 <MetaPixelTracker />

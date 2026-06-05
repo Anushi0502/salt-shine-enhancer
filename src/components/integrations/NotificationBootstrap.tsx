@@ -7,6 +7,7 @@ import {
   hideNativeLaunchSplash,
   isNativeApp,
   MOBILE_ROUTE_EVENT,
+  NATIVE_LAUNCH_READY_EVENT,
   normalizeAppRoute,
 } from "@/lib/mobile";
 import { LIVE_SHOPIFY_QUERY_PREFIXES, primeLiveShopifyData } from "@/lib/shopify-data";
@@ -19,11 +20,27 @@ const NotificationBootstrap = () => {
       return undefined;
     }
 
+    let launchCompleted = false;
+    const finishLaunch = () => {
+      if (launchCompleted) {
+        return;
+      }
+
+      launchCompleted = true;
+      window.dispatchEvent(new Event(NATIVE_LAUNCH_READY_EVENT));
+      void hideNativeLaunchSplash();
+    };
+
+    const launchTimeout = window.setTimeout(finishLaunch, 2200);
+
     void initializePushNotifications();
     void syncWeeklyNotifications();
-    void primeLiveShopifyData(queryClient).finally(() => {
-      void hideNativeLaunchSplash();
-    });
+    void primeLiveShopifyData(queryClient)
+      .catch(() => undefined)
+      .finally(() => {
+        window.clearTimeout(launchTimeout);
+        finishLaunch();
+      });
 
     const appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
       const route = normalizeAppRoute(event.url);
@@ -60,6 +77,7 @@ const NotificationBootstrap = () => {
     });
 
     return () => {
+      window.clearTimeout(launchTimeout);
       void appUrlOpenListener.then((handle) => handle.remove());
       void appStateListener.then((handle) => handle.remove());
       window.removeEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);

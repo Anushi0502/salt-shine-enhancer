@@ -49,7 +49,6 @@ const MainFooter = () => {
               <div className="mt-5 grid gap-3 text-[0.92rem] text-[#2a4f90]/84">
                 <Link to="/about" className="transition-colors hover:text-[#f2b600]">About Us</Link>
                 <Link to="/about" className="transition-colors hover:text-[#f2b600]">Our Story</Link>
-                <Link to="/blog" className="transition-colors hover:text-[#f2b600]">Blogs</Link>
                 <Link to="/contact" className="transition-colors hover:text-[#f2b600]">Get in Touch</Link>
               </div>
             </div>

@@ -80,10 +80,10 @@ const ContactPage = () => {
               Contact policy
             </a>
             <Link
-              to="/blog"
+              to="/shipping-policy"
               className="salt-outline-chip h-10 w-full justify-center px-4 py-0 text-xs sm:w-auto"
             >
-              Help guides
+              Shipping policy
             </Link>
           </div>
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpenText, Grid2x2, Headphones, House, ShoppingBag } from "lucide-react";
+import { Grid2x2, Headphones, House, ShoppingBag } from "lucide-react";
 import { isNativeApp } from "@/lib/mobile";
 
 type NavItem = {
@@ -33,16 +33,6 @@ const navItems: NavItem[] = [
     to: "/collections",
     icon: Grid2x2,
     isActive: (pathname) => pathname === "/collections" || pathname.startsWith("/collections/"),
-  },
-  {
-    label: "Blogs",
-    to: "/blog",
-    icon: BookOpenText,
-    isActive: (pathname) =>
-      pathname === "/blog" ||
-      pathname.startsWith("/blog/") ||
-      pathname === "/blogs" ||
-      pathname.startsWith("/blogs/"),
   },
   {
     label: "Support",

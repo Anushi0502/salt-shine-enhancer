@@ -2231,6 +2231,18 @@
     }
   }
 
+  @keyframes native-launch-progress {
+    0% {
+      transform: translateX(-55%);
+    }
+    50% {
+      transform: translateX(55%);
+    }
+    100% {
+      transform: translateX(-55%);
+    }
+  }
+
   .animate-crawl {
     animation: crawl 22s linear infinite;
   }
@@ -2259,5 +2271,10 @@
 
   .animate-float-slow {
     animation: float-slow 6.5s ease-in-out infinite;
+  }
+
+  .native-launch-progress {
+    animation: native-launch-progress 1.8s ease-in-out infinite;
+    transform-origin: center;
   }
 }

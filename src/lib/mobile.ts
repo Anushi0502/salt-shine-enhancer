@@ -5,6 +5,7 @@ import { Preferences } from "@capacitor/preferences";
 import { SplashScreen } from "@capacitor/splash-screen";
 
 export const MOBILE_ROUTE_EVENT = "salt:navigate-route";
+export const NATIVE_LAUNCH_READY_EVENT = "salt:native-launch-ready";
 
 function normalizeRouteTarget(input: string, fallback = "/"): string {
   const raw = String(input || "").trim();

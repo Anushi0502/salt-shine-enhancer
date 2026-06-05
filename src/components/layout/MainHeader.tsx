@@ -30,10 +30,6 @@ const primaryNav: NavItem[] = [
     to: "/collections",
   },
   {
-    label: "Blogs",
-    to: "/blog",
-  },
-  {
     label: "Support",
     to: "/contact",
   },
