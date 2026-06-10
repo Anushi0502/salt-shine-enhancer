@@ -47,6 +47,7 @@ export function getNativePlatform(): string {
 type CapacitorRuntime = {
   isNativePlatform: () => boolean;
   getPlatform: () => string;
+  Plugins?: Record<string, unknown>;
 };
 
 function getCapacitorRuntime(): CapacitorRuntime | null {
@@ -60,24 +61,14 @@ function getCapacitorRuntime(): CapacitorRuntime | null {
     }).Capacitor ?? null;
 }
 
-async function getBrowserPlugin() {
-  const { Browser } = await import(/* @vite-ignore */ "@capacitor/browser");
-  return Browser;
-}
+function getCapacitorPlugin<T = unknown>(name: string): T | null {
+  const runtime = getCapacitorRuntime();
+  const plugins = runtime?.Plugins;
+  if (!plugins) {
+    return null;
+  }
 
-async function getPreferencesPlugin() {
-  const { Preferences } = await import(/* @vite-ignore */ "@capacitor/preferences");
-  return Preferences;
-}
-
-async function getAppPlugin() {
-  const { App } = await import(/* @vite-ignore */ "@capacitor/app");
-  return App;
-}
-
-async function getSplashScreenPlugin() {
-  const { SplashScreen } = await import(/* @vite-ignore */ "@capacitor/splash-screen");
-  return SplashScreen;
+  return (plugins[name] as T | undefined) ?? null;
 }
 
 export function normalizeAppRoute(input: string, fallback = "/"): string {
@@ -126,8 +117,15 @@ export async function openExternalUrl(url: string): Promise<void> {
   }
 
   if (isNativeApp()) {
-    const Browser = await getBrowserPlugin();
-    await Browser.open({ url: target });
+    const Browser = getCapacitorPlugin<{ open: (options: { url: string }) => Promise<void> | void }>(
+      "Browser",
+    );
+    if (Browser) {
+      await Browser.open({ url: target });
+      return;
+    }
+
+    window.location.assign(target);
     return;
   }
 
@@ -137,7 +135,28 @@ export async function openExternalUrl(url: string): Promise<void> {
 }
 
 export async function readBooleanPreference(key: string, fallback = false): Promise<boolean> {
-  const Preferences = await getPreferencesPlugin();
+  const Preferences = getCapacitorPlugin<{
+    get: (options: { key: string }) => Promise<{ value: string | null }> | { value: string | null };
+  }>("Preferences");
+
+  if (!Preferences) {
+    const storageValue = window.localStorage.getItem(key);
+    if (storageValue == null) {
+      return fallback;
+    }
+
+    const normalized = storageValue.trim().toLowerCase();
+    if (["true", "1", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "off"].includes(normalized)) {
+      return false;
+    }
+
+    return fallback;
+  }
+
   const { value } = await Preferences.get({ key });
   if (value == null) {
     return fallback;
@@ -156,30 +175,73 @@ export async function readBooleanPreference(key: string, fallback = false): Prom
 }
 
 export async function writeBooleanPreference(key: string, value: boolean): Promise<void> {
-  const Preferences = await getPreferencesPlugin();
+  const Preferences = getCapacitorPlugin<{
+    set: (options: { key: string; value: string }) => Promise<void> | void;
+  }>("Preferences");
+
+  if (!Preferences) {
+    window.localStorage.setItem(key, value ? "true" : "false");
+    return;
+  }
+
   await Preferences.set({ key, value: value ? "true" : "false" });
 }
 
 export async function readTextPreference(key: string): Promise<string | null> {
-  const Preferences = await getPreferencesPlugin();
+  const Preferences = getCapacitorPlugin<{
+    get: (options: { key: string }) => Promise<{ value: string | null }> | { value: string | null };
+  }>("Preferences");
+
+  if (!Preferences) {
+    return window.localStorage.getItem(key);
+  }
+
   const { value } = await Preferences.get({ key });
   return value ?? null;
 }
 
 export async function writeTextPreference(key: string, value: string): Promise<void> {
-  const Preferences = await getPreferencesPlugin();
+  const Preferences = getCapacitorPlugin<{
+    set: (options: { key: string; value: string }) => Promise<void> | void;
+  }>("Preferences");
+
+  if (!Preferences) {
+    window.localStorage.setItem(key, String(value));
+    return;
+  }
+
   await Preferences.set({ key, value: String(value) });
 }
 
 export async function removePreference(key: string): Promise<void> {
-  const Preferences = await getPreferencesPlugin();
+  const Preferences = getCapacitorPlugin<{
+    remove: (options: { key: string }) => Promise<void> | void;
+  }>("Preferences");
+
+  if (!Preferences) {
+    window.localStorage.removeItem(key);
+    return;
+  }
+
   await Preferences.remove({ key });
 }
 
 export async function observeAppUrlOpen(
   handler: (route: string, url: string) => void,
 ): Promise<PluginListenerHandle> {
-  const App = await getAppPlugin();
+  const App = getCapacitorPlugin<{
+    addListener: (
+      eventName: "appUrlOpen",
+      callback: (event: { url: string }) => void,
+    ) => Promise<PluginListenerHandle> | PluginListenerHandle;
+  }>("App");
+
+  if (!App) {
+    return {
+      remove: () => undefined,
+    };
+  }
+
   return App.addListener("appUrlOpen", (event) => {
     const route = normalizeAppRoute(event.url);
     handler(route, event.url);
@@ -192,8 +254,10 @@ export async function hideNativeLaunchSplash(): Promise<void> {
   }
 
   try {
-    const SplashScreen = await getSplashScreenPlugin();
-    await SplashScreen.hide({ fadeOutDuration: 260 });
+    const SplashScreen = getCapacitorPlugin<{
+      hide: (options: { fadeOutDuration: number }) => Promise<void> | void;
+    }>("SplashScreen");
+    await SplashScreen?.hide({ fadeOutDuration: 260 });
   } catch {
     // Ignore splash errors so the app can continue rendering.
   }

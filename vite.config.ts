@@ -58,6 +58,12 @@ export default defineConfig(({ mode }) => {
         "react-dom/client",
         "react-router-dom",
         "@tanstack/react-query",
+        "lucide-react",
+        "@radix-ui/react-dialog",
+        "class-variance-authority",
+        "clsx",
+        "tailwind-merge",
+        "framer-motion",
       ],
     },
     server: {
