@@ -1,0 +1,16 @@
+import { getReactDomRuntime } from "./react-runtime";
+
+const ReactDOM = getReactDomRuntime();
+
+export default ReactDOM;
+
+export const createPortal = ReactDOM.createPortal;
+export const findDOMNode = ReactDOM.findDOMNode;
+export const flushSync = ReactDOM.flushSync;
+export const hydrate = ReactDOM.hydrate;
+export const hydrateRoot = ReactDOM.hydrateRoot;
+export const render = ReactDOM.render;
+export const unmountComponentAtNode = ReactDOM.unmountComponentAtNode;
+export const unstable_batchedUpdates = ReactDOM.unstable_batchedUpdates;
+export const unstable_renderSubtreeIntoContainer = ReactDOM.unstable_renderSubtreeIntoContainer;
+export const version = ReactDOM.version;

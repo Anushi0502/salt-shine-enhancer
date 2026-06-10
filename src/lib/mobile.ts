@@ -1,8 +1,6 @@
-import { App, type PluginListenerHandle } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
-import { Preferences } from "@capacitor/preferences";
-import { SplashScreen } from "@capacitor/splash-screen";
+type PluginListenerHandle = {
+  remove: () => Promise<void> | void;
+};
 
 export const MOBILE_ROUTE_EVENT = "salt:navigate-route";
 export const NATIVE_LAUNCH_READY_EVENT = "salt:native-launch-ready";
@@ -37,11 +35,49 @@ function normalizeRouteTarget(input: string, fallback = "/"): string {
 }
 
 export function isNativeApp(): boolean {
-  return Capacitor.isNativePlatform();
+  const runtime = getCapacitorRuntime();
+  return runtime ? runtime.isNativePlatform() : false;
 }
 
 export function getNativePlatform(): string {
-  return Capacitor.getPlatform();
+  const runtime = getCapacitorRuntime();
+  return runtime ? runtime.getPlatform() : "web";
+}
+
+type CapacitorRuntime = {
+  isNativePlatform: () => boolean;
+  getPlatform: () => string;
+};
+
+function getCapacitorRuntime(): CapacitorRuntime | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (window as Window &
+    typeof globalThis & {
+      Capacitor?: CapacitorRuntime;
+    }).Capacitor ?? null;
+}
+
+async function getBrowserPlugin() {
+  const { Browser } = await import(/* @vite-ignore */ "@capacitor/browser");
+  return Browser;
+}
+
+async function getPreferencesPlugin() {
+  const { Preferences } = await import(/* @vite-ignore */ "@capacitor/preferences");
+  return Preferences;
+}
+
+async function getAppPlugin() {
+  const { App } = await import(/* @vite-ignore */ "@capacitor/app");
+  return App;
+}
+
+async function getSplashScreenPlugin() {
+  const { SplashScreen } = await import(/* @vite-ignore */ "@capacitor/splash-screen");
+  return SplashScreen;
 }
 
 export function normalizeAppRoute(input: string, fallback = "/"): string {
@@ -90,6 +126,7 @@ export async function openExternalUrl(url: string): Promise<void> {
   }
 
   if (isNativeApp()) {
+    const Browser = await getBrowserPlugin();
     await Browser.open({ url: target });
     return;
   }
@@ -100,6 +137,7 @@ export async function openExternalUrl(url: string): Promise<void> {
 }
 
 export async function readBooleanPreference(key: string, fallback = false): Promise<boolean> {
+  const Preferences = await getPreferencesPlugin();
   const { value } = await Preferences.get({ key });
   if (value == null) {
     return fallback;
@@ -118,25 +156,30 @@ export async function readBooleanPreference(key: string, fallback = false): Prom
 }
 
 export async function writeBooleanPreference(key: string, value: boolean): Promise<void> {
+  const Preferences = await getPreferencesPlugin();
   await Preferences.set({ key, value: value ? "true" : "false" });
 }
 
 export async function readTextPreference(key: string): Promise<string | null> {
+  const Preferences = await getPreferencesPlugin();
   const { value } = await Preferences.get({ key });
   return value ?? null;
 }
 
 export async function writeTextPreference(key: string, value: string): Promise<void> {
+  const Preferences = await getPreferencesPlugin();
   await Preferences.set({ key, value: String(value) });
 }
 
 export async function removePreference(key: string): Promise<void> {
+  const Preferences = await getPreferencesPlugin();
   await Preferences.remove({ key });
 }
 
 export async function observeAppUrlOpen(
   handler: (route: string, url: string) => void,
 ): Promise<PluginListenerHandle> {
+  const App = await getAppPlugin();
   return App.addListener("appUrlOpen", (event) => {
     const route = normalizeAppRoute(event.url);
     handler(route, event.url);
@@ -149,6 +192,7 @@ export async function hideNativeLaunchSplash(): Promise<void> {
   }
 
   try {
+    const SplashScreen = await getSplashScreenPlugin();
     await SplashScreen.hide({ fadeOutDuration: 260 });
   } catch {
     // Ignore splash errors so the app can continue rendering.

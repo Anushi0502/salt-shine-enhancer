@@ -52,23 +52,23 @@ async function loadBrowserScript(src: string): Promise<void> {
 }
 
 void (async () => {
+  console.log("SALT boot: loading React UMD");
   await loadBrowserScript("/node_modules/react/umd/react.development.js");
+  console.log("SALT boot: loading ReactDOM UMD");
   await loadBrowserScript("/node_modules/react-dom/umd/react-dom.development.js");
+  console.log("SALT boot: importing App module");
+  const { default: App } = await import("./App");
+  console.log("SALT boot: App module loaded");
   const browserWindow = window as Window &
     typeof globalThis & {
       React: typeof import("react");
       ReactDOM: typeof import("react-dom");
     };
-  const React = browserWindow.React;
-  const ReactDOM = browserWindow.ReactDOM;
-  const { default: App } = await import("./App.tsx");
-  const element = React.createElement(App);
-  if (typeof ReactDOM.createRoot === "function") {
-    ReactDOM.createRoot(mountTarget).render(element);
-    return;
-  }
-
-  ReactDOM.render(element, mountTarget);
+  console.log("SALT boot: creating root");
+  const root = browserWindow.ReactDOM.createRoot(mountTarget);
+  console.log("SALT boot: rendering App");
+  root.render(browserWindow.React.createElement(App));
+  console.log("SALT boot: render call complete");
 })().catch((error) => {
   console.error("SALT app failed to boot", error);
 });
