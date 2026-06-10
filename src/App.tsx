@@ -1,60 +1,65 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Suspense, lazy, startTransition, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { SpeedInsights } from "@vercel/speed-insights/react";
-import { Analytics } from "@vercel/analytics/react";
-import SiteShell from "@/components/layout/SiteShell";
-import NativeAppLaunchBanner from "@/components/layout/NativeAppLaunchBanner";
-import NotificationBootstrap from "@/components/integrations/NotificationBootstrap";
 import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
 import { ThemeProvider } from "@/lib/theme";
 import { WishlistProvider } from "@/lib/wishlist";
-import HomePage from "@/pages/HomePage";
-import ShopPage from "@/pages/ShopPage";
-import CollectionsPage from "@/pages/CollectionsPage";
-import ProductPage from "@/pages/ProductPage";
-import ProductReviewsPage from "@/pages/ProductReviewsPage";
-import CartPage from "@/pages/CartPage";
-import WishlistPage from "@/pages/WishlistPage";
-import RecentlyViewedPage from "@/pages/RecentlyViewedPage";
-import AboutPage from "@/pages/AboutPage";
-import ContactPage from "@/pages/ContactPage";
-import BlogPage from "@/pages/BlogPage";
-import BlogPostPage from "@/pages/BlogPostPage";
-import OrderHistoryPage from "@/pages/OrderHistoryPage";
-import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
-import RefundPolicyPage from "@/pages/RefundPolicyPage";
-import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
-import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
-import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
-import BulkReviewPage from "@/pages/BulkReviewPage";
-import ScrollToTop from "@/components/layout/ScrollToTop";
-import MetaPixelTracker from "@/components/integrations/MetaPixelTracker";
-import NotFound from "./pages/NotFound";
 
+const SiteShell = lazy(() => import("@/components/layout/SiteShell"));
 const queryClient = new QueryClient();
-const shouldLoadVercelTelemetry = (() => {
-  const flag = String(import.meta.env.VITE_ENABLE_VERCEL_ANALYTICS || "").trim().toLowerCase();
-  if (flag === "true") {
-    return true;
-  }
+const AppBootSplash = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-[#eef5ff]">
+    <div className="w-[min(28rem,86vw)] rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-[0_24px_70px_-36px_rgba(26,77,154,0.5)]">
+      <div className="flex items-center gap-4">
+        <img
+          src="/brand/salt-logo.png"
+          alt="SALT"
+          className="h-14 w-14 rounded-[1.1rem] object-cover shadow-[0_12px_28px_-18px_rgba(26,77,154,0.55)]"
+        />
+        <div className="min-w-0">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-[#1f4b97]">
+            Loading storefront
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Preparing the Shopify storefront and order account experience.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
-  return false;
-})();
+const ScrollToTop = lazy(() => import("@/components/layout/ScrollToTop"));
+const MetaPixelTracker = lazy(() => import("@/components/integrations/MetaPixelTracker"));
+const NotificationBootstrap = lazy(() => import("@/components/integrations/NotificationBootstrap"));
+const HomePage = lazy(() => import("@/pages/HomePage"));
+const ShopPage = lazy(() => import("@/pages/ShopPage"));
+const CollectionsPage = lazy(() => import("@/pages/CollectionsPage"));
+const ProductPage = lazy(() => import("@/pages/ProductPage"));
+const ProductReviewsPage = lazy(() => import("@/pages/ProductReviewsPage"));
+const CartPage = lazy(() => import("@/pages/CartPage"));
+const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
+const RecentlyViewedPage = lazy(() => import("@/pages/RecentlyViewedPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const OrderHistoryPage = lazy(() => import("@/pages/OrderHistoryPage"));
+const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
+const RefundPolicyPage = lazy(() => import("@/pages/RefundPolicyPage"));
+const ShippingPolicyPage = lazy(() => import("@/pages/ShippingPolicyPage"));
+const ContactInformationPolicyPage = lazy(() => import("@/pages/ContactInformationPolicyPage"));
+const ShopAuthBridgePage = lazy(() => import("@/pages/ShopAuthBridgePage"));
+const BulkReviewPage = lazy(() => import("@/pages/BulkReviewPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const App = () => {
-  return (
+const AppShell = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <WishlistProvider>
           <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <NativeAppLaunchBanner />
+            <Suspense fallback={<AppBootSplash />}>
               <BrowserRouter>
                 <ScrollToTop />
                 <MetaPixelTracker />
@@ -110,14 +115,31 @@ const App = () => {
                   </Route>
                 </Routes>
               </BrowserRouter>
-              {shouldLoadVercelTelemetry ? <SpeedInsights /> : null}
-              {shouldLoadVercelTelemetry ? <Analytics /> : null}
-            </TooltipProvider>
+            </Suspense>
           </CartProvider>
         </WishlistProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  );
+);
+
+const App = () => {
+  const [isShellReady, setIsShellReady] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      startTransition(() => {
+        setIsShellReady(true);
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  if (!isShellReady) {
+    return <AppBootSplash />;
+  }
+
+  return <AppShell />;
 };
 
 export default App;

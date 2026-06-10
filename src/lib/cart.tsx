@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { getBrowserStorage } from "@/lib/browser-storage";
 import { trackMetaPixelAddToCart } from "@/lib/meta-pixel";
 import { getRuntimeContext } from "@/lib/theme-assets";
 
@@ -182,11 +183,8 @@ function sanitizeCartItems(items: CartItem[]): CartItem[] {
 }
 
 function readStoredCart(): CartItem[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+  const storage = getBrowserStorage();
+  const raw = storage?.getItem(CART_STORAGE_KEY);
 
   if (!raw) {
     return [];
@@ -257,7 +255,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
-    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    getBrowserStorage()?.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
   const value = useMemo<CartContextValue>(() => {

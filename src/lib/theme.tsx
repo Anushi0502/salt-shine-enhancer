@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { getBrowserStorage } from "@/lib/browser-storage";
 
 type Theme = "light" | "dark";
 
@@ -20,11 +21,8 @@ const THEME_STORAGE_KEY = "salt-ui-theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function resolveInitialTheme(): Theme {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+  const storage = getBrowserStorage();
+  const stored = storage?.getItem(THEME_STORAGE_KEY);
 
   if (stored === "light" || stored === "dark") {
     return stored;
@@ -50,7 +48,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     applyTheme(theme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    getBrowserStorage()?.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   const value = useMemo<ThemeContextValue>(

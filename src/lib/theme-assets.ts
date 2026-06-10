@@ -89,7 +89,7 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     return {};
   }
 
-  const root = document.getElementById("salt-app-root");
+  const root = document.getElementById("salt-app-root") || document.getElementById("root");
   if (!root) {
     return {};
   }

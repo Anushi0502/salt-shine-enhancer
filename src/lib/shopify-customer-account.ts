@@ -492,7 +492,11 @@ function getStorage(): Storage | null {
     return null;
   }
 
-  return window.localStorage;
+  try {
+    return typeof window.localStorage === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 function persistAuthRequest(value: ShopifyCustomerAccountAuthRequest): void {

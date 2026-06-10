@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { getBrowserStorage } from "@/lib/browser-storage";
 import { minPrice, productImage } from "@/lib/formatters";
 import type { ShopifyProduct } from "@/types/shopify";
 
@@ -63,11 +64,8 @@ function sanitizeWishlistItems(items: WishlistItem[]): WishlistItem[] {
 }
 
 function readStoredWishlist(): WishlistItem[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WISHLIST_STORAGE_KEY);
+  const storage = getBrowserStorage();
+  const raw = storage?.getItem(WISHLIST_STORAGE_KEY);
   if (!raw) {
     return [];
   }
@@ -101,11 +99,12 @@ export function WishlistProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<WishlistItem[]>(readStoredWishlist);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const storage = getBrowserStorage();
+    if (!storage) {
       return;
     }
 
-    window.localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
+    storage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
   const value = useMemo<WishlistContextValue>(() => ({

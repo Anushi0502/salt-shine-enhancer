@@ -5,6 +5,7 @@ import {
   isValidShopifyVariantId,
   type CartItem,
 } from "@/lib/cart";
+import { getBrowserStorage } from "@/lib/browser-storage";
 
 export type CustomerOrderHistoryItem = {
   id: number;
@@ -138,11 +139,8 @@ function sanitizeOrderHistoryEntries(input: unknown): DeviceOrderHistoryEntry[] 
 }
 
 function readOrderHistoryFromStorage(): DeviceOrderHistoryEntry[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(ORDER_HISTORY_STORAGE_KEY);
+  const storage = getBrowserStorage();
+  const raw = storage?.getItem(ORDER_HISTORY_STORAGE_KEY);
   if (!raw) {
     return [];
   }
@@ -156,12 +154,13 @@ function readOrderHistoryFromStorage(): DeviceOrderHistoryEntry[] {
 }
 
 function writeOrderHistoryToStorage(entries: DeviceOrderHistoryEntry[]): void {
-  if (typeof window === "undefined") {
+  const storage = getBrowserStorage();
+  if (!storage) {
     return;
   }
 
   const normalized = sanitizeOrderHistoryEntries(entries);
-  window.localStorage.setItem(ORDER_HISTORY_STORAGE_KEY, JSON.stringify(normalized));
+  storage.setItem(ORDER_HISTORY_STORAGE_KEY, JSON.stringify(normalized));
   window.dispatchEvent(new CustomEvent(ORDER_HISTORY_EVENT));
 }
 

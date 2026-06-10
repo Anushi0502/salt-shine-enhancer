@@ -1,4 +1,5 @@
 import type { ShopifyProduct } from "@/types/shopify";
+import { getBrowserStorage } from "@/lib/browser-storage";
 
 export const RECENTLY_VIEWED_STORAGE_KEY = "salt-recently-viewed-handles";
 export const RECENTLY_VIEWED_UPDATED_EVENT = "salt:recently-viewed-updated";
@@ -27,11 +28,8 @@ function sanitizeHandles(input: unknown): string[] {
 }
 
 export function readRecentlyViewedHandles(): string[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY);
+  const storage = getBrowserStorage();
+  const raw = storage?.getItem(RECENTLY_VIEWED_STORAGE_KEY);
   if (!raw) {
     return [];
   }
@@ -44,7 +42,8 @@ export function readRecentlyViewedHandles(): string[] {
 }
 
 export function rememberRecentlyViewedHandle(handle: string, limit = RECENTLY_VIEWED_LIMIT): string[] {
-  if (typeof window === "undefined") {
+  const storage = getBrowserStorage();
+  if (!storage) {
     return [];
   }
 
@@ -56,7 +55,7 @@ export function rememberRecentlyViewedHandle(handle: string, limit = RECENTLY_VI
   const existing = readRecentlyViewedHandles().filter((entry) => entry !== normalized);
   const next = [normalized, ...existing].slice(0, Math.max(1, Math.floor(limit || RECENTLY_VIEWED_LIMIT)));
 
-  window.localStorage.setItem(RECENTLY_VIEWED_STORAGE_KEY, JSON.stringify(next));
+  storage.setItem(RECENTLY_VIEWED_STORAGE_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(RECENTLY_VIEWED_UPDATED_EVENT));
   return next;
 }
@@ -71,4 +70,3 @@ export function readRecentlyViewedProducts(
     .map((handle) => byHandle.get(normalizeHandle(handle)))
     .filter((product): product is ShopifyProduct => Boolean(product));
 }
-

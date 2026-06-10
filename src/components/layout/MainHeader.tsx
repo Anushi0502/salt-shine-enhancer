@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronRight, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { filterProducts } from "@/lib/catalog";
+import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { isNativeApp } from "@/lib/mobile";
@@ -264,12 +265,9 @@ const MainHeader = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     try {
-      const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+      const storage = getBrowserStorage();
+      const raw = storage?.getItem(RECENT_SEARCHES_KEY);
       if (!raw) {
         return;
       }
@@ -311,13 +309,14 @@ const MainHeader = () => {
   };
 
   const rememberSearchQuery = (query: string) => {
-    if (!query || typeof window === "undefined") {
+    const storage = getBrowserStorage();
+    if (!query || !storage) {
       return;
     }
 
     const next = [query, ...recentSearches.filter((entry) => entry.toLowerCase() !== query.toLowerCase())].slice(0, 6);
     setRecentSearches(next);
-    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+    storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
   };
 
   const applySearchQuery = (value: string) => {

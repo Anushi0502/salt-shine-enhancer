@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { App } from "@capacitor/app";
-import { initializePushNotifications, syncWeeklyNotifications } from "@/lib/notifications";
 import {
   hideNativeLaunchSplash,
   isNativeApp,
@@ -10,9 +8,10 @@ import {
   NATIVE_LAUNCH_READY_EVENT,
   normalizeAppRoute,
 } from "@/lib/mobile";
-import { LIVE_SHOPIFY_QUERY_PREFIXES, primeLiveShopifyData } from "@/lib/shopify-data";
 
 async function refreshLiveShopifyData(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  const { LIVE_SHOPIFY_QUERY_PREFIXES, primeLiveShopifyData } = await import("@/lib/shopify-data");
+
   await primeLiveShopifyData(queryClient);
   await Promise.all(
     LIVE_SHOPIFY_QUERY_PREFIXES.map((queryKey) =>
@@ -30,9 +29,10 @@ const NotificationBootstrap = () => {
       return undefined;
     }
 
+    let cancelled = false;
     let launchCompleted = false;
     const finishLaunch = () => {
-      if (launchCompleted) {
+      if (cancelled || launchCompleted) {
         return;
       }
 
@@ -42,26 +42,13 @@ const NotificationBootstrap = () => {
     };
 
     const launchTimeout = window.setTimeout(finishLaunch, 2200);
-
-    void initializePushNotifications();
-    void syncWeeklyNotifications();
-    void primeLiveShopifyData(queryClient)
-      .catch(() => undefined)
-      .finally(() => {
-        window.clearTimeout(launchTimeout);
-        finishLaunch();
-      });
-
-    const appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
-      const route = normalizeAppRoute(event.url);
-      if (!route) {
+    let appUrlOpenListener: Promise<{ remove: () => Promise<void> | void }> | null = null;
+    let appStateListener: Promise<{ remove: () => Promise<void> | void }> | null = null;
+    const onRouteEvent = (event: Event) => {
+      if (cancelled) {
         return;
       }
 
-      navigate(route, { replace: true });
-    });
-
-    const onRouteEvent = (event: Event) => {
       const customEvent = event as CustomEvent<string>;
       const route = normalizeAppRoute(customEvent.detail || "/");
       if (!route) {
@@ -73,19 +60,54 @@ const NotificationBootstrap = () => {
 
     window.addEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);
 
-    const appStateListener = App.addListener("appStateChange", (event) => {
-      if (!event.isActive || !launchCompleted) {
+    void (async () => {
+      const [
+        { App },
+        { initializePushNotifications, syncWeeklyNotifications },
+        { primeLiveShopifyData },
+      ] = await Promise.all([
+        import("@capacitor/app"),
+        import("@/lib/notifications"),
+        import("@/lib/shopify-data"),
+      ]);
+
+      if (cancelled) {
         return;
       }
 
-      void refreshLiveShopifyData(queryClient).catch(() => undefined);
+      void initializePushNotifications();
       void syncWeeklyNotifications();
-    });
+      void primeLiveShopifyData(queryClient)
+        .catch(() => undefined)
+        .finally(() => {
+          window.clearTimeout(launchTimeout);
+          finishLaunch();
+        });
+
+      appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
+        const route = normalizeAppRoute(event.url);
+        if (!route) {
+          return;
+        }
+
+        navigate(route, { replace: true });
+      });
+
+      appStateListener = App.addListener("appStateChange", (event) => {
+        if (!event.isActive || !launchCompleted) {
+          return;
+        }
+
+        void refreshLiveShopifyData(queryClient).catch(() => undefined);
+        void syncWeeklyNotifications();
+      });
+    })().catch(() => undefined);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(launchTimeout);
-      void appUrlOpenListener.then((handle) => handle.remove());
-      void appStateListener.then((handle) => handle.remove());
+      void appUrlOpenListener?.then((handle) => handle.remove());
+      void appStateListener?.then((handle) => handle.remove());
       window.removeEventListener(MOBILE_ROUTE_EVENT, onRouteEvent as EventListener);
     };
   }, [navigate, queryClient]);
