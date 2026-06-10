@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/salt_navy</item>
+        <item name="colorOnPrimary">@color/salt_surface</item>
+        <item name="colorPrimaryContainer">@color/salt_ink</item>
+        <item name="colorOnPrimaryContainer">@color/salt_surface</item>
+        <item name="colorSecondary">@color/salt_teal</item>
+        <item name="colorOnSecondary">@color/salt_surface</item>
+        <item name="colorSecondaryContainer">@color/salt_teal</item>
+        <item name="colorOnSecondaryContainer">@color/salt_surface</item>
+        <item name="colorTertiary">@color/salt_gold</item>
+        <item name="colorOnTertiary">@color/salt_ink</item>
+        <item name="colorSurface">@color/salt_surface</item>
+        <item name="colorOnSurface">@color/salt_ink</item>
+        <item name="colorSurfaceVariant">@color/salt_surface_alt</item>
+        <item name="colorOnSurfaceVariant">@color/salt_muted</item>
+        <item name="colorOutline">@color/salt_outline</item>
+        <item name="android:windowBackground">@drawable/bg_shell_canvas</item>
+        <item name="android:statusBarColor">@color/salt_surface_alt</item>
+        <item name="android:navigationBarColor">@color/salt_surface_alt</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="AppTheme" />
+
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/salt_surface_alt</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
+</resources>

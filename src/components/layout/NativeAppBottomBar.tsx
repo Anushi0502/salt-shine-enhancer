@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Grid2x2, Headphones, House, ShoppingBag } from "lucide-react";
+import { ClipboardList, Grid2x2, Headphones, House, ShoppingBag } from "lucide-react";
 import { isNativeApp } from "@/lib/mobile";
 
 type NavItem = {
@@ -33,6 +33,12 @@ const navItems: NavItem[] = [
     to: "/collections",
     icon: Grid2x2,
     isActive: (pathname) => pathname === "/collections" || pathname.startsWith("/collections/"),
+  },
+  {
+    label: "Orders",
+    to: "/account/orders",
+    icon: ClipboardList,
+    isActive: (pathname) => pathname.startsWith("/account/orders") || pathname === "/order-history",
   },
   {
     label: "Support",
@@ -79,7 +85,7 @@ const NativeAppBottomBar = () => {
               aria-current={active ? "page" : undefined}
             >
               <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : "stroke-[2.1]"}`} />
-              <span className="text-[0.6rem] font-semibold tracking-[0.04em] min-[390px]:text-[0.64rem]">
+              <span className="text-[0.58rem] font-semibold tracking-[0.04em] min-[390px]:text-[0.62rem]">
                 {item.label}
               </span>
             </Link>

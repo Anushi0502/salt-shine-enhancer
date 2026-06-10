@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="salt_ink">#101828</color>
+    <color name="salt_navy">#0F2740</color>
+    <color name="salt_teal">#116B67</color>
+    <color name="salt_gold">#D97706</color>
+    <color name="salt_coralline">#EE6A5A</color>
+    <color name="salt_sand">#EEF2F6</color>
+    <color name="salt_surface">#FFFFFF</color>
+    <color name="salt_surface_alt">#F5F7FB</color>
+    <color name="salt_outline">#D7DFE8</color>
+    <color name="salt_muted">#667085</color>
+    <color name="salt_success">#1D8F6E</color>
+    <color name="salt_error">#C4422E</color>
+    <color name="salt_chip">#EEF3F8</color>
+    <color name="salt_chip_selected">#1D4ED8</color>
+    <color name="colorPrimary">#0F2740</color>
+    <color name="colorPrimaryDark">#101828</color>
+    <color name="colorAccent">#D97706</color>
+</resources>

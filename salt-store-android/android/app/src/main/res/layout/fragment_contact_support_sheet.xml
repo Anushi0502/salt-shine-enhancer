@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="20dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/salt_surface"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/salt_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contact support"
+                android:textColor="@color/salt_ink"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="3dp"
+                android:text="Use the contact page or official social channels from inside the app."
+                android:textColor="@color/salt_muted"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="@color/salt_surface"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/salt_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/contact_support_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open contact details"
+                app:backgroundTint="@color/salt_navy"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_menu_call"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconTint="@color/salt_surface"
+                android:textColor="@color/salt_surface" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/contact_support_instagram"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Instagram"
+                app:backgroundTint="@color/salt_surface"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_menu_share"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
+                android:textColor="@color/salt_ink" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/contact_support_facebook"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Facebook"
+                app:backgroundTint="@color/salt_surface"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_menu_share"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
+                android:textColor="@color/salt_ink" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/contact_support_youtube"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="YouTube"
+                app:backgroundTint="@color/salt_surface"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_media_play"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
+                android:textColor="@color/salt_ink" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

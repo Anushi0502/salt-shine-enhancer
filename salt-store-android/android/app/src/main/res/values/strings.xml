@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">S.A.L.T.</string>
+    <string name="title_activity_main">S.A.L.T.</string>
+    <string name="package_name">com.saltonlinestore.saltstoreandroid</string>
+    <string name="custom_url_scheme">com.saltonlinestore.saltstoreandroid</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_shop">Shop</string>
+    <string name="nav_collections">Collections</string>
+    <string name="nav_support">Support</string>
+    <string name="browse_sheet_title">Saved items and history</string>
+    <string name="header_search">Search store</string>
+    <string name="header_cart">Cart</string>
+    <string name="header_browse">Browse menu</string>
+</resources>

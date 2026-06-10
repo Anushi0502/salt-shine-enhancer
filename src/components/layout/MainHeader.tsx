@@ -701,7 +701,7 @@ const MainHeader = () => {
                   <div>
                     <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#171717]">Browse</p>
                     <p className="mt-1 text-sm text-[#6f6659]">
-                      Wishlist, cart, order history, and recent products stay in the app drawer.
+                      Wishlist, cart, order tracking, and recent products stay in the app drawer.
                     </p>
                   </div>
                   <button
@@ -733,11 +733,11 @@ const MainHeader = () => {
                     Cart ({itemCount})
                   </button>
                   <Link
-                    to="/order-history"
+                    to="/account/orders"
                     onClick={closeMobileMenu}
                     className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
                   >
-                    Order history
+                    Order tracking
                   </Link>
                   <Link
                     to="/recently-viewed"

@@ -79,7 +79,7 @@ const App = () => {
                     <Route path="/blog/:handle" element={<BlogPostPage />} />
                     <Route path="/blogs/:blogHandle" element={<BlogPage />} />
                     <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
-                    <Route path="/order-history" element={<OrderHistoryPage />} />
+                    <Route path="/order-history" element={<Navigate to="/account/orders" replace />} />
                     <Route
                       path="/bulk-review"
                       element={isNativeApp() ? <Navigate to="/shop" replace /> : <BulkReviewPage />}
@@ -100,7 +100,9 @@ const App = () => {
                     <Route path="/policies/privacy-policy" element={<PrivacyPolicyPage />} />
                     <Route path="/policies/refund-policy" element={<RefundPolicyPage />} />
                     <Route path="/policies/shipping-policy" element={<ShippingPolicyPage />} />
+                    <Route path="/account" element={<Navigate to="/account/orders" replace />} />
                     <Route path="/account/orders" element={<OrderHistoryPage />} />
+                    <Route path="/account/authorize" element={<ShopAuthBridgePage />} />
                     <Route path="/account/*" element={<ShopAuthBridgePage />} />
                     <Route path="/customer_authentication/*" element={<ShopAuthBridgePage />} />
                     <Route path="/services/login_with_shop/*" element={<ShopAuthBridgePage />} />

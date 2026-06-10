@@ -1,56 +1,109 @@
-import { useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
-import { LoadingState } from "@/components/storefront/LoadState";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { completeShopifyCustomerAccountSignInFromUrl } from "@/lib/shopify-customer-account";
 
-function shouldOpenOrders(pathname: string, search: string): boolean {
-  const normalizedPath = String(pathname || "").toLowerCase();
-  if (normalizedPath.includes("/orders")) {
-    return true;
+function resolveTargetPath(pathname: string, search: string): string {
+  const params = new URLSearchParams(search || "");
+  const requestedReturnTarget = String(params.get("return_url") || params.get("return_to") || "").trim();
+
+  if (requestedReturnTarget) {
+    try {
+      const parsed = new URL(requestedReturnTarget, window.location.origin);
+      const returnPath = `${parsed.pathname}${parsed.search}${parsed.hash}` || "/account/orders";
+
+      if (/^\/account(\/|$)/i.test(returnPath) && !/^\/account\/orders/i.test(returnPath)) {
+        return "/account/orders";
+      }
+
+      return returnPath.startsWith("/") ? returnPath : "/account/orders";
+    } catch {
+      return "/account/orders";
+    }
   }
 
-  const params = new URLSearchParams(search || "");
-  const returnTo = String(params.get("return_to") || "").toLowerCase();
-  const returnUrl = String(params.get("return_url") || "").toLowerCase();
-  const combined = `${returnTo} ${returnUrl}`;
-  return combined.includes("/account/orders");
+  if (
+    pathname.startsWith("/account") ||
+    pathname.startsWith("/customer_authentication") ||
+    pathname.startsWith("/services/login_with_shop")
+  ) {
+    return "/account/orders";
+  }
+
+  return "/";
 }
 
 const ShopAuthBridgePage = () => {
   const location = useLocation();
-  const isOrdersIntent = shouldOpenOrders(location.pathname, location.search);
+  const navigate = useNavigate();
   const params = useMemo(() => new URLSearchParams(location.search || ""), [location.search]);
-  const requestedReturnTarget =
-    String(params.get("return_url") || params.get("return_to") || "").trim() || undefined;
-  const targetPath = (() => {
-    if (!requestedReturnTarget) {
-      return isOrdersIntent ? "/order-history" : "/";
-    }
-
-    try {
-      const parsed = new URL(requestedReturnTarget, window.location.origin);
-      const returnPath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-      if (/^\/account(\/|$)/i.test(returnPath)) {
-        return "/order-history";
-      }
-
-      return returnPath.startsWith("/") ? returnPath : "/";
-    } catch {
-      return isOrdersIntent ? "/order-history" : "/";
-    }
-  })();
+  const isCallback = params.has("code") || params.has("state") || params.has("error");
+  const targetPath = useMemo(
+    () => resolveTargetPath(location.pathname, location.search),
+    [location.pathname, location.search],
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!targetPath || typeof window === "undefined") {
-      return;
-    }
+    let active = true;
 
-    window.location.replace(targetPath);
-  }, [targetPath]);
+    const run = async () => {
+      if (isCallback) {
+        try {
+          const result = await completeShopifyCustomerAccountSignInFromUrl(params);
+          if (!active) {
+            return;
+          }
+
+          navigate(result.returnTo || "/account/orders", { replace: true });
+          return;
+        } catch (error) {
+          if (!active) {
+            return;
+          }
+
+          setErrorMessage(error instanceof Error ? error.message : "Unable to complete Shopify sign-in");
+          return;
+        }
+      }
+
+      navigate(targetPath, { replace: true });
+    };
+
+    void run();
+
+    return () => {
+      active = false;
+    };
+  }, [isCallback, navigate, params, targetPath]);
+
+  if (errorMessage) {
+    return (
+      <ErrorState
+        title="Shopify sign-in failed"
+        subtitle={errorMessage}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link to="/account/orders" className="salt-primary-cta h-11 px-5 text-sm font-bold">
+              Open orders
+            </Link>
+            <Link to="/shop" className="salt-outline-chip h-11 px-5 text-sm font-bold">
+              Continue shopping
+            </Link>
+          </div>
+        }
+      />
+    );
+  }
 
   return (
     <LoadingState
-      title={isOrdersIntent ? "Opening order history" : "Redirecting"}
-      subtitle="Please wait while we continue to the storefront."
+      title={isCallback ? "Completing Shopify sign-in" : "Redirecting to order tracking"}
+      subtitle={
+        isCallback
+          ? "Please wait while we finish the customer account callback."
+          : "Please wait while we route you to the Shopify order dashboard."
+      }
     />
   );
 };

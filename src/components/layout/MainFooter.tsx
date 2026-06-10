@@ -67,7 +67,7 @@ const MainFooter = () => {
               <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#1a4d9a]">Support</h3>
               <div className="mt-5 grid gap-3 text-[0.92rem] text-[#2a4f90]/84">
                 <Link to="/contact" className="transition-colors hover:text-[#f2b600]">Contact Us</Link>
-                <Link to="/order-history" className="transition-colors hover:text-[#f2b600]">Order Tracking</Link>
+                <Link to="/account/orders" className="transition-colors hover:text-[#f2b600]">Order tracking</Link>
                 <a href={shippingPolicyHref} className="transition-colors hover:text-[#f2b600]">Shipping</a>
                 <a href={returnsPolicyHref} className="transition-colors hover:text-[#f2b600]">Returns</a>
               </div>

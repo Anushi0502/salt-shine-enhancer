@@ -28,7 +28,7 @@ const FloatingActions = () => {
     () => pathname !== "/cart" && !pathname.startsWith("/account") && !pathname.startsWith("/checkout"),
     [pathname],
   );
-  const showOrderShortcut = useMemo(() => pathname !== "/order-history", [pathname]);
+  const showOrderShortcut = useMemo(() => pathname !== "/account/orders", [pathname]);
 
   if (!isVisible || isDrawerOpen) {
     return null;
@@ -55,9 +55,9 @@ const FloatingActions = () => {
       ) : null}
       {showOrderShortcut ? (
         <Link
-          to="/order-history"
+          to="/account/orders"
           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border/80 bg-card/92 px-3 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-foreground shadow-[0_18px_34px_-28px_rgba(15,23,42,0.24)] transition hover:border-primary/45 hover:text-primary sm:text-[0.68rem]"
-          aria-label="Open order history"
+          aria-label="Open Shopify order tracking"
         >
           <ClipboardList className="h-3.5 w-3.5" />
           Orders

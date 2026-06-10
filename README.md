@@ -36,11 +36,14 @@ Dev server defaults:
 
 - `npm run dev`: start local dev server.
 - `npm run build`: production build + compatibility aliases in `dist/assets`.
+- `npm run build:web`: Vite production build without the Shopify data refresh wrapper.
 - `npm run build:dev`: development-mode build.
 - `npm run test`: run Vitest once.
 - `npm run test:watch`: run Vitest in watch mode.
 - `npm run sync:data`: pull Shopify snapshot JSON into `public/data`.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
+- `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
+- `npm run release`: run the full SALT release pipeline with version output and staged failure reporting.
 
 ## Environment variables
 
@@ -117,6 +120,24 @@ Push with Shopify CLI:
 ```bash
 npx @shopify/cli theme push --path shopify-theme --store 0309d3-72.myshopify.com
 ```
+
+## Release
+
+Run the full release workflow from the repository root:
+
+```bash
+npm run release
+```
+
+That single command:
+
+1. Refreshes Shopify snapshot data.
+2. Builds the Vite web app.
+3. Generates the Shopify theme bundle.
+4. Syncs the iOS Capacitor shell.
+5. Syncs the Android Capacitor shell.
+
+The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
 
 ## Quality checks
 
