@@ -40,11 +40,6 @@ export type ShopifyCustomerAccountToken = {
   tokenType?: string;
 };
 
-type MoneyLike = {
-  amount?: string | number | null;
-  currencyCode?: string | null;
-};
-
 type ShopifyCustomerAccountLineItem = {
   title: string;
   quantity: number;
@@ -105,6 +100,11 @@ type ShopifyAccountAuthOptions = {
 
 type ShopifyCustomerAccountQueryResponse = {
   customer?: Record<string, unknown> | null;
+};
+
+type ShopifyCustomerAccountSnapshot = {
+  customer?: Record<string, unknown> | null;
+  orders?: unknown[] | null;
 };
 
 type DiscoveryResponse = {
@@ -190,6 +190,22 @@ function normalizeBaseUrl(input: string | undefined | null): string | null {
     const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
     const url = new URL(withProtocol);
     return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDiscoveryBaseUrl(input: string | undefined | null): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(withProtocol);
+    const pathname = url.pathname.replace(/\/+$/, "");
+    return `${url.protocol}//${url.host}${pathname && pathname !== "/" ? pathname : ""}`;
   } catch {
     return null;
   }
@@ -294,10 +310,10 @@ function formatMoney(amount: number, currencyCode: string): string {
   }
 }
 
-function parseMoney(value: unknown): OrderMoney {
+function parseMoney(value: unknown, fallbackCurrencyCode = "USD"): OrderMoney {
   const money = asRecord(value);
-  const amount = asNumber(money?.amount);
-  const currencyCode = asString(money?.currencyCode) || "USD";
+  const amount = money ? asNumber(money.amount ?? money.price ?? money.totalPrice ?? money.value) : asNumber(value);
+  const currencyCode = asString(money?.currencyCode || money?.currency || fallbackCurrencyCode) || "USD";
 
   return {
     amount,
@@ -316,10 +332,10 @@ function resolveCustomerName(customer: Record<string, unknown> | null): string {
     return displayName;
   }
 
-  const firstName = asString(customer.firstName);
-  const lastName = asString(customer.lastName);
-  const email = asString(asRecord(customer.emailAddress)?.emailAddress);
-  const phone = asString(asRecord(customer.phoneNumber)?.phoneNumber);
+  const firstName = asString(customer.firstName || customer.first_name);
+  const lastName = asString(customer.lastName || customer.last_name);
+  const email = asString(asRecord(customer.emailAddress)?.emailAddress || customer.email);
+  const phone = asString(asRecord(customer.phoneNumber)?.phoneNumber || customer.phone);
 
   const combined = [firstName, lastName].filter(Boolean).join(" ").trim();
   if (combined) {
@@ -343,34 +359,40 @@ function mapOrderStatusLabel(value: unknown): string {
     return "Unknown";
   }
 
-  switch (raw) {
-    case "PAID":
+  switch (raw.toLowerCase()) {
+    case "paid":
       return "Paid";
-    case "AUTHORIZED":
+    case "authorized":
       return "Authorized";
-    case "PARTIALLY_PAID":
+    case "partially_paid":
+    case "partially paid":
       return "Partially paid";
-    case "PENDING":
+    case "pending":
       return "Pending";
-    case "VOIDED":
+    case "voided":
       return "Voided";
-    case "REFUNDED":
+    case "refunded":
       return "Refunded";
-    case "PARTIALLY_REFUNDED":
+    case "partially_refunded":
+    case "partially refunded":
       return "Partially refunded";
-    case "IN_PROGRESS":
+    case "in_progress":
+    case "in progress":
       return "In progress";
-    case "PENDING_FULFILLMENT":
+    case "pending_fulfillment":
+    case "pending fulfillment":
       return "Pending fulfillment";
-    case "PARTIALLY_FULFILLED":
+    case "partially_fulfilled":
+    case "partially fulfilled":
       return "Partially fulfilled";
-    case "FULFILLED":
+    case "fulfilled":
       return "Fulfilled";
-    case "ON_HOLD":
+    case "on_hold":
+    case "on hold":
       return "On hold";
-    case "RESTOCKED":
+    case "restocked":
       return "Restocked";
-    case "SCHEDULED":
+    case "scheduled":
       return "Scheduled";
     default:
       return toTitleCase(raw);
@@ -389,7 +411,7 @@ function mapLineItem(input: Record<string, unknown>): ShopifyCustomerAccountLine
     totalLabel: money.label,
     currencyCode: money.currencyCode,
     imageUrl: asString(image?.url),
-    imageAlt: asString(image?.altText || input.title || input.name),
+    imageAlt: asString(image?.altText || image?.alt_text || image?.alt || input.title || input.name),
   };
 }
 
@@ -447,16 +469,114 @@ function toShopifyCustomerAccountSummary(response: ShopifyCustomerAccountQueryRe
   };
 }
 
+function mapLiquidLineItem(input: Record<string, unknown>, currencyCode: string): ShopifyCustomerAccountLineItem {
+  const image = asRecord(input.image);
+  const quantity = Math.max(1, Math.floor(asNumber(input.quantity) || 1));
+  const totalMoney = parseMoney(
+    input.final_line_price || input.line_price || input.total_price || input.final_price,
+    currencyCode,
+  );
+  const unitMoney = parseMoney(input.final_price || input.price, currencyCode);
+  const totalAmount = totalMoney.amount || Math.max(0, unitMoney.amount) * quantity;
+
+  return {
+    title: asString(input.title || input.name),
+    quantity,
+    variantTitle: asString(
+      input.variant_title ||
+        input.variantTitle ||
+        asRecord(input.variant)?.title ||
+        input.presentment_title ||
+        input.presentmentTitle,
+    ),
+    totalAmount,
+    totalLabel: formatMoney(totalAmount, totalMoney.currencyCode || currencyCode),
+    currencyCode: totalMoney.currencyCode || currencyCode,
+    imageUrl: asString(image?.url || image?.src),
+    imageAlt: asString(image?.altText || image?.alt_text || image?.alt || input.title || input.name),
+  };
+}
+
+function mapLiquidOrder(input: Record<string, unknown>): ShopifyCustomerAccountOrder | null {
+  const id = asString(input.id || input.customer_order_url || input.customer_url || input.order_status_url);
+  if (!id) {
+    return null;
+  }
+
+  const runtimeCurrency = asString(getRuntimeContext().currency) || "USD";
+  const currencyCode =
+    asString(input.currency || input.currencyCode || input.presentment_currency || input.presentmentCurrency) ||
+    runtimeCurrency;
+  const total = parseMoney(input.total_price || input.total_net_amount || input.totalPrice || input.totalPriceSet, currencyCode);
+  const lineItems = Array.isArray(input.line_items)
+    ? input.line_items
+    : Array.isArray(input.lineItems)
+      ? input.lineItems
+      : [];
+
+  return {
+    id,
+    name: asString(input.name),
+    orderNumber: Math.max(0, Math.floor(asNumber(input.order_number || input.number))),
+    confirmationNumber: asString(input.confirmation_number || input.confirmationNumber),
+    processedAt: asString(input.processed_at || input.created_at || input.createdAt),
+    updatedAt: asString(input.updated_at || input.updatedAt || input.processed_at || input.created_at || input.createdAt),
+    paymentStatus: mapOrderStatusLabel(input.financial_status_label || input.financial_status),
+    fulfillmentStatus: mapOrderStatusLabel(input.fulfillment_status_label || input.fulfillment_status),
+    financialStatus: mapOrderStatusLabel(input.financial_status_label || input.financial_status),
+    statusPageUrl: asString(input.customer_order_url || input.customer_url || input.order_status_url),
+    phone: asString(input.phone),
+    totalAmount: total.amount,
+    totalLabel: total.label,
+    currencyCode: total.currencyCode || currencyCode,
+    lineItems: lineItems
+      .map((entry) => asRecord(entry))
+      .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+      .map((entry) => mapLiquidLineItem(entry, currencyCode)),
+  };
+}
+
+export function mapShopifyCustomerAccountSnapshot(
+  snapshot: ShopifyCustomerAccountSnapshot | null | undefined,
+): ShopifyCustomerAccountSummary | null {
+  const root = asRecord(snapshot);
+  if (!root) {
+    return null;
+  }
+
+  const customerRecord = asRecord(root.customer);
+  const orders = Array.isArray(root.orders) ? root.orders : [];
+
+  return {
+    customer: {
+      displayName: resolveCustomerName(customerRecord),
+      email: asString(asRecord(customerRecord?.emailAddress)?.emailAddress || customerRecord?.email),
+      phone: asString(asRecord(customerRecord?.phoneNumber)?.phoneNumber || customerRecord?.phone),
+    },
+    orders: orders
+      .map((entry) => asRecord(entry))
+      .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+      .map(mapLiquidOrder)
+      .filter((order): order is ShopifyCustomerAccountOrder => Boolean(order))
+      .sort((left, right) => new Date(right.processedAt).getTime() - new Date(left.processedAt).getTime()),
+  };
+}
+
+export function hasShopifyCustomerAccountClientId(): boolean {
+  return Boolean(getCustomerAccountClientId());
+}
+
 async function discoverFromBase(base: string): Promise<ShopifyCustomerAccountDiscovery | null> {
-  const normalizedBase = normalizeBaseUrl(base);
+  const normalizedBase = normalizeDiscoveryBaseUrl(base);
   if (!normalizedBase) {
     return null;
   }
 
   try {
+    const discoveryBase = normalizedBase.replace(/\/+$/, "");
     const [openidConfig, apiConfig] = await Promise.all([
-      fetchJson<DiscoveryResponse>(`${normalizedBase}/.well-known/openid-configuration`),
-      fetchJson<CustomerAccountApiDiscoveryResponse>(`${normalizedBase}/.well-known/customer-account-api`),
+      fetchJson<DiscoveryResponse>(`${discoveryBase}/.well-known/openid-configuration`),
+      fetchJson<CustomerAccountApiDiscoveryResponse>(`${discoveryBase}/.well-known/customer-account-api`),
     ]);
 
     if (!openidConfig.authorization_endpoint || !openidConfig.token_endpoint || !apiConfig.graphql_api) {
@@ -468,7 +588,7 @@ async function discoverFromBase(base: string): Promise<ShopifyCustomerAccountDis
       tokenEndpoint: openidConfig.token_endpoint,
       graphqlEndpoint: apiConfig.graphql_api,
       logoutEndpoint: openidConfig.end_session_endpoint,
-      shopBaseUrl: normalizedBase,
+      shopBaseUrl: discoveryBase,
     };
   } catch {
     return null;
@@ -923,12 +1043,18 @@ const CUSTOMER_ACCOUNT_QUERY = `
 `;
 
 export async function loadShopifyCustomerOrders(): Promise<ShopifyCustomerAccountSummary> {
-  const discovery = await discoverShopifyCustomerAccount();
+  const runtimeSnapshot = mapShopifyCustomerAccountSnapshot(getRuntimeContext().customerAccountSnapshot as ShopifyCustomerAccountSnapshot | null);
   let token = readStoredToken();
 
   if (!token) {
+    if (runtimeSnapshot) {
+      return runtimeSnapshot;
+    }
+
     throw new Error("Shopify customer account session is missing");
   }
+
+  const discovery = await discoverShopifyCustomerAccount();
 
   if (token.expiresAt <= Date.now() + 30_000 && token.refreshToken) {
     token = await refreshAccessToken(discovery.tokenEndpoint, token);
@@ -989,11 +1115,12 @@ export function getShopifyCustomerAccountSessionHint(): ShopifyCustomerAccountAu
 }
 
 export async function ensureShopifyCustomerAccountToken(): Promise<ShopifyCustomerAccountToken | null> {
-  const discovery = await discoverShopifyCustomerAccount();
   const token = readStoredToken();
   if (!token) {
     return null;
   }
+
+  const discovery = await discoverShopifyCustomerAccount();
 
   if (token.expiresAt > Date.now() + 30_000) {
     return token;

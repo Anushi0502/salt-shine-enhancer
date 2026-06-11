@@ -1,9 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildShopifyCustomerAccountAuthorizationUrl,
   mapShopifyCustomerOrders,
 } from "@/lib/shopify-customer-account-core";
+import {
+  discoverShopifyCustomerAccount,
+  loadShopifyCustomerOrders,
+  mapShopifyCustomerAccountSnapshot,
+} from "@/lib/shopify-customer-account";
+
+import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
+
+vi.mock("@/lib/shopify-live-bases", () => ({
+  buildLiveShopifyBaseCandidates: vi.fn(),
+}));
+
+beforeEach(() => {
+  window.localStorage.clear();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("buildShopifyCustomerAccountAuthorizationUrl", () => {
   it("builds a Shopify customer account authorization URL with an email hint", () => {
@@ -94,5 +111,128 @@ describe("mapShopifyCustomerOrders", () => {
         },
       ],
     });
+  });
+});
+
+describe("mapShopifyCustomerAccountSnapshot", () => {
+  it("maps a Liquid customer account snapshot into the shared order summary", () => {
+    const result = mapShopifyCustomerAccountSnapshot({
+      customer: {
+        first_name: "Asha",
+        last_name: "Patel",
+        email: "asha@example.com",
+        phone: "+1 317 555 0198",
+      },
+      orders: [
+        {
+          id: 1024,
+          name: "#1024",
+          order_number: 1024,
+          created_at: "2026-06-10T11:45:00Z",
+          updated_at: "2026-06-10T12:05:00Z",
+          financial_status_label: "Paid",
+          fulfillment_status_label: "In progress",
+          customer_order_url: "https://shop.example.com/account/orders/1024",
+          phone: "+1 317 555 0198",
+          total_price: "84.50",
+          line_items: [
+            {
+              title: "Reversible Tote",
+              quantity: 2,
+              variant_title: "Natural",
+              final_line_price: "84.50",
+              image: {
+                url: "https://cdn.example.com/tote.jpg",
+                alt_text: "Reversible Tote",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.customer.displayName).toBe("Asha Patel");
+    expect(result?.customer.email).toBe("asha@example.com");
+    expect(result?.customer.phone).toBe("+1 317 555 0198");
+    expect(result?.orders).toHaveLength(1);
+    expect(result?.orders[0]).toMatchObject({
+      name: "#1024",
+      orderNumber: 1024,
+      paymentStatus: "Paid",
+      fulfillmentStatus: "In progress",
+      totalLabel: "$84.50",
+      statusPageUrl: "https://shop.example.com/account/orders/1024",
+      lineItems: [
+        {
+          title: "Reversible Tote",
+          quantity: 2,
+          variantTitle: "Natural",
+          totalLabel: "$84.50",
+          imageUrl: "https://cdn.example.com/tote.jpg",
+        },
+      ],
+    });
+  });
+});
+
+describe("discoverShopifyCustomerAccount", () => {
+  it("keeps proxy bases intact when probing Shopify discovery endpoints", async () => {
+    vi.mocked(buildLiveShopifyBaseCandidates).mockReturnValue([
+      "http://127.0.0.1:5174/__salt_shopify",
+    ]);
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/.well-known/openid-configuration")) {
+        return new Response(
+          JSON.stringify({
+            authorization_endpoint: "https://shopify.com/authentication/58076594275/oauth/authorize",
+            token_endpoint: "https://shopify.com/authentication/58076594275/oauth/token",
+            end_session_endpoint: "https://shopify.com/authentication/58076594275/logout",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (url.endsWith("/.well-known/customer-account-api")) {
+        return new Response(
+          JSON.stringify({
+            graphql_api: "https://shopify.com/58076594275/account/customer/api/2026-04/graphql",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("not found", { status: 404 });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const discovery = await discoverShopifyCustomerAccount();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:5174/__salt_shopify/.well-known/openid-configuration",
+      expect.objectContaining({
+        credentials: "include",
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:5174/__salt_shopify/.well-known/customer-account-api",
+      expect.objectContaining({
+        credentials: "include",
+      }),
+    );
+    expect(discovery.shopBaseUrl).toBe("http://127.0.0.1:5174/__salt_shopify");
+  });
+});
+
+describe("loadShopifyCustomerOrders", () => {
+  it("short-circuits before discovery when no customer session exists", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loadShopifyCustomerOrders()).rejects.toThrow("Shopify customer account session is missing");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

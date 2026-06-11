@@ -15,13 +15,13 @@ function parseEntryAssets(indexHtml) {
   const jsMatch = indexHtml.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/i);
   const cssMatch = indexHtml.match(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/i);
 
-  if (!jsMatch?.[1] || !cssMatch?.[1]) {
-    throw new Error("Could not resolve built entry assets from dist/index.html");
+  if (!jsMatch?.[1]) {
+    throw new Error("Could not resolve built JavaScript entry asset from dist/index.html");
   }
 
   return {
     js: basename(jsMatch[1]),
-    css: basename(cssMatch[1]),
+    css: cssMatch?.[1] ? basename(cssMatch[1]) : null,
   };
 }
 
@@ -40,7 +40,9 @@ async function main() {
   const { js, css } = parseEntryAssets(indexHtml);
 
   await writeAliases(js, COMPAT_JS_ALIASES);
-  await writeAliases(css, COMPAT_CSS_ALIASES);
+  if (css) {
+    await writeAliases(css, COMPAT_CSS_ALIASES);
+  }
 }
 
 main().catch((error) => {

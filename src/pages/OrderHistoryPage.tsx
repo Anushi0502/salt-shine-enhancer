@@ -21,6 +21,7 @@ import Reveal from "@/components/storefront/Reveal";
 import {
   clearShopifyCustomerAccountSession,
   getShopifyCustomerAccountSessionHint,
+  hasShopifyCustomerAccountClientId,
   loadShopifyCustomerOrders,
   prepareShopifyCustomerAccountSignIn,
 } from "@/lib/shopify-customer-account";
@@ -28,6 +29,7 @@ import type {
   ShopifyCustomerAccountOrder,
   ShopifyCustomerAccountSummary,
 } from "@/lib/shopify-customer-account-core";
+import { buildShopLoginUrl } from "@/lib/theme-assets";
 
 type PageMode = "loading" | "signed_out" | "ready" | "error";
 type OrderFilter = "all" | "open" | "fulfilled" | "needs-attention";
@@ -206,6 +208,7 @@ const ShopifyOrderBadge = ({ label, tone }: { label: string; tone: StatusTone })
 
 const OrderHistoryPage = () => {
   const sessionHint = getShopifyCustomerAccountSessionHint();
+  const hasCustomerAccountClientId = hasShopifyCustomerAccountClientId();
   const [account, setAccount] = useState<ShopifyCustomerAccountSummary | null>(null);
   const [mode, setMode] = useState<PageMode>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -323,6 +326,11 @@ const OrderHistoryPage = () => {
       return;
     }
 
+    if (!hasCustomerAccountClientId) {
+      window.location.assign(buildShopLoginUrl());
+      return;
+    }
+
     setSigningIn(true);
     setSignInError(null);
 
@@ -335,6 +343,11 @@ const OrderHistoryPage = () => {
       window.location.assign(authorizationUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to start Shopify sign-in";
+      if (message.toLowerCase().includes("missing shopify customer account client id")) {
+        window.location.assign(buildShopLoginUrl());
+        return;
+      }
+
       setSignInError(message);
       setSigningIn(false);
     }
@@ -382,8 +395,9 @@ const OrderHistoryPage = () => {
           Sign in with the email or mobile tied to your Shopify account.
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Orders are pulled directly from Shopify with payment and fulfillment status labels from the customer
-          account API. No device-only history, no local shadow copy.
+          {hasCustomerAccountClientId
+            ? "Orders are pulled directly from Shopify with payment and fulfillment status labels from the customer account API. No device-only history, no local shadow copy."
+            : "This environment will hand customers off to Shopify hosted sign-in because the Customer Account API client ID is not configured here. No device-only history, no local shadow copy."}
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -463,6 +477,12 @@ const OrderHistoryPage = () => {
               Recent orders and fulfillment states stay synchronized with Shopify.
             </li>
           </ul>
+          {!hasCustomerAccountClientId ? (
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Hosted login fallback is active because the Customer Account API client ID is not configured in this
+              environment.
+            </p>
+          ) : null}
         </div>
       </form>
     </div>
@@ -533,7 +553,7 @@ const OrderHistoryPage = () => {
     );
   }
 
-  const content = mode === "signed_out" ? signInPanel : null;
+  const content = mode === "signed_out" || mode === "error" ? signInPanel : null;
   const errorPanel =
     mode === "error" && loadError ? (
       <div className="rounded-[1.5rem] border border-rose-500/20 bg-rose-500/8 p-4 text-rose-700 dark:text-rose-200">
@@ -643,7 +663,7 @@ const OrderHistoryPage = () => {
             </div>
           </Reveal>
 
-          {mode === "signed_out" ? (
+          {content ? (
             <Reveal delayMs={110}>{content}</Reveal>
           ) : null}
 

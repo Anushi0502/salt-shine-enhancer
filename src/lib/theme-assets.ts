@@ -12,6 +12,7 @@ export type SaltRuntimeContext = {
   shopAppUrl?: string;
   customerAccountClientId?: string;
   customerAccountRedirectPath?: string;
+  customerAccountSnapshot?: unknown;
   judgeMeShopDomain?: string;
   judgeMePrivateToken?: string;
   judgeMePublicToken?: string;
@@ -404,18 +405,13 @@ function hasNativeShopifyLoginMarkup(): boolean {
   return Boolean(anchor?.href || button);
 }
 
-function isCrossOriginStoreRuntime(): boolean {
-  if (typeof window === "undefined") {
-    return false;
+function hasShopifyCustomerAccountClientIdConfigured(): boolean {
+  const runtimeValue = String(RUNTIME_CONTEXT.customerAccountClientId || "").trim();
+  if (runtimeValue) {
+    return true;
   }
 
-  const appOrigin = normalizeBaseUrl(window.location.origin);
-  const shopOrigin = normalizeBaseUrl(SHOP_BASE_ORIGIN);
-  if (!appOrigin || !shopOrigin) {
-    return false;
-  }
-
-  return appOrigin !== shopOrigin;
+  return String(import.meta.env.VITE_SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID || "").trim().length > 0;
 }
 
 function isShopifyLoginEnabledForRuntime(): boolean {
@@ -427,10 +423,14 @@ function isShopifyLoginEnabledForRuntime(): boolean {
     return true;
   }
 
-  return !isCrossOriginStoreRuntime();
+  return true;
 }
 
 export function buildShopLoginUrl(returnTarget?: string): string {
+  if (!hasShopifyCustomerAccountClientIdConfigured()) {
+    return buildShopHostedLoginUrl(String(returnTarget || "").trim() || getCurrentReturnPath());
+  }
+
   const storefrontLoginPath = resolveStorePath(
     RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
     "/customer_authentication/login",
@@ -463,6 +463,30 @@ export function buildShopLoginUrl(returnTarget?: string): string {
   }
 
   return appendReturnUrl(storefrontLoginUrl, resolvedReturnTargetAbsolute);
+}
+
+export function buildShopHostedLoginUrl(returnTarget?: string): string {
+  const storefrontLoginPath = resolveStorePath(
+    RUNTIME_CONTEXT.storefrontLoginUrl || RUNTIME_CONTEXT.accountLoginUrl,
+    "/customer_authentication/login",
+  );
+  const storefrontLoginUrl = toAbsoluteStoreUrl(storefrontLoginPath);
+  const resolvedReturnTarget = resolveStorePath(
+    String(returnTarget || "").trim() || "/account/orders",
+    "/account/orders",
+  );
+
+  if (storefrontLoginUrl.includes("/customer_authentication/login")) {
+    try {
+      const loginUrl = new URL(storefrontLoginUrl);
+      loginUrl.searchParams.set("return_to", resolvedReturnTarget);
+      return loginUrl.toString();
+    } catch {
+      return appendReturnUrl(storefrontLoginUrl, resolvedReturnTarget);
+    }
+  }
+
+  return appendReturnUrl(storefrontLoginUrl, resolvedReturnTarget);
 }
 
 export function openShopLogin(fallbackHref?: string): void {
