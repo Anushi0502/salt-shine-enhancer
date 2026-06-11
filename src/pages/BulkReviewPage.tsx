@@ -12,6 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 import { useProducts } from "@/lib/shopify-data";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { toast } from "sonner";
@@ -486,7 +487,7 @@ async function submitSingleReview(
     throw new Error("Missing product mapping");
   }
 
-  const endpoint = "https://api.judge.me/api/v1/reviews";
+  const endpoint = buildJudgeMeProxyUrl("reviews");
   const basePayload = {
     api_token: config.apiToken,
     platform: "shopify",

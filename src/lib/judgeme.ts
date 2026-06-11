@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { polishPlainText } from "@/lib/formatters";
+import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
 export type JudgeMeReviewSummary = {
   productId: number;
@@ -299,8 +300,15 @@ async function requestJudgeMeSummary(
     external_id: String(productId),
     t: String(Date.now()),
   });
-  const previewEndpoint = `https://api.judge.me/api/v1/widgets/preview_badge?${baseParams.toString()}`;
-  const widgetEndpoint = `https://api.judge.me/api/v1/widgets/product_review?${baseParams.toString()}&page=1&per_page=100`;
+  const previewEndpoint = buildJudgeMeProxyUrl("widgets/preview_badge", baseParams);
+  const widgetEndpoint = buildJudgeMeProxyUrl(
+    "widgets/product_review",
+    new URLSearchParams({
+      ...Object.fromEntries(baseParams.entries()),
+      page: "1",
+      per_page: "100",
+    }),
+  );
 
   const [previewResponse, widgetResponse] = await Promise.all([
     fetch(previewEndpoint, { credentials: "omit" }),
@@ -341,7 +349,7 @@ async function requestJudgeMeTestimonialsForProduct(
     per_page: "25",
     t: String(Date.now()),
   });
-  const endpoint = `https://api.judge.me/api/v1/widgets/product_review?${params.toString()}`;
+  const endpoint = buildJudgeMeProxyUrl("widgets/product_review", params);
 
   const response = await fetch(endpoint, { credentials: "omit" });
   if (!response.ok) {

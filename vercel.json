@@ -25,6 +25,10 @@
       "dest": "https://0309d3-72.myshopify.com/$1"
     },
     {
+      "src": "/api/judgeme/(.*)",
+      "dest": "/api/judgeme/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {

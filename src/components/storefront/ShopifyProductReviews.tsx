@@ -4,6 +4,7 @@ import { BarChart3, CheckCircle2, MessageSquareQuote, PenSquare, Star, X } from 
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
+import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
 declare global {
   interface Window {
@@ -142,8 +143,15 @@ async function fetchJudgeMeWidgetHtml(
         t: String(Date.now()),
       });
 
-      const previewUrl = `https://api.judge.me/api/v1/widgets/preview_badge?${baseParams.toString()}`;
-      const reviewUrl = `https://api.judge.me/api/v1/widgets/product_review?${baseParams.toString()}&page=1&per_page=100`;
+      const previewUrl = buildJudgeMeProxyUrl("widgets/preview_badge", baseParams);
+      const reviewUrl = buildJudgeMeProxyUrl(
+        "widgets/product_review",
+        new URLSearchParams({
+          ...Object.fromEntries(baseParams.entries()),
+          page: "1",
+          per_page: "100",
+        }),
+      );
 
       const [previewRes, reviewRes] = await Promise.all([
         fetch(previewUrl, { credentials: "omit" }),
@@ -180,7 +188,7 @@ async function submitJudgeMeReview(
   preferredShopDomain: string | undefined,
   payload: JudgeMeSubmitReviewPayload,
 ): Promise<void> {
-  const endpoint = "https://api.judge.me/api/v1/reviews";
+  const endpoint = buildJudgeMeProxyUrl("reviews");
   const normalizedHandle = String(productHandle || "").trim();
   const productUrl = `${getShopBaseOrigin()}/products/${normalizedHandle}`;
   const candidateDomains = Array.from(new Set([preferredShopDomain, ...config.shopDomains, config.shopDomain].filter(Boolean)));
