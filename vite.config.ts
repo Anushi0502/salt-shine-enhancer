@@ -51,11 +51,6 @@ export default defineConfig(({ mode }) => {
     cacheDir: path.resolve(os.tmpdir(), "salt-shine-vite-cache"),
     optimizeDeps: {
       exclude: [
-        "react",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "react-dom",
-        "react-dom/client",
         "react-router-dom",
         "@tanstack/react-query",
         "lucide-react",
@@ -77,32 +72,12 @@ export default defineConfig(({ mode }) => {
     preview: {
       proxy: shopifyProxy,
     },
-    plugins: [react({ jsxImportSource: "/src/shims" })],
+    plugins: [react()],
     resolve: {
       alias: [
         {
           find: /^@\/(.*)$/,
           replacement: path.resolve(__dirname, "./src") + "/$1",
-        },
-        {
-          find: /^react$/,
-          replacement: path.resolve(__dirname, "./src/shims/react.ts"),
-        },
-        {
-          find: /^react\/jsx-runtime$/,
-          replacement: path.resolve(__dirname, "./src/shims/react-jsx-runtime.ts"),
-        },
-        {
-          find: /^react\/jsx-dev-runtime$/,
-          replacement: path.resolve(__dirname, "./src/shims/react-jsx-dev-runtime.ts"),
-        },
-        {
-          find: /^react-dom$/,
-          replacement: path.resolve(__dirname, "./src/shims/react-dom.ts"),
-        },
-        {
-          find: /^react-dom\/client$/,
-          replacement: path.resolve(__dirname, "./src/shims/react-dom-client.ts"),
         },
       ],
     },
