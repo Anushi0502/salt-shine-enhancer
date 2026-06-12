@@ -70,18 +70,18 @@ describe("MainHeader", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Salt Online Store")).toBeInTheDocument();
-    expect(screen.getByText("Deliver to India")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Salt Online Store" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Deliver to India")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Search Salt Online Store")).toBeInTheDocument();
-    expect(screen.getByText("Today’s Deals")).toBeInTheDocument();
-    expect(screen.getByText("Himalayan Salt")).toBeInTheDocument();
-    expect(screen.getByText("Rock Salt")).toBeInTheDocument();
-    expect(screen.getByText("Sea Salt")).toBeInTheDocument();
-    expect(screen.getByText("Black Salt")).toBeInTheDocument();
-    expect(screen.getByText("Bulk Orders")).toBeInTheDocument();
-    expect(screen.getByText("Customer Service")).toBeInTheDocument();
-    expect(screen.getByText("Hello, sign in / Account & Lists")).toBeInTheDocument();
-    expect(screen.getByText("Returns / & Orders")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Today's Deals" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Himalayan Salt" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Rock Salt" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sea Salt" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Black Salt" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bulk Orders" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Customer Service" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /hello, sign in \/ account & lists/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /returns \/ & orders/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cart with 3 items/i })).toBeInTheDocument();
   });
 

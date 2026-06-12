@@ -253,7 +253,7 @@ const MainHeader = () => {
           onSubmit={submitSearch}
           className="order-3 basis-full md:order-2 md:min-w-0 md:flex-1"
         >
-          <div className="relative isolate flex h-12 overflow-visible rounded-full border border-[#BFD7F2] bg-white shadow-[0_14px_30px_-26px_rgba(12,32,72,0.35)]">
+          <div className="relative isolate flex h-11 overflow-visible rounded-[4px] border border-[#131A22] bg-white shadow-[0_1px_0_rgba(255,255,255,0.7)_inset] transition focus-within:border-[#F0A115] focus-within:shadow-[0_0_0_3px_rgba(255,153,0,0.12)]">
             <div className="relative">
               <button
                 type="button"
@@ -261,11 +261,11 @@ const MainHeader = () => {
                 aria-label={`Search category ${selectedCategory}`}
                 aria-haspopup="listbox"
                 aria-expanded={categoryOpen}
-                className="flex h-full min-w-[6.8rem] items-center justify-between gap-2 rounded-l-full border-r border-[#BFD7F2] bg-[#D0E4FC] px-3 text-left text-sm font-semibold text-[#0C2048] transition hover:bg-[#c3dbfa] sm:min-w-[10.25rem]"
+                className="flex h-full min-w-[4.9rem] items-center justify-between gap-1.5 rounded-l-[3px] border-r border-[#cdcdcd] bg-[#f3f3f3] px-3 text-left text-[0.8rem] font-normal text-[#555555] transition hover:bg-[#ececec] sm:min-w-[6rem] sm:max-w-[11.5rem]"
               >
                 <span className="truncate">{selectedCategory}</span>
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 transition ${categoryOpen ? "rotate-180" : ""}`}
+                  className={`h-3.5 w-3.5 shrink-0 text-[#6b6b6b] transition ${categoryOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -273,7 +273,7 @@ const MainHeader = () => {
                 <div
                   id="header-category-menu"
                   role="listbox"
-                  className="absolute left-0 top-[calc(100%+0.55rem)] z-40 w-[min(18rem,calc(100vw-1.25rem))] rounded-2xl border border-[#BFD7F2] bg-white p-2 shadow-[0_20px_40px_-28px_rgba(12,32,72,0.3)]"
+                  className="absolute left-0 top-[calc(100%+0.55rem)] z-40 w-[min(18rem,calc(100vw-1.25rem))] rounded-2xl border border-[#d5d5d5] bg-white p-2 shadow-[0_18px_36px_-28px_rgba(12,32,72,0.25)]"
                 >
                   {categoryOptions.map((option) => {
                     const active = option === selectedCategory;
@@ -287,13 +287,13 @@ const MainHeader = () => {
                         onClick={() => setCategory(option)}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
                           active
-                            ? "bg-[#D0E4FC] font-semibold text-[#0C2048]"
-                            : "text-[#102A43] hover:bg-[#ECF4FC]"
+                            ? "bg-[#fbeec2] font-semibold text-[#111111]"
+                            : "text-[#111111] hover:bg-[#f7f7f7]"
                         }`}
                       >
                         <span>{option}</span>
                         {active ? (
-                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0C2048]">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a6110]">
                             Selected
                           </span>
                         ) : null}
@@ -304,24 +304,24 @@ const MainHeader = () => {
               ) : null}
             </div>
 
-            <label className="relative flex min-w-0 flex-1 items-center">
+            <label className="relative flex min-w-0 flex-1 items-stretch bg-white">
               <span className="sr-only">Search Salt Online Store</span>
-              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#5C748F]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#767676]" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search Salt Online Store"
-                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-sm text-[#102A43] outline-none placeholder:text-[#7A94B1]"
+                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-[0.92rem] text-[#111111] outline-none placeholder:text-[#767676]"
               />
             </label>
 
             <button
               type="submit"
-              className="inline-flex h-full items-center justify-center gap-2 rounded-r-full bg-[#0C2048] px-3 text-sm font-semibold text-white transition hover:bg-[#102A43] sm:px-5"
+              className="inline-flex h-full w-11 items-center justify-center rounded-r-[3px] border-l border-[#cdcdcd] bg-[#febd69] text-[#111111] transition hover:bg-[#f3a847]"
             >
-              <Search className="h-4 w-4" />
-              <span className="hidden sm:inline">Search</span>
+              <Search className="h-[1.08rem] w-[1.08rem]" />
+              <span className="sr-only">Search</span>
             </button>
           </div>
         </form>
