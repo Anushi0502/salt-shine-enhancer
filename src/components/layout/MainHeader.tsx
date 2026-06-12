@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronRight, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
@@ -18,17 +18,39 @@ type NavItem = {
 
 const primaryNav: NavItem[] = [
   {
-    label: "Home",
-    to: "/",
+    label: "Departments",
+    to: "/collections",
+    isActive: (pathname) => pathname.startsWith("/collections"),
   },
   {
-    label: "Shop",
-    to: "/shop?collection=all-products",
+    label: "Best Sellers",
+    to: "/shop?sort=featured",
     isActive: (pathname) => pathname === "/shop" || pathname.startsWith("/search"),
   },
   {
-    label: "Collections",
-    to: "/collections",
+    label: "Books & Planners",
+    to: "/collections/books",
+    isActive: (pathname) => pathname === "/collections/books",
+  },
+  {
+    label: "Under $35",
+    to: "/collections/under-35",
+    isActive: (pathname) => pathname === "/collections/under-35",
+  },
+  {
+    label: "Home",
+    to: "/collections/home-decor",
+    isActive: (pathname) => pathname === "/collections/home-decor",
+  },
+  {
+    label: "Gifts",
+    to: "/collections/gifts",
+    isActive: (pathname) => pathname === "/collections/gifts",
+  },
+  {
+    label: "Track Order",
+    to: "/account/orders",
+    isActive: (pathname) => pathname.startsWith("/account"),
   },
   {
     label: "Support",
@@ -101,24 +123,28 @@ const MainHeader = () => {
   const navigate = useNavigate();
   const { itemCount, openCartDrawer } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
-  const { data: productsData } = useProducts();
-  const { data: collectionsData } = useCollections();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const deferredSearchInput = useDeferredValue(searchInput);
   const nativeApp = isNativeApp();
   const actionButtonClassName = nativeApp
     ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/18 hover:bg-white/12 hover:text-white sm:h-10 sm:w-10"
-    : "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#bfd3f8] bg-[linear-gradient(180deg,#ffffff_0%,#eef5ff_100%)] text-[#1f4b97] shadow-[0_8px_16px_-14px_rgba(28,75,150,0.55)] transition duration-200 hover:-translate-y-[1px] hover:border-[#8eb1ef] hover:bg-[#e8f1ff] hover:text-[#143f8e] sm:h-10 sm:w-10";
+    : "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/20 hover:bg-[rgba(255,255,255,0.12)] hover:text-white sm:h-10 sm:w-10";
   const showHeaderSearch = true;
-  const allProducts = useMemo(() => productsData?.products ?? [], [productsData?.products]);
-  const allCollections = useMemo(
-    () => collectionsData?.collections ?? [],
-    [collectionsData?.collections],
-  );
+  const shouldLoadSearchData = searchDropdownOpen;
+  const { data: productsData } = useProducts(shouldLoadSearchData);
+  const { data: collectionsData } = useCollections(shouldLoadSearchData);
+  const allProducts = productsData?.products ?? [];
+  const allCollections = collectionsData?.collections ?? [];
   const hasSearchQuery = Boolean(searchInput.trim());
+  const deferredSearchQuery = deferredSearchInput.trim();
   const dropdownProducts = useMemo(() => {
+    if (!searchDropdownOpen) {
+      return [];
+    }
+
     if (!allProducts.length) {
       return [];
     }
@@ -127,12 +153,12 @@ const MainHeader = () => {
       return allProducts.slice(0, 4);
     }
 
-    const strictMatches = filterProducts(allProducts, { query: searchInput.trim() }).slice(0, 4);
+    const strictMatches = filterProducts(allProducts, { query: deferredSearchQuery }).slice(0, 4);
     if (strictMatches.length > 0) {
       return strictMatches;
     }
 
-    const normalizedQuery = normalizeSearchPhrase(searchInput);
+    const normalizedQuery = normalizeSearchPhrase(deferredSearchQuery);
     const queryTokens = normalizedQuery.split(" ").filter(Boolean);
     if (!queryTokens.length) {
       return [];
@@ -149,8 +175,12 @@ const MainHeader = () => {
       .sort((left, right) => right.score - left.score || minPrice(left.product) - minPrice(right.product))
       .slice(0, 4)
       .map((entry) => entry.product);
-  }, [allProducts, hasSearchQuery, searchInput]);
+  }, [allProducts, deferredSearchQuery, hasSearchQuery, searchDropdownOpen]);
   const trendingSearches = useMemo(() => {
+    if (!searchDropdownOpen || !allProducts.length) {
+      return DEFAULT_TRENDING_SEARCHES;
+    }
+
     const counts = new Map<string, number>();
 
     allProducts.forEach((product) => {
@@ -168,11 +198,19 @@ const MainHeader = () => {
     const merged = [...topFromCatalog, ...DEFAULT_TRENDING_SEARCHES];
 
     return merged.filter((value, index) => merged.findIndex((entry) => entry.toLowerCase() === value.toLowerCase()) === index).slice(0, 6);
-  }, [allProducts]);
+  }, [allProducts, searchDropdownOpen]);
   const categorySuggestions = useMemo(() => {
-    const query = normalizeSearchPhrase(searchInput);
+    if (!searchDropdownOpen) {
+      return [];
+    }
+
+    const query = normalizeSearchPhrase(deferredSearchQuery);
     const suggestions: Array<{ label: string; to: string }> = [];
     const seen = new Set<string>();
+
+    if (!allCollections.length && !allProducts.length) {
+      return suggestions;
+    }
 
     allCollections.forEach((collection) => {
       const label = String(collection.title || "").trim();
@@ -223,20 +261,24 @@ const MainHeader = () => {
       });
 
     return suggestions.slice(0, 8);
-  }, [allCollections, allProducts, searchInput]);
+  }, [allCollections, allProducts, deferredSearchQuery, searchDropdownOpen]);
   const bestSellerCollection = useMemo(
     () =>
-      allCollections.find((collection) =>
-        /best[\s-]*sellers?/i.test(`${collection.handle} ${collection.title}`),
-      ) || null,
-    [allCollections],
+      searchDropdownOpen
+        ? allCollections.find((collection) =>
+            /best[\s-]*sellers?/i.test(`${collection.handle} ${collection.title}`),
+          ) || null
+        : null,
+    [allCollections, searchDropdownOpen],
   );
   const summerCollection = useMemo(
     () =>
-      allCollections.find((collection) =>
-        /(summer|sunny|vacation|beach)/i.test(`${collection.handle} ${collection.title}`),
-      ) || null,
-    [allCollections],
+      searchDropdownOpen
+        ? allCollections.find((collection) =>
+            /(summer|sunny|vacation|beach)/i.test(`${collection.handle} ${collection.title}`),
+          ) || null
+        : null,
+    [allCollections, searchDropdownOpen],
   );
   const popularRoutes = useMemo(
     () => [
@@ -347,28 +389,26 @@ const MainHeader = () => {
       className={`sticky top-0 z-50 backdrop-blur-[10px] ${
         nativeApp
           ? "border-b border-white/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98)_0%,rgba(21,21,21,0.96)_100%)] shadow-[0_22px_42px_-34px_rgba(0,0,0,0.62)]"
-          : "border-b border-[#c6d9ff] bg-[linear-gradient(180deg,rgba(249,252,255,0.96)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_18px_34px_-30px_rgba(20,58,128,0.55)]"
+          : "border-b border-[#243247] bg-[linear-gradient(180deg,rgba(18,25,36,0.98)_0%,rgba(24,33,47,0.97)_100%)] text-white shadow-[0_22px_42px_-34px_rgba(0,0,0,0.66)]"
       }`}
     >
       {nativeApp ? null : (
-        <div className="border-b border-[#d7e5ff] bg-[linear-gradient(90deg,rgba(234,243,255,0.85),rgba(241,247,255,0.85))]">
-          <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#36558f] sm:px-6 sm:text-[0.72rem] lg:px-8">
+        <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
+          <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#f3d78a] sm:px-6 sm:text-[0.72rem] lg:px-8">
             <span>Free Shipping on All US Orders</span>
-            <span className="mx-3 text-[#9eb8e8]">|</span>
+            <span className="mx-3 text-white/28">|</span>
             <span>30-Day Easy Returns</span>
           </div>
         </div>
       )}
 
-      <div className={`flex w-full items-start justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8 ${nativeApp ? "text-white" : ""}`}>
+      <div className={`flex w-full items-center gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8 ${nativeApp ? "text-white" : "text-white"}`}>
         <Link to="/" className="shrink-0 self-start" aria-label="Go to SALT homepage">
           <BrandLogo withWordmark size="md" />
         </Link>
 
         <nav
-          className={`hidden min-w-0 flex-1 items-center justify-start gap-3 xl:gap-4 ${
-            nativeApp ? "" : "lg:flex"
-          }`}
+          className="hidden"
         >
           {primaryNav.map((item) => {
             const active = isNavItemActive(item, location.pathname);
@@ -381,10 +421,10 @@ const MainHeader = () => {
                   active
                     ? nativeApp
                       ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-                      : "bg-[#e7f0ff] text-[#15428d] shadow-[inset_0_0_0_1px_rgba(157,190,241,0.7)]"
+                      : "bg-[#f2b600] text-[#131921] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)]"
                     : nativeApp
                       ? "text-white/74 hover:bg-white/8 hover:text-white"
-                      : "text-[#2a3f66] hover:bg-[#edf4ff] hover:text-[#15428d]"
+                      : "text-white/82 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 {item.label}
@@ -395,7 +435,7 @@ const MainHeader = () => {
 
         <div className="ml-auto flex items-center gap-1.5 min-[420px]:gap-2">
           {showHeaderSearch ? (
-            <form onSubmit={submitSearch} className="relative hidden w-[min(320px,42vw)] lg:block xl:w-[min(440px,46vw)]">
+            <form onSubmit={submitSearch} className="relative hidden min-w-0 flex-1 lg:block xl:flex-[1.2]">
               <label className="relative block w-full">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
                 <input
@@ -406,8 +446,8 @@ const MainHeader = () => {
                   onBlur={() => {
                     window.setTimeout(() => setSearchDropdownOpen(false), 120);
                   }}
-                  placeholder="Search"
-                  className="h-10 w-full rounded-full border border-[#b8cff8] bg-white pl-10 pr-16 text-[0.92rem] text-[#1b2e4f] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:border-[#7ea6ea] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)]"
+                  placeholder="Search products, deals, and order help"
+                  className="h-11 w-full rounded-full border border-white/12 bg-white pl-10 pr-28 text-[0.92rem] text-[#1b2e4f] shadow-[0_10px_18px_-18px_rgba(0,0,0,0.55)] outline-none placeholder:text-[#6a80a8] focus:border-[#f2b600] focus:shadow-[0_0_0_3px_rgba(242,182,0,0.22)]"
                   aria-label="Search products"
                 />
                 {searchInput.trim() ? (
@@ -423,9 +463,12 @@ const MainHeader = () => {
                     <X className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-[#c5d7f8] bg-[#eff5ff] px-2 py-0.5 text-[0.62rem] font-semibold text-[#5f78a8]">
-                  / K
-                </span>
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2b600] px-4 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#131921] transition hover:bg-[#ffd54a]"
+                >
+                  Search
+                </button>
               </label>
 
               {searchDropdownOpen ? (
@@ -651,10 +694,34 @@ const MainHeader = () => {
         </div>
       </div>
 
+      {nativeApp ? null : (
+        <div className="border-t border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02))]">
+          <div className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/82 sm:px-6 lg:px-8">
+            {primaryNav.map((item) => {
+              const active = isNavItemActive(item, location.pathname);
+
+              return (
+                <Link
+                  key={`bar-${item.label}`}
+                  to={item.to}
+                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    active
+                      ? "border-[#f2b600] bg-[#f2b600] text-[#131921] shadow-[0_12px_22px_-18px_rgba(242,182,0,0.55)]"
+                      : "border-white/12 bg-white/6 text-white/80 hover:border-white/22 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {showHeaderSearch ? (
         <div
           className={`border-t px-3 py-2 lg:hidden ${
-            nativeApp ? "border-white/10 bg-[#121212]" : "border-[#d7e5ff] bg-transparent"
+            nativeApp ? "border-white/10 bg-[#121212]" : "border-white/10 bg-[#131921]"
           }`}
         >
           <div className="w-full">
@@ -669,7 +736,7 @@ const MainHeader = () => {
                   type="search"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search"
+                  placeholder="Search products, deals, and order help"
                   className={`h-10 w-full rounded-full pl-10 pr-24 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)] ${
                     nativeApp
                       ? "border border-[#e0d7cc] bg-[#fffdf8] text-[#121212] placeholder:text-[#82796c] focus:border-[#d61f26] focus:shadow-[0_0_0_3px_rgba(214,31,38,0.12)]"

@@ -4,11 +4,13 @@ import { isNativeApp } from "@/lib/mobile";
 
 const CUSTOMER_ACCOUNT_STORAGE_KEY = "salt-shopify-customer-account-v1";
 const CUSTOMER_ACCOUNT_SESSION_KEY = "salt-shopify-customer-account-session-v1";
+const CUSTOMER_ACCOUNT_DISCOVERY_CACHE_KEY = "salt-shopify-customer-account-discovery-v1";
 const DEFAULT_SCOPE = "openid email customer-account-api:full";
 const DEFAULT_REDIRECT_PATH = "/account/authorize";
 const DEFAULT_REGION_COUNTRY = "US";
 const DEFAULT_LOCALE = "en";
 const DISCOVERY_TIMEOUT_MS = 7_500;
+const DISCOVERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const ORDERS_PAGE_SIZE = 24;
 
 export type ShopifyCustomerAccountDiscovery = {
@@ -117,6 +119,16 @@ type CustomerAccountApiDiscoveryResponse = {
   graphql_api?: string;
 };
 
+type CachedDiscoveryRecord = {
+  discovery: ShopifyCustomerAccountDiscovery;
+  cachedAt: number;
+};
+
+type DiscoveryCacheStore = Record<string, CachedDiscoveryRecord>;
+
+const discoveryInFlightRequests = new Map<string, Promise<ShopifyCustomerAccountDiscovery | null>>();
+const discoveryMemoryCache = new Map<string, CachedDiscoveryRecord>();
+
 function asString(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -209,6 +221,107 @@ function normalizeDiscoveryBaseUrl(input: string | undefined | null): string | n
   } catch {
     return null;
   }
+}
+
+function normalizeDiscoveryCacheKey(input: string | undefined | null): string {
+  return normalizeDiscoveryBaseUrl(input)?.replace(/\/+$/, "") || "";
+}
+
+function readDiscoveryCacheStore(): DiscoveryCacheStore {
+  const storage = getStorage();
+  if (!storage) {
+    return {};
+  }
+
+  const raw = storage.getItem(CUSTOMER_ACCOUNT_DISCOVERY_CACHE_KEY);
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+
+    return parsed as DiscoveryCacheStore;
+  } catch {
+    return {};
+  }
+}
+
+function writeDiscoveryCacheStore(store: DiscoveryCacheStore): void {
+  const storage = getStorage();
+  if (!storage) {
+    return;
+  }
+
+  try {
+    storage.setItem(CUSTOMER_ACCOUNT_DISCOVERY_CACHE_KEY, JSON.stringify(store));
+  } catch {
+    // Ignore quota or serialization failures; discovery will fall back to network.
+  }
+}
+
+function isFreshDiscoveryRecord(record: CachedDiscoveryRecord): boolean {
+  return Date.now() - record.cachedAt < DISCOVERY_CACHE_TTL_MS;
+}
+
+function readCachedDiscovery(baseUrl: string): ShopifyCustomerAccountDiscovery | null {
+  const cacheKey = normalizeDiscoveryCacheKey(baseUrl);
+  if (!cacheKey) {
+    return null;
+  }
+
+  const memoryRecord = discoveryMemoryCache.get(cacheKey);
+  if (memoryRecord) {
+    if (isFreshDiscoveryRecord(memoryRecord)) {
+      return memoryRecord.discovery;
+    }
+
+    discoveryMemoryCache.delete(cacheKey);
+  }
+
+  const store = readDiscoveryCacheStore();
+  const diskRecord = store[cacheKey];
+  if (!diskRecord) {
+    return null;
+  }
+
+  if (!isFreshDiscoveryRecord(diskRecord)) {
+    delete store[cacheKey];
+    writeDiscoveryCacheStore(store);
+    return null;
+  }
+
+  discoveryMemoryCache.set(cacheKey, diskRecord);
+  return diskRecord.discovery;
+}
+
+function persistCachedDiscovery(baseUrl: string, discovery: ShopifyCustomerAccountDiscovery): void {
+  const cacheKey = normalizeDiscoveryCacheKey(baseUrl);
+  if (!cacheKey) {
+    return;
+  }
+
+  const record: CachedDiscoveryRecord = {
+    discovery,
+    cachedAt: Date.now(),
+  };
+
+  discoveryMemoryCache.set(cacheKey, record);
+
+  const store = readDiscoveryCacheStore();
+  store[cacheKey] = record;
+  writeDiscoveryCacheStore(store);
+}
+
+export function clearShopifyCustomerAccountDiscoveryCacheForTests(): void {
+  discoveryInFlightRequests.clear();
+  discoveryMemoryCache.clear();
+
+  const storage = getStorage();
+  storage?.removeItem(CUSTOMER_ACCOUNT_DISCOVERY_CACHE_KEY);
 }
 
 function getDiscoveryBaseCandidates(): string[] {
@@ -572,26 +685,50 @@ async function discoverFromBase(base: string): Promise<ShopifyCustomerAccountDis
     return null;
   }
 
-  try {
-    const discoveryBase = normalizedBase.replace(/\/+$/, "");
-    const [openidConfig, apiConfig] = await Promise.all([
-      fetchJson<DiscoveryResponse>(`${discoveryBase}/.well-known/openid-configuration`),
-      fetchJson<CustomerAccountApiDiscoveryResponse>(`${discoveryBase}/.well-known/customer-account-api`),
-    ]);
+  const cacheKey = normalizedBase.replace(/\/+$/, "");
+  const cachedDiscovery = readCachedDiscovery(cacheKey);
+  if (cachedDiscovery) {
+    return cachedDiscovery;
+  }
 
-    if (!openidConfig.authorization_endpoint || !openidConfig.token_endpoint || !apiConfig.graphql_api) {
+  const inFlightDiscovery = discoveryInFlightRequests.get(cacheKey);
+  if (inFlightDiscovery) {
+    return inFlightDiscovery;
+  }
+
+  const discoveryPromise = (async () => {
+    try {
+      const discoveryBase = normalizedBase.replace(/\/+$/, "");
+      const [openidConfig, apiConfig] = await Promise.all([
+        fetchJson<DiscoveryResponse>(`${discoveryBase}/.well-known/openid-configuration`),
+        fetchJson<CustomerAccountApiDiscoveryResponse>(`${discoveryBase}/.well-known/customer-account-api`),
+      ]);
+
+      if (!openidConfig.authorization_endpoint || !openidConfig.token_endpoint || !apiConfig.graphql_api) {
+        return null;
+      }
+
+      const discovered = {
+        authorizationEndpoint: openidConfig.authorization_endpoint,
+        tokenEndpoint: openidConfig.token_endpoint,
+        graphqlEndpoint: apiConfig.graphql_api,
+        logoutEndpoint: openidConfig.end_session_endpoint,
+        shopBaseUrl: discoveryBase,
+      };
+
+      persistCachedDiscovery(discoveryBase, discovered);
+      return discovered;
+    } catch {
       return null;
     }
+  })();
 
-    return {
-      authorizationEndpoint: openidConfig.authorization_endpoint,
-      tokenEndpoint: openidConfig.token_endpoint,
-      graphqlEndpoint: apiConfig.graphql_api,
-      logoutEndpoint: openidConfig.end_session_endpoint,
-      shopBaseUrl: discoveryBase,
-    };
-  } catch {
-    return null;
+  discoveryInFlightRequests.set(cacheKey, discoveryPromise);
+
+  try {
+    return await discoveryPromise;
+  } finally {
+    discoveryInFlightRequests.delete(cacheKey);
   }
 }
 
@@ -779,14 +916,32 @@ function getCustomerAccountClientId(): string {
   return asString(import.meta.env.VITE_SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID);
 }
 
+export function resolveShopifyCustomerAccountRedirectBaseUrl(options: {
+  browserOrigin?: string | null;
+  shopBaseOrigin?: string | null;
+} = {}): string {
+  const shopBaseOrigin = normalizeBaseUrl(options.shopBaseOrigin ?? getShopBaseOrigin());
+  if (shopBaseOrigin) {
+    return shopBaseOrigin;
+  }
+
+  const browserOrigin = normalizeBaseUrl(options.browserOrigin ?? getWindowBaseUrl());
+  if (browserOrigin) {
+    return browserOrigin;
+  }
+
+  return getWindowBaseUrl();
+}
+
 function getRedirectUri(): string {
   const runtime = getRuntimeContext();
   const redirectPath = asString((runtime as Record<string, unknown>).customerAccountRedirectPath) || DEFAULT_REDIRECT_PATH;
+  const redirectBaseUrl = resolveShopifyCustomerAccountRedirectBaseUrl();
 
   try {
-    return new URL(redirectPath, getWindowBaseUrl()).toString();
+    return new URL(redirectPath, redirectBaseUrl).toString();
   } catch {
-    return `${getWindowBaseUrl()}${redirectPath.startsWith("/") ? redirectPath : DEFAULT_REDIRECT_PATH}`;
+    return `${redirectBaseUrl}${redirectPath.startsWith("/") ? redirectPath : DEFAULT_REDIRECT_PATH}`;
   }
 }
 
@@ -1120,8 +1275,6 @@ export async function ensureShopifyCustomerAccountToken(): Promise<ShopifyCustom
     return null;
   }
 
-  const discovery = await discoverShopifyCustomerAccount();
-
   if (token.expiresAt > Date.now() + 30_000) {
     return token;
   }
@@ -1130,6 +1283,7 @@ export async function ensureShopifyCustomerAccountToken(): Promise<ShopifyCustom
     return token;
   }
 
+  const discovery = await discoverShopifyCustomerAccount();
   return refreshAccessToken(discovery.tokenEndpoint, token);
 }
 

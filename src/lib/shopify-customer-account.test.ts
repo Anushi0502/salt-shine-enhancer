@@ -5,9 +5,12 @@ import {
   mapShopifyCustomerOrders,
 } from "@/lib/shopify-customer-account-core";
 import {
+  clearShopifyCustomerAccountDiscoveryCacheForTests,
   discoverShopifyCustomerAccount,
+  ensureShopifyCustomerAccountToken,
   loadShopifyCustomerOrders,
   mapShopifyCustomerAccountSnapshot,
+  resolveShopifyCustomerAccountRedirectBaseUrl,
 } from "@/lib/shopify-customer-account";
 
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
@@ -18,6 +21,7 @@ vi.mock("@/lib/shopify-live-bases", () => ({
 
 beforeEach(() => {
   window.localStorage.clear();
+  clearShopifyCustomerAccountDiscoveryCacheForTests();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -39,6 +43,26 @@ describe("buildShopifyCustomerAccountAuthorizationUrl", () => {
     expect(url).toBe(
       "https://shop.example.com/oauth/authorize?scope=openid+email+customer-account-api%3Afull&client_id=client_123&response_type=code&redirect_uri=https%3A%2F%2Fstore.example.com%2Faccount%2Fauthorize&state=state_123&nonce=nonce_123&code_challenge=challenge_123&code_challenge_method=S256&login_hint=customer%40example.com&region_country=US&locale=en",
     );
+  });
+});
+
+describe("resolveShopifyCustomerAccountRedirectBaseUrl", () => {
+  it("prefers the store origin over localhost for customer account callbacks", () => {
+    expect(
+      resolveShopifyCustomerAccountRedirectBaseUrl({
+        browserOrigin: "http://127.0.0.1:4174",
+        shopBaseOrigin: "https://www.saltonlinestore.com",
+      }),
+    ).toBe("https://www.saltonlinestore.com");
+  });
+
+  it("falls back to the browser origin when the store origin is unavailable", () => {
+    expect(
+      resolveShopifyCustomerAccountRedirectBaseUrl({
+        browserOrigin: "https://store.example.com",
+        shopBaseOrigin: "",
+      }),
+    ).toBe("https://store.example.com");
   });
 });
 
@@ -225,6 +249,45 @@ describe("discoverShopifyCustomerAccount", () => {
     );
     expect(discovery.shopBaseUrl).toBe("http://127.0.0.1:5174/__salt_shopify");
   });
+
+  it("reuses cached discovery data on repeated lookups", async () => {
+    vi.mocked(buildLiveShopifyBaseCandidates).mockReturnValue([
+      "http://127.0.0.1:5174/__salt_shopify",
+    ]);
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/.well-known/openid-configuration")) {
+        return new Response(
+          JSON.stringify({
+            authorization_endpoint: "https://shopify.com/authentication/58076594275/oauth/authorize",
+            token_endpoint: "https://shopify.com/authentication/58076594275/oauth/token",
+            end_session_endpoint: "https://shopify.com/authentication/58076594275/logout",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (url.endsWith("/.well-known/customer-account-api")) {
+        return new Response(
+          JSON.stringify({
+            graphql_api: "https://shopify.com/58076594275/account/customer/api/2026-04/graphql",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("not found", { status: 404 });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const firstDiscovery = await discoverShopifyCustomerAccount();
+    const secondDiscovery = await discoverShopifyCustomerAccount();
+
+    expect(secondDiscovery).toEqual(firstDiscovery);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("loadShopifyCustomerOrders", () => {
@@ -233,6 +296,30 @@ describe("loadShopifyCustomerOrders", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(loadShopifyCustomerOrders()).rejects.toThrow("Shopify customer account session is missing");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("ensureShopifyCustomerAccountToken", () => {
+  it("returns a fresh stored token without probing discovery endpoints", async () => {
+    window.localStorage.setItem(
+      "salt-shopify-customer-account-v1",
+      JSON.stringify({
+        accessToken: "token-123",
+        refreshToken: "refresh-123",
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      }),
+    );
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const token = await ensureShopifyCustomerAccountToken();
+
+    expect(token).toMatchObject({
+      accessToken: "token-123",
+      refreshToken: "refresh-123",
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

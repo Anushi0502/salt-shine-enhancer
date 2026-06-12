@@ -4,6 +4,7 @@ import { Clock3, Sparkles } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { readRecentlyViewedHandles, RECENTLY_VIEWED_UPDATED_EVENT } from "@/lib/recently-viewed";
 import { useProducts } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
@@ -39,6 +40,9 @@ const RecentlyViewedPage = () => {
       .map((handle) => byHandle.get(handle))
       .filter((product): product is ShopifyProduct => Boolean(product));
   }, [data?.products, recentHandles]);
+  const recentProductIds = useMemo(() => recentProducts.map((product) => product.id), [recentProducts]);
+  const recentRatingsQuery = useJudgeMeRatings(recentProductIds);
+  const recentRatingsById = recentRatingsQuery.data ?? {};
 
   const unresolvedCount = Math.max(0, recentHandles.length - recentProducts.length);
 
@@ -129,7 +133,7 @@ const RecentlyViewedPage = () => {
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {recentProducts.map((product, index) => (
           <Reveal key={`${product.handle}-${product.id}`} delayMs={index * 45}>
-            <ProductCard product={product} variant="shop" />
+            <ProductCard product={product} variant="shop" reviewSummary={recentRatingsById[product.id] ?? null} />
           </Reveal>
         ))}
       </div>

@@ -50,6 +50,13 @@ export default defineConfig(({ mode }) => {
   return {
     cacheDir: path.resolve(os.tmpdir(), "salt-shine-vite-cache"),
     optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+      ],
       exclude: [
         "react-router-dom",
         "@tanstack/react-query",

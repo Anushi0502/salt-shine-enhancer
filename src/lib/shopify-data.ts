@@ -1151,10 +1151,11 @@ export async function loadPolicyPage(path: string, fallbackTitle: string): Promi
   }
 }
 
-export function useProducts() {
+export function useProducts(enabled = true) {
   return useQuery({
     queryKey: ["products", DATA_MODE],
     queryFn: loadProducts,
+    enabled,
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -1166,10 +1167,11 @@ export function useProducts() {
   });
 }
 
-export function useCollections() {
+export function useCollections(enabled = true) {
   return useQuery({
     queryKey: ["collections", DATA_MODE],
     queryFn: loadCollections,
+    enabled,
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,

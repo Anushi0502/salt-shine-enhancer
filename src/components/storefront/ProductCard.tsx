@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Heart, ShoppingBag, Sparkles, Star } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   productImage,
   savingsPercent,
 } from "@/lib/formatters";
+import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
@@ -21,13 +22,15 @@ export type ProductCardVariant = "default" | "dense" | "shop";
 type ProductCardProps = {
   product: ShopifyProduct;
   variant?: ProductCardVariant;
+  reviewSummary?: JudgeMeReviewSummary | null;
 };
 
-const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
+const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCardProps) => {
   const { addItem } = useCart();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
-  const { summary } = useJudgeMeProductRating(product.id);
+  const reviewSummaryProvided = reviewSummary !== undefined;
+  const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
   const nativeApp = isNativeApp();
   const isDense = variant === "dense";
   const isShop = variant === "shop";
@@ -37,6 +40,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   const image = productImage(product);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
   const wishlisted = isWishlisted(product.handle);
+  const summary = reviewSummaryProvided ? reviewSummary ?? null : fetchedSummary;
   const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
   const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
   const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
@@ -56,12 +60,13 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
         >
           {image ? (
             <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1.2/1.4]">
-              <img
-                src={image}
-                alt={product.title}
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-              />
+                <img
+                  src={image}
+                  alt={product.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                />
             </div>
           ) : (
             <div className="grid aspect-[1.04/0.93] w-full place-items-center bg-[linear-gradient(180deg,#dce8fb_0%,#c6dafd_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#31538c] sm:aspect-[1/0.9]">
@@ -141,6 +146,7 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
                 src={image}
                 alt={product.title}
                 loading="lazy"
+                decoding="async"
                 className="h-[112%] w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
               />
             </div>
@@ -238,4 +244,6 @@ const ProductCard = ({ product, variant = "default" }: ProductCardProps) => {
   );
 };
 
-export default ProductCard;
+const MemoizedProductCard = memo(ProductCard);
+
+export default MemoizedProductCard;

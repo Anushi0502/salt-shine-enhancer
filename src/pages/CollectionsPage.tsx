@@ -773,8 +773,8 @@ const CollectionsPage = () => {
         <div className="salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_18%,rgba(46,109,255,0.1),transparent_28%),radial-gradient(circle_at_88%_16%,rgba(244,190,48,0.12),transparent_30%),linear-gradient(165deg,rgba(249,252,255,0.98),rgba(241,247,255,0.92))]" />
 
-          <div className="relative">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start lg:gap-6">
+          <div className="relative grid gap-5 lg:grid-cols-1 lg:gap-6">
+            <div className="space-y-4">
               <div className="max-w-3xl">
                 <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#2b63ca]">
                   Collection directory
@@ -786,114 +786,87 @@ const CollectionsPage = () => {
                       ? "Browse collections"
                       : `Explore ${selectedTheme.label}`}
                 </h1>
-                {query.trim() || themeFilter !== "all" ? (
-                  <p className="mt-3 max-w-2xl text-[0.96rem] leading-7 text-[#56719d]">
-                    {query.trim()
-                      ? "Search collection names and browse with the same structured filtering and merchandising logic used across the shop catalog."
-                      : formatCollectionDescription(previewCollection?.description) || selectedTheme.description}
-                  </p>
-                ) : null}
-
-                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[#60789f]">
-                  <span>US shipping included</span>
-                  <span className="h-1 w-1 rounded-full bg-[#9db7e4]" />
-                  <span>Secure checkout</span>
-                  <span className="h-1 w-1 rounded-full bg-[#9db7e4]" />
-                  <span>Structured browsing</span>
-                </div>
+                <p className="mt-3 max-w-2xl text-[0.96rem] leading-7 text-[#56719d]">
+                  {query.trim()
+                    ? "Search, filter, and jump to a collection fast."
+                    : formatCollectionDescription(previewCollection?.description) || selectedTheme.description}
+                </p>
               </div>
 
-                          </div>
-
-            <div className="mt-6 rounded-[1.15rem] border border-[#d6e4ff] bg-white/78 p-2 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.24)]">
-              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-                {themeConfigs.map((theme) => (
+              <form
+                onSubmit={submitSearch}
+                className="rounded-[1.15rem] border border-[#d6e4ff] bg-white/88 p-2.5 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.24)]"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7e97bf]" />
+                    <input
+                      type="search"
+                      value={searchInput}
+                      onChange={(event) => setSearchInput(event.target.value)}
+                      placeholder="Search collections, categories, or product types"
+                      aria-label="Search collections"
+                      className="h-11 w-full rounded-full border border-[#c7d9f6] bg-white pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-[#7e97bf] focus:border-[#2b67db]"
+                    />
+                  </div>
                   <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => updateParams({ theme: theme.id === "all" ? null : theme.id }, true)}
-                    className={
-                      theme.id === themeFilter
-                        ? "inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#1f63d8] px-3.5 text-[0.78rem] font-semibold text-white shadow-[0_14px_28px_-22px_rgba(31,99,216,0.55)]"
-                        : "inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.78rem] font-medium text-[#355c98] transition hover:bg-[#edf4ff] hover:text-[#1d4d9d]"
-                    }
+                    type="submit"
+                    className="salt-primary-cta h-11 justify-center rounded-full px-4 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
                   >
-                    {theme.label}
-                    <span
-                      className={
-                        theme.id === themeFilter
-                          ? "rounded-full bg-white/18 px-1.5 py-0.5 text-[0.62rem] leading-none text-white"
-                          : "rounded-full bg-[#e7f0ff] px-1.5 py-0.5 text-[0.62rem] leading-none text-[#4d70a9]"
-                      }
-                    >
-                      {themeCounts[theme.id].toLocaleString()}
-                    </span>
+                    Search catalog
                   </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Reveal>
+                </div>
+              </form>
 
-      {!hasActiveFilters && leadCollection ? (
-        <Reveal delayMs={70}>
-          <div className="salt-section-shell mt-4 rounded-[1.35rem] p-2.5 sm:mt-5 sm:rounded-[1.6rem] sm:p-3">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.22fr)_minmax(260px,0.78fr)] lg:items-stretch">
-              <CollectionCard
-                collection={leadCollection}
-                variant="hero"
-                imageSrc={spotlightImageSrc}
-                editorialContent={{
-                  kicker: "Collection spotlight",
-                  headline: leadCollection.title,
-                  primaryAction: {
-                    to: `/shop?collection=${leadCollection.handle}`,
-                    label: "Open collection",
-                  },
-                  secondaryAction: {
-                    to: "/shop",
-                    label: "View all products",
-                  },
-                }}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                {supportCollections.slice(0, 3).map((collection) => (
+              <div className="flex flex-wrap gap-2">
+                {popularRoutes.slice(0, 4).map((route) => (
                   <Link
-                    key={collection.id}
-                    to={`/shop?collection=${collection.handle}`}
-                    className="salt-search-hit min-h-[84px] rounded-[0.95rem] px-3 py-2.5"
+                    key={route.label}
+                    to={route.to}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d4e2fb] bg-white/86 px-3 py-1.5 text-[0.68rem] font-semibold text-[#335a95] transition hover:border-[#95b8f1] hover:text-[#1d4d9d]"
                   >
-                    {collection.imageSrc ? (
-                      <img
-                        src={collection.imageSrc}
-                        alt={collection.title}
-                        className="h-12 w-12 rounded-[0.8rem] object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="grid h-12 w-12 place-items-center rounded-[0.8rem] bg-muted text-[0.46rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                        SALT
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[0.86rem] font-semibold leading-5 text-foreground">
-                        {collection.title}
-                      </p>
-                      <p className="mt-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                        {collection.products_count.toLocaleString()} items
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="max-w-[11rem] truncate">{route.label}</span>
+                    <span className="rounded-full bg-[#e8f0ff] px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.08em] text-[#4d70a9]">
+                      {route.meta}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                 ))}
               </div>
             </div>
           </div>
-        </Reveal>
-      ) : null}
 
+          <div className="relative mt-5 rounded-[1.15rem] border border-[#d6e4ff] bg-white/78 p-2 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.24)]">
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+              {themeConfigs.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => updateParams({ theme: theme.id === "all" ? null : theme.id }, true)}
+                  className={
+                    theme.id === themeFilter
+                      ? "inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#1f63d8] px-3.5 text-[0.78rem] font-semibold text-white shadow-[0_14px_28px_-22px_rgba(31,99,216,0.55)]"
+                      : "inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.78rem] font-medium text-[#355c98] transition hover:bg-[#edf4ff] hover:text-[#1d4d9d]"
+                  }
+                >
+                  {theme.label}
+                  <span
+                    className={
+                      theme.id === themeFilter
+                        ? "rounded-full bg-white/18 px-1.5 py-0.5 text-[0.62rem] leading-none text-white"
+                        : "rounded-full bg-[#e7f0ff] px-1.5 py-0.5 text-[0.62rem] leading-none text-[#4d70a9]"
+                    }
+                  >
+                    {themeCounts[theme.id].toLocaleString()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Reveal>
+
+      
       <div
         className={
           desktopFiltersVisible

@@ -259,6 +259,10 @@ function trimText(input: string, maxChars: number): string {
   return `${shortened.trimEnd()}…`;
 }
 
+function stripContentLabel(input: string): string {
+  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:\-]?\s*/i, "").trim();
+}
+
 function primaryTitleSegment(input: string): string {
   const title = stripHtml(input).replace(/\s+/g, " ").trim();
   if (!title) {
@@ -290,8 +294,8 @@ export function conciseTitle(input: string, maxChars = 58): string {
 }
 
 export function productBenefitText(product: ShopifyProduct, maxChars = 84): string {
-  const description = stripHtml(product.body_html).replace(/\s+/g, " ").trim();
-  const firstSentence = description.split(/(?<=[.!?])\s+/).find(Boolean)?.trim() || description;
+  const description = stripContentLabel(stripHtml(product.body_html).replace(/\s+/g, " ").trim());
+  const firstSentence = stripContentLabel(description.split(/(?<=[.!?])\s+/).find(Boolean)?.trim() || description);
   const fallback = product.product_type
     ? `${product.product_type} made easier to browse, gift, and use every day.`
     : "Useful everyday find selected to feel practical, giftable, and easy to shop.";

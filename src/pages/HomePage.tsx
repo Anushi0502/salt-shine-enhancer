@@ -1169,6 +1169,37 @@ const HomePage = () => {
 
     return tiles;
   }, [bestSellerHeroImage, collectionImageByHandle, findCollectionProductImage, findProductImageByKeywords]);
+  const heroSpotlightCards = useMemo<ImageTile[]>(
+    () => [
+      {
+        title: "Best Sellers",
+        image: bestSellerHeroImage,
+        to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/shop?sort=featured",
+      },
+      {
+        title: "Books & Planners",
+        image: featuredCourtneyBookFallbackImage,
+        to: "/collections/books",
+      },
+      {
+        title: "Under $35",
+        image: collectionImageByHandle.get("under-35") || bestSellerHeroImage,
+        to: "/collections/under-35",
+      },
+      {
+        title: "Gift Ideas",
+        image: giftTiles[0]?.image || collectionDecor,
+        to: "/collections/gifts",
+      },
+    ],
+    [
+      bestSellerCollection,
+      bestSellerHeroImage,
+      collectionImageByHandle,
+      featuredCourtneyBookFallbackImage,
+      giftTiles,
+    ],
+  );
 
   useEffect(() => {
     if (heroPosterTiles.length <= 1) {
@@ -1246,48 +1277,85 @@ const HomePage = () => {
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
           <section className="border-b border-[#dce9ff] p-[10px] sm:p-[30px]">
-            <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
-              <div
-                className="flex transition-transform duration-700 ease-in-out"
-                style={{ transform: `translateX(-${activeHeroPosterIndex * 100}%)` }}
-              >
-                {heroPosterTiles.map((tile, index) => (
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.18fr)_minmax(280px,0.82fr)] lg:items-stretch">
+              <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
+                <div
+                  className="flex transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translateX(-${activeHeroPosterIndex * 100}%)` }}
+                >
+                  {heroPosterTiles.map((tile, index) => (
+                    <Link
+                      key={`${tile.to}-${index}`}
+                      to={tile.to}
+                      className="group block w-full shrink-0"
+                      aria-label={buildBannerImageAltText(tile)}
+                    >
+                      <div className="overflow-hidden bg-[#eaf3ff]">
+                        <ResilientImage
+                          src={tile.image}
+                          alt={buildBannerImageAltText(tile)}
+                          className="block h-auto w-full transition duration-700 ease-out group-hover:scale-[1.01]"
+                          fallback={
+                            <img
+                              src={bestSellerHeroImage}
+                              alt={buildBannerImageAltText(tile)}
+                              className="block h-auto w-full transition duration-700 ease-out group-hover:scale-[1.01]"
+                            />
+                          }
+                        />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                {heroPosterTiles.length > 1 ? (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-2">
+                    {heroPosterTiles.map((tile, index) => (
+                      <span
+                        key={`${tile.to}-dot-${index}`}
+                        className={`h-1.5 rounded-full transition-all ${
+                          index === activeHeroPosterIndex ? "w-6 bg-white/95" : "w-2 bg-white/55"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-2">
+                {heroSpotlightCards.map((tile, index) => (
                   <Link
                     key={`${tile.to}-${index}`}
                     to={tile.to}
-                    className="group block w-full shrink-0"
-                    aria-label={buildBannerImageAltText(tile)}
+                    className="group relative block overflow-hidden rounded-[1.02rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_36px_-30px_rgba(22,77,160,0.24)]"
+                    aria-label={buildCollectionImageAltText(tile.title, "hero spotlight")}
                   >
-                    <div className="overflow-hidden bg-[#eaf3ff]">
+                    <div className="aspect-[1.08/0.8] overflow-hidden">
                       <ResilientImage
                         src={tile.image}
-                        alt={buildBannerImageAltText(tile)}
-                        className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
+                        alt={buildCollectionImageAltText(tile.title, "hero spotlight")}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                         fallback={
                           <img
                             src={bestSellerHeroImage}
-                            alt={buildBannerImageAltText(tile)}
-                            className="block w-full h-auto transition duration-700 ease-out group-hover:scale-[1.01]"
+                            alt={buildCollectionImageAltText(tile.title, "hero spotlight")}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                           />
                         }
-                      /> 
-                      
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.1),rgba(8,30,73,0.2)_44%,rgba(8,30,73,0.88))]" />
+                    <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                      <p className="line-clamp-2 font-display text-[0.92rem] font-semibold leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)] sm:text-[1rem]">
+                        {tile.title}
+                      </p>
                     </div>
                   </Link>
                 ))}
               </div>
-              {heroPosterTiles.length > 1 ? (
-                <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-2">
-                  {heroPosterTiles.map((tile, index) => (
-                    <span
-                      key={`${tile.to}-dot-${index}`}
-                      className={`h-1.5 rounded-full transition-all ${
-                        index === activeHeroPosterIndex ? "w-6 bg-white/95" : "w-2 bg-white/55"
-                      }`}
-                    />
-                  ))}
-                </div>
-              ) : null}
             </div>
           </section>
         </Reveal>

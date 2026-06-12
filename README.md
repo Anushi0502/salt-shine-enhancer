@@ -51,6 +51,7 @@ Use `.env.local` for local development.
 
 - `VITE_SHOPIFY_STOREFRONT_URL`: Shopify storefront base URL.
 - `VITE_SALT_SHOP_URL`: canonical storefront URL used by runtime fallbacks.
+- `VITE_SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID`: Shopify Customer Account API client ID used for login and order history.
 - `VITE_DATA_MODE`: data mode (`live` recommended).
 - `VITE_SALT_PAGE_LIMIT`: page size for sync/data fetches.
 - `VITE_ABOUT_PAGE_HANDLE`: About page handle.

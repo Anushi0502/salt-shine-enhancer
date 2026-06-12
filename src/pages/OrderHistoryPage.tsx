@@ -222,25 +222,40 @@ const OrderHistoryPage = () => {
   const orders = account?.orders ?? [];
   const currencyCode = orders[0]?.currencyCode ?? "USD";
 
-  const totalSpent = useMemo(
-    () => orders.reduce((sum, order) => sum + order.totalAmount, 0),
-    [orders],
-  );
-  const openOrderCount = useMemo(() => orders.filter(isOpenOrder).length, [orders]);
-  const fulfilledOrderCount = useMemo(
-    () => orders.filter((order) => order.fulfillmentStatus === "Fulfilled").length,
-    [orders],
-  );
-  const needsAttentionCount = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          order.paymentStatus === "Refunded" ||
-          order.paymentStatus === "Voided" ||
-          order.fulfillmentStatus === "On hold",
-      ).length,
-    [orders],
-  );
+  const orderStats = useMemo(() => {
+    let totalSpent = 0;
+    let openOrderCount = 0;
+    let fulfilledOrderCount = 0;
+    let needsAttentionCount = 0;
+
+    for (const order of orders) {
+      totalSpent += order.totalAmount;
+
+      if (isOpenOrder(order)) {
+        openOrderCount += 1;
+      }
+
+      if (order.fulfillmentStatus === "Fulfilled") {
+        fulfilledOrderCount += 1;
+      }
+
+      if (
+        order.paymentStatus === "Refunded" ||
+        order.paymentStatus === "Voided" ||
+        order.fulfillmentStatus === "On hold"
+      ) {
+        needsAttentionCount += 1;
+      }
+    }
+
+    return {
+      totalSpent,
+      openOrderCount,
+      fulfilledOrderCount,
+      needsAttentionCount,
+    };
+  }, [orders]);
+  const { totalSpent, openOrderCount, fulfilledOrderCount, needsAttentionCount } = orderStats;
   const recentOrder = orders[0] ?? null;
   const customer = account?.customer ?? null;
   const normalizedSearch = normalizeText(search);

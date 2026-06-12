@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
@@ -19,6 +19,7 @@ import TrustStrip from "@/components/storefront/TrustStrip";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
@@ -124,6 +125,7 @@ const ShopPage = () => {
   const { handle: routeCollectionHandle } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
+  const deferredQuery = useDeferredValue(query);
   const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
   const collectionHandle = currentCollectionParam || DEFAULT_COLLECTION_HANDLE;
   const typeFilter = searchParams.get("type") || "";
@@ -200,8 +202,8 @@ const ShopPage = () => {
   }, [collectionHandle, selectedCollectionProductIds]);
 
   const textFilteredProducts = useMemo(
-    () => filterProducts(products, { query, productType: typeFilter, collections }),
-    [products, query, typeFilter, collections],
+    () => filterProducts(products, { query: deferredQuery, productType: typeFilter, collections }),
+    [products, deferredQuery, typeFilter, collections],
   );
 
   const collectionFilteredProducts = useMemo(() => {
@@ -297,6 +299,10 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+  const visibleProductIds = useMemo(() => visibleProducts.map((product) => product.id), [visibleProducts]);
+  const deferredVisibleProductIds = useDeferredValue(visibleProductIds);
+  const visibleRatingsQuery = useJudgeMeRatings(deferredVisibleProductIds);
+  const visibleRatingsByProductId = visibleRatingsQuery.data ?? {};
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
   useEffect(() => {
@@ -308,7 +314,7 @@ const ShopPage = () => {
       return;
     }
 
-    const normalizedQuery = query.trim();
+    const normalizedQuery = deferredQuery.trim();
     if (!normalizedQuery) {
       lastTrackedSearchRef.current = "";
       return;
@@ -329,7 +335,7 @@ const ShopPage = () => {
     collectionsLoading,
     productsError,
     productsLoading,
-    query,
+    deferredQuery,
     totalResults,
   ]);
   if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
@@ -692,7 +698,7 @@ const ShopPage = () => {
 
       <Reveal>
         <div
-          className={`salt-editorial-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5${
+          className={`salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5${
             selectedCollectionImage ? " salt-editorial-shell--image" : ""
           }`}
         >
@@ -704,7 +710,7 @@ const ShopPage = () => {
               className="salt-editorial-image"
             />
           ) : null}
-          <div className={`salt-editorial-wash${selectedCollectionImage ? " salt-editorial-wash--image" : ""}`} />
+          <div className={`salt-editorial-wash salt-shop-channel-wash${selectedCollectionImage ? " salt-shop-channel-wash--image" : ""}`} />
 
           <div className="relative">
             <SectionHeading
@@ -860,7 +866,11 @@ const ShopPage = () => {
                       delayMs={index * 35}
                       className="mx-auto h-full w-full max-w-[11.4rem] sm:max-w-[11.8rem] lg:max-w-[12.1rem] xl:max-w-[12.35rem]"
                     >
-                      <ProductCard product={product} variant="shop" />
+                      <ProductCard
+                        product={product}
+                        variant="shop"
+                        reviewSummary={visibleRatingsByProductId[product.id] ?? null}
+                      />
                     </Reveal>
                   ))}
                 </div>

@@ -77,12 +77,9 @@ const NotificationBootstrap = () => {
 
       void initializePushNotifications();
       void syncWeeklyNotifications();
-      void primeLiveShopifyData(queryClient)
-        .catch(() => undefined)
-        .finally(() => {
-          window.clearTimeout(launchTimeout);
-          finishLaunch();
-        });
+      void primeLiveShopifyData(queryClient).catch(() => undefined);
+      window.clearTimeout(launchTimeout);
+      finishLaunch();
 
       appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
         const route = normalizeAppRoute(event.url);

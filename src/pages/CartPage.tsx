@@ -22,6 +22,7 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
@@ -157,6 +158,9 @@ const CartPage = () => {
     100,
     Math.round((Math.min(subtotal, freeShippingThreshold) / freeShippingThreshold) * 100),
   );
+  const recommendedProductIds = useMemo(() => recommendedProducts.map((product) => product.id), [recommendedProducts]);
+  const recommendedRatingsQuery = useJudgeMeRatings(recommendedProductIds);
+  const recommendedRatingsById = recommendedRatingsQuery.data ?? {};
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -473,7 +477,11 @@ const CartPage = () => {
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recommendedProducts.map((product, index) => (
                 <Reveal key={product.id} delayMs={index * 60} className="h-full">
-                  <ProductCard product={product} variant="shop" />
+                  <ProductCard
+                    product={product}
+                    variant="shop"
+                    reviewSummary={recommendedRatingsById[product.id] ?? null}
+                  />
                 </Reveal>
               ))}
             </div>

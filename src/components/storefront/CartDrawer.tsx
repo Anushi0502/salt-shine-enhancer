@@ -16,7 +16,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 
 const CartDrawer = () => {
   const location = useLocation();
-  const { data: productsPayload } = useProducts();
   const {
     items,
     itemCount,
@@ -27,6 +26,7 @@ const CartDrawer = () => {
     removeItem,
     addItem,
   } = useCart();
+  const { data: productsPayload } = useProducts(isDrawerOpen);
 
   useEffect(() => {
     closeCartDrawer();
@@ -37,11 +37,16 @@ const CartDrawer = () => {
     [items],
   );
   const recommendedProducts = useMemo(
-    () =>
-      (productsPayload?.products || [])
+    () => {
+      if (!isDrawerOpen) {
+        return [];
+      }
+
+      return (productsPayload?.products || [])
         .filter((product) => !cartHandleSet.has(product.handle.trim().toLowerCase()))
-        .slice(0, 3),
-    [cartHandleSet, productsPayload],
+        .slice(0, 3);
+    },
+    [cartHandleSet, isDrawerOpen, productsPayload],
   );
 
   const invalidItemCount = items.filter((item) => !isValidShopifyVariantId(item.shopifyVariantId)).length;

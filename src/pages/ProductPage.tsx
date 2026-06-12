@@ -43,7 +43,7 @@ import {
   sortVariantsByPrice,
   stripHtml,
 } from "@/lib/formatters";
-import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { useJudgeMeProductRating, useJudgeMeRatings } from "@/lib/judgeme";
 import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
@@ -98,6 +98,10 @@ function uniqueStrings(values: string[]): string[] {
   return values.filter((value, index) => values.findIndex((entry) => entry === value) === index);
 }
 
+function stripContentLabel(input: string): string {
+  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:\-]?\s*/i, "").trim();
+}
+
 function extractProductBullets(bodyHtml: string, fallback: string): string[] {
   const bodyText = normalizeProductBodyText(bodyHtml);
   const sentences = stripHtml(bodyHtml)
@@ -109,9 +113,9 @@ function extractProductBullets(bodyHtml: string, fallback: string): string[] {
     [
       ...bodyText
         .split(/\n+/)
-        .map((line) => line.replace(/^[-•\u2022]+\s*/, "").trim())
+        .map((line) => stripContentLabel(line.replace(/^[-•\u2022]+\s*/, "").trim()))
         .filter(Boolean),
-      ...sentences,
+      ...sentences.map((sentence) => stripContentLabel(sentence)),
     ]
       .map((line) => line.replace(/\s+/g, " ").trim())
       .filter((line) => line.length >= 36 && line.length <= 170)
@@ -127,7 +131,7 @@ function extractProductBullets(bodyHtml: string, fallback: string): string[] {
   }
 
   if (fallback) {
-    return [fallback];
+    return [stripContentLabel(fallback)];
   }
 
   return [];
@@ -136,7 +140,7 @@ function extractProductBullets(bodyHtml: string, fallback: string): string[] {
 function extractProductSpecs(bodyHtml: string, productType: string, variantCount: number): ProductSpecPair[] {
   const lines = normalizeProductBodyText(bodyHtml)
     .split(/\n+/)
-    .map((line) => line.replace(/\s+/g, " ").trim())
+    .map((line) => stripContentLabel(line.replace(/\s+/g, " ").trim()))
     .filter(Boolean);
 
   const specs: ProductSpecPair[] = [];
@@ -200,8 +204,8 @@ const ProductPage = () => {
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
 
-  const products = data?.products || [];
-  const product = products.find((entry) => entry.handle === handle);
+  const products = useMemo(() => data?.products ?? [], [data]);
+  const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
@@ -257,6 +261,39 @@ const ProductPage = () => {
 
     trackMetaPixelViewContent(product, selectedVariant);
   }, [product, selectedVariant]);
+
+  const relatedProducts = useMemo(
+    () =>
+      product
+        ? products
+            .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
+            .slice(0, 5)
+        : [],
+    [product, products],
+  );
+  const recentlyViewedProducts = useMemo(
+    () =>
+      product
+        ? recentHandles
+            .filter((entry) => entry !== product.handle)
+            .map((entry) => products.find((candidate) => candidate.handle === entry))
+            .filter((entry): entry is (typeof products)[number] => Boolean(entry))
+            .slice(0, 5)
+        : [],
+    [product, products, recentHandles],
+  );
+  const productCardRatingIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...relatedProducts.map((entry) => entry.id),
+          ...recentlyViewedProducts.map((entry) => entry.id),
+        ]),
+      ),
+    [recentlyViewedProducts, relatedProducts],
+  );
+  const productCardRatingsQuery = useJudgeMeRatings(productCardRatingIds);
+  const productCardRatingsById = productCardRatingsQuery.data ?? {};
 
   if (isLoading) {
     return <LoadingState title="Loading product" subtitle="Preparing details, variants, and delivery info." />;
@@ -343,10 +380,6 @@ const ProductPage = () => {
         ? "Emerging trust signal"
         : "";
 
-  const relatedProducts = products
-    .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
-    .slice(0, 5);
-
   const primaryImage = productImage(product) || "";
   const imageSources = (product.images.length
     ? product.images.map((image) => image.src)
@@ -407,12 +440,6 @@ const ProductPage = () => {
 
     void openExternalUrl(checkoutTargetUrl);
   };
-
-  const recentlyViewedProducts = recentHandles
-    .filter((entry) => entry !== product.handle)
-    .map((entry) => products.find((candidate) => candidate.handle === entry))
-    .filter((entry): entry is (typeof products)[number] => Boolean(entry))
-    .slice(0, 5);
 
   const addToCart = () => {
     if (!selectedVariant || !isAvailable) {
@@ -547,22 +574,47 @@ const ProductPage = () => {
               </p>
             </div>
 
+            {!nativeApp ? (
+              <div className="mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Key details</p>
+                    <h2 className="mt-1 text-sm font-semibold text-foreground">Summary</h2>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    {detailBullets.length > 0 ? `${detailBullets.length} notes` : "Live summary"}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{productSummary}</p>
+                {detailBullets.length > 0 ? (
+                  <ul className="mt-3 space-y-2">
+                    {detailBullets.slice(0, 2).map((bullet, index) => (
+                      <li key={`${bullet}-${index}`} className="flex gap-2 text-sm leading-6 text-foreground/90">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        <span className="line-clamp-3">{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+
             {nativeApp ? (
               <div className="mt-4 space-y-3">
                 <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.35)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Quick view</p>
-                      <h2 className="mt-1 text-sm font-semibold text-foreground">What shoppers notice first</h2>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Key details</p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">Summary</h2>
                     </div>
                     <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                      {detailBullets.length > 0 ? `${detailBullets.length} highlights` : "Live summary"}
+                      {detailBullets.length > 0 ? `${detailBullets.length} notes` : "Live summary"}
                     </span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{productSummary}</p>
                   {detailBullets.length > 0 ? (
                     <ul className="mt-3 space-y-2">
-                      {detailBullets.slice(0, 3).map((bullet, index) => (
+                      {detailBullets.slice(0, 2).map((bullet, index) => (
                         <li key={`${bullet}-${index}`} className="flex gap-2 text-sm leading-6 text-foreground/90">
                           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                           <span className="line-clamp-3">{bullet}</span>
@@ -575,11 +627,11 @@ const ProductPage = () => {
                 <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Specifications</p>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Specs</p>
                       <h2 className="mt-1 text-sm font-semibold text-foreground">At a glance</h2>
                     </div>
                     <span className="shrink-0 rounded-full border border-border/70 bg-muted/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                      {productSpecs.length > 0 ? `${productSpecs.length} notes` : "Live catalog"}
+                      {productSpecs.length > 0 ? `${productSpecs.length} notes` : "Live"}
                     </span>
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -596,7 +648,7 @@ const ProductPage = () => {
                       ))
                     ) : (
                       <div className="rounded-xl border border-dashed border-border/70 bg-muted/25 px-3 py-3 text-sm leading-6 text-muted-foreground sm:col-span-2">
-                        More live detail appears below in the description accordion, while the app keeps the purchase summary compact.
+                        More detail appears below.
                       </div>
                     )}
                   </div>
@@ -840,17 +892,6 @@ const ProductPage = () => {
                 </p>
               ) : null}
             </div>
-
-            <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-              {highlights.map((item) => (
-                <span
-                  key={item}
-                  className="salt-outline-chip shrink-0 px-2.5 py-1 text-[0.62rem]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
           </aside>
         </Reveal>
       </div>
@@ -872,7 +913,11 @@ const ProductPage = () => {
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
-                  <ProductCard product={related} variant="shop" />
+                  <ProductCard
+                    product={related}
+                    variant="shop"
+                    reviewSummary={productCardRatingsById[related.id] ?? null}
+                  />
                 </Reveal>
               ))}
             </div>
@@ -896,7 +941,11 @@ const ProductPage = () => {
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55} className="h-full">
-                  <ProductCard product={entry} variant="shop" />
+                  <ProductCard
+                    product={entry}
+                    variant="shop"
+                    reviewSummary={productCardRatingsById[entry.id] ?? null}
+                  />
                 </Reveal>
               ))}
             </div>
