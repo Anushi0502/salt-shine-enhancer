@@ -1,861 +1,411 @@
-import { FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronRight, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
-import BrandLogo from "@/components/layout/BrandLogo";
-import { filterProducts } from "@/lib/catalog";
-import { getBrowserStorage } from "@/lib/browser-storage";
+import { ChevronDown, Globe, MapPin, Menu, Search, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
-import { isNativeApp } from "@/lib/mobile";
-import { useCollections, useProducts } from "@/lib/shopify-data";
-import { useWishlist } from "@/lib/wishlist";
 
-type NavItem = {
+const categoryOptions = [
+  "All",
+  "Himalayan Salt",
+  "Rock Salt",
+  "Sea Salt",
+  "Black Salt",
+] as const;
+
+type HeaderCategory = (typeof categoryOptions)[number];
+
+type HeaderNavItem = {
   label: string;
   to: string;
-  isActive?: (pathname: string) => boolean;
+  isActive?: (pathname: string, search: string) => boolean;
 };
 
-const primaryNav: NavItem[] = [
+const secondaryNavItems: HeaderNavItem[] = [
   {
-    label: "Departments",
-    to: "/collections",
-    isActive: (pathname) => pathname.startsWith("/collections"),
+    label: "All",
+    to: "/shop",
+    isActive: (pathname) => pathname === "/" || pathname.startsWith("/shop"),
   },
   {
-    label: "Best Sellers",
-    to: "/shop?sort=featured",
-    isActive: (pathname) => pathname === "/shop" || pathname.startsWith("/search"),
+    label: "Today's Deals",
+    to: "/shop?sort=discount",
+    isActive: (pathname, search) => pathname === "/shop" && search.includes("sort=discount"),
   },
   {
-    label: "Books & Planners",
-    to: "/collections/books",
-    isActive: (pathname) => pathname === "/collections/books",
+    label: "Himalayan Salt",
+    to: "/search?category=Himalayan%20Salt",
+    isActive: (_, search) => new URLSearchParams(search).get("category") === "Himalayan Salt",
   },
   {
-    label: "Under $35",
-    to: "/collections/under-35",
-    isActive: (pathname) => pathname === "/collections/under-35",
+    label: "Rock Salt",
+    to: "/search?category=Rock%20Salt",
+    isActive: (_, search) => new URLSearchParams(search).get("category") === "Rock Salt",
   },
   {
-    label: "Home",
-    to: "/collections/home-decor",
-    isActive: (pathname) => pathname === "/collections/home-decor",
+    label: "Sea Salt",
+    to: "/search?category=Sea%20Salt",
+    isActive: (_, search) => new URLSearchParams(search).get("category") === "Sea Salt",
   },
   {
-    label: "Gifts",
-    to: "/collections/gifts",
-    isActive: (pathname) => pathname === "/collections/gifts",
+    label: "Black Salt",
+    to: "/search?category=Black%20Salt",
+    isActive: (_, search) => new URLSearchParams(search).get("category") === "Black Salt",
   },
   {
-    label: "Track Order",
-    to: "/account/orders",
-    isActive: (pathname) => pathname.startsWith("/account"),
+    label: "Bulk Orders",
+    to: "/contact?topic=bulk-orders",
   },
   {
-    label: "Support",
+    label: "Customer Service",
     to: "/contact",
   },
 ];
 
-const mobileNav: NavItem[] = [...primaryNav];
-
-function isNavItemActive(item: NavItem, pathname: string): boolean {
+function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string): boolean {
   if (item.isActive) {
-    return item.isActive(pathname);
-  }
-
-  if (item.to === "/") {
-    return pathname === "/";
+    return item.isActive(pathname, search);
   }
 
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
-const RECENT_SEARCHES_KEY = "salt-recent-searches";
-const DEFAULT_TRENDING_SEARCHES = [
-  "Gifts",
-  "Candles",
-  "Kitchen",
-  "Pet accessories",
-  "Home decor",
-];
-
-function normalizeSearchPhrase(input: string): string {
-  return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function approximateSearchScore(haystack: string, queryTokens: string[]): number {
-  if (!haystack || !queryTokens.length) {
-    return 0;
-  }
-
-  const words = haystack.split(" ").filter(Boolean);
-  let score = 0;
-
-  queryTokens.forEach((token) => {
-    if (!token) {
-      return;
-    }
-
-    if (haystack.includes(token)) {
-      score += 5;
-      return;
-    }
-
-    const prefix = token.length > 3 ? token.slice(0, token.length - 1) : token;
-    if (words.some((word) => word.startsWith(prefix))) {
-      score += 3;
-      return;
-    }
-
-    const compact = token.replace(/[aeiou]/g, "");
-    if (compact && words.some((word) => word.includes(compact))) {
-      score += 1;
-    }
-  });
-
-  return score;
+function SaltBagMark({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/80 shadow-[0_10px_24px_-18px_rgba(12,32,72,0.3)] ${className}`}
+    >
+      <svg
+        viewBox="0 0 56 56"
+        className="h-8 w-8"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="salt-bag-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#D0E4FC" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M16.5 18.5c0-3.6 2.9-6.5 6.5-6.5h10c3.6 0 6.5 2.9 6.5 6.5v1.8c0 1.2-.6 2.4-1.6 3.1l-1.7 1.2c2.4 2.1 3.8 5.1 3.8 8.3v7.4c0 4.8-3.9 8.7-8.7 8.7h-7.8c-4.8 0-8.7-3.9-8.7-8.7v-7.4c0-3.2 1.4-6.2 3.8-8.3l-1.7-1.2c-1-.7-1.6-1.9-1.6-3.1v-1.8Z"
+          fill="url(#salt-bag-gradient)"
+          stroke="#0C2048"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M22 16.5h12"
+          stroke="#0C2048"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M20.4 32.2l4.2-4.2 4.2 4.2 4.2-4.2 4.2 4.2"
+          fill="none"
+          stroke="#0C2048"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M23.2 23.5l2-2 2 2-2 2-2-2Zm8.4 0l2-2 2 2-2 2-2-2Z"
+          fill="#ECF4FC"
+          stroke="#0C2048"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
 }
 
 const MainHeader = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { itemCount, openCartDrawer } = useCart();
-  const { itemCount: wishlistCount } = useWishlist();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const deferredSearchInput = useDeferredValue(searchInput);
-  const nativeApp = isNativeApp();
-  const actionButtonClassName = nativeApp
-    ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/18 hover:bg-white/12 hover:text-white sm:h-10 sm:w-10"
-    : "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/20 hover:bg-[rgba(255,255,255,0.12)] hover:text-white sm:h-10 sm:w-10";
-  const showHeaderSearch = true;
-  const shouldLoadSearchData = searchDropdownOpen;
-  const { data: productsData } = useProducts(shouldLoadSearchData);
-  const { data: collectionsData } = useCollections(shouldLoadSearchData);
-  const allProducts = productsData?.products ?? [];
-  const allCollections = collectionsData?.collections ?? [];
-  const hasSearchQuery = Boolean(searchInput.trim());
-  const deferredSearchQuery = deferredSearchInput.trim();
-  const dropdownProducts = useMemo(() => {
-    if (!searchDropdownOpen) {
-      return [];
-    }
-
-    if (!allProducts.length) {
-      return [];
-    }
-
-    if (!hasSearchQuery) {
-      return allProducts.slice(0, 4);
-    }
-
-    const strictMatches = filterProducts(allProducts, { query: deferredSearchQuery }).slice(0, 4);
-    if (strictMatches.length > 0) {
-      return strictMatches;
-    }
-
-    const normalizedQuery = normalizeSearchPhrase(deferredSearchQuery);
-    const queryTokens = normalizedQuery.split(" ").filter(Boolean);
-    if (!queryTokens.length) {
-      return [];
-    }
-
-    return allProducts
-      .map((product) => {
-        const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
-        const searchable = normalizeSearchPhrase(`${product.title} ${product.product_type || ""} ${tags}`);
-        const score = approximateSearchScore(searchable, queryTokens);
-        return score > 0 ? { product, score } : null;
-      })
-      .filter((entry): entry is { product: (typeof allProducts)[number]; score: number } => Boolean(entry))
-      .sort((left, right) => right.score - left.score || minPrice(left.product) - minPrice(right.product))
-      .slice(0, 4)
-      .map((entry) => entry.product);
-  }, [allProducts, deferredSearchQuery, hasSearchQuery, searchDropdownOpen]);
-  const trendingSearches = useMemo(() => {
-    if (!searchDropdownOpen || !allProducts.length) {
-      return DEFAULT_TRENDING_SEARCHES;
-    }
-
-    const counts = new Map<string, number>();
-
-    allProducts.forEach((product) => {
-      const label = String(product.product_type || "").trim();
-      if (!label) {
-        return;
-      }
-      counts.set(label, (counts.get(label) || 0) + 1);
-    });
-
-    const topFromCatalog = [...counts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .map(([label]) => label)
-      .slice(0, 5);
-    const merged = [...topFromCatalog, ...DEFAULT_TRENDING_SEARCHES];
-
-    return merged.filter((value, index) => merged.findIndex((entry) => entry.toLowerCase() === value.toLowerCase()) === index).slice(0, 6);
-  }, [allProducts, searchDropdownOpen]);
-  const categorySuggestions = useMemo(() => {
-    if (!searchDropdownOpen) {
-      return [];
-    }
-
-    const query = normalizeSearchPhrase(deferredSearchQuery);
-    const suggestions: Array<{ label: string; to: string }> = [];
-    const seen = new Set<string>();
-
-    if (!allCollections.length && !allProducts.length) {
-      return suggestions;
-    }
-
-    allCollections.forEach((collection) => {
-      const label = String(collection.title || "").trim();
-      const handle = String(collection.handle || "").trim();
-      if (!label || !handle) {
-        return;
-      }
-
-      if (query) {
-        const searchable = normalizeSearchPhrase(`${collection.title} ${collection.handle}`);
-        if (!searchable.includes(query)) {
-          return;
-        }
-      }
-
-      const key = `collection:${label.toLowerCase()}`;
-      if (seen.has(key)) {
-        return;
-      }
-
-      seen.add(key);
-      suggestions.push({ label, to: `/collections/${handle}` });
-    });
-
-    const typeCounts = new Map<string, number>();
-    allProducts.forEach((product) => {
-      const label = String(product.product_type || "").trim();
-      if (!label) {
-        return;
-      }
-      typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
-    });
-
-    [...typeCounts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .forEach(([label]) => {
-        if (query && !normalizeSearchPhrase(label).includes(query)) {
-          return;
-        }
-
-        const key = `type:${label.toLowerCase()}`;
-        if (seen.has(key)) {
-          return;
-        }
-
-        seen.add(key);
-        suggestions.push({ label, to: `/shop?type=${encodeURIComponent(label)}` });
-      });
-
-    return suggestions.slice(0, 8);
-  }, [allCollections, allProducts, deferredSearchQuery, searchDropdownOpen]);
-  const bestSellerCollection = useMemo(
-    () =>
-      searchDropdownOpen
-        ? allCollections.find((collection) =>
-            /best[\s-]*sellers?/i.test(`${collection.handle} ${collection.title}`),
-          ) || null
-        : null,
-    [allCollections, searchDropdownOpen],
-  );
-  const summerCollection = useMemo(
-    () =>
-      searchDropdownOpen
-        ? allCollections.find((collection) =>
-            /(summer|sunny|vacation|beach)/i.test(`${collection.handle} ${collection.title}`),
-          ) || null
-        : null,
-    [allCollections, searchDropdownOpen],
-  );
-  const popularRoutes = useMemo(
-    () => [
-      { label: "All Products", to: "/shop?collection=all-products" },
-      {
-        label: "Best Sellers",
-        to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/shop?sort=featured",
-      },
-      { label: "NEW ARRIVALS", to: "/shop?sort=newest" },
-      {
-        label: "Summer Collection",
-        to: summerCollection ? `/collections/${summerCollection.handle}` : "/collections",
-      },
-    ],
-    [bestSellerCollection, summerCollection],
-  );
-  const quickCategoryLinks = useMemo(() => categorySuggestions.slice(0, 3), [categorySuggestions]);
-  const quickSearchTerms = useMemo(
-    () => (recentSearches.length ? recentSearches : trendingSearches).slice(0, 3),
-    [recentSearches, trendingSearches],
-  );
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setSearchDropdownOpen(false);
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
-    try {
-      const storage = getBrowserStorage();
-      const raw = storage?.getItem(RECENT_SEARCHES_KEY);
-      if (!raw) {
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed)) {
-        const sanitized = parsed
-          .filter((entry): entry is string => typeof entry === "string")
-          .map((entry) => entry.trim())
-          .filter(Boolean)
-          .slice(0, 6);
-        setRecentSearches(sanitized);
-      }
-    } catch {
-      setRecentSearches([]);
-    }
-  }, []);
+  const headerRef = useRef<HTMLElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<HeaderCategory>("All");
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setSearchInput(params.get("q") || "");
+    const query = params.get("q") || "";
+    const category = params.get("category");
+
+    setSearchQuery(query);
+    setSelectedCategory(
+      category && categoryOptions.includes(category as HeaderCategory)
+        ? (category as HeaderCategory)
+        : "All",
+    );
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    if (!mobileOpen || typeof window === "undefined") {
-      return;
-    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (!headerRef.current) {
+        return;
+      }
 
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+      if (!headerRef.current.contains(event.target as Node)) {
+        setCategoryOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCategoryOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
     };
-  }, [mobileOpen]);
-
-  const closeMobileMenu = () => {
-    setMobileOpen(false);
-  };
-
-  const rememberSearchQuery = (query: string) => {
-    const storage = getBrowserStorage();
-    if (!query || !storage) {
-      return;
-    }
-
-    const next = [query, ...recentSearches.filter((entry) => entry.toLowerCase() !== query.toLowerCase())].slice(0, 6);
-    setRecentSearches(next);
-    storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-  };
-
-  const applySearchQuery = (value: string) => {
-    const normalizedQuery = value.trim();
-    if (!normalizedQuery) {
-      navigate("/shop?collection=all-products");
-      return;
-    }
-
-    rememberSearchQuery(normalizedQuery);
-    navigate(`/search?q=${encodeURIComponent(normalizedQuery)}`);
-  };
-
-  const runQuickSearch = (value: string) => {
-    setSearchInput(value);
-    setSearchDropdownOpen(false);
-    applySearchQuery(value);
-  };
+  }, []);
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSearchDropdownOpen(false);
-    applySearchQuery(searchInput);
+
+    const query = searchQuery.trim();
+    const params = new URLSearchParams();
+
+    if (query) {
+      params.set("q", query);
+    }
+
+    if (selectedCategory !== "All") {
+      params.set("category", selectedCategory);
+    }
+
+    navigate(params.toString() ? `/search?${params.toString()}` : "/search");
+    setCategoryOpen(false);
   };
+
+  const setCategory = (nextCategory: HeaderCategory) => {
+    setSelectedCategory(nextCategory);
+    setCategoryOpen(false);
+  };
+
+  const cartLabel = `Cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`;
 
   return (
     <header
-      className={`sticky top-0 z-50 backdrop-blur-[10px] ${
-        nativeApp
-          ? "border-b border-white/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98)_0%,rgba(21,21,21,0.96)_100%)] shadow-[0_22px_42px_-34px_rgba(0,0,0,0.62)]"
-          : "border-b border-[#243247] bg-[linear-gradient(180deg,rgba(18,25,36,0.98)_0%,rgba(24,33,47,0.97)_100%)] text-white shadow-[0_22px_42px_-34px_rgba(0,0,0,0.66)]"
-      }`}
+      ref={headerRef}
+      className="sticky top-0 z-50 border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
     >
-      {nativeApp ? null : (
-        <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
-          <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#f3d78a] sm:px-6 sm:text-[0.72rem] lg:px-8">
-            <span>Free Shipping on All US Orders</span>
-            <span className="mx-3 text-white/28">|</span>
-            <span>30-Day Easy Returns</span>
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-start gap-3 px-3 py-3 sm:px-4 lg:px-8">
+        <div className="order-1 flex min-w-0 flex-1 items-center justify-between gap-3 md:flex-none md:justify-start">
+          <Link
+            to="/"
+            aria-label="Salt Online Store"
+            className="flex min-w-0 items-center gap-2 rounded-full px-1.5 py-1 transition hover:bg-white/65"
+          >
+            <SaltBagMark />
+            <span className="min-w-0 truncate text-[1.02rem] font-semibold tracking-[0.01em] text-[#102A43] sm:text-[1.08rem]">
+              Salt Online Store
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              className="hidden h-10 items-center gap-1.5 rounded-full border border-[#BFD7F2] bg-white/85 px-3 text-[0.78rem] font-semibold text-[#102A43] shadow-sm transition hover:bg-[#F5FAFF] sm:inline-flex"
+              aria-label="Language EN"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>EN</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openCartDrawer}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              aria-label={cartLabel}
+            >
+              <ShoppingCart className="h-4.5 w-4.5" />
+              {itemCount > 0 ? (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                  {itemCount}
+                </span>
+              ) : null}
+            </button>
           </div>
+
+          <button
+            type="button"
+            className="hidden h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/80 px-4 text-left shadow-sm transition hover:bg-[#F5FAFF] md:inline-flex"
+            aria-label="Deliver to India"
+          >
+            <MapPin className="h-4 w-4 text-[#0C2048]" />
+            <span className="leading-tight">
+              <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#5C748F]">
+                Deliver to
+              </span>
+              <span className="block text-sm font-semibold text-[#102A43]">India</span>
+            </span>
+          </button>
         </div>
-      )}
 
-      <div className={`flex w-full items-center gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8 ${nativeApp ? "text-white" : "text-white"}`}>
-        <Link to="/" className="shrink-0 self-start" aria-label="Go to SALT homepage">
-          <BrandLogo withWordmark size="md" />
-        </Link>
-
-        <nav
-          className="hidden"
+        <form
+          onSubmit={submitSearch}
+          className="order-3 basis-full md:order-2 md:min-w-0 md:flex-1"
         >
-          {primaryNav.map((item) => {
-            const active = isNavItemActive(item, location.pathname);
+          <div className="relative isolate flex h-12 overflow-visible rounded-full border border-[#BFD7F2] bg-white shadow-[0_14px_30px_-26px_rgba(12,32,72,0.35)]">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCategoryOpen((open) => !open)}
+                aria-label={`Search category ${selectedCategory}`}
+                aria-haspopup="listbox"
+                aria-expanded={categoryOpen}
+                className="flex h-full min-w-[6.8rem] items-center justify-between gap-2 rounded-l-full border-r border-[#BFD7F2] bg-[#D0E4FC] px-3 text-left text-sm font-semibold text-[#0C2048] transition hover:bg-[#c3dbfa] sm:min-w-[10.25rem]"
+              >
+                <span className="truncate">{selectedCategory}</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 transition ${categoryOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {categoryOpen ? (
+                <div
+                  id="header-category-menu"
+                  role="listbox"
+                  className="absolute left-0 top-[calc(100%+0.55rem)] z-40 w-[min(18rem,calc(100vw-1.25rem))] rounded-2xl border border-[#BFD7F2] bg-white p-2 shadow-[0_20px_40px_-28px_rgba(12,32,72,0.3)]"
+                >
+                  {categoryOptions.map((option) => {
+                    const active = option === selectedCategory;
+
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => setCategory(option)}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
+                          active
+                            ? "bg-[#D0E4FC] font-semibold text-[#0C2048]"
+                            : "text-[#102A43] hover:bg-[#ECF4FC]"
+                        }`}
+                      >
+                        <span>{option}</span>
+                        {active ? (
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0C2048]">
+                            Selected
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+
+            <label className="relative flex min-w-0 flex-1 items-center">
+              <span className="sr-only">Search Salt Online Store</span>
+              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#5C748F]" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search Salt Online Store"
+                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-sm text-[#102A43] outline-none placeholder:text-[#7A94B1]"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="inline-flex h-full items-center justify-center gap-2 rounded-r-full bg-[#0C2048] px-3 text-sm font-semibold text-white transition hover:bg-[#102A43] sm:px-5"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Search</span>
+            </button>
+          </div>
+        </form>
+
+        <div className="order-2 ml-auto hidden items-center gap-2 md:order-3 md:flex">
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/80 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#F5FAFF]"
+            aria-label="Language EN"
+          >
+            <Globe className="h-4 w-4" />
+            <span>EN</span>
+          </button>
+
+          <Link
+            to="/account"
+            aria-label="Hello, sign in / Account & Lists"
+            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
+          >
+            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
+              Hello, sign in
+            </span>
+            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
+              Account & Lists
+            </span>
+          </Link>
+
+          <Link
+            to="/account/orders"
+            aria-label="Returns / & Orders"
+            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
+          >
+            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
+              Returns
+            </span>
+            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
+              & Orders
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={openCartDrawer}
+            className="relative inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/90 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#D0E4FC]"
+            aria-label={cartLabel}
+          >
+            <ShoppingCart className="h-4.5 w-4.5" />
+            <span className="hidden sm:inline">Cart</span>
+            {itemCount > 0 ? (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                {itemCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
+
+      <div className="border-t border-[#BFD7F2] bg-[#0C2048]">
+        <nav
+          aria-label="Secondary navigation"
+          className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
+        >
+          {secondaryNavItems.map((item) => {
+            const active = isActiveNavItem(item, location.pathname, location.search);
 
             return (
               <Link
                 key={item.label}
                 to={item.to}
-                className={`rounded-full px-3 py-2 font-display text-[0.98rem] leading-none transition-colors xl:text-[1.05rem] ${
+                className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 transition ${
                   active
-                    ? nativeApp
-                      ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-                      : "bg-[#f2b600] text-[#131921] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)]"
-                    : nativeApp
-                      ? "text-white/74 hover:bg-white/8 hover:text-white"
-                      : "text-white/82 hover:bg-white/8 hover:text-white"
+                    ? "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]"
+                    : "border-white/10 bg-white/5 text-white/90 hover:border-[#D0E4FC] hover:bg-[#D0E4FC] hover:text-[#0C2048]"
                 }`}
               >
-                {item.label}
+                {item.label === "All" ? (
+                  <Menu className="h-4 w-4" />
+                ) : null}
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
-
-        <div className="ml-auto flex items-center gap-1.5 min-[420px]:gap-2">
-          {showHeaderSearch ? (
-            <form onSubmit={submitSearch} className="relative hidden min-w-0 flex-1 lg:block xl:flex-[1.2]">
-              <label className="relative block w-full">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  onFocus={() => setSearchDropdownOpen(true)}
-                  onBlur={() => {
-                    window.setTimeout(() => setSearchDropdownOpen(false), 120);
-                  }}
-                  placeholder="Search products, deals, and order help"
-                  className="h-11 w-full rounded-full border border-white/12 bg-white pl-10 pr-28 text-[0.92rem] text-[#1b2e4f] shadow-[0_10px_18px_-18px_rgba(0,0,0,0.55)] outline-none placeholder:text-[#6a80a8] focus:border-[#f2b600] focus:shadow-[0_0_0_3px_rgba(242,182,0,0.22)]"
-                  aria-label="Search products"
-                />
-                {searchInput.trim() ? (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      setSearchInput("");
-                    }}
-                    className="absolute right-11 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#2f5eaa] transition hover:bg-[#e8f0ff]"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2b600] px-4 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#131921] transition hover:bg-[#ffd54a]"
-                >
-                  Search
-                </button>
-              </label>
-
-              {searchDropdownOpen ? (
-                <div
-                  className="absolute right-0 top-[calc(100%+0.45rem)] z-[80] hidden w-[min(840px,calc(100vw-2rem))] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] gap-1.5 rounded-[0.9rem] border border-[#c5d8fc] bg-[#f3f8ff] p-2 shadow-[0_26px_48px_-40px_rgba(20,58,128,0.52)] lg:grid"
-                  onMouseDown={(event) => event.preventDefault()}
-                >
-                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
-                    <div className="flex items-center justify-between border-b border-[#d8e6ff] pb-2">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Products</p>
-                      <button
-                        type="button"
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          setSearchDropdownOpen(false);
-                          applySearchQuery(searchInput);
-                        }}
-                        className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4f6b9c] transition hover:text-[#1b3f8c]"
-                      >
-                        Search all
-                      </button>
-                    </div>
-
-                    <div className="mt-2 grid max-h-[352px] grid-cols-1 gap-1.5 overflow-y-auto pr-1">
-                      {dropdownProducts.map((product) => {
-                        const image = productImage(product);
-                        const price = formatMoney(minPrice(product));
-                        return (
-                          <Link
-                            key={product.id}
-                            to={`/products/${product.handle}`}
-                            onClick={() => setSearchDropdownOpen(false)}
-                            className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.75rem] border border-[#d2e2ff] bg-[#f9fbff] px-2 py-1.5 transition hover:border-[#aac4ef] hover:bg-[#eef5ff]"
-                          >
-                            {image ? (
-                              <img
-                                src={image}
-                                alt={product.title}
-                                className="h-10 w-10 rounded-[0.65rem] object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="grid h-10 w-10 place-items-center rounded-[0.65rem] bg-[#eaf2ff] text-[0.42rem] font-bold uppercase tracking-[0.08em] text-[#5d75a2]">
-                                SALT
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="line-clamp-2 text-[0.82rem] font-semibold leading-tight text-[#1c3761]">
-                                {conciseTitle(product.title, 36)}
-                              </p>
-                              <p className="mt-0.5 text-[0.5rem] font-semibold uppercase tracking-[0.13em] text-[#5a729d]">
-                                {product.product_type || "Curated pick"}
-                              </p>
-                            </div>
-                            <div className="flex min-h-full flex-col items-end justify-between gap-1.5 text-right">
-                              <p className="text-[0.84rem] font-semibold leading-none text-[#193764]">{price}</p>
-                              <span className="inline-flex items-center gap-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#496793]">
-                                View
-                                <ChevronRight className="h-3 w-3" />
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })}
-
-                      {hasSearchQuery && !dropdownProducts.length ? (
-                        <div className="rounded-[1rem] border border-dashed border-[#c7daff] px-3 py-4 text-sm text-[#496793]">
-                          <p>No product matches this search yet. Try a category shortcut:</p>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
-                              <button
-                                key={entry.label}
-                                type="button"
-                                onMouseDown={(event) => {
-                                  event.preventDefault();
-                                  setSearchDropdownOpen(false);
-                                }}
-                                onClick={() => {
-                                  if ("to" in entry) {
-                                    navigate(entry.to);
-                                  }
-                                }}
-                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
-                              >
-                                {entry.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
-                    <div className="flex items-start justify-between">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Collections</p>
-                      <button
-                        type="button"
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          setSearchDropdownOpen(false);
-                        }}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#cadbf8] text-[#6a81ab] transition hover:bg-[#ecf3ff] hover:text-[#163f87]"
-                        aria-label="Close search"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="mt-3 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
-                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Popular routes</p>
-                      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-                        {popularRoutes.map((route) => (
-                          <Link
-                            key={route.label}
-                            to={route.to}
-                            onClick={() => setSearchDropdownOpen(false)}
-                            className="inline-flex items-center justify-between rounded-[0.7rem] border border-transparent bg-white px-2 py-1.5 text-[0.74rem] font-medium text-[#1c3761] transition hover:border-[#b4cbf1] hover:bg-[#edf4ff]"
-                          >
-                            <span>{route.label}</span>
-                            <ChevronRight className="h-3 w-3 text-[#345f9b]" />
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-1.5 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Quick picks</p>
-                        <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#667ea8]">
-                          {recentSearches.length ? "Recent first" : "Trending first"}
-                        </p>
-                      </div>
-
-                      {quickCategoryLinks.length ? (
-                        <div className="mt-2.5">
-                          <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">Categories</p>
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {quickCategoryLinks.map((entry) => (
-                              <Link
-                                key={`${entry.label}-${entry.to}`}
-                                to={entry.to}
-                                onClick={() => setSearchDropdownOpen(false)}
-                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
-                              >
-                                {entry.label}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      <div className={quickCategoryLinks.length ? "mt-2.5" : "mt-3"}>
-                        <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">
-                          {recentSearches.length ? "Recent searches" : "Trending searches"}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {quickSearchTerms.map((term) => (
-                            <button
-                              key={term}
-                              type="button"
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                runQuickSearch(term);
-                              }}
-                              className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
-                            >
-                              {term}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              ) : null}
-            </form>
-          ) : null}
-
-          {!nativeApp ? (
-            <>
-              <Link to="/wishlist" className={actionButtonClassName} aria-label="Open wishlist">
-                <Heart
-                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${
-                    wishlistCount > 0 ? "fill-[#f2b600] text-[#f2b600]" : ""
-                  }`}
-                />
-                {wishlistCount > 0 ? (
-                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#f2b600] text-[0.58rem] font-bold text-[#153a80]">
-                    {wishlistCount}
-                  </span>
-                ) : null}
-              </Link>
-
-              <button
-                type="button"
-                onClick={openCartDrawer}
-                className={actionButtonClassName}
-                aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
-              >
-                <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                {itemCount > 0 ? (
-                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#225ed6] text-[0.58rem] font-bold text-white">
-                    {itemCount}
-                  </span>
-                ) : null}
-              </button>
-            </>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={() => setMobileOpen((open) => !open)}
-            className={`${actionButtonClassName} lg:hidden`}
-            aria-label={nativeApp ? "Open browse menu" : "Toggle navigation menu"}
-          >
-            {mobileOpen ? (
-              <X className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-            ) : (
-              <Menu className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-            )}
-          </button>
-        </div>
       </div>
-
-      {nativeApp ? null : (
-        <div className="border-t border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02))]">
-          <div className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/82 sm:px-6 lg:px-8">
-            {primaryNav.map((item) => {
-              const active = isNavItemActive(item, location.pathname);
-
-              return (
-                <Link
-                  key={`bar-${item.label}`}
-                  to={item.to}
-                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
-                    active
-                      ? "border-[#f2b600] bg-[#f2b600] text-[#131921] shadow-[0_12px_22px_-18px_rgba(242,182,0,0.55)]"
-                      : "border-white/12 bg-white/6 text-white/80 hover:border-white/22 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {showHeaderSearch ? (
-        <div
-          className={`border-t px-3 py-2 lg:hidden ${
-            nativeApp ? "border-white/10 bg-[#121212]" : "border-white/10 bg-[#131921]"
-          }`}
-        >
-          <div className="w-full">
-            <form onSubmit={submitSearch}>
-              <label className="relative block">
-                <Search
-                  className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
-                    nativeApp ? "text-[#847b70]" : "text-[#5e78a6]"
-                  }`}
-                />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search products, deals, and order help"
-                  className={`h-10 w-full rounded-full pl-10 pr-24 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)] ${
-                    nativeApp
-                      ? "border border-[#e0d7cc] bg-[#fffdf8] text-[#121212] placeholder:text-[#82796c] focus:border-[#d61f26] focus:shadow-[0_0_0_3px_rgba(214,31,38,0.12)]"
-                      : "border border-[#b8cff8] bg-white text-[#1b2e4f] focus:border-[#7ea6ea]"
-                  }`}
-                  aria-label="Search products"
-                />
-                <button
-                  type="submit"
-                  className={`absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition ${
-                    nativeApp ? "bg-[#151515] hover:bg-[#d61f26]" : "bg-[#1d4faa] hover:bg-[#153f8b]"
-                  }`}
-                >
-                  Search
-                </button>
-              </label>
-            </form>
-          </div>
-        </div>
-      ) : null}
-
-      {mobileOpen ? (
-        <div className={`border-t px-3 py-4 lg:hidden ${nativeApp ? "border-white/10 bg-[#f6f1e8]" : "border-[#d7e5ff] bg-[#f1f7ff]"}`}>
-          {nativeApp ? (
-            <div className="grid w-full gap-3">
-              <div className="rounded-[1.35rem] border border-[#ddd5c9] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] p-3 shadow-[0_22px_42px_-32px_rgba(17,17,17,0.18)]">
-                <div className="flex items-center justify-between gap-3 border-b border-[#e6ded2] pb-2.5">
-                  <div>
-                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#171717]">Browse</p>
-                    <p className="mt-1 text-sm text-[#6f6659]">
-                      Wishlist, cart, order tracking, and recent products stay in the app drawer.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeMobileMenu}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d9d0c5] text-[#6d655a] transition hover:bg-[#f6f0e8] hover:text-[#171717]"
-                    aria-label="Close browse menu"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Link
-                    to="/wishlist"
-                    onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
-                  >
-                    Wishlist
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMobileMenu();
-                      openCartDrawer();
-                    }}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
-                  >
-                    Cart ({itemCount})
-                  </button>
-                  <Link
-                    to="/account/orders"
-                    onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
-                  >
-                    Order tracking
-                  </Link>
-                  <Link
-                    to="/recently-viewed"
-                    onClick={closeMobileMenu}
-                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
-                  >
-                    Recently viewed
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-          ) : (
-            <div className="grid w-full gap-2">
-              {mobileNav.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  onClick={closeMobileMenu}
-                  className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 font-display text-[1rem] transition ${
-                    isNavItemActive(item, location.pathname)
-                      ? "border-[#98b8ef] bg-[#e7f0ff] text-[#153f8d]"
-                      : "text-[#2a3f66] hover:border-[#9ab9ee] hover:text-[#153f8d]"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                <Link
-                  to="/wishlist"
-                  onClick={closeMobileMenu}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
-                >
-                  Wishlist
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMobileMenu();
-                    openCartDrawer();
-                  }}
-                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#1d4faa] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
-                >
-                  Cart ({itemCount})
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : null}
     </header>
   );
 };
