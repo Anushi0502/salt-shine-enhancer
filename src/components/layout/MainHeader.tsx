@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Globe, MapPin, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronDown, Globe, Menu, Search, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart";
 
 const categoryOptions = [
@@ -66,56 +66,6 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
   }
 
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
-}
-
-function SaltBagMark({ className = "" }: { className?: string }) {
-  return (
-    <span
-      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/80 shadow-[0_10px_24px_-18px_rgba(12,32,72,0.3)] ${className}`}
-    >
-      <svg
-        viewBox="0 0 56 56"
-        className="h-8 w-8"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <defs>
-          <linearGradient id="salt-bag-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="100%" stopColor="#D0E4FC" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M16.5 18.5c0-3.6 2.9-6.5 6.5-6.5h10c3.6 0 6.5 2.9 6.5 6.5v1.8c0 1.2-.6 2.4-1.6 3.1l-1.7 1.2c2.4 2.1 3.8 5.1 3.8 8.3v7.4c0 4.8-3.9 8.7-8.7 8.7h-7.8c-4.8 0-8.7-3.9-8.7-8.7v-7.4c0-3.2 1.4-6.2 3.8-8.3l-1.7-1.2c-1-.7-1.6-1.9-1.6-3.1v-1.8Z"
-          fill="url(#salt-bag-gradient)"
-          stroke="#0C2048"
-          strokeWidth="1.8"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M22 16.5h12"
-          stroke="#0C2048"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-        <path
-          d="M20.4 32.2l4.2-4.2 4.2 4.2 4.2-4.2 4.2 4.2"
-          fill="none"
-          stroke="#0C2048"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M23.2 23.5l2-2 2 2-2 2-2-2Zm8.4 0l2-2 2 2-2 2-2-2Z"
-          fill="#ECF4FC"
-          stroke="#0C2048"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
 }
 
 const MainHeader = () => {
@@ -201,12 +151,16 @@ const MainHeader = () => {
           <Link
             to="/"
             aria-label="Salt Online Store"
-            className="flex min-w-0 items-center gap-2 rounded-full px-1.5 py-1 transition hover:bg-white/65"
+            className="flex min-w-0 items-center rounded-full px-1.5 py-1 transition hover:bg-white/65"
           >
-            <SaltBagMark />
-            <span className="min-w-0 truncate text-[1.02rem] font-semibold tracking-[0.01em] text-[#102A43] sm:text-[1.08rem]">
-              Salt Online Store
-            </span>
+            <img
+              src="/brand/salt-logo.png"
+              alt="SALT Online Store"
+              className="block h-11 w-auto select-none object-contain sm:h-12"
+              loading="eager"
+              decoding="async"
+              draggable={false}
+            />
           </Link>
 
           <div className="flex items-center gap-2 md:hidden">
@@ -234,19 +188,6 @@ const MainHeader = () => {
             </button>
           </div>
 
-          <button
-            type="button"
-            className="hidden h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/80 px-4 text-left shadow-sm transition hover:bg-[#F5FAFF] md:inline-flex"
-            aria-label="Deliver to India"
-          >
-            <MapPin className="h-4 w-4 text-[#0C2048]" />
-            <span className="leading-tight">
-              <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#5C748F]">
-                Deliver to
-              </span>
-              <span className="block text-sm font-semibold text-[#102A43]">India</span>
-            </span>
-          </button>
         </div>
 
         <form

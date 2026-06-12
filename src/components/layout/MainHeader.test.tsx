@@ -71,7 +71,7 @@ describe("MainHeader", () => {
     );
 
     expect(screen.getByRole("link", { name: "Salt Online Store" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Deliver to India")).toBeInTheDocument();
+    expect(screen.getByAltText("SALT Online Store")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Search Salt Online Store")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Today's Deals" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Himalayan Salt" })).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe("MainHeader", () => {
     expect(screen.getByRole("link", { name: "Customer Service" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /hello, sign in \/ account & lists/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /returns \/ & orders/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /cart with 3 items/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /cart with 3 items/i })).toHaveLength(2);
   });
 
   it("lets the shopper pick a category and run a search", () => {
@@ -93,7 +93,7 @@ describe("MainHeader", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /search category all/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Sea Salt" }));
+    fireEvent.click(screen.getByRole("option", { name: "Sea Salt" }));
     fireEvent.change(screen.getByPlaceholderText("Search Salt Online Store"), {
       target: { value: "coarse grains" },
     });
@@ -109,7 +109,7 @@ describe("MainHeader", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /cart with 3 items/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /cart with 3 items/i })[0]);
 
     expect(openCartDrawerMock).toHaveBeenCalledTimes(1);
   });
