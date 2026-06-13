@@ -21,6 +21,8 @@ const CartPage = lazy(() => import("@/pages/CartPage"));
 const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
 const RecentlyViewedPage = lazy(() => import("@/pages/RecentlyViewedPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const MissionVisionPage = lazy(() => import("@/pages/MissionVisionPage"));
+const AffiliateProgramPage = lazy(() => import("@/pages/AffiliateProgramPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const BlogPage = lazy(() => import("@/pages/BlogPage"));
 const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
@@ -58,6 +60,8 @@ const AppShell = () => (
                 <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/pages/about-us" element={<AboutPage />} />
+                <Route path="/pages/our-mission-vision" element={<MissionVisionPage />} />
+                <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:handle" element={<BlogPostPage />} />
                 <Route path="/blogs/:blogHandle" element={<BlogPage />} />
