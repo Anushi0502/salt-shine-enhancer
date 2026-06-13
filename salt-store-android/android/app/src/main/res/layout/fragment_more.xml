@@ -26,22 +26,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Support"
+                    android:text="Help center"
                     android:textColor="@color/salt_ink"
-                    android:textSize="24sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="Policies, order history, FAQs, and contact stay inside the app."
+                    android:text="Shipping, returns, privacy, FAQs, and contact stay inside the app."
                     android:textColor="@color/salt_muted"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -51,7 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Help topics"
+            android:text="Quick help"
             android:textColor="@color/salt_ink"
             android:textSize="15sp"
             android:textStyle="bold" />

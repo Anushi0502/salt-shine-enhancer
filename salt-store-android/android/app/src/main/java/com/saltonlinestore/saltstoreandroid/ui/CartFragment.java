@@ -108,65 +108,78 @@ public class CartFragment extends Fragment {
             return;
         }
 
+        com.saltonlinestore.saltstoreandroid.model.StoreCatalog cached = repository.peekCatalog();
+        if (cached != null) {
+            bindCartRows(cached, false);
+        } else {
+            subtitle.setText("Refreshing live prices...");
+        }
+
         repository.loadCatalog(new StoreRepository.CatalogCallback() {
             @Override
             public void onSuccess(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog) {
-                List<CartAdapter.CartRow> rows = new ArrayList<>();
-                double subtotal = 0d;
-
-                for (StoreCartEntry entry : prefs.getCartEntries()) {
-                    StoreProduct product = catalog.findProductById(entry.productId);
-                    if (product == null) {
-                        continue;
-                    }
-
-                    StoreVariant variant = null;
-                    for (StoreVariant candidate : product.variants) {
-                        if (candidate.id == entry.variantId) {
-                            variant = candidate;
-                            break;
-                        }
-                    }
-
-                    if (variant == null) {
-                        variant = product.defaultVariant();
-                    }
-
-                    if (variant == null) {
-                        continue;
-                    }
-
-                    rows.add(new CartAdapter.CartRow(product, entry));
-                    subtotal += StoreFormat.parseDouble(variant.price) * Math.max(1, entry.quantity);
-                }
-
-                adapter.submit(rows);
-                subtotalLabel.setText(StoreFormat.moneyLabel(subtotal));
-                subtitle.setText(prefs.cartItemCount() + " item(s) staged for checkout");
-                boolean isEmpty = rows.isEmpty();
-                if (emptyCard != null) {
-                    emptyCard.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-                }
-                emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-                emptyAction.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-                list.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
-                checkoutButton.setEnabled(!rows.isEmpty());
+                bindCartRows(catalog, true);
             }
 
             @Override
             public void onError(Throwable error) {
-                adapter.submit(new ArrayList<>());
-                subtotalLabel.setText(StoreFormat.moneyLabel(0d));
-                subtitle.setText("0 item(s) staged for checkout");
-                if (emptyCard != null) {
-                    emptyCard.setVisibility(View.VISIBLE);
+                if (cached == null) {
+                    adapter.submit(new ArrayList<>());
+                    subtotalLabel.setText(StoreFormat.moneyLabel(0d));
+                    subtitle.setText("0 item(s) staged for checkout");
+                    if (emptyCard != null) {
+                        emptyCard.setVisibility(View.VISIBLE);
+                    }
+                    emptyState.setVisibility(View.VISIBLE);
+                    emptyAction.setVisibility(View.VISIBLE);
+                    list.setVisibility(View.GONE);
+                    checkoutButton.setEnabled(false);
                 }
-                emptyState.setVisibility(View.VISIBLE);
-                emptyAction.setVisibility(View.VISIBLE);
-                list.setVisibility(View.GONE);
-                checkoutButton.setEnabled(false);
             }
         });
+    }
+
+    private void bindCartRows(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog, boolean liveReady) {
+        List<CartAdapter.CartRow> rows = new ArrayList<>();
+        double subtotal = 0d;
+
+        for (StoreCartEntry entry : prefs.getCartEntries()) {
+            StoreProduct product = catalog.findProductById(entry.productId);
+            if (product == null) {
+                continue;
+            }
+
+            StoreVariant variant = null;
+            for (StoreVariant candidate : product.variants) {
+                if (candidate.id == entry.variantId) {
+                    variant = candidate;
+                    break;
+                }
+            }
+
+            if (variant == null) {
+                variant = product.defaultVariant();
+            }
+
+            if (variant == null) {
+                continue;
+            }
+
+            rows.add(new CartAdapter.CartRow(product, entry));
+            subtotal += StoreFormat.parseDouble(variant.price) * Math.max(1, entry.quantity);
+        }
+
+        adapter.submit(rows);
+        subtotalLabel.setText(StoreFormat.moneyLabel(subtotal));
+        subtitle.setText(liveReady ? prefs.cartItemCount() + " item(s) staged for checkout" : "Refreshing live prices...");
+        boolean isEmpty = rows.isEmpty();
+        if (emptyCard != null) {
+            emptyCard.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        }
+        emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        emptyAction.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        list.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
+        checkoutButton.setEnabled(!rows.isEmpty());
     }
 
     private void openProduct(String handle) {

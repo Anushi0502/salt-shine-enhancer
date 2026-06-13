@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingBottom="12dp">
+    android:paddingBottom="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingBottom="10dp">
+            android:paddingBottom="8dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:textColor="@color/salt_muted"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView
@@ -41,8 +41,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_quantity_pill"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="5dp"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="4dp"
             android:textColor="@color/salt_ink"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -55,5 +55,5 @@
         android:clipToPadding="false"
         android:nestedScrollingEnabled="false"
         android:overScrollMode="never"
-        android:paddingEnd="12dp" />
+        android:paddingEnd="10dp" />
 </LinearLayout>

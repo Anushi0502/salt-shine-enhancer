@@ -29,20 +29,21 @@ const wordmarkSubtextSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string
 
 const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoProps) => {
   return (
-      <span
-        className={cn(
-          "relative inline-flex  items-center justify-center overflow-hidden  ",
-          shellSizeMap[size],
-        )}
-      >
-        <img
-          src={brandMarkSrc}
-          alt="SALT Online Store"
-          className="relative z-[1] h-full w-full object-fill "
-          loading="eager"
-          decoding="async"
-        />
-      </span>
+    <span
+      className={cn(
+        "relative inline-flex items-center justify-center overflow-hidden",
+        shellSizeMap[size],
+        className,
+      )}
+    >
+      <img
+        src={brandMarkSrc}
+        alt="SALT Online Store"
+        className="relative z-[1] h-full w-full object-contain"
+        loading="eager"
+        decoding="async"
+      />
+    </span>
 
   );
 };

@@ -71,28 +71,49 @@ public class RecentlyViewedFragment extends Fragment {
             return;
         }
 
+        com.saltonlinestore.saltstoreandroid.model.StoreCatalog cached = repository.peekCatalog();
+        if (cached != null) {
+            bindRecentlyViewed(cached, false);
+        } else {
+            emptyState.setVisibility(View.VISIBLE);
+            emptyState.setText("Loading live catalog...");
+            emptyAction.setVisibility(View.GONE);
+        }
+
         repository.loadCatalog(new StoreRepository.CatalogCallback() {
             @Override
             public void onSuccess(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog) {
-                List<StoreProduct> products = historyStore.resolveRecentlyViewedProducts(catalog);
-                adapter.submit(products);
-                if (countView != null) {
-                    countView.setText(String.valueOf(products.size()));
-                }
-                emptyState.setVisibility(products.isEmpty() ? View.VISIBLE : View.GONE);
-                emptyAction.setVisibility(products.isEmpty() ? View.VISIBLE : View.GONE);
+                bindRecentlyViewed(catalog, true);
             }
 
             @Override
             public void onError(Throwable error) {
-                adapter.submit(java.util.Collections.emptyList());
-                if (countView != null) {
-                    countView.setText("0");
+                if (cached == null) {
+                    adapter.submit(java.util.Collections.emptyList());
+                    if (countView != null) {
+                        countView.setText("0");
+                    }
+                    emptyState.setVisibility(View.VISIBLE);
+                    emptyState.setText("No recently viewed products yet. Open a product to see it here.");
+                    emptyAction.setVisibility(View.VISIBLE);
                 }
-                emptyState.setVisibility(View.VISIBLE);
-                emptyAction.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    private void bindRecentlyViewed(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog, boolean liveReady) {
+        List<StoreProduct> products = historyStore.resolveRecentlyViewedProducts(catalog);
+        adapter.submit(products);
+        if (countView != null) {
+            countView.setText(String.valueOf(products.size()));
+        }
+        emptyState.setVisibility(products.isEmpty() ? View.VISIBLE : View.GONE);
+        if (products.isEmpty()) {
+            emptyState.setText(liveReady
+                    ? "No recently viewed products yet. Open a product to see it here."
+                    : "Loading live catalog...");
+        }
+        emptyAction.setVisibility(products.isEmpty() && liveReady ? View.VISIBLE : View.GONE);
     }
 
     private void openProduct(String handle) {

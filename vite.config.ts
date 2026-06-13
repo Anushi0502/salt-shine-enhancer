@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import os from "os";
 import path from "path";
 
 // https://vitejs.dev/config/
@@ -47,6 +48,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
+    cacheDir: path.resolve(os.tmpdir(), "salt-shine-vite-cache"),
     optimizeDeps: {
       include: [
         "react",

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="150dp"
+    android:layout_width="156dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="10dp"
     android:foreground="?attr/selectableItemBackground"
     app:cardBackgroundColor="@color/salt_surface"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
     app:cardUseCompatPadding="false"
     app:strokeColor="@color/salt_outline"
@@ -19,7 +19,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="118dp">
+            android:layout_height="128dp">
 
             <ImageView
                 android:id="@+id/home_rail_product_image"
@@ -35,11 +35,11 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="start|top"
                 android:layout_margin="8dp"
-                android:background="@drawable/bg_dark_pill"
+                android:background="@drawable/bg_quantity_pill"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="4dp"
                 android:text="Live"
-                android:textColor="@color/salt_surface"
+                android:textColor="@color/salt_ink"
                 android:textSize="9sp"
                 android:textStyle="bold" />
         </FrameLayout>
@@ -67,7 +67,7 @@
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:textColor="@color/salt_ink"
-                android:textSize="12sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -87,8 +87,8 @@
                         android:id="@+id/home_rail_product_price"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/salt_gold"
-                        android:textSize="14sp"
+                        android:textColor="@color/salt_ink"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -97,18 +97,18 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:textColor="@color/salt_muted"
-                        android:textSize="9sp" />
+                        android:textSize="10sp" />
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/home_rail_product_cta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_dark_pill"
+                    android:background="@drawable/bg_amazon_pill"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="6dp"
                     android:text="+"
-                    android:textColor="@color/salt_surface"
+                    android:textColor="@color/salt_ink"
                     android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>

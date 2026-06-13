@@ -19,8 +19,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,7 +49,9 @@ public final class StoreRepository {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Object lock = new Object();
     private final List<CatalogCallback> pendingCatalogCallbacks = new ArrayList<>();
+    private final Map<String, List<StoreProduct>> cachedCollectionProducts = new LinkedHashMap<>();
     private volatile boolean loadingCatalog;
+    private volatile StoreCatalog cachedCatalog;
 
     private StoreRepository() {}
 
@@ -64,8 +68,26 @@ public final class StoreRepository {
     }
 
     public void clearCache() {
-        // Intentionally empty: live data is fetched on demand and not retained
-        // as a session snapshot.
+        synchronized (lock) {
+            cachedCatalog = null;
+            cachedCollectionProducts.clear();
+        }
+    }
+
+    public StoreCatalog peekCatalog() {
+        return cachedCatalog;
+    }
+
+    public List<StoreProduct> peekCollectionProducts(String handle) {
+        String normalized = normalize(handle);
+        if (normalized.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        synchronized (lock) {
+            List<StoreProduct> cached = cachedCollectionProducts.get(normalized);
+            return cached == null ? new ArrayList<>() : new ArrayList<>(cached);
+        }
     }
 
     public void loadCatalog(CatalogCallback callback) {
@@ -96,36 +118,69 @@ public final class StoreRepository {
     }
 
     public void loadProduct(String handle, ProductCallback callback) {
-        loadCatalog(new CatalogCallback() {
-            @Override
-            public void onSuccess(StoreCatalog catalog) {
+        executor.execute(() -> {
+            boolean deliveredSuccess = false;
+            try {
+                StoreCatalog cached = cachedCatalog;
+                if (cached != null) {
+                    StoreProduct cachedProduct = cached.findProductByHandle(handle);
+                    if (cachedProduct != null) {
+                        deliveredSuccess = true;
+                        postSuccess(callback, cachedProduct);
+                    }
+                }
+
+                StoreCatalog catalog = fetchCatalog();
+                cachedCatalog = catalog;
+                synchronized (lock) {
+                    cachedCollectionProducts.clear();
+                }
+
                 StoreProduct product = catalog.findProductByHandle(handle);
                 if (product != null) {
+                    deliveredSuccess = true;
                     postSuccess(callback, product);
-                } else {
+                } else if (!deliveredSuccess) {
                     postError(callback, new IllegalStateException("Product not found: " + handle));
                 }
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                postError(callback, error);
+            } catch (Throwable error) {
+                if (!deliveredSuccess) {
+                    postError(callback, error);
+                }
             }
         });
     }
 
     public void loadCollectionProducts(String handle, ProductsCallback callback) {
+        String normalizedHandle = normalize(handle);
+        List<StoreProduct> cached = peekCollectionProducts(normalizedHandle);
+        if (!cached.isEmpty()) {
+            mainHandler.post(() -> callback.onSuccess(cached));
+        }
+
         executor.execute(() -> {
             try {
                 List<StoreProduct> products = fetchCollectionProducts(handle);
+                synchronized (lock) {
+                    cachedCollectionProducts.put(normalizedHandle, new ArrayList<>(products));
+                }
                 mainHandler.post(() -> callback.onSuccess(products));
             } catch (Throwable error) {
-                mainHandler.post(() -> callback.onError(error));
+                if (cached.isEmpty()) {
+                    mainHandler.post(() -> callback.onError(error));
+                }
             }
         });
     }
 
     private void flushCatalogCallbacks(StoreCatalog catalog, Throwable error) {
+        if (error == null && catalog != null) {
+            cachedCatalog = catalog;
+            synchronized (lock) {
+                cachedCollectionProducts.clear();
+            }
+        }
+
         List<CatalogCallback> callbacks;
         synchronized (lock) {
             callbacks = new ArrayList<>(pendingCatalogCallbacks);

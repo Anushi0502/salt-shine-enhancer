@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+buildDir = file("/tmp/salt-store-android-app-build")
 
 android {
     namespace = "com.saltonlinestore.saltstoreandroid"

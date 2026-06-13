@@ -80,7 +80,7 @@ public final class HomeFeedComposer {
             sections.add(HomeFeedSection.collectionRail(
                     collection,
                     displayCollectionTitle(collection, entry),
-                    "20 live picks · tap to see more",
+                    "20 picks · swipe to browse",
                     resolution.products,
                     resolution.needsLiveFallback
             ));

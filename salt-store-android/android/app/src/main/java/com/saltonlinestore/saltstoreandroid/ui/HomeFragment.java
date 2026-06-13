@@ -32,6 +32,7 @@ public class HomeFragment extends Fragment {
     private final HomeFeedComposer composer = new HomeFeedComposer();
 
     private RecyclerView homeFeed;
+    private View loadingState;
     private HomeFeedAdapter feedAdapter;
     private StorePrefs prefs;
     private StoreHistoryStore historyStore;
@@ -52,6 +53,7 @@ public class HomeFragment extends Fragment {
         historyStore = StoreHistoryStore.getInstance(requireContext());
 
         homeFeed = view.findViewById(R.id.home_feed);
+        loadingState = view.findViewById(R.id.home_loading_state);
         feedAdapter = new HomeFeedAdapter(new HomeFeedAdapter.HomeActionListener() {
             @Override
             public void onSearch() {
@@ -120,22 +122,20 @@ public class HomeFragment extends Fragment {
         }
 
         final int generation = ++refreshGeneration;
+        StoreCatalog cachedCatalog = repository.peekCatalog();
+        if (cachedCatalog != null) {
+            renderCatalog(cachedCatalog, generation);
+        } else {
+            showLoadingState(true);
+        }
+
         repository.loadCatalog(new StoreRepository.CatalogCallback() {
             @Override
             public void onSuccess(StoreCatalog catalog) {
                 if (!isAdded() || generation != refreshGeneration) {
                     return;
                 }
-
-                List<StoreProduct> recentlyViewed = historyStore.resolveRecentlyViewedProducts(catalog);
-
-                List<HomeFeedSection> sections = new ArrayList<>(composer.compose(catalog, null, recentlyViewed));
-                currentSections = sections;
-                feedAdapter.submitSections(sections);
-                resolveSparseRails(catalog, sections, generation);
-                if (homeFeed != null) {
-                    homeFeed.post(() -> publishHomeScrollState());
-                }
+                renderCatalog(catalog, generation);
             }
 
             @Override
@@ -143,14 +143,31 @@ public class HomeFragment extends Fragment {
                 if (!isAdded() || generation != refreshGeneration) {
                     return;
                 }
-
-                currentSections = new ArrayList<>();
-                feedAdapter.submitSections(currentSections);
-                if (homeFeed != null) {
-                    homeFeed.post(() -> publishHomeScrollState());
+                if (currentSections.isEmpty()) {
+                    showLoadingState(true);
+                } else {
+                    showLoadingState(false);
                 }
             }
         });
+    }
+
+    private void renderCatalog(@NonNull StoreCatalog catalog, int generation) {
+        List<StoreProduct> recentlyViewed = historyStore.resolveRecentlyViewedProducts(catalog);
+        List<HomeFeedSection> sections = new ArrayList<>(composer.compose(catalog, null, recentlyViewed));
+        currentSections = sections;
+        feedAdapter.submitSections(sections);
+        showLoadingState(false);
+        resolveSparseRails(catalog, sections, generation);
+        if (homeFeed != null) {
+            homeFeed.post(this::publishHomeScrollState);
+        }
+    }
+
+    private void showLoadingState(boolean visible) {
+        if (loadingState != null) {
+            loadingState.setVisibility(visible && currentSections.isEmpty() ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void publishHomeScrollState() {

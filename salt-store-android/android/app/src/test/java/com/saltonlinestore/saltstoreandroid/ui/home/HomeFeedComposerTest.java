@@ -18,25 +18,26 @@ import static org.junit.Assert.assertTrue;
 
 public class HomeFeedComposerTest {
     @Test
-    public void compose_ordersPriorityRailsAndCapsEachRailAtFourProducts() {
+    public void compose_ordersPriorityRailsAndCapsEachRailAtTwentyProducts() {
         StoreCatalog catalog = new StoreCatalog(sampleProducts(), sampleCollections());
         CollectionMerchandisingMap merchMap = CollectionMerchandisingMap.fromJson(sampleMerchandisingJson());
 
         HomeFeedComposer composer = new HomeFeedComposer();
         List<HomeFeedSection> sections = composer.compose(catalog, merchMap, sampleRecentlyViewed());
 
-        assertEquals(HomeFeedSection.Type.HEADER, sections.get(0).type);
-        assertEquals(HomeFeedSection.Type.BANNER_CAROUSEL, sections.get(1).type);
-        assertEquals("appplaza-best-sellers", sections.get(2).collection.handle);
-        assertEquals("gifts", sections.get(3).collection.handle);
-        assertEquals("books", sections.get(4).collection.handle);
-        assertEquals("new-arrivals", sections.get(5).collection.handle);
+        assertEquals("appplaza-best-sellers", sections.get(0).collection.handle);
+        assertEquals("gifts", sections.get(1).collection.handle);
+        assertEquals("books", sections.get(2).collection.handle);
+        assertEquals("new-arrivals", sections.get(3).collection.handle);
+        assertEquals(HomeFeedSection.Type.RECENTLY_VIEWED, sections.get(4).type);
+        assertEquals("home-decor", sections.get(5).collection.handle);
+        assertEquals("seasonal-picks", sections.get(6).collection.handle);
 
         for (HomeFeedSection section : sections) {
             if (section.type != HomeFeedSection.Type.COLLECTION_RAIL && section.type != HomeFeedSection.Type.RECENTLY_VIEWED) {
                 continue;
             }
-            assertTrue(section.products.size() <= 4);
+            assertTrue(section.products.size() <= 20);
         }
     }
 
@@ -50,11 +51,11 @@ public class HomeFeedComposerTest {
 
         HomeFeedSection sparseRail = findRail(sections, "gifts");
         assertTrue(sparseRail.needsLiveFallback);
-        assertEquals(4, sparseRail.products.size());
+        assertEquals(16, sparseRail.products.size());
 
         HomeFeedSection missingRail = findRail(sections, "home-decor");
         assertTrue(missingRail.needsLiveFallback);
-        assertEquals(4, missingRail.products.size());
+        assertEquals(16, missingRail.products.size());
     }
 
     private HomeFeedSection findRail(List<HomeFeedSection> sections, String handle) {

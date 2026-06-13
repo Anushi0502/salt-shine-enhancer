@@ -13,14 +13,14 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.getcapacitor.BridgeActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputEditText;
@@ -48,8 +48,9 @@ import com.saltonlinestore.saltstoreandroid.ui.policy.NativePolicyActivity;
 import com.saltonlinestore.saltstoreandroid.util.StoreUrls;
 
 import java.util.List;
+import java.util.Locale;
 
-public class MainActivity extends BridgeActivity {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG_HOME = "home";
     private static final String TAG_SHOP = "shop";
     private static final String TAG_COLLECTIONS = "collections";
@@ -116,7 +117,7 @@ public class MainActivity extends BridgeActivity {
         });
         headerSearchInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                applyHeaderSearchQuery(String.valueOf(v.getText() == null ? "" : v.getText()));
+                handleHeaderSearchAction(String.valueOf(v.getText() == null ? "" : v.getText()));
                 return true;
             }
             return false;
@@ -137,8 +138,7 @@ public class MainActivity extends BridgeActivity {
         shellBannerList.setNestedScrollingEnabled(false);
         shellBannerList.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
-        bottomNavigationView.setItemActiveIndicatorEnabled(true);
-        bottomNavigationView.setItemActiveIndicatorColor(ContextCompat.getColorStateList(this, R.color.salt_teal));
+        bottomNavigationView.setItemActiveIndicatorEnabled(false);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             switchTab(item.getItemId(), false);
             return true;
@@ -297,9 +297,28 @@ public class MainActivity extends BridgeActivity {
 
         switchTab(R.id.nav_shop, true);
         shopFragment.setSearchQuery(normalized);
+    }
+
+    private void handleHeaderSearchAction(String query) {
+        String normalized = query == null ? "" : query.trim();
         if (normalized.isEmpty()) {
+            applyHeaderSearchQuery("");
             focusHeaderSearch();
+            return;
         }
+
+        StoreCollection matchingCollection = findMatchingCollection(normalized);
+        if (matchingCollection != null) {
+            openCollection(matchingCollection);
+            return;
+        }
+
+        if (shouldOpenSupportForQuery(normalized)) {
+            switchTab(R.id.nav_support, true);
+            return;
+        }
+
+        applyHeaderSearchQuery(normalized);
     }
 
     public void focusHeaderSearch() {
@@ -427,6 +446,12 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
+        com.saltonlinestore.saltstoreandroid.model.StoreCatalog cachedCatalog = repository.peekCatalog();
+        if (cachedCatalog != null) {
+            List<HomeFeedSection.BannerItem> cachedBanners = homeFeedComposer.buildHeroBanners(cachedCatalog, null);
+            shellBannerAdapter.submit(cachedBanners);
+        }
+
         repository.loadCatalog(new StoreRepository.CatalogCallback() {
             @Override
             public void onSuccess(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog) {
@@ -504,6 +529,31 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
+        if (normalizedPath.startsWith("/pages/about-us") || normalizedPath.startsWith("/about-us")) {
+            NativePolicyActivity.open(this, "About us", "Meet SALT and the story behind the store", StoreUrls.aboutUsUrl());
+            return;
+        }
+
+        if (normalizedPath.startsWith("/pages/mission-vision") || normalizedPath.startsWith("/mission-vision")) {
+            NativePolicyActivity.open(this, "Mission & vision", "See the values guiding the catalog", StoreUrls.missionVisionUrl());
+            return;
+        }
+
+        if (normalizedPath.startsWith("/pages/affiliate-program") || normalizedPath.startsWith("/affiliate-program")) {
+            NativePolicyActivity.open(this, "Affiliate program", "Partner inquiry information", StoreUrls.affiliateProgramUrl());
+            return;
+        }
+
+        if (normalizedPath.startsWith("/pages/terms-conditions") || normalizedPath.startsWith("/pages/terms-and-conditions") || normalizedPath.startsWith("/terms-conditions")) {
+            NativePolicyActivity.open(this, "Terms & conditions", "Review store usage terms", StoreUrls.termsConditionsUrl());
+            return;
+        }
+
+        if (normalizedPath.startsWith("/pages/faqs") || normalizedPath.startsWith("/pages/faq")) {
+            NativePolicyActivity.open(this, "FAQs", "Quick answers inside the app", StoreUrls.faqUrl());
+            return;
+        }
+
         if (normalizedPath.startsWith("/blog") || normalizedPath.startsWith("/blogs")) {
             switchTab(R.id.nav_home, true);
             return;
@@ -532,5 +582,46 @@ public class MainActivity extends BridgeActivity {
         if (normalizedPath.startsWith("/shop") || host.equalsIgnoreCase("shop")) {
             switchTab(R.id.nav_shop, true);
         }
+    }
+
+    @Nullable
+    private StoreCollection findMatchingCollection(@NonNull String query) {
+        com.saltonlinestore.saltstoreandroid.model.StoreCatalog cachedCatalog = repository.peekCatalog();
+        if (cachedCatalog == null) {
+            return null;
+        }
+
+        String normalizedQuery = query.trim().toLowerCase(Locale.US);
+        for (StoreCollection collection : cachedCatalog.collections) {
+            if (collection == null) {
+                continue;
+            }
+            String title = String.valueOf(collection.title == null ? "" : collection.title).trim().toLowerCase(Locale.US);
+            String handle = String.valueOf(collection.handle == null ? "" : collection.handle).trim().toLowerCase(Locale.US);
+            if (title.equals(normalizedQuery) || handle.equals(normalizedQuery)) {
+                return collection;
+            }
+            if (title.startsWith(normalizedQuery) || handle.startsWith(normalizedQuery)) {
+                return collection;
+            }
+        }
+        return null;
+    }
+
+    private boolean shouldOpenSupportForQuery(@NonNull String query) {
+        String normalized = query.trim().toLowerCase(Locale.US);
+        return normalized.equals("shipping")
+                || normalized.equals("shipping policy")
+                || normalized.equals("delivery")
+                || normalized.equals("returns")
+                || normalized.equals("refunds")
+                || normalized.equals("refund policy")
+                || normalized.equals("privacy")
+                || normalized.equals("privacy policy")
+                || normalized.equals("faq")
+                || normalized.equals("faqs")
+                || normalized.equals("help")
+                || normalized.equals("support")
+                || normalized.equals("contact");
     }
 }

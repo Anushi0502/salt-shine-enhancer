@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="176dp"
+    android:layout_width="164dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="10dp"
     android:foreground="?attr/selectableItemBackground"
     app:cardBackgroundColor="@color/salt_surface"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
     app:cardUseCompatPadding="true"
     app:strokeColor="@color/salt_outline"
@@ -19,7 +19,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="104dp">
+            android:layout_height="110dp">
 
             <ImageView
                 android:id="@+id/collection_image"
@@ -65,18 +65,18 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:textColor="@color/salt_muted"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/collection_cta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_dark_pill"
+                android:background="@drawable/bg_amazon_pill"
                 android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
+                android:paddingVertical="5dp"
                 android:text="Browse"
-                android:textColor="@color/salt_surface"
+                android:textColor="@color/salt_ink"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>

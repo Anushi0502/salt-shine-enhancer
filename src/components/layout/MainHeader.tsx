@@ -1,463 +1,861 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Globe, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronRight, Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
+import BrandLogo from "@/components/layout/BrandLogo";
+import { filterProducts } from "@/lib/catalog";
+import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
+import { isNativeApp } from "@/lib/mobile";
+import { useCollections, useProducts } from "@/lib/shopify-data";
+import { useWishlist } from "@/lib/wishlist";
 
-const searchScopeOptions = [
-  {
-    label: "All",
-    collection: "all-products",
-  },
-  {
-    label: "New Arrivals",
-    collection: "new-arrivals",
-  },
-  {
-    label: "Cookware",
-    collection: "cookware",
-  },
-  {
-    label: "Home Decor",
-    collection: "home-decor",
-  },
-  {
-    label: "Apparel",
-    collection: "apparel",
-  },
-  {
-    label: "Gifts",
-    collection: "gifts",
-  },
-] as const;
-
-type HeaderSearchScope = (typeof searchScopeOptions)[number]["collection"];
-
-type HeaderNavItem = {
+type NavItem = {
   label: string;
   to: string;
-  isActive?: (pathname: string, search: string) => boolean;
+  isActive?: (pathname: string) => boolean;
 };
 
-function isCollectionRouteActive(pathname: string, search: string, collection: HeaderSearchScope): boolean {
-  const params = new URLSearchParams(search);
-  const currentCollection = params.get("collection");
-
-  return (
-    (pathname === "/shop" ||
-      pathname === "/search" ||
-      pathname.startsWith("/shop/") ||
-      pathname.startsWith("/search/")) &&
-    currentCollection === collection
-  );
-}
-
-const secondaryNavItems: HeaderNavItem[] = [
+const primaryNav: NavItem[] = [
   {
-    label: "All products",
-    to: "/shop?collection=all-products",
-    isActive: (pathname, search) => {
-      const params = new URLSearchParams(search);
-      const collection = params.get("collection");
-
-      return (pathname === "/shop" || pathname === "/search") && (!collection || collection === "all-products");
-    },
-  },
-  {
-    label: "Collections",
+    label: "Departments",
     to: "/collections",
-    isActive: (pathname) => pathname === "/collections" || pathname.startsWith("/collections/"),
+    isActive: (pathname) => pathname.startsWith("/collections"),
   },
   {
-    label: "New Arrivals",
-    to: "/shop?collection=new-arrivals",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "new-arrivals"),
+    label: "Best Sellers",
+    to: "/shop?sort=featured",
+    isActive: (pathname) => pathname === "/shop" || pathname.startsWith("/search"),
   },
   {
-    label: "Cookware",
-    to: "/shop?collection=cookware",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "cookware"),
+    label: "Books & Planners",
+    to: "/collections/books",
+    isActive: (pathname) => pathname === "/collections/books",
   },
   {
-    label: "Home Decor",
-    to: "/shop?collection=home-decor",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "home-decor"),
+    label: "Under $35",
+    to: "/collections/under-35",
+    isActive: (pathname) => pathname === "/collections/under-35",
   },
   {
-    label: "Apparel",
-    to: "/shop?collection=apparel",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "apparel"),
+    label: "Home",
+    to: "/collections/home-decor",
+    isActive: (pathname) => pathname === "/collections/home-decor",
   },
   {
     label: "Gifts",
-    to: "/shop?collection=gifts",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "gifts"),
+    to: "/collections/gifts",
+    isActive: (pathname) => pathname === "/collections/gifts",
+  },
+  {
+    label: "Track Order",
+    to: "/account/orders",
+    isActive: (pathname) => pathname.startsWith("/account"),
   },
   {
     label: "Support",
     to: "/contact",
-    isActive: (pathname) => pathname === "/contact" || pathname.startsWith("/pages/contact"),
   },
 ];
 
-function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string): boolean {
+const mobileNav: NavItem[] = [...primaryNav];
+
+function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.isActive) {
-    return item.isActive(pathname, search);
+    return item.isActive(pathname);
+  }
+
+  if (item.to === "/") {
+    return pathname === "/";
   }
 
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
+const RECENT_SEARCHES_KEY = "salt-recent-searches";
+const DEFAULT_TRENDING_SEARCHES = [
+  "Gifts",
+  "Candles",
+  "Kitchen",
+  "Pet accessories",
+  "Home decor",
+];
+
+function normalizeSearchPhrase(input: string): string {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function approximateSearchScore(haystack: string, queryTokens: string[]): number {
+  if (!haystack || !queryTokens.length) {
+    return 0;
+  }
+
+  const words = haystack.split(" ").filter(Boolean);
+  let score = 0;
+
+  queryTokens.forEach((token) => {
+    if (!token) {
+      return;
+    }
+
+    if (haystack.includes(token)) {
+      score += 5;
+      return;
+    }
+
+    const prefix = token.length > 3 ? token.slice(0, token.length - 1) : token;
+    if (words.some((word) => word.startsWith(prefix))) {
+      score += 3;
+      return;
+    }
+
+    const compact = token.replace(/[aeiou]/g, "");
+    if (compact && words.some((word) => word.includes(compact))) {
+      score += 1;
+    }
+  });
+
+  return score;
+}
+
 const MainHeader = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
   const { itemCount, openCartDrawer } = useCart();
-  const headerRef = useRef<HTMLElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedScope, setSelectedScope] = useState<HeaderSearchScope>("all-products");
-  const [scopeOpen, setScopeOpen] = useState(false);
+  const { itemCount: wishlistCount } = useWishlist();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const deferredSearchInput = useDeferredValue(searchInput);
+  const nativeApp = isNativeApp();
+  const actionButtonClassName = nativeApp
+    ? "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/18 hover:bg-white/12 hover:text-white sm:h-10 sm:w-10"
+    : "relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.03)_100%)] text-white shadow-[0_10px_20px_-16px_rgba(0,0,0,0.58)] transition duration-200 hover:-translate-y-[1px] hover:border-white/20 hover:bg-[rgba(255,255,255,0.12)] hover:text-white sm:h-10 sm:w-10";
+  const showHeaderSearch = true;
+  const shouldLoadSearchData = searchDropdownOpen;
+  const { data: productsData } = useProducts(shouldLoadSearchData);
+  const { data: collectionsData } = useCollections(shouldLoadSearchData);
+  const allProducts = productsData?.products ?? [];
+  const allCollections = collectionsData?.collections ?? [];
+  const hasSearchQuery = Boolean(searchInput.trim());
+  const deferredSearchQuery = deferredSearchInput.trim();
+  const dropdownProducts = useMemo(() => {
+    if (!searchDropdownOpen) {
+      return [];
+    }
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const query = params.get("q") || "";
-    const collection = params.get("collection");
+    if (!allProducts.length) {
+      return [];
+    }
 
-    setSearchQuery(query);
-    setSelectedScope(
-      collection && searchScopeOptions.some((option) => option.collection === collection)
-        ? (collection as HeaderSearchScope)
-        : "all-products",
-    );
-  }, [location.pathname, location.search]);
+    if (!hasSearchQuery) {
+      return allProducts.slice(0, 4);
+    }
 
-  useEffect(() => {
-    const onPointerDown = (event: PointerEvent) => {
-      if (!headerRef.current) {
+    const strictMatches = filterProducts(allProducts, { query: deferredSearchQuery }).slice(0, 4);
+    if (strictMatches.length > 0) {
+      return strictMatches;
+    }
+
+    const normalizedQuery = normalizeSearchPhrase(deferredSearchQuery);
+    const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+    if (!queryTokens.length) {
+      return [];
+    }
+
+    return allProducts
+      .map((product) => {
+        const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
+        const searchable = normalizeSearchPhrase(`${product.title} ${product.product_type || ""} ${tags}`);
+        const score = approximateSearchScore(searchable, queryTokens);
+        return score > 0 ? { product, score } : null;
+      })
+      .filter((entry): entry is { product: (typeof allProducts)[number]; score: number } => Boolean(entry))
+      .sort((left, right) => right.score - left.score || minPrice(left.product) - minPrice(right.product))
+      .slice(0, 4)
+      .map((entry) => entry.product);
+  }, [allProducts, deferredSearchQuery, hasSearchQuery, searchDropdownOpen]);
+  const trendingSearches = useMemo(() => {
+    if (!searchDropdownOpen || !allProducts.length) {
+      return DEFAULT_TRENDING_SEARCHES;
+    }
+
+    const counts = new Map<string, number>();
+
+    allProducts.forEach((product) => {
+      const label = String(product.product_type || "").trim();
+      if (!label) {
+        return;
+      }
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    const topFromCatalog = [...counts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .map(([label]) => label)
+      .slice(0, 5);
+    const merged = [...topFromCatalog, ...DEFAULT_TRENDING_SEARCHES];
+
+    return merged.filter((value, index) => merged.findIndex((entry) => entry.toLowerCase() === value.toLowerCase()) === index).slice(0, 6);
+  }, [allProducts, searchDropdownOpen]);
+  const categorySuggestions = useMemo(() => {
+    if (!searchDropdownOpen) {
+      return [];
+    }
+
+    const query = normalizeSearchPhrase(deferredSearchQuery);
+    const suggestions: Array<{ label: string; to: string }> = [];
+    const seen = new Set<string>();
+
+    if (!allCollections.length && !allProducts.length) {
+      return suggestions;
+    }
+
+    allCollections.forEach((collection) => {
+      const label = String(collection.title || "").trim();
+      const handle = String(collection.handle || "").trim();
+      if (!label || !handle) {
         return;
       }
 
-      if (!headerRef.current.contains(event.target as Node)) {
-        setScopeOpen(false);
+      if (query) {
+        const searchable = normalizeSearchPhrase(`${collection.title} ${collection.handle}`);
+        if (!searchable.includes(query)) {
+          return;
+        }
       }
-    };
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setScopeOpen(false);
+      const key = `collection:${label.toLowerCase()}`;
+      if (seen.has(key)) {
+        return;
       }
-    };
 
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+      seen.add(key);
+      suggestions.push({ label, to: `/collections/${handle}` });
+    });
 
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
+    const typeCounts = new Map<string, number>();
+    allProducts.forEach((product) => {
+      const label = String(product.product_type || "").trim();
+      if (!label) {
+        return;
+      }
+      typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
+    });
+
+    [...typeCounts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .forEach(([label]) => {
+        if (query && !normalizeSearchPhrase(label).includes(query)) {
+          return;
+        }
+
+        const key = `type:${label.toLowerCase()}`;
+        if (seen.has(key)) {
+          return;
+        }
+
+        seen.add(key);
+        suggestions.push({ label, to: `/shop?type=${encodeURIComponent(label)}` });
+      });
+
+    return suggestions.slice(0, 8);
+  }, [allCollections, allProducts, deferredSearchQuery, searchDropdownOpen]);
+  const bestSellerCollection = useMemo(
+    () =>
+      searchDropdownOpen
+        ? allCollections.find((collection) =>
+            /best[\s-]*sellers?/i.test(`${collection.handle} ${collection.title}`),
+          ) || null
+        : null,
+    [allCollections, searchDropdownOpen],
+  );
+  const summerCollection = useMemo(
+    () =>
+      searchDropdownOpen
+        ? allCollections.find((collection) =>
+            /(summer|sunny|vacation|beach)/i.test(`${collection.handle} ${collection.title}`),
+          ) || null
+        : null,
+    [allCollections, searchDropdownOpen],
+  );
+  const popularRoutes = useMemo(
+    () => [
+      { label: "All Products", to: "/shop?collection=all-products" },
+      {
+        label: "Best Sellers",
+        to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/shop?sort=featured",
+      },
+      { label: "NEW ARRIVALS", to: "/shop?sort=newest" },
+      {
+        label: "Summer Collection",
+        to: summerCollection ? `/collections/${summerCollection.handle}` : "/collections",
+      },
+    ],
+    [bestSellerCollection, summerCollection],
+  );
+  const quickCategoryLinks = useMemo(() => categorySuggestions.slice(0, 3), [categorySuggestions]);
+  const quickSearchTerms = useMemo(
+    () => (recentSearches.length ? recentSearches : trendingSearches).slice(0, 3),
+    [recentSearches, trendingSearches],
+  );
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setSearchDropdownOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    try {
+      const storage = getBrowserStorage();
+      const raw = storage?.getItem(RECENT_SEARCHES_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        const sanitized = parsed
+          .filter((entry): entry is string => typeof entry === "string")
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+          .slice(0, 6);
+        setRecentSearches(sanitized);
+      }
+    } catch {
+      setRecentSearches([]);
+    }
   }, []);
 
-  const selectedScopeLabel =
-    searchScopeOptions.find((option) => option.collection === selectedScope)?.label || "All";
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchInput(params.get("q") || "");
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!mobileOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [mobileOpen]);
+
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
+  };
+
+  const rememberSearchQuery = (query: string) => {
+    const storage = getBrowserStorage();
+    if (!query || !storage) {
+      return;
+    }
+
+    const next = [query, ...recentSearches.filter((entry) => entry.toLowerCase() !== query.toLowerCase())].slice(0, 6);
+    setRecentSearches(next);
+    storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+  };
+
+  const applySearchQuery = (value: string) => {
+    const normalizedQuery = value.trim();
+    if (!normalizedQuery) {
+      navigate("/shop?collection=all-products");
+      return;
+    }
+
+    rememberSearchQuery(normalizedQuery);
+    navigate(`/search?q=${encodeURIComponent(normalizedQuery)}`);
+  };
+
+  const runQuickSearch = (value: string) => {
+    setSearchInput(value);
+    setSearchDropdownOpen(false);
+    applySearchQuery(value);
+  };
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const query = searchQuery.trim();
-    const params = new URLSearchParams();
-
-    params.set("collection", selectedScope);
-
-    if (query) {
-      params.set("q", query);
-    }
-
-    navigate(`/shop?${params.toString()}`);
-    setScopeOpen(false);
+    setSearchDropdownOpen(false);
+    applySearchQuery(searchInput);
   };
-
-  const setScope = (nextScope: HeaderSearchScope) => {
-    setSelectedScope(nextScope);
-    setScopeOpen(false);
-  };
-
-  const cartLabel = `Cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`;
 
   return (
     <header
-      ref={headerRef}
-      className="sticky top-0 z-50 border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
+      className={`sticky top-0 z-50 backdrop-blur-[10px] ${
+        nativeApp
+          ? "border-b border-white/10 bg-[linear-gradient(180deg,rgba(17,17,17,0.98)_0%,rgba(21,21,21,0.96)_100%)] shadow-[0_22px_42px_-34px_rgba(0,0,0,0.62)]"
+          : "border-b border-[#243247] bg-[linear-gradient(180deg,rgba(18,25,36,0.98)_0%,rgba(24,33,47,0.97)_100%)] text-white shadow-[0_22px_42px_-34px_rgba(0,0,0,0.66)]"
+      }`}
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
-        <div className="order-1 flex min-w-0 flex-1 items-center gap-2 md:flex-none">
-          <Link
-            to="/"
-            aria-label="SALT Online Store"
-            className="flex min-w-0 items-center rounded-full px-1.5 py-1 transition hover:bg-white/65"
-          >
-            <img
-              src="/brand/salt-logo.png"
-              alt="SALT Online Store"
-              className="block h-11 w-auto select-none object-contain sm:h-12"
-              loading="eager"
-              decoding="async"
-              draggable={false}
-            />
-          </Link>
-
-          <div className="ml-auto flex items-center gap-2 md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => setScopeOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
-                  aria-label="Open menu"
-                >
-                  <Menu className="h-4.5 w-4.5" />
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-full !max-w-[21rem] overflow-y-auto border-l border-[#BFD7F2] bg-[#F7FBFF] px-0"
-              >
-                <div className="flex min-h-full flex-col">
-                  <SheetHeader className="border-b border-[#BFD7F2] px-4 pb-4 pt-10 text-left">
-                    <SheetTitle className="font-display text-[clamp(1.6rem,4.8vw,2.1rem)] leading-tight text-[#102A43]">
-                      Menu
-                    </SheetTitle>
-                    <SheetDescription className="text-sm leading-6 text-[#5C748F]">
-                      Browse the catalog, collections, and account tools.
-                    </SheetDescription>
-                  </SheetHeader>
-
-                  <div className="flex-1 px-4 py-4">
-                    <div className="grid gap-1.5">
-                      {secondaryNavItems.map((item) => {
-                        const active = isActiveNavItem(item, location.pathname, location.search);
-
-                        return (
-                          <SheetClose asChild key={item.label}>
-                            <Link
-                              to={item.to}
-                              className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                                active
-                                  ? "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]"
-                                  : "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                              }`}
-                              aria-current={active ? "page" : undefined}
-                            >
-                              {item.label}
-                            </Link>
-                          </SheetClose>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-6 grid gap-1.5">
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
-                        Account
-                      </p>
-
-                      <SheetClose asChild>
-                        <Link
-                          to="/account"
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Account & Lists
-                        </Link>
-                      </SheetClose>
-
-                      <SheetClose asChild>
-                        <Link
-                          to="/account/orders"
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Track order
-                        </Link>
-                      </SheetClose>
-
-                      <SheetClose asChild>
-                        <Link
-                          to="/contact"
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Contact support
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <button
-              type="button"
-              onClick={openCartDrawer}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
-              aria-label={cartLabel}
-            >
-              <ShoppingCart className="h-4.5 w-4.5" />
-              {itemCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
-                  {itemCount}
-                </span>
-              ) : null}
-            </button>
+      {nativeApp ? null : (
+        <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
+          <div className="flex w-full items-center justify-center px-3 py-2 text-center text-[0.62rem] font-semibold tracking-[0.08em] text-[#f3d78a] sm:px-6 sm:text-[0.72rem] lg:px-8">
+            <span>Free Shipping on All US Orders</span>
+            <span className="mx-3 text-white/28">|</span>
+            <span>30-Day Easy Returns</span>
           </div>
         </div>
+      )}
 
-        <form onSubmit={submitSearch} className="order-3 basis-full md:order-2 md:min-w-0 md:flex-1">
-          <div className="relative isolate flex h-11 overflow-visible rounded-[4px] border border-[#131A22] bg-white shadow-[0_1px_0_rgba(255,255,255,0.7)_inset] transition focus-within:border-[#F0A115] focus-within:shadow-[0_0_0_3px_rgba(255,153,0,0.12)]">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setScopeOpen((open) => !open)}
-                aria-label={`Search category ${selectedScopeLabel}`}
-                aria-haspopup="listbox"
-                aria-expanded={scopeOpen}
-                className="flex h-full min-w-[4.5rem] items-center justify-between gap-1.5 rounded-l-[3px] border-r border-[#cdcdcd] bg-[#f3f3f3] px-3 text-left text-[0.8rem] font-normal text-[#555555] transition hover:bg-[#ececec] sm:min-w-[6rem] sm:max-w-[11.5rem]"
-              >
-                <span className="truncate">{selectedScopeLabel}</span>
-                <ChevronDown
-                  className={`h-3.5 w-3.5 shrink-0 text-[#6b6b6b] transition ${scopeOpen ? "rotate-180" : ""}`}
-                />
-              </button>
+      <div className={`flex w-full items-center gap-3 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8 ${nativeApp ? "text-white" : "text-white"}`}>
+        <Link to="/" className="shrink-0 self-start" aria-label="Go to SALT homepage">
+          <BrandLogo withWordmark size="md" />
+        </Link>
 
-              {scopeOpen ? (
-                <div
-                  id="header-scope-menu"
-                  role="listbox"
-                  className="absolute left-0 top-[calc(100%+0.55rem)] z-40 w-[min(18rem,calc(100vw-1.25rem))] rounded-2xl border border-[#d5d5d5] bg-white p-2 shadow-[0_18px_36px_-28px_rgba(12,32,72,0.25)]"
-                >
-                  {searchScopeOptions.map((option) => {
-                    const active = option.collection === selectedScope;
-
-                    return (
-                      <button
-                        key={option.collection}
-                        type="button"
-                        role="option"
-                        aria-selected={active}
-                        onClick={() => setScope(option.collection)}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
-                          active
-                            ? "bg-[#fbeec2] font-semibold text-[#111111]"
-                            : "text-[#111111] hover:bg-[#f7f7f7]"
-                        }`}
-                      >
-                        <span>{option.label}</span>
-                        {active ? (
-                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a6110]">
-                            Selected
-                          </span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-
-            <label className="relative flex min-w-0 flex-1 items-stretch bg-white">
-              <span className="sr-only">Search SALT</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#767676]" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search SALT"
-                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-[0.92rem] text-[#111111] outline-none placeholder:text-[#767676]"
-              />
-            </label>
-
-            <button
-              type="submit"
-              className="inline-flex h-full w-11 items-center justify-center rounded-r-[3px] border-l border-[#cdcdcd] bg-[#febd69] text-[#111111] transition hover:bg-[#f3a847]"
-            >
-              <Search className="h-[1.08rem] w-[1.08rem]" />
-              <span className="sr-only">Search</span>
-            </button>
-          </div>
-        </form>
-
-        <div className="order-2 ml-auto hidden items-center gap-2 md:order-3 md:flex">
-          <button
-            type="button"
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/80 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#F5FAFF]"
-            aria-label="Language EN"
-          >
-            <Globe className="h-4 w-4" />
-            <span>EN</span>
-          </button>
-
-          <Link
-            to="/account"
-            aria-label="Hello, sign in / Account & Lists"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
-          >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
-              Hello, sign in
-            </span>
-            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
-              Account & Lists
-            </span>
-          </Link>
-
-          <Link
-            to="/account/orders"
-            aria-label="Returns / & Orders"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
-          >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
-              Returns
-            </span>
-            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
-              & Orders
-            </span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={openCartDrawer}
-            className="relative inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/90 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#D0E4FC]"
-            aria-label={cartLabel}
-          >
-            <ShoppingCart className="h-4.5 w-4.5" />
-            <span className="hidden sm:inline">Cart</span>
-            {itemCount > 0 ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
-                {itemCount}
-              </span>
-            ) : null}
-          </button>
-        </div>
-      </div>
-
-      <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
         <nav
-          aria-label="Secondary navigation"
-          className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
+          className="hidden"
         >
-          {secondaryNavItems.map((item) => {
-            const active = isActiveNavItem(item, location.pathname, location.search);
+          {primaryNav.map((item) => {
+            const active = isNavItemActive(item, location.pathname);
 
             return (
               <Link
                 key={item.label}
                 to={item.to}
-                className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-2 transition ${
+                className={`rounded-full px-3 py-2 font-display text-[0.98rem] leading-none transition-colors xl:text-[1.05rem] ${
                   active
-                    ? "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]"
-                    : "border-white/10 bg-white/5 text-white/90 hover:border-[#D0E4FC] hover:bg-[#D0E4FC] hover:text-[#0C2048]"
+                    ? nativeApp
+                      ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+                      : "bg-[#f2b600] text-[#131921] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)]"
+                    : nativeApp
+                      ? "text-white/74 hover:bg-white/8 hover:text-white"
+                      : "text-white/82 hover:bg-white/8 hover:text-white"
                 }`}
-                aria-current={active ? "page" : undefined}
               >
-                <span>{item.label}</span>
+                {item.label}
               </Link>
             );
           })}
         </nav>
+
+        <div className="ml-auto flex items-center gap-1.5 min-[420px]:gap-2">
+          {showHeaderSearch ? (
+            <form onSubmit={submitSearch} className="relative hidden min-w-0 flex-1 lg:block xl:flex-[1.2]">
+              <label className="relative block w-full">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e78a6]" />
+                <input
+                  type="search"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  onFocus={() => setSearchDropdownOpen(true)}
+                  onBlur={() => {
+                    window.setTimeout(() => setSearchDropdownOpen(false), 120);
+                  }}
+                  placeholder="Search products, deals, and order help"
+                  className="h-11 w-full rounded-full border border-white/12 bg-white pl-10 pr-28 text-[0.92rem] text-[#1b2e4f] shadow-[0_10px_18px_-18px_rgba(0,0,0,0.55)] outline-none placeholder:text-[#6a80a8] focus:border-[#f2b600] focus:shadow-[0_0_0_3px_rgba(242,182,0,0.22)]"
+                  aria-label="Search products"
+                />
+                {searchInput.trim() ? (
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      setSearchInput("");
+                    }}
+                    className="absolute right-11 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#2f5eaa] transition hover:bg-[#e8f0ff]"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2b600] px-4 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-[#131921] transition hover:bg-[#ffd54a]"
+                >
+                  Search
+                </button>
+              </label>
+
+              {searchDropdownOpen ? (
+                <div
+                  className="absolute right-0 top-[calc(100%+0.45rem)] z-[80] hidden w-[min(840px,calc(100vw-2rem))] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] gap-1.5 rounded-[0.9rem] border border-[#c5d8fc] bg-[#f3f8ff] p-2 shadow-[0_26px_48px_-40px_rgba(20,58,128,0.52)] lg:grid"
+                  onMouseDown={(event) => event.preventDefault()}
+                >
+                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
+                    <div className="flex items-center justify-between border-b border-[#d8e6ff] pb-2">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Products</p>
+                      <button
+                        type="button"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          setSearchDropdownOpen(false);
+                          applySearchQuery(searchInput);
+                        }}
+                        className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4f6b9c] transition hover:text-[#1b3f8c]"
+                      >
+                        Search all
+                      </button>
+                    </div>
+
+                    <div className="mt-2 grid max-h-[352px] grid-cols-1 gap-1.5 overflow-y-auto pr-1">
+                      {dropdownProducts.map((product) => {
+                        const image = productImage(product);
+                        const price = formatMoney(minPrice(product));
+                        return (
+                          <Link
+                            key={product.id}
+                            to={`/products/${product.handle}`}
+                            onClick={() => setSearchDropdownOpen(false)}
+                            className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.75rem] border border-[#d2e2ff] bg-[#f9fbff] px-2 py-1.5 transition hover:border-[#aac4ef] hover:bg-[#eef5ff]"
+                          >
+                            {image ? (
+                              <img
+                                src={image}
+                                alt={product.title}
+                                className="h-10 w-10 rounded-[0.65rem] object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="grid h-10 w-10 place-items-center rounded-[0.65rem] bg-[#eaf2ff] text-[0.42rem] font-bold uppercase tracking-[0.08em] text-[#5d75a2]">
+                                SALT
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="line-clamp-2 text-[0.82rem] font-semibold leading-tight text-[#1c3761]">
+                                {conciseTitle(product.title, 36)}
+                              </p>
+                              <p className="mt-0.5 text-[0.5rem] font-semibold uppercase tracking-[0.13em] text-[#5a729d]">
+                                {product.product_type || "Curated pick"}
+                              </p>
+                            </div>
+                            <div className="flex min-h-full flex-col items-end justify-between gap-1.5 text-right">
+                              <p className="text-[0.84rem] font-semibold leading-none text-[#193764]">{price}</p>
+                              <span className="inline-flex items-center gap-0.5 text-[0.54rem] font-semibold uppercase tracking-[0.12em] text-[#496793]">
+                                View
+                                <ChevronRight className="h-3 w-3" />
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+
+                      {hasSearchQuery && !dropdownProducts.length ? (
+                        <div className="rounded-[1rem] border border-dashed border-[#c7daff] px-3 py-4 text-sm text-[#496793]">
+                          <p>No product matches this search yet. Try a category shortcut:</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
+                              <button
+                                key={entry.label}
+                                type="button"
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  setSearchDropdownOpen(false);
+                                }}
+                                onClick={() => {
+                                  if ("to" in entry) {
+                                    navigate(entry.to);
+                                  }
+                                }}
+                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
+                              >
+                                {entry.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section className="rounded-[0.85rem] border border-[#cddffc] bg-[#f8fbff] p-2">
+                    <div className="flex items-start justify-between">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#2e61c7]">Collections</p>
+                      <button
+                        type="button"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          setSearchDropdownOpen(false);
+                        }}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#cadbf8] text-[#6a81ab] transition hover:bg-[#ecf3ff] hover:text-[#163f87]"
+                        aria-label="Close search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
+                      <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Popular routes</p>
+                      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+                        {popularRoutes.map((route) => (
+                          <Link
+                            key={route.label}
+                            to={route.to}
+                            onClick={() => setSearchDropdownOpen(false)}
+                            className="inline-flex items-center justify-between rounded-[0.7rem] border border-transparent bg-white px-2 py-1.5 text-[0.74rem] font-medium text-[#1c3761] transition hover:border-[#b4cbf1] hover:bg-[#edf4ff]"
+                          >
+                            <span>{route.label}</span>
+                            <ChevronRight className="h-3 w-3 text-[#345f9b]" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-1.5 rounded-[0.8rem] border border-[#cfdefa] bg-[#f5f9ff] p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#4c6696]">Quick picks</p>
+                        <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#667ea8]">
+                          {recentSearches.length ? "Recent first" : "Trending first"}
+                        </p>
+                      </div>
+
+                      {quickCategoryLinks.length ? (
+                        <div className="mt-2.5">
+                          <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">Categories</p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {quickCategoryLinks.map((entry) => (
+                              <Link
+                                key={`${entry.label}-${entry.to}`}
+                                to={entry.to}
+                                onClick={() => setSearchDropdownOpen(false)}
+                                className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
+                              >
+                                {entry.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className={quickCategoryLinks.length ? "mt-2.5" : "mt-3"}>
+                        <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#667ea8]">
+                          {recentSearches.length ? "Recent searches" : "Trending searches"}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {quickSearchTerms.map((term) => (
+                            <button
+                              key={term}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                runQuickSearch(term);
+                              }}
+                              className="rounded-full border border-[#bdd2f8] bg-[#eef5ff] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#365a94] transition hover:border-[#8fb1ec] hover:text-[#1d3e7c]"
+                            >
+                              {term}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
+            </form>
+          ) : null}
+
+          {!nativeApp ? (
+            <>
+              <Link to="/wishlist" className={actionButtonClassName} aria-label="Open wishlist">
+                <Heart
+                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${
+                    wishlistCount > 0 ? "fill-[#f2b600] text-[#f2b600]" : ""
+                  }`}
+                />
+                {wishlistCount > 0 ? (
+                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#f2b600] text-[0.58rem] font-bold text-[#153a80]">
+                    {wishlistCount}
+                  </span>
+                ) : null}
+              </Link>
+
+              <button
+                type="button"
+                onClick={openCartDrawer}
+                className={actionButtonClassName}
+                aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
+              >
+                <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                {itemCount > 0 ? (
+                  <span className="absolute right-0.5 top-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#225ed6] text-[0.58rem] font-bold text-white">
+                    {itemCount}
+                  </span>
+                ) : null}
+              </button>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
+            className={`${actionButtonClassName} lg:hidden`}
+            aria-label={nativeApp ? "Open browse menu" : "Toggle navigation menu"}
+          >
+            {mobileOpen ? (
+              <X className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            ) : (
+              <Menu className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            )}
+          </button>
+        </div>
       </div>
+
+      {nativeApp ? null : (
+        <div className="border-t border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02))]">
+          <div className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/82 sm:px-6 lg:px-8">
+            {primaryNav.map((item) => {
+              const active = isNavItemActive(item, location.pathname);
+
+              return (
+                <Link
+                  key={`bar-${item.label}`}
+                  to={item.to}
+                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    active
+                      ? "border-[#f2b600] bg-[#f2b600] text-[#131921] shadow-[0_12px_22px_-18px_rgba(242,182,0,0.55)]"
+                      : "border-white/12 bg-white/6 text-white/80 hover:border-white/22 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {showHeaderSearch ? (
+        <div
+          className={`border-t px-3 py-2 lg:hidden ${
+            nativeApp ? "border-white/10 bg-[#121212]" : "border-white/10 bg-[#131921]"
+          }`}
+        >
+          <div className="w-full">
+            <form onSubmit={submitSearch}>
+              <label className="relative block">
+                <Search
+                  className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
+                    nativeApp ? "text-[#847b70]" : "text-[#5e78a6]"
+                  }`}
+                />
+                <input
+                  type="search"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder="Search products, deals, and order help"
+                  className={`h-10 w-full rounded-full pl-10 pr-24 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] outline-none placeholder:text-[#6a80a8] focus:shadow-[0_0_0_3px_rgba(126,166,234,0.25)] ${
+                    nativeApp
+                      ? "border border-[#e0d7cc] bg-[#fffdf8] text-[#121212] placeholder:text-[#82796c] focus:border-[#d61f26] focus:shadow-[0_0_0_3px_rgba(214,31,38,0.12)]"
+                      : "border border-[#b8cff8] bg-white text-[#1b2e4f] focus:border-[#7ea6ea]"
+                  }`}
+                  aria-label="Search products"
+                />
+                <button
+                  type="submit"
+                  className={`absolute right-1 top-1 inline-flex h-8 items-center justify-center rounded-full px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white transition ${
+                    nativeApp ? "bg-[#151515] hover:bg-[#d61f26]" : "bg-[#1d4faa] hover:bg-[#153f8b]"
+                  }`}
+                >
+                  Search
+                </button>
+              </label>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {mobileOpen ? (
+        <div className={`border-t px-3 py-4 lg:hidden ${nativeApp ? "border-white/10 bg-[#f6f1e8]" : "border-[#d7e5ff] bg-[#f1f7ff]"}`}>
+          {nativeApp ? (
+            <div className="grid w-full gap-3">
+              <div className="rounded-[1.35rem] border border-[#ddd5c9] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,244,0.98))] p-3 shadow-[0_22px_42px_-32px_rgba(17,17,17,0.18)]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#e6ded2] pb-2.5">
+                  <div>
+                    <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-[#171717]">Browse</p>
+                    <p className="mt-1 text-sm text-[#6f6659]">
+                      Wishlist, cart, order tracking, and recent products stay in the app drawer.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d9d0c5] text-[#6d655a] transition hover:bg-[#f6f0e8] hover:text-[#171717]"
+                    aria-label="Close browse menu"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link
+                    to="/wishlist"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
+                  >
+                    Wishlist
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      openCartDrawer();
+                    }}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
+                  >
+                    Cart ({itemCount})
+                  </button>
+                  <Link
+                    to="/account/orders"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
+                  >
+                    Order tracking
+                  </Link>
+                  <Link
+                    to="/recently-viewed"
+                    onClick={closeMobileMenu}
+                    className="inline-flex h-11 items-center justify-center rounded-[0.85rem] border border-[#d9d0c5] bg-white px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#171717] transition hover:border-[#bfb4a5] hover:text-[#d61f26]"
+                  >
+                    Recently viewed
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            <div className="grid w-full gap-2">
+              {mobileNav.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  onClick={closeMobileMenu}
+                  className={`inline-flex h-11 items-center justify-center rounded-[0.9rem] border border-[#c6d8f9] bg-[#f9fcff] px-4 font-display text-[1rem] transition ${
+                    isNavItemActive(item, location.pathname)
+                      ? "border-[#98b8ef] bg-[#e7f0ff] text-[#153f8d]"
+                      : "text-[#2a3f66] hover:border-[#9ab9ee] hover:text-[#153f8d]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <Link
+                  to="/wishlist"
+                  onClick={closeMobileMenu}
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] border border-[#c6d8f9] bg-[#f9fcff] text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-[#2a3f66]"
+                >
+                  Wishlist
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    openCartDrawer();
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-[0.85rem] bg-[#1d4faa] px-4 text-[0.74rem] font-semibold uppercase tracking-[0.11em] text-white"
+                >
+                  Cart ({itemCount})
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
     </header>
   );
 };

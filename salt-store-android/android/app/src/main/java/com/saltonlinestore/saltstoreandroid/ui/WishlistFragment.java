@@ -80,30 +80,52 @@ public class WishlistFragment extends Fragment {
             return;
         }
 
+        com.saltonlinestore.saltstoreandroid.model.StoreCatalog cached = repository.peekCatalog();
+        if (cached != null) {
+            bindWishlist(cached, false);
+        } else {
+            emptyState.setVisibility(View.VISIBLE);
+            emptyState.setText("Loading live catalog...");
+            emptyAction.setVisibility(View.GONE);
+            list.setVisibility(View.GONE);
+        }
+
         repository.loadCatalog(new StoreRepository.CatalogCallback() {
             @Override
             public void onSuccess(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog) {
-                List<WishlistAdapter.WishlistRow> rows = new ArrayList<>();
-                for (Long id : prefs.getWishlistIds()) {
-                    StoreProduct product = catalog.findProductById(id);
-                    if (product != null) {
-                        rows.add(new WishlistAdapter.WishlistRow(product));
-                    }
-                }
-                adapter.submit(rows);
-                emptyState.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
-                emptyAction.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
-                list.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
+                bindWishlist(catalog, true);
             }
 
             @Override
             public void onError(Throwable error) {
-                adapter.submit(new ArrayList<>());
-                emptyState.setVisibility(View.VISIBLE);
-                emptyAction.setVisibility(View.VISIBLE);
-                list.setVisibility(View.GONE);
+                if (cached == null) {
+                    adapter.submit(new ArrayList<>());
+                    emptyState.setVisibility(View.VISIBLE);
+                    emptyState.setText("Nothing saved yet. Tap the star on a product to add it here.");
+                    emptyAction.setVisibility(View.VISIBLE);
+                    list.setVisibility(View.GONE);
+                }
             }
         });
+    }
+
+    private void bindWishlist(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog, boolean liveReady) {
+        List<WishlistAdapter.WishlistRow> rows = new ArrayList<>();
+        for (Long id : prefs.getWishlistIds()) {
+            StoreProduct product = catalog.findProductById(id);
+            if (product != null) {
+                rows.add(new WishlistAdapter.WishlistRow(product));
+            }
+        }
+        adapter.submit(rows);
+        emptyState.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
+        if (rows.isEmpty()) {
+            emptyState.setText(liveReady
+                    ? "Nothing saved yet. Tap the star on a product to add it here."
+                    : "Loading live catalog...");
+        }
+        emptyAction.setVisibility(rows.isEmpty() && liveReady ? View.VISIBLE : View.GONE);
+        list.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void openProduct(String handle) {

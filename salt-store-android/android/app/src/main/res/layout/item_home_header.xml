@@ -3,27 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@color/salt_navy"
-    app:cardCornerRadius="22dp"
-    app:cardElevation="0dp"
-    app:strokeColor="#23425F"
-    app:strokeWidth="1dp">
+        android:layout_marginBottom="12dp"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardBackgroundColor="@color/salt_surface"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/salt_outline"
+        app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+            android:padding="16dp">
 
         <TextView
             android:id="@+id/home_header_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="S.A.L.T."
-            android:textColor="@color/salt_surface"
-            android:textSize="24sp"
+            android:text="Live catalog"
+            android:textColor="@color/salt_ink"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <TextView
@@ -31,8 +31,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Live Shopify data · endless catalog"
-            android:textColor="#D5E1EC"
+            android:text="Fast browse · quick add"
+            android:textColor="@color/salt_muted"
             android:textSize="13sp" />
 
         <TextView
@@ -54,10 +54,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="@color/salt_surface"
+            app:cardBackgroundColor="@color/salt_surface_alt"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeColor="#35607B"
+            app:strokeColor="@color/salt_outline"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -66,7 +66,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="14dp"
-                android:paddingVertical="12dp">
+                    android:paddingVertical="12dp">
 
                 <ImageView
                     android:layout_width="18dp"
@@ -80,7 +80,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
-                    android:text="Search products, collections, and blogs"
+                    android:text="Search products"
                     android:textColor="@color/salt_muted"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -102,12 +102,14 @@
                 android:layout_marginEnd="6dp"
                 android:layout_marginBottom="8dp"
                 android:text="Shop"
-                app:backgroundTint="@color/salt_surface"
+                app:backgroundTint="@color/salt_surface_alt"
                 app:cornerRadius="14dp"
                 app:icon="@android:drawable/ic_menu_search"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
                 android:textColor="@color/salt_ink" />
 
             <com.google.android.material.button.MaterialButton
@@ -118,12 +120,14 @@
                 android:layout_marginStart="6dp"
                 android:layout_marginBottom="8dp"
                 android:text="Cart"
-                app:backgroundTint="@color/salt_surface"
+                app:backgroundTint="@color/salt_surface_alt"
                 app:cornerRadius="14dp"
                 app:icon="@android:drawable/ic_menu_view"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
                 android:textColor="@color/salt_ink" />
 
             <com.google.android.material.button.MaterialButton
@@ -134,12 +138,14 @@
                 android:layout_marginEnd="6dp"
                 android:layout_marginTop="2dp"
                 android:text="Wishlist"
-                app:backgroundTint="@color/salt_surface"
+                app:backgroundTint="@color/salt_surface_alt"
                 app:cornerRadius="14dp"
                 app:icon="@android:drawable/btn_star_big_off"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="@color/salt_gold"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
                 android:textColor="@color/salt_ink" />
 
             <com.google.android.material.button.MaterialButton
@@ -150,12 +156,14 @@
                 android:layout_marginStart="6dp"
                 android:layout_marginTop="2dp"
                 android:text="Browse"
-                app:backgroundTint="@color/salt_surface"
+                app:backgroundTint="@color/salt_surface_alt"
                 app:cornerRadius="14dp"
                 app:icon="@android:drawable/ic_menu_more"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="@color/salt_ink"
+                app:strokeColor="@color/salt_outline"
+                app:strokeWidth="1dp"
                 android:textColor="@color/salt_ink" />
         </GridLayout>
     </LinearLayout>

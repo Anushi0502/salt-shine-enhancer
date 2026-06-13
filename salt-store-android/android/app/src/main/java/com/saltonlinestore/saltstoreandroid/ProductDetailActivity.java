@@ -25,6 +25,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.saltonlinestore.saltstoreandroid.data.StoreHistoryStore;
 import com.saltonlinestore.saltstoreandroid.data.StorePrefs;
 import com.saltonlinestore.saltstoreandroid.data.StoreRepository;
+import com.saltonlinestore.saltstoreandroid.model.StoreCatalog;
 import com.saltonlinestore.saltstoreandroid.model.StoreProduct;
 import com.saltonlinestore.saltstoreandroid.model.StoreVariant;
 import com.saltonlinestore.saltstoreandroid.ui.adapter.ProductImagePagerAdapter;
@@ -76,6 +77,7 @@ public class ProductDetailActivity extends AppCompatActivity {
 
     private StoreProduct currentProduct;
     private StoreVariant selectedVariant;
+    private long selectedVariantId = -1L;
     private int currentGalleryIndex;
     private boolean overviewExpanded;
     private boolean specificationsExpanded;
@@ -143,6 +145,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         });
 
         String handle = getIntent().getStringExtra(EXTRA_HANDLE);
+        showLoadingState();
         loadProduct(handle);
     }
 
@@ -151,42 +154,37 @@ public class ProductDetailActivity extends AppCompatActivity {
     }
 
     private void loadProduct(String handle) {
-        repository.loadProduct(handle, new StoreRepository.ProductCallback() {
+        String normalizedHandle = handle == null ? "" : handle.trim();
+        if (normalizedHandle.isEmpty()) {
+            showUnavailableState();
+            return;
+        }
+
+        repository.loadProduct(normalizedHandle, new StoreRepository.ProductCallback() {
             @Override
             public void onSuccess(StoreProduct product) {
-                currentProduct = product;
                 populate(product);
             }
 
             @Override
             public void onError(Throwable error) {
-                currentProduct = null;
-                selectedVariant = null;
-                title.setText("Product unavailable");
-                description.setText("The item could not be loaded from the live catalog.");
-                descriptionToggle.setVisibility(View.GONE);
-                if (highlightsCard != null) {
-                    highlightsCard.setVisibility(View.GONE);
+                if (currentProduct == null) {
+                    showUnavailableState();
+                    Toast.makeText(ProductDetailActivity.this, "Unable to load product", Toast.LENGTH_SHORT).show();
                 }
-                if (highlightsList != null) {
-                    highlightsList.removeAllViews();
-                }
-                specificationsCard.setVisibility(View.GONE);
-                if (specificationsList != null) {
-                    specificationsList.removeAllViews();
-                }
-                price.setText("");
-                bottomPrice.setText("");
-                vendor.setText("");
-                wishlistButton.setEnabled(false);
-                addToCartButton.setEnabled(false);
-                Toast.makeText(ProductDetailActivity.this, "Unable to load product", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void populate(@NonNull StoreProduct product) {
-        historyStore.rememberRecentlyViewed(product.handle);
+        String previousHandle = currentProduct == null ? "" : String.valueOf(currentProduct.handle == null ? "" : currentProduct.handle);
+        long previousVariantId = selectedVariant == null ? -1L : selectedVariant.id;
+        currentProduct = product;
+
+        String currentHandle = product.handle == null ? "" : product.handle;
+        if (!currentHandle.equals(previousHandle)) {
+            historyStore.rememberRecentlyViewed(currentHandle);
+        }
         overviewExpanded = false;
         specificationsExpanded = false;
 
@@ -227,7 +225,9 @@ public class ProductDetailActivity extends AppCompatActivity {
         }
 
         variantGroup.removeAllViews();
-        selectedVariant = product.defaultVariant();
+        StoreVariant defaultVariant = product.defaultVariant();
+        selectedVariant = findVariant(product, previousVariantId, defaultVariant);
+        selectedVariantId = selectedVariant == null ? -1L : selectedVariant.id;
         List<StoreVariant> variants = product.variants;
         for (StoreVariant variant : variants) {
             Chip chip = new Chip(this);
@@ -241,6 +241,7 @@ public class ProductDetailActivity extends AppCompatActivity {
             chip.setChecked(selectedVariant != null && selectedVariant.id == variant.id);
             chip.setOnClickListener(v -> {
                 selectedVariant = (StoreVariant) v.getTag();
+                selectedVariantId = selectedVariant == null ? -1L : selectedVariant.id;
                 updatePrice();
             });
             variantGroup.addView(chip);
@@ -270,6 +271,68 @@ public class ProductDetailActivity extends AppCompatActivity {
             prefs.incrementCartQuantity(product.id, selectedVariant.id, 1);
             Toast.makeText(this, "Added to cart", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void showLoadingState() {
+        title.setText("Loading live product...");
+        vendor.setText("SALT");
+        price.setText("");
+        bottomPrice.setText("");
+        compareAt.setVisibility(View.GONE);
+        availability.setText("Fetching from live catalog");
+        description.setText("We are pulling the latest product details.");
+        descriptionToggle.setVisibility(View.GONE);
+        if (highlightsCard != null) {
+            highlightsCard.setVisibility(View.GONE);
+        }
+        if (highlightsList != null) {
+            highlightsList.removeAllViews();
+        }
+        specificationsCard.setVisibility(View.GONE);
+        if (specificationsList != null) {
+            specificationsList.removeAllViews();
+        }
+        wishlistButton.setEnabled(false);
+        wishlistButton.setText("Save");
+        addToCartButton.setEnabled(false);
+        addToCartButton.setText("Loading...");
+    }
+
+    private void showUnavailableState() {
+        currentProduct = null;
+        selectedVariant = null;
+        selectedVariantId = -1L;
+        title.setText("Product unavailable");
+        description.setText("The item could not be loaded from the live catalog.");
+        descriptionToggle.setVisibility(View.GONE);
+        if (highlightsCard != null) {
+            highlightsCard.setVisibility(View.GONE);
+        }
+        if (highlightsList != null) {
+            highlightsList.removeAllViews();
+        }
+        specificationsCard.setVisibility(View.GONE);
+        if (specificationsList != null) {
+            specificationsList.removeAllViews();
+        }
+        price.setText("");
+        bottomPrice.setText("");
+        vendor.setText("");
+        wishlistButton.setEnabled(false);
+        wishlistButton.setText("Save");
+        addToCartButton.setEnabled(false);
+        addToCartButton.setText("Unavailable");
+    }
+
+    private StoreVariant findVariant(@NonNull StoreProduct product, long variantId, StoreVariant fallback) {
+        if (variantId > 0) {
+            for (StoreVariant variant : product.variants) {
+                if (variant != null && variant.id == variantId) {
+                    return variant;
+                }
+            }
+        }
+        return fallback;
     }
 
     private void bindBodyCopy(StoreProduct product) {

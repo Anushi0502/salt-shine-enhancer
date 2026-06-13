@@ -91,6 +91,22 @@ public final class StoreUrls {
         return homeUrl() + "/pages/faqs";
     }
 
+    public static String aboutUsUrl() {
+        return homeUrl() + "/pages/about-us";
+    }
+
+    public static String missionVisionUrl() {
+        return homeUrl() + "/pages/mission-vision";
+    }
+
+    public static String affiliateProgramUrl() {
+        return homeUrl() + "/pages/affiliate-program";
+    }
+
+    public static String termsConditionsUrl() {
+        return homeUrl() + "/pages/terms-conditions";
+    }
+
     private static String ensureBase(String base) {
         if (base == null || base.trim().isEmpty()) {
             return "https://www.saltonlinestore.com";

@@ -16,6 +16,7 @@ import com.google.android.material.button.MaterialButton;
 import com.saltonlinestore.saltstoreandroid.MainActivity;
 import com.saltonlinestore.saltstoreandroid.R;
 import com.saltonlinestore.saltstoreandroid.data.StoreRepository;
+import com.saltonlinestore.saltstoreandroid.model.StoreCatalog;
 import com.saltonlinestore.saltstoreandroid.model.StoreProduct;
 import com.saltonlinestore.saltstoreandroid.ui.adapter.ProductAdapter;
 import com.saltonlinestore.saltstoreandroid.util.StoreFormat;
@@ -37,6 +38,7 @@ public class ShopFragment extends Fragment {
     private String currentQuery = "";
     private List<StoreProduct> currentSourceProducts = new ArrayList<>();
     private boolean pendingLoad;
+    private boolean loadingScope;
 
     @Nullable
     @Override
@@ -122,7 +124,20 @@ public class ShopFragment extends Fragment {
         }
 
         pendingLoad = false;
+        loadingScope = true;
         if (currentCollectionHandle == null || "all-products".equalsIgnoreCase(currentCollectionHandle)) {
+            StoreCatalog cached = repository.peekCatalog();
+            if (cached != null) {
+                currentSourceProducts = new ArrayList<>(cached.products);
+                currentCollectionTitle = "Catalog";
+                if (resultsLabel != null) {
+                    resultsLabel.setText(currentCollectionTitle);
+                }
+                applyFilter();
+            } else {
+                showLoadingState("Loading live catalog...", "Fresh products are loading from Shopify.");
+            }
+
             repository.loadCatalog(new StoreRepository.CatalogCallback() {
                 @Override
                 public void onSuccess(com.saltonlinestore.saltstoreandroid.model.StoreCatalog catalog) {
@@ -131,16 +146,28 @@ public class ShopFragment extends Fragment {
                     if (resultsLabel != null) {
                         resultsLabel.setText(currentCollectionTitle);
                     }
+                    loadingScope = false;
                     applyFilter();
                 }
 
                 @Override
                 public void onError(Throwable error) {
-                    currentSourceProducts = new ArrayList<>();
+                    loadingScope = false;
                     applyFilter();
                 }
             });
             return;
+        }
+
+        List<StoreProduct> cached = repository.peekCollectionProducts(currentCollectionHandle);
+        if (!cached.isEmpty()) {
+            currentSourceProducts = new ArrayList<>(cached);
+            if (resultsLabel != null) {
+                resultsLabel.setText(currentCollectionTitle);
+            }
+            applyFilter();
+        } else {
+            showLoadingState("Loading collection...", "Fresh collection products are loading.");
         }
 
         repository.loadCollectionProducts(currentCollectionHandle, new StoreRepository.ProductsCallback() {
@@ -150,12 +177,13 @@ public class ShopFragment extends Fragment {
                 if (resultsLabel != null) {
                     resultsLabel.setText(currentCollectionTitle);
                 }
+                loadingScope = false;
                 applyFilter();
             }
 
             @Override
             public void onError(Throwable error) {
-                currentSourceProducts = new ArrayList<>();
+                loadingScope = false;
                 applyFilter();
             }
         });
@@ -198,17 +226,35 @@ public class ShopFragment extends Fragment {
         boolean isEmpty = filtered.isEmpty();
         if (emptyState != null) {
             emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-            emptyState.setText(query.isEmpty()
-                    ? "No products are available in this collection right now."
-                    : "No products match \"" + currentQuery.trim() + "\".");
+            if (loadingScope && currentSourceProducts.isEmpty()) {
+                emptyState.setText("Loading live catalog...");
+            } else {
+                emptyState.setText(query.isEmpty()
+                        ? "No products are available in this collection right now."
+                        : "No products match \"" + currentQuery.trim() + "\".");
+            }
         }
         if (emptyAction != null) {
-            emptyAction.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-            if (query.isEmpty()) {
-                emptyAction.setText("Browse collections");
+            if (loadingScope && currentSourceProducts.isEmpty()) {
+                emptyAction.setVisibility(View.GONE);
             } else {
-                emptyAction.setText("Clear search");
+                emptyAction.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+                if (query.isEmpty()) {
+                    emptyAction.setText("Browse collections");
+                } else {
+                    emptyAction.setText("Clear search");
+                }
             }
+        }
+    }
+
+    private void showLoadingState(@NonNull String title, @NonNull String subtitle) {
+        if (emptyState != null) {
+            emptyState.setVisibility(View.VISIBLE);
+            emptyState.setText(title + "\n" + subtitle);
+        }
+        if (emptyAction != null) {
+            emptyAction.setVisibility(View.GONE);
         }
     }
 

@@ -75,6 +75,15 @@ const MainFooter = () => {
               <Link to="/contact" className="transition-colors hover:text-white">
                 Contact
               </Link>
+              <Link to="/about" className="transition-colors hover:text-white">
+                About
+              </Link>
+              <Link to="/pages/mission-vision" className="transition-colors hover:text-white">
+                Mission &amp; Vision
+              </Link>
+              <Link to="/pages/affiliate-program" className="transition-colors hover:text-white">
+                Affiliate program
+              </Link>
               <Link to="/account/orders" className="transition-colors hover:text-white">
                 Track order
               </Link>

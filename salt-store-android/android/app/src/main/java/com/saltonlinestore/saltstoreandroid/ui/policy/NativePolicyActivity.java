@@ -102,7 +102,6 @@ public class NativePolicyActivity extends AppCompatActivity {
                 getSupportActionBar().setTitle(content.title);
                 getSupportActionBar().setSubtitle(content.subtitle);
             }
-            renderSummaryCard(content);
             List<PolicySection> sections = parseSections(content.bodyHtml);
             if (sections.isEmpty()) {
                 showError("This policy is not available in-app yet.");
@@ -136,6 +135,18 @@ public class NativePolicyActivity extends AppCompatActivity {
         if (normalized.contains("/pages/faqs") || normalized.contains("/pages/faq")) {
             return new PolicyContent("FAQs", getIntent().getStringExtra(EXTRA_SUBTITLE), readAsset("policies/faq.html"));
         }
+        if (normalized.contains("/pages/about-us")) {
+            return new PolicyContent("About us", getIntent().getStringExtra(EXTRA_SUBTITLE), readAsset("policies/about-us.html"));
+        }
+        if (normalized.contains("/pages/mission-vision")) {
+            return new PolicyContent("Mission & vision", getIntent().getStringExtra(EXTRA_SUBTITLE), readAsset("policies/mission-vision.html"));
+        }
+        if (normalized.contains("/pages/affiliate-program")) {
+            return new PolicyContent("Affiliate program", getIntent().getStringExtra(EXTRA_SUBTITLE), readAsset("policies/affiliate-program.html"));
+        }
+        if (normalized.contains("/pages/terms-conditions") || normalized.contains("/pages/terms-and-conditions") || normalized.contains("/policies/terms-conditions")) {
+            return new PolicyContent("Terms & conditions", getIntent().getStringExtra(EXTRA_SUBTITLE), readAsset("policies/terms-conditions.html"));
+        }
         return null;
     }
 
@@ -153,68 +164,10 @@ public class NativePolicyActivity extends AppCompatActivity {
         }
     }
 
-    private void renderSummaryCard(@NonNull PolicyContent content) {
-        MaterialCardView card = new MaterialCardView(this);
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        cardParams.bottomMargin = dp(12);
-        card.setLayoutParams(cardParams);
-        card.setCardBackgroundColor(getColor(R.color.salt_surface));
-        card.setRadius(dp(28));
-        card.setCardElevation(0f);
-        card.setStrokeColor(getColor(R.color.salt_outline));
-        card.setStrokeWidth(dp(1));
-
-        LinearLayout wrapper = new LinearLayout(this);
-        wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setPadding(dp(20), dp(20), dp(20), dp(20));
-
-        TextView titleView = new TextView(this);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        titleParams.topMargin = 0;
-        titleView.setLayoutParams(titleParams);
-        titleView.setText(content.title);
-        titleView.setTextColor(getColor(R.color.salt_ink));
-        titleView.setTextSize(26f);
-        titleView.setTypeface(titleView.getTypeface(), android.graphics.Typeface.BOLD);
-        titleView.setLetterSpacing(0.01f);
-        wrapper.addView(titleView);
-
-        String subtitle = TextUtils.isEmpty(content.subtitle)
-                ? "Official policy rendered in-app."
-                : content.subtitle.trim();
-        TextView subtitleView = new TextView(this);
-        LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        subtitleParams.topMargin = dp(8);
-        subtitleView.setLayoutParams(subtitleParams);
-        subtitleView.setText(subtitle);
-        subtitleView.setTextColor(getColor(R.color.salt_muted));
-        subtitleView.setTextSize(14f);
-        subtitleView.setLineSpacing(dp(4), 1f);
-        subtitleView.setLetterSpacing(0.005f);
-        wrapper.addView(subtitleView);
-
-        String lastUpdated = extractLastUpdated(content.bodyHtml);
-        if (!TextUtils.isEmpty(lastUpdated)) {
-            TextView updatedView = new TextView(this);
-            LinearLayout.LayoutParams updatedParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            updatedParams.topMargin = dp(12);
-            updatedView.setLayoutParams(updatedParams);
-            updatedView.setText("Updated " + lastUpdated);
-            updatedView.setTextColor(getColor(R.color.salt_muted));
-            updatedView.setTextSize(12.5f);
-            updatedView.setTypeface(updatedView.getTypeface(), android.graphics.Typeface.BOLD);
-            updatedView.setLetterSpacing(0.015f);
-            wrapper.addView(updatedView);
-        }
-
-        card.addView(wrapper);
-        contentContainer.addView(card);
-    }
-
     private void renderSectionCard(@NonNull PolicySection section) {
-        String title = TextUtils.isEmpty(section.title) ? "Overview" : section.title.trim();
+        String title = TextUtils.isEmpty(section.title) ? "" : section.title.trim();
         String bodyHtml = TextUtils.isEmpty(section.bodyHtml) ? "" : section.bodyHtml.trim();
-        if (bodyHtml.isEmpty()) {
+        if (bodyHtml.isEmpty() || TextUtils.isEmpty(cleanHtmlText(bodyHtml))) {
             return;
         }
 
@@ -232,14 +185,16 @@ public class NativePolicyActivity extends AppCompatActivity {
         wrapper.setOrientation(LinearLayout.VERTICAL);
         wrapper.setPadding(dp(20), dp(20), dp(20), dp(20));
 
-        TextView titleView = new TextView(this);
-        titleView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        titleView.setText(title);
-        titleView.setTextColor(getColor(R.color.salt_ink));
-        titleView.setTextSize(18f);
-        titleView.setTypeface(titleView.getTypeface(), android.graphics.Typeface.BOLD);
-        titleView.setLetterSpacing(0.005f);
-        wrapper.addView(titleView);
+        if (!TextUtils.isEmpty(title)) {
+            TextView titleView = new TextView(this);
+            titleView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            titleView.setText(title);
+            titleView.setTextColor(getColor(R.color.salt_ink));
+            titleView.setTextSize(18f);
+            titleView.setTypeface(titleView.getTypeface(), android.graphics.Typeface.BOLD);
+            titleView.setLetterSpacing(0.005f);
+            wrapper.addView(titleView);
+        }
 
         TextView body = new TextView(this);
         LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -279,13 +234,16 @@ public class NativePolicyActivity extends AppCompatActivity {
         }
 
         if (markers.isEmpty()) {
-            sections.add(new PolicySection("", html));
+            if (!TextUtils.isEmpty(cleanHtmlText(html))) {
+                sections.add(new PolicySection("", html));
+            }
             return sections;
         }
 
         if (markers.get(0).start > 0) {
             String introHtml = html.substring(0, markers.get(0).start).trim();
-            if (!introHtml.isEmpty()) {
+            String introText = cleanHtmlText(introHtml);
+            if (!introText.isEmpty() && introText.length() > 180) {
                 sections.add(new PolicySection("", introHtml));
             }
         }
@@ -295,7 +253,8 @@ public class NativePolicyActivity extends AppCompatActivity {
             int bodyStart = marker.end;
             int bodyEnd = index + 1 < markers.size() ? markers.get(index + 1).start : html.length();
             String sectionBody = html.substring(bodyStart, bodyEnd).trim();
-            if (sectionBody.isEmpty()) {
+            String sectionText = cleanHtmlText(sectionBody);
+            if (sectionBody.isEmpty() || TextUtils.isEmpty(sectionText)) {
                 continue;
             }
             sections.add(new PolicySection(marker.title, sectionBody));

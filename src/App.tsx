@@ -60,7 +60,9 @@ const AppShell = () => (
                 <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/pages/about-us" element={<AboutPage />} />
-                <Route path="/pages/our-mission-vision" element={<MissionVisionPage />} />
+                <Route path="/mission-vision" element={<MissionVisionPage />} />
+                <Route path="/pages/mission-vision" element={<MissionVisionPage />} />
+                <Route path="/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:handle" element={<BlogPostPage />} />

@@ -15,6 +15,10 @@ import type {
 } from "@/types/shopify";
 import { firstImageSrcFromHtml, polishPlainText, stripHtml } from "@/lib/formatters";
 import {
+  getEditorialPageContent,
+  type EditorialPagePayload,
+} from "@/lib/editorial-pages";
+import {
   getRuntimeContext,
   getShopBaseOrigin,
   normalizeShopifyAssetUrl,
@@ -1102,19 +1106,23 @@ async function loadCollectionProductIds(handle: string): Promise<CollectionProdu
   }
 }
 
-export async function loadAboutPage(): Promise<AboutPagePayload> {
-  try {
-    return await fetchAboutPageFromLive();
-  } catch (error) {
-    const liveMessage = error instanceof Error ? error.message : "Unknown live about page error";
+export async function loadEditorialPage(handle: string): Promise<EditorialPagePayload> {
+  const page = getEditorialPageContent(handle);
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
 
-    try {
-      return await fetchAboutPageFromCache();
-    } catch (cacheError) {
-      const cacheMessage = cacheError instanceof Error ? cacheError.message : "Unknown cached about page error";
-      throw new Error(`Live about page fetch failed: ${liveMessage}. Cached about page fetch failed: ${cacheMessage}`);
-    }
+  if (!page) {
+    throw new Error(`Editorial page content unavailable for handle "${normalizedHandle}"`);
   }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: `workbook:${normalizedHandle}`,
+    page,
+  };
+}
+
+export async function loadAboutPage(): Promise<EditorialPagePayload> {
+  return loadEditorialPage(ABOUT_HANDLE || "about-us");
 }
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {
@@ -1220,6 +1228,23 @@ export function useAboutPage() {
   return useQuery({
     queryKey: ["about-page", DATA_MODE, ABOUT_HANDLE],
     queryFn: loadAboutPage,
+    staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
+    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+}
+
+export function useEditorialPage(handle: string) {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+
+  return useQuery({
+    queryKey: ["editorial-page", DATA_MODE, normalizedHandle],
+    queryFn: () => loadEditorialPage(normalizedHandle),
     staleTime: LIVE_STALE_TIME_MS,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
