@@ -87,12 +87,7 @@ const MainFooter = () => {
               <Link to="/account/orders" className="transition-colors hover:text-white">
                 Track order
               </Link>
-              <a href={shippingPolicyHref} className="transition-colors hover:text-white">
-                Shipping
-              </a>
-              <a href={returnsPolicyHref} className="transition-colors hover:text-white">
-                Returns
-              </a>
+              
             </div>
           </div>
 
@@ -107,6 +102,9 @@ const MainFooter = () => {
               </a>
               <a href={shippingPolicyHref} className="transition-colors hover:text-white">
                 Shipping policy
+              </a>
+              <a href={returnsPolicyHref} className="transition-colors hover:text-white">
+                Returns
               </a>
             </div>
           </div>

@@ -1,0 +1,771 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "SALT Online Store" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img "SALT Online Store" [ref=e8]
+      - generic [ref=e10]:
+        - button "Search category All" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: All
+          - img [ref=e14]
+        - generic [ref=e16]:
+          - generic [ref=e17]: Search SALT
+          - img
+          - searchbox "Search SALT" [ref=e18]
+        - button "Search" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+          - generic [ref=e23]: Search
+      - generic [ref=e24]:
+        - button "Language EN" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e29]: EN
+        - link "Hello, sign in / Account & Lists" [ref=e30] [cursor=pointer]:
+          - /url: /account
+          - generic [ref=e31]: Hello, sign in
+          - generic [ref=e32]: Account & Lists
+        - link "Returns / & Orders" [ref=e33] [cursor=pointer]:
+          - /url: /account/orders
+          - generic [ref=e34]: Returns
+          - generic [ref=e35]: "& Orders"
+        - button "Cart with 0 items" [ref=e36] [cursor=pointer]:
+          - img [ref=e37]
+          - generic [ref=e41]: Cart
+    - navigation "Secondary navigation" [ref=e43]:
+      - link "All products" [ref=e44] [cursor=pointer]:
+        - /url: /shop?collection=all-products
+        - generic [ref=e45]: All products
+      - link "Collections" [ref=e46] [cursor=pointer]:
+        - /url: /collections
+        - generic [ref=e47]: Collections
+      - link "New Arrivals" [ref=e48] [cursor=pointer]:
+        - /url: /shop?collection=new-arrivals
+        - generic [ref=e49]: New Arrivals
+      - link "Cookware" [ref=e50] [cursor=pointer]:
+        - /url: /shop?collection=cookware
+        - generic [ref=e51]: Cookware
+      - link "Home Decor" [ref=e52] [cursor=pointer]:
+        - /url: /shop?collection=home-decor
+        - generic [ref=e53]: Home Decor
+      - link "Apparel" [ref=e54] [cursor=pointer]:
+        - /url: /shop?collection=apparel
+        - generic [ref=e55]: Apparel
+      - link "Gifts" [ref=e56] [cursor=pointer]:
+        - /url: /shop?collection=gifts
+        - generic [ref=e57]: Gifts
+      - link "Support" [ref=e58] [cursor=pointer]:
+        - /url: /contact
+        - generic [ref=e59]: Support
+  - main [ref=e60]:
+    - generic [ref=e62]:
+      - generic [ref=e65]:
+        - generic [ref=e67]:
+          - link "Spring garden tools collection banner with gloves, raised beds, planters, and outdoor decor." [ref=e68] [cursor=pointer]:
+            - /url: /collections/garden-tools
+            - img "Spring garden tools collection banner with gloves, raised beds, planters, and outdoor decor." [ref=e70]
+          - link "Unique home decor and gift collection banner featuring distinctive statement pieces." [ref=e71] [cursor=pointer]:
+            - /url: /collections/unique-products
+            - img "Unique home decor and gift collection banner featuring distinctive statement pieces." [ref=e73]
+          - link "Summer collection banner featuring seasonal lifestyle, outdoor, and home essentials." [ref=e74] [cursor=pointer]:
+            - /url: /collections/summer-collection
+            - img "Summer collection banner featuring seasonal lifestyle, outdoor, and home essentials." [ref=e76]
+        - generic [ref=e77]:
+          - link "Best Sellers collection image featured in SALT hero spotlight." [ref=e78] [cursor=pointer]:
+            - /url: /collections/appplaza-best-sellers
+            - img "Best Sellers collection image featured in SALT hero spotlight." [ref=e80]
+            - paragraph [ref=e83]: Best Sellers
+          - link "Books & Planners collection image featured in SALT hero spotlight." [ref=e84] [cursor=pointer]:
+            - /url: /collections/books
+            - img "Books & Planners collection image featured in SALT hero spotlight." [ref=e86]
+            - paragraph [ref=e89]: Books & Planners
+          - link "Under $35 collection image featured in SALT hero spotlight." [ref=e90] [cursor=pointer]:
+            - /url: /collections/under-35
+            - img "Under $35 collection image featured in SALT hero spotlight." [ref=e92]
+            - paragraph [ref=e95]: Under $35
+          - link "Gift Ideas collection image featured in SALT hero spotlight." [ref=e96] [cursor=pointer]:
+            - /url: /collections/gifts
+            - img "Gift Ideas collection image featured in SALT hero spotlight." [ref=e98]
+            - paragraph [ref=e101]: Gift Ideas
+      - generic [ref=e103]:
+        - heading "Shop by Category" [level=2] [ref=e106]
+        - generic [ref=e109]:
+          - link "All Products collection image featured in SALT shop by category. All Products" [ref=e110] [cursor=pointer]:
+            - /url: /collections/all-products
+            - img "All Products collection image featured in SALT shop by category." [ref=e113]
+            - paragraph [ref=e115]: All Products
+          - link "Artificial Aquarium Decor Plants collection image featured in SALT shop by category. Artificial Aquarium Decor Plants" [ref=e116] [cursor=pointer]:
+            - /url: /collections/artificial-aquarium-decor-plants
+            - img "Artificial Aquarium Decor Plants collection image featured in SALT shop by category." [ref=e119]
+            - paragraph [ref=e121]: Artificial Aquarium Decor Plants
+          - link "Beauty & Personal Care collection image featured in SALT shop by category. Beauty & Personal Care" [ref=e122] [cursor=pointer]:
+            - /url: /collections/personal-care
+            - img "Beauty & Personal Care collection image featured in SALT shop by category." [ref=e125]
+            - paragraph [ref=e127]: Beauty & Personal Care
+          - link "Best Sellers collection image featured in SALT shop by category. Best Sellers" [ref=e128] [cursor=pointer]:
+            - /url: /collections/appplaza-best-sellers
+            - img "Best Sellers collection image featured in SALT shop by category." [ref=e131]
+            - paragraph [ref=e133]: Best Sellers
+          - link "Can and Jar Lid Screwer Non-slip Twist Bottle Opener collection image featured in SALT shop by category. Can and Jar Lid Screwer Non-slip Twist Bottle Opener" [ref=e134] [cursor=pointer]:
+            - /url: /collections/jaar-opener
+            - img "Can and Jar Lid Screwer Non-slip Twist Bottle Opener collection image featured in SALT shop by category." [ref=e137]
+            - paragraph [ref=e139]: Can and Jar Lid Screwer Non-slip Twist Bottle Opener
+          - link "CANDLES collection image featured in SALT shop by category. CANDLES" [ref=e140] [cursor=pointer]:
+            - /url: /collections/candles
+            - img "CANDLES collection image featured in SALT shop by category." [ref=e143]
+            - paragraph [ref=e145]: CANDLES
+          - link "Clearance collection image featured in SALT shop by category. Clearance" [ref=e146] [cursor=pointer]:
+            - /url: /collections/winter-wear
+            - img "Clearance collection image featured in SALT shop by category." [ref=e149]
+            - paragraph [ref=e151]: Clearance
+          - link "COOKING ESSENTIAL collection image featured in SALT shop by category. COOKING ESSENTIAL" [ref=e152] [cursor=pointer]:
+            - /url: /collections/cooking-essential
+            - img "COOKING ESSENTIAL collection image featured in SALT shop by category." [ref=e155]
+            - paragraph [ref=e157]: COOKING ESSENTIAL
+          - link "DIGITAL PRODUCTS collection image featured in SALT shop by category. DIGITAL PRODUCTS" [ref=e158] [cursor=pointer]:
+            - /url: /collections/digital-products
+            - img "DIGITAL PRODUCTS collection image featured in SALT shop by category." [ref=e161]
+            - paragraph [ref=e163]: DIGITAL PRODUCTS
+          - link "Electronics & Gadgets collection image featured in SALT shop by category. Electronics & Gadgets" [ref=e164] [cursor=pointer]:
+            - /url: /collections/medical-accessories
+            - img "Electronics & Gadgets collection image featured in SALT shop by category." [ref=e167]
+            - paragraph [ref=e169]: Electronics & Gadgets
+          - link "Fitness & Wellness collection image featured in SALT shop by category. Fitness & Wellness" [ref=e170] [cursor=pointer]:
+            - /url: /collections/face-mask
+            - img "Fitness & Wellness collection image featured in SALT shop by category." [ref=e173]
+            - paragraph [ref=e175]: Fitness & Wellness
+          - link "Garden Tools collection image featured in SALT shop by category. Garden Tools" [ref=e176] [cursor=pointer]:
+            - /url: /collections/garden-tools
+            - img "Garden Tools collection image featured in SALT shop by category." [ref=e179]
+            - paragraph [ref=e181]: Garden Tools
+          - link "Gifts & Seasonal collection image featured in SALT shop by category. Gifts & Seasonal" [ref=e182] [cursor=pointer]:
+            - /url: /collections/gifts
+            - img "Gifts & Seasonal collection image featured in SALT shop by category." [ref=e185]
+            - paragraph [ref=e187]: Gifts & Seasonal
+          - link "HAIR ACCESSORIES collection image featured in SALT shop by category. HAIR ACCESSORIES" [ref=e188] [cursor=pointer]:
+            - /url: /collections/hair-accessories
+            - img "HAIR ACCESSORIES collection image featured in SALT shop by category." [ref=e191]
+            - paragraph [ref=e193]: HAIR ACCESSORIES
+          - link "Home & Living collection image featured in SALT shop by category. Home & Living" [ref=e194] [cursor=pointer]:
+            - /url: /collections/home-decor
+            - img "Home & Living collection image featured in SALT shop by category." [ref=e197]
+            - paragraph [ref=e199]: Home & Living
+          - link "JEANS collection image featured in SALT shop by category. JEANS" [ref=e200] [cursor=pointer]:
+            - /url: /collections/jeans
+            - img "JEANS collection image featured in SALT shop by category." [ref=e203]
+            - paragraph [ref=e205]: JEANS
+          - link "Kitchen Essentials collection image featured in SALT shop by category. Kitchen Essentials" [ref=e206] [cursor=pointer]:
+            - /url: /collections/cookware
+            - img "Kitchen Essentials collection image featured in SALT shop by category." [ref=e209]
+            - paragraph [ref=e211]: Kitchen Essentials
+          - link "Men Collection collection image featured in SALT shop by category. Men Collection" [ref=e212] [cursor=pointer]:
+            - /url: /collections/men-collection
+            - img "Men Collection collection image featured in SALT shop by category." [ref=e215]
+            - paragraph [ref=e217]: Men Collection
+          - link "New Arrivals collection image featured in SALT shop by category. New Arrivals" [ref=e218] [cursor=pointer]:
+            - /url: /collections/new-arrivals
+            - img "New Arrivals collection image featured in SALT shop by category." [ref=e221]
+            - paragraph [ref=e223]: New Arrivals
+          - link "Pet Supplies collection image featured in SALT shop by category. Pet Supplies" [ref=e224] [cursor=pointer]:
+            - /url: /collections/pet-assocerries
+            - img "Pet Supplies collection image featured in SALT shop by category." [ref=e227]
+            - paragraph [ref=e229]: Pet Supplies
+          - link "ROBE collection image featured in SALT shop by category. ROBE" [ref=e230] [cursor=pointer]:
+            - /url: /collections/robe
+            - img "ROBE collection image featured in SALT shop by category." [ref=e233]
+            - paragraph [ref=e235]: ROBE
+          - link "Senior Living Solutions collection image featured in SALT shop by category. Senior Living Solutions" [ref=e236] [cursor=pointer]:
+            - /url: /collections/books
+            - img "Senior Living Solutions collection image featured in SALT shop by category." [ref=e239]
+            - paragraph [ref=e241]: Senior Living Solutions
+          - link "SHOES collection image featured in SALT shop by category. SHOES" [ref=e242] [cursor=pointer]:
+            - /url: /collections/shoes
+            - img "SHOES collection image featured in SALT shop by category." [ref=e245]
+            - paragraph [ref=e247]: SHOES
+          - link "Shopping Bag Market Trolley Bag with Wheels Collapsible collection image featured in SALT shop by category. Shopping Bag Market Trolley Bag with Wheels Collapsible" [ref=e248] [cursor=pointer]:
+            - /url: /collections/shopping-bag-market-trolley-bag-with-wheels-collapsible
+            - img "Shopping Bag Market Trolley Bag with Wheels Collapsible collection image featured in SALT shop by category." [ref=e251]
+            - paragraph [ref=e253]: Shopping Bag Market Trolley Bag with Wheels Collapsible
+          - link "Smart Home Gadgets collection image featured in SALT shop by category. Smart Home Gadgets" [ref=e254] [cursor=pointer]:
+            - /url: /collections/tools
+            - img "Smart Home Gadgets collection image featured in SALT shop by category." [ref=e257]
+            - paragraph [ref=e259]: Smart Home Gadgets
+          - link "Summer Collection collection image featured in SALT shop by category. Summer Collection" [ref=e260] [cursor=pointer]:
+            - /url: /collections/summer-collection
+            - img "Summer Collection collection image featured in SALT shop by category." [ref=e263]
+            - paragraph [ref=e265]: Summer Collection
+          - link "T-SHIRT collection image featured in SALT shop by category. T-SHIRT" [ref=e266] [cursor=pointer]:
+            - /url: /collections/t-shirt
+            - img "T-SHIRT collection image featured in SALT shop by category." [ref=e269]
+            - paragraph [ref=e271]: T-SHIRT
+          - link "Travel Accessories collection image featured in SALT shop by category. Travel Accessories" [ref=e272] [cursor=pointer]:
+            - /url: /collections/shopping-bags-jute-bags
+            - img "Travel Accessories collection image featured in SALT shop by category." [ref=e275]
+            - paragraph [ref=e277]: Travel Accessories
+          - link "Trending Products collection image featured in SALT shop by category. Trending Products" [ref=e278] [cursor=pointer]:
+            - /url: /collections/unique-products
+            - img "Trending Products collection image featured in SALT shop by category." [ref=e281]
+            - paragraph [ref=e283]: Trending Products
+          - link "TROUSERS collection image featured in SALT shop by category. TROUSERS" [ref=e284] [cursor=pointer]:
+            - /url: /collections/trousers
+            - img "TROUSERS collection image featured in SALT shop by category." [ref=e287]
+            - paragraph [ref=e289]: TROUSERS
+          - link "Under $60 collection image featured in SALT shop by category. Under $60" [ref=e290] [cursor=pointer]:
+            - /url: /collections/gloves
+            - img "Under $60 collection image featured in SALT shop by category." [ref=e293]
+            - paragraph [ref=e295]: Under $60
+          - link "Under 35 collection image featured in SALT shop by category. Under 35" [ref=e296] [cursor=pointer]:
+            - /url: /collections/under-35
+            - img "Under 35 collection image featured in SALT shop by category." [ref=e299]
+            - paragraph [ref=e301]: Under 35
+          - link "All Products collection image featured in SALT shop by category. All Products" [ref=e302] [cursor=pointer]:
+            - /url: /collections/all-products
+            - img "All Products collection image featured in SALT shop by category." [ref=e305]
+            - paragraph [ref=e307]: All Products
+          - link "Artificial Aquarium Decor Plants collection image featured in SALT shop by category. Artificial Aquarium Decor Plants" [ref=e308] [cursor=pointer]:
+            - /url: /collections/artificial-aquarium-decor-plants
+            - img "Artificial Aquarium Decor Plants collection image featured in SALT shop by category." [ref=e311]
+            - paragraph [ref=e313]: Artificial Aquarium Decor Plants
+          - link "Beauty & Personal Care collection image featured in SALT shop by category. Beauty & Personal Care" [ref=e314] [cursor=pointer]:
+            - /url: /collections/personal-care
+            - img "Beauty & Personal Care collection image featured in SALT shop by category." [ref=e317]
+            - paragraph [ref=e319]: Beauty & Personal Care
+          - link "Best Sellers collection image featured in SALT shop by category. Best Sellers" [ref=e320] [cursor=pointer]:
+            - /url: /collections/appplaza-best-sellers
+            - img "Best Sellers collection image featured in SALT shop by category." [ref=e323]
+            - paragraph [ref=e325]: Best Sellers
+          - link "Can and Jar Lid Screwer Non-slip Twist Bottle Opener collection image featured in SALT shop by category. Can and Jar Lid Screwer Non-slip Twist Bottle Opener" [ref=e326] [cursor=pointer]:
+            - /url: /collections/jaar-opener
+            - img "Can and Jar Lid Screwer Non-slip Twist Bottle Opener collection image featured in SALT shop by category." [ref=e329]
+            - paragraph [ref=e331]: Can and Jar Lid Screwer Non-slip Twist Bottle Opener
+          - link "CANDLES collection image featured in SALT shop by category. CANDLES" [ref=e332] [cursor=pointer]:
+            - /url: /collections/candles
+            - img "CANDLES collection image featured in SALT shop by category." [ref=e335]
+            - paragraph [ref=e337]: CANDLES
+          - link "Clearance collection image featured in SALT shop by category. Clearance" [ref=e338] [cursor=pointer]:
+            - /url: /collections/winter-wear
+            - img "Clearance collection image featured in SALT shop by category." [ref=e341]
+            - paragraph [ref=e343]: Clearance
+          - link "COOKING ESSENTIAL collection image featured in SALT shop by category. COOKING ESSENTIAL" [ref=e344] [cursor=pointer]:
+            - /url: /collections/cooking-essential
+            - img "COOKING ESSENTIAL collection image featured in SALT shop by category." [ref=e347]
+            - paragraph [ref=e349]: COOKING ESSENTIAL
+          - link "DIGITAL PRODUCTS collection image featured in SALT shop by category. DIGITAL PRODUCTS" [ref=e350] [cursor=pointer]:
+            - /url: /collections/digital-products
+            - img "DIGITAL PRODUCTS collection image featured in SALT shop by category." [ref=e353]
+            - paragraph [ref=e355]: DIGITAL PRODUCTS
+          - link "Electronics & Gadgets collection image featured in SALT shop by category. Electronics & Gadgets" [ref=e356] [cursor=pointer]:
+            - /url: /collections/medical-accessories
+            - img "Electronics & Gadgets collection image featured in SALT shop by category." [ref=e359]
+            - paragraph [ref=e361]: Electronics & Gadgets
+          - link "Fitness & Wellness collection image featured in SALT shop by category. Fitness & Wellness" [ref=e362] [cursor=pointer]:
+            - /url: /collections/face-mask
+            - img "Fitness & Wellness collection image featured in SALT shop by category." [ref=e365]
+            - paragraph [ref=e367]: Fitness & Wellness
+          - link "Garden Tools collection image featured in SALT shop by category. Garden Tools" [ref=e368] [cursor=pointer]:
+            - /url: /collections/garden-tools
+            - img "Garden Tools collection image featured in SALT shop by category." [ref=e371]
+            - paragraph [ref=e373]: Garden Tools
+          - link "Gifts & Seasonal collection image featured in SALT shop by category. Gifts & Seasonal" [ref=e374] [cursor=pointer]:
+            - /url: /collections/gifts
+            - img "Gifts & Seasonal collection image featured in SALT shop by category." [ref=e377]
+            - paragraph [ref=e379]: Gifts & Seasonal
+          - link "HAIR ACCESSORIES collection image featured in SALT shop by category. HAIR ACCESSORIES" [ref=e380] [cursor=pointer]:
+            - /url: /collections/hair-accessories
+            - img "HAIR ACCESSORIES collection image featured in SALT shop by category." [ref=e383]
+            - paragraph [ref=e385]: HAIR ACCESSORIES
+          - link "Home & Living collection image featured in SALT shop by category. Home & Living" [ref=e386] [cursor=pointer]:
+            - /url: /collections/home-decor
+            - img "Home & Living collection image featured in SALT shop by category." [ref=e389]
+            - paragraph [ref=e391]: Home & Living
+          - link "JEANS collection image featured in SALT shop by category. JEANS" [ref=e392] [cursor=pointer]:
+            - /url: /collections/jeans
+            - img "JEANS collection image featured in SALT shop by category." [ref=e395]
+            - paragraph [ref=e397]: JEANS
+          - link "Kitchen Essentials collection image featured in SALT shop by category. Kitchen Essentials" [ref=e398] [cursor=pointer]:
+            - /url: /collections/cookware
+            - img "Kitchen Essentials collection image featured in SALT shop by category." [ref=e401]
+            - paragraph [ref=e403]: Kitchen Essentials
+          - link "Men Collection collection image featured in SALT shop by category. Men Collection" [ref=e404] [cursor=pointer]:
+            - /url: /collections/men-collection
+            - img "Men Collection collection image featured in SALT shop by category." [ref=e407]
+            - paragraph [ref=e409]: Men Collection
+          - link "New Arrivals collection image featured in SALT shop by category. New Arrivals" [ref=e410] [cursor=pointer]:
+            - /url: /collections/new-arrivals
+            - img "New Arrivals collection image featured in SALT shop by category." [ref=e413]
+            - paragraph [ref=e415]: New Arrivals
+          - link "Pet Supplies collection image featured in SALT shop by category. Pet Supplies" [ref=e416] [cursor=pointer]:
+            - /url: /collections/pet-assocerries
+            - img "Pet Supplies collection image featured in SALT shop by category." [ref=e419]
+            - paragraph [ref=e421]: Pet Supplies
+          - link "ROBE collection image featured in SALT shop by category. ROBE" [ref=e422] [cursor=pointer]:
+            - /url: /collections/robe
+            - img "ROBE collection image featured in SALT shop by category." [ref=e425]
+            - paragraph [ref=e427]: ROBE
+          - link "Senior Living Solutions collection image featured in SALT shop by category. Senior Living Solutions" [ref=e428] [cursor=pointer]:
+            - /url: /collections/books
+            - img "Senior Living Solutions collection image featured in SALT shop by category." [ref=e431]
+            - paragraph [ref=e433]: Senior Living Solutions
+          - link "SHOES collection image featured in SALT shop by category. SHOES" [ref=e434] [cursor=pointer]:
+            - /url: /collections/shoes
+            - img "SHOES collection image featured in SALT shop by category." [ref=e437]
+            - paragraph [ref=e439]: SHOES
+          - link "Shopping Bag Market Trolley Bag with Wheels Collapsible collection image featured in SALT shop by category. Shopping Bag Market Trolley Bag with Wheels Collapsible" [ref=e440] [cursor=pointer]:
+            - /url: /collections/shopping-bag-market-trolley-bag-with-wheels-collapsible
+            - img "Shopping Bag Market Trolley Bag with Wheels Collapsible collection image featured in SALT shop by category." [ref=e443]
+            - paragraph [ref=e445]: Shopping Bag Market Trolley Bag with Wheels Collapsible
+          - link "Smart Home Gadgets collection image featured in SALT shop by category. Smart Home Gadgets" [ref=e446] [cursor=pointer]:
+            - /url: /collections/tools
+            - img "Smart Home Gadgets collection image featured in SALT shop by category." [ref=e449]
+            - paragraph [ref=e451]: Smart Home Gadgets
+          - link "Summer Collection collection image featured in SALT shop by category. Summer Collection" [ref=e452] [cursor=pointer]:
+            - /url: /collections/summer-collection
+            - img "Summer Collection collection image featured in SALT shop by category." [ref=e455]
+            - paragraph [ref=e457]: Summer Collection
+          - link "T-SHIRT collection image featured in SALT shop by category. T-SHIRT" [ref=e458] [cursor=pointer]:
+            - /url: /collections/t-shirt
+            - img "T-SHIRT collection image featured in SALT shop by category." [ref=e461]
+            - paragraph [ref=e463]: T-SHIRT
+          - link "Travel Accessories collection image featured in SALT shop by category. Travel Accessories" [ref=e464] [cursor=pointer]:
+            - /url: /collections/shopping-bags-jute-bags
+            - img "Travel Accessories collection image featured in SALT shop by category." [ref=e467]
+            - paragraph [ref=e469]: Travel Accessories
+          - link "Trending Products collection image featured in SALT shop by category. Trending Products" [ref=e470] [cursor=pointer]:
+            - /url: /collections/unique-products
+            - img "Trending Products collection image featured in SALT shop by category." [ref=e473]
+            - paragraph [ref=e475]: Trending Products
+          - link "TROUSERS collection image featured in SALT shop by category. TROUSERS" [ref=e476] [cursor=pointer]:
+            - /url: /collections/trousers
+            - img "TROUSERS collection image featured in SALT shop by category." [ref=e479]
+            - paragraph [ref=e481]: TROUSERS
+          - link "Under $60 collection image featured in SALT shop by category. Under $60" [ref=e482] [cursor=pointer]:
+            - /url: /collections/gloves
+            - img "Under $60 collection image featured in SALT shop by category." [ref=e485]
+            - paragraph [ref=e487]: Under $60
+          - link "Under 35 collection image featured in SALT shop by category. Under 35" [ref=e488] [cursor=pointer]:
+            - /url: /collections/under-35
+            - img "Under 35 collection image featured in SALT shop by category." [ref=e491]
+            - paragraph [ref=e493]: Under 35
+      - generic [ref=e495]:
+        - heading "Best Sellers" [level=2] [ref=e498]
+        - generic [ref=e500]:
+          - link "The Daily Bloom product photo featured in SALT best sellers. The Daily Bloom $49.99" [ref=e502] [cursor=pointer]:
+            - /url: /products/the-daily-bloom
+            - img "The Daily Bloom product photo featured in SALT best sellers." [ref=e504]
+            - generic [ref=e505]:
+              - paragraph [ref=e506]: The Daily Bloom
+              - generic [ref=e508]: $49.99
+          - link "The Living Legacy Planner 2nd Edition product photo featured in SALT best sellers. The Living Legacy Planner 2nd Edition $55.99" [ref=e510] [cursor=pointer]:
+            - /url: /products/the-living-legacy-planner-2nd-edition
+            - img "The Living Legacy Planner 2nd Edition product photo featured in SALT best sellers." [ref=e512]
+            - generic [ref=e513]:
+              - paragraph [ref=e514]: The Living Legacy Planner 2nd Edition
+              - generic [ref=e516]: $55.99
+          - link "High-Pressure Foam Lance Water Gun – 3 Nozzle Car & Garden Cleaner product photo featured in SALT best sellers. High-Pressure Foam Lance Water Gun – 3 Nozzle Car & Garden Cleaner $34.99" [ref=e518] [cursor=pointer]:
+            - /url: /products/portable-auto-foam-lance-water-gun-high-pressure-3-grade-nozzle-jet-car-washer-sprayer-cleaning-tool-automobile-garden-wash-tool
+            - img "High-Pressure Foam Lance Water Gun – 3 Nozzle Car & Garden Cleaner product photo featured in SALT best sellers." [ref=e520]
+            - generic [ref=e521]:
+              - paragraph [ref=e522]: High-Pressure Foam Lance Water Gun – 3 Nozzle Car & Garden Cleaner
+              - generic [ref=e524]: $34.99
+          - link "8-in-1 Dog Shower Sprayer | High-Pressure Pet Bath & Garden Tool product photo featured in SALT best sellers. 8-in-1 Dog Shower Sprayer | High-Pressure Pet Bath & Garden Tool $39.99" [ref=e526] [cursor=pointer]:
+            - /url: /products/8-in-1-dog-shower-sprayer-high-pressure-pet-bath-garden-tool
+            - img "8-in-1 Dog Shower Sprayer | High-Pressure Pet Bath & Garden Tool product photo featured in SALT best sellers." [ref=e528]
+            - generic [ref=e529]:
+              - paragraph [ref=e530]: 8-in-1 Dog Shower Sprayer | High-Pressure Pet Bath & Garden Tool
+              - generic [ref=e532]: $39.99
+          - link "3-in-1 Soil Tester | Moisture, Light, pH Meter for Gardens product photo featured in SALT best sellers. 3-in-1 Soil Tester | Moisture, Light, pH Meter for Gardens $29.99" [ref=e534] [cursor=pointer]:
+            - /url: /products/3-in-1-soil-tester-moisture-light-ph-meter-for-gardens
+            - img "3-in-1 Soil Tester | Moisture, Light, pH Meter for Gardens product photo featured in SALT best sellers." [ref=e536]
+            - generic [ref=e537]:
+              - paragraph [ref=e538]: 3-in-1 Soil Tester | Moisture, Light, pH Meter for Gardens
+              - generic [ref=e540]: $29.99
+          - link "Hollow Hoe Handheld Weeding Rake | Perfect for Planting & Loosening Soil product photo featured in SALT best sellers. Hollow Hoe Handheld Weeding Rake | Perfect for Planting & Loosening Soil $29.99" [ref=e542] [cursor=pointer]:
+            - /url: /products/hollow-hoe-handheld-weeding-rake-perfect-for-planting-loosening-soil
+            - img "Hollow Hoe Handheld Weeding Rake | Perfect for Planting & Loosening Soil product photo featured in SALT best sellers." [ref=e544]
+            - generic [ref=e545]:
+              - paragraph [ref=e546]: Hollow Hoe Handheld Weeding Rake | Perfect for Planting & Loosening Soil
+              - generic [ref=e548]: $29.99
+          - link "Heavy-Duty Professional Pruning Shears product photo featured in SALT best sellers. Heavy-Duty Professional Pruning Shears $34.99" [ref=e550] [cursor=pointer]:
+            - /url: /products/heavy-duty-professional-pruning-shears
+            - img "Heavy-Duty Professional Pruning Shears product photo featured in SALT best sellers." [ref=e552]
+            - generic [ref=e553]:
+              - paragraph [ref=e554]: Heavy-Duty Professional Pruning Shears
+              - generic [ref=e556]: $34.99
+          - link "Garden Pruning Shears for Plants & Shrubs product photo featured in SALT best sellers. Garden Pruning Shears for Plants & Shrubs $34.99" [ref=e558] [cursor=pointer]:
+            - /url: /products/garden-pruning-shears-for-plants-shrubs
+            - img "Garden Pruning Shears for Plants & Shrubs product photo featured in SALT best sellers." [ref=e560]
+            - generic [ref=e561]:
+              - paragraph [ref=e562]: Garden Pruning Shears for Plants & Shrubs
+              - generic [ref=e564]: $34.99
+      - generic [ref=e566]:
+        - heading "Gift Ideas For Loved Ones" [level=2] [ref=e569]
+        - generic [ref=e571]:
+          - link "Home Decor collection image featured in SALT gift ideas. Home Decor Shop Now" [ref=e573] [cursor=pointer]:
+            - /url: /collections/home-decor
+            - img "Home Decor collection image featured in SALT gift ideas." [ref=e575]
+            - generic [ref=e576]:
+              - paragraph [ref=e577]: Home Decor
+              - generic [ref=e578]: Shop Now
+          - link "Gifts collection image featured in SALT gift ideas. Gifts Shop Now" [ref=e580] [cursor=pointer]:
+            - /url: /collections/gifts
+            - img "Gifts collection image featured in SALT gift ideas." [ref=e582]
+            - generic [ref=e583]:
+              - paragraph [ref=e584]: Gifts
+              - generic [ref=e585]: Shop Now
+          - link "Fun & Unique Finds collection image featured in SALT gift ideas. Fun & Unique Finds Shop Now" [ref=e587] [cursor=pointer]:
+            - /url: /shop?q=unique+gift
+            - img "Fun & Unique Finds collection image featured in SALT gift ideas." [ref=e589]
+            - generic [ref=e590]:
+              - paragraph [ref=e591]: Fun & Unique Finds
+              - generic [ref=e592]: Shop Now
+      - generic [ref=e594]:
+        - heading "Quirky Gift Picks" [level=2] [ref=e597]
+        - generic [ref=e599]:
+          - link "High-Quality Silk Peony & Hydrangea Bouquet for Home & Weddings product photo featured in SALT quirky gift picks. High-Quality Silk Peony & Hydrangea Bouquet for Home & Weddings $39.99" [ref=e601] [cursor=pointer]:
+            - /url: /products/high-quality-silk-peony-hydrangea-bouquet-for-home-weddings
+            - img "High-Quality Silk Peony & Hydrangea Bouquet for Home & Weddings product photo featured in SALT quirky gift picks." [ref=e603]
+            - generic [ref=e604]:
+              - paragraph [ref=e605]: High-Quality Silk Peony & Hydrangea Bouquet for Home & Weddings
+              - generic [ref=e607]: $39.99
+          - link "Digital Wall Clock - Time, Day, and Temperature Display product photo featured in SALT quirky gift picks. Digital Wall Clock - Time, Day, and Temperature Display $49.99" [ref=e609] [cursor=pointer]:
+            - /url: /products/digital-wall-clock-time-day-and-temperature-display
+            - img "Digital Wall Clock - Time, Day, and Temperature Display product photo featured in SALT quirky gift picks." [ref=e611]
+            - generic [ref=e612]:
+              - paragraph [ref=e613]: Digital Wall Clock - Time, Day, and Temperature Display
+              - generic [ref=e615]: $49.99
+          - link "Gold Cutlery Set Forks Spoons Knives Tableware Steel Cutlery Set Stainless Steel Dinnerware Set Spoon Knife Fork Custom Logo product photo featured in SALT quirky gift picks. Gold Cutlery Set Forks Spoons Knives Tableware Steel Cutlery Set Stainless Steel Dinnerware Set Spoon Knife Fork Custom Logo $59.99" [ref=e617] [cursor=pointer]:
+            - /url: /products/gold-cutlery-set-forks-spoons-knives-tableware-steel-cutlery-set-stainless-steel-dinnerware-set-spoon-knife-fork-custom-logo
+            - img "Gold Cutlery Set Forks Spoons Knives Tableware Steel Cutlery Set Stainless Steel Dinnerware Set Spoon Knife Fork Custom Logo product photo featured in SALT quirky gift picks." [ref=e619]
+            - generic [ref=e620]:
+              - paragraph [ref=e621]: Gold Cutlery Set Forks Spoons Knives Tableware Steel Cutlery Set Stainless Steel Dinnerware Set Spoon Knife Fork Custom Logo
+              - generic [ref=e623]: $59.99
+          - link "Burlap Bags Farm Animal Gift Drawstring Bags - Jute Pouches product photo featured in SALT quirky gift picks. Burlap Bags Farm Animal Gift Drawstring Bags - Jute Pouches $29.99" [ref=e625] [cursor=pointer]:
+            - /url: /products/burlap-bags-farm-animal-gift-drawstring-bags-jute-pouches
+            - img "Burlap Bags Farm Animal Gift Drawstring Bags - Jute Pouches product photo featured in SALT quirky gift picks." [ref=e627]
+            - generic [ref=e628]:
+              - paragraph [ref=e629]: Burlap Bags Farm Animal Gift Drawstring Bags - Jute Pouches
+              - generic [ref=e631]: $29.99
+          - link "Titanic Ship air Humidifier | 250ml Aroma Diffuser with Jellyfish Design product photo featured in SALT quirky gift picks. Titanic Ship air Humidifier | 250ml Aroma Diffuser with Jellyfish Design $39.99" [ref=e633] [cursor=pointer]:
+            - /url: /products/air-humidifier-250ml-essential-oil-diffuser-jellyfish-smoke-ring-spray-aroma-diffuser-titanic-ship-model-decoration-for-home
+            - img "Titanic Ship air Humidifier | 250ml Aroma Diffuser with Jellyfish Design product photo featured in SALT quirky gift picks." [ref=e635]
+            - generic [ref=e636]:
+              - paragraph [ref=e637]: Titanic Ship air Humidifier | 250ml Aroma Diffuser with Jellyfish Design
+              - generic [ref=e639]: $39.99
+          - link "Jellyfish Aromatherapy Diffuser | 7-Color Night Light & Humidifier product photo featured in SALT quirky gift picks. Jellyfish Aromatherapy Diffuser | 7-Color Night Light & Humidifier $34.99" [ref=e641] [cursor=pointer]:
+            - /url: /products/jellyfish-aromatherapy-diffuser-7-color-night-light-humidifier
+            - img "Jellyfish Aromatherapy Diffuser | 7-Color Night Light & Humidifier product photo featured in SALT quirky gift picks." [ref=e643]
+            - generic [ref=e644]:
+              - paragraph [ref=e645]: Jellyfish Aromatherapy Diffuser | 7-Color Night Light & Humidifier
+              - generic [ref=e647]: $34.99
+          - link "2PCS Japanese Ceramic Teacups & Retro Sake Bottles product photo featured in SALT quirky gift picks. 2PCS Japanese Ceramic Teacups & Retro Sake Bottles $29.99" [ref=e649] [cursor=pointer]:
+            - /url: /products/2pcs-japanese-ceramic-teacups-retro-sake-bottles
+            - img "2PCS Japanese Ceramic Teacups & Retro Sake Bottles product photo featured in SALT quirky gift picks." [ref=e651]
+            - generic [ref=e652]:
+              - paragraph [ref=e653]: 2PCS Japanese Ceramic Teacups & Retro Sake Bottles
+              - generic [ref=e655]: $29.99
+          - link "Light Creative Sleep With Small Night Lamp product photo featured in SALT quirky gift picks. Light Creative Sleep With Small Night Lamp $27.16" [ref=e657] [cursor=pointer]:
+            - /url: /products/light-creative-sleep-with-small-night-lamp
+            - img "Light Creative Sleep With Small Night Lamp product photo featured in SALT quirky gift picks." [ref=e659]
+            - generic [ref=e660]:
+              - paragraph [ref=e661]: Light Creative Sleep With Small Night Lamp
+              - generic [ref=e663]: $27.16
+      - generic [ref=e666]:
+        - generic [ref=e667]:
+          - heading "Our Exclusive Book Collection" [level=2] [ref=e668]
+          - generic [ref=e669]:
+            - link "The Living Legacy Planner 2nd Edition product photo featured in SALT exclusive book collection. The Living Legacy Planner 2nd Edition $55.99" [ref=e671] [cursor=pointer]:
+              - /url: /products/the-living-legacy-planner-2nd-edition
+              - img "The Living Legacy Planner 2nd Edition product photo featured in SALT exclusive book collection." [ref=e673]
+              - generic [ref=e674]:
+                - paragraph [ref=e675]: The Living Legacy Planner 2nd Edition
+                - generic [ref=e677]: $55.99
+            - link "The Daily Bloom product photo featured in SALT exclusive book collection. The Daily Bloom $49.99" [ref=e679] [cursor=pointer]:
+              - /url: /products/the-daily-bloom
+              - img "The Daily Bloom product photo featured in SALT exclusive book collection." [ref=e681]
+              - generic [ref=e682]:
+                - paragraph [ref=e683]: The Daily Bloom
+                - generic [ref=e685]: $49.99
+            - link "Relics of the Century product photo featured in SALT exclusive book collection. Relics of the Century $19.99" [ref=e687] [cursor=pointer]:
+              - /url: /products/relics-of-the-century
+              - img "Relics of the Century product photo featured in SALT exclusive book collection." [ref=e689]
+              - generic [ref=e690]:
+                - paragraph [ref=e691]: Relics of the Century
+                - generic [ref=e693]: $19.99
+            - link "The Living Legacy Planner 1st Edition product photo featured in SALT exclusive book collection. The Living Legacy Planner 1st Edition $28.99" [ref=e695] [cursor=pointer]:
+              - /url: /products/the-living-legacy-planner
+              - img "The Living Legacy Planner 1st Edition product photo featured in SALT exclusive book collection." [ref=e697]
+              - generic [ref=e698]:
+                - paragraph [ref=e699]: The Living Legacy Planner 1st Edition
+                - generic [ref=e701]: $28.99
+        - link "The Daily Bloom product photo featured in SALT featured book spotlight. The Daily Bloom $49.99" [ref=e703] [cursor=pointer]:
+          - /url: /products/the-daily-bloom
+          - img "The Daily Bloom product photo featured in SALT featured book spotlight." [ref=e704]
+          - generic [ref=e705]:
+            - paragraph [ref=e706]: The Daily Bloom
+            - generic [ref=e708]: $49.99
+      - generic [ref=e710]:
+        - heading "Everyday Essentials" [level=2] [ref=e713]
+        - generic [ref=e715]:
+          - link "Adjustable Beverage Bottle Sprayer | Gardening Watering Tool product photo featured in SALT everyday essentials. Adjustable Beverage Bottle Sprayer | Gardening Watering Tool $24.99" [ref=e717] [cursor=pointer]:
+            - /url: /products/adjustable-beverage-bottle-sprayer-gardening-watering-tool
+            - img "Adjustable Beverage Bottle Sprayer | Gardening Watering Tool product photo featured in SALT everyday essentials." [ref=e719]
+            - generic [ref=e720]:
+              - paragraph [ref=e721]: Adjustable Beverage Bottle Sprayer | Gardening Watering Tool
+              - generic [ref=e723]: $24.99
+          - link "Dual-Purpose Plant Watering Spray Bottle product photo featured in SALT everyday essentials. Dual-Purpose Plant Watering Spray Bottle $29.99" [ref=e725] [cursor=pointer]:
+            - /url: /products/dual-purpose-plant-watering-spray-bottle
+            - img "Dual-Purpose Plant Watering Spray Bottle product photo featured in SALT everyday essentials." [ref=e727]
+            - generic [ref=e728]:
+              - paragraph [ref=e729]: Dual-Purpose Plant Watering Spray Bottle
+              - generic [ref=e731]: $29.99
+          - link "ATWFS Electric Wireless Bottle Pump product photo featured in SALT everyday essentials. ATWFS Electric Wireless Bottle Pump $29.99" [ref=e733] [cursor=pointer]:
+            - /url: /products/atwfs-electric-wireless-bottle-pump
+            - img "ATWFS Electric Wireless Bottle Pump product photo featured in SALT everyday essentials." [ref=e735]
+            - generic [ref=e736]:
+              - paragraph [ref=e737]: ATWFS Electric Wireless Bottle Pump
+              - generic [ref=e739]: $29.99
+          - link "Mini Soil Moisture Meter | Gardening Water Analyzer Tool product photo featured in SALT everyday essentials. Mini Soil Moisture Meter | Gardening Water Analyzer Tool $40.99" [ref=e741] [cursor=pointer]:
+            - /url: /products/mini-soil-moisture-meter-gardening-water-analyzer-tool
+            - img "Mini Soil Moisture Meter | Gardening Water Analyzer Tool product photo featured in SALT everyday essentials." [ref=e743]
+            - generic [ref=e744]:
+              - paragraph [ref=e745]: Mini Soil Moisture Meter | Gardening Water Analyzer Tool
+              - generic [ref=e747]: $40.99
+          - link "Labor-Saving Garden Pruning Shears product photo featured in SALT everyday essentials. Labor-Saving Garden Pruning Shears $24.99" [ref=e749] [cursor=pointer]:
+            - /url: /products/labor-saving-garden-pruning-shears
+            - img "Labor-Saving Garden Pruning Shears product photo featured in SALT everyday essentials." [ref=e751]
+            - generic [ref=e752]:
+              - paragraph [ref=e753]: Labor-Saving Garden Pruning Shears
+              - generic [ref=e755]: $24.99
+          - link "Water Beak Kettle | Succulent & Flower Watering Tool product photo featured in SALT everyday essentials. Water Beak Kettle | Succulent & Flower Watering Tool $24.99" [ref=e757] [cursor=pointer]:
+            - /url: /products/water-beak-kettle-succulent-flower-watering-tool
+            - img "Water Beak Kettle | Succulent & Flower Watering Tool product photo featured in SALT everyday essentials." [ref=e759]
+            - generic [ref=e760]:
+              - paragraph [ref=e761]: Water Beak Kettle | Succulent & Flower Watering Tool
+              - generic [ref=e763]: $24.99
+          - link "Anti-Cut Gloves | High-Strength for Gardening & Industry product photo featured in SALT everyday essentials. Anti-Cut Gloves | High-Strength for Gardening & Industry $24.99" [ref=e765] [cursor=pointer]:
+            - /url: /products/anti-cut-gloves-high-strength-for-gardening-industry
+            - img "Anti-Cut Gloves | High-Strength for Gardening & Industry product photo featured in SALT everyday essentials." [ref=e767]
+            - generic [ref=e768]:
+              - paragraph [ref=e769]: Anti-Cut Gloves | High-Strength for Gardening & Industry
+              - generic [ref=e771]: $24.99
+          - link "Multifunctional Glass Wiper with Sprayer product photo featured in SALT everyday essentials. Multifunctional Glass Wiper with Sprayer $29.99" [ref=e773] [cursor=pointer]:
+            - /url: /products/multifunctional-glass-wiper-with-sprayer
+            - img "Multifunctional Glass Wiper with Sprayer product photo featured in SALT everyday essentials." [ref=e775]
+            - generic [ref=e776]:
+              - paragraph [ref=e777]: Multifunctional Glass Wiper with Sprayer
+              - generic [ref=e779]: $29.99
+      - generic [ref=e781]:
+        - heading "What Our Customers Are Saying" [level=2] [ref=e784]
+        - paragraph [ref=e787]: 4 reviews
+        - generic [ref=e790]:
+          - article [ref=e791]:
+            - generic [ref=e792]:
+              - img [ref=e793]
+              - img [ref=e795]
+              - img [ref=e797]
+              - img [ref=e799]
+              - img [ref=e801]
+            - paragraph [ref=e803]: "\"Creating a warm home feels easier when everything is grouped in one calm place.\""
+            - paragraph [ref=e804]: SALT customer - Verified Buyer
+          - article [ref=e805]:
+            - generic [ref=e806]:
+              - img [ref=e807]
+              - img [ref=e809]
+              - img [ref=e811]
+              - img [ref=e813]
+              - img [ref=e815]
+            - paragraph [ref=e817]: "\"The layout feels clean, the categories make sense, and checkout is quick.\""
+            - paragraph [ref=e818]: SALT customer - Verified Buyer
+          - article [ref=e819]:
+            - generic [ref=e820]:
+              - img [ref=e821]
+              - img [ref=e823]
+              - img [ref=e825]
+              - img [ref=e827]
+              - img [ref=e829]
+            - paragraph [ref=e831]: "\"Beautiful picks, soft colors, and products that feel giftable right away.\""
+            - paragraph [ref=e832]: SALT customer - Verified Buyer
+          - article [ref=e833]:
+            - generic [ref=e834]:
+              - img [ref=e835]
+              - img [ref=e837]
+              - img [ref=e839]
+              - img [ref=e841]
+              - img [ref=e843]
+            - paragraph [ref=e845]: "\"Quality felt better than expected and delivery updates were clear throughout.\""
+            - paragraph [ref=e846]: SALT customer - Verified Buyer
+          - article [ref=e847]:
+            - generic [ref=e848]:
+              - img [ref=e849]
+              - img [ref=e851]
+              - img [ref=e853]
+              - img [ref=e855]
+              - img [ref=e857]
+            - paragraph [ref=e859]: "\"Creating a warm home feels easier when everything is grouped in one calm place.\""
+            - paragraph [ref=e860]: SALT customer - Verified Buyer
+          - article [ref=e861]:
+            - generic [ref=e862]:
+              - img [ref=e863]
+              - img [ref=e865]
+              - img [ref=e867]
+              - img [ref=e869]
+              - img [ref=e871]
+            - paragraph [ref=e873]: "\"The layout feels clean, the categories make sense, and checkout is quick.\""
+            - paragraph [ref=e874]: SALT customer - Verified Buyer
+          - article [ref=e875]:
+            - generic [ref=e876]:
+              - img [ref=e877]
+              - img [ref=e879]
+              - img [ref=e881]
+              - img [ref=e883]
+              - img [ref=e885]
+            - paragraph [ref=e887]: "\"Beautiful picks, soft colors, and products that feel giftable right away.\""
+            - paragraph [ref=e888]: SALT customer - Verified Buyer
+          - article [ref=e889]:
+            - generic [ref=e890]:
+              - img [ref=e891]
+              - img [ref=e893]
+              - img [ref=e895]
+              - img [ref=e897]
+              - img [ref=e899]
+            - paragraph [ref=e901]: "\"Quality felt better than expected and delivery updates were clear throughout.\""
+            - paragraph [ref=e902]: SALT customer - Verified Buyer
+          - article [ref=e903]:
+            - generic [ref=e904]:
+              - img [ref=e905]
+              - img [ref=e907]
+              - img [ref=e909]
+              - img [ref=e911]
+              - img [ref=e913]
+            - paragraph [ref=e915]: "\"Creating a warm home feels easier when everything is grouped in one calm place.\""
+            - paragraph [ref=e916]: SALT customer - Verified Buyer
+          - article [ref=e917]:
+            - generic [ref=e918]:
+              - img [ref=e919]
+              - img [ref=e921]
+              - img [ref=e923]
+              - img [ref=e925]
+              - img [ref=e927]
+            - paragraph [ref=e929]: "\"The layout feels clean, the categories make sense, and checkout is quick.\""
+            - paragraph [ref=e930]: SALT customer - Verified Buyer
+          - article [ref=e931]:
+            - generic [ref=e932]:
+              - img [ref=e933]
+              - img [ref=e935]
+              - img [ref=e937]
+              - img [ref=e939]
+              - img [ref=e941]
+            - paragraph [ref=e943]: "\"Beautiful picks, soft colors, and products that feel giftable right away.\""
+            - paragraph [ref=e944]: SALT customer - Verified Buyer
+          - article [ref=e945]:
+            - generic [ref=e946]:
+              - img [ref=e947]
+              - img [ref=e949]
+              - img [ref=e951]
+              - img [ref=e953]
+              - img [ref=e955]
+            - paragraph [ref=e957]: "\"Quality felt better than expected and delivery updates were clear throughout.\""
+            - paragraph [ref=e958]: SALT customer - Verified Buyer
+          - article [ref=e959]:
+            - generic [ref=e960]:
+              - img [ref=e961]
+              - img [ref=e963]
+              - img [ref=e965]
+              - img [ref=e967]
+              - img [ref=e969]
+            - paragraph [ref=e971]: "\"Creating a warm home feels easier when everything is grouped in one calm place.\""
+            - paragraph [ref=e972]: SALT customer - Verified Buyer
+          - article [ref=e973]:
+            - generic [ref=e974]:
+              - img [ref=e975]
+              - img [ref=e977]
+              - img [ref=e979]
+              - img [ref=e981]
+              - img [ref=e983]
+            - paragraph [ref=e985]: "\"The layout feels clean, the categories make sense, and checkout is quick.\""
+            - paragraph [ref=e986]: SALT customer - Verified Buyer
+          - article [ref=e987]:
+            - generic [ref=e988]:
+              - img [ref=e989]
+              - img [ref=e991]
+              - img [ref=e993]
+              - img [ref=e995]
+              - img [ref=e997]
+            - paragraph [ref=e999]: "\"Beautiful picks, soft colors, and products that feel giftable right away.\""
+            - paragraph [ref=e1000]: SALT customer - Verified Buyer
+          - article [ref=e1001]:
+            - generic [ref=e1002]:
+              - img [ref=e1003]
+              - img [ref=e1005]
+              - img [ref=e1007]
+              - img [ref=e1009]
+              - img [ref=e1011]
+            - paragraph [ref=e1013]: "\"Quality felt better than expected and delivery updates were clear throughout.\""
+            - paragraph [ref=e1014]: SALT customer - Verified Buyer
+  - contentinfo [ref=e1015]:
+    - generic [ref=e1017]:
+      - generic [ref=e1018]:
+        - img "SALT Online Store" [ref=e1020]
+        - paragraph [ref=e1021]: Search fast. Shop clean. Get trusted checkout and delivery.
+        - generic [ref=e1022]:
+          - link [ref=e1023] [cursor=pointer]:
+            - /url: https://instagram.com/saltonlinestore
+            - img [ref=e1024]
+          - link [ref=e1027] [cursor=pointer]:
+            - /url: https://www.facebook.com/profile.php?id=61573199456052
+            - img [ref=e1028]
+          - link [ref=e1030] [cursor=pointer]:
+            - /url: https://youtube.com/@saltonlinestore
+            - img [ref=e1031]
+      - generic [ref=e1034]:
+        - heading "Shop" [level=3] [ref=e1035]
+        - generic [ref=e1036]:
+          - link "All products" [ref=e1037] [cursor=pointer]:
+            - /url: /shop?collection=all-products
+          - link "Collections" [ref=e1038] [cursor=pointer]:
+            - /url: /collections
+          - link "New arrivals" [ref=e1039] [cursor=pointer]:
+            - /url: /shop?sort=newest
+          - link "Sale" [ref=e1040] [cursor=pointer]:
+            - /url: /shop?sort=discount
+      - generic [ref=e1041]:
+        - heading "Support" [level=3] [ref=e1042]
+        - generic [ref=e1043]:
+          - link "Contact" [ref=e1044] [cursor=pointer]:
+            - /url: /contact
+          - link "About" [ref=e1045] [cursor=pointer]:
+            - /url: /about
+          - link "Mission & Vision" [ref=e1046] [cursor=pointer]:
+            - /url: /pages/mission-vision
+          - link "Affiliate program" [ref=e1047] [cursor=pointer]:
+            - /url: /pages/affiliate-program
+          - link "Track order" [ref=e1048] [cursor=pointer]:
+            - /url: /account/orders
+      - generic [ref=e1049]:
+        - heading "Policies" [level=3] [ref=e1050]
+        - generic [ref=e1051]:
+          - link "Privacy" [ref=e1052] [cursor=pointer]:
+            - /url: /policies/privacy-policy
+          - link "Refunds" [ref=e1053] [cursor=pointer]:
+            - /url: /policies/refund-policy
+          - link "Shipping policy" [ref=e1054] [cursor=pointer]:
+            - /url: /policies/shipping-policy
+          - link "Returns" [ref=e1055] [cursor=pointer]:
+            - /url: /policies/refund-policy
+      - generic [ref=e1056]:
+        - heading "Email updates" [level=3] [ref=e1057]
+        - paragraph [ref=e1058]: New drops, deals, and restocks.
+        - generic [ref=e1060]:
+          - textbox "Email address" [ref=e1061]
+          - button "Join" [ref=e1062] [cursor=pointer]
+    - generic [ref=e1064]:
+      - generic [ref=e1065]:
+        - generic [ref=e1066]: Secure checkout
+        - generic [ref=e1067]: Tracked shipping
+        - generic [ref=e1068]: Easy returns
+      - generic [ref=e1069]:
+        - generic [ref=e1070]: © 2026 SALT ONLINE STORE
+        - link "Privacy" [ref=e1071] [cursor=pointer]:
+          - /url: /policies/privacy-policy
+        - link "Refunds" [ref=e1072] [cursor=pointer]:
+          - /url: /policies/refund-policy
+        - link "Shipping" [ref=e1073] [cursor=pointer]:
+          - /url: /policies/shipping-policy
