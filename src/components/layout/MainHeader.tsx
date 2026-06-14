@@ -6,6 +6,7 @@ import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
+import BrandLogo from "@/components/layout/BrandLogo";
 import {
   Sheet,
   SheetClose,
@@ -477,14 +478,7 @@ const MainHeader = () => {
             aria-label="SALT Online Store"
             className="flex min-w-0 items-center rounded-full px-1.5 py-1 transition hover:bg-white/65"
           >
-            <img
-              src="/brand/salt-logo.png"
-              alt="SALT Online Store"
-              className="block h-11 w-auto select-none object-contain sm:h-12"
-              loading="eager"
-              decoding="async"
-              draggable={false}
-            />
+            <BrandLogo withWordmark size="md" />
           </Link>
 
           <div className="ml-auto flex items-center gap-2 md:hidden">

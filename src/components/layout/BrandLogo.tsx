@@ -7,8 +7,6 @@ type BrandLogoProps = {
 };
 
 const brandLogoFontFamily = "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-const brandMarkSrc = "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/SALT_Store_logo_bd9c21b9-df40-4f5f-abaf-659bfed7215b.png?v=1744872481";
-
 const shellSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
   sm: "h-11 w-28 px-2.5 rounded-[1rem]",
   md: "h-12 w-32 px-3 rounded-[1.05rem]",
@@ -18,16 +16,18 @@ const shellSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
 const textSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
   sm: "text-[1.55rem]",
   md: "text-[2rem]",
-  lg: "text-[2.45rem]",
+  lg: "text-[3.45rem]",
 };
 
 const wordmarkSubtextSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
   sm: "text-[0.72rem] tracking-[0.16em]",
   md: "text-[0.82rem] tracking-[0.18em]",
-  lg: "text-[0.95rem] tracking-[0.2em]",
+  lg: "text-[1rem] tracking-[0.3em]",
 };
 
 const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoProps) => {
+  const brandMarkSrc = "/brand/salt-logo.png";
+
   return (
     <span
       className={cn(

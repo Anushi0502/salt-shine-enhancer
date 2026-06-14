@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isNativeApp, NATIVE_LAUNCH_READY_EVENT } from "@/lib/mobile";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 const NativeAppLaunchBanner = () => {
   const [isMounted, setIsMounted] = useState(isNativeApp());
@@ -51,7 +52,7 @@ const NativeAppLaunchBanner = () => {
         <div className="relative flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-white/30 bg-white/95 p-2 shadow-[0_10px_24px_rgba(14,26,52,0.2)]">
             <img
-              src="/brand/salt-logo.png"
+              src={normalizeShopifyAssetUrl("/brand/salt-logo.png") || "/brand/salt-logo.png"}
               alt="S.A.L.T."
               className="h-full w-full object-contain"
               draggable={false}

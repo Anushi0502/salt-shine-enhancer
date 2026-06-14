@@ -25,7 +25,7 @@ const MainFooter = () => {
       <div className="mx-auto w-full max-w-[1360px] px-4 py-10 sm:px-6 lg:px-10">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_1.35fr]">
           <div className="flex flex-col items-start">
-            <BrandLogo withWordmark size="md" />
+            <BrandLogo withWordmark size="lg" />
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/70">
               Search fast. Shop clean. Get trusted checkout and delivery.
             </p>
