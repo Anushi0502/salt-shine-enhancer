@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 
 type BrandLogoProps = {
   className?: string;
@@ -26,7 +27,7 @@ const wordmarkSubtextSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string
 };
 
 const BrandLogo = ({ className, withWordmark = false, size = "md" }: BrandLogoProps) => {
-  const brandMarkSrc = "/brand/salt-logo.png";
+  const brandMarkSrc = normalizeShopifyAssetUrl("https://cdn.shopify.com/s/files/1/0580/7659/4275/files/SALT_Store_logo_bd9c21b9-df40-4f5f-abaf-659bfed7215b.png?v=1744872481") || "/brand/salt-logo.png";
 
   return (
     <span
