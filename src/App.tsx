@@ -1,5 +1,4 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import SiteShell from "@/components/layout/SiteShell";
@@ -10,30 +9,30 @@ import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
 import { ThemeProvider } from "@/lib/theme";
 import { WishlistProvider } from "@/lib/wishlist";
+import AboutPage from "@/pages/AboutPage";
+import AffiliateProgramPage from "@/pages/AffiliateProgramPage";
+import BlogPage from "@/pages/BlogPage";
+import BlogPostPage from "@/pages/BlogPostPage";
+import BulkReviewPage from "@/pages/BulkReviewPage";
+import CartPage from "@/pages/CartPage";
+import CollectionsPage from "@/pages/CollectionsPage";
+import ContactInformationPolicyPage from "@/pages/ContactInformationPolicyPage";
+import ContactPage from "@/pages/ContactPage";
+import HomePage from "@/pages/HomePage";
+import MissionVisionPage from "@/pages/MissionVisionPage";
+import NotFound from "@/pages/NotFound";
+import OrderHistoryPage from "@/pages/OrderHistoryPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import ProductPage from "@/pages/ProductPage";
+import ProductReviewsPage from "@/pages/ProductReviewsPage";
+import RecentlyViewedPage from "@/pages/RecentlyViewedPage";
+import RefundPolicyPage from "@/pages/RefundPolicyPage";
+import ShippingPolicyPage from "@/pages/ShippingPolicyPage";
+import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
+import ShopPage from "@/pages/ShopPage";
+import WishlistPage from "@/pages/WishlistPage";
 
 const queryClient = new QueryClient();
-const HomePage = lazy(() => import("@/pages/HomePage"));
-const ShopPage = lazy(() => import("@/pages/ShopPage"));
-const CollectionsPage = lazy(() => import("@/pages/CollectionsPage"));
-const ProductPage = lazy(() => import("@/pages/ProductPage"));
-const ProductReviewsPage = lazy(() => import("@/pages/ProductReviewsPage"));
-const CartPage = lazy(() => import("@/pages/CartPage"));
-const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
-const RecentlyViewedPage = lazy(() => import("@/pages/RecentlyViewedPage"));
-const AboutPage = lazy(() => import("@/pages/AboutPage"));
-const MissionVisionPage = lazy(() => import("@/pages/MissionVisionPage"));
-const AffiliateProgramPage = lazy(() => import("@/pages/AffiliateProgramPage"));
-const ContactPage = lazy(() => import("@/pages/ContactPage"));
-const BlogPage = lazy(() => import("@/pages/BlogPage"));
-const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
-const OrderHistoryPage = lazy(() => import("@/pages/OrderHistoryPage"));
-const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
-const RefundPolicyPage = lazy(() => import("@/pages/RefundPolicyPage"));
-const ShippingPolicyPage = lazy(() => import("@/pages/ShippingPolicyPage"));
-const ContactInformationPolicyPage = lazy(() => import("@/pages/ContactInformationPolicyPage"));
-const ShopAuthBridgePage = lazy(() => import("@/pages/ShopAuthBridgePage"));
-const BulkReviewPage = lazy(() => import("@/pages/BulkReviewPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
 
 const AppShell = () => (
   <QueryClientProvider client={queryClient}>

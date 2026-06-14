@@ -125,7 +125,21 @@ async function writeThemeScaffold() {
 
   await writeFile(
     resolve(themeDir, "config", "settings_schema.json"),
-    JSON.stringify([{ name: "SALT App Theme", settings: [] }], null, 2),
+    JSON.stringify(
+      [
+        {
+          name: "SALT App Theme",
+          settings: [
+            {
+              type: "paragraph",
+              content: "SALT storefront presentation is managed in code.",
+            },
+          ],
+        },
+      ],
+      null,
+      2,
+    ),
   );
   await writeFile(resolve(themeDir, "config", "settings_data.json"), JSON.stringify({ current: {} }, null, 2));
   await writeFile(resolve(themeDir, "locales", "en.default.json"), JSON.stringify({}, null, 2));
