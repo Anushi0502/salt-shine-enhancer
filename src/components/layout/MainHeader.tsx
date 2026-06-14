@@ -1,11 +1,12 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Globe, Menu, Search, ShoppingCart } from "lucide-react";
+import { ChevronDown, ChevronRight, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 import { filterProducts } from "@/lib/catalog";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections, useProducts } from "@/lib/shopify-data";
+import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
   Sheet,
@@ -123,6 +124,7 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
+const SHOPIFY_CUSTOMER_ACCOUNT_URL = "https://shopify.com/58076594275/account";
 
 function normalizeSearchPhrase(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -164,7 +166,8 @@ function approximateSearchScore(haystack: string, queryTokens: string[]): number
 const MainHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { itemCount, openCartDrawer } = useCart();
+  const { itemCount: cartItemCount, openCartDrawer } = useCart();
+  const { itemCount: wishlistItemCount } = useWishlist();
   const headerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -464,7 +467,7 @@ const MainHeader = () => {
     setScopeOpen(false);
   };
 
-  const cartLabel = `Cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`;
+  const cartLabel = `Cart with ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}`;
 
   return (
     <header
@@ -536,20 +539,20 @@ const MainHeader = () => {
                       </p>
 
                       <SheetClose asChild>
-                        <Link
-                          to="/account"
+                        <a
+                          href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
                           className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
                         >
-                          Account & Lists
-                        </Link>
+                          Account & Orders
+                        </a>
                       </SheetClose>
 
                       <SheetClose asChild>
                         <Link
-                          to="/account/orders"
+                          to="/wishlist"
                           className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
                         >
-                          Track order
+                          Wishlist
                         </Link>
                       </SheetClose>
 
@@ -567,6 +570,19 @@ const MainHeader = () => {
               </SheetContent>
             </Sheet>
 
+            <Link
+              to="/wishlist"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              aria-label={`Wishlist with ${wishlistItemCount} item${wishlistItemCount === 1 ? "" : "s"}`}
+            >
+              <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-[#0C2048]/12" : ""}`} />
+              {wishlistItemCount > 0 ? (
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                  {wishlistItemCount}
+                </span>
+              ) : null}
+            </Link>
+
             <button
               type="button"
               onClick={openCartDrawer}
@@ -574,9 +590,9 @@ const MainHeader = () => {
               aria-label={cartLabel}
             >
               <ShoppingCart className="h-4.5 w-4.5" />
-              {itemCount > 0 ? (
+              {cartItemCount > 0 ? (
                 <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
-                  {itemCount}
+                  {cartItemCount}
                 </span>
               ) : null}
             </button>
@@ -830,39 +846,30 @@ const MainHeader = () => {
         </form>
 
         <div className="order-2 ml-auto hidden items-center gap-2 md:order-3 md:flex">
-          <button
-            type="button"
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/80 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#F5FAFF]"
-            aria-label="Language EN"
+          <a
+            href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
+            aria-label="Hello, sign in / Account and orders"
+            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 dark:hover:bg-white/10 lg:flex"
           >
-            <Globe className="h-4 w-4" />
-            <span>EN</span>
-          </button>
-
-          <Link
-            to="/account"
-            aria-label="Hello, sign in / Account & Lists"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
-          >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
+            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F] dark:text-white/70">
               Hello, sign in
             </span>
-            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
-              Account & Lists
+            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-[#102A43] dark:text-white">
+              Account & Orders
             </span>
-          </Link>
+          </a>
 
           <Link
-            to="/account/orders"
-            aria-label="Returns / & Orders"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
+            to="/wishlist"
+            aria-label={`Wishlist with ${wishlistItemCount} item${wishlistItemCount === 1 ? "" : "s"}`}
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#102A43] shadow-sm transition hover:bg-[#D0E4FC] lg:inline-flex"
           >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
-              Returns
-            </span>
-            <span className="block text-sm font-semibold leading-tight text-[#102A43]">
-              & Orders
-            </span>
+            <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-[#102A43]/12" : ""}`} />
+            {wishlistItemCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                {wishlistItemCount}
+              </span>
+            ) : null}
           </Link>
 
           <button
@@ -873,9 +880,9 @@ const MainHeader = () => {
           >
             <ShoppingCart className="h-4.5 w-4.5" />
             <span className="hidden sm:inline">Cart</span>
-            {itemCount > 0 ? (
+            {cartItemCount > 0 ? (
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
-                {itemCount}
+                {cartItemCount}
               </span>
             ) : null}
           </button>
