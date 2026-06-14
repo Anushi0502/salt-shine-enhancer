@@ -7,9 +7,23 @@ import { basename, resolve } from "node:path";
 const rootDir = process.cwd();
 const distDir = resolve(rootDir, "dist");
 const publicDir = resolve(rootDir, "public");
-const themeDir = resolve(
-  "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-online-store-v2",
-);
+const defaultThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
+
+function resolveThemeDir() {
+  const outIndex = process.argv.indexOf("--out");
+
+  if (outIndex !== -1 && process.argv[outIndex + 1]) {
+    return resolve(process.cwd(), process.argv[outIndex + 1]);
+  }
+
+  if (process.env.SHOPIFY_THEME_DIR) {
+    return resolve(process.env.SHOPIFY_THEME_DIR);
+  }
+
+  return defaultThemeDir;
+}
+
+const themeDir = resolveThemeDir();
 const themeAssetsDir = resolve(themeDir, "assets");
 const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
 
