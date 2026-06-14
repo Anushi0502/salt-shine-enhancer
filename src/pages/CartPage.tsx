@@ -1,19 +1,6 @@
 import { useEffect, useMemo, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import {
-  Minus,
-  PackageCheck,
-  Plus,
-  ShieldCheck,
-  ShoppingBag,
-  Truck,
-  Trash2,
-} from "lucide-react";
-import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
-import Reveal from "@/components/storefront/Reveal";
-import ProductCard from "@/components/storefront/ProductCard";
-import SectionHeading from "@/components/storefront/SectionHeading";
-import TrustStrip from "@/components/storefront/TrustStrip";
+import { Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import {
   buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
@@ -22,7 +9,6 @@ import {
   useCart,
 } from "@/lib/cart";
 import { formatMoney } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
@@ -46,16 +32,13 @@ const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
   const { data: productsPayload } = useProducts();
 
-  const recommendedProducts = (productsPayload?.products || []).slice(0, 5);
   const catalogLookup = useMemo(() => {
     const byHandle = new Map<string, { variantId: number; handle: string }>();
     const byTitle = new Map<string, { variantId: number; handle: string }>();
 
     for (const product of productsPayload?.products || []) {
       const preferredVariant =
-        product.variants.find(
-          (variant) => variant.available && isValidShopifyVariantId(Number(variant.id)),
-        ) ||
+        product.variants.find((variant) => variant.available && isValidShopifyVariantId(Number(variant.id))) ||
         product.variants.find((variant) => isValidShopifyVariantId(Number(variant.id)));
 
       if (!preferredVariant) {
@@ -133,9 +116,6 @@ const CartPage = () => {
   ).length;
   const unresolvedEntries = resolvedCheckout.filter((entry) => entry.method === "unresolved");
   const unresolvedCheckoutItems = unresolvedEntries.map((entry) => entry.item);
-  const unresolvedHandleSet = new Set(
-    unresolvedEntries.map((entry) => normalizeHandleLookup(entry.item.handle || "")),
-  );
   const unresolvedShopifyLinks = unresolvedEntries
     .map((entry) => ({
       id: entry.item.id,
@@ -145,22 +125,20 @@ const CartPage = () => {
           ? entry.productUrl
           : buildShopifySearchUrl(entry.item.title || entry.item.handle) || entry.productUrl,
     }))
-    .filter(
-      (entry): entry is { id: number; title: string; url: string } => Boolean(entry.url),
-    );
+    .filter((entry): entry is { id: number; title: string; url: string } => Boolean(entry.url));
+  const unresolvedShopifyLinksById = useMemo(
+    () => new Map(unresolvedShopifyLinks.map((entry) => [entry.id, entry.url])),
+    [unresolvedShopifyLinks],
+  );
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
 
   const checkoutHandoffUrl = buildShopifyCheckoutUrl(checkoutItems);
-  const checkoutTargetUrl = checkoutHandoffUrl;
   const freeShippingThreshold = 120;
   const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingProgress = Math.min(
     100,
     Math.round((Math.min(subtotal, freeShippingThreshold) / freeShippingThreshold) * 100),
   );
-  const recommendedProductIds = useMemo(() => recommendedProducts.map((product) => product.id), [recommendedProducts]);
-  const recommendedRatingsQuery = useJudgeMeRatings(recommendedProductIds);
-  const recommendedRatingsById = recommendedRatingsQuery.data ?? {};
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -173,10 +151,7 @@ const CartPage = () => {
         return false;
       }
 
-      return (
-        current.shopifyVariantId !== item.shopifyVariantId ||
-        current.handle !== item.handle
-      );
+      return current.shopifyVariantId !== item.shopifyVariantId || current.handle !== item.handle;
     });
 
     if (hasPatch) {
@@ -198,316 +173,324 @@ const CartPage = () => {
       items: checkoutItems,
     });
 
-    void openExternalUrl(checkoutTargetUrl);
+    void openExternalUrl(checkoutHandoffUrl);
   };
 
   if (!items.length) {
     return (
-      <section className="mx-auto mt-8 w-[min(880px,calc(100%-20px))] pb-10 text-center sm:w-[min(880px,calc(100%-20px))]">
-        <Reveal>
-          <div className="salt-surface rounded-[2rem] p-8">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <ShoppingBag className="h-8 w-8" />
-            </div>
-            <h1 className="mt-4 font-display text-4xl">Your cart is empty</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Add a few pieces from the catalog and they will appear here.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <Link
-                to="/shop"
-                className="salt-primary-cta h-11 px-6 text-sm font-bold"
-              >
-                Start shopping
-              </Link>
-              <Link
-                to="/collections"
-                className="salt-outline-chip h-11 px-6 py-0 text-sm"
-              >
-                Browse collections
-              </Link>
-            </div>
+      <section className="mx-auto mt-8 w-[min(840px,calc(100%-24px))] pb-10 text-center">
+        <div className="rounded-[1.6rem] border border-[#d8e6f5] bg-white p-8 shadow-[0_22px_44px_-34px_rgba(12,32,72,0.18)]">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ECF4FC] text-[#15479a]">
+            <ShoppingBag className="h-8 w-8" />
           </div>
-        </Reveal>
+          <h1 className="mt-4 text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight text-[#102A43]">
+            Your cart is empty
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#5C748F]">
+            Add products from the catalog and they will appear here for checkout.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+            <Link
+              to="/shop?collection=all-products"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#15479a] px-6 text-sm font-bold text-white transition hover:bg-[#123c81]"
+            >
+              Start shopping
+            </Link>
+            <Link
+              to="/collections"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#bfd7f2] bg-white px-6 text-sm font-bold text-[#102A43] transition hover:bg-[#f5faff]"
+            >
+              Browse collections
+            </Link>
+          </div>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="mx-auto mt-5 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-10">
-      <Reveal>
-        <InnerBreadcrumbs
-          items={[
-            { label: "Home", to: "/" },
-            { label: "Cart" },
-          ]}
-        />
-      </Reveal>
+    <section className="mx-auto mt-6 w-[min(1280px,calc(100%-24px))] pb-28 md:pb-10">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4">
+          <div className="rounded-[1.35rem] border border-[#d8e6f5] bg-white p-5 shadow-[0_20px_42px_-34px_rgba(12,32,72,0.16)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">Cart</p>
+                <h1 className="mt-1 text-[clamp(1.95rem,4vw,3rem)] font-semibold tracking-tight text-[#102A43]">
+                  Shopping Cart
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-[#5C748F]">
+                  {itemCount} item{itemCount === 1 ? "" : "s"} ready for checkout.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clear}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[#d8e6f5] bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-[#102A43] transition hover:border-[#d54c4c]/35 hover:text-[#b42318]"
+              >
+                Clear cart
+              </button>
+            </div>
 
-      <Reveal>
-        <div className="mb-4 mt-3 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-          <div className="w-full">
-            <SectionHeading
-              kicker="Cart"
-              title="Review your bag"
-              description={`${itemCount} item${itemCount === 1 ? "" : "s"} ready for checkout.`}
-            />
-            <TrustStrip
-              className="mt-2"
-              items={[
-                { icon: ShieldCheck, label: "Secure checkout" },
-                { icon: PackageCheck, label: "Live variant validation" },
-                { icon: Truck, label: "Fast US shipping" },
-              ]}
-            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e6f5] bg-[#f7fbff] px-3 py-1.5 text-[0.68rem] font-semibold text-[#102A43]">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#15479a]" />
+                Secure checkout
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e6f5] bg-[#f7fbff] px-3 py-1.5 text-[0.68rem] font-semibold text-[#102A43]">
+                <PackageCheck className="h-3.5 w-3.5 text-[#15479a]" />
+                Live stock validation
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8e6f5] bg-[#f7fbff] px-3 py-1.5 text-[0.68rem] font-semibold text-[#102A43]">
+                <Truck className="h-3.5 w-3.5 text-[#15479a]" />
+                Fast US shipping
+              </span>
+            </div>
+
+            {autoRecoveredCount > 0 ? (
+              <p className="mt-4 rounded-[1rem] border border-emerald-500/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-900">
+                {autoRecoveredCount} item{autoRecoveredCount === 1 ? "" : "s"} were automatically matched to live Shopify variants.
+              </p>
+            ) : null}
           </div>
-          <button
-            type="button"
-            onClick={clear}
-            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-border px-4 text-xs font-bold uppercase tracking-[0.08em] hover:border-destructive/40 hover:text-destructive sm:w-auto"
-          >
-            Clear cart
-          </button>
-        </div>
-      </Reveal>
 
-      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="grid gap-3">
-          {items.map((item, index) => (
-            <Reveal key={item.id} delayMs={index * 45}>
-              <article className="salt-panel-shell rounded-[1.35rem] p-3.5 sm:rounded-2xl sm:p-4">
-                <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+          {resolvedCheckout.map((entry, index) => {
+            const { item, productUrl, method } = entry;
+            const unresolvedLookupUrl = unresolvedShopifyLinksById.get(item.id) || productUrl;
+
+            return (
+              <article
+                key={item.id}
+                className="rounded-[1.35rem] border border-[#d8e6f5] bg-white p-4 shadow-[0_18px_36px_-32px_rgba(12,32,72,0.14)] sm:p-5"
+              >
+                <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
                   {item.image ? (
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="aspect-square w-full rounded-xl border border-border bg-muted object-cover"
+                      className="aspect-square w-full rounded-[1rem] border border-[#e2edf8] bg-[#f7fbff] object-cover"
                     />
                   ) : (
-                    <div className="grid aspect-square w-full place-items-center rounded-xl border border-border bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-blue)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                    <div className="grid aspect-square w-full place-items-center rounded-[1rem] border border-[#e2edf8] bg-[#f7fbff] px-3 text-center">
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#5C748F]">
                         Image unavailable
                       </p>
                     </div>
                   )}
 
-                  <div>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h2 className="font-display text-xl leading-tight">{item.title}</h2>
-                        <p className="mt-1 text-xs text-muted-foreground">Unit price {formatMoney(item.unitPrice)}</p>
+                  <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#2e7d32]">
+                          {method === "unresolved" ? "Needs remap" : "In stock"}
+                        </p>
+                        <h2 className="mt-1 text-lg font-semibold leading-tight text-[#102A43] sm:text-[1.2rem]">
+                          {item.title}
+                        </h2>
+                        <p className="mt-1 text-sm text-[#5C748F]">Sold by SALT</p>
+                        <a
+                          href={unresolvedLookupUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex text-sm font-semibold text-[#15479a] transition hover:text-[#123c81]"
+                        >
+                          View product
+                        </a>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border hover:border-destructive/40 hover:text-destructive"
-                        aria-label={`Remove ${item.title}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
+                      <div className="shrink-0 text-left sm:text-right">
+                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#5C748F]">
+                          Item total
+                        </p>
+                        <p className="mt-1 text-[1.7rem] font-semibold leading-none text-[#102A43]">
+                          {formatMoney(item.unitPrice * item.quantity)}
+                        </p>
+                        <p className="mt-1 text-sm text-[#5C748F]">{formatMoney(item.unitPrice)} each</p>
+                      </div>
                     </div>
 
-                    <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                      <div className="inline-flex h-10 items-center rounded-full border border-border bg-background">
+                    {method === "unresolved" ? (
+                      <div className="rounded-[1rem] border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                        This item could not be mapped to a live Shopify variant. Reopen the product and add it again before checkout.
+                      </div>
+                    ) : null}
+
+                    <div className="flex flex-col gap-3 border-t border-[#e2edf8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="inline-flex h-10 items-center rounded-full border border-[#d8e6f5] bg-[#f7fbff]">
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="inline-flex h-10 w-10 items-center justify-center"
+                          className="inline-flex h-10 w-10 items-center justify-center text-[#102A43]"
                           aria-label="Decrease quantity"
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span className="min-w-10 text-center text-sm font-bold">{item.quantity}</span>
+                        <span className="min-w-12 text-center text-sm font-bold text-[#102A43]">{item.quantity}</span>
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="inline-flex h-10 w-10 items-center justify-center"
+                          className="inline-flex h-10 w-10 items-center justify-center text-[#102A43]"
                           aria-label="Increase quantity"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
 
-                      <p className="font-display text-2xl text-primary sm:text-right">
-                        {formatMoney(item.unitPrice * item.quantity)}
-                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id)}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d8e6f5] bg-white px-4 text-sm font-semibold text-[#102A43] transition hover:border-[#d54c4c]/35 hover:text-[#b42318]"
+                          aria-label={`Remove ${item.title}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </article>
-            </Reveal>
-          ))}
+            );
+          })}
         </div>
 
-        <Reveal delayMs={120}>
-          <aside className="salt-panel-shell rounded-[1.45rem] p-4 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
-            <h2 className="font-display text-3xl">Order summary</h2>
-            <div className="mt-4 space-y-3 border-b border-border pb-4 text-sm">
-              <p className="flex items-center justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <strong>{formatMoney(subtotal)}</strong>
-              </p>
-              <p className="flex items-center justify-between">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>Calculated at checkout</span>
-              </p>
-              <p className="flex items-center justify-between">
-                <span className="text-muted-foreground">Taxes</span>
-                <span>Calculated at checkout</span>
-              </p>
-            </div>
-            <p className="mt-4 flex items-center justify-between font-display text-3xl">
-              <span>Total</span>
-              <span className="text-primary">{formatMoney(subtotal)}</span>
-            </p>
-            <div className="mt-3 rounded-xl border border-border/80 bg-background/88 p-3">
-              <p className="text-[0.66rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                Free shipping progress
-              </p>
-              <div className="salt-progress-track mt-2">
-                <span className="salt-progress-fill" style={{ width: `${freeShippingProgress}%` }} />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {freeShippingRemaining > 0
-                  ? `${formatMoney(freeShippingRemaining)} away from free shipping.`
-                  : "You unlocked free shipping on this order."}
-              </p>
-            </div>
-            <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-3">
-              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Encrypted payment
-              </p>
-              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Live order tracking
-              </p>
-              <p className="salt-kpi-card rounded-xl border border-border/70 px-2.5 py-2 text-center text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                30-day returns
-              </p>
-            </div>
+        <aside className="rounded-[1.35rem] border border-[#d8e6f5] bg-white p-5 shadow-[0_20px_42px_-34px_rgba(12,32,72,0.16)] lg:sticky lg:top-24 lg:self-start">
+          <h2 className="text-[1.7rem] font-semibold tracking-tight text-[#102A43]">Order Summary</h2>
 
-            <p className="mt-4 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
+          <div className="mt-5 space-y-3 border-b border-[#e2edf8] pb-5 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#5C748F]">Items ({itemCount})</span>
+              <strong className="text-[#102A43]">{formatMoney(subtotal)}</strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#5C748F]">Shipping</span>
+              <span className="text-[#102A43]">Calculated at checkout</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#5C748F]">Estimated tax</span>
+              <span className="text-[#102A43]">Calculated at checkout</span>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-base font-semibold text-[#102A43]">Subtotal</span>
+              <span className="text-[1.8rem] font-semibold leading-none text-[#102A43]">
+                {formatMoney(subtotal)}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-[#5C748F]">
               Express payment options appear inside secure Shopify checkout.
             </p>
-            {autoRecoveredCount > 0 ? (
-              <p className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:text-emerald-100">
-                Auto-recovered {autoRecoveredCount} item(s) to live Shopify variants.
-              </p>
-            ) : null}
-            {hasUnresolvedCheckoutItems ? (
-              <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
-                <p>
-                  {unresolvedCheckoutItems.length} item(s) in this cart could not be mapped to a live Shopify variant. Remove and re-add them before checkout, or remove all unmapped items at once:
-                </p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {unresolvedShopifyLinks.map((entry) => (
-                    <li key={entry.id}>
-                      <a
-                        href={entry.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline hover:text-primary"
-                      >
-                        {entry.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => {
-                    unresolvedCheckoutItems.forEach((item) => removeItem(item.id));
-                  }}
-                  className="mt-2 inline-flex h-9 items-center rounded-full border border-amber-700/40 bg-background px-3 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-amber-900 hover:border-amber-700/70 dark:text-amber-100"
-                >
-                  Remove unmapped items
-                </button>
-              </div>
-            ) : null}
-
-            <a
-              href={checkoutTargetUrl}
-              onClick={handleCheckoutClick}
-              aria-disabled={hasUnresolvedCheckoutItems}
-                className={`mt-3 salt-button-shine inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-[0.08em] text-primary-foreground ${
-                hasUnresolvedCheckoutItems
-                  ? "pointer-events-none opacity-60"
-                  : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
-              }`}
-            >
-              Continue to checkout
-            </a>
-
-            <Link
-              to="/shop"
-              className="salt-outline-chip mt-2 h-12 w-full justify-center rounded-xl px-5 py-0 text-sm"
-            >
-              Continue shopping
-            </Link>
-
-            <Link
-              to="/contact"
-              className="salt-outline-chip mt-2 h-10 w-full justify-center rounded-xl px-5 py-0 text-xs"
-            >
-              Need checkout help?
-            </Link>
-
-            <div className="mt-3 grid gap-2 rounded-xl border border-border/80 bg-background p-3 text-xs text-muted-foreground">
-              <p className="inline-flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5" /> Payment encryption enabled
-              </p>
-              <p className="inline-flex items-center gap-2">
-                <PackageCheck className="h-3.5 w-3.5" /> Tracking details after dispatch
-              </p>
-            </div>
-          </aside>
-        </Reveal>
-      </div>
-
-      {recommendedProducts.length > 0 ? (
-        <section className="mt-8">
-          <Reveal>
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Add-on picks</p>
-                <h2 className="font-display text-[clamp(1.7rem,2.6vw,2.5rem)]">Complete the basket</h2>
-              </div>
-            </div>
-          </Reveal>
-          <div className="salt-section-shell rounded-[1.7rem] p-4">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
-              {recommendedProducts.map((product, index) => (
-                <Reveal key={product.id} delayMs={index * 60} className="h-full">
-                  <ProductCard
-                    product={product}
-                    variant="shop"
-                    reviewSummary={recommendedRatingsById[product.id] ?? null}
-                  />
-                </Reveal>
-              ))}
-            </div>
           </div>
-        </section>
-      ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/96 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
-        <div className="mx-auto flex w-[min(1280px,100%)] items-center gap-3">
-          <div className="min-w-0 shrink-0">
-            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              {itemCount} item{itemCount === 1 ? "" : "s"}
+          <div className="mt-5 rounded-[1rem] border border-[#d8e6f5] bg-[#f7fbff] p-4">
+            <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#5C748F]">
+              Free shipping progress
             </p>
-            <p className="font-display text-[1.4rem] leading-none text-primary">{formatMoney(subtotal)}</p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#dbe8f7]">
+              <span
+                className="block h-full rounded-full bg-[#15479a] transition-[width] duration-300"
+                style={{ width: `${freeShippingProgress}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm leading-6 text-[#5C748F]">
+              {freeShippingRemaining > 0
+                ? `${formatMoney(freeShippingRemaining)} away from free shipping.`
+                : "Free shipping unlocked for this order."}
+            </p>
           </div>
+
+          {hasUnresolvedCheckoutItems ? (
+            <div className="mt-4 rounded-[1rem] border border-amber-400/40 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+              <p>
+                {unresolvedCheckoutItems.length} item{unresolvedCheckoutItems.length === 1 ? "" : "s"} must be re-added before checkout.
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {unresolvedShopifyLinks.map((entry) => (
+                  <li key={entry.id}>
+                    <a href={entry.url} target="_blank" rel="noreferrer" className="underline">
+                      {entry.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => {
+                  unresolvedCheckoutItems.forEach((item) => removeItem(item.id));
+                }}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-amber-700/30 bg-white px-4 text-xs font-bold uppercase tracking-[0.08em] text-amber-900 transition hover:border-amber-700/50"
+              >
+                Remove unmapped items
+              </button>
+            </div>
+          ) : null}
+
           <a
-            href={checkoutTargetUrl}
+            href={checkoutHandoffUrl}
             onClick={handleCheckoutClick}
             aria-disabled={hasUnresolvedCheckoutItems}
-            className={`salt-button-shine salt-primary-cta inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] ${
+            className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-full px-5 text-sm font-bold uppercase tracking-[0.08em] text-white transition ${
               hasUnresolvedCheckoutItems
-                ? "pointer-events-none opacity-60"
-                : "hover:brightness-110 hover:shadow-[0_18px_30px_-24px_hsl(var(--primary)/0.95)]"
+                ? "pointer-events-none bg-[#7d8fa8] opacity-65"
+                : "bg-[#15479a] hover:bg-[#123c81]"
             }`}
           >
-            Continue to checkout
+            Proceed to checkout
+          </a>
+
+          <Link
+            to="/shop?collection=all-products"
+            className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-[#bfd7f2] bg-white px-5 text-sm font-bold text-[#102A43] transition hover:bg-[#f5faff]"
+          >
+            Continue shopping
+          </Link>
+
+          <Link
+            to="/contact"
+            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-full border border-[#d8e6f5] bg-[#f7fbff] px-5 text-xs font-bold uppercase tracking-[0.08em] text-[#102A43] transition hover:bg-white"
+          >
+            Need checkout help?
+          </Link>
+
+          <div className="mt-4 grid gap-2 rounded-[1rem] border border-[#e2edf8] bg-[#f7fbff] p-4 text-sm text-[#5C748F]">
+            <p className="inline-flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-[#15479a]" />
+              Secure Shopify checkout
+            </p>
+            <p className="inline-flex items-center gap-2">
+              <PackageCheck className="h-4 w-4 text-[#15479a]" />
+              Live variant validation
+            </p>
+            <p className="inline-flex items-center gap-2">
+              <Truck className="h-4 w-4 text-[#15479a]" />
+              Tracking after dispatch
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d8e6f5] bg-white/96 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_40px_-32px_rgba(12,32,72,0.2)] backdrop-blur md:hidden">
+        <div className="mx-auto flex w-full max-w-5xl items-center gap-3">
+          <div className="min-w-0 shrink-0">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#5C748F]">
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+            </p>
+            <p className="text-[1.4rem] font-semibold leading-none text-[#102A43]">{formatMoney(subtotal)}</p>
+          </div>
+          <a
+            href={checkoutHandoffUrl}
+            onClick={handleCheckoutClick}
+            aria-disabled={hasUnresolvedCheckoutItems}
+            className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-5 text-sm font-bold uppercase tracking-[0.08em] text-white transition ${
+              hasUnresolvedCheckoutItems
+                ? "pointer-events-none bg-[#7d8fa8] opacity-65"
+                : "bg-[#15479a] hover:bg-[#123c81]"
+            }`}
+          >
+            Checkout
           </a>
         </div>
       </div>

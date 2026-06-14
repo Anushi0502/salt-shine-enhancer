@@ -17,44 +17,32 @@
     <meta name="application-name" content="SALT Online Store" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <meta name="theme-color" content="#131921" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f8ff" />
+    <meta name="color-scheme" content="light" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="canonical" href="https://saltonlinestore.com/" />
 
     <script>
       (() => {
         try {
-          const storage = window.localStorage;
-          const stored = storage.getItem("salt-ui-theme");
-          const theme =
-            stored === "light" || stored === "dark"
-              ? stored
-              : window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light";
           const root = document.documentElement;
-          root.classList.toggle("dark", theme === "dark");
-          root.style.colorScheme = theme;
-          root.dataset.theme = theme;
+          root.classList.remove("dark");
+          root.style.colorScheme = "light";
+          root.dataset.theme = "light";
           const meta = document.querySelector('meta[name="theme-color"]');
           if (meta) {
-            meta.setAttribute("content", theme === "dark" ? "#0f172a" : "#131921");
+            meta.setAttribute("content", "#f4f8ff");
           }
         } catch {
-          // Ignore storage and media-query failures.
+          // Ignore storage and DOM failures.
         }
       })();
     </script>
 
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" href="/favicon-dark.ico" sizes="any" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" media="(prefers-color-scheme: light)" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="preload" as="image" href="/brand/salt-logo.png" />
     <link rel="manifest" href="/site.webmanifest" />
 

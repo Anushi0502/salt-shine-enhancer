@@ -472,9 +472,9 @@ const MainHeader = () => {
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-50 border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
+      className="sticky top-0 z-50 w-full border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
+      <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
         <div className="order-1 flex min-w-0 flex-1 items-center gap-2 md:flex-none">
           <Link
             to="/"
@@ -849,12 +849,12 @@ const MainHeader = () => {
           <a
             href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
             aria-label="Hello, sign in / Account and orders"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 dark:hover:bg-white/10 lg:flex"
+            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
           >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F] dark:text-white/70">
+            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
               Hello, sign in
             </span>
-            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-[#102A43] dark:text-white">
+            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-[#102A43]">
               Account & Orders
             </span>
           </a>
@@ -892,7 +892,7 @@ const MainHeader = () => {
       <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
         <nav
           aria-label="Secondary navigation"
-          className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 py-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
+          className="flex w-full items-center gap-2 overflow-x-auto px-3 py-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
         >
           {secondaryNavItems.map((item) => {
             const active = isActiveNavItem(item, location.pathname, location.search);
