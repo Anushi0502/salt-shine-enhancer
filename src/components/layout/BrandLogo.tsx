@@ -7,7 +7,7 @@ type BrandLogoProps = {
 };
 
 const brandLogoFontFamily = "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-const brandMarkSrc = "/brand/salt-logo.png";
+const brandMarkSrc = "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/SALT_Store_logo_bd9c21b9-df40-4f5f-abaf-659bfed7215b.png?v=1744872481";
 
 const shellSizeMap: Record<NonNullable<BrandLogoProps["size"]>, string> = {
   sm: "h-11 w-28 px-2.5 rounded-[1rem]",
