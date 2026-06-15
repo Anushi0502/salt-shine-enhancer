@@ -3,14 +3,33 @@ import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
-  getRuntimeContext,
-  resolveStorefrontPath,
-} from "@/lib/theme-assets";
+  SITE_FOOTER_COMPANY_LINKS,
+  SITE_FOOTER_POLICY_LINKS,
+  SITE_FOOTER_RESOURCE_LINKS,
+  TRACK_ORDER_URL,
+} from "@/lib/site-navigation";
 
-const runtimeContext = getRuntimeContext();
-const privacyPolicyHref = resolveStorefrontPath(runtimeContext.privacyPolicyUrl, "/policies/privacy-policy");
-const returnsPolicyHref = resolveStorefrontPath(runtimeContext.refundPolicyUrl, "/policies/refund-policy");
-const shippingPolicyHref = resolveStorefrontPath(runtimeContext.shippingPolicyUrl, "/policies/shipping-policy");
+type FooterLink = {
+  label: string;
+  to?: string;
+  href?: string;
+};
+
+const footerLinkClass = "transition-colors hover:text-white";
+const footerCardLinkClass =
+  "inline-flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition hover:border-[#f2b600]/40 hover:bg-white/10 hover:text-white";
+
+function renderFooterLink(link: FooterLink) {
+  return link.href ? (
+    <a key={link.label} href={link.href} className={footerCardLinkClass}>
+      {link.label}
+    </a>
+  ) : (
+    <Link key={link.label} to={link.to || "/"} className={footerCardLinkClass}>
+      {link.label}
+    </Link>
+  );
+}
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
@@ -23,7 +42,7 @@ const MainFooter = () => {
   return (
     <footer className="mt-4 border-t border-white/10 bg-[#131921] text-white sm:mt-6">
       <div className="mx-auto w-full max-w-[1360px] px-4 py-10 sm:px-6 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_1.35fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.82fr_0.82fr_0.82fr_1.3fr]">
           <div className="flex flex-col items-start">
             <BrandLogo withWordmark size="lg" />
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/70">
@@ -52,60 +71,39 @@ const MainFooter = () => {
           </div>
 
           <div>
-            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">Shop</h3>
-            <div className="mt-4 grid gap-3 text-sm text-white/74">
-              <Link to="/shop?collection=all-products" className="transition-colors hover:text-white">
-                All products
-              </Link>
-              <Link to="/collections" className="transition-colors hover:text-white">
-                Collections
-              </Link>
-              <Link to="/shop?sort=newest" className="transition-colors hover:text-white">
-                New arrivals
-              </Link>
-              <Link to="/shop?sort=discount" className="transition-colors hover:text-white">
-                Sale
-              </Link>
+            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">
+              Company
+            </h3>
+            <div className="mt-4 grid gap-2 text-sm text-white/74">
+              {SITE_FOOTER_COMPANY_LINKS.map((link) => renderFooterLink(link))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">Support</h3>
-            <div className="mt-4 grid gap-3 text-sm text-white/74">
-              <Link to="/contact" className="transition-colors hover:text-white">
-                Contact
-              </Link>
-              <Link to="/about" className="transition-colors hover:text-white">
-                About
-              </Link>
-              <Link to="/pages/mission-vision" className="transition-colors hover:text-white">
-                Mission &amp; Vision
-              </Link>
-              <Link to="/pages/affiliate-program" className="transition-colors hover:text-white">
-                Affiliate program
-              </Link>
-              <Link to="/account/orders" className="transition-colors hover:text-white">
-                Track order
-              </Link>
-              
+            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">
+              Resources
+            </h3>
+            <div className="mt-4 grid gap-2 text-sm text-white/74">
+              {SITE_FOOTER_RESOURCE_LINKS.map((link) => renderFooterLink(link))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">Policies</h3>
-            <div className="mt-4 grid gap-3 text-sm text-white/74">
-              <a href={privacyPolicyHref} className="transition-colors hover:text-white">
-                Privacy
-              </a>
-              <a href={returnsPolicyHref} className="transition-colors hover:text-white">
-                Refunds
-              </a>
-              <a href={shippingPolicyHref} className="transition-colors hover:text-white">
-                Shipping policy
-              </a>
-              <a href={returnsPolicyHref} className="transition-colors hover:text-white">
-                Returns
-              </a>
+            <h3 className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">
+              Policies
+            </h3>
+            <div className="mt-4 grid gap-2 text-sm text-white/74">
+              {SITE_FOOTER_POLICY_LINKS.map((link) =>
+                link.href ? (
+                  <a key={link.label} href={link.href} className={footerLinkClass}>
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.label} to={link.to || "/"} className={footerLinkClass}>
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
@@ -132,9 +130,7 @@ const MainFooter = () => {
                 </button>
               </div>
               {subscribed && (
-                <p className="mt-3 text-xs font-semibold text-[#f2b600]">
-                  You’re on the list.
-                </p>
+                <p className="mt-3 text-xs font-semibold text-[#f2b600]">You’re on the list.</p>
               )}
             </form>
           </div>
@@ -156,14 +152,14 @@ const MainFooter = () => {
           </div>
           <div className="flex flex-wrap items-center gap-5">
             <span>&copy; {new Date().getFullYear()} SALT ONLINE STORE</span>
-            <a href={privacyPolicyHref} className="transition-colors hover:text-white">
-              Privacy
-            </a>
-            <a href={returnsPolicyHref} className="transition-colors hover:text-white">
-              Refunds
-            </a>
-            <a href={shippingPolicyHref} className="transition-colors hover:text-white">
-              Shipping
+            <Link to="/about" className={footerLinkClass}>
+              About SALT
+            </Link>
+            <Link to="/contact" className={footerLinkClass}>
+              Contact Us
+            </Link>
+            <a href={TRACK_ORDER_URL} className={footerLinkClass}>
+              Track Order
             </a>
           </div>
         </div>

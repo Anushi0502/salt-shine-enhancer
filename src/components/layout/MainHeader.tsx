@@ -1,10 +1,21 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight, Heart, Menu, Search, ShoppingCart } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { filterProducts } from "@/lib/catalog";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
+import {
+  SITE_COLLECTIONS,
+  SITE_FOOTER_COMPANY_LINKS,
+  SITE_FOOTER_RESOURCE_LINKS,
+  SITE_FOOTER_POLICY_LINKS,
+  SITE_RESOURCE_GUIDES,
+  TRACK_ORDER_URL,
+  buildCollectionRoute,
+  buildResourceRoute,
+} from "@/lib/site-navigation";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
@@ -50,6 +61,7 @@ type HeaderSearchScope = (typeof searchScopeOptions)[number]["collection"];
 type HeaderNavItem = {
   label: string;
   to: string;
+  kind?: "link" | "collections" | "resources";
   isActive?: (pathname: string, search: string) => boolean;
 };
 
@@ -70,6 +82,7 @@ const secondaryNavItems: HeaderNavItem[] = [
   {
     label: "All products",
     to: "/shop?collection=all-products",
+    kind: "link",
     isActive: (pathname, search) => {
       const params = new URLSearchParams(search);
       const collection = params.get("collection");
@@ -80,36 +93,29 @@ const secondaryNavItems: HeaderNavItem[] = [
   {
     label: "Collections",
     to: "/collections",
+    kind: "collections",
     isActive: (pathname) => pathname === "/collections" || pathname.startsWith("/collections/"),
   },
   {
-    label: "New Arrivals",
-    to: "/shop?collection=new-arrivals",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "new-arrivals"),
-  },
-  {
-    label: "Cookware",
-    to: "/shop?collection=cookware",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "cookware"),
-  },
-  {
-    label: "Home Decor",
-    to: "/shop?collection=home-decor",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "home-decor"),
-  },
-  {
-    label: "Apparel",
-    to: "/shop?collection=apparel",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "apparel"),
-  },
-  {
-    label: "Gifts",
-    to: "/shop?collection=gifts",
-    isActive: (pathname, search) => isCollectionRouteActive(pathname, search, "gifts"),
+    label: "Resources",
+    to: "/resources",
+    kind: "resources",
+    isActive: (pathname) =>
+      pathname === "/resources" ||
+      pathname.startsWith("/resources/") ||
+      pathname === "/faq" ||
+      pathname === "/track-order" ||
+      pathname === "/wholesale-inquiries" ||
+      pathname === "/terms-conditions" ||
+      pathname.startsWith("/pages/track-order") ||
+      pathname.startsWith("/pages/faq") ||
+      pathname.startsWith("/pages/wholesale-inquiries") ||
+      pathname.startsWith("/pages/terms-conditions"),
   },
   {
     label: "Support",
     to: "/contact",
+    kind: "link",
     isActive: (pathname) => pathname === "/contact" || pathname.startsWith("/pages/contact"),
   },
 ];
@@ -120,6 +126,137 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
   }
 
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
+
+const menuTriggerBaseClass =
+  "inline-flex h-10 items-center gap-1 rounded-full border px-3.5 text-sm font-semibold transition";
+const menuPanelCardClass =
+  "rounded-[1.1rem] border border-[#d7e5fb] bg-white p-3 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.16)]";
+const menuTriggerActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
+const menuTriggerInactiveClass = "border-white/10 bg-white/5 text-white/90 hover:border-[#D0E4FC] hover:bg-[#D0E4FC] hover:text-[#0C2048]";
+const menuLinkActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
+const menuLinkInactiveClass = "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]";
+
+function CollectionsMenuPanel() {
+  return (
+    <div className="w-[min(92vw,76rem)] p-3 sm:p-4">
+      <div className="grid gap-3 xl:grid-cols-2">
+        {SITE_COLLECTIONS.map((collection) => (
+          <div key={collection.handle} className={menuPanelCardClass}>
+            <Link
+              to={buildCollectionRoute(collection.handle)}
+              className="inline-flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca] transition hover:text-[#1748a8]"
+            >
+              {collection.title}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+            <p className="mt-2 text-sm leading-6 text-[#56719d]">{collection.summary}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {collection.subcollections.map((subcollection) => (
+                <Link
+                  key={subcollection.handle}
+                  to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
+                  className="rounded-full border border-[#d3e4fb] bg-[#f6f9ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c] transition hover:border-[#9fc0f5] hover:bg-[#edf4ff]"
+                >
+                  {subcollection.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Link
+          to="/collections"
+          className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-[#eef5ff] px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#e1edff]"
+        >
+          Collections index
+        </Link>
+        <Link
+          to="/resources"
+          className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
+        >
+          Resource Hub
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ResourcesMenuPanel() {
+  return (
+    <div className="w-[min(90vw,68rem)] p-3 sm:p-4">
+      <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
+        <div className={menuPanelCardClass}>
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca]">
+            Resource Hub
+          </p>
+          <h3 className="mt-2 font-display text-[1.35rem] leading-[1.02] tracking-[-0.03em] text-[#173a74]">
+            AEO/GEO pages for the questions shoppers actually ask.
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[#56719d]">
+            The hub gives search engines a clear answer path and gives shoppers a cleaner place to start when they want advice before they buy.
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Link
+              to="/resources"
+              className="inline-flex h-10 items-center rounded-full border border-[#1f63d8] bg-[#1f63d8] px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-[#174fb5]"
+            >
+              Open hub
+            </Link>
+            <Link
+              to="/faq"
+              className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
+            >
+              FAQ
+            </Link>
+            <a
+              href={TRACK_ORDER_URL}
+              className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
+            >
+              Track order
+            </a>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {SITE_RESOURCE_GUIDES.map((guide) => (
+            <Link
+              key={guide.handle}
+              to={buildResourceRoute(guide.handle)}
+              className={menuPanelCardClass}
+            >
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca]">
+                Guide
+              </p>
+              <h3 className="mt-2 font-display text-[1.18rem] leading-[1.04] tracking-[-0.03em] text-[#173a74]">
+                {guide.title}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[#56719d]">{guide.summary}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {guide.bullets.slice(0, 2).map((bullet) => (
+                  <span
+                    key={bullet}
+                    className="rounded-full border border-[#d3e4fb] bg-[#f6f9ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c]"
+                  >
+                    {bullet}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function desktopNavItemClass(active: boolean, isMenuTrigger: boolean) {
+  return `${menuTriggerBaseClass} ${active ? menuTriggerActiveClass : menuTriggerInactiveClass} ${
+    isMenuTrigger ? "px-4" : ""
+  }`;
 }
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
@@ -520,9 +657,7 @@ const MainHeader = () => {
                             <Link
                               to={item.to}
                               className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                                active
-                                  ? "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]"
-                                  : "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]"
+                                active ? menuLinkActiveClass : menuLinkInactiveClass
                               }`}
                               aria-current={active ? "page" : undefined}
                             >
@@ -531,6 +666,183 @@ const MainHeader = () => {
                           </SheetClose>
                         );
                       })}
+                    </div>
+
+                    <div className="mt-5 rounded-3xl border border-[#d8e6f5] bg-white p-3">
+                      <div className="flex items-center justify-between gap-3 border-b border-[#e2edf8] pb-3">
+                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
+                          Collections
+                        </p>
+                        <SheetClose asChild>
+                          <Link
+                            to="/collections"
+                            className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                          >
+                            View all
+                          </Link>
+                        </SheetClose>
+                      </div>
+
+                      <div className="mt-3 grid gap-3">
+                        {SITE_COLLECTIONS.map((collection) => (
+                          <div key={collection.handle} className="rounded-[1.1rem] border border-[#e2edf8] bg-[#fbfdff] p-3">
+                            <SheetClose asChild>
+                              <Link
+                                to={buildCollectionRoute(collection.handle)}
+                                className="inline-flex text-sm font-semibold text-[#102A43] transition hover:text-[#1f55aa]"
+                              >
+                                {collection.title}
+                              </Link>
+                            </SheetClose>
+                            <p className="mt-1.5 text-[0.78rem] leading-6 text-[#5C748F]">
+                              {collection.summary}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {collection.subcollections.map((subcollection) => (
+                                <SheetClose asChild key={subcollection.handle}>
+                                  <Link
+                                    to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
+                                    className="rounded-full border border-[#bfd7f2] bg-[#f4f8ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c] transition hover:border-[#9fc0f5] hover:bg-[#edf4ff]"
+                                  >
+                                    {subcollection.title}
+                                  </Link>
+                                </SheetClose>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-3xl border border-[#d8e6f5] bg-white p-3">
+                      <div className="flex items-center justify-between gap-3 border-b border-[#e2edf8] pb-3">
+                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
+                          Resource Hub
+                        </p>
+                        <SheetClose asChild>
+                          <Link
+                            to="/resources"
+                            className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                          >
+                            Open hub
+                          </Link>
+                        </SheetClose>
+                      </div>
+
+                      <div className="mt-3 grid gap-3">
+                        {SITE_RESOURCE_GUIDES.map((guide) => (
+                          <SheetClose asChild key={guide.handle}>
+                            <Link
+                              to={buildResourceRoute(guide.handle)}
+                              className="rounded-[1.1rem] border border-[#e2edf8] bg-[#fbfdff] p-3 text-left transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                            >
+                              <p className="text-sm font-semibold text-[#102A43]">{guide.title}</p>
+                              <p className="mt-1.5 text-[0.78rem] leading-6 text-[#5C748F]">
+                                {guide.summary}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {guide.bullets.slice(0, 2).map((bullet) => (
+                                  <span
+                                    key={bullet}
+                                    className="rounded-full border border-[#bfd7f2] bg-white px-2 py-1 text-[0.54rem] font-bold uppercase tracking-[0.08em] text-[#31538c]"
+                                  >
+                                    {bullet}
+                                  </span>
+                                ))}
+                              </div>
+                            </Link>
+                          </SheetClose>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-3xl border border-[#d8e6f5] bg-white p-3">
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
+                        Quick links
+                      </p>
+
+                      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-1.5">
+                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
+                            Company
+                          </p>
+                          {SITE_FOOTER_COMPANY_LINKS.map((link) =>
+                            link.href ? (
+                              <SheetClose asChild key={link.label}>
+                                <a
+                                  href={link.href}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </a>
+                              </SheetClose>
+                            ) : (
+                              <SheetClose asChild key={link.label}>
+                                <Link
+                                  to={link.to || "/"}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </Link>
+                              </SheetClose>
+                            ),
+                          )}
+                        </div>
+
+                        <div className="grid gap-1.5">
+                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
+                            Resources
+                          </p>
+                          {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
+                            link.href ? (
+                              <SheetClose asChild key={link.label}>
+                                <a
+                                  href={link.href}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </a>
+                              </SheetClose>
+                            ) : (
+                              <SheetClose asChild key={link.label}>
+                                <Link
+                                  to={link.to || "/"}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </Link>
+                              </SheetClose>
+                            ),
+                          )}
+                        </div>
+
+                        <div className="grid gap-1.5">
+                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
+                            Policies
+                          </p>
+                          {SITE_FOOTER_POLICY_LINKS.map((link) =>
+                            link.href ? (
+                              <SheetClose asChild key={link.label}>
+                                <a
+                                  href={link.href}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </a>
+                              </SheetClose>
+                            ) : (
+                              <SheetClose asChild key={link.label}>
+                                <Link
+                                  to={link.to || "/"}
+                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                                >
+                                  {link.label}
+                                </Link>
+                              </SheetClose>
+                            ),
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="mt-6 grid gap-1.5">
@@ -897,15 +1209,51 @@ const MainHeader = () => {
           {secondaryNavItems.map((item) => {
             const active = isActiveNavItem(item, location.pathname, location.search);
 
+            if (item.kind === "collections") {
+              return (
+                <Popover key={item.label}>
+                  <PopoverTrigger asChild>
+                    <button type="button" className={desktopNavItemClass(active, true)}>
+                      <span>{item.label}</span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    sideOffset={14}
+                    className="w-auto border-0 bg-transparent p-0 shadow-none"
+                  >
+                    <CollectionsMenuPanel />
+                  </PopoverContent>
+                </Popover>
+              );
+            }
+
+            if (item.kind === "resources") {
+              return (
+                <Popover key={item.label}>
+                  <PopoverTrigger asChild>
+                    <button type="button" className={desktopNavItemClass(active, true)}>
+                      <span>{item.label}</span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    sideOffset={14}
+                    className="w-auto border-0 bg-transparent p-0 shadow-none"
+                  >
+                    <ResourcesMenuPanel />
+                  </PopoverContent>
+                </Popover>
+              );
+            }
+
             return (
               <Link
                 key={item.label}
                 to={item.to}
-                className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-2 transition ${
-                  active
-                    ? "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]"
-                    : "border-white/10 bg-white/5 text-white/90 hover:border-[#D0E4FC] hover:bg-[#D0E4FC] hover:text-[#0C2048]"
-                }`}
+                className={`inline-flex shrink-0 items-center whitespace-nowrap ${desktopNavItemClass(active, false)}`}
                 aria-current={active ? "page" : undefined}
               >
                 <span>{item.label}</span>

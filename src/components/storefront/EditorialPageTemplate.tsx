@@ -252,17 +252,33 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap lg:justify-end">
                     {page.actions.map((action) => (
-                      <Link
-                        key={action.to}
-                        to={action.to}
-                        className={
-                          action.primary
-                            ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_20px_38px_-24px_rgba(37,99,235,0.52)] sm:w-auto"
-                            : "inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
-                        }
-                      >
-                        {action.label}
-                      </Link>
+                      action.href ? (
+                        <a
+                          key={action.label}
+                          href={action.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={
+                            action.primary
+                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_20px_38px_-24px_rgba(37,99,235,0.52)] sm:w-auto"
+                              : "inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
+                          }
+                        >
+                          {action.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={action.to || action.label}
+                          to={action.to || "/"}
+                          className={
+                            action.primary
+                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_20px_38px_-24px_rgba(37,99,235,0.52)] sm:w-auto"
+                              : "inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
+                          }
+                        >
+                          {action.label}
+                        </Link>
+                      )
                     ))}
                   </div>
                 </div>
