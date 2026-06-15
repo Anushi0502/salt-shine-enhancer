@@ -1,8 +1,8 @@
-import ShopifyPolicyPageTemplate from "@/components/storefront/ShopifyPolicyPageTemplate";
+import PolicyPageView from "@/components/storefront/PolicyPageView";
 
 const RefundPolicyPage = () => {
   return (
-    <ShopifyPolicyPageTemplate
+    <PolicyPageView
       policyKey="refund"
       actions={[
         { to: "/contact", label: "Start return request", primary: true },

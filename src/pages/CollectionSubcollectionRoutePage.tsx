@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import ShopPage from "@/pages/ShopPage";
-import { getSubcollectionByHandle } from "@/lib/site-navigation";
+import { getSubcollectionByHandle, resolveCollectionShopifyHandle } from "@/lib/site-navigation";
 
 const CollectionSubcollectionRoutePage = () => {
   const { handle, subhandle } = useParams();
@@ -25,12 +25,39 @@ const CollectionSubcollectionRoutePage = () => {
     const next = new URLSearchParams(searchParams);
     let changed = false;
 
-    if (next.get("collection") !== normalizedHandle) {
-      next.set("collection", normalizedHandle);
+    const feedHandle = subcollection?.shopifyHandle || resolveCollectionShopifyHandle(normalizedHandle);
+    if (feedHandle && next.get("collection") !== feedHandle) {
+      next.set("collection", feedHandle);
       changed = true;
     }
 
-    const nextQuery = subcollection?.searchQuery?.trim() || "";
+    const nextMin = subcollection?.priceFilter?.min;
+    const nextMax = subcollection?.priceFilter?.max;
+
+    if (nextMin != null) {
+      const minValue = String(nextMin);
+      if (next.get("min") !== minValue) {
+        next.set("min", minValue);
+        changed = true;
+      }
+    } else if (next.has("min")) {
+      next.delete("min");
+      changed = true;
+    }
+
+    if (nextMax != null) {
+      const maxValue = String(nextMax);
+      if (next.get("max") !== maxValue) {
+        next.set("max", maxValue);
+        changed = true;
+      }
+    } else if (next.has("max")) {
+      next.delete("max");
+      changed = true;
+    }
+
+    const hasDirectFeed = Boolean(subcollection?.shopifyHandle || subcollection?.priceFilter);
+    const nextQuery = hasDirectFeed ? "" : subcollection?.searchQuery?.trim() || "";
     if (nextQuery) {
       if (next.get("q") !== nextQuery) {
         next.set("q", nextQuery);
@@ -49,7 +76,15 @@ const CollectionSubcollectionRoutePage = () => {
     if (changed) {
       setSearchParams(next, { replace: true });
     }
-  }, [normalizedHandle, searchParams, setSearchParams, subcollection?.searchQuery]);
+  }, [
+    normalizedHandle,
+    searchParams,
+    setSearchParams,
+    subcollection?.searchQuery,
+    subcollection?.shopifyHandle,
+    subcollection?.priceFilter?.max,
+    subcollection?.priceFilter?.min,
+  ]);
 
   return <ShopPage />;
 };

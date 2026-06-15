@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ShopifyCollection } from "@/types/shopify";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import { buildCollectionRoute } from "@/lib/site-navigation";
 
 export type CollectionCardVariant = "default" | "hero";
 
@@ -37,7 +38,7 @@ const CollectionCard = ({
   const totalProducts = productCount ?? collection.products_count;
   const isHero = variant === "hero";
   const hasEditorialContent = isHero && Boolean(editorialContent);
-  const collectionHref = `/shop?collection=${collection.handle}`;
+  const collectionHref = buildCollectionRoute(collection.handle);
 
   if (!isHero) {
     return (

@@ -15,6 +15,7 @@ import {
   type SiteCollection,
   buildCollectionRoute,
   buildResourceRoute,
+  getCollectionRoutePaths,
 } from "@/lib/site-navigation";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
@@ -145,18 +146,23 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
     null;
 
   return (
-    <div className="w-[min(92vw,28rem)] px-0 pt-0">
-      <div className="border-t border-[#edf2f8] bg-white shadow-[0_18px_36px_-30px_rgba(12,32,72,0.16)]">
-        <div className="px-5 py-7 sm:px-6">
+    <div className="w-[min(24rem,calc(100vw-0.75rem))] px-0 pt-0">
+      <div className="overflow-hidden rounded-b-[1.1rem] border border-[#bfd4fb] border-t-0 bg-white shadow-[0_24px_40px_-32px_rgba(12,32,72,0.28)]">
+        <div className="h-1 bg-[#f2b600]" />
+        <div className="px-4 py-4 sm:px-5">
           <Link
             to={buildCollectionRoute(collection.handle)}
-            className="inline-flex max-w-full text-[clamp(1.45rem,2.2vw,1.95rem)] font-semibold leading-none tracking-[-0.06em] text-[#111111] transition hover:text-[#ff6700]"
+            className="inline-flex max-w-full text-[1rem] font-semibold leading-none tracking-[-0.03em] text-[#102A43] transition hover:text-[#ff6700]"
             onMouseEnter={() => setActiveSubcollectionHandle(collection.subcollections[0]?.handle || "")}
           >
             {collection.title}
           </Link>
 
-          <div className="mt-5 flex max-w-full flex-col gap-3">
+          <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">
+            {collection.summary}
+          </p>
+
+          <div className="mt-4 grid gap-1">
             {collection.subcollections.map((subcollection) => {
               const active = subcollection.handle === activeSubcollection?.handle;
 
@@ -166,14 +172,27 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
                   to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
                   onMouseEnter={() => setActiveSubcollectionHandle(subcollection.handle)}
                   onFocus={() => setActiveSubcollectionHandle(subcollection.handle)}
-                  className={`inline-flex w-fit max-w-full text-[clamp(1rem,1.4vw,1.3rem)] leading-[1.12] tracking-[-0.04em] transition ${
-                    active ? "text-[#ff6700]" : "text-[#7a7a7a] hover:text-[#ff6700]"
+                  className={`group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm transition ${
+                    active ? "bg-[#f5faff] text-[#ff6700]" : "text-[#102A43] hover:bg-[#f5faff]"
                   }`}
                 >
-                  {subcollection.title}
+                  <span className={active ? "text-[#ff6700]" : "text-[#7a7a7a] group-hover:text-[#ff6700]"}>
+                    {subcollection.title}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#ff6700]" />
                 </Link>
               );
             })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between border-t border-[#edf3fb] pt-3">
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">Shop feed</span>
+            <Link
+              to={buildCollectionRoute(collection.handle)}
+              className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+            >
+              Open collection
+            </Link>
           </div>
         </div>
       </div>
@@ -252,8 +271,9 @@ const MainHeader = () => {
   const hasSearchQuery = Boolean(searchQuery.trim());
   const routeCollectionHandle = useMemo(() => {
     const matchedCollection = SITE_COLLECTIONS.find((collection) => {
-      const route = buildCollectionRoute(collection.handle);
-      return location.pathname === route || location.pathname.startsWith(`${route}/`);
+      return getCollectionRoutePaths(collection.handle).some(
+        (route) => location.pathname === route || location.pathname.startsWith(`${route}/`),
+      );
     });
 
     return matchedCollection?.handle || "";

@@ -3,6 +3,7 @@ import { ArrowRight, BadgeCheck, Sparkles, Star, Truck } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { formatMoney, minPrice, productImage, savingsPercent } from "@/lib/formatters";
+import { buildCollectionRoute } from "@/lib/site-navigation";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
@@ -22,7 +23,7 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
   const collectionImage = normalizeShopifyAssetUrl(leadCollection?.image?.src);
   const [mainProduct, secondaryProduct, tertiaryProduct] = featured ?? [];
   const spotlightProducts = [mainProduct, secondaryProduct,].filter(Boolean) as ShopifyProduct[];
-  const primaryCtaHref = leadCollection ? `/shop?collection=${leadCollection.handle}` : "/shop?sort=discount";
+  const primaryCtaHref = leadCollection ? buildCollectionRoute(leadCollection.handle) : "/shop?sort=discount";
   const primaryCtaLabel = leadCollection && /best[\s-]*seller/i.test(leadCollection.title)
     ? "Shop best sellers"
     : "Shop curated picks";
@@ -140,4 +141,3 @@ const HomeHero = ({ featured, leadCollection }: HomeHeroProps) => {
 };
 
 export default HomeHero;
-

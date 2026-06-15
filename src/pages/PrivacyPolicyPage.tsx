@@ -1,8 +1,8 @@
-import ShopifyPolicyPageTemplate from "@/components/storefront/ShopifyPolicyPageTemplate";
+import PolicyPageView from "@/components/storefront/PolicyPageView";
 
 const PrivacyPolicyPage = () => {
   return (
-    <ShopifyPolicyPageTemplate
+    <PolicyPageView
       policyKey="privacy"
       actions={[
         { to: "/contact", label: "Contact support", primary: true },

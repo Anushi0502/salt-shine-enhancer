@@ -1,6 +1,11 @@
 export type SiteSubcollection = {
   title: string;
   handle: string;
+  shopifyHandle?: string;
+  priceFilter?: {
+    min?: number;
+    max?: number;
+  };
   summary: string;
   searchQuery: string;
 };
@@ -8,6 +13,7 @@ export type SiteSubcollection = {
 export type SiteCollection = {
   title: string;
   handle: string;
+  shopifyHandle: string;
   summary: string;
   searchQuery: string;
   accent: {
@@ -38,10 +44,11 @@ export const TRACK_ORDER_URL = "https://shopify.com/58076594275/account/orders";
 export const SITE_COLLECTIONS: SiteCollection[] = [
   {
     title: "Senior Living Solutions",
-    handle: "books",
+    handle: "senior-living-solutions",
+    shopifyHandle: "books",
     summary:
       "Practical daily supports for easier routines, safer rooms, stronger organization, and more confident independent living.",
-    searchQuery: "senior living aids mobility support caregiver essentials home safety memory organization gifts for seniors",
+    searchQuery: "planner",
     accent: {
       label: "Senior living route",
       title: "A calmer way to shop for everyday support",
@@ -54,29 +61,30 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Daily Living Aids",
         handle: "daily-living-aids",
         summary: "Easy-use helpers that make dressing, gripping, reaching, and routine tasks feel lighter.",
-        searchQuery: "daily living aids easy use helpers",
+        searchQuery: "planner",
       },
       {
         title: "Home Safety",
         handle: "home-safety",
         summary: "Safer bath, hallway, and room solutions that reduce friction around the home.",
-        searchQuery: "home safety bathroom hallway support",
+        searchQuery: "self-help",
       },
       {
         title: "Memory & Organization",
         handle: "memory-organization",
         summary: "Planners, reminders, labels, and simple systems that keep the day on track.",
-        searchQuery: "memory organization planner reminders labels",
+        searchQuery: "goal setting",
       },
       {
         title: "Caregiver Essentials",
         handle: "caregiver-essentials",
         summary: "Tools that make caregiving more organized, calm, and straightforward.",
-        searchQuery: "caregiver essentials support organization",
+        searchQuery: "tracker",
       },
       {
         title: "Gifts for Seniors",
         handle: "gifts-for-seniors",
+        shopifyHandle: "gifts",
         summary: "Thoughtful gift ideas that feel personal, practical, and easy to appreciate.",
         searchQuery: "gifts for seniors thoughtful practical",
       },
@@ -84,16 +92,17 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Mobility Support",
         handle: "mobility-support",
         summary: "Comfortable supports for balance, movement, and around-the-home travel.",
-        searchQuery: "mobility support balance movement",
+        searchQuery: "exercise",
       },
     ],
   },
   {
     title: "Home & Kitchen",
-    handle: "cookware",
+    handle: "home-kitchen",
+    shopifyHandle: "cookware",
     summary:
       "Useful kitchen, dining, storage, and clean-up essentials that make everyday routines easier to manage.",
-    searchQuery: "home kitchen cookware storage coffee tea dining cleaning decor lighting",
+    searchQuery: "cookware",
     accent: {
       label: "Kitchen route",
       title: "Built for daily use, not clutter",
@@ -106,11 +115,12 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Kitchen Gadgets",
         handle: "kitchen-gadgets",
         summary: "Smart little helpers that speed up prep, serving, and cleanup.",
-        searchQuery: "kitchen gadgets prep serving cleanup",
+        searchQuery: "gadget",
       },
       {
         title: "Cookware",
         handle: "cookware",
+        shopifyHandle: "cookware",
         summary: "Pans, pots, and cooking tools that work for real everyday meals.",
         searchQuery: "cookware pans pots cooking",
       },
@@ -118,40 +128,42 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Storage & Organization",
         handle: "storage-organization",
         summary: "Keep shelves, cabinets, and counters neat with space-saving organization.",
-        searchQuery: "storage organization kitchen containers",
+        searchQuery: "organizer",
       },
       {
         title: "Coffee & Tea Accessories",
         handle: "coffee-tea-accessories",
         summary: "Morning-friendly accessories for brewing, serving, and enjoying a pause.",
-        searchQuery: "coffee tea accessories brewer mug",
+        searchQuery: "tea",
       },
       {
         title: "Dining Essentials",
         handle: "dining-essentials",
         summary: "Serving and table basics that make meals feel settled and complete.",
-        searchQuery: "dining essentials table serving",
+        searchQuery: "bowl",
       },
       {
         title: "Cleaning Tools",
         handle: "cleaning-tools",
         summary: "Practical tools for the jobs that keep kitchens and homes feeling fresh.",
-        searchQuery: "cleaning tools kitchen home",
+        searchQuery: "cleaning",
       },
       {
         title: "Home Decor & Lighting",
         handle: "home-decor-lighting",
+        shopifyHandle: "home-decor",
         summary: "Warm accents and lighting that make the room feel finished.",
-        searchQuery: "home decor lighting lamps wall art decor accessories",
+        searchQuery: "decor",
       },
     ],
   },
   {
     title: "Home Decor & Lighting",
-    handle: "home-decor",
+    handle: "home-decor-lighting",
+    shopifyHandle: "home-decor",
     summary:
       "Lighting and decorative touches that warm a room, highlight a wall, and finish a space with intention.",
-    searchQuery: "home decor lighting wall lights decorative lamps wall art seasonal decor smart lighting accessories",
+    searchQuery: "decor",
     accent: {
       label: "Decor route",
       title: "Finish the room, not just fill it",
@@ -164,51 +176,53 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Wall Lights",
         handle: "wall-lights",
         summary: "Mounted lighting that adds shape, glow, and function.",
-        searchQuery: "wall lights mounted lighting",
+        searchQuery: "wall",
       },
       {
         title: "Decorative Lamps",
         handle: "decorative-lamps",
         summary: "Table and floor lamps that bring warmth and character.",
-        searchQuery: "decorative lamps table floor lights",
+        searchQuery: "lamp",
       },
       {
         title: "Wall Art",
         handle: "wall-art",
         summary: "Artwork and wall decor that turn blank space into a finished room.",
-        searchQuery: "wall art decor prints",
+        searchQuery: "art",
       },
       {
         title: "Seasonal Decor",
         handle: "seasonal-decor",
         summary: "Rotating accents for holidays, transitions, and special moments.",
-        searchQuery: "seasonal decor holiday home accents",
+        searchQuery: "decor",
       },
       {
         title: "Smart Lighting",
         handle: "smart-lighting",
         summary: "Connected lighting for more control, better mood, and easier routines.",
-        searchQuery: "smart lighting home control",
+        searchQuery: "light",
       },
       {
         title: "Decorative Accessories",
         handle: "decorative-accessories",
         summary: "Small accents that bring the room together without overfilling it.",
-        searchQuery: "decorative accessories home accents",
+        searchQuery: "decor",
       },
       {
         title: "Pet Essentials",
         handle: "pet-essentials",
+        shopifyHandle: "pet-assocerries",
         summary: "A practical cross-shop for pet-friendly home routines and organization.",
-        searchQuery: "pet essentials home pet",
+        searchQuery: "pet",
       },
     ],
   },
   {
     title: "Pet Essentials",
-    handle: "pet-assocerries",
+    handle: "pet-essentials",
+    shopifyHandle: "pet-assocerries",
     summary: "Feeding, grooming, travel, and play basics for dogs and cats that keep pet care straightforward.",
-    searchQuery: "pet essentials dog supplies cat supplies pet travel feeding grooming toys wellness",
+    searchQuery: "pet",
     accent: {
       label: "Pet route",
       title: "Care that feels simple for pets and people",
@@ -221,51 +235,53 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Dog Supplies",
         handle: "dog-supplies",
         summary: "Dog-friendly basics for feeding, play, travel, and daily care.",
-        searchQuery: "dog supplies feeding toys travel care",
+        searchQuery: "dog",
       },
       {
         title: "Cat Supplies",
         handle: "cat-supplies",
         summary: "Cat essentials for feeding, comfort, play, and grooming.",
-        searchQuery: "cat supplies feeding toys grooming care",
+        searchQuery: "cat",
       },
       {
         title: "Pet Travel",
         handle: "pet-travel",
         summary: "Portable solutions for road trips, appointments, and overnight stays.",
-        searchQuery: "pet travel carrier portable",
+        searchQuery: "travel",
       },
       {
         title: "Pet Feeding",
         handle: "pet-feeding",
         summary: "Feeding tools and accessories for a cleaner routine.",
-        searchQuery: "pet feeding bowls mats accessories",
+        searchQuery: "feeding",
       },
       {
         title: "Pet Grooming",
         handle: "pet-grooming",
         summary: "Basic grooming helpers that keep the routine manageable.",
-        searchQuery: "pet grooming brush clean",
+        searchQuery: "grooming",
       },
       {
         title: "Pet Toys",
         handle: "pet-toys",
         summary: "Play-first picks that help pets stay engaged and active.",
-        searchQuery: "pet toys play interactive",
+        searchQuery: "toy",
       },
       {
         title: "Health & Wellness",
         handle: "health-wellness",
+        shopifyHandle: "face-mask",
         summary: "Pet wellness overlap for everyday care and comfort.",
-        searchQuery: "pet health wellness comfort care",
+        searchQuery: "mask",
       },
     ],
   },
   {
     title: "Health & Wellness",
-    handle: "face-mask",
+    handle: "health-wellness",
+    shopifyHandle: "face-mask",
     summary: "Sleep, posture, relaxation, and recovery-focused products for everyday wellbeing.",
-    searchQuery: "health wellness posture sleep relaxation massage accessories travel outdoor",
+    searchQuery: "mask",
     accent: {
       label: "Wellness route",
       title: "Comfort-oriented products for calmer routines",
@@ -278,45 +294,47 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Posture Support",
         handle: "posture-support",
         summary: "Support-focused products for better alignment and daily comfort.",
-        searchQuery: "posture support comfort alignment",
+        searchQuery: "windproof",
       },
       {
         title: "Sleep Essentials",
         handle: "sleep-essentials",
         summary: "Tools that help the bedroom feel more restful and prepared.",
-        searchQuery: "sleep essentials rest comfort",
+        searchQuery: "winter",
       },
       {
         title: "Relaxation Products",
         handle: "relaxation-products",
         summary: "Calm-first picks for winding down after busy days.",
-        searchQuery: "relaxation products calm stress relief",
+        searchQuery: "breathable",
       },
       {
         title: "Massage Tools",
         handle: "massage-tools",
         summary: "Massage accessories for tension relief and everyday recovery.",
-        searchQuery: "massage tools recovery relaxation",
+        searchQuery: "cycling",
       },
       {
         title: "Wellness Accessories",
         handle: "wellness-accessories",
         summary: "Small accessories that support balance, consistency, and self-care.",
-        searchQuery: "wellness accessories self care",
+        searchQuery: "uv",
       },
       {
         title: "Travel & Outdoor",
         handle: "travel-outdoor",
+        shopifyHandle: "shopping-bags-jute-bags",
         summary: "Portable support for on-the-go routines and outdoor days.",
-        searchQuery: "travel outdoor portable wellness",
+        searchQuery: "travel",
       },
     ],
   },
   {
     title: "Travel & Outdoor",
-    handle: "shopping-bags-jute-bags",
+    handle: "travel-outdoor",
+    shopifyHandle: "shopping-bags-jute-bags",
     summary: "Portable helpers for road trips, camping, and organized travel days that stay easy to pack.",
-    searchQuery: "travel outdoor organizers car accessories camping gear portable gadgets outdoor essentials",
+    searchQuery: "travel",
     accent: {
       label: "Travel route",
       title: "Pack lighter and move easier",
@@ -329,40 +347,41 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Travel Organizers",
         handle: "travel-organizers",
         summary: "Pouches, cases, and organizers that make packing and unpacking easier.",
-        searchQuery: "travel organizers packing cases pouches",
+        searchQuery: "organizer",
       },
       {
         title: "Car Accessories",
         handle: "car-accessories",
         summary: "On-the-road add-ons that make the cabin feel more usable.",
-        searchQuery: "car accessories travel road",
+        searchQuery: "car",
       },
       {
         title: "Camping Gear",
         handle: "camping-gear",
         summary: "Simple gear for campsites, tailgates, and outdoor stays.",
-        searchQuery: "camping gear outdoor stay",
+        searchQuery: "travel",
       },
       {
         title: "Portable Gadgets",
         handle: "portable-gadgets",
         summary: "Battery-friendly tools and portable helpers that travel well.",
-        searchQuery: "portable gadgets travel compact",
+        searchQuery: "portable",
       },
       {
         title: "Outdoor Essentials",
         handle: "outdoor-essentials",
         summary: "Reliable basics for picnics, patios, and time outside.",
-        searchQuery: "outdoor essentials patio picnic",
+        searchQuery: "portable",
       },
     ],
   },
   {
     title: "Gifts Collection",
     handle: "gifts",
+    shopifyHandle: "gifts",
     summary:
       "Giftable finds for birthdays, holidays, housewarmings, and everyday surprises that feel useful and thoughtful.",
-    searchQuery: "gifts for mom gifts for dad gifts for seniors housewarming birthday holiday gift ideas",
+    searchQuery: "gift",
     accent: {
       label: "Gift route",
       title: "Choose a present people can actually use",
@@ -375,46 +394,47 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Gifts for Mom",
         handle: "gifts-for-mom",
         summary: "Warm and practical gift ideas for moms.",
-        searchQuery: "gifts for mom thoughtful practical",
+        searchQuery: "gift",
       },
       {
         title: "Gifts for Dad",
         handle: "gifts-for-dad",
         summary: "Useful gifts that feel easy to appreciate and easy to use.",
-        searchQuery: "gifts for dad practical useful",
+        searchQuery: "gift",
       },
       {
         title: "Gifts for Seniors",
         handle: "gifts-for-seniors",
         summary: "Helpful gifts that support comfort, organization, and daily life.",
-        searchQuery: "gifts for seniors helpful comfort",
+        searchQuery: "gift",
       },
       {
         title: "Housewarming Gifts",
         handle: "housewarming-gifts",
         summary: "New-home gifts that make a fresh space feel settled sooner.",
-        searchQuery: "housewarming gifts home",
+        searchQuery: "gift",
       },
       {
         title: "Birthday Gifts",
         handle: "birthday-gifts",
         summary: "Birthday picks that are easy to match with the person and the moment.",
-        searchQuery: "birthday gifts surprise",
+        searchQuery: "birthday",
       },
       {
         title: "Holiday Gifts",
         handle: "holiday-gifts",
         summary: "Seasonal picks for winter, celebrations, and gifting rushes.",
-        searchQuery: "holiday gifts seasonal",
+        searchQuery: "candle",
       },
     ],
   },
   {
     title: "Trending Finds",
-    handle: "unique-products",
+    handle: "trending-finds",
+    shopifyHandle: "unique-products",
     summary:
       "What’s moving now: viral picks, best sellers, new arrivals, staff picks, and budget-friendly favorites.",
-    searchQuery: "viral tiktok products best sellers new arrivals staff picks under 25 under 50 trending finds",
+    searchQuery: "humidifier",
     accent: {
       label: "Trending route",
       title: "Keep the page fresh without rebuilding the catalog",
@@ -427,37 +447,45 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         title: "Viral TikTok Products",
         handle: "viral-tiktok-products",
         summary: "Social-first picks that capture attention quickly.",
-        searchQuery: "viral tiktok products trending",
+        searchQuery: "humidifier",
       },
       {
         title: "Best Sellers",
         handle: "best-sellers",
+        shopifyHandle: "appplaza-best-sellers",
         summary: "The most consistently chosen items from the current catalog.",
-        searchQuery: "best sellers top rated popular",
+        searchQuery: "best sellers",
       },
       {
         title: "New Arrivals",
         handle: "new-arrivals",
+        shopifyHandle: "new-arrivals",
         summary: "Fresh additions to the store for repeat visitors and launch traffic.",
-        searchQuery: "new arrivals fresh drops",
+        searchQuery: "new arrivals",
       },
       {
         title: "Staff Picks",
         handle: "staff-picks",
         summary: "Hand-picked ideas from the SALT team.",
-        searchQuery: "staff picks curated favorites",
+        searchQuery: "clock",
       },
       {
         title: "Under $25",
         handle: "under-25",
+        priceFilter: {
+          max: 25,
+        },
         summary: "Budget-friendly finds for quick add-to-cart decisions.",
-        searchQuery: "under 25 budget affordable",
+        searchQuery: "gift",
       },
       {
         title: "Under $50",
         handle: "under-50",
+        priceFilter: {
+          max: 50,
+        },
         summary: "Still affordable, but a little roomier in what can fit inside.",
-        searchQuery: "under 50 budget affordable",
+        searchQuery: "gift",
       },
     ],
   },
@@ -522,9 +550,62 @@ export const SITE_FOOTER_POLICY_LINKS: SiteFooterLink[] = [
   { label: "Terms & Conditions", to: "/terms-conditions" },
 ];
 
-export function getCollectionByHandle(handle: string): SiteCollection | null {
+function findCollectionMatch(handle: string): SiteCollection | null {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
-  return SITE_COLLECTIONS.find((collection) => collection.handle === normalizedHandle) || null;
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  return (
+    SITE_COLLECTIONS.find(
+      (collection) => collection.handle === normalizedHandle || collection.shopifyHandle === normalizedHandle,
+    ) || null
+  );
+}
+
+function findSubcollectionMatch(collection: SiteCollection, handle: string): SiteSubcollection | null {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  return (
+    collection.subcollections.find(
+      (subcollection) => subcollection.handle === normalizedHandle || subcollection.shopifyHandle === normalizedHandle,
+    ) || null
+  );
+}
+
+export function getCollectionByHandle(handle: string): SiteCollection | null {
+  return findCollectionMatch(handle);
+}
+
+export function resolveCollectionRouteHandle(handle: string): string {
+  const collection = findCollectionMatch(handle);
+  if (!collection) {
+    return String(handle || "").trim().toLowerCase();
+  }
+
+  return collection.handle;
+}
+
+export function resolveCollectionShopifyHandle(handle: string): string {
+  const collection = findCollectionMatch(handle);
+  if (!collection) {
+    return String(handle || "").trim().toLowerCase();
+  }
+
+  return collection.shopifyHandle || collection.handle;
+}
+
+export function getCollectionRoutePaths(handle: string): string[] {
+  const collection = findCollectionMatch(handle);
+  if (!collection) {
+    const normalizedHandle = String(handle || "").trim().toLowerCase();
+    return normalizedHandle ? [`/collections/${normalizedHandle}`] : [];
+  }
+
+  return [...new Set([`/collections/${collection.handle}`, `/collections/${collection.shopifyHandle}`])];
 }
 
 export function getSubcollectionByHandle(collectionHandle: string, subcollectionHandle: string): SiteSubcollection | null {
@@ -533,8 +614,7 @@ export function getSubcollectionByHandle(collectionHandle: string, subcollection
     return null;
   }
 
-  const normalizedSubHandle = String(subcollectionHandle || "").trim().toLowerCase();
-  return collection.subcollections.find((subcollection) => subcollection.handle === normalizedSubHandle) || null;
+  return findSubcollectionMatch(collection, subcollectionHandle);
 }
 
 export function getResourceByHandle(handle: string): SiteResourceGuide | null {
@@ -547,11 +627,19 @@ export function isFeaturedCollectionHandle(handle: string): boolean {
 }
 
 export function buildCollectionRoute(collectionHandle: string): string {
-  return `/collections/${String(collectionHandle || "").trim().toLowerCase()}`;
+  return `/collections/${resolveCollectionRouteHandle(collectionHandle)}`;
 }
 
 export function buildSubcollectionRoute(collectionHandle: string, subcollectionHandle: string): string {
-  return `${buildCollectionRoute(collectionHandle)}/${String(subcollectionHandle || "").trim().toLowerCase()}`;
+  const collection = findCollectionMatch(collectionHandle);
+  const normalizedSubHandle = String(subcollectionHandle || "").trim().toLowerCase();
+
+  if (!collection) {
+    return `${buildCollectionRoute(collectionHandle)}/${normalizedSubHandle}`;
+  }
+
+  const subcollection = findSubcollectionMatch(collection, subcollectionHandle);
+  return `${buildCollectionRoute(collection.handle)}/${subcollection?.handle || normalizedSubHandle}`;
 }
 
 export function buildResourceRoute(handle: string): string {

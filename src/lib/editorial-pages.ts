@@ -63,10 +63,12 @@ import {
   buildResourceRoute,
   buildSearchQueryUrl,
   buildSubcollectionRoute,
+  getCollectionByHandle,
+  getSubcollectionByHandle,
 } from "@/lib/site-navigation";
 
 function buildCollectionPageContent(collectionHandle: string): EditorialPageContent | null {
-  const collection = SITE_COLLECTIONS.find((entry) => entry.handle === collectionHandle);
+  const collection = getCollectionByHandle(collectionHandle);
   if (!collection) {
     return null;
   }
@@ -109,12 +111,12 @@ function buildCollectionPageContent(collectionHandle: string): EditorialPageCont
 }
 
 function buildSubcollectionPageContent(collectionHandle: string, subcollectionHandle: string): EditorialPageContent | null {
-  const collection = SITE_COLLECTIONS.find((entry) => entry.handle === collectionHandle);
+  const collection = getCollectionByHandle(collectionHandle);
   if (!collection) {
     return null;
   }
 
-  const subcollection = collection.subcollections.find((entry) => entry.handle === subcollectionHandle);
+  const subcollection = getSubcollectionByHandle(collectionHandle, subcollectionHandle);
   if (!subcollection) {
     return null;
   }
@@ -726,7 +728,30 @@ const editorialPages: Record<string, EditorialPageContent> = {
 
 export function getEditorialPageContent(handle: string): EditorialPageContent | null {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
-  return editorialPages[normalizedHandle] || null;
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  const directMatch = editorialPages[normalizedHandle];
+  if (directMatch) {
+    return directMatch;
+  }
+
+  const collectionMatch = getCollectionByHandle(normalizedHandle);
+  if (collectionMatch) {
+    return editorialPages[collectionMatch.handle] || null;
+  }
+
+  const [collectionSegment, subcollectionSegment] = normalizedHandle.split("/", 2);
+  if (collectionSegment && subcollectionSegment) {
+    const nestedCollection = getCollectionByHandle(collectionSegment);
+    const nestedSubcollection = nestedCollection ? getSubcollectionByHandle(collectionSegment, subcollectionSegment) : null;
+    if (nestedCollection && nestedSubcollection) {
+      return editorialPages[`${nestedCollection.handle}/${nestedSubcollection.handle}`] || null;
+    }
+  }
+
+  return null;
 }
 
 export function listEditorialPages(): EditorialPageContent[] {

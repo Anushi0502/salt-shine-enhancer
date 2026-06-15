@@ -22,6 +22,7 @@ import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
+import { getCollectionByHandle, getSubcollectionByHandle, resolveCollectionShopifyHandle } from "@/lib/site-navigation";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
@@ -122,12 +123,20 @@ function formatTypeLabel(value: string): string {
 const ShopPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { handle: routeCollectionHandle } = useParams();
+  const { handle: routeCollectionHandle, subhandle: routeSubcollectionHandle } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const deferredQuery = useDeferredValue(query);
   const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
-  const collectionHandle = currentCollectionParam || DEFAULT_COLLECTION_HANDLE;
+  const routeCollectionAlias = normalizeCollectionFilter(routeCollectionHandle);
+  const routeSubcollectionAlias = normalizeCollectionFilter(routeSubcollectionHandle);
+  const collectionHandle = resolveCollectionShopifyHandle(
+    currentCollectionParam || routeCollectionAlias || DEFAULT_COLLECTION_HANDLE,
+  );
+  const curatedCollection = getCollectionByHandle(routeCollectionAlias || currentCollectionParam || collectionHandle);
+  const curatedSubcollection = routeCollectionAlias && routeSubcollectionAlias
+    ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias)
+    : null;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
   const page = asPositiveInt(searchParams.get("page"), 1);
@@ -146,11 +155,11 @@ const ShopPage = () => {
   }, [minFilter, maxFilter]);
 
   useEffect(() => {
-    if (!routeCollectionHandle) {
+    if (!routeCollectionAlias) {
       return;
     }
 
-    const nextCollection = normalizeCollectionFilter(routeCollectionHandle);
+    const nextCollection = resolveCollectionShopifyHandle(routeCollectionAlias);
     const currentCollection = normalizeCollectionFilter(searchParams.get("collection"));
     if (nextCollection === currentCollection) {
       return;
@@ -164,7 +173,7 @@ const ShopPage = () => {
     }
 
     setSearchParams(next, { replace: true });
-  }, [routeCollectionHandle, searchParams, setSearchParams]);
+  }, [routeCollectionAlias, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (location.pathname !== "/shop") {
@@ -291,7 +300,12 @@ const ShopPage = () => {
     [collections, selectedCollection, typeFilter],
   );
   const selectedCollectionImage = bannerImageSelection.image;
-  const selectedCollectionImageAlt = bannerImageSelection.collection?.title || selectedCollection?.title || "Collection preview";
+  const selectedCollectionImageAlt =
+    bannerImageSelection.collection?.title ||
+    curatedSubcollection?.title ||
+    curatedCollection?.title ||
+    selectedCollection?.title ||
+    "Collection preview";
 
   const totalResults = sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
@@ -434,7 +448,7 @@ const ShopPage = () => {
       nextParams.set("q", preservedSearchQuery);
     }
 
-    if (routeCollectionHandle) {
+    if (routeCollectionAlias) {
       const suffix = nextParams.toString();
       navigate(suffix ? `/shop?${suffix}` : "/shop", { replace: true });
       setMobileFiltersOpen(false);
@@ -458,7 +472,7 @@ const ShopPage = () => {
     collectionHandle
       ? {
           key: "collection",
-          label: `Collection: ${selectedCollection?.title || collectionHandle}`,
+          label: `Collection: ${curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || collectionHandle}`,
           onRemove: () => updateParams({ collection: null }, true),
         }
       : null,
@@ -495,7 +509,7 @@ const ShopPage = () => {
   const breadcrumbItems = [
     { label: "Home", to: "/" },
     { label: "Shop", to: "/shop" },
-    { label: selectedCollection?.title || "Catalog" },
+    { label: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Catalog" },
   ];
   const sidebarFilterPanelContent = (
     <div className="mt-2 grid gap-2">
@@ -715,7 +729,7 @@ const ShopPage = () => {
           <div className="relative">
             <SectionHeading
               className="mt-3"
-              title={selectedCollection?.title || "Explore the full SALT catalog"}
+              title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
               action={''}
             />
             <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
