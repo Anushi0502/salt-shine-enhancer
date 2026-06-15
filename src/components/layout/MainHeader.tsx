@@ -12,7 +12,7 @@ import {
   SITE_FOOTER_RESOURCE_LINKS,
   SITE_FOOTER_POLICY_LINKS,
   SITE_RESOURCE_GUIDES,
-  TRACK_ORDER_URL,
+  type SiteCollection,
   buildCollectionRoute,
   buildResourceRoute,
 } from "@/lib/site-navigation";
@@ -61,7 +61,7 @@ type HeaderSearchScope = (typeof searchScopeOptions)[number]["collection"];
 type HeaderNavItem = {
   label: string;
   to: string;
-  kind?: "link" | "collections" | "resources";
+  kind?: "link" | "resources";
   isActive?: (pathname: string, search: string) => boolean;
 };
 
@@ -89,12 +89,6 @@ const secondaryNavItems: HeaderNavItem[] = [
 
       return (pathname === "/shop" || pathname === "/search") && (!collection || collection === "all-products");
     },
-  },
-  {
-    label: "Collections",
-    to: "/collections",
-    kind: "collections",
-    isActive: (pathname) => pathname === "/collections" || pathname.startsWith("/collections/"),
   },
   {
     label: "Resources",
@@ -128,135 +122,71 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
-const menuTriggerBaseClass =
-  "inline-flex h-10 items-center gap-1 rounded-full border px-3.5 text-sm font-semibold transition";
-const menuPanelCardClass =
-  "rounded-[1.1rem] border border-[#d7e5fb] bg-white p-3 shadow-[0_14px_28px_-26px_rgba(28,75,150,0.16)]";
-const menuTriggerActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
-const menuTriggerInactiveClass = "border-white/10 bg-white/5 text-white/90 hover:border-[#D0E4FC] hover:bg-[#D0E4FC] hover:text-[#0C2048]";
 const menuLinkActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
 const menuLinkInactiveClass = "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]";
+const collectionNavTabBaseClass =
+  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-1.5 pb-3 pt-3 text-[0.96rem] font-semibold transition";
+const collectionNavTabActiveClass = "border-[#f2b600] text-[#f2b600]";
+const collectionNavTabInactiveClass = "border-transparent text-white/88 hover:border-[#f2b600]/60 hover:text-[#f2b600]";
+const utilityNavTabClass =
+  "inline-flex shrink-0 items-center whitespace-nowrap border-b-2 border-transparent px-1.5 pb-3 pt-3 text-[0.88rem] font-medium text-white/82 transition hover:border-[#f2b600]/45 hover:text-[#f2b600]";
+type CollectionMenuPanelProps = {
+  collection: SiteCollection;
+};
 
-function CollectionsMenuPanel() {
+function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
+  const [activeSubcollectionHandle, setActiveSubcollectionHandle] = useState(
+    collection.subcollections[0]?.handle || "",
+  );
+
+  const activeSubcollection =
+    collection.subcollections.find((subcollection) => subcollection.handle === activeSubcollectionHandle) ||
+    collection.subcollections[0] ||
+    null;
+
   return (
-    <div className="w-[min(92vw,76rem)] p-3 sm:p-4">
-      <div className="grid gap-3 xl:grid-cols-2">
-        {SITE_COLLECTIONS.map((collection) => (
-          <div key={collection.handle} className={menuPanelCardClass}>
-            <Link
-              to={buildCollectionRoute(collection.handle)}
-              className="inline-flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca] transition hover:text-[#1748a8]"
-            >
-              {collection.title}
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-            <p className="mt-2 text-sm leading-6 text-[#56719d]">{collection.summary}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {collection.subcollections.map((subcollection) => (
+    <div className="w-[min(92vw,28rem)] px-0 pt-0">
+      <div className="border-t border-[#edf2f8] bg-white shadow-[0_18px_36px_-30px_rgba(12,32,72,0.16)]">
+        <div className="px-5 py-7 sm:px-6">
+          <Link
+            to={buildCollectionRoute(collection.handle)}
+            className="inline-flex max-w-full text-[clamp(1.45rem,2.2vw,1.95rem)] font-semibold leading-none tracking-[-0.06em] text-[#111111] transition hover:text-[#ff6700]"
+            onMouseEnter={() => setActiveSubcollectionHandle(collection.subcollections[0]?.handle || "")}
+          >
+            {collection.title}
+          </Link>
+
+          <div className="mt-5 flex max-w-full flex-col gap-3">
+            {collection.subcollections.map((subcollection) => {
+              const active = subcollection.handle === activeSubcollection?.handle;
+
+              return (
                 <Link
                   key={subcollection.handle}
                   to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
-                  className="rounded-full border border-[#d3e4fb] bg-[#f6f9ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c] transition hover:border-[#9fc0f5] hover:bg-[#edf4ff]"
+                  onMouseEnter={() => setActiveSubcollectionHandle(subcollection.handle)}
+                  onFocus={() => setActiveSubcollectionHandle(subcollection.handle)}
+                  className={`inline-flex w-fit max-w-full text-[clamp(1rem,1.4vw,1.3rem)] leading-[1.12] tracking-[-0.04em] transition ${
+                    active ? "text-[#ff6700]" : "text-[#7a7a7a] hover:text-[#ff6700]"
+                  }`}
                 >
                   {subcollection.title}
                 </Link>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Link
-          to="/collections"
-          className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-[#eef5ff] px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#e1edff]"
-        >
-          Collections index
-        </Link>
-        <Link
-          to="/resources"
-          className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
-        >
-          Resource Hub
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function ResourcesMenuPanel() {
-  return (
-    <div className="w-[min(90vw,68rem)] p-3 sm:p-4">
-      <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
-        <div className={menuPanelCardClass}>
-          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca]">
-            Resource Hub
-          </p>
-          <h3 className="mt-2 font-display text-[1.35rem] leading-[1.02] tracking-[-0.03em] text-[#173a74]">
-            AEO/GEO pages for the questions shoppers actually ask.
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-[#56719d]">
-            The hub gives search engines a clear answer path and gives shoppers a cleaner place to start when they want advice before they buy.
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Link
-              to="/resources"
-              className="inline-flex h-10 items-center rounded-full border border-[#1f63d8] bg-[#1f63d8] px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-[#174fb5]"
-            >
-              Open hub
-            </Link>
-            <Link
-              to="/faq"
-              className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
-            >
-              FAQ
-            </Link>
-            <a
-              href={TRACK_ORDER_URL}
-              className="inline-flex h-10 items-center rounded-full border border-[#d0e1fb] bg-white px-4 text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#173a74] transition hover:border-[#99bef2] hover:bg-[#f7fbff]"
-            >
-              Track order
-            </a>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {SITE_RESOURCE_GUIDES.map((guide) => (
-            <Link
-              key={guide.handle}
-              to={buildResourceRoute(guide.handle)}
-              className={menuPanelCardClass}
-            >
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#2b63ca]">
-                Guide
-              </p>
-              <h3 className="mt-2 font-display text-[1.18rem] leading-[1.04] tracking-[-0.03em] text-[#173a74]">
-                {guide.title}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[#56719d]">{guide.summary}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {guide.bullets.slice(0, 2).map((bullet) => (
-                  <span
-                    key={bullet}
-                    className="rounded-full border border-[#d3e4fb] bg-[#f6f9ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c]"
-                  >
-                    {bullet}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function desktopNavItemClass(active: boolean, isMenuTrigger: boolean) {
-  return `${menuTriggerBaseClass} ${active ? menuTriggerActiveClass : menuTriggerInactiveClass} ${
-    isMenuTrigger ? "px-4" : ""
-  }`;
+function collectionNavItemClass(active: boolean) {
+  return `${collectionNavTabBaseClass} ${active ? collectionNavTabActiveClass : collectionNavTabInactiveClass}`;
+}
+
+function utilityNavItemClass(active: boolean) {
+  return `${utilityNavTabClass} ${active ? "border-[#f2b600] text-[#f2b600]" : ""}`;
 }
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
@@ -310,6 +240,7 @@ const MainHeader = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedScope, setSelectedScope] = useState<HeaderSearchScope>("all-products");
   const [scopeOpen, setScopeOpen] = useState(false);
+  const [openCollectionHandle, setOpenCollectionHandle] = useState<string | null>(null);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const deferredSearchQuery = useDeferredValue(searchQuery).trim();
@@ -319,6 +250,16 @@ const MainHeader = () => {
   const allProducts = productsData?.products ?? [];
   const allCollections = collectionsData?.collections ?? [];
   const hasSearchQuery = Boolean(searchQuery.trim());
+  const routeCollectionHandle = useMemo(() => {
+    const matchedCollection = SITE_COLLECTIONS.find((collection) => {
+      const route = buildCollectionRoute(collection.handle);
+      return location.pathname === route || location.pathname.startsWith(`${route}/`);
+    });
+
+    return matchedCollection?.handle || "";
+  }, [location.pathname]);
+  const resourcesNavItem = secondaryNavItems.find((item) => item.label === "Resources") || secondaryNavItems[0];
+  const supportNavItem = secondaryNavItems.find((item) => item.label === "Support") || secondaryNavItems[0];
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -385,6 +326,10 @@ const MainHeader = () => {
 
   useEffect(() => {
     setSearchDropdownOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    setOpenCollectionHandle(null);
   }, [location.pathname, location.search]);
 
   const selectedScopeLabel =
@@ -1204,62 +1149,56 @@ const MainHeader = () => {
       <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
         <nav
           aria-label="Secondary navigation"
-          className="flex w-full items-center gap-2 overflow-x-auto px-3 py-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
+          className="flex w-full items-center gap-4 overflow-x-auto px-3 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
         >
-          {secondaryNavItems.map((item) => {
-            const active = isActiveNavItem(item, location.pathname, location.search);
-
-            if (item.kind === "collections") {
-              return (
-                <Popover key={item.label}>
-                  <PopoverTrigger asChild>
-                    <button type="button" className={desktopNavItemClass(active, true)}>
-                      <span>{item.label}</span>
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="start"
-                    sideOffset={14}
-                    className="w-auto border-0 bg-transparent p-0 shadow-none"
-                  >
-                    <CollectionsMenuPanel />
-                  </PopoverContent>
-                </Popover>
-              );
-            }
-
-            if (item.kind === "resources") {
-              return (
-                <Popover key={item.label}>
-                  <PopoverTrigger asChild>
-                    <button type="button" className={desktopNavItemClass(active, true)}>
-                      <span>{item.label}</span>
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="start"
-                    sideOffset={14}
-                    className="w-auto border-0 bg-transparent p-0 shadow-none"
-                  >
-                    <ResourcesMenuPanel />
-                  </PopoverContent>
-                </Popover>
-              );
-            }
+          {SITE_COLLECTIONS.map((collection) => {
+            const isActive = openCollectionHandle === collection.handle || routeCollectionHandle === collection.handle;
 
             return (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={`inline-flex shrink-0 items-center whitespace-nowrap ${desktopNavItemClass(active, false)}`}
-                aria-current={active ? "page" : undefined}
+              <Popover
+                key={collection.handle}
+                open={openCollectionHandle === collection.handle}
+                onOpenChange={(open) => setOpenCollectionHandle(open ? collection.handle : null)}
               >
-                <span>{item.label}</span>
-              </Link>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenCollectionHandle((current) => (current === collection.handle ? null : collection.handle))
+                    }
+                    className={collectionNavItemClass(isActive)}
+                    aria-expanded={openCollectionHandle === collection.handle}
+                  >
+                    <span>{collection.title}</span>
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  sideOffset={0}
+                  className="w-auto border-0 bg-transparent p-0 shadow-none"
+                >
+                  <CollectionMenuPanel collection={collection} />
+                </PopoverContent>
+              </Popover>
             );
           })}
+
+          <Link
+            to="/resources"
+            className={utilityNavItemClass(isActiveNavItem(resourcesNavItem, location.pathname, location.search))}
+            aria-current={isActiveNavItem(resourcesNavItem, location.pathname, location.search) ? "page" : undefined}
+          >
+            <span>Resources</span>
+          </Link>
+
+          <Link
+            to="/contact"
+            className={utilityNavItemClass(isActiveNavItem(supportNavItem, location.pathname, location.search))}
+            aria-current={isActiveNavItem(supportNavItem, location.pathname, location.search) ? "page" : undefined}
+          >
+            <span>Support</span>
+          </Link>
         </nav>
       </div>
     </header>

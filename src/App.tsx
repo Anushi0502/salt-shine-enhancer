@@ -35,6 +35,7 @@ import ShopAuthBridgePage from "@/pages/ShopAuthBridgePage";
 import ShopPage from "@/pages/ShopPage";
 import TermsConditionsPage from "@/pages/TermsConditionsPage";
 import TrackOrderPage from "@/pages/TrackOrderPage";
+import CollectionSubcollectionRoutePage from "@/pages/CollectionSubcollectionRoutePage";
 import RouteEditorialPage from "@/components/storefront/RouteEditorialPage";
 import WholesaleInquiriesPage from "@/pages/WholesaleInquiriesPage";
 import WishlistPage from "@/pages/WishlistPage";
@@ -58,18 +59,7 @@ const AppShell = () => (
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/pages/collections" element={<CollectionsPage />} />
                 <Route path="/collections/:handle" element={<CollectionRoutePage />} />
-                <Route
-                  path="/collections/:handle/:subhandle"
-                  element={
-                    <RouteEditorialPage
-                      resolveHandle={(params) => `${params.handle || ""}/${params.subhandle || ""}`}
-                      loadingTitle="Loading subcollection"
-                      loadingSubtitle="Building the curated subcollection page."
-                      errorTitle="Subcollection unavailable"
-                      errorSubtitle="Please retry to refresh the subcollection page."
-                    />
-                  }
-                />
+                <Route path="/collections/:handle/:subhandle" element={<CollectionSubcollectionRoutePage />} />
                 <Route path="/product/:handle" element={<ProductPage />} />
                 <Route path="/products/:handle" element={<ProductPage />} />
                 <Route path="/product/:handle/reviews" element={<ProductReviewsPage />} />

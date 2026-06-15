@@ -38,7 +38,7 @@ export const TRACK_ORDER_URL = "https://shopify.com/58076594275/account/orders";
 export const SITE_COLLECTIONS: SiteCollection[] = [
   {
     title: "Senior Living Solutions",
-    handle: "senior-living-solutions",
+    handle: "books",
     summary:
       "Practical daily supports for easier routines, safer rooms, stronger organization, and more confident independent living.",
     searchQuery: "senior living aids mobility support caregiver essentials home safety memory organization gifts for seniors",
@@ -90,7 +90,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Home & Kitchen",
-    handle: "home-kitchen",
+    handle: "cookware",
     summary:
       "Useful kitchen, dining, storage, and clean-up essentials that make everyday routines easier to manage.",
     searchQuery: "home kitchen cookware storage coffee tea dining cleaning decor lighting",
@@ -148,7 +148,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Home Decor & Lighting",
-    handle: "home-decor-lighting",
+    handle: "home-decor",
     summary:
       "Lighting and decorative touches that warm a room, highlight a wall, and finish a space with intention.",
     searchQuery: "home decor lighting wall lights decorative lamps wall art seasonal decor smart lighting accessories",
@@ -206,7 +206,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Pet Essentials",
-    handle: "pet-essentials",
+    handle: "pet-assocerries",
     summary: "Feeding, grooming, travel, and play basics for dogs and cats that keep pet care straightforward.",
     searchQuery: "pet essentials dog supplies cat supplies pet travel feeding grooming toys wellness",
     accent: {
@@ -263,7 +263,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Health & Wellness",
-    handle: "health-wellness",
+    handle: "face-mask",
     summary: "Sleep, posture, relaxation, and recovery-focused products for everyday wellbeing.",
     searchQuery: "health wellness posture sleep relaxation massage accessories travel outdoor",
     accent: {
@@ -314,7 +314,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Travel & Outdoor",
-    handle: "travel-outdoor",
+    handle: "shopping-bags-jute-bags",
     summary: "Portable helpers for road trips, camping, and organized travel days that stay easy to pack.",
     searchQuery: "travel outdoor organizers car accessories camping gear portable gadgets outdoor essentials",
     accent: {
@@ -411,7 +411,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
   {
     title: "Trending Finds",
-    handle: "trending-finds",
+    handle: "unique-products",
     summary:
       "What’s moving now: viral picks, best sellers, new arrivals, staff picks, and budget-friendly favorites.",
     searchQuery: "viral tiktok products best sellers new arrivals staff picks under 25 under 50 trending finds",
@@ -562,4 +562,3 @@ export function buildSearchQueryUrl(query: string): string {
   const normalizedQuery = String(query || "").trim();
   return normalizedQuery ? `/shop?q=${encodeURIComponent(normalizedQuery)}` : "/shop";
 }
-

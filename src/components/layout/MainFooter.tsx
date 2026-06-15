@@ -9,27 +9,7 @@ import {
   TRACK_ORDER_URL,
 } from "@/lib/site-navigation";
 
-type FooterLink = {
-  label: string;
-  to?: string;
-  href?: string;
-};
-
 const footerLinkClass = "transition-colors hover:text-white";
-const footerCardLinkClass =
-  "inline-flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition hover:border-[#f2b600]/40 hover:bg-white/10 hover:text-white";
-
-function renderFooterLink(link: FooterLink) {
-  return link.href ? (
-    <a key={link.label} href={link.href} className={footerCardLinkClass}>
-      {link.label}
-    </a>
-  ) : (
-    <Link key={link.label} to={link.to || "/"} className={footerCardLinkClass}>
-      {link.label}
-    </Link>
-  );
-}
 
 const MainFooter = () => {
   const [subscribed, setSubscribed] = useState(false);
@@ -75,7 +55,17 @@ const MainFooter = () => {
               Company
             </h3>
             <div className="mt-4 grid gap-2 text-sm text-white/74">
-              {SITE_FOOTER_COMPANY_LINKS.map((link) => renderFooterLink(link))}
+              {SITE_FOOTER_COMPANY_LINKS.map((link) =>
+                link.href ? (
+                  <a key={link.label} href={link.href} className={footerLinkClass}>
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.label} to={link.to || "/"} className={footerLinkClass}>
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
@@ -84,7 +74,17 @@ const MainFooter = () => {
               Resources
             </h3>
             <div className="mt-4 grid gap-2 text-sm text-white/74">
-              {SITE_FOOTER_RESOURCE_LINKS.map((link) => renderFooterLink(link))}
+              {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
+                link.href ? (
+                  <a key={link.label} href={link.href} className={footerLinkClass}>
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.label} to={link.to || "/"} className={footerLinkClass}>
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
