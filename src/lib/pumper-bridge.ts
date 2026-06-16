@@ -1,3 +1,5 @@
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
+
 declare global {
   interface Window {
     __saltPumperBridgeInstalled?: boolean;
@@ -77,7 +79,7 @@ export function installSaltPumperBridge(): void {
     const hidden = document.getElementById("pumper_custom_qty") as HTMLInputElement | null;
     if (!hidden) return;
 
-    const nextValue = String(Math.max(1, Math.floor(quantity || 1)));
+    const nextValue = String(Math.max(getCurrentBundleMinimumQuantity(), Math.floor(quantity || 1)));
     if (hidden.value === nextValue) return;
 
     hidden.value = nextValue;
@@ -171,7 +173,7 @@ export function installSaltPumperBridge(): void {
     const available = getAvailablePumperQuantities();
     if (!available.length) return 0;
 
-    const target = Math.max(1, Math.floor(quantity || 1));
+    const target = Math.max(getCurrentBundleMinimumQuantity(), Math.floor(quantity || 1));
     let selected = available[0];
 
     for (const option of available) {
@@ -266,6 +268,49 @@ export function installSaltPumperBridge(): void {
     return match ? decodeURIComponent(match[1]) : "";
   };
 
+  const getCurrentBundleMinimumQuantity = () =>
+    getMinimumProductQuantity(state.currentProductHandle || getCurrentProductHandle());
+
+  const ensurePumperSoldOutStyle = () => {
+    if (document.getElementById("salt-pumper-sold-out-style")) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = "salt-pumper-sold-out-style";
+    style.textContent = `
+      #pumper_bundle_svelte [data-salt-sold-out="true"] {
+        cursor: not-allowed !important;
+        opacity: 0.56 !important;
+      }
+
+      #pumper_bundle_svelte [data-salt-sold-out="true"] .pumper_template_9_block__cbmain--content--left__top [data-tier-title] {
+        position: relative !important;
+        color: transparent !important;
+      }
+
+      #pumper_bundle_svelte [data-salt-sold-out="true"] .pumper_template_9_block__cbmain--content--left__top [data-tier-title]::before {
+        content: "Sold out";
+        position: absolute;
+        inset: 0;
+        display: inline-flex;
+        align-items: center;
+        color: rgb(155, 28, 28);
+        font-weight: 700;
+      }
+
+      #pumper_bundle_svelte [data-salt-sold-out="true"] [data-tier-subtitle],
+      #pumper_bundle_svelte [data-salt-sold-out="true"] [data-tier-offer-subtitle],
+      #pumper_bundle_svelte [data-salt-sold-out="true"] .pumper_totalAmount_wrapper,
+      #pumper_bundle_svelte [data-salt-sold-out="true"] [id^="pumper_totalAmount_"],
+      #pumper_bundle_svelte [data-salt-sold-out="true"] .tier-price__compare,
+      #pumper_bundle_svelte [data-salt-sold-out="true"] .tier-price__each-unit-line {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
   type PumperPricingCard = {
     index: number;
     quantity: number;
@@ -326,6 +371,30 @@ export function installSaltPumperBridge(): void {
         currentComparePrice: parseMoney(compareNodes[0]?.textContent),
       };
     });
+
+  const syncBundleMinimumQuantityState = (cards: PumperPricingCard[]) => {
+    const minimumQuantity = getCurrentBundleMinimumQuantity();
+    const restricted = minimumQuantity > 1;
+
+    if (restricted) {
+      ensurePumperSoldOutStyle();
+    }
+
+    cards.forEach((card) => {
+      const soldOut = restricted && card.quantity < minimumQuantity;
+      const cardElement = card.card;
+      if (cardElement) {
+        if (soldOut) {
+          cardElement.setAttribute("data-salt-sold-out", "true");
+        } else {
+          cardElement.removeAttribute("data-salt-sold-out");
+        }
+      }
+
+      card.radio.disabled = soldOut;
+      card.radio.setAttribute("aria-disabled", soldOut ? "true" : "false");
+    });
+  };
 
   const getReactFiberRoot = () => {
     const root = document.getElementById("salt-app-root") || document.getElementById("root");
@@ -390,11 +459,13 @@ export function installSaltPumperBridge(): void {
 
   const syncPumperPricingFromVariant = () => {
     const handle = normalizeHandle(state.currentProductHandle || getCurrentProductHandle());
-    const variantPrice = Number(state.currentVariantPrice || 0);
-    if (!handle || !isPositiveNumber(variantPrice)) return;
-
     const cards = getPumperPricingCards();
-    if (!cards.length) return;
+    if (!handle || !cards.length) return;
+
+    syncBundleMinimumQuantityState(cards);
+
+    const variantPrice = Number(state.currentVariantPrice || 0);
+    if (!isPositiveNumber(variantPrice)) return;
 
     const firstCard = cards.find((card) => isPositiveNumber(card.currentPrice)) || cards[0];
     if (!firstCard || !isPositiveNumber(firstCard.currentPrice)) return;
@@ -530,7 +601,7 @@ export function installSaltPumperBridge(): void {
   };
 
   const setThemeQuantity = async (quantity: number) => {
-    const target = Math.max(1, Math.floor(quantity || 1));
+    const target = Math.max(getCurrentBundleMinimumQuantity(), Math.floor(quantity || 1));
     const controls = getQuantityControls();
     if (!controls) return;
 
@@ -635,6 +706,7 @@ export function installSaltPumperBridge(): void {
     const quantity = getPumperQuantity();
     if (quantity > 0) {
       await setThemeQuantity(quantity);
+      syncPumperFromTheme();
     }
 
     syncAddToCartLabels();

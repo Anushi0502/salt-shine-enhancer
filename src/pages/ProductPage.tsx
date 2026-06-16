@@ -48,6 +48,7 @@ import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import {
   getProductPurchasesLast30Days,
   recordDeviceOrderHistory,
@@ -208,6 +209,7 @@ const ProductPage = () => {
   const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
+  const quantityFloor = useMemo(() => getMinimumProductQuantity(product?.handle), [product?.handle]);
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
@@ -226,9 +228,9 @@ const ProductPage = () => {
 
     const firstVariant = variants.find((variant) => variant.available) || variants[0];
     setSelectedVariantId(firstVariant?.id || 0);
-    setQuantity(1);
+    setQuantity(quantityFloor);
     setActiveImage(productImage(product) || "");
-  }, [product, variants]);
+  }, [product, quantityFloor, variants]);
 
   useEffect(() => {
     if (!showAvailableOnly || !selectedVariantId) {
@@ -374,7 +376,7 @@ const ProductPage = () => {
   const isAvailable = selectedVariant?.available ?? true;
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
 
-  const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
+  const selectedQuantity = Math.max(quantityFloor, Math.floor(quantity || 1));
   const directCheckoutUrl = selectedVariant
     ? buildShopifyDirectCheckoutUrl(selectedVariant.id, selectedQuantity)
     : buildShopifyCartUrl();
@@ -481,11 +483,11 @@ const ProductPage = () => {
         unitPrice: price,
         productType: product.product_type,
       },
-      quantity,
+      selectedQuantity,
     );
 
     toast.success("Added to cart", {
-      description: `${quantity} x ${product.title}`,
+      description: `${selectedQuantity} x ${product.title}`,
     });
   };
 
@@ -806,8 +808,9 @@ const ProductPage = () => {
               <div className="mt-2 inline-flex h-11 w-full items-center justify-between rounded-full border border-border bg-background sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                  className="inline-flex h-11 w-11 items-center justify-center"
+                  onClick={() => setQuantity((value) => Math.max(quantityFloor, value - 1))}
+                  disabled={quantity <= quantityFloor}
+                  className="inline-flex h-11 w-11 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="h-4 w-4" />
@@ -822,6 +825,11 @@ const ProductPage = () => {
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
+              {quantityFloor > 1 ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Minimum quantity {quantityFloor}.
+                </p>
+              ) : null}
             </div>
 
             <a

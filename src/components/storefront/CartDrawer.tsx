@@ -11,6 +11,7 @@ import { formatMoney, productImage } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { openExternalUrl } from "@/lib/mobile";
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { useProducts } from "@/lib/shopify-data";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -164,15 +165,16 @@ const CartDrawer = () => {
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-                          <div className="inline-flex h-10 items-center rounded-full border border-border/70 bg-background/90 px-1">
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
-                              aria-label="Decrease quantity"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </button>
+                        <div className="inline-flex h-10 items-center rounded-full border border-border/70 bg-background/90 px-1">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= getMinimumProductQuantity(item.handle)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
                             <span className="min-w-8 text-center text-sm font-semibold text-foreground">
                               {item.quantity}
                             </span>

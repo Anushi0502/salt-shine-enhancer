@@ -12,6 +12,7 @@ import { formatMoney } from "@/lib/formatters";
 import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { useProducts } from "@/lib/shopify-data";
 
 function normalizeHandleLookup(input: string): string {
@@ -320,7 +321,8 @@ const CartPage = () => {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="inline-flex h-10 w-10 items-center justify-center text-[#102A43]"
+                          disabled={item.quantity <= getMinimumProductQuantity(item.handle)}
+                          className="inline-flex h-10 w-10 items-center justify-center text-[#102A43] disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label="Decrease quantity"
                         >
                           <Minus className="h-4 w-4" />

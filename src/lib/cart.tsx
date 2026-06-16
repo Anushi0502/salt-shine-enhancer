@@ -8,6 +8,7 @@ import {
 } from "react";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { trackMetaPixelAddToCart } from "@/lib/meta-pixel";
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { getRuntimeContext } from "@/lib/theme-assets";
 
 export type CartItem = {
@@ -173,7 +174,7 @@ function sanitizeCartItems(items: CartItem[]): CartItem[] {
     )
     .map((entry) => ({
       ...entry,
-      quantity: Math.max(1, Math.floor(entry.quantity || 1)),
+      quantity: Math.max(getMinimumProductQuantity(entry.handle), Math.floor(entry.quantity || 1)),
       shopifyVariantId: isValidShopifyVariantId(entry.shopifyVariantId)
         ? entry.shopifyVariantId
         : isValidShopifyVariantId(entry.id)
@@ -268,7 +269,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       subtotal,
       isDrawerOpen,
       addItem: (newItem, quantity = 1, options) => {
-        const safeQuantity = Math.max(1, Math.floor(quantity || 1));
+        const safeQuantity = Math.max(getMinimumProductQuantity(newItem.handle), Math.floor(quantity || 1));
 
         setItems((current) => {
           const existing = current.find((entry) => entry.id === newItem.id);
@@ -297,20 +298,26 @@ export function CartProvider({ children }: PropsWithChildren) {
         }
       },
       updateQuantity: (id, quantity) => {
-        if (quantity <= 0) {
-          setItems((current) => current.filter((entry) => entry.id !== id));
-          return;
-        }
-
         setItems((current) =>
-          current.map((entry) =>
-            entry.id === id
-              ? {
-                  ...entry,
-                  quantity,
-                }
-              : entry,
-          ),
+          current.flatMap((entry) => {
+            if (entry.id !== id) {
+              return [entry];
+            }
+
+            const minimumQuantity = getMinimumProductQuantity(entry.handle);
+            const nextQuantity = Math.floor(quantity || 0);
+
+            if (nextQuantity <= 0 && minimumQuantity === 1) {
+              return [];
+            }
+
+            return [
+              {
+                ...entry,
+                quantity: Math.max(minimumQuantity, nextQuantity),
+              },
+            ];
+          }),
         );
       },
       removeItem: (id) => setItems((current) => current.filter((entry) => entry.id !== id)),
