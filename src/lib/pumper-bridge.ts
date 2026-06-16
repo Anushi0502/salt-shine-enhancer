@@ -22,6 +22,68 @@ export function findBundleCartItemIndex(
   });
 }
 
+const normalizeWhitespaceText = (value: unknown) => String(value || "").replace(/\s+/g, " ").trim();
+
+export const formatMoneyValue = (value: unknown) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return null;
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+export const replaceFirstMoney = (text: string, amount: number) => {
+  const formatted = formatMoneyValue(amount);
+  if (!formatted) return text;
+
+  return /\$\s*[\d,]+(?:\.\d+)?/.test(text) ? text.replace(/\$\s*[\d,]+(?:\.\d+)?/, formatted) : formatted;
+};
+
+export const collectLeafMatchingElements = (root: HTMLElement | null, predicate: (text: string) => boolean) => {
+  if (!root) return [] as HTMLElement[];
+
+  const candidates = Array.from(root.querySelectorAll<HTMLElement>("*")).filter((element) =>
+    predicate(normalizeWhitespaceText(element.textContent)),
+  );
+
+  return candidates.filter((candidate) => !candidates.some((other) => other !== candidate && candidate.contains(other)));
+};
+
+export const replaceMoneyInElement = (element: HTMLElement | null, amount: number) => {
+  if (!element) return false;
+
+  let changed = false;
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const textNode = node as Text;
+    const text = textNode.nodeValue || "";
+
+    if (!/\$\s*[\d,]+(?:\.\d+)?/.test(text)) {
+      continue;
+    }
+
+    const nextText = replaceFirstMoney(text, amount);
+    if (nextText !== text) {
+      textNode.nodeValue = nextText;
+      changed = true;
+      break;
+    }
+  }
+
+  return changed;
+};
+
+export const replaceMoneyInElements = (elements: HTMLElement[], amount: number) => {
+  elements.forEach((element) => {
+    replaceMoneyInElement(element, amount);
+  });
+};
+
 declare global {
   interface Window {
     __saltPumperBridgeInstalled?: boolean;
@@ -64,7 +126,7 @@ export function installSaltPumperBridge(): void {
 
   const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-  const normalizeText = (value: unknown) => String(value || "").replace(/\s+/g, " ").trim();
+  const normalizeText = normalizeWhitespaceText;
 
   const isPositiveNumber = (value: unknown) => Number.isFinite(value as number) && Number(value) > 0;
 
@@ -277,17 +339,7 @@ export function installSaltPumperBridge(): void {
     return true;
   };
 
-  const formatMoney = (value: unknown) => {
-    const amount = Number(value);
-    if (!Number.isFinite(amount)) return null;
-
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+  const formatMoney = formatMoneyValue;
 
   const normalizeHandle = (value: unknown) => String(value || "").trim().toLowerCase();
 
@@ -311,13 +363,6 @@ export function installSaltPumperBridge(): void {
     const a = Number(left);
     const b = Number(right);
     return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= tolerance;
-  };
-
-  const replaceFirstMoney = (text: string, amount: number) => {
-    const formatted = formatMoney(amount);
-    if (!formatted) return text;
-
-    return /\$\s*[\d,]+(?:\.\d+)?/.test(text) ? text.replace(/\$\s*[\d,]+(?:\.\d+)?/, formatted) : formatted;
   };
 
   const getCurrentProductHandle = () => {
@@ -393,19 +438,9 @@ export function installSaltPumperBridge(): void {
           )
         : [];
 
-      const saveNodes = card
-        ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
-            const text = normalizeText(element.textContent);
-            return /^save\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
-          })
-        : [];
+      const saveNodes = collectLeafMatchingElements(card, (text) => /^save\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text));
 
-      const eachNodes = card
-        ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
-            const text = normalizeText(element.textContent);
-            return /\/\s*each\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
-          })
-        : [];
+      const eachNodes = collectLeafMatchingElements(card, (text) => /\/\s*each\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text));
 
       return {
         index,
@@ -560,7 +595,7 @@ export function installSaltPumperBridge(): void {
       const nextPriceText = formatMoney(nextPrice);
 
       if (priceNode && nextPriceText) {
-        priceNode.textContent = replaceFirstMoney(priceNode.textContent || nextPriceText, nextPrice);
+        replaceMoneyInElement(priceNode, nextPrice);
       }
 
       const compareNode = card.compareNodes[0] || null;
@@ -569,23 +604,19 @@ export function installSaltPumperBridge(): void {
       const nextCompareText = isPositiveNumber(nextCompare) ? formatMoney(nextCompare) : null;
 
       if (compareNode && nextCompareText) {
-        compareNode.textContent = replaceFirstMoney(compareNode.textContent || nextCompareText, nextCompare);
+        replaceMoneyInElement(compareNode, nextCompare);
       }
 
       const saveText = isPositiveNumber(nextCompare) ? nextCompare - nextPrice : 0;
       if (card.saveNodes.length && isPositiveNumber(saveText)) {
-        card.saveNodes.forEach((element) => {
-          element.textContent = replaceFirstMoney(element.textContent || "", saveText);
-        });
+        replaceMoneyInElements(card.saveNodes, saveText);
       }
 
       if (card.eachNodes.length && isPositiveNumber(card.quantity)) {
         const eachPrice = nextPrice / card.quantity;
         const eachText = formatMoney(eachPrice);
         if (eachText) {
-          card.eachNodes.forEach((element) => {
-            element.textContent = replaceFirstMoney(element.textContent || eachText, eachPrice);
-          });
+          replaceMoneyInElements(card.eachNodes, eachPrice);
         }
       }
     });
