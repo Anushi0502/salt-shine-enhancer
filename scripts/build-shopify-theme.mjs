@@ -78,6 +78,11 @@ async function writeThemeScaffold() {
     <meta name="viewport" content="width=768,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#1e3a6e">
     <title>{{ page_title }}</title>
+    <link rel="icon" href="{{ 'favicon.ico' | asset_url }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ 'favicon-32x32.png' | asset_url }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ 'favicon-16x16.png' | asset_url }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ 'apple-touch-icon.png' | asset_url }}">
+    <link rel="manifest" href="{{ 'site.webmanifest' | asset_url }}">
     <script>
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -155,6 +160,13 @@ async function copyAssets(entryJsPath, entryCssPath) {
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
+  await cp(resolve(publicDir, "favicon.ico"), resolve(themeAssetsDir, "favicon.ico"));
+  await cp(resolve(publicDir, "favicon-32x32.png"), resolve(themeAssetsDir, "favicon-32x32.png"));
+  await cp(resolve(publicDir, "favicon-16x16.png"), resolve(themeAssetsDir, "favicon-16x16.png"));
+  await cp(resolve(publicDir, "apple-touch-icon.png"), resolve(themeAssetsDir, "apple-touch-icon.png"));
+  await cp(resolve(publicDir, "site.webmanifest"), resolve(themeAssetsDir, "site.webmanifest"));
+  await cp(resolve(publicDir, "android-chrome-192x192.png"), resolve(themeAssetsDir, "android-chrome-192x192.png"));
+  await cp(resolve(publicDir, "android-chrome-512x512.png"), resolve(themeAssetsDir, "android-chrome-512x512.png"));
   await cp(
     resolve(publicDir, "shopify-meta-pixel-customer-events.js"),
     resolve(themeAssetsDir, "shopify-meta-pixel-customer-events.js"),
