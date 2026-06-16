@@ -126,11 +126,11 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
 const menuLinkActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
 const menuLinkInactiveClass = "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]";
 const collectionNavTabBaseClass =
-  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-1.5 pb-3 pt-3 text-[0.96rem] font-semibold transition";
+  "inline-flex shrink-0 items-center whitespace-nowrap border-b-2 px-0.5 pb-2.5 pt-2.5 text-[0.7rem] font-semibold tracking-[-0.01em] transition xl:px-1 xl:pb-3 xl:pt-3 xl:text-[0.76rem] 2xl:gap-1.5 2xl:px-1.5 2xl:pb-3 2xl:pt-3 2xl:text-[0.96rem]";
 const collectionNavTabActiveClass = "border-[#f2b600] text-[#f2b600]";
 const collectionNavTabInactiveClass = "border-transparent text-white/88 hover:border-[#f2b600]/60 hover:text-[#f2b600]";
 const utilityNavTabClass =
-  "inline-flex shrink-0 items-center whitespace-nowrap border-b-2 border-transparent px-1.5 pb-3 pt-3 text-[0.88rem] font-medium text-white/82 transition hover:border-[#f2b600]/45 hover:text-[#f2b600]";
+  "inline-flex shrink-0 items-center whitespace-nowrap border-b-2 border-transparent px-0.5 pb-2.5 pt-2.5 text-[0.66rem] font-medium text-white/82 transition hover:border-[#f2b600]/45 hover:text-[#f2b600] xl:px-1 xl:pb-3 xl:pt-3 xl:text-[0.72rem] 2xl:px-1.5 2xl:pb-3 2xl:pt-3 2xl:text-[0.88rem]";
 type CollectionMenuPanelProps = {
   collection: SiteCollection;
 };
@@ -1169,7 +1169,7 @@ const MainHeader = () => {
       <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
         <nav
           aria-label="Secondary navigation"
-          className="flex w-full items-center gap-4 overflow-x-auto px-3 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-4 lg:px-8"
+          className="flex w-full items-center gap-1.5 overflow-x-auto px-2 text-sm font-medium text-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-3 lg:px-4 xl:px-5 2xl:gap-4 2xl:px-8"
         >
           {SITE_COLLECTIONS.map((collection) => {
             const isActive = openCollectionHandle === collection.handle || routeCollectionHandle === collection.handle;
@@ -1190,7 +1190,7 @@ const MainHeader = () => {
                     aria-expanded={openCollectionHandle === collection.handle}
                   >
                     <span>{collection.title}</span>
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <ChevronDown className="hidden h-3.5 w-3.5 2xl:block" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
