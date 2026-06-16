@@ -26,6 +26,8 @@ export function installSaltPumperBridge(): void {
     cartSyncTimer: 0,
     quantityObserver: null as MutationObserver | null,
     quantityObserverRoot: null as Element | null,
+    pumperObserver: null as MutationObserver | null,
+    pumperObserverRoot: null as Element | null,
     currentProductHandle: "",
     currentVariantPrice: null as number | null,
     currentVariantComparePrice: null as number | null,
@@ -215,6 +217,37 @@ export function installSaltPumperBridge(): void {
       childList: true,
       subtree: true,
       characterData: true,
+    });
+
+    return true;
+  };
+
+  const observePumperWidget = () => {
+    const widget = getPumperWidget();
+    if (!widget) {
+      return false;
+    }
+
+    if (state.pumperObserverRoot === widget) {
+      return true;
+    }
+
+    if (state.pumperObserver) {
+      state.pumperObserver.disconnect();
+    }
+
+    state.pumperObserverRoot = widget;
+    state.pumperObserver = new MutationObserver(() => {
+      if (state.locked) return;
+      queueVariantPricingSync(0);
+      syncAddToCartLabels();
+    });
+
+    state.pumperObserver.observe(widget, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
     });
 
     return true;
@@ -460,15 +493,15 @@ export function installSaltPumperBridge(): void {
   const syncPumperPricingFromVariant = () => {
     const handle = normalizeHandle(state.currentProductHandle || getCurrentProductHandle());
     const cards = getPumperPricingCards();
-    if (!handle || !cards.length) return;
+    if (!handle || !cards.length) return false;
 
     syncBundleMinimumQuantityState(cards);
 
     const variantPrice = Number(state.currentVariantPrice || 0);
-    if (!isPositiveNumber(variantPrice)) return;
+    if (!isPositiveNumber(variantPrice)) return false;
 
     const firstCard = cards.find((card) => isPositiveNumber(card.currentPrice)) || cards[0];
-    if (!firstCard || !isPositiveNumber(firstCard.currentPrice)) return;
+    if (!firstCard || !isPositiveNumber(firstCard.currentPrice)) return false;
 
     const firstComparePrice = isPositiveNumber(firstCard.currentComparePrice) ? firstCard.currentComparePrice : null;
 
@@ -485,7 +518,7 @@ export function installSaltPumperBridge(): void {
     }
 
     const priceBase = Number(state.bundlePriceBase || 0);
-    if (!isPositiveNumber(priceBase)) return;
+    if (!isPositiveNumber(priceBase)) return false;
 
     const compareBase = Number(state.bundleCompareBase || 0);
     const priceScale = variantPrice / priceBase;
@@ -498,7 +531,8 @@ export function installSaltPumperBridge(): void {
       !approxEqual(state.appliedVariantComparePrice, state.currentVariantComparePrice);
 
     if (!pricingChanged && approxEqual(priceScale, 1) && approxEqual(compareScale, 1)) {
-      return;
+      syncAddToCartLabels();
+      return true;
     }
 
     cards.forEach((card) => {
@@ -549,11 +583,17 @@ export function installSaltPumperBridge(): void {
       : null;
 
     syncAddToCartLabels();
+    return true;
   };
 
-  const queueVariantPricingSync = (delay = 0) => {
+  const queueVariantPricingSync = (delay = 0, attempt = 0) => {
     window.clearTimeout(state.variantSyncTimer);
-    state.variantSyncTimer = window.setTimeout(() => syncPumperPricingFromVariant(), delay);
+    state.variantSyncTimer = window.setTimeout(() => {
+      const synced = syncPumperPricingFromVariant();
+      if (!synced && attempt < 20 && !state.locked) {
+        queueVariantPricingSync(Math.min(400, 80 + attempt * 40), attempt + 1);
+      }
+    }, delay);
   };
 
   const applyBundlePriceToCart = (snapshot: { handle: string; unitPrice: number }) => {
@@ -746,8 +786,9 @@ export function installSaltPumperBridge(): void {
   const boot = async () => {
     placeWidgetAboveCheckout();
     observeQuantityChanges();
+    observePumperWidget();
     await syncThemeFromPumper();
-    syncPumperPricingFromVariant();
+    queueVariantPricingSync(0);
     syncAddToCartLabels();
   };
 
@@ -852,7 +893,10 @@ export function installSaltPumperBridge(): void {
   );
 
   if (document.body) {
-    new MutationObserver(queueBoot).observe(document.body, {
+    new MutationObserver(() => {
+      observePumperWidget();
+      queueBoot();
+    }).observe(document.body, {
       childList: true,
       subtree: true,
     });
