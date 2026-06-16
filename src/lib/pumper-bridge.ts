@@ -1,5 +1,27 @@
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 
+export type BundlePricingSnapshot = {
+  handle: string;
+  variantId: number | null;
+  unitPrice: number;
+};
+
+export function findBundleCartItemIndex(
+  items: Array<{ handle?: string; shopifyVariantId?: number; id?: number }>,
+  snapshot: BundlePricingSnapshot,
+) {
+  return items.findIndex((item: { handle?: string; shopifyVariantId?: number; id?: number }) => {
+    const itemVariantId = Number(item.shopifyVariantId || item.id || 0);
+    const snapshotVariantId = Number(snapshot.variantId || 0);
+
+    if (Number.isFinite(snapshotVariantId) && snapshotVariantId > 0 && Number.isFinite(itemVariantId) && itemVariantId > 0) {
+      return itemVariantId === snapshot.variantId;
+    }
+
+    return String(item.handle || "").trim().toLowerCase() === String(snapshot.handle || "").trim().toLowerCase();
+  });
+}
+
 declare global {
   interface Window {
     __saltPumperBridgeInstalled?: boolean;
@@ -29,9 +51,11 @@ export function installSaltPumperBridge(): void {
     pumperObserver: null as MutationObserver | null,
     pumperObserverRoot: null as Element | null,
     currentProductHandle: "",
+    currentVariantId: null as number | null,
     currentVariantPrice: null as number | null,
     currentVariantComparePrice: null as number | null,
     appliedVariantHandle: "",
+    appliedVariantId: null as number | null,
     appliedVariantPrice: null as number | null,
     appliedVariantComparePrice: null as number | null,
     bundlePriceBase: null as number | null,
@@ -471,11 +495,13 @@ export function installSaltPumperBridge(): void {
     const quantity = getPumperQuantity();
     const total = parseMoney(getSelectedPumperTotal());
     const handle = getCurrentProductHandle();
+    const variantId = Number(state.currentVariantId || 0);
 
     if (!isPositiveNumber(quantity) || !isPositiveNumber(total) || !handle) return null;
 
     return {
       handle: normalizeHandle(handle),
+      variantId: isPositiveNumber(variantId) ? variantId : null,
       quantity,
       total,
       unitPrice: total / quantity,
@@ -588,11 +614,11 @@ export function installSaltPumperBridge(): void {
     }, delay);
   };
 
-  const applyBundlePriceToCart = (snapshot: { handle: string; unitPrice: number }) => {
+  const applyBundlePriceToCart = (snapshot: BundlePricingSnapshot) => {
     const api = getCartApi();
     if (!api || typeof api.replaceItems !== "function" || !Array.isArray(api.items)) return false;
 
-    const itemIndex = api.items.findIndex((item: { handle?: string }) => normalizeHandle(item.handle) === snapshot.handle);
+    const itemIndex = findBundleCartItemIndex(api.items, snapshot);
     if (itemIndex < 0) return false;
 
     const currentItem = api.items[itemIndex] as { unitPrice?: number };
@@ -607,7 +633,7 @@ export function installSaltPumperBridge(): void {
     return true;
   };
 
-  const queueCartBundlePriceSync = (snapshot: { handle: string; unitPrice: number } | null) => {
+  const queueCartBundlePriceSync = (snapshot: BundlePricingSnapshot | null) => {
     if (!snapshot) return;
 
     window.clearTimeout(state.cartSyncTimer);
@@ -830,6 +856,7 @@ export function installSaltPumperBridge(): void {
       if (!handle) return;
 
       state.currentProductHandle = handle;
+      state.currentVariantId = isPositiveNumber(detail?.variantId) ? Number(detail?.variantId) : null;
       state.currentVariantPrice = Number(detail?.price || 0);
       state.currentVariantComparePrice = isPositiveNumber(detail?.compareAtPrice)
         ? Number(detail?.compareAtPrice)
@@ -839,6 +866,7 @@ export function installSaltPumperBridge(): void {
         state.bundlePriceBase = null;
         state.bundleCompareBase = null;
         state.appliedVariantHandle = "";
+        state.appliedVariantId = null;
         state.appliedVariantPrice = null;
         state.appliedVariantComparePrice = null;
       }
