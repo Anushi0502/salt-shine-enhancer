@@ -279,6 +279,60 @@
     @apply w-[min(1240px,calc(100%-20px))] mx-auto;
   }
 
+  .salt-header-secondary-nav {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(0.25rem, 0.32vw, 0.65rem);
+    overflow-x: auto;
+    padding-inline: clamp(0.45rem, 0.95vw, 2rem);
+    scrollbar-width: none;
+  }
+
+  .salt-header-secondary-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .salt-header-collection-item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.1rem, 0.12vw, 0.35rem);
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    padding: clamp(0.42rem, 0.52vw, 0.88rem) clamp(0.15rem, 0.28vw, 0.45rem)
+      clamp(0.52rem, 0.62vw, 0.98rem);
+    font-size: clamp(0.66rem, 0.24vw + 0.56rem, 0.86rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.022em;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .salt-header-utility-item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    padding: clamp(0.42rem, 0.48vw, 0.85rem) clamp(0.15rem, 0.25vw, 0.42rem)
+      clamp(0.52rem, 0.58vw, 0.96rem);
+    font-size: clamp(0.6rem, 0.18vw + 0.52rem, 0.78rem);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    transition:
+      border-color 180ms ease,
+      color 180ms ease,
+      background-color 180ms ease;
+  }
+
   .salt-heading {
     font-family: "Inter", system-ui, sans-serif;
     @apply tracking-tight;
