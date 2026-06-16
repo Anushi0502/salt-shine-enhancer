@@ -371,10 +371,6 @@ export function installSaltPumperBridge(): void {
 
       const saveNodes = card
         ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
-            if (element.childElementCount > 0) {
-              return false;
-            }
-
             const text = normalizeText(element.textContent);
             return /^save\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
           })
@@ -382,10 +378,6 @@ export function installSaltPumperBridge(): void {
 
       const eachNodes = card
         ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
-            if (element.childElementCount > 0) {
-              return false;
-            }
-
             const text = normalizeText(element.textContent);
             return /\/\s*each\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
           })
