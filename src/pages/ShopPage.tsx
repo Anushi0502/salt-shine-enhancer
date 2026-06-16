@@ -172,7 +172,9 @@ const ShopPage = () => {
       next.set("collection", nextCollection);
     }
 
-    setSearchParams(next, { replace: true });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
   }, [routeCollectionAlias, searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -186,7 +188,9 @@ const ShopPage = () => {
 
     const next = new URLSearchParams(searchParams);
     next.set("collection", DEFAULT_COLLECTION_HANDLE);
-    setSearchParams(next, { replace: true });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
   }, [currentCollectionParam, location.pathname, searchParams, setSearchParams]);
 
   const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
@@ -450,7 +454,11 @@ const ShopPage = () => {
 
     if (routeCollectionAlias) {
       const suffix = nextParams.toString();
-      navigate(suffix ? `/shop?${suffix}` : "/shop", { replace: true });
+      const targetRoute = suffix ? `/shop?${suffix}` : "/shop";
+      const currentRoute = `${location.pathname}${location.search}${location.hash}`;
+      if (targetRoute !== currentRoute) {
+        navigate(targetRoute, { replace: true });
+      }
       setMobileFiltersOpen(false);
       return;
     }

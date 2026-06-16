@@ -262,6 +262,30 @@ const ProductPage = () => {
     trackMetaPixelViewContent(product, selectedVariant);
   }, [product, selectedVariant]);
 
+  useEffect(() => {
+    if (!product || !selectedVariant || typeof window === "undefined") {
+      return;
+    }
+
+    const selectedPrice = Number(selectedVariant.price || 0);
+    const selectedComparePriceCandidate = Number(selectedVariant.compare_at_price || 0) || compareAt(product);
+    const selectedComparePrice = isPlausibleComparePrice(selectedPrice, selectedComparePriceCandidate)
+      ? selectedComparePriceCandidate
+      : 0;
+
+    window.dispatchEvent(
+      new CustomEvent("salt:product-variant-change", {
+        detail: {
+          handle: product.handle,
+          variantId: selectedVariant.id,
+          price: selectedPrice,
+          compareAtPrice: selectedComparePrice > 0 ? selectedComparePrice : null,
+          title: selectedVariant.title,
+        },
+      }),
+    );
+  }, [product, selectedVariant]);
+
   const relatedProducts = useMemo(
     () =>
       product
@@ -349,6 +373,7 @@ const ProductPage = () => {
   const comparePrice = isPlausibleComparePrice(price, comparePriceCandidate) ? comparePriceCandidate : 0;
   const isAvailable = selectedVariant?.available ?? true;
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
+
   const selectedQuantity = Math.max(1, Math.floor(quantity || 1));
   const directCheckoutUrl = selectedVariant
     ? buildShopifyDirectCheckoutUrl(selectedVariant.id, selectedQuantity)

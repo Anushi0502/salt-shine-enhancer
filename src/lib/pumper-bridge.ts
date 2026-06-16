@@ -20,9 +20,18 @@ export function installSaltPumperBridge(): void {
     bootQueued: false,
     themeSyncTimer: 0,
     pumperSyncTimer: 0,
+    variantSyncTimer: 0,
     cartSyncTimer: 0,
     quantityObserver: null as MutationObserver | null,
     quantityObserverRoot: null as Element | null,
+    currentProductHandle: "",
+    currentVariantPrice: null as number | null,
+    currentVariantComparePrice: null as number | null,
+    appliedVariantHandle: "",
+    appliedVariantPrice: null as number | null,
+    appliedVariantComparePrice: null as number | null,
+    bundlePriceBase: null as number | null,
+    bundleCompareBase: null as number | null,
   };
 
   const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -239,10 +248,84 @@ export function installSaltPumperBridge(): void {
     return Number.isFinite(amount) ? amount : null;
   };
 
+  const approxEqual = (left: unknown, right: unknown, tolerance = 0.01) => {
+    const a = Number(left);
+    const b = Number(right);
+    return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= tolerance;
+  };
+
+  const replaceFirstMoney = (text: string, amount: number) => {
+    const formatted = formatMoney(amount);
+    if (!formatted) return text;
+
+    return /\$\s*[\d,]+(?:\.\d+)?/.test(text) ? text.replace(/\$\s*[\d,]+(?:\.\d+)?/, formatted) : formatted;
+  };
+
   const getCurrentProductHandle = () => {
     const match = window.location.pathname.match(/\/products?\/([^/]+)/i);
     return match ? decodeURIComponent(match[1]) : "";
   };
+
+  type PumperPricingCard = {
+    index: number;
+    quantity: number;
+    radio: HTMLInputElement;
+    card: HTMLElement | null;
+    priceNode: HTMLElement | null;
+    compareNodes: HTMLElement[];
+    saveNodes: HTMLElement[];
+    eachNodes: HTMLElement[];
+    currentPrice: number | null;
+    currentComparePrice: number | null;
+  };
+
+  const getPumperPricingCards = (): PumperPricingCard[] =>
+    getPumperOptions().map(({ input, index, quantity }) => {
+      const card = getPumperRadioLabel(input);
+      const priceNode = document.getElementById(`pumper_totalAmount_${index}`) as HTMLElement | null;
+      const priceNodeText = normalizeText(priceNode?.textContent);
+
+      const compareNodes = card
+        ? Array.from(card.querySelectorAll<HTMLElement>("s, del")).filter((element) =>
+            /\$\s*[\d,]+(?:\.\d+)?/.test(normalizeText(element.textContent)),
+          )
+        : [];
+
+      const saveNodes = card
+        ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
+            if (element.childElementCount > 0) {
+              return false;
+            }
+
+            const text = normalizeText(element.textContent);
+            return /^save\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
+          })
+        : [];
+
+      const eachNodes = card
+        ? Array.from(card.querySelectorAll<HTMLElement>("*")).filter((element) => {
+            if (element.childElementCount > 0) {
+              return false;
+            }
+
+            const text = normalizeText(element.textContent);
+            return /\/\s*each\b/i.test(text) && /\$\s*[\d,]+(?:\.\d+)?/.test(text);
+          })
+        : [];
+
+      return {
+        index,
+        quantity,
+        radio: input,
+        card,
+        priceNode,
+        compareNodes,
+        saveNodes,
+        eachNodes,
+        currentPrice: parseMoney(priceNodeText),
+        currentComparePrice: parseMoney(compareNodes[0]?.textContent),
+      };
+    });
 
   const getReactFiberRoot = () => {
     const root = document.getElementById("salt-app-root") || document.getElementById("root");
@@ -303,6 +386,103 @@ export function installSaltPumperBridge(): void {
       total,
       unitPrice: total / quantity,
     };
+  };
+
+  const syncPumperPricingFromVariant = () => {
+    const handle = normalizeHandle(state.currentProductHandle || getCurrentProductHandle());
+    const variantPrice = Number(state.currentVariantPrice || 0);
+    if (!handle || !isPositiveNumber(variantPrice)) return;
+
+    const cards = getPumperPricingCards();
+    if (!cards.length) return;
+
+    const firstCard = cards.find((card) => isPositiveNumber(card.currentPrice)) || cards[0];
+    if (!firstCard || !isPositiveNumber(firstCard.currentPrice)) return;
+
+    const firstComparePrice = isPositiveNumber(firstCard.currentComparePrice) ? firstCard.currentComparePrice : null;
+
+    if (!isPositiveNumber(state.bundlePriceBase) || !approxEqual(state.bundlePriceBase, firstCard.currentPrice)) {
+      state.bundlePriceBase = firstCard.currentPrice;
+    }
+
+    if (isPositiveNumber(firstComparePrice)) {
+      if (!isPositiveNumber(state.bundleCompareBase) || !approxEqual(state.bundleCompareBase, firstComparePrice)) {
+        state.bundleCompareBase = firstComparePrice;
+      }
+    } else {
+      state.bundleCompareBase = null;
+    }
+
+    const priceBase = Number(state.bundlePriceBase || 0);
+    if (!isPositiveNumber(priceBase)) return;
+
+    const compareBase = Number(state.bundleCompareBase || 0);
+    const priceScale = variantPrice / priceBase;
+    const compareScale = isPositiveNumber(state.currentVariantComparePrice) && isPositiveNumber(compareBase)
+      ? Number(state.currentVariantComparePrice) / compareBase
+      : priceScale;
+
+    const pricingChanged =
+      !approxEqual(state.appliedVariantPrice, variantPrice) ||
+      !approxEqual(state.appliedVariantComparePrice, state.currentVariantComparePrice);
+
+    if (!pricingChanged && approxEqual(priceScale, 1) && approxEqual(compareScale, 1)) {
+      return;
+    }
+
+    cards.forEach((card) => {
+      const priceNode = card.priceNode;
+      const currentPrice = Number(card.currentPrice || 0);
+      const nextPrice = currentPrice * priceScale;
+      const nextPriceText = formatMoney(nextPrice);
+
+      if (priceNode && nextPriceText) {
+        priceNode.textContent = replaceFirstMoney(priceNode.textContent || nextPriceText, nextPrice);
+      }
+
+      const compareNode = card.compareNodes[0] || null;
+      const currentComparePrice = Number(card.currentComparePrice || 0);
+      const nextCompare = isPositiveNumber(currentComparePrice) ? currentComparePrice * compareScale : 0;
+      const nextCompareText = isPositiveNumber(nextCompare) ? formatMoney(nextCompare) : null;
+
+      if (compareNode && nextCompareText) {
+        compareNode.textContent = replaceFirstMoney(compareNode.textContent || nextCompareText, nextCompare);
+      }
+
+      const saveText = isPositiveNumber(nextCompare) ? nextCompare - nextPrice : 0;
+      if (card.saveNodes.length && isPositiveNumber(saveText)) {
+        card.saveNodes.forEach((element) => {
+          element.textContent = replaceFirstMoney(element.textContent || "", saveText);
+        });
+      }
+
+      if (card.eachNodes.length && isPositiveNumber(card.quantity)) {
+        const eachPrice = nextPrice / card.quantity;
+        const eachText = formatMoney(eachPrice);
+        if (eachText) {
+          card.eachNodes.forEach((element) => {
+            element.textContent = replaceFirstMoney(element.textContent || eachText, eachPrice);
+          });
+        }
+      }
+    });
+
+    state.bundlePriceBase = variantPrice;
+    state.bundleCompareBase = isPositiveNumber(state.currentVariantComparePrice)
+      ? Number(state.currentVariantComparePrice)
+      : state.bundleCompareBase;
+    state.appliedVariantHandle = handle;
+    state.appliedVariantPrice = variantPrice;
+    state.appliedVariantComparePrice = isPositiveNumber(state.currentVariantComparePrice)
+      ? Number(state.currentVariantComparePrice)
+      : null;
+
+    syncAddToCartLabels();
+  };
+
+  const queueVariantPricingSync = (delay = 0) => {
+    window.clearTimeout(state.variantSyncTimer);
+    state.variantSyncTimer = window.setTimeout(() => syncPumperPricingFromVariant(), delay);
   };
 
   const applyBundlePriceToCart = (snapshot: { handle: string; unitPrice: number }) => {
@@ -495,6 +675,7 @@ export function installSaltPumperBridge(): void {
     placeWidgetAboveCheckout();
     observeQuantityChanges();
     await syncThemeFromPumper();
+    syncPumperPricingFromVariant();
     syncAddToCartLabels();
   };
 
@@ -528,6 +709,37 @@ export function installSaltPumperBridge(): void {
       }
     },
     true,
+  );
+
+  window.addEventListener(
+    "salt:product-variant-change",
+    (event) => {
+      const detail = (event as CustomEvent<{
+        handle?: string;
+        variantId?: number;
+        price?: number;
+        compareAtPrice?: number | null;
+      }>).detail;
+
+      const handle = normalizeHandle(detail?.handle || getCurrentProductHandle());
+      if (!handle) return;
+
+      state.currentProductHandle = handle;
+      state.currentVariantPrice = Number(detail?.price || 0);
+      state.currentVariantComparePrice = isPositiveNumber(detail?.compareAtPrice)
+        ? Number(detail?.compareAtPrice)
+        : null;
+
+      if (state.appliedVariantHandle && state.appliedVariantHandle !== handle) {
+        state.bundlePriceBase = null;
+        state.bundleCompareBase = null;
+        state.appliedVariantHandle = "";
+        state.appliedVariantPrice = null;
+        state.appliedVariantComparePrice = null;
+      }
+
+      queueVariantPricingSync(0);
+    },
   );
 
   document.addEventListener(

@@ -55,7 +55,11 @@ const ShopAuthBridgePage = () => {
             return;
           }
 
-          navigate(result.returnTo || "/account/orders", { replace: true });
+          const target = result.returnTo || "/account/orders";
+          const currentRoute = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+          if (target !== currentRoute) {
+            navigate(target, { replace: true });
+          }
           return;
         } catch (error) {
           if (!active) {
@@ -67,7 +71,10 @@ const ShopAuthBridgePage = () => {
         }
       }
 
-      navigate(targetPath, { replace: true });
+      const currentRoute = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (targetPath !== currentRoute) {
+        navigate(targetPath, { replace: true });
+      }
     };
 
     void run();

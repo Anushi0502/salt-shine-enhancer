@@ -455,7 +455,9 @@ const ShopifyProductReviews = ({
 
     const next = new URLSearchParams(searchParams);
     next.delete("write");
-    setSearchParams(next, { replace: true });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
   };
 
   const closeComposer = () => {

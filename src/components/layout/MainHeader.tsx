@@ -24,10 +24,6 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 
 const searchScopeOptions = [
@@ -144,55 +140,52 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
     null;
 
   return (
-    <div className="w-[min(24rem,calc(100vw-0.75rem))] px-0 pt-0">
-      <div className="overflow-hidden rounded-b-[1.1rem] border border-[#bfd4fb] border-t-0 bg-white shadow-[0_24px_40px_-32px_rgba(12,32,72,0.28)]">
-        <div className="h-1 bg-[#f2b600]" />
-        <div className="px-4 py-4 sm:px-5">
-          <Link
-            to={buildCollectionRoute(collection.handle)}
-            className="inline-flex max-w-full text-[1rem] font-semibold leading-none tracking-[-0.03em] text-[#102A43] transition hover:text-[#ff6700]"
-            onMouseEnter={() => setActiveSubcollectionHandle(collection.subcollections[0]?.handle || "")}
-          >
-            {collection.title}
-          </Link>
+    <div className="w-[min(24rem,calc(100vw-0.75rem))] overflow-hidden border border-[#bfd4fb] bg-white shadow-[0_24px_40px_-32px_rgba(12,32,72,0.28)]">
+      <div className="border-b border-[#edf3fb] bg-[#f7fbff] px-4 py-4 sm:px-5">
+        <Link
+          to={buildCollectionRoute(collection.handle)}
+          className="inline-flex max-w-full text-[1rem] font-semibold leading-none tracking-[-0.03em] text-[#102A43] transition hover:text-[#ff6700]"
+          onMouseEnter={() => setActiveSubcollectionHandle(collection.subcollections[0]?.handle || "")}
+        >
+          {collection.title}
+        </Link>
 
-          <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">
-            {collection.summary}
-          </p>
+        <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">{collection.summary}</p>
+      </div>
 
-          <div className="mt-4 grid gap-1">
-            {collection.subcollections.map((subcollection) => {
-              const active = subcollection.handle === activeSubcollection?.handle;
+      <div className="px-2.5 py-2.5 sm:px-3">
+        <div className="grid gap-1">
+          {collection.subcollections.map((subcollection) => {
+            const active = subcollection.handle === activeSubcollection?.handle;
 
-              return (
-                <Link
-                  key={subcollection.handle}
-                  to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
-                  onMouseEnter={() => setActiveSubcollectionHandle(subcollection.handle)}
-                  onFocus={() => setActiveSubcollectionHandle(subcollection.handle)}
-                  className={`group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm transition ${
-                    active ? "bg-[#f5faff] text-[#ff6700]" : "text-[#102A43] hover:bg-[#f5faff]"
-                  }`}
-                >
-                  <span className={active ? "text-[#ff6700]" : "text-[#7a7a7a] group-hover:text-[#ff6700]"}>
-                    {subcollection.title}
-                  </span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#ff6700]" />
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between border-t border-[#edf3fb] pt-3">
-            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">Shop feed</span>
-            <Link
-              to={buildCollectionRoute(collection.handle)}
-              className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-            >
-              Open collection
-            </Link>
-          </div>
+            return (
+              <Link
+                key={subcollection.handle}
+                to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
+                onMouseEnter={() => setActiveSubcollectionHandle(subcollection.handle)}
+                onFocus={() => setActiveSubcollectionHandle(subcollection.handle)}
+                className={`group flex items-center justify-between rounded-[0.75rem] px-3 py-2.5 text-sm transition ${
+                  active ? "bg-[#f5faff] text-[#ff6700]" : "text-[#102A43] hover:bg-[#f5faff]"
+                }`}
+              >
+                <span className={active ? "text-[#ff6700]" : "text-[#7a7a7a] group-hover:text-[#ff6700]"}>
+                  {subcollection.title}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#ff6700]" />
+              </Link>
+            );
+          })}
         </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-[#edf3fb] px-4 py-3">
+        <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">Shop feed</span>
+        <Link
+          to={buildCollectionRoute(collection.handle)}
+          className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+        >
+          Open collection
+        </Link>
       </div>
     </div>
   );
@@ -209,6 +202,261 @@ function utilityNavItemClass(active: boolean) {
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
 const SHOPIFY_CUSTOMER_ACCOUNT_URL = "https://shopify.com/58076594275/account";
+
+type HeaderMenuDrawerProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  activeCollectionHandle: string;
+  onSelectCollection: (handle: string) => void;
+};
+
+function HeaderMenuDrawer({
+  open,
+  onOpenChange,
+  activeCollectionHandle,
+  onSelectCollection,
+}: HeaderMenuDrawerProps) {
+  const activeCollection =
+    SITE_COLLECTIONS.find((collection) => collection.handle === activeCollectionHandle) || SITE_COLLECTIONS[0] || null;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        id="salt-header-menu"
+        side="left"
+        style={{ width: "min(24rem, calc(100vw - 0.75rem))" }}
+        className="overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)]"
+      >
+        <div className="flex min-h-full flex-col">
+          <div className="border-b border-[#BFD7F2] bg-[#0C2048] px-4 py-4 text-white">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">
+                <Menu className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white/60">
+                  Browse SALT
+                </p>
+                <h2 className="font-display text-[1.6rem] leading-none">All</h2>
+              </div>
+            </div>
+
+            <p className="mt-2.5 max-w-[18rem] text-sm leading-6 text-white/74">
+              Collections, subcategories, resources, and support in one open panel.
+            </p>
+          </div>
+
+          <div className="flex-1 px-4 py-4">
+            <section className="border-b border-[#e2edf8] pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
+                <SheetClose asChild>
+                  <Link
+                    to="/collections"
+                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                  >
+                    View all
+                  </Link>
+                </SheetClose>
+              </div>
+
+              <div className="mt-3 grid gap-1">
+                {SITE_COLLECTIONS.map((collection) => {
+                  const active = activeCollection?.handle === collection.handle;
+
+                  return (
+                    <div key={collection.handle} className="border-b border-[#edf3fb] pb-2.5 last:border-b-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <SheetClose asChild>
+                          <Link
+                            to={buildCollectionRoute(collection.handle)}
+                            onMouseEnter={() => onSelectCollection(collection.handle)}
+                            onFocus={() => onSelectCollection(collection.handle)}
+                            className="min-w-0 flex-1 rounded-[0.75rem] px-1 py-1 text-left transition hover:bg-[#f5faff]"
+                          >
+                            <span className="block text-sm font-semibold leading-6 text-[#102A43]">
+                              {collection.title}
+                            </span>
+                            <span className="mt-0.5 line-clamp-2 block text-[0.75rem] leading-5 text-[#5C748F]">
+                              {collection.summary}
+                            </span>
+                          </Link>
+                        </SheetClose>
+
+                        <button
+                          type="button"
+                          onClick={() => onSelectCollection(active ? "" : collection.handle)}
+                          className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition hover:border-[#bfd7f2] hover:text-[#1f55aa]"
+                          aria-label={`${active ? "Collapse" : "Expand"} ${collection.title}`}
+                        >
+                          <ChevronRight className={`h-4 w-4 transition ${active ? "rotate-90" : ""}`} />
+                        </button>
+                      </div>
+
+                      {active ? (
+                        <div className="mt-2 grid gap-1.5 border-l border-[#edf3fb] pl-3">
+                          {collection.subcollections.map((subcollection) => (
+                            <SheetClose asChild key={subcollection.handle}>
+                              <Link
+                                to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
+                                onMouseEnter={() => onSelectCollection(collection.handle)}
+                                onFocus={() => onSelectCollection(collection.handle)}
+                                className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                              >
+                                <span className="line-clamp-1">{subcollection.title}</span>
+                                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                              </Link>
+                            </SheetClose>
+                          ))}
+
+                          <SheetClose asChild>
+                            <Link
+                              to={buildCollectionRoute(collection.handle)}
+                              className="pt-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                            >
+                              Open collection feed
+                            </Link>
+                          </SheetClose>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="border-b border-[#e2edf8] py-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resource Hub</p>
+                <SheetClose asChild>
+                  <Link
+                    to="/resources"
+                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                  >
+                    Open hub
+                  </Link>
+                </SheetClose>
+              </div>
+
+              <div className="mt-3 grid gap-1.5">
+                {SITE_RESOURCE_GUIDES.map((guide) => (
+                  <SheetClose asChild key={guide.handle}>
+                    <Link
+                      to={buildResourceRoute(guide.handle)}
+                      className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                    >
+                      <span className="line-clamp-1">{guide.title}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    </Link>
+                  </SheetClose>
+                ))}
+              </div>
+            </section>
+
+            <section className="border-b border-[#e2edf8] py-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  Account & support
+                </p>
+              </div>
+
+              <div className="mt-3 grid gap-1.5">
+                <SheetClose asChild>
+                  <a
+                    href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
+                    className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                  >
+                    <span>Account & Orders</span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                  </a>
+                </SheetClose>
+
+                {SITE_FOOTER_COMPANY_LINKS.map((link) =>
+                  link.href ? (
+                    <SheetClose asChild key={link.label}>
+                      <a
+                        href={link.href}
+                        className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                      >
+                        <span>{link.label}</span>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                      </a>
+                    </SheetClose>
+                  ) : (
+                    <SheetClose asChild key={link.label}>
+                      <Link
+                        to={link.to || "/"}
+                        className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                      >
+                        <span>{link.label}</span>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                      </Link>
+                    </SheetClose>
+                  ),
+                )}
+              </div>
+            </section>
+
+            <section className="py-4">
+              <div className="grid gap-4">
+                <div className="grid gap-1.5">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resources</p>
+                  {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
+                    link.href ? (
+                      <SheetClose asChild key={link.label}>
+                        <a
+                          href={link.href}
+                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                        >
+                          {link.label}
+                        </a>
+                      </SheetClose>
+                    ) : (
+                      <SheetClose asChild key={link.label}>
+                        <Link
+                          to={link.to || "/"}
+                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                        >
+                          {link.label}
+                        </Link>
+                      </SheetClose>
+                    ),
+                  )}
+                </div>
+
+                <div className="grid gap-1.5">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Policies</p>
+                  {SITE_FOOTER_POLICY_LINKS.map((link) =>
+                    link.href ? (
+                      <SheetClose asChild key={link.label}>
+                        <a
+                          href={link.href}
+                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                        >
+                          {link.label}
+                        </a>
+                      </SheetClose>
+                    ) : (
+                      <SheetClose asChild key={link.label}>
+                        <Link
+                          to={link.to || "/"}
+                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                        >
+                          {link.label}
+                        </Link>
+                      </SheetClose>
+                    ),
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
 
 function normalizeSearchPhrase(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -258,6 +506,8 @@ const MainHeader = () => {
   const [selectedScope, setSelectedScope] = useState<HeaderSearchScope>("all-products");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [openCollectionHandle, setOpenCollectionHandle] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuCollectionHandle, setMenuCollectionHandle] = useState(SITE_COLLECTIONS[0]?.handle || "");
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const deferredSearchQuery = useDeferredValue(searchQuery).trim();
@@ -350,8 +600,28 @@ const MainHeader = () => {
     setOpenCollectionHandle(null);
   }, [location.pathname, location.search]);
 
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    setMenuCollectionHandle(routeCollectionHandle || SITE_COLLECTIONS[0]?.handle || "");
+  }, [menuOpen, routeCollectionHandle]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname, location.search]);
+
   const selectedScopeLabel =
     searchScopeOptions.find((option) => option.collection === selectedScope)?.label || "All";
+
+  const openMenu = () => {
+    setScopeOpen(false);
+    setSearchDropdownOpen(false);
+    setOpenCollectionHandle(null);
+    setMenuCollectionHandle(routeCollectionHandle || SITE_COLLECTIONS[0]?.handle || "");
+    setMenuOpen(true);
+  };
 
   const dropdownProducts = useMemo(() => {
     if (!searchDropdownOpen || !allProducts.length) {
@@ -570,10 +840,11 @@ const MainHeader = () => {
   const cartLabel = `Cart with ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}`;
 
   return (
-    <header
-      ref={headerRef}
-      className="sticky top-0 z-50 w-full border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
-    >
+    <>
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-50 w-full border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
+      >
       <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
         <div className="order-1 flex min-w-0 flex-1 items-center gap-2 md:flex-none">
           <Link
@@ -585,265 +856,15 @@ const MainHeader = () => {
           </Link>
 
           <div className="ml-auto flex items-center gap-2 md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => setScopeOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
-                  aria-label="Open menu"
-                >
-                  <Menu className="h-4.5 w-4.5" />
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-full !max-w-[21rem] overflow-y-auto border-l border-[#BFD7F2] bg-[#F7FBFF] px-0"
-              >
-                <div className="flex min-h-full flex-col">
-                  <SheetHeader className="border-b border-[#BFD7F2] px-4 pb-4 pt-10 text-left">
-                    <SheetTitle className="font-display text-[clamp(1.6rem,4.8vw,2.1rem)] leading-tight text-[#102A43]">
-                      Menu
-                    </SheetTitle>
-                    <SheetDescription className="text-sm leading-6 text-[#5C748F]">
-                      Browse the catalog, collections, and account tools.
-                    </SheetDescription>
-                  </SheetHeader>
-
-                  <div className="flex-1 px-4 py-4">
-                    <div className="grid gap-1.5">
-                      {secondaryNavItems.map((item) => {
-                        const active = isActiveNavItem(item, location.pathname, location.search);
-
-                        return (
-                          <SheetClose asChild key={item.label}>
-                            <Link
-                              to={item.to}
-                              className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                                active ? menuLinkActiveClass : menuLinkInactiveClass
-                              }`}
-                              aria-current={active ? "page" : undefined}
-                            >
-                              {item.label}
-                            </Link>
-                          </SheetClose>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-5 rounded-3xl border border-[#d8e6f5] bg-white p-3">
-                      <div className="flex items-center justify-between gap-3 border-b border-[#e2edf8] pb-3">
-                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
-                          Collections
-                        </p>
-                        <SheetClose asChild>
-                          <Link
-                            to="/collections"
-                            className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-                          >
-                            View all
-                          </Link>
-                        </SheetClose>
-                      </div>
-
-                      <div className="mt-3 grid gap-3">
-                        {SITE_COLLECTIONS.map((collection) => (
-                          <div key={collection.handle} className="rounded-[1.1rem] border border-[#e2edf8] bg-[#fbfdff] p-3">
-                            <SheetClose asChild>
-                              <Link
-                                to={buildCollectionRoute(collection.handle)}
-                                className="inline-flex text-sm font-semibold text-[#102A43] transition hover:text-[#1f55aa]"
-                              >
-                                {collection.title}
-                              </Link>
-                            </SheetClose>
-                            <p className="mt-1.5 text-[0.78rem] leading-6 text-[#5C748F]">
-                              {collection.summary}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {collection.subcollections.map((subcollection) => (
-                                <SheetClose asChild key={subcollection.handle}>
-                                  <Link
-                                    to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
-                                    className="rounded-full border border-[#bfd7f2] bg-[#f4f8ff] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#31538c] transition hover:border-[#9fc0f5] hover:bg-[#edf4ff]"
-                                  >
-                                    {subcollection.title}
-                                  </Link>
-                                </SheetClose>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-3xl border border-[#d8e6f5] bg-white p-3">
-                      <div className="flex items-center justify-between gap-3 border-b border-[#e2edf8] pb-3">
-                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
-                          Resource Hub
-                        </p>
-                        <SheetClose asChild>
-                          <Link
-                            to="/resources"
-                            className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-                          >
-                            Open hub
-                          </Link>
-                        </SheetClose>
-                      </div>
-
-                      <div className="mt-3 grid gap-3">
-                        {SITE_RESOURCE_GUIDES.map((guide) => (
-                          <SheetClose asChild key={guide.handle}>
-                            <Link
-                              to={buildResourceRoute(guide.handle)}
-                              className="rounded-[1.1rem] border border-[#e2edf8] bg-[#fbfdff] p-3 text-left transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                            >
-                              <p className="text-sm font-semibold text-[#102A43]">{guide.title}</p>
-                              <p className="mt-1.5 text-[0.78rem] leading-6 text-[#5C748F]">
-                                {guide.summary}
-                              </p>
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {guide.bullets.slice(0, 2).map((bullet) => (
-                                  <span
-                                    key={bullet}
-                                    className="rounded-full border border-[#bfd7f2] bg-white px-2 py-1 text-[0.54rem] font-bold uppercase tracking-[0.08em] text-[#31538c]"
-                                  >
-                                    {bullet}
-                                  </span>
-                                ))}
-                              </div>
-                            </Link>
-                          </SheetClose>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-3xl border border-[#d8e6f5] bg-white p-3">
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
-                        Quick links
-                      </p>
-
-                      <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                        <div className="grid gap-1.5">
-                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
-                            Company
-                          </p>
-                          {SITE_FOOTER_COMPANY_LINKS.map((link) =>
-                            link.href ? (
-                              <SheetClose asChild key={link.label}>
-                                <a
-                                  href={link.href}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </a>
-                              </SheetClose>
-                            ) : (
-                              <SheetClose asChild key={link.label}>
-                                <Link
-                                  to={link.to || "/"}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </Link>
-                              </SheetClose>
-                            ),
-                          )}
-                        </div>
-
-                        <div className="grid gap-1.5">
-                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
-                            Resources
-                          </p>
-                          {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
-                            link.href ? (
-                              <SheetClose asChild key={link.label}>
-                                <a
-                                  href={link.href}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </a>
-                              </SheetClose>
-                            ) : (
-                              <SheetClose asChild key={link.label}>
-                                <Link
-                                  to={link.to || "/"}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </Link>
-                              </SheetClose>
-                            ),
-                          )}
-                        </div>
-
-                        <div className="grid gap-1.5">
-                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
-                            Policies
-                          </p>
-                          {SITE_FOOTER_POLICY_LINKS.map((link) =>
-                            link.href ? (
-                              <SheetClose asChild key={link.label}>
-                                <a
-                                  href={link.href}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </a>
-                              </SheetClose>
-                            ) : (
-                              <SheetClose asChild key={link.label}>
-                                <Link
-                                  to={link.to || "/"}
-                                  className="rounded-2xl border border-[#e2edf8] bg-[#fbfdff] px-3 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
-                                >
-                                  {link.label}
-                                </Link>
-                              </SheetClose>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 grid gap-1.5">
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
-                        Account
-                      </p>
-
-                      <SheetClose asChild>
-                        <a
-                          href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Account & Orders
-                        </a>
-                      </SheetClose>
-
-                      <SheetClose asChild>
-                        <Link
-                          to="/wishlist"
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Wishlist
-                        </Link>
-                      </SheetClose>
-
-                      <SheetClose asChild>
-                        <Link
-                          to="/contact"
-                          className="rounded-2xl border border-[#d8e6f5] bg-white px-4 py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:bg-[#f5faff]"
-                        >
-                          Contact support
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <button
+              type="button"
+              onClick={openMenu}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+            >
+              <Menu className="h-4.5 w-4.5" />
+            </button>
 
             <Link
               to="/wishlist"
@@ -1164,11 +1185,22 @@ const MainHeader = () => {
         </div>
       </div>
 
-      <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
+        <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
         <nav
           aria-label="Secondary navigation"
           className="salt-header-secondary-nav text-white"
         >
+          <button
+            type="button"
+            onClick={openMenu}
+            className={collectionNavItemClass(menuOpen)}
+            aria-expanded={menuOpen}
+            aria-controls="salt-header-menu"
+          >
+            <Menu className="h-4 w-4 shrink-0" />
+            <span>All</span>
+          </button>
+
           {SITE_COLLECTIONS.map((collection) => {
             const isActive = openCollectionHandle === collection.handle || routeCollectionHandle === collection.handle;
 
@@ -1216,9 +1248,16 @@ const MainHeader = () => {
           >
             <span>Support</span>
           </Link>
-        </nav>
-      </div>
-    </header>
+          </nav>
+        </div>
+      </header>
+      <HeaderMenuDrawer
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        activeCollectionHandle={menuCollectionHandle}
+        onSelectCollection={setMenuCollectionHandle}
+      />
+    </>
   );
 };
 

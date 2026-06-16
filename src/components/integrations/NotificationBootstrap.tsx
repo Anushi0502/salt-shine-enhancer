@@ -55,6 +55,11 @@ const NotificationBootstrap = () => {
         return;
       }
 
+      const currentRoute = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (route === currentRoute) {
+        return;
+      }
+
       navigate(route, { replace: true });
     };
 
@@ -84,6 +89,11 @@ const NotificationBootstrap = () => {
       appUrlOpenListener = App.addListener("appUrlOpen", (event) => {
         const route = normalizeAppRoute(event.url);
         if (!route) {
+          return;
+        }
+
+        const currentRoute = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (route === currentRoute) {
           return;
         }
 

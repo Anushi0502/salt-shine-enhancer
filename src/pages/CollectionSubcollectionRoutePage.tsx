@@ -74,7 +74,9 @@ const CollectionSubcollectionRoutePage = () => {
     }
 
     if (changed) {
-      setSearchParams(next, { replace: true });
+      if (next.toString() !== searchParams.toString()) {
+        setSearchParams(next, { replace: true });
+      }
     }
   }, [
     normalizedHandle,
