@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import ShopPage from "@/pages/ShopPage";
-import { getSubcollectionByHandle, resolveCollectionShopifyHandle } from "@/lib/site-navigation";
+import { getSubcollectionByHandle, resolveCollectionFeedHandle } from "@/lib/site-navigation";
 
 const CollectionSubcollectionRoutePage = () => {
   const { handle, subhandle } = useParams();
@@ -25,7 +25,7 @@ const CollectionSubcollectionRoutePage = () => {
     const next = new URLSearchParams(searchParams);
     let changed = false;
 
-    const feedHandle = subcollection?.shopifyHandle || resolveCollectionShopifyHandle(normalizedHandle);
+    const feedHandle = resolveCollectionFeedHandle(normalizedHandle, normalizedSubhandle);
     if (feedHandle && next.get("collection") !== feedHandle) {
       next.set("collection", feedHandle);
       changed = true;

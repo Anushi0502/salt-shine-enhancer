@@ -22,7 +22,12 @@ import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
-import { getCollectionByHandle, getSubcollectionByHandle, resolveCollectionShopifyHandle } from "@/lib/site-navigation";
+import {
+  getCollectionByHandle,
+  getSubcollectionByHandle,
+  resolveCollectionFeedHandle,
+  resolveCollectionShopifyHandle,
+} from "@/lib/site-navigation";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
@@ -130,8 +135,11 @@ const ShopPage = () => {
   const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
   const routeCollectionAlias = normalizeCollectionFilter(routeCollectionHandle);
   const routeSubcollectionAlias = normalizeCollectionFilter(routeSubcollectionHandle);
+  const routeFeedHandle = routeCollectionAlias
+    ? resolveCollectionFeedHandle(routeCollectionAlias, routeSubcollectionAlias || null)
+    : "";
   const collectionHandle = resolveCollectionShopifyHandle(
-    currentCollectionParam || routeCollectionAlias || DEFAULT_COLLECTION_HANDLE,
+    currentCollectionParam || routeFeedHandle || routeCollectionAlias || DEFAULT_COLLECTION_HANDLE,
   );
   const curatedCollection = getCollectionByHandle(routeCollectionAlias || currentCollectionParam || collectionHandle);
   const curatedSubcollection = routeCollectionAlias && routeSubcollectionAlias
@@ -159,7 +167,7 @@ const ShopPage = () => {
       return;
     }
 
-    const nextCollection = resolveCollectionShopifyHandle(routeCollectionAlias);
+    const nextCollection = routeFeedHandle || resolveCollectionShopifyHandle(routeCollectionAlias);
     const currentCollection = normalizeCollectionFilter(searchParams.get("collection"));
     if (nextCollection === currentCollection) {
       return;
@@ -175,7 +183,7 @@ const ShopPage = () => {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [routeCollectionAlias, searchParams, setSearchParams]);
+  }, [routeCollectionAlias, routeFeedHandle, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (location.pathname !== "/shop") {

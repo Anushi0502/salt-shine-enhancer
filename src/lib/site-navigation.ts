@@ -598,6 +598,22 @@ export function resolveCollectionShopifyHandle(handle: string): string {
   return collection.shopifyHandle || collection.handle;
 }
 
+export function resolveCollectionFeedHandle(collectionHandle: string, subcollectionHandle?: string | null): string {
+  const collection = findCollectionMatch(collectionHandle);
+  if (!collection) {
+    return String(collectionHandle || "").trim().toLowerCase();
+  }
+
+  if (subcollectionHandle) {
+    const subcollection = findSubcollectionMatch(collection, subcollectionHandle);
+    if (subcollection?.shopifyHandle) {
+      return subcollection.shopifyHandle;
+    }
+  }
+
+  return collection.shopifyHandle || collection.handle;
+}
+
 export function getCollectionRoutePaths(handle: string): string[] {
   const collection = findCollectionMatch(handle);
   if (!collection) {
