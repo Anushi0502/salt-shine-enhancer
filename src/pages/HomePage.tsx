@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
+import HomeCategoryHierarchy from "@/components/storefront/HomeCategoryHierarchy";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
@@ -40,33 +41,6 @@ const HERO_BANNER_ROTATE_MS = 3500;
 const HOME_REVIEW_TARGET = 280;
 const HOME_REVIEW_FETCH_LIMIT = 48;
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
-
-const categoryTileConfigs = [
-  {
-    title: "Kitchen",
-    to: "/collections/cookware",
-    collectionHandles: ["cookware", "kitchen"],
-    productKeywords: ["kitchen", "cookware", "pan", "pot"],
-  },
-  {
-    title: "Home",
-    to: "/collections/home-decor",
-    collectionHandles: ["home-decor", "home", "decor"],
-    productKeywords: ["home", "decor", "candle"],
-  },
-  {
-    title: "Gifts",
-    to: "/collections/gifts",
-    collectionHandles: ["gifts", "gift"],
-    productKeywords: ["gift", "present", "planner"],
-  },
-  {
-    title: "Wellness",
-    to: "/collections/personal-care",
-    collectionHandles: ["personal-care", "wellness", "health"],
-    productKeywords: ["wellness", "care", "health", "essential"],
-  },
-];
 
 const fallbackBestSellerTiles: ProductTile[] = [
   {
@@ -1092,55 +1066,6 @@ const HomePage = () => {
     [collectionProductIdsByHandle, productById],
   );
 
-  const categoryTiles = useMemo<ImageTile[]>(() => {
-    const seenHandles = new Set<string>();
-    const liveCollectionTiles = collections.reduce<ImageTile[]>((acc, collection) => {
-      const handle = normalizeHandle(collection.handle);
-      if (!handle || seenHandles.has(handle)) {
-        return acc;
-      }
-
-      seenHandles.add(handle);
-
-      const imageFromCollection = normalizeShopifyAssetUrl(collection.image?.src);
-      const keywordTokens = normalizeText(`${collection.title} ${collection.handle}`)
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 5);
-      const imageFromProduct = keywordTokens.length ? findProductImageByKeywords(keywordTokens) : null;
-
-      acc.push({
-        title: collection.title || "Collection",
-        to: `/collections/${collection.handle}`,
-        image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
-      });
-
-      return acc;
-    }, []);
-
-    if (liveCollectionTiles.length) {
-      return liveCollectionTiles;
-    }
-
-    return categoryTileConfigs.map((tile) => {
-      const imageFromCollection =
-        tile.collectionHandles
-          .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
-          .find(Boolean) || null;
-      const imageFromProduct = findProductImageByKeywords(tile.productKeywords);
-
-      return {
-        title: tile.title,
-        to: tile.to,
-        image: imageFromCollection || imageFromProduct || bestSellerHeroImage,
-      };
-    });
-  }, [bestSellerHeroImage, collectionImageByHandle, collections, findProductImageByKeywords]);
-  const categoryCarouselTiles = useMemo(
-    () => (categoryTiles.length > 1 ? [...categoryTiles, ...categoryTiles] : categoryTiles),
-    [categoryTiles],
-  );
-
   const giftTiles = useMemo<ImageTile[]>(() => {
     const usedGiftProductIds = new Set<number>();
 
@@ -1363,39 +1288,7 @@ const HomePage = () => {
         <Reveal delayMs={80}>
           <section className="px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
             <SectionTitle title="Shop by Category" />
-            <div className="salt-category-carousel mt-4 sm:mt-5">
-              <div className="salt-category-carousel-track">
-                {categoryCarouselTiles.map((tile, index) => (
-                  <Link
-                    key={`${tile.to}-${index}`}
-                    to={tile.to}
-                    className="group relative block w-[15.75rem] shrink-0 overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] sm:w-[17.4rem] lg:w-[19rem]"
-                  >
-                    <div className="aspect-[1.26/0.85] overflow-hidden sm:aspect-[1.18/0.8]">
-                      <div className="salt-category-scroll-track h-full w-full">
-                        <ResilientImage
-                          src={tile.image}
-                          alt={buildCollectionImageAltText(tile.title, "shop by category")}
-                          className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          fallback={
-                            <img
-                              src={bestSellerHeroImage}
-                              alt={buildCollectionImageAltText(tile.title, "shop by category")}
-                              className="h-[114%] w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                            />
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(14,48,109,0),rgba(14,48,109,0.92))] px-3 py-2.5 text-center">
-                      <p className="font-display text-[0.98rem] text-white sm:text-[1.08rem]">
-                        {tile.title}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <HomeCategoryHierarchy collections={collections} className="mt-4 sm:mt-5" />
           </section>
         </Reveal>
 
