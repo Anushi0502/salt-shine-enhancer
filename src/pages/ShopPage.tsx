@@ -136,14 +136,14 @@ const ShopPage = () => {
   const routeCollectionAlias = normalizeCollectionFilter(routeCollectionHandle);
   const routeSubcollectionAlias = normalizeCollectionFilter(routeSubcollectionHandle);
   const routeFeedHandle = routeCollectionAlias
-    ? resolveCollectionFeedHandle(routeCollectionAlias, routeSubcollectionAlias || null)
+    ? resolveCollectionFeedHandle(routeCollectionAlias, routeSubcollectionAlias || currentCollectionParam || null)
     : "";
   const collectionHandle = resolveCollectionShopifyHandle(
     currentCollectionParam || routeFeedHandle || routeCollectionAlias || DEFAULT_COLLECTION_HANDLE,
   );
   const curatedCollection = getCollectionByHandle(routeCollectionAlias || currentCollectionParam || collectionHandle);
-  const curatedSubcollection = routeCollectionAlias && routeSubcollectionAlias
-    ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias)
+  const curatedSubcollection = routeCollectionAlias
+    ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias || currentCollectionParam)
     : null;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";

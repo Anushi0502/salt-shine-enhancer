@@ -651,11 +651,16 @@ export function buildSubcollectionRoute(collectionHandle: string, subcollectionH
   const normalizedSubHandle = String(subcollectionHandle || "").trim().toLowerCase();
 
   if (!collection) {
-    return `${buildCollectionRoute(collectionHandle)}/${normalizedSubHandle}`;
+    return normalizedSubHandle
+      ? `/collections/${String(collectionHandle || "").trim().toLowerCase()}?collection=${encodeURIComponent(normalizedSubHandle)}`
+      : buildCollectionRoute(collectionHandle);
   }
 
   const subcollection = findSubcollectionMatch(collection, subcollectionHandle);
-  return `${buildCollectionRoute(collection.handle)}/${subcollection?.handle || normalizedSubHandle}`;
+  const feedHandle = subcollection?.shopifyHandle || subcollection?.handle || normalizedSubHandle;
+  const collectionRoute = buildCollectionRoute(collection.handle);
+
+  return feedHandle ? `${collectionRoute}?collection=${encodeURIComponent(feedHandle)}` : collectionRoute;
 }
 
 export function buildResourceRoute(handle: string): string {
