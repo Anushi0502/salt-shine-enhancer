@@ -224,7 +224,10 @@ function HeaderMenuDrawer({
       <SheetContent
         id="salt-header-menu"
         side="left"
-        style={{ width: "min(24rem, calc(100vw - 0.75rem))" }}
+        style={{
+          width: "min(46rem, calc(100vw - 0.75rem))",
+          maxWidth: "min(46rem, calc(100vw - 0.75rem))",
+        }}
         className="overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)]"
       >
         <div className="flex min-h-full flex-col">
@@ -247,8 +250,9 @@ function HeaderMenuDrawer({
             </p>
           </div>
 
-          <div className="flex-1 px-4 py-4">
-            <section className="border-b border-[#e2edf8] pb-4">
+          <div className="grid flex-1 gap-4 px-4 py-4 sm:grid-cols-[minmax(0,18.75rem)_minmax(24rem,1fr)]">
+            <div className="min-w-0">
+              <section className="border-b border-[#e2edf8] pb-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
                 <SheetClose asChild>
@@ -324,133 +328,138 @@ function HeaderMenuDrawer({
                   );
                 })}
               </div>
-            </section>
+              </section>
 
-            <section className="border-b border-[#e2edf8] py-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resource Hub</p>
-                <SheetClose asChild>
-                  <Link
-                    to="/resources"
-                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-                  >
-                    Open hub
-                  </Link>
-                </SheetClose>
-              </div>
-
-              <div className="mt-3 grid gap-1.5">
-                {SITE_RESOURCE_GUIDES.map((guide) => (
-                  <SheetClose asChild key={guide.handle}>
+              <section className="border-b border-[#e2edf8] py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resource Hub</p>
+                  <SheetClose asChild>
                     <Link
-                      to={buildResourceRoute(guide.handle)}
-                      className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                      to="/resources"
+                      className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
                     >
-                      <span className="line-clamp-1">{guide.title}</span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                      Open hub
                     </Link>
                   </SheetClose>
-                ))}
-              </div>
-            </section>
+                </div>
 
-            <section className="border-b border-[#e2edf8] py-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
-                  Account & support
-                </p>
-              </div>
-
-              <div className="mt-3 grid gap-1.5">
-                <SheetClose asChild>
-                  <a
-                    href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
-                    className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
-                  >
-                    <span>Account & Orders</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                  </a>
-                </SheetClose>
-
-                {SITE_FOOTER_COMPANY_LINKS.map((link) =>
-                  link.href ? (
-                    <SheetClose asChild key={link.label}>
-                      <a
-                        href={link.href}
-                        className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
-                      >
-                        <span>{link.label}</span>
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                      </a>
-                    </SheetClose>
-                  ) : (
-                    <SheetClose asChild key={link.label}>
+                <div className="mt-3 grid gap-1.5">
+                  {SITE_RESOURCE_GUIDES.map((guide) => (
+                    <SheetClose asChild key={guide.handle}>
                       <Link
-                        to={link.to || "/"}
+                        to={buildResourceRoute(guide.handle)}
                         className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
                       >
-                        <span>{link.label}</span>
+                        <span className="line-clamp-1">{guide.title}</span>
                         <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                       </Link>
                     </SheetClose>
-                  ),
-                )}
-              </div>
-            </section>
+                  ))}
+                </div>
+              </section>
 
-            <section className="py-4">
-              <div className="grid gap-4">
-                <div className="grid gap-1.5">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resources</p>
-                  {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
+              <section className="border-b border-[#e2edf8] py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                    Account & support
+                  </p>
+                </div>
+
+                <div className="mt-3 grid gap-1.5">
+                  <SheetClose asChild>
+                    <a
+                      href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
+                      className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                    >
+                      <span>Account & Orders</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    </a>
+                  </SheetClose>
+
+                  {SITE_FOOTER_COMPANY_LINKS.map((link) =>
                     link.href ? (
                       <SheetClose asChild key={link.label}>
                         <a
                           href={link.href}
-                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
                         >
-                          {link.label}
+                          <span>{link.label}</span>
+                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                         </a>
                       </SheetClose>
                     ) : (
                       <SheetClose asChild key={link.label}>
                         <Link
                           to={link.to || "/"}
-                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
                         >
-                          {link.label}
+                          <span>{link.label}</span>
+                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                         </Link>
                       </SheetClose>
                     ),
                   )}
                 </div>
+              </section>
 
-                <div className="grid gap-1.5">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Policies</p>
-                  {SITE_FOOTER_POLICY_LINKS.map((link) =>
-                    link.href ? (
-                      <SheetClose asChild key={link.label}>
-                        <a
-                          href={link.href}
-                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
-                        >
-                          {link.label}
-                        </a>
-                      </SheetClose>
-                    ) : (
-                      <SheetClose asChild key={link.label}>
-                        <Link
-                          to={link.to || "/"}
-                          className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
-                        >
-                          {link.label}
-                        </Link>
-                      </SheetClose>
-                    ),
-                  )}
+              <section className="py-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-1.5">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Resources</p>
+                    {SITE_FOOTER_RESOURCE_LINKS.map((link) =>
+                      link.href ? (
+                        <SheetClose asChild key={link.label}>
+                          <a
+                            href={link.href}
+                            className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          >
+                            {link.label}
+                          </a>
+                        </SheetClose>
+                      ) : (
+                        <SheetClose asChild key={link.label}>
+                          <Link
+                            to={link.to || "/"}
+                            className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          >
+                            {link.label}
+                          </Link>
+                        </SheetClose>
+                      ),
+                    )}
+                  </div>
+
+                  <div className="grid gap-1.5">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Policies</p>
+                    {SITE_FOOTER_POLICY_LINKS.map((link) =>
+                      link.href ? (
+                        <SheetClose asChild key={link.label}>
+                          <a
+                            href={link.href}
+                            className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          >
+                            {link.label}
+                          </a>
+                        </SheetClose>
+                      ) : (
+                        <SheetClose asChild key={link.label}>
+                          <Link
+                            to={link.to || "/"}
+                            className="rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                          >
+                            {link.label}
+                          </Link>
+                        </SheetClose>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
+
+            <div className="min-w-0 sm:sticky sm:top-4">
+              <CollectionMenuPanel collection={activeCollection} />
+            </div>
           </div>
         </div>
       </SheetContent>
