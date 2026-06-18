@@ -149,6 +149,7 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
         >
           {collection.title}
         </Link>
+        <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">{collection.summary}</p>
 
       </div>
 
@@ -286,24 +287,7 @@ function HeaderMenuDrawer({
                         </button>
                       </div>
 
-                      {active ? (
-                        <div className="mt-2 grid gap-1.5 border-l border-[#edf3fb] pl-3">
-                          {collection.subcollections.map((subcollection) => (
-                            <SheetClose asChild key={subcollection.handle}>
-                              <Link
-                                to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
-                                onMouseEnter={() => onSelectCollection(collection.handle)}
-                                onFocus={() => onSelectCollection(collection.handle)}
-                                className="group flex items-center justify-between rounded-[0.7rem] px-3 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
-                              >
-                                <span className="line-clamp-1">{subcollection.title}</span>
-                                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                              </Link>
-                            </SheetClose>
-                          ))}
-
-                        </div>
-                      ) : null}
+                      
                     </div>
                   );
                 })}
