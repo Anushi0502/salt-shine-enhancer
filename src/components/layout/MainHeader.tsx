@@ -150,7 +150,6 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
           {collection.title}
         </Link>
 
-        <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">{collection.summary}</p>
       </div>
 
       <div className="px-2.5 py-2.5 sm:px-3">
