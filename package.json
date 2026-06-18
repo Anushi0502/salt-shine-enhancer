@@ -10,6 +10,8 @@
     "build:dev": "vite build --mode development",
     "build:shopify-theme": "npm run build && npm run theme:bundle",
     "theme:bundle": "node scripts/build-shopify-theme.mjs",
+    "shopify:seo-batch": "node scripts/shopify-seo-batch-update.mjs",
+    "shopify:seo-batch:dry-run": "node scripts/shopify-seo-batch-update.mjs --dry-run",
     "build:mobile": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview",

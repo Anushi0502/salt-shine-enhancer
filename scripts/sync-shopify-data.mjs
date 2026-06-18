@@ -20,26 +20,77 @@ const blogHandles = Array.from(
   ),
 );
 const outDir = resolve(process.cwd(), "public", "data");
+const requestSpacingMs = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS ?? 250);
+const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS ?? 8);
+const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
+const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
+const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const productsPath = resolve(outDir, "products.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
+let requestQueue = Promise.resolve();
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchJsonUrl(url, { attempt = 0, maxAttempts = 5 } = {}) {
-  const response = await fetch(url);
+function parseRetryAfterMs(value) {
+  if (!value) {
+    return null;
+  }
+
+  const numericSeconds = Number(value);
+  if (Number.isFinite(numericSeconds) && numericSeconds >= 0) {
+    return Math.round(numericSeconds * 1000);
+  }
+
+  const parsedDate = Date.parse(value);
+  if (Number.isFinite(parsedDate)) {
+    return Math.max(0, parsedDate - Date.now());
+  }
+
+  return null;
+}
+
+function computeRetryDelayMs(response, attempt, baseDelayMs) {
+  const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+  if (retryAfterMs !== null) {
+    return Math.min(retryAfterMs, maxRetryDelayMs);
+  }
+
+  const jitterMs = Math.floor(Math.random() * 500);
+  return Math.min(maxRetryDelayMs, baseDelayMs * 2 ** attempt + jitterMs);
+}
+
+async function runSerializedRequest(task) {
+  let releaseQueue;
+  const currentRequest = new Promise((resolve) => {
+    releaseQueue = resolve;
+  });
+
+  const previousRequest = requestQueue;
+  requestQueue = currentRequest;
+  await previousRequest;
+
+  try {
+    const result = await task();
+    if (requestSpacingMs > 0) {
+      await sleep(requestSpacingMs);
+    }
+    return result;
+  } finally {
+    releaseQueue?.();
+  }
+}
+
+async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
+  const response = await runSerializedRequest(() => fetch(url));
 
   if (!response.ok) {
     if (response.status === 429 && attempt < maxAttempts - 1) {
-      const retryAfterHeader = response.headers.get("retry-after");
-      const retryAfterSeconds = Number(retryAfterHeader);
-      const backoffDelay =
-        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-          ? Math.min(retryAfterSeconds * 1000, 30_000)
-          : Math.min(1000 * 2 ** attempt + Math.floor(Math.random() * 400), 30_000);
+      const backoffDelay = computeRetryDelayMs(response, attempt, publicRetryBaseDelayMs);
 
       process.stdout.write(
         `Rate limited on ${url}; retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
@@ -54,29 +105,26 @@ async function fetchJsonUrl(url, { attempt = 0, maxAttempts = 5 } = {}) {
   return response.json();
 }
 
-async function fetchAdminJson(path, { attempt = 0, maxAttempts = 5 } = {}) {
+async function fetchAdminJson(path, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
   if (!adminAccessToken) {
     throw new Error("Shopify Admin API token not configured");
   }
 
   const adminBase = new URL(baseUrl).origin;
   const url = `${adminBase}/admin/api/${adminApiVersion}${path}`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": adminAccessToken,
-    },
-  });
+  const response = await runSerializedRequest(() =>
+    fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": adminAccessToken,
+      },
+    }),
+  );
 
   if (!response.ok) {
     if (response.status === 429 && attempt < maxAttempts - 1) {
-      const retryAfterHeader = response.headers.get("retry-after");
-      const retryAfterSeconds = Number(retryAfterHeader);
-      const delayMs =
-        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-          ? Math.min(retryAfterSeconds * 1000, 30_000)
-          : Math.min(1500 * 2 ** attempt + Math.floor(Math.random() * 400), 30_000);
+      const delayMs = computeRetryDelayMs(response, attempt, adminRetryBaseDelayMs);
       process.stdout.write(
         `Rate limited on ${url}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
       );
