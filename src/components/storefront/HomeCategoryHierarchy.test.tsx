@@ -66,12 +66,10 @@ describe("HomeCategoryHierarchy", () => {
     );
 
     await waitFor(() => expect(screen.getByTestId("location-search")).toHaveTextContent("category=cookware"));
-    expect(screen.getByRole("link", { name: /Cooking Essential/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View all/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Home & Decor/i }));
 
-    expect(screen.getByRole("link", { name: /Candles/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Cooking Essential/i })).not.toBeInTheDocument();
     expect(screen.getByTestId("location-search")).toHaveTextContent("category=home-decor");
   });
 
@@ -101,8 +99,8 @@ describe("HomeCategoryHierarchy", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Home & Decor/i }));
-    fireEvent.click(screen.getByRole("link", { name: /Candles/i }));
+    fireEvent.click(screen.getByRole("link", { name: /View all/i }));
 
-    expect(screen.getByTestId("collection-route")).toHaveTextContent("candles");
+    expect(screen.getByTestId("collection-route")).toHaveTextContent("home-decor");
   });
 });

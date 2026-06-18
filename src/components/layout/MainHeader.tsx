@@ -177,15 +177,6 @@ function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[#edf3fb] px-4 py-3">
-        <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">Shop feed</span>
-        <Link
-          to={buildCollectionRoute(collection.handle)}
-          className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-        >
-          Open collection
-        </Link>
-      </div>
     </div>
   );
 }
@@ -281,9 +272,7 @@ function HeaderMenuDrawer({
                             <span className="block text-sm font-semibold leading-6 text-[#102A43]">
                               {collection.title}
                             </span>
-                            <span className="mt-0.5 line-clamp-2 block text-[0.75rem] leading-5 text-[#5C748F]">
-                              {collection.summary}
-                            </span>
+                            
                           </Link>
                         </SheetClose>
 
@@ -313,14 +302,6 @@ function HeaderMenuDrawer({
                             </SheetClose>
                           ))}
 
-                          <SheetClose asChild>
-                            <Link
-                              to={buildCollectionRoute(collection.handle)}
-                              className="pt-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-                            >
-                              Open collection feed
-                            </Link>
-                          </SheetClose>
                         </div>
                       ) : null}
                     </div>

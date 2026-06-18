@@ -127,7 +127,7 @@ export function HomeCategoryHierarchy({ collections, className }: HomeCategoryHi
         </div>
 
         <div className="rounded-[1.5rem] border border-[#d6e4fb] bg-[#eef5ff] px-4 py-4 shadow-[0_18px_48px_rgba(16,45,95,0.05)] sm:px-5 sm:py-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="max-w-[36rem]">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-[#5a7fb8]">
                 {selectedCategory.collectionTitle}
@@ -135,7 +135,6 @@ export function HomeCategoryHierarchy({ collections, className }: HomeCategoryHi
               <h3 className="mt-1 font-display text-[1.18rem] leading-tight text-[#143b7c] sm:text-[1.3rem]">
                 {selectedCategory.label}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{selectedCategory.description}</p>
             </div>
 
             <Link
@@ -144,29 +143,7 @@ export function HomeCategoryHierarchy({ collections, className }: HomeCategoryHi
               aria-label={`View all ${selectedCategory.label}`}
             >
               <span>View all</span>
-              <ChevronRight className="h-4 w-4" />
             </Link>
-          </div>
-
-          <div className="mt-4">
-            {selectedCategory.items.length ? (
-              <div className="space-y-2.5">
-                {selectedCategory.items.map((item) => (
-                  <Link
-                    key={item.handle}
-                    to={item.href}
-                    className="group flex items-center justify-between rounded-2xl border border-[#d7e5fb] bg-white/80 px-4 py-3 text-left text-[0.98rem] text-slate-700 transition hover:border-[#a7c5f4] hover:bg-white hover:text-[#143b7c]"
-                  >
-                    <span className="font-medium leading-snug">{item.label}</span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#1654b2]" />
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-[#bfd4fb] bg-white/70 px-4 py-4 text-sm leading-6 text-slate-600">
-                Use <span className="font-semibold text-[#1c4d94]">View all</span> to open the live collection for this department.
-              </div>
-            )}
           </div>
         </div>
       </div>
