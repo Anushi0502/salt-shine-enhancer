@@ -94,16 +94,16 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
       onMouseEnter={clearCloseTimeout}
       onMouseLeave={scheduleClose}
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-[0.95rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
-          <div className="flex items-center justify-between border-b border-[#e2edf8] px-3 py-2.5">
-            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
-            <p className="text-[0.52rem] font-semibold uppercase tracking-[0.14em] text-[#8a99aa]">
+      <div className="grid gap-2.5 lg:grid-cols-[minmax(0,14.5rem)_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-[0.85rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
+          <div className="flex items-center justify-between border-b border-[#e2edf8] px-2.5 py-2">
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
+            <p className="text-[0.48rem] font-semibold uppercase tracking-[0.14em] text-[#8a99aa]">
               {collections.length} live groups
             </p>
           </div>
 
-          <div className="max-h-[18rem] space-y-1 overflow-y-auto p-2 pr-1">
+          <div className="max-h-[15rem] space-y-0.5 overflow-y-auto p-1.5 pr-1">
             {collections.map((collection) => {
               const isActive = normalizeHandle(collection.handle) === normalizeHandle(activeCollection.handle);
 
@@ -114,7 +114,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                   onMouseEnter={() => openCollection(collection.handle)}
                   onFocus={() => openCollection(collection.handle)}
                   className={cn(
-                    "group flex w-full items-center justify-between rounded-2xl border px-3.5 py-3 text-left text-[0.95rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8df7] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                    "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8df7] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                     isActive
                       ? "border-[#a8c8ff] bg-[#dce9ff] text-[#0f3b7f] shadow-[0_8px_20px_rgba(74,120,204,0.12)]"
                       : "border-transparent text-slate-700 hover:border-[#d9e6fa] hover:bg-[#f2f7ff]",
@@ -122,9 +122,9 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                   aria-expanded={isActive && submenuOpen}
                 >
                   <span className="min-w-0 flex-1 leading-snug">{collection.title}</span>
-                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
+                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
                     <ChevronRight
-                      className={cn("h-4 w-4 transition", isActive ? "rotate-90 text-[#1654b2]" : "")}
+                      className={cn("h-3.5 w-3.5 transition", isActive ? "rotate-90 text-[#1654b2]" : "")}
                     />
                   </span>
                 </button>
@@ -133,7 +133,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
           </div>
         </div>
 
-        <div className="relative min-h-[18rem] lg:self-stretch">
+        <div className="relative min-h-[15rem] lg:self-stretch">
           <div
             data-testid="collection-hover-submenu"
             onMouseEnter={clearCloseTimeout}
@@ -141,14 +141,14 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
             aria-hidden={!submenuOpen}
             data-state={submenuOpen ? "open" : "closed"}
             className={cn(
-              "h-full max-h-[18rem] overflow-y-auto rounded-[0.95rem] border border-[#d8e6f5] bg-[#eef5ff] p-3 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)] transition-all duration-200",
+              "h-full max-h-[15rem] overflow-y-auto rounded-[0.85rem] border border-[#d8e6f5] bg-[#eef5ff] p-2.5 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)] transition-all duration-200",
               submenuOpen ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-2 opacity-0",
             )}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-[#dbe8f6] pb-3">
+            <div className="flex items-start justify-between gap-2 border-b border-[#dbe8f6] pb-2.5">
               <div className="min-w-0">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Subcategories</p>
-                <h3 className="mt-1 truncate text-[1.03rem] font-semibold leading-6 text-[#102A43]">
+                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Subcategories</p>
+                <h3 className="mt-0.5 truncate text-[0.9rem] font-semibold leading-5 text-[#102A43]">
                   {activeCollection.title}
                 </h3>
               </div>
@@ -156,28 +156,28 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
               <Link
                 to={buildCollectionRoute(activeCollection.handle)}
                 onClick={onLinkClick}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#9cbcf2] bg-white px-3 py-1.5 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-[#1c4d94] transition hover:border-[#7ea9ef] hover:bg-[#f8fbff]"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#9cbcf2] bg-white px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-[#1c4d94] transition hover:border-[#7ea9ef] hover:bg-[#f8fbff]"
               >
                 <span>View all</span>
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
 
-            <div className="mt-3 grid gap-1.5">
+            <div className="mt-2 grid gap-1">
               {activeCollection.subcollections.length ? (
                 activeCollection.subcollections.map((subcollection) => (
                   <Link
                     key={subcollection.handle}
                     to={buildSubcollectionRoute(activeCollection.handle, subcollection.handle)}
                     onClick={onLinkClick}
-                    className="group flex items-center justify-between rounded-[0.8rem] px-3 py-2.5 text-sm font-medium text-[#102A43] transition hover:bg-white hover:text-[#1c4d94]"
+                    className="group flex items-center justify-between rounded-[0.65rem] px-2.5 py-2 text-[0.75rem] font-medium text-[#102A43] transition hover:bg-white hover:text-[#1c4d94]"
                   >
                     <span className="line-clamp-1">{subcollection.title}</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                   </Link>
                 ))
               ) : (
-                <div className="rounded-[0.8rem] border border-dashed border-[#cfdff2] bg-white px-3 py-4 text-sm text-[#5C748F]">
+                <div className="rounded-[0.65rem] border border-dashed border-[#cfdff2] bg-white px-2.5 py-3 text-[0.75rem] text-[#5C748F]">
                   No subcategories yet.
                 </div>
               )}

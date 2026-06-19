@@ -183,77 +183,77 @@ function HeaderMenuDrawer({
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="w-[min(18.5rem,calc(100vw-0.75rem))] max-w-[min(18.5rem,calc(100vw-0.75rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(40rem,calc(100vw-1rem))] lg:max-w-[min(40rem,calc(100vw-1rem))]"
+        className="w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(34rem,calc(100vw-1rem))] lg:max-w-[min(34rem,calc(100vw-1rem))]"
       >
         <div className="flex min-h-full flex-col">
-          <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-3 py-2 text-white sm:px-3.5 sm:py-2.5">
+          <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-2.5 py-1.5 text-white sm:px-3 sm:py-2">
             <SheetClose asChild>
               <a
                 href={accountHref}
-                className="flex min-w-0 items-center gap-2.5 rounded-md pr-8 text-left transition hover:opacity-95"
+                className="flex min-w-0 items-center gap-2 rounded-md pr-6 text-left transition hover:opacity-95"
                 aria-label={accountRoutes.isLoggedIn && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/18 bg-white text-[#1f2d47] shadow-[0_1px_2px_rgba(0,0,0,0.12)]">
-                  <CircleUserRound className="h-4.5 w-4.5" />
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/18 bg-white text-[#1f2d47] shadow-[0_1px_2px_rgba(0,0,0,0.12)]">
+                  <CircleUserRound className="h-4 w-4" />
                 </span>
-                <span className="min-w-0 truncate font-semibold text-[1rem] leading-none tracking-[-0.01em] text-white">
+                <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white">
                   {accountLabel}
                 </span>
               </a>
             </SheetClose>
           </div>
 
-          <div className="grid gap-3 px-3 py-3">
-            <section className="border-b border-[#e2edf8] pb-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
-                  <ArrowDownUp className="h-3.5 w-3.5" />
+          <div className="grid gap-2 px-2.5 py-2.5 sm:px-3">
+            <section className="border-b border-[#e2edf8] pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  <ArrowDownUp className="h-3 w-3" />
                   Filter
                 </p>
                 <SheetClose asChild>
                   <Link
                     to="/shop"
-                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                    className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
                   >
                     View shop
                   </Link>
                 </SheetClose>
               </div>
 
-              <div className="mt-2.5 grid gap-1.5">
+              <div className="mt-2 grid gap-1">
                 {drawerFilterOptions.map((option) => (
                   <SheetClose asChild key={option.sort}>
                     <Link
                       to={`/shop?sort=${option.sort}`}
-                      className="group flex items-center justify-between rounded-[0.7rem] border border-[#e2edf8] bg-white px-3 py-2 text-left transition hover:bg-[#f5faff]"
+                      className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
                     >
-                      <span className="text-sm font-medium leading-6 text-[#102A43]">{option.label}</span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                      <span className="text-[0.82rem] font-medium leading-5 text-[#102A43]">{option.label}</span>
+                      <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                     </Link>
                   </SheetClose>
                 ))}
               </div>
             </section>
 
-            <section className="border-b border-[#e2edf8] pb-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
+            <section className="border-b border-[#e2edf8] pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
                 <SheetClose asChild>
                   <Link
                     to="/collections"
-                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                    className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
                   >
                     View all
                   </Link>
                 </SheetClose>
               </div>
 
-              <div className="mt-2.5 grid gap-2.5 lg:hidden">
+              <div className="mt-2 grid gap-1.5 lg:hidden">
                 {SITE_COLLECTIONS.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
 
                   return (
-                    <div key={collection.handle} className="overflow-hidden rounded-[0.95rem] border border-[#e2edf8] bg-white">
+                    <div key={collection.handle} className="overflow-hidden rounded-[0.8rem] border border-[#e2edf8] bg-white">
                       <button
                         type="button"
                         onClick={() => {
@@ -261,32 +261,32 @@ function HeaderMenuDrawer({
                             current === collection.handle ? null : collection.handle,
                           );
                         }}
-                        className="group flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-[#f5faff]"
+                        className="group flex w-full items-center justify-between gap-2.5 px-2.5 py-2 text-left transition hover:bg-[#f5faff]"
                         aria-expanded={isExpanded}
                         aria-controls={`salt-menu-subcollections-${collection.handle}`}
                       >
-                        <span className="min-w-0 flex-1 text-sm font-semibold leading-6 text-[#102A43]">
+                        <span className="min-w-0 flex-1 text-[0.82rem] font-semibold leading-5 text-[#102A43]">
                           {collection.title}
                         </span>
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
-                          <ChevronRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} />
+                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
+                          <ChevronRight className={`h-3.5 w-3.5 transition ${isExpanded ? "rotate-90" : ""}`} />
                         </span>
                       </button>
 
                       {isExpanded ? (
                         <div
                           id={`salt-menu-subcollections-${collection.handle}`}
-                          className="border-t border-[#edf3fb] bg-[#fbfdff] px-2 py-2"
+                          className="border-t border-[#edf3fb] bg-[#fbfdff] px-1.5 py-1.5"
                         >
-                          <div className="grid gap-1">
+                          <div className="grid gap-0.5">
                             {collection.subcollections.map((subcollection) => (
                               <SheetClose asChild key={subcollection.handle}>
                                 <Link
                                   to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
-                                  className="group flex items-center justify-between rounded-[0.65rem] px-2.5 py-1.5 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                                  className="group flex items-center justify-between rounded-[0.55rem] px-2 py-1 text-[0.75rem] text-[#102A43] transition hover:bg-[#f5faff]"
                                 >
                                   <span className="line-clamp-1">{subcollection.title}</span>
-                                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                                  <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                                 </Link>
                               </SheetClose>
                             ))}
@@ -298,30 +298,30 @@ function HeaderMenuDrawer({
                 })}
               </div>
 
-              <div className="mt-3 hidden lg:block">
+              <div className="mt-2 hidden lg:block">
                 <CollectionHoverMenu collections={SITE_COLLECTIONS} onLinkClick={() => setMenuOpen(false)} />
               </div>
             </section>
 
             <section>
-              <div className="flex items-center justify-between gap-3">
-                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
-                  <Settings2 className="h-3.5 w-3.5" />
+              <div className="flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  <Settings2 className="h-3 w-3" />
                   Help & Settings
                 </p>
               </div>
 
-              <div className="mt-2.5 grid gap-1">
-                <div className="flex items-center justify-between rounded-[0.7rem] border border-[#e2edf8] bg-white px-3 py-2 text-left">
-                  <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
-                    <Globe className="h-4 w-4 text-[#7d90aa]" />
+              <div className="mt-2 grid gap-0.5">
+                <div className="flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left">
+                  <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
+                    <Globe className="h-3.5 w-3.5 text-[#7d90aa]" />
                     English
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between rounded-[0.7rem] border border-[#e2edf8] bg-white px-3 py-2 text-left">
-                  <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
-                    <Flag className="h-4 w-4 text-[#7d90aa]" />
+                <div className="flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left">
+                  <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
+                    <Flag className="h-3.5 w-3.5 text-[#7d90aa]" />
                     United States
                   </span>
                 </div>
@@ -329,26 +329,26 @@ function HeaderMenuDrawer({
                 <SheetClose asChild>
                   <a
                     href="/contact"
-                    className="group flex items-center justify-between rounded-[0.7rem] border border-[#e2edf8] bg-white px-3 py-2 text-left transition hover:bg-[#f5faff]"
+                    className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
                   >
-                    <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
-                      <LifeBuoy className="h-4 w-4 text-[#7d90aa]" />
+                    <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
+                      <LifeBuoy className="h-3.5 w-3.5 text-[#7d90aa]" />
                       Customer Service
                     </span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                   </a>
                 </SheetClose>
 
                 <SheetClose asChild>
                   <a
                     href={accountRoutes.login}
-                    className="group flex items-center justify-between rounded-[0.7rem] border border-[#e2edf8] bg-white px-3 py-2 text-left transition hover:bg-[#f5faff]"
+                    className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
                   >
-                    <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
-                      <CircleUserRound className="h-4 w-4 text-[#7d90aa]" />
+                    <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
+                      <CircleUserRound className="h-3.5 w-3.5 text-[#7d90aa]" />
                       Sign in
                     </span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
                   </a>
                 </SheetClose>
               </div>
