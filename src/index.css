@@ -321,10 +321,10 @@
     justify-content: center;
     white-space: nowrap;
     border-bottom: 2px solid transparent;
-    padding: clamp(0.58rem, 0.7vw, 1rem) clamp(0.2rem, 0.3vw, 0.55rem)
-      clamp(0.7rem, 0.8vw, 1.12rem);
-    font-size: clamp(0.74rem, 0.22vw + 0.62rem, 0.92rem);
-    font-weight: 600;
+    padding: clamp(0.58rem, 0.76vw, 1.05rem) clamp(0.25rem, 0.34vw, 0.65rem)
+      clamp(0.7rem, 0.86vw, 1.2rem);
+    font-size: clamp(0.82rem, 0.32vw + 0.7rem, 1.02rem);
+    font-weight: 700;
     line-height: 1;
     letter-spacing: -0.01em;
     transition:

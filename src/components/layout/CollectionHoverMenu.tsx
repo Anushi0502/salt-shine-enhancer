@@ -94,7 +94,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
       onMouseEnter={clearCloseTimeout}
       onMouseLeave={scheduleClose}
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
         <div className="rounded-[0.95rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
           <div className="flex items-center justify-between border-b border-[#e2edf8] px-3 py-2.5">
             <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
@@ -133,7 +133,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
           </div>
         </div>
 
-        <div className="relative min-h-[18rem]">
+        <div className="relative min-h-[18rem] lg:self-stretch">
           <div
             data-testid="collection-hover-submenu"
             onMouseEnter={clearCloseTimeout}
@@ -141,7 +141,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
             aria-hidden={!submenuOpen}
             data-state={submenuOpen ? "open" : "closed"}
             className={cn(
-              "absolute inset-0 rounded-[0.95rem] border border-[#d8e6f5] bg-[#eef5ff] p-3 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)] transition-all duration-200",
+              "h-full max-h-[18rem] overflow-y-auto rounded-[0.95rem] border border-[#d8e6f5] bg-[#eef5ff] p-3 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)] transition-all duration-200",
               submenuOpen ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-2 opacity-0",
             )}
           >
