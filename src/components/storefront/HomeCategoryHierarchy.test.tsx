@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useLocation, useParams, MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import "@testing-library/jest-dom/vitest";
 
 import { HomeCategoryHierarchy } from "@/components/storefront/HomeCategoryHierarchy";
 import type { ShopifyCollection } from "@/types/shopify";

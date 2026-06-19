@@ -56,61 +56,13 @@ export type SiteFooterLink = {
 
 export const TRACK_ORDER_URL = "https://shopify.com/58076594275/account/orders";
 
+function normalizeHandle(value: string | null | undefined): string {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
 export const SITE_COLLECTIONS: SiteCollection[] = [
-  {
-    title: "Senior Living Solutions",
-    handle: "senior-living-solutions",
-    shopifyHandle: "books",
-    summary:
-      "Practical daily supports for easier routines, safer rooms, stronger organization, and more confident independent living.",
-    searchQuery: "planner",
-    accent: {
-      label: "Senior living route",
-      title: "A calmer way to shop for everyday support",
-      body:
-        "Start with simple daily helpers, then narrow into home safety, memory support, caregiver essentials, and mobility-friendly tools that feel useful without feeling clinical.",
-      bullets: ["Daily living aids", "Memory and organization", "Caregiver-friendly tools"],
-    },
-    subcollections: [
-      {
-        title: "Daily Living Aids",
-        handle: "daily-living-aids",
-        summary: "Easy-use helpers that make dressing, gripping, reaching, and routine tasks feel lighter.",
-        searchQuery: "planner",
-      },
-      {
-        title: "Home Safety",
-        handle: "home-safety",
-        summary: "Safer bath, hallway, and room solutions that reduce friction around the home.",
-        searchQuery: "self-help",
-      },
-      {
-        title: "Memory & Organization",
-        handle: "memory-organization",
-        summary: "Planners, reminders, labels, and simple systems that keep the day on track.",
-        searchQuery: "goal setting",
-      },
-      {
-        title: "Caregiver Essentials",
-        handle: "caregiver-essentials",
-        summary: "Tools that make caregiving more organized, calm, and straightforward.",
-        searchQuery: "tracker",
-      },
-      {
-        title: "Gifts for Seniors",
-        handle: "gifts-for-seniors",
-        shopifyHandle: "gifts",
-        summary: "Thoughtful gift ideas that feel personal, practical, and easy to appreciate.",
-        searchQuery: "gifts for seniors thoughtful practical",
-      },
-      {
-        title: "Mobility Support",
-        handle: "mobility-support",
-        summary: "Comfortable supports for balance, movement, and around-the-home travel.",
-        searchQuery: "exercise",
-      },
-    ],
-  },
   {
     title: "Home & Kitchen",
     handle: "home-kitchen",
@@ -387,6 +339,60 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         handle: "outdoor-essentials",
         summary: "Reliable basics for picnics, patios, and time outside.",
         searchQuery: "portable",
+      },
+    ],
+  },
+  {
+    title: "Senior Living Solutions",
+    handle: "senior-living-solutions",
+    shopifyHandle: "books",
+    summary:
+      "Practical daily supports for easier routines, safer rooms, stronger organization, and more confident independent living.",
+    searchQuery: "planner",
+    accent: {
+      label: "Senior living route",
+      title: "A calmer way to shop for everyday support",
+      body:
+        "Start with simple daily helpers, then narrow into home safety, memory support, caregiver essentials, and mobility-friendly tools that feel useful without feeling clinical.",
+      bullets: ["Daily living aids", "Memory and organization", "Caregiver-friendly tools"],
+    },
+    subcollections: [
+      {
+        title: "Daily Living Aids",
+        handle: "daily-living-aids",
+        summary: "Easy-use helpers that make dressing, gripping, reaching, and routine tasks feel lighter.",
+        searchQuery: "planner",
+      },
+      {
+        title: "Home Safety",
+        handle: "home-safety",
+        summary: "Safer bath, hallway, and room solutions that reduce friction around the home.",
+        searchQuery: "self-help",
+      },
+      {
+        title: "Memory & Organization",
+        handle: "memory-organization",
+        summary: "Planners, reminders, labels, and simple systems that keep the day on track.",
+        searchQuery: "goal setting",
+      },
+      {
+        title: "Caregiver Essentials",
+        handle: "caregiver-essentials",
+        summary: "Tools that make caregiving more organized, calm, and straightforward.",
+        searchQuery: "tracker",
+      },
+      {
+        title: "Gifts for Seniors",
+        handle: "gifts-for-seniors",
+        shopifyHandle: "gifts",
+        summary: "Thoughtful gift ideas that feel personal, practical, and easy to appreciate.",
+        searchQuery: "gifts for seniors thoughtful practical",
+      },
+      {
+        title: "Mobility Support",
+        handle: "mobility-support",
+        summary: "Comfortable supports for balance, movement, and around-the-home travel.",
+        searchQuery: "exercise",
       },
     ],
   },
@@ -736,3 +742,4 @@ export function buildSearchQueryUrl(query: string): string {
   const normalizedQuery = String(query || "").trim();
   return normalizedQuery ? `/shop?q=${encodeURIComponent(normalizedQuery)}` : "/shop";
 }
+

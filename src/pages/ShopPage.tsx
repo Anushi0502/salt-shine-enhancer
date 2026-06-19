@@ -31,9 +31,11 @@ import {
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
-  { value: "featured", label: "Featured" },
+  { value: "title-asc", label: "A to Z" },
+  { value: "title-desc", label: "Z to A" },
   { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
+  { value: "featured", label: "Featured" },
   { value: "discount", label: "Biggest Savings" },
   { value: "newest", label: "Newest" },
 ] as const;
@@ -261,6 +263,14 @@ const ShopPage = () => {
 
   const sortedProducts = useMemo(() => {
     const base = [...priceFilteredProducts];
+
+    if (sort === "title-asc") {
+      return base.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    if (sort === "title-desc") {
+      return base.sort((a, b) => b.title.localeCompare(a.title));
+    }
 
     if (sort === "featured" && selectedCollectionOrder) {
       return base.sort((a, b) => {

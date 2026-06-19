@@ -1,6 +1,19 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, CircleUserRound, Heart, Menu, Search, ShoppingCart } from "lucide-react";
+import {
+  ArrowDownUp,
+  ChevronDown,
+  ChevronRight,
+  CircleUserRound,
+  Flag,
+  Globe,
+  Heart,
+  LifeBuoy,
+  Menu,
+  Search,
+  Settings2,
+  ShoppingCart,
+} from "lucide-react";
 import { filterProducts } from "@/lib/catalog";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
@@ -11,11 +24,12 @@ import {
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
 } from "@/lib/site-navigation";
-import { getRuntimeContext } from "@/lib/theme-assets";
-import { getShopifyAccountRoutes, mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
+import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
+import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
+import { CollectionHoverMenu } from "@/components/layout/CollectionHoverMenu";
 import { Sheet, SheetClose, SheetContent } from "@/components/ui/sheet";
 
 const searchScopeOptions = [
@@ -128,6 +142,12 @@ function utilityNavItemClass(active: boolean) {
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
 const SHOPIFY_CUSTOMER_ACCOUNT_URL = "https://shopify.com/58076594275/account";
+const drawerFilterOptions = [
+  { label: "A to Z", sort: "title-asc" },
+  { label: "Z to A", sort: "title-desc" },
+  { label: "Price - Low to High", sort: "price-asc" },
+  { label: "Price - High to Low", sort: "price-desc" },
+] as const;
 
 type HeaderMenuDrawerProps = {
   open: boolean;
@@ -162,12 +182,8 @@ function HeaderMenuDrawer({
       <SheetContent
         id="salt-header-menu"
         side="left"
-        style={{
-          width: "min(20rem, calc(100vw - 1rem))",
-          maxWidth: "min(20rem, calc(100vw - 1rem))",
-        }}
         hideOverlay
-        className="overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)]"
+        className="w-[min(20rem,calc(100vw-1rem))] max-w-[min(20rem,calc(100vw-1rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(42rem,calc(100vw-1rem))] lg:max-w-[min(42rem,calc(100vw-1rem))]"
       >
         <div className="flex min-h-full flex-col">
           <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-3 py-2.5 text-white sm:px-3.5 sm:py-3">
@@ -187,7 +203,38 @@ function HeaderMenuDrawer({
             </SheetClose>
           </div>
 
-          <div className="px-3.5 py-3.5">
+          <div className="grid gap-4 px-3.5 py-3.5">
+            <section className="border-b border-[#e2edf8] pb-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  <ArrowDownUp className="h-3.5 w-3.5" />
+                  Filter
+                </p>
+                <SheetClose asChild>
+                  <Link
+                    to="/shop"
+                    className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                  >
+                    View shop
+                  </Link>
+                </SheetClose>
+              </div>
+
+              <div className="mt-3 grid gap-1.5">
+                {drawerFilterOptions.map((option) => (
+                  <SheetClose asChild key={option.sort}>
+                    <Link
+                      to={`/shop?sort=${option.sort}`}
+                      className="group flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left transition hover:bg-[#f5faff]"
+                    >
+                      <span className="text-sm font-medium leading-6 text-[#102A43]">{option.label}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    </Link>
+                  </SheetClose>
+                ))}
+              </div>
+            </section>
+
             <section className="border-b border-[#e2edf8] pb-3.5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
@@ -201,7 +248,7 @@ function HeaderMenuDrawer({
                 </SheetClose>
               </div>
 
-              <div className="mt-3 grid gap-2">
+              <div className="mt-3 grid gap-3 lg:hidden">
                 {SITE_COLLECTIONS.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
 
@@ -249,6 +296,74 @@ function HeaderMenuDrawer({
                     </div>
                   );
                 })}
+              </div>
+
+              <div className="mt-3 hidden lg:block">
+                <CollectionHoverMenu collections={SITE_COLLECTIONS} onLinkClick={() => setMenuOpen(false)} />
+              </div>
+            </section>
+
+            <section>
+              <div className="flex items-center justify-between gap-3">
+                <p className="inline-flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  <Settings2 className="h-3.5 w-3.5" />
+                  Help & Settings
+                </p>
+              </div>
+
+              <div className="mt-3 grid gap-1.5">
+                <SheetClose asChild>
+                  <a
+                    href={accountHref}
+                    className="group flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left transition hover:bg-[#f5faff]"
+                  >
+                    <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
+                      <CircleUserRound className="h-4.5 w-4.5 text-[#7d90aa]" />
+                      Your Account
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                  </a>
+                </SheetClose>
+
+                <div className="flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
+                    <Globe className="h-4.5 w-4.5 text-[#7d90aa]" />
+                    English
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
+                    <Flag className="h-4.5 w-4.5 text-[#7d90aa]" />
+                    United States
+                  </span>
+                </div>
+
+                <SheetClose asChild>
+                  <a
+                    href="/contact"
+                    className="group flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left transition hover:bg-[#f5faff]"
+                  >
+                    <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
+                      <LifeBuoy className="h-4.5 w-4.5 text-[#7d90aa]" />
+                      Customer Service
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                  </a>
+                </SheetClose>
+
+                <SheetClose asChild>
+                  <a
+                    href={accountRoutes.login}
+                    className="group flex items-center justify-between rounded-[0.75rem] border border-[#e2edf8] bg-white px-3 py-2.5 text-left transition hover:bg-[#f5faff]"
+                  >
+                    <span className="inline-flex items-center gap-2 text-sm font-medium leading-6 text-[#102A43]">
+                      <CircleUserRound className="h-4.5 w-4.5 text-[#7d90aa]" />
+                      Sign in
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                  </a>
+                </SheetClose>
               </div>
             </section>
           </div>
@@ -312,8 +427,8 @@ const MainHeader = () => {
   const shouldLoadSearchData = searchDropdownOpen;
   const { data: productsData } = useProducts(shouldLoadSearchData);
   const { data: collectionsData } = useCollections(shouldLoadSearchData);
-  const allProducts = productsData?.products ?? [];
-  const allCollections = collectionsData?.collections ?? [];
+  const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
+  const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const hasSearchQuery = Boolean(searchQuery.trim());
   const resourcesNavItem = secondaryNavItems.find((item) => item.label === "Resources") || secondaryNavItems[0];
   const supportNavItem = secondaryNavItems.find((item) => item.label === "Support") || secondaryNavItems[0];
@@ -618,7 +733,7 @@ const MainHeader = () => {
     <>
       <header
         ref={headerRef}
-        className="sticky top-0 z-50 w-full border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
+        className="w-full border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
       >
       <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
         <div className="order-1 flex min-w-0 flex-1 items-center gap-2 md:flex-none">

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  SITE_COLLECTIONS,
   SITE_HEADER_COLLECTION_LINKS,
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
@@ -23,6 +24,16 @@ describe("resolveCollectionFeedHandle", () => {
     expect(buildSubcollectionRoute("senior-living-solutions", "gifts-for-seniors")).toBe(
       "/collections/senior-living-solutions?collection=gifts",
     );
+  });
+
+  it("keeps Senior Living Solutions below Travel & Outdoor in the collection order", () => {
+    const travelIndex = SITE_COLLECTIONS.findIndex((collection) => collection.title === "Travel & Outdoor");
+    const seniorLivingIndex = SITE_COLLECTIONS.findIndex(
+      (collection) => collection.title === "Senior Living Solutions",
+    );
+
+    expect(travelIndex).toBeGreaterThanOrEqual(0);
+    expect(seniorLivingIndex).toBeGreaterThan(travelIndex);
   });
 
   it("exposes the featured header shortcuts in the requested order", () => {
