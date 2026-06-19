@@ -11,8 +11,8 @@ import {
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
 } from "@/lib/site-navigation";
-import { getRuntimeContext } from "@/lib/theme-assets";
-import { getShopifyAccountRoutes, mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
+import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
+import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
