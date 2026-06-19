@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildSubcollectionRoute, resolveCollectionFeedHandle } from "@/lib/site-navigation";
+import {
+  SITE_HEADER_COLLECTION_LINKS,
+  buildSubcollectionRoute,
+  isSiteHeaderCollectionLinkActive,
+  resolveCollectionFeedHandle,
+} from "@/lib/site-navigation";
 
 describe("resolveCollectionFeedHandle", () => {
   it("uses the parent collection feed when there is no subcollection override", () => {
@@ -18,5 +23,49 @@ describe("resolveCollectionFeedHandle", () => {
     expect(buildSubcollectionRoute("senior-living-solutions", "gifts-for-seniors")).toBe(
       "/collections/senior-living-solutions?collection=gifts",
     );
+  });
+
+  it("exposes the featured header shortcuts in the requested order", () => {
+    expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.label)).toEqual([
+      "Best Sellers",
+      "New Arrivals",
+      "Today's Deals",
+      "Trending Now",
+      "Weekend Sale",
+    ]);
+  });
+
+  it("points the featured header shortcuts at live collection routes", () => {
+    expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.to)).toEqual([
+      "/collections/trending-finds?collection=appplaza-best-sellers",
+      "/collections/trending-finds?collection=new-arrivals",
+      "/collections/winter-wear?collection=winter-wear",
+      "/collections/trending-finds?collection=unique-products",
+      "/collections/winter-wear?collection=under-35",
+    ]);
+  });
+
+  it("marks the featured header shortcuts active for their collection feeds", () => {
+    expect(
+      isSiteHeaderCollectionLinkActive(
+        "/collections/trending-finds",
+        "?collection=appplaza-best-sellers",
+        SITE_HEADER_COLLECTION_LINKS[0],
+      ),
+    ).toBe(true);
+    expect(
+      isSiteHeaderCollectionLinkActive(
+        "/collections/winter-wear",
+        "?collection=under-35",
+        SITE_HEADER_COLLECTION_LINKS[4],
+      ),
+    ).toBe(true);
+    expect(
+      isSiteHeaderCollectionLinkActive(
+        "/collections/trending-finds",
+        "?collection=new-arrivals",
+        SITE_HEADER_COLLECTION_LINKS[0],
+      ),
+    ).toBe(false);
   });
 });

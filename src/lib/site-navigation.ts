@@ -506,6 +506,46 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
 ];
 
+export type SiteHeaderCollectionLink = {
+  label: string;
+  routeHandle: string;
+  activeCollectionHandles: string[];
+  to: string;
+};
+
+export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
+  {
+    label: "Best Sellers",
+    routeHandle: "trending-finds",
+    activeCollectionHandles: ["appplaza-best-sellers"],
+    to: buildSubcollectionRoute("trending-finds", "best-sellers"),
+  },
+  {
+    label: "New Arrivals",
+    routeHandle: "trending-finds",
+    activeCollectionHandles: ["new-arrivals"],
+    to: buildSubcollectionRoute("trending-finds", "new-arrivals"),
+  },
+  {
+    label: "Today's Deals",
+    routeHandle: "winter-wear",
+    activeCollectionHandles: ["winter-wear"],
+    to: `${buildCollectionRoute("winter-wear")}?collection=winter-wear`,
+  },
+  {
+    label: "Trending Now",
+    routeHandle: "trending-finds",
+    activeCollectionHandles: ["unique-products"],
+    to: `${buildCollectionRoute("trending-finds")}?collection=unique-products`,
+  },
+  {
+    label: "Weekend Sale",
+    routeHandle: "winter-wear",
+    activeCollectionHandles: ["under-35"],
+    to: buildSubcollectionRoute("winter-wear", "under-35"),
+  },
+];
+
 export const SITE_RESOURCE_GUIDES: SiteResourceGuide[] = RESOURCE_HUB_GUIDES;
 
 export const SITE_FOOTER_COMPANY_LINKS: SiteFooterLink[] = [
@@ -601,6 +641,24 @@ export function getCollectionRoutePaths(handle: string): string[] {
   }
 
   return [...new Set([`/collections/${collection.handle}`, `/collections/${collection.shopifyHandle}`])];
+}
+
+export function isSiteHeaderCollectionLinkActive(
+  pathname: string,
+  search: string,
+  link: SiteHeaderCollectionLink,
+): boolean {
+  const routePaths = getCollectionRoutePaths(link.routeHandle);
+  if (!routePaths.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    return false;
+  }
+
+  const currentCollection = normalizeHandle(new URLSearchParams(search).get("collection"));
+  if (!currentCollection) {
+    return false;
+  }
+
+  return link.activeCollectionHandles.some((candidate) => normalizeHandle(candidate) === currentCollection);
 }
 
 export function getSubcollectionByHandle(collectionHandle: string, subcollectionHandle: string): SiteSubcollection | null {

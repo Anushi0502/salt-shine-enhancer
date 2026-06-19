@@ -1,26 +1,22 @@
 import { FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Heart, Menu, Search, ShoppingCart } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown, ChevronRight, CircleUserRound, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 import { filterProducts } from "@/lib/catalog";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import {
+  SITE_HEADER_COLLECTION_LINKS,
   SITE_COLLECTIONS,
-  type SiteCollection,
-  buildCollectionRoute,
   buildSubcollectionRoute,
-  getCollectionRoutePaths,
+  isSiteHeaderCollectionLinkActive,
 } from "@/lib/site-navigation";
+import { getRuntimeContext } from "@/lib/theme-assets";
+import { getShopifyAccountRoutes, mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
 import { useCollections, useProducts } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-} from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent } from "@/components/ui/sheet";
 
 const searchScopeOptions = [
   {
@@ -121,63 +117,6 @@ const collectionNavTabBaseClass = "salt-header-collection-item";
 const collectionNavTabActiveClass = "border-[#f2b600] text-[#f2b600]";
 const collectionNavTabInactiveClass = "border-transparent text-white/88 hover:border-[#f2b600]/60 hover:text-[#f2b600]";
 const utilityNavTabClass = "salt-header-utility-item border-transparent text-white/82 hover:border-[#f2b600]/45 hover:text-[#f2b600]";
-type CollectionMenuPanelProps = {
-  collection: SiteCollection;
-};
-
-function CollectionMenuPanel({ collection }: CollectionMenuPanelProps) {
-  const [activeSubcollectionHandle, setActiveSubcollectionHandle] = useState(
-    collection.subcollections[0]?.handle || "",
-  );
-
-  const activeSubcollection =
-    collection.subcollections.find((subcollection) => subcollection.handle === activeSubcollectionHandle) ||
-    collection.subcollections[0] ||
-    null;
-
-  return (
-    <div className="w-[min(24rem,calc(100vw-0.75rem))] overflow-hidden border border-[#bfd4fb] bg-white shadow-[0_24px_40px_-32px_rgba(12,32,72,0.28)]">
-      <div className="border-b border-[#edf3fb] bg-[#f7fbff] px-4 py-4 sm:px-5">
-        <Link
-          to={buildCollectionRoute(collection.handle)}
-          className="inline-flex max-w-full text-[1rem] font-semibold leading-none tracking-[-0.03em] text-[#102A43] transition hover:text-[#ff6700]"
-          onMouseEnter={() => setActiveSubcollectionHandle(collection.subcollections[0]?.handle || "")}
-        >
-          {collection.title}
-        </Link>
-        <p className="mt-1.5 max-w-[22rem] text-[0.78rem] leading-5 text-[#5C748F]">{collection.summary}</p>
-
-      </div>
-
-      <div className="px-2.5 py-2.5 sm:px-3">
-        <div className="grid gap-1">
-          {collection.subcollections.map((subcollection) => {
-            const active = subcollection.handle === activeSubcollection?.handle;
-
-            return (
-              <Link
-                key={subcollection.handle}
-                to={`${buildCollectionRoute(collection.handle)}/${subcollection.handle}`}
-                onMouseEnter={() => setActiveSubcollectionHandle(subcollection.handle)}
-                onFocus={() => setActiveSubcollectionHandle(subcollection.handle)}
-                className={`group flex items-center justify-between rounded-[0.75rem] px-3 py-2.5 text-sm transition ${
-                  active ? "bg-[#f5faff] text-[#ff6700]" : "text-[#102A43] hover:bg-[#f5faff]"
-                }`}
-              >
-                <span className={active ? "text-[#ff6700]" : "text-[#7a7a7a] group-hover:text-[#ff6700]"}>
-                  {subcollection.title}
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#ff6700]" />
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
 function collectionNavItemClass(active: boolean) {
   return `${collectionNavTabBaseClass} ${active ? collectionNavTabActiveClass : collectionNavTabInactiveClass}`;
 }
@@ -200,6 +139,17 @@ function HeaderMenuDrawer({
   onOpenChange,
 }: HeaderMenuDrawerProps) {
   const [expandedCollectionHandle, setExpandedCollectionHandle] = useState<string | null>(null);
+  const accountRoutes = useMemo(() => getShopifyAccountRoutes(), []);
+  const customerAccountSummary = useMemo(
+    () =>
+      mapShopifyCustomerAccountSnapshot(
+        getRuntimeContext().customerAccountSnapshot as Parameters<typeof mapShopifyCustomerAccountSnapshot>[0],
+      ),
+    [],
+  );
+  const accountDisplayName = customerAccountSummary?.customer.displayName?.trim() || "";
+  const accountHref = accountRoutes.isLoggedIn ? accountRoutes.account : accountRoutes.login;
+  const accountLabel = accountRoutes.isLoggedIn ? `Hello, ${accountDisplayName || "there"}` : "Hello, sign in";
 
   useEffect(() => {
     if (!open) {
@@ -220,19 +170,21 @@ function HeaderMenuDrawer({
         className="overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)]"
       >
         <div className="flex min-h-full flex-col">
-          <div className="border-b border-[#BFD7F2] bg-[#0C2048] px-3.5 py-3.5 text-white">
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">
-                <Menu className="h-4.5 w-4.5" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white/60">
-                  Browse SALT
-                </p>
-                <h2 className="font-display text-[1.6rem] leading-none">All</h2>
-              </div>
-            </div>
+          <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-3 py-2.5 text-white sm:px-3.5 sm:py-3">
+            <SheetClose asChild>
+              <a
+                href={accountHref}
+                className="flex min-w-0 items-center gap-3 rounded-md pr-10 text-left transition hover:opacity-95"
+                aria-label={accountRoutes.isLoggedIn && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/18 bg-white text-[#1f2d47] shadow-[0_1px_2px_rgba(0,0,0,0.12)]">
+                  <CircleUserRound className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 truncate font-semibold text-[1.05rem] leading-none tracking-[-0.01em] text-white">
+                  {accountLabel}
+                </span>
+              </a>
+            </SheetClose>
           </div>
 
           <div className="px-3.5 py-3.5">
@@ -353,7 +305,6 @@ const MainHeader = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedScope, setSelectedScope] = useState<HeaderSearchScope>("all-products");
   const [scopeOpen, setScopeOpen] = useState(false);
-  const [openCollectionHandle, setOpenCollectionHandle] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -364,15 +315,6 @@ const MainHeader = () => {
   const allProducts = productsData?.products ?? [];
   const allCollections = collectionsData?.collections ?? [];
   const hasSearchQuery = Boolean(searchQuery.trim());
-  const routeCollectionHandle = useMemo(() => {
-    const matchedCollection = SITE_COLLECTIONS.find((collection) => {
-      return getCollectionRoutePaths(collection.handle).some(
-        (route) => location.pathname === route || location.pathname.startsWith(`${route}/`),
-      );
-    });
-
-    return matchedCollection?.handle || "";
-  }, [location.pathname]);
   const resourcesNavItem = secondaryNavItems.find((item) => item.label === "Resources") || secondaryNavItems[0];
   const supportNavItem = secondaryNavItems.find((item) => item.label === "Support") || secondaryNavItems[0];
 
@@ -444,10 +386,6 @@ const MainHeader = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    setOpenCollectionHandle(null);
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname, location.search]);
 
@@ -457,7 +395,6 @@ const MainHeader = () => {
   const openMenu = () => {
     setScopeOpen(false);
     setSearchDropdownOpen(false);
-    setOpenCollectionHandle(null);
     setMenuOpen(true);
   };
 
@@ -1039,35 +976,18 @@ const MainHeader = () => {
             <span>All</span>
           </button>
 
-          {SITE_COLLECTIONS.map((collection) => {
-            const isActive = openCollectionHandle === collection.handle || routeCollectionHandle === collection.handle;
+          {SITE_HEADER_COLLECTION_LINKS.map((link) => {
+            const isActive = isSiteHeaderCollectionLinkActive(location.pathname, location.search, link);
 
             return (
-              <Popover
-                key={collection.handle}
-                open={openCollectionHandle === collection.handle}
-                onOpenChange={(open) => setOpenCollectionHandle(open ? collection.handle : null)}
+              <Link
+                key={link.label}
+                to={link.to}
+                className={collectionNavItemClass(isActive)}
+                aria-current={isActive ? "page" : undefined}
               >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenCollectionHandle((current) => (current === collection.handle ? null : collection.handle))
-                    }
-                    className={collectionNavItemClass(isActive)}
-                    aria-expanded={openCollectionHandle === collection.handle}
-                  >
-                    <span>{collection.title}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  sideOffset={0}
-                  className="w-auto border-0 bg-transparent p-0 shadow-none"
-                >
-                  <CollectionMenuPanel collection={collection} />
-                </PopoverContent>
-              </Popover>
+                <span>{link.label}</span>
+              </Link>
             );
           })}
 
