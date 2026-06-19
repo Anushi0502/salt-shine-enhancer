@@ -10,6 +10,7 @@ import {
   SITE_COLLECTIONS,
   type SiteCollection,
   buildCollectionRoute,
+  buildSubcollectionRoute,
   getCollectionRoutePaths,
 } from "@/lib/site-navigation";
 import { useCollections, useProducts } from "@/lib/shopify-data";
@@ -198,22 +199,31 @@ function HeaderMenuDrawer({
   open,
   onOpenChange,
 }: HeaderMenuDrawerProps) {
+  const [expandedCollectionHandle, setExpandedCollectionHandle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setExpandedCollectionHandle(null);
+    }
+  }, [open]);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet modal={false} open={open} onOpenChange={onOpenChange}>
       <SheetContent
         id="salt-header-menu"
         side="left"
         style={{
-          width: "min(24.5rem, calc(100vw - 0.75rem))",
-          maxWidth: "min(24.5rem, calc(100vw - 0.75rem))",
+          width: "min(20rem, calc(100vw - 1rem))",
+          maxWidth: "min(20rem, calc(100vw - 1rem))",
         }}
+        hideOverlay
         className="overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)]"
       >
         <div className="flex min-h-full flex-col">
-          <div className="border-b border-[#BFD7F2] bg-[#0C2048] px-4 py-4 text-white">
+          <div className="border-b border-[#BFD7F2] bg-[#0C2048] px-3.5 py-3.5 text-white">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">
-                <Menu className="h-5 w-5" />
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10">
+                <Menu className="h-4.5 w-4.5" />
               </div>
 
               <div className="min-w-0">
@@ -223,14 +233,10 @@ function HeaderMenuDrawer({
                 <h2 className="font-display text-[1.6rem] leading-none">All</h2>
               </div>
             </div>
-
-            <p className="mt-2.5 max-w-[18rem] text-sm leading-6 text-white/74">
-              Collections in one clean panel.
-            </p>
           </div>
 
-          <div className="px-4 py-4">
-            <section className="border-b border-[#e2edf8] pb-4">
+          <div className="px-3.5 py-3.5">
+            <section className="border-b border-[#e2edf8] pb-3.5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
                 <SheetClose asChild>
@@ -243,22 +249,54 @@ function HeaderMenuDrawer({
                 </SheetClose>
               </div>
 
-              <div className="mt-3 grid gap-1">
-                {SITE_COLLECTIONS.map((collection) => (
-                  <SheetClose asChild key={collection.handle}>
-                    <Link
-                      to={buildCollectionRoute(collection.handle)}
-                      className="group flex items-center justify-between rounded-[0.75rem] border-b border-[#edf3fb] px-1 py-2.5 text-left transition last:border-b-0 hover:bg-[#f5faff]"
-                    >
-                      <span className="block text-sm font-semibold leading-6 text-[#102A43]">
-                        {collection.title}
-                      </span>
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
-                        <ChevronRight className="h-4 w-4" />
-                      </span>
-                    </Link>
-                  </SheetClose>
-                ))}
+              <div className="mt-3 grid gap-2">
+                {SITE_COLLECTIONS.map((collection) => {
+                  const isExpanded = expandedCollectionHandle === collection.handle;
+
+                  return (
+                    <div key={collection.handle} className="overflow-hidden rounded-[0.95rem] border border-[#e2edf8] bg-white">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedCollectionHandle((current) =>
+                            current === collection.handle ? null : collection.handle,
+                          );
+                        }}
+                        className="group flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition hover:bg-[#f5faff]"
+                        aria-expanded={isExpanded}
+                        aria-controls={`salt-menu-subcollections-${collection.handle}`}
+                      >
+                        <span className="min-w-0 flex-1 text-sm font-semibold leading-6 text-[#102A43]">
+                          {collection.title}
+                        </span>
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
+                          <ChevronRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} />
+                        </span>
+                      </button>
+
+                      {isExpanded ? (
+                        <div
+                          id={`salt-menu-subcollections-${collection.handle}`}
+                          className="border-t border-[#edf3fb] bg-[#fbfdff] px-2.5 py-2.5"
+                        >
+                          <div className="grid gap-1">
+                            {collection.subcollections.map((subcollection) => (
+                              <SheetClose asChild key={subcollection.handle}>
+                                <Link
+                                  to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
+                                  className="group flex items-center justify-between rounded-[0.7rem] px-2.5 py-2 text-sm text-[#102A43] transition hover:bg-[#f5faff]"
+                                >
+                                  <span className="line-clamp-1">{subcollection.title}</span>
+                                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                                </Link>
+                              </SheetClose>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </div>
