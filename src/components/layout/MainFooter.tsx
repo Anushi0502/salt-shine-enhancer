@@ -14,34 +14,12 @@ const MainFooter = () => {
   return (
     <footer className="mt-4 border-t border-white/10 bg-[#131921] text-white sm:mt-6">
       <div className="mx-auto w-full max-w-[1360px] px-4 py-10 sm:px-6 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1.35fr_0.92fr_0.92fr_0.92fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.25fr_0.9fr_0.9fr_0.9fr_1.1fr]">
           <div className="flex flex-col items-start">
             <BrandLogo withWordmark size="lg" />
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/70">
               Search fast. Shop clean. Get trusted checkout and delivery.
             </p>
-            <div className="mt-5 rounded-[1rem] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-6 text-white/78">
-              <p className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">
-                Contact
-              </p>
-              <address className="mt-3 space-y-2 not-italic">
-                <p className="break-words">
-                  <span className="text-white/52">Email:</span>{" "}
-                  <a href="mailto:support@saltonlinestore.com" className={footerLinkClass}>
-                    support@saltonlinestore.com
-                  </a>
-                </p>
-                <p className="break-words">
-                  <span className="text-white/52">Mobile:</span>{" "}
-                  <a href="tel:+18888357211" className={footerLinkClass}>
-                    +18888357211
-                  </a>
-                </p>
-                <p className="max-w-[18ch] break-words">
-                  <span className="text-white/52">Address:</span> P O box 15 Dayton 45404 ohio
-                </p>
-              </address>
-            </div>
             <div className="mt-5 flex gap-3">
               <a
                 href="https://instagram.com/saltonlinestore"
@@ -118,6 +96,31 @@ const MainFooter = () => {
                   </Link>
                 ),
               )}
+            </div>
+          </div>
+
+          <div>
+            <div className="rounded-[1rem] border border-white/10 bg-white/5 px-4 py-4 text-sm leading-6 text-white/78">
+              <p className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-[#f2b600]">
+                Contact
+              </p>
+              <address className="mt-3 space-y-2 not-italic">
+                <p className="break-words">
+                  <span className="text-white/52">Email:</span>{" "}
+                  <a href="mailto:support@saltonlinestore.com" className={footerLinkClass}>
+                    support@saltonlinestore.com
+                  </a>
+                </p>
+                <p className="break-words">
+                  <span className="text-white/52">Mobile:</span>{" "}
+                  <a href="tel:+18888357211" className={footerLinkClass}>
+                    +18888357211
+                  </a>
+                </p>
+                <p className="max-w-[18ch] break-words">
+                  <span className="text-white/52">Address:</span> P O box 15 Dayton 45404 ohio
+                </p>
+              </address>
             </div>
           </div>
 

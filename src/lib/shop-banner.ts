@@ -153,6 +153,8 @@ export function resolveShopBannerImageSelection(input: {
   collections: ShopifyCollection[];
   selectedCollection?: ShopifyCollection | null;
   categoryValue?: string | null;
+  routeCollectionHandle?: string | null;
+  routeSubcollectionHandle?: string | null;
 }): ShopBannerImageSelection {
   const selectedCollection = input.selectedCollection || null;
 

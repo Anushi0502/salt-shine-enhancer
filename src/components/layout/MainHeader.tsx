@@ -31,6 +31,7 @@ import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { CollectionHoverMenu } from "@/components/layout/CollectionHoverMenu";
 import { Sheet, SheetClose, SheetContent } from "@/components/ui/sheet";
+import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE, WEEKEND_SALE_ROUTE } from "@/lib/promo-banners";
 
 const searchScopeOptions = [
   {
@@ -200,6 +201,32 @@ function HeaderMenuDrawer({
                   {accountLabel}
                 </span>
               </a>
+            </SheetClose>
+          </div>
+
+          <div className="px-2.5 pt-2 sm:px-3">
+            <SheetClose asChild>
+              <Link
+                to={WEEKEND_SALE_ROUTE}
+                className="group block overflow-hidden rounded-[1rem] border border-[#d7e3f6] bg-[#0c2048] shadow-[0_18px_36px_-30px_rgba(12,32,72,0.28)]"
+              >
+                <div className="relative aspect-[1.85/0.92] overflow-hidden">
+                  <img
+                    src={WEEKEND_SALE_BANNER_IMAGE}
+                    alt={WEEKEND_SALE_BANNER_ALT}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,20,44,0.04),rgba(7,20,44,0.12)_50%,rgba(7,20,44,0.56))]" />
+                  <div className="absolute inset-x-0 bottom-0 px-3 py-2 text-white">
+                    <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-white/72">
+                      Weekend Sale
+                    </p>
+                    <p className="mt-0.5 text-[0.88rem] font-semibold leading-5 text-white">
+                      Friday Flash Sale
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </SheetClose>
           </div>
 
