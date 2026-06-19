@@ -52,7 +52,7 @@ describe("resolveCollectionFeedHandle", () => {
       "/collections/trending-finds?collection=new-arrivals",
       "/collections/winter-wear?collection=winter-wear",
       "/collections/trending-finds?collection=unique-products",
-      "/collections/winter-wear?collection=under-35",
+      "/collections/winter-wear?collection=under-35&promo=weekend-sale",
     ]);
   });
 

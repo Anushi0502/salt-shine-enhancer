@@ -548,7 +548,7 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
     label: "Weekend Sale",
     routeHandle: "winter-wear",
     activeCollectionHandles: ["under-35"],
-    to: buildSubcollectionRoute("winter-wear", "under-35"),
+    to: `${buildSubcollectionRoute("winter-wear", "under-35")}&promo=weekend-sale`,
   },
 ];
 

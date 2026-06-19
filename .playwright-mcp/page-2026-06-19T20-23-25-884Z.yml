@@ -1,0 +1,132 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "SALT Online Store" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img "SALT Online Store" [ref=e9]
+      - generic [ref=e11]:
+        - button "Search category All" [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: All
+          - img [ref=e15]
+        - generic [ref=e17]:
+          - generic [ref=e18]: Search SALT
+          - img
+          - searchbox "Search SALT" [ref=e19]
+        - button "Search" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e24]: Search
+      - generic [ref=e25]:
+        - link "Hello, sign in / Account and orders" [ref=e26] [cursor=pointer]:
+          - /url: https://shopify.com/58076594275/account
+          - generic [ref=e27]: Hello, sign in
+          - generic [ref=e28]: Account & Orders
+        - link "Wishlist with 0 items" [ref=e29] [cursor=pointer]:
+          - /url: /wishlist
+          - img [ref=e30]
+        - button "Cart with 0 items" [ref=e32] [cursor=pointer]:
+          - img [ref=e33]
+          - generic [ref=e37]: Cart
+    - navigation "Secondary navigation" [ref=e39]:
+      - button "All" [ref=e40] [cursor=pointer]:
+        - img [ref=e41]
+        - generic [ref=e42]: All
+      - link "Best Sellers" [ref=e43] [cursor=pointer]:
+        - /url: /collections/trending-finds?collection=appplaza-best-sellers
+        - generic [ref=e44]: Best Sellers
+      - link "New Arrivals" [ref=e45] [cursor=pointer]:
+        - /url: /collections/trending-finds?collection=new-arrivals
+        - generic [ref=e46]: New Arrivals
+      - link "Today's Deals" [ref=e47] [cursor=pointer]:
+        - /url: /collections/winter-wear?collection=winter-wear
+        - generic [ref=e48]: Today's Deals
+      - link "Trending Now" [ref=e49] [cursor=pointer]:
+        - /url: /collections/trending-finds?collection=unique-products
+        - generic [ref=e50]: Trending Now
+      - link "Weekend Sale" [ref=e51] [cursor=pointer]:
+        - /url: /collections/winter-wear?collection=under-35
+        - generic [ref=e52]: Weekend Sale
+      - link "Resources" [ref=e53] [cursor=pointer]:
+        - /url: /resources
+        - generic [ref=e54]: Resources
+      - link "Support" [ref=e55] [cursor=pointer]:
+        - /url: /contact
+        - generic [ref=e56]: Support
+  - main [ref=e57]:
+    - generic [ref=e59]:
+      - img "SALT Online Store" [ref=e61]
+      - img [ref=e63]
+      - heading "Loading products" [level=2] [ref=e65]
+      - paragraph [ref=e66]: Building your filtered catalog view with latest pricing and availability.
+  - contentinfo [ref=e71]:
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - img "SALT Online Store" [ref=e76]
+        - paragraph [ref=e77]: Search fast. Shop clean. Get trusted checkout and delivery.
+        - generic [ref=e78]:
+          - link [ref=e79] [cursor=pointer]:
+            - /url: https://instagram.com/saltonlinestore
+            - img [ref=e80]
+          - link [ref=e83] [cursor=pointer]:
+            - /url: https://www.facebook.com/profile.php?id=61573199456052
+            - img [ref=e84]
+          - link [ref=e86] [cursor=pointer]:
+            - /url: https://youtube.com/@saltonlinestore
+            - img [ref=e87]
+      - generic [ref=e90]:
+        - heading "Company" [level=3] [ref=e91]
+        - generic [ref=e92]:
+          - link "About SALT" [ref=e93] [cursor=pointer]:
+            - /url: /about
+          - link "Contact Us" [ref=e94] [cursor=pointer]:
+            - /url: /contact
+          - link "Track Order" [ref=e95] [cursor=pointer]:
+            - /url: https://shopify.com/58076594275/account/orders
+          - link "FAQ" [ref=e96] [cursor=pointer]:
+            - /url: /faq
+      - generic [ref=e97]:
+        - heading "Resources" [level=3] [ref=e98]
+        - generic [ref=e99]:
+          - link "Resource Hub" [ref=e100] [cursor=pointer]:
+            - /url: /resources
+          - link "Blog" [ref=e101] [cursor=pointer]:
+            - /url: /blog
+          - link "Wholesale Inquiries" [ref=e102] [cursor=pointer]:
+            - /url: /wholesale-inquiries
+          - link "Affiliate Program" [ref=e103] [cursor=pointer]:
+            - /url: /affiliate-program
+      - generic [ref=e104]:
+        - heading "Policies" [level=3] [ref=e105]
+        - generic [ref=e106]:
+          - link "Shipping Policy" [ref=e107] [cursor=pointer]:
+            - /url: /shipping-policy
+          - link "Return Policy" [ref=e108] [cursor=pointer]:
+            - /url: /refund-policy
+          - link "Privacy Policy" [ref=e109] [cursor=pointer]:
+            - /url: /privacy-policy
+          - link "Terms & Conditions" [ref=e110] [cursor=pointer]:
+            - /url: /terms-conditions
+      - generic [ref=e112]:
+        - paragraph [ref=e113]: Contact
+        - generic [ref=e114]:
+          - paragraph [ref=e115]:
+            - text: "Email:"
+            - link "support@saltonlinestore.com" [ref=e116] [cursor=pointer]:
+              - /url: mailto:support@saltonlinestore.com
+          - paragraph [ref=e117]:
+            - text: "Mobile:"
+            - link "+18888357211" [ref=e118] [cursor=pointer]:
+              - /url: tel:+18888357211
+          - paragraph [ref=e119]: "Address: P O box 15 Dayton 45404 ohio"
+    - generic [ref=e121]:
+      - generic [ref=e122]:
+        - generic [ref=e123]: Secure checkout
+        - generic [ref=e124]: Tracked shipping
+        - generic [ref=e125]: Easy returns
+      - generic [ref=e126]:
+        - generic [ref=e127]: © 2026 SALT ONLINE STORE
+        - link "About SALT" [ref=e128] [cursor=pointer]:
+          - /url: /about
+        - link "Contact Us" [ref=e129] [cursor=pointer]:
+          - /url: /contact
+        - link "Track Order" [ref=e130] [cursor=pointer]:
+          - /url: https://shopify.com/58076594275/account/orders

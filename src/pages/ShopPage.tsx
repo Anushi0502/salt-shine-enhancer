@@ -22,7 +22,7 @@ import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
-import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE, isWeekendSaleRoute } from "@/lib/promo-banners";
+import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
   getSubcollectionByHandle,
@@ -327,7 +327,7 @@ const ShopPage = () => {
       }),
     [collections, selectedCollection, typeFilter, routeCollectionAlias, routeSubcollectionAlias, activeCollectionParam],
   );
-  const isWeekendSaleBanner = isWeekendSaleRoute(routeCollectionAlias, routeSubcollectionAlias || activeCollectionParam || null);
+  const isWeekendSaleBanner = searchParams.get("promo") === "weekend-sale";
   const selectedCollectionImage = isWeekendSaleBanner ? WEEKEND_SALE_BANNER_IMAGE : bannerImageSelection.image;
   const selectedCollectionImageAlt =
     isWeekendSaleBanner
