@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
-import HomeCategoryHierarchy from "@/components/storefront/HomeCategoryHierarchy";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
@@ -336,6 +335,7 @@ function OverlayProductCard({
   fallbackImage,
   className = "",
   imageAlt,
+  compact = false,
 }: {
   title: string;
   image: string;
@@ -345,6 +345,7 @@ function OverlayProductCard({
   fallbackImage: string;
   className?: string;
   imageAlt?: string;
+  compact?: boolean;
 }) {
   const { summary } = useJudgeMeProductRating(productId);
   const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
@@ -352,13 +353,26 @@ function OverlayProductCard({
   const hasReviews = Boolean(summary && summary.reviewCount > 0);
   const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
   const resolvedAlt = imageAlt || `${title} product image from SALT Online Store`;
+  const shellClass = compact
+    ? "border border-[#d2e4ff] bg-[#f4f8ff] shadow-[0_12px_26px_-22px_rgba(14,48,109,0.28)]"
+    : "border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]";
+  const mediaClass = compact ? "aspect-[1.08/0.82] overflow-hidden" : "aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]";
+  const overlayClass = compact
+    ? "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.08),rgba(8,30,73,0.88)_45%,rgba(8,30,73,0.98))] px-2 py-2 text-center text-white sm:px-2.5 sm:py-2.5"
+    : "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3";
+  const titleClass = compact
+    ? "line-clamp-2 font-display text-[0.82rem] font-semibold leading-[1.08] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.92rem]"
+    : "line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]";
+  const priceClass = compact
+    ? "text-[1rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.1rem]"
+    : "text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]";
 
   return (
     <Link
       to={to}
-      className={`group relative block overflow-hidden border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${className}`.trim()}
+      className={`group relative block overflow-hidden ${shellClass} ${className}`.trim()}
     >
-      <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]">
+      <div className={mediaClass}>
         <ResilientImage
           src={imageSrc}
           alt={resolvedAlt}
@@ -372,12 +386,12 @@ function OverlayProductCard({
           }
         />
       </div>
-      <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3">
-        <p className="line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]">
+      <div className={overlayClass}>
+        <p className={titleClass}>
           {title}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]">
-          <span className="text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]">
+        <div className={compact ? "mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[0.68rem] font-semibold text-white/92 sm:text-[0.76rem]" : "mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]"}>
+          <span className={priceClass}>
             {price}
           </span>
           {hasReviews ? (
@@ -1286,19 +1300,12 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <section className="px-3 py-6 sm:px-5 sm:py-7 lg:px-8 lg:py-8">
-            <SectionTitle title="Shop by Category" />
-            <HomeCategoryHierarchy collections={collections} className="mt-4 sm:mt-5" />
-          </section>
-        </Reveal>
-
-        <Reveal delayMs={120}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {bestSellerProducts.length > 0
                 ? bestSellerProducts.slice(0, 8).map((product, index) => (
-                    <Reveal key={`best-seller-product-${product.id}`} delayMs={160 + index * 70}>
+                    <Reveal key={`best-seller-product-${product.id}`} delayMs={120 + index * 50}>
                       <OverlayProductCard
                         title={product.title}
                         image={productImage(product) || bestSellerHeroImage}
@@ -1307,12 +1314,13 @@ const HomePage = () => {
                         productId={product.id}
                         fallbackImage={bestSellerHeroImage}
                         imageAlt={buildProductImageAltText(product.title, "best sellers")}
-                        className="mx-auto w-[calc(100%-15px)]"
+                        compact
+                        className="w-full"
                       />
                     </Reveal>
                   ))
                 : bestSellerTiles.map((tile, index) => (
-                    <Reveal key={tile.title} delayMs={160 + index * 70}>
+                    <Reveal key={tile.title} delayMs={120 + index * 50}>
                       <OverlayProductCard
                         title={tile.title}
                         image={tile.image}
@@ -1321,7 +1329,8 @@ const HomePage = () => {
                         productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
                         imageAlt={buildProductImageAltText(tile.title, "best sellers")}
-                        className="mx-auto w-[calc(100%-15px)]"
+                        compact
+                        className="w-full"
                       />
                     </Reveal>
                   ))}
@@ -1329,8 +1338,8 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={160}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+        <Reveal delayMs={120}>
+          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Gift Ideas For Loved Ones" />
             <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:gap-5">
               {giftTiles.map((tile, index) => (
@@ -1368,12 +1377,12 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={180}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+        <Reveal delayMs={140}>
+          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Quirky Gift Picks" />
-            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
-                <Reveal key={`${tile.to}-${tile.title}`} delayMs={200 + index * 70}>
+                <Reveal key={`${tile.to}-${tile.title}`} delayMs={140 + index * 50}>
                   <OverlayProductCard
                     title={tile.title}
                     image={tile.image}
@@ -1382,7 +1391,8 @@ const HomePage = () => {
                     productId={tile.productId}
                     fallbackImage={bestSellerHeroImage}
                     imageAlt={buildProductImageAltText(tile.title, "quirky gift picks")}
-                    className="mx-auto w-[calc(100%-15px)]"
+                    compact
+                    className="w-full"
                   />
                 </Reveal>
               ))}
@@ -1456,13 +1466,13 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={240}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+        <Reveal delayMs={180}>
+          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Everyday Essentials" />
-            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-8 lg:grid-cols-4 lg:gap-9">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {everydayEssentialProducts.length > 0
                 ? everydayEssentialProducts.slice(0, 8).map((product, index) => (
-                    <Reveal key={`everyday-essential-product-${product.id}`} delayMs={260 + index * 70}>
+                    <Reveal key={`everyday-essential-product-${product.id}`} delayMs={180 + index * 50}>
                       <OverlayProductCard
                         title={product.title}
                         image={productImage(product) || bestSellerHeroImage}
@@ -1471,12 +1481,13 @@ const HomePage = () => {
                         productId={product.id}
                         fallbackImage={bestSellerHeroImage}
                         imageAlt={buildProductImageAltText(product.title, "everyday essentials")}
-                        className="mx-auto w-[calc(100%-15px)]"
+                        compact
+                        className="w-full"
                       />
                     </Reveal>
                   ))
                 : everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
-                    <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={260 + index * 70}>
+                    <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={180 + index * 50}>
                       <OverlayProductCard
                         title={tile.title}
                         image={tile.image}
@@ -1485,7 +1496,8 @@ const HomePage = () => {
                         productId={tile.productId}
                         fallbackImage={bestSellerHeroImage}
                         imageAlt={buildProductImageAltText(tile.title, "everyday essentials")}
-                        className="mx-auto w-[calc(100%-15px)]"
+                        compact
+                        className="w-full"
                       />
                     </Reveal>
                   ))}
