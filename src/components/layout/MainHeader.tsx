@@ -183,7 +183,7 @@ function HeaderMenuDrawer({
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(34rem,calc(100vw-1rem))] lg:max-w-[min(34rem,calc(100vw-1rem))]"
+        className="w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(17rem,calc(100vw-1rem))] lg:max-w-[min(17rem,calc(100vw-1rem))]"
       >
         <div className="flex min-h-full flex-col">
           <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-2.5 py-1.5 text-white sm:px-3 sm:py-2">
