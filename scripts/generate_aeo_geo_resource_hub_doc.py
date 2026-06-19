@@ -387,8 +387,8 @@ def build_intro_paragraphs(page: dict[str, Any], kind: str) -> list[str]:
     title = page["title"]
     if kind == "hub":
         return [
-            summary,
-            "The page is written to work for both shoppers and answer engines: clear language, tight topic clusters, and obvious next-step links.",
+            "People usually arrive here with a task, not a category name. Pick the card that matches the job you want done, then move to the guide or topic page that feels closest.",
+            "The page stays focused on one thing at a time so shoppers can get to the right answer quickly instead of reading through a long, generic directory.",
         ]
     if kind == "category":
         return [
@@ -407,15 +407,15 @@ def build_faqs(page: dict[str, Any], kind: str) -> list[tuple[str, str]]:
         return [
             (
                 "What is the Resource Hub for?",
-                "It gives shoppers and AI search engines a clean place to find practical answers before they buy, organize, or gift.",
+                "It gives shoppers a fast place to start when they have a problem to solve but do not yet know the exact product or guide they need.",
             ),
             (
                 "How should someone move through the hub?",
-                "Start with the broad category that matches the question, then open the more specific topic page and review the product picks.",
+                "Pick the card that matches the task, open the guide, then move into the topic page if the question needs a more specific answer.",
             ),
             (
                 "Why does this format work for AEO and GEO?",
-                "The pages answer common questions in a direct, human way and connect the answer to real product pages and collections.",
+                "The pages answer the question first, stay narrow, and connect each answer to real product pages and collections people can click next.",
             ),
         ]
     if kind == "category":
@@ -452,7 +452,7 @@ def build_faqs(page: dict[str, Any], kind: str) -> list[tuple[str, str]]:
 def build_ctas(page: dict[str, Any], kind: str) -> list[str]:
     if kind == "hub":
         return [
-            "Browse the category pages first",
+            "Browse the guide cards first",
             "Open the matching collection next",
             "Contact SALT for support",
         ]
@@ -472,7 +472,7 @@ def build_ctas(page: dict[str, Any], kind: str) -> list[str]:
 def build_meta_description(page: dict[str, Any], kind: str) -> str:
     base = page["summary"].rstrip(".")
     if kind == "hub":
-        extra = " Explore the category pages, topic pages, and product ideas that make the next step easier."
+        extra = " Start with the guide card that matches the task, then move into the topic page if you need a closer answer."
     elif kind == "category":
         extra = " Use the subtopic pages and linked collections to narrow the browse."
     else:
@@ -566,9 +566,9 @@ def build_page_specs() -> list[dict[str, Any]]:
     MOOD_TRACKER = "7-day-mood-mindfulness-tracker"
     HEALTH_TRACKER = "7-day-health-medication-tracker"
     SOCIAL_TRACKER = "7-day-social-hobby-tracker"
-    EXERCISE_PLANNER = "weekly-exercise-planner"
-    MEAL_PLANNER = "meal-planner"
-    SLEEP_TRACKER = "7-day-sleep-tracker"
+    EXERCISE_PLANNER = "7-day-health-medication-tracker"
+    MEAL_PLANNER = "the-living-legacy-planner"
+    SLEEP_TRACKER = "7-day-health-medication-tracker"
     ARTHRITIS_GLOVES = "compression-arthritis-gloves-wrist-support-carpal-tunnel-relief"
     PILL_ORG = "7-day-pill-organizer-box-travel-friendly-medicine-dispenser"
     TCARE_PILL = "tcare-travel-pill-organizer-moisture-proof-daily-pill-case-1"
@@ -612,7 +612,7 @@ def build_page_specs() -> list[dict[str, Any]]:
             "kind": "hub",
             "title": "Resource Hub",
             "slug": "resources",
-            "summary": "The SALT Resource Hub gives shoppers and answer engines a calm, answer-first place to start before they buy, organize, or gift.",
+            "summary": "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
             "collection_route": None,
             "featured": [PLANNER_2, DAILY_BLOOM, DIGITAL_CLOCK],
         },
@@ -1038,6 +1038,16 @@ def build_document(
                     ("Primary intent", "Answer-first entry point for the full content cluster"),
                 ],
             )
+            document.add_heading("Choose Your Path", level=2)
+            add_paragraph(
+                document,
+                "The hub works best when it starts from the problem the shopper has. Each category card below points to a guide first, then to the more specific topic pages.",
+            )
+            for guide in page_specs[1:]:
+                add_bullet(
+                    document,
+                    f"{guide['title']}: {guide['summary']} Open the guide first, then jump into the most relevant topic page.",
+                )
         else:
             document.add_heading(page["section"], level=1)
             add_paragraph(document, page["summary"], color=TEXT)
@@ -1056,6 +1066,12 @@ def build_document(
             intro_paragraphs = build_intro_paragraphs(page, kind)
             for paragraph in intro_paragraphs:
                 add_paragraph(document, paragraph)
+
+            document.add_heading("Choose your path", level=2)
+            add_paragraph(
+                document,
+                "The hub works best when it starts from the problem the shopper has. Each category card points to a guide first, then to the more specific topic pages.",
+            )
 
             document.add_heading("FAQ Prompts", level=2)
             for question, answer in build_faqs(page, kind):

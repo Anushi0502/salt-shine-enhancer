@@ -108,33 +108,14 @@ export function formatMoneyValue(input) {
   return value.toFixed(2);
 }
 
-function getSuggestedRetailMultiplier(cost) {
-  if (!Number.isFinite(cost) || cost <= 0) {
-    return null;
-  }
-
-  if (cost < 5) {
-    return 4;
-  }
-
-  if (cost < 15) {
-    return 3;
-  }
-
-  if (cost < 30) {
-    return 2.5;
-  }
-
-  return 2;
-}
-
 function suggestRetailPriceFromCost(cost) {
-  const multiplier = getSuggestedRetailMultiplier(cost);
-  if (!multiplier) {
+  if (!Number.isFinite(cost) || cost <= 0) {
     return "";
   }
 
-  const raw = cost * multiplier;
+  const bandTarget =
+    cost < 5 ? cost * 4 : cost < 15 ? cost * 3 : cost < 30 ? cost * 2.5 : cost * 2;
+  const raw = Math.max(cost + 17, bandTarget);
   if (!Number.isFinite(raw) || raw <= 0) {
     return "";
   }
@@ -212,9 +193,11 @@ function buildVariantPlanFromRow(row) {
   const label =
     optionValues.join(" / ") ||
     normalizePlainText(firstNonEmpty(getRowValue(row, ["Variant Title"]), sku, getRowValue(row, ["Title"])));
-  const sourceCost = formatMoneyValue(getRowValue(row, ["Cost per item"]));
+  const sourceCostValue = parseMoneyValue(getRowValue(row, ["Cost per item"]));
+  const sourceCost = formatMoneyValue(sourceCostValue);
   const explicitPrice = formatMoneyValue(firstNonEmpty(getRowValue(row, ["Variant Price"]), getRowValue(row, ["Price / International"])));
-  const price = explicitPrice || suggestRetailPriceFromCost(Number(sourceCost));
+  const derivedPrice = suggestRetailPriceFromCost(sourceCostValue);
+  const price = derivedPrice || explicitPrice;
   const compareAtPrice = formatMoneyValue(
     firstNonEmpty(getRowValue(row, ["Variant Compare At Price"]), getRowValue(row, ["Compare At Price / International"])),
   );

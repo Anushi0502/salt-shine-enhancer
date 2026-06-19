@@ -174,7 +174,7 @@ function sanitizeCartItems(items: CartItem[]): CartItem[] {
     )
     .map((entry) => ({
       ...entry,
-      quantity: Math.max(getMinimumProductQuantity(entry.handle), Math.floor(entry.quantity || 1)),
+      quantity: Math.max(getMinimumProductQuantity(entry.handle, entry.unitPrice), Math.floor(entry.quantity || 1)),
       shopifyVariantId: isValidShopifyVariantId(entry.shopifyVariantId)
         ? entry.shopifyVariantId
         : isValidShopifyVariantId(entry.id)
@@ -269,7 +269,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       subtotal,
       isDrawerOpen,
       addItem: (newItem, quantity = 1, options) => {
-        const safeQuantity = Math.max(getMinimumProductQuantity(newItem.handle), Math.floor(quantity || 1));
+        const safeQuantity = Math.max(getMinimumProductQuantity(newItem.handle, newItem.unitPrice), Math.floor(quantity || 1));
 
         setItems((current) => {
           const existing = current.find((entry) => entry.id === newItem.id);
@@ -304,7 +304,7 @@ export function CartProvider({ children }: PropsWithChildren) {
               return [entry];
             }
 
-            const minimumQuantity = getMinimumProductQuantity(entry.handle);
+            const minimumQuantity = getMinimumProductQuantity(entry.handle, entry.unitPrice);
             const nextQuantity = Math.floor(quantity || 0);
 
             if (nextQuantity <= 0 && minimumQuantity === 1) {

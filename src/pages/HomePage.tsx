@@ -336,6 +336,7 @@ function OverlayProductCard({
   className = "",
   imageAlt,
   compact = false,
+  tight = false,
 }: {
   title: string;
   image: string;
@@ -346,6 +347,7 @@ function OverlayProductCard({
   className?: string;
   imageAlt?: string;
   compact?: boolean;
+  tight?: boolean;
 }) {
   const { summary } = useJudgeMeProductRating(productId);
   const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
@@ -353,19 +355,32 @@ function OverlayProductCard({
   const hasReviews = Boolean(summary && summary.reviewCount > 0);
   const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
   const resolvedAlt = imageAlt || `${title} product image from SALT Online Store`;
-  const shellClass = compact
+  const shellClass = tight || compact
     ? "border border-[#d2e4ff] bg-[#f4f8ff] shadow-[0_12px_26px_-22px_rgba(14,48,109,0.28)]"
     : "border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)]";
-  const mediaClass = compact ? "aspect-[1.08/0.82] overflow-hidden" : "aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]";
-  const overlayClass = compact
-    ? "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.08),rgba(8,30,73,0.88)_45%,rgba(8,30,73,0.98))] px-2 py-2 text-center text-white sm:px-2.5 sm:py-2.5"
+  const mediaClass = tight
+    ? "h-[13.5rem] overflow-hidden bg-[#f7fbff] sm:h-[14.25rem] lg:h-[15rem]"
+    : compact
+      ? "aspect-[1.08/0.82] overflow-hidden"
+      : "aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/1.2]";
+  const overlayClass = tight
+    ? "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.06),rgba(8,30,73,0.86)_50%,rgba(8,30,73,0.98))] px-2 py-1.5 text-center text-white sm:px-2.5 sm:py-2"
+    : compact
+      ? "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.08),rgba(8,30,73,0.88)_45%,rgba(8,30,73,0.98))] px-2 py-2 text-center text-white sm:px-2.5 sm:py-2.5"
     : "absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-3 py-2.5 text-center text-white sm:px-3.5 sm:py-3";
-  const titleClass = compact
-    ? "line-clamp-2 font-display text-[0.82rem] font-semibold leading-[1.08] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.92rem]"
+  const titleClass = tight
+    ? "line-clamp-2 font-display text-[0.74rem] font-semibold leading-[1.05] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.84rem]"
+    : compact
+      ? "line-clamp-2 font-display text-[0.82rem] font-semibold leading-[1.08] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.92rem]"
     : "line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.08rem]";
-  const priceClass = compact
-    ? "text-[1rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.1rem]"
+  const priceClass = tight
+    ? "text-[0.92rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1rem]"
+    : compact
+      ? "text-[1rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.1rem]"
     : "text-[1.24rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.38rem]";
+  const imageClass = tight
+    ? "h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
+    : "h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]";
 
   return (
     <Link
@@ -376,12 +391,12 @@ function OverlayProductCard({
         <ResilientImage
           src={imageSrc}
           alt={resolvedAlt}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          className={imageClass}
           fallback={
             <img
               src={fallbackSrc}
               alt={resolvedAlt}
-              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+              className={imageClass}
             />
           }
         />
@@ -390,7 +405,7 @@ function OverlayProductCard({
         <p className={titleClass}>
           {title}
         </p>
-        <div className={compact ? "mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[0.68rem] font-semibold text-white/92 sm:text-[0.76rem]" : "mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]"}>
+        <div className={tight ? "mt-0.5 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 text-[0.62rem] font-semibold text-white/92 sm:text-[0.7rem]" : compact ? "mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[0.68rem] font-semibold text-white/92 sm:text-[0.76rem]" : "mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.78rem] font-semibold text-white/92 sm:text-[0.88rem]"}>
           <span className={priceClass}>
             {price}
           </span>
@@ -476,6 +491,39 @@ function buildBannerImageAltText(tile: ImageTile): string {
   }
 
   return `${polishPlainText(tile.title) || "SALT"} homepage banner image.`;
+}
+
+function getProductTileKey(tile: ProductTile): string {
+  return [
+    String(tile.productId || ""),
+    tile.to,
+    tile.title,
+    tile.price,
+  ]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter(Boolean)
+    .join("|");
+}
+
+function padProductTiles(primary: ProductTile[], fallback: ProductTile[], targetCount = 10): ProductTile[] {
+  const result: ProductTile[] = [];
+  const seen = new Set<string>();
+
+  for (const tile of [...primary, ...fallback]) {
+    const key = getProductTileKey(tile);
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(tile);
+
+    if (result.length >= targetCount) {
+      break;
+    }
+  }
+
+  return result;
 }
 
 const HomePage = () => {
@@ -699,6 +747,10 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerProducts]);
+  const bestSellerDisplayTiles = useMemo(
+    () => padProductTiles(bestSellerTiles, fallbackBestSellerTiles, 10),
+    [bestSellerTiles],
+  );
   const bestSellerHeroImage =
     normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
   const everydayEssentialProducts = useMemo(() => {
@@ -879,6 +931,14 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerHeroImage, quirkyGiftProducts]);
+  const quirkyGiftDisplayTiles = useMemo(
+    () => padProductTiles(quirkyGiftTiles, fallbackQuirkyGiftTiles, 10),
+    [quirkyGiftTiles],
+  );
+  const everydayEssentialsDisplayTiles = useMemo(
+    () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 10),
+    [everydayEssentialsTiles],
+  );
   const testimonialCandidateProductIds = useMemo(
     () =>
       Array.from(
@@ -1303,37 +1363,21 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Best Sellers" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
-              {bestSellerProducts.length > 0
-                ? bestSellerProducts.slice(0, 8).map((product, index) => (
-                    <Reveal key={`best-seller-product-${product.id}`} delayMs={120 + index * 50}>
-                      <OverlayProductCard
-                        title={product.title}
-                        image={productImage(product) || bestSellerHeroImage}
-                        to={`/products/${product.handle}`}
-                        price={formatMoney(minPrice(product))}
-                        productId={product.id}
-                        fallbackImage={bestSellerHeroImage}
-                        imageAlt={buildProductImageAltText(product.title, "best sellers")}
-                        compact
-                        className="w-full"
-                      />
-                    </Reveal>
-                  ))
-                : bestSellerTiles.map((tile, index) => (
-                    <Reveal key={tile.title} delayMs={120 + index * 50}>
-                      <OverlayProductCard
-                        title={tile.title}
-                        image={tile.image}
-                        to={tile.to}
-                        price={tile.price}
-                        productId={tile.productId}
-                        fallbackImage={bestSellerHeroImage}
-                        imageAlt={buildProductImageAltText(tile.title, "best sellers")}
-                        compact
-                        className="w-full"
-                      />
-                    </Reveal>
-                  ))}
+              {bestSellerDisplayTiles.map((tile, index) => (
+                <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={120 + index * 50}>
+                  <OverlayProductCard
+                    title={tile.title}
+                    image={tile.image}
+                    to={tile.to}
+                    price={tile.price}
+                    productId={tile.productId}
+                    fallbackImage={bestSellerHeroImage}
+                    imageAlt={buildProductImageAltText(tile.title, "best sellers")}
+                    compact
+                    className="w-full"
+                  />
+                </Reveal>
+              ))}
             </div>
           </section>
         </Reveal>
@@ -1381,8 +1425,8 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Quirky Gift Picks" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
-              {quirkyGiftTiles.slice(0, 8).map((tile, index) => (
-                <Reveal key={`${tile.to}-${tile.title}`} delayMs={140 + index * 50}>
+              {quirkyGiftDisplayTiles.map((tile, index) => (
+                <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={140 + index * 50}>
                   <OverlayProductCard
                     title={tile.title}
                     image={tile.image}
@@ -1401,13 +1445,13 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={220}>
-          <section className="border-t border-[#dce9ff] px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8 lg:items-start">
-              <div className="space-y-5 sm:space-y-6">
-                <h2 className="text-left font-display text-[clamp(1.45rem,2.6vw,2.05rem)] leading-[1.08] text-[#183f84]">
+          <section className="border-t border-[#dce9ff] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:gap-5 lg:items-start">
+              <div className="space-y-3.5 sm:space-y-4">
+                <h2 className="text-left font-display text-[clamp(1.18rem,2vw,1.62rem)] leading-[1.06] text-[#183f84]">
                   Our Exclusive Book Collection
                 </h2>
-                <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-6">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3.5 lg:gap-4">
                   {featuredCourtneyBookCards.map((bookCard, index) => (
                     <Reveal key={bookCard.key} delayMs={240 + index * 60}>
                       <OverlayProductCard
@@ -1418,6 +1462,7 @@ const HomePage = () => {
                         productId={bookCard.productId}
                         fallbackImage={featuredCourtneyBookFallbackImage}
                         imageAlt={buildProductImageAltText(bookCard.title, "exclusive book collection")}
+                        tight
                       />
                     </Reveal>
                   ))}
@@ -1427,26 +1472,26 @@ const HomePage = () => {
               <Reveal delayMs={320}>
                 <Link
                   to={dailyBloomFeatureCard.to}
-                  className="group relative hidden h-full min-h-[38rem] overflow-hidden rounded-[1.15rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] lg:block"
+                  className="group relative hidden overflow-hidden rounded-[1rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] lg:block lg:h-[34rem] lg:self-start"
                 >
                   <ResilientImage
                     src={dailyBloomFeatureCard.image}
                     alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                    className="h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
                     fallback={
                       <img
                         src={featuredCourtneyBookFallbackImage}
                         alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                        className="h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
                       />
                     }
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-4 py-4 text-center text-white sm:px-5">
-                    <p className="line-clamp-2 font-display text-[1.12rem] font-semibold leading-[1.15] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1.24rem]">
+                  <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-4 py-2 text-center text-white sm:px-5 sm:py-2.5">
+                    <p className="line-clamp-2 font-display text-[0.9rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1rem]">
                       {dailyBloomFeatureCard.title}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.82rem] font-semibold text-white/92 sm:text-[0.92rem]">
-                      <span className="text-[1.5rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.7rem]">
+                    <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.7rem] font-semibold text-white/92 sm:text-[0.78rem]">
+                      <span className="text-[0.98rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.08rem]">
                         {dailyBloomFeatureCard.price}
                       </span>
                       {dailyBloomFeatureSummary && dailyBloomFeatureSummary.reviewCount > 0 ? (
@@ -1470,37 +1515,21 @@ const HomePage = () => {
           <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
             <SectionTitle title="Everyday Essentials" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
-              {everydayEssentialProducts.length > 0
-                ? everydayEssentialProducts.slice(0, 8).map((product, index) => (
-                    <Reveal key={`everyday-essential-product-${product.id}`} delayMs={180 + index * 50}>
-                      <OverlayProductCard
-                        title={product.title}
-                        image={productImage(product) || bestSellerHeroImage}
-                        to={`/products/${product.handle}`}
-                        price={formatMoney(minPrice(product))}
-                        productId={product.id}
-                        fallbackImage={bestSellerHeroImage}
-                        imageAlt={buildProductImageAltText(product.title, "everyday essentials")}
-                        compact
-                        className="w-full"
-                      />
-                    </Reveal>
-                  ))
-                : everydayEssentialsTiles.slice(0, 8).map((tile, index) => (
-                    <Reveal key={`everyday-essential-${tile.to}-${tile.title}`} delayMs={180 + index * 50}>
-                      <OverlayProductCard
-                        title={tile.title}
-                        image={tile.image}
-                        to={tile.to}
-                        price={tile.price}
-                        productId={tile.productId}
-                        fallbackImage={bestSellerHeroImage}
-                        imageAlt={buildProductImageAltText(tile.title, "everyday essentials")}
-                        compact
-                        className="w-full"
-                      />
-                    </Reveal>
-                  ))}
+              {everydayEssentialsDisplayTiles.map((tile, index) => (
+                <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={180 + index * 50}>
+                  <OverlayProductCard
+                    title={tile.title}
+                    image={tile.image}
+                    to={tile.to}
+                    price={tile.price}
+                    productId={tile.productId}
+                    fallbackImage={bestSellerHeroImage}
+                    imageAlt={buildProductImageAltText(tile.title, "everyday essentials")}
+                    compact
+                    className="w-full"
+                  />
+                </Reveal>
+              ))}
             </div>
           </section>
         </Reveal>

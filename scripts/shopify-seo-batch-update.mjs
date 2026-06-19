@@ -46,6 +46,10 @@ const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
           compareAtPrice
           sku
           barcode
+          selectedOptions {
+            name
+            value
+          }
         }
       }
       media(first: 100) {
@@ -433,6 +437,32 @@ function normalizeVariantMatch(value) {
   return normalizePlainText(value).toLowerCase();
 }
 
+function normalizeVariantMatchLoose(value) {
+  return normalizeVariantMatch(value).replace(/[^a-z0-9]+/g, "");
+}
+
+function variantTextMatches(candidate, expected) {
+  const normalizedCandidate = normalizeVariantMatch(candidate);
+  const normalizedExpected = normalizeVariantMatch(expected);
+  if (normalizedCandidate && normalizedExpected && normalizedCandidate === normalizedExpected) {
+    return true;
+  }
+
+  const looseCandidate = normalizeVariantMatchLoose(candidate);
+  const looseExpected = normalizeVariantMatchLoose(expected);
+  return Boolean(looseCandidate && looseExpected && looseCandidate === looseExpected);
+}
+
+function getVariantSelectedOptionText(variant) {
+  const values = Array.isArray(variant?.selectedOptions)
+    ? variant.selectedOptions
+        .map((option) => normalizePlainText(option?.value))
+        .filter(Boolean)
+    : [];
+
+  return values.join(" / ");
+}
+
 function buildProductUpdateInput(product, productPlan, categoryId) {
   const input = {
     id: productPlan.productId || product.id,
@@ -624,7 +654,12 @@ function resolveProductVariant(liveVariants, variantPlan) {
 
   const normalizedSku = normalizeVariantMatch(variantPlan.sku);
   if (normalizedSku) {
-    const match = variants.find((variant) => normalizeVariantMatch(variant?.sku) === normalizedSku);
+    const match = variants.find((variant) => {
+      const candidateSku = normalizeVariantMatch(variant?.sku);
+      const looseCandidateSku = normalizeVariantMatchLoose(variant?.sku);
+      const looseExpectedSku = normalizeVariantMatchLoose(variantPlan.sku);
+      return candidateSku === normalizedSku || (looseCandidateSku && looseCandidateSku === looseExpectedSku);
+    });
     if (match?.id) {
       return match;
     }
@@ -632,7 +667,11 @@ function resolveProductVariant(liveVariants, variantPlan) {
 
   const normalizedLabel = normalizeVariantMatch(variantPlan.label);
   if (normalizedLabel) {
-    const match = variants.find((variant) => normalizeVariantMatch(variant?.title) === normalizedLabel);
+    const match = variants.find((variant) => {
+      const titleMatch = variantTextMatches(variant?.title, variantPlan.label);
+      const optionMatch = variantTextMatches(getVariantSelectedOptionText(variant), variantPlan.label);
+      return titleMatch || optionMatch;
+    });
     if (match?.id) {
       return match;
     }
@@ -640,7 +679,11 @@ function resolveProductVariant(liveVariants, variantPlan) {
 
   const normalizedOptions = normalizeVariantMatch((variantPlan.optionValues || []).join(" / "));
   if (normalizedOptions) {
-    const match = variants.find((variant) => normalizeVariantMatch(variant?.title) === normalizedOptions);
+    const match = variants.find((variant) => {
+      const titleMatch = variantTextMatches(variant?.title, variantPlan.optionValues.join(" / "));
+      const selectedOptionsMatch = variantTextMatches(getVariantSelectedOptionText(variant), variantPlan.optionValues.join(" / "));
+      return titleMatch || selectedOptionsMatch;
+    });
     if (match?.id) {
       return match;
     }

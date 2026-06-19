@@ -209,7 +209,6 @@ const ProductPage = () => {
   const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
-  const quantityFloor = useMemo(() => getMinimumProductQuantity(product?.handle), [product?.handle]);
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
@@ -219,6 +218,10 @@ const ProductPage = () => {
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
+  );
+  const quantityFloor = useMemo(
+    () => getMinimumProductQuantity(product?.handle, Number(selectedVariant?.price || 0)),
+    [product?.handle, selectedVariant?.price],
   );
 
   useEffect(() => {

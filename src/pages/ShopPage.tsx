@@ -135,15 +135,21 @@ const ShopPage = () => {
   const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
   const routeCollectionAlias = normalizeCollectionFilter(routeCollectionHandle);
   const routeSubcollectionAlias = normalizeCollectionFilter(routeSubcollectionHandle);
+  const hasSearchQuery = Boolean(query.trim());
+  const isDefaultSearchCollection =
+    hasSearchQuery && currentCollectionParam === DEFAULT_COLLECTION_HANDLE && !routeCollectionAlias && !routeSubcollectionAlias;
+  const activeCollectionParam = isDefaultSearchCollection ? "" : currentCollectionParam;
   const routeFeedHandle = routeCollectionAlias
-    ? resolveCollectionFeedHandle(routeCollectionAlias, routeSubcollectionAlias || currentCollectionParam || null)
+    ? resolveCollectionFeedHandle(routeCollectionAlias, routeSubcollectionAlias || activeCollectionParam || null)
     : "";
+  const explicitCollectionHandle = activeCollectionParam || routeFeedHandle || routeCollectionAlias;
+  const shouldDefaultToAllProducts = !explicitCollectionHandle && !hasSearchQuery;
   const collectionHandle = resolveCollectionShopifyHandle(
-    currentCollectionParam || routeFeedHandle || routeCollectionAlias || DEFAULT_COLLECTION_HANDLE,
+    explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : ""),
   );
-  const curatedCollection = getCollectionByHandle(routeCollectionAlias || currentCollectionParam || collectionHandle);
+  const curatedCollection = getCollectionByHandle(routeCollectionAlias || activeCollectionParam || routeFeedHandle);
   const curatedSubcollection = routeCollectionAlias
-    ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias || currentCollectionParam)
+    ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias || activeCollectionParam)
     : null;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
@@ -186,20 +192,17 @@ const ShopPage = () => {
   }, [routeCollectionAlias, routeFeedHandle, searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (location.pathname !== "/shop") {
-      return;
-    }
-
-    if (currentCollectionParam) {
+    if (!isDefaultSearchCollection) {
       return;
     }
 
     const next = new URLSearchParams(searchParams);
-    next.set("collection", DEFAULT_COLLECTION_HANDLE);
+    next.delete("collection");
+
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [currentCollectionParam, location.pathname, searchParams, setSearchParams]);
+  }, [isDefaultSearchCollection, searchParams, setSearchParams]);
 
   const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
   const { data: collectionsPayload, isLoading: collectionsLoading, error: collectionsError, refetch: refetchCollections } = useCollections();

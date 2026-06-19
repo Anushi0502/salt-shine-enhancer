@@ -22,7 +22,7 @@ describe("shopify SEO batch plan", () => {
 
     expect(plan.handle).toBe("sample-handle");
     expect(plan.variantUpdates).toHaveLength(1);
-    expect(plan.variantUpdates[0]?.price).toBe("9.99");
+    expect(plan.variantUpdates[0]?.price).toBe("19.99");
   });
 
   it("passes approved category values through the resolver without touching protected fields", async () => {

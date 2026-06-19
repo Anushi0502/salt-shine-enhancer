@@ -13,4 +13,10 @@ describe("minimum quantity bundle rules", () => {
     expect(getMinimumProductQuantity("some-other-product")).toBe(1);
     expect(isMinimumTwoBundleProduct("some-other-product")).toBe(false);
   });
+
+  it("forces any product under $25 to minimum quantity 2", () => {
+    expect(getMinimumProductQuantity("some-other-product", 24.99)).toBe(2);
+    expect(isMinimumTwoBundleProduct("some-other-product", 24.99)).toBe(true);
+    expect(getMinimumProductQuantity("some-other-product", 25)).toBe(1);
+  });
 });

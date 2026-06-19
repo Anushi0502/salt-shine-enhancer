@@ -1121,8 +1121,24 @@ export async function loadEditorialPage(handle: string): Promise<EditorialPagePa
   };
 }
 
-export async function loadAboutPage(): Promise<EditorialPagePayload> {
-  return loadEditorialPage(ABOUT_HANDLE || "about-us");
+export async function loadAboutPage(): Promise<AboutPagePayload> {
+  try {
+    return await fetchAboutPageFromLive();
+  } catch (liveError) {
+    const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live about-page error";
+
+    try {
+      const cached = await fetchAboutPageFromCache();
+      return {
+        ...cached,
+        source: `cache:${cached.source}`,
+      };
+    } catch (cacheError) {
+      const cacheMessage =
+        cacheError instanceof Error ? cacheError.message : "Unknown cached about-page error";
+      throw new Error(`Live about page fetch failed: ${liveMessage}. Cached about fallback failed: ${cacheMessage}`);
+    }
+  }
 }
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {

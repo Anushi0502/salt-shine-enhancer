@@ -27,11 +27,20 @@ export type EditorialAction = {
   primary?: boolean;
 };
 
+export type EditorialFeaturedProduct = {
+  handle: string;
+  reason?: string;
+  collectionLabel?: string;
+};
+
 export type EditorialPageContent = {
   handle: string;
   kicker: string;
   title: string;
   summary: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  breadcrumbs?: Array<{ label: string; to?: string }>;
   stats: EditorialStat[];
   accent: {
     label: string;
@@ -52,6 +61,9 @@ export type EditorialPageContent = {
   faqsTitle?: string;
   faqsDescription?: string;
   faqs?: EditorialFaq[];
+  featuredProductsTitle?: string;
+  featuredProductsDescription?: string;
+  featuredProducts?: EditorialFeaturedProduct[];
   actions: EditorialAction[];
 };
 
@@ -61,11 +73,15 @@ import {
   TRACK_ORDER_URL,
   buildCollectionRoute,
   buildResourceRoute,
+  buildResourceTopicRoute,
   buildSearchQueryUrl,
   buildSubcollectionRoute,
   getCollectionByHandle,
+  getResourceByHandle,
+  getResourceTopicByHandle,
   getSubcollectionByHandle,
 } from "@/lib/site-navigation";
+import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
 
 function buildCollectionPageContent(collectionHandle: string): EditorialPageContent | null {
   const collection = getCollectionByHandle(collectionHandle);
@@ -213,31 +229,240 @@ function buildCollectionsIndexPageContent(): EditorialPageContent {
   };
 }
 
+type ResourcePageKind = "hub" | "category" | "topic";
+
+function getCollectionTitleFromRoute(collectionRoute?: string | null): string {
+  const rawHandle = String(collectionRoute || "")
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/^collections\//, "");
+  if (!rawHandle) {
+    return "";
+  }
+
+  return getCollectionByHandle(rawHandle)?.title || rawHandle.replace(/-/g, " ");
+}
+
+export function buildResourceReason(productTitle: string, pageTitle: string): string {
+  const title = productTitle.toLowerCase();
+  const page = pageTitle.toLowerCase();
+  if (/\b(planner|tracker|journal|bloom)\b/.test(title)) {
+    return `Supports the planning and reflection angle behind ${page}.`;
+  }
+  if (/\b(pill|medication|medical)\b/.test(title)) {
+    return "Makes medication or essentials easier to keep in one place.";
+  }
+  if (/\b(night light|lamp|clock)\b/.test(title)) {
+    return "Supports safer evenings and a calmer room at home.";
+  }
+  if (/\b(diffuser|humidifier|hot water|hand warmer)\b/.test(title)) {
+    return "Adds a comfort-first self-care layer without feeling overdone.";
+  }
+  if (/\b(pet|dog|cat|harness|brush|water bottle|poop bags)\b/.test(title)) {
+    return "Fits the pet-care route and keeps the routine simple.";
+  }
+  if (/\b(cookware|bowl|cup|opener|pump)\b/.test(title)) {
+    return "Works well for daily use and giftable household upgrades.";
+  }
+  if (/\b(storage|bag|stand|toilet)\b/.test(title)) {
+    return "Helps the home feel easier to organize and maintain.";
+  }
+  if (/\b(walking stick|cane)\b/.test(title)) {
+    return "Adds a practical comfort-and-support signal for older adults.";
+  }
+  if (/\b(book|legacy)\b/.test(title)) {
+    return "Reinforces the legacy and memory-preservation theme.";
+  }
+
+  return `Strong supporting pick for ${page}.`;
+}
+
+function buildResourceIntroParagraphs(kind: ResourcePageKind, summary: string, collectionTitle: string): string[] {
+  if (kind === "hub") {
+    return [
+      "People usually arrive here with a task, not a category name. Pick the card that matches the job you want done, then move to the guide or topic page that feels closest.",
+      "The page stays focused on one thing at a time so shoppers can get to the right answer quickly instead of reading through a long, generic directory.",
+    ];
+  }
+
+  if (kind === "category") {
+    return [
+      summary,
+      `This category landing page keeps the browse broad enough to explain the topic, but narrow enough to send readers into the exact subtopic they need next.`,
+    ];
+  }
+
+  return [
+    summary,
+    `This topic page is intentionally focused so it can answer the question in plain language, then move the reader toward a matching SALT collection or product.`,
+  ];
+}
+
+function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?: string): EditorialFaq[] {
+  if (kind === "hub") {
+    return [
+      {
+        question: "What is the Resource Hub for?",
+        answer:
+          "It gives shoppers a fast place to start when they have a problem to solve but do not yet know the exact product or guide they need.",
+      },
+      {
+        question: "How should someone move through the hub?",
+        answer:
+          "Pick the card that matches the task, open the guide, then move into the topic page if the question needs a more specific answer.",
+      },
+      {
+        question: "Why does this format work for AEO and GEO?",
+        answer:
+          "The pages answer the question first, stay narrow, and connect each answer to real product pages and collections people can click next.",
+      },
+    ];
+  }
+
+  if (kind === "category") {
+    return [
+      {
+        question: `What does ${title} help me solve?`,
+        answer: "It turns a broad shopping or planning need into a clearer route, so the reader can move from curiosity to a practical next step.",
+      },
+      {
+        question: "Which page should I open after this one?",
+        answer: "Open the most relevant subtopic page inside the category, then use the collection link if you want to browse products directly.",
+      },
+      {
+        question: "How many products should this page feature?",
+        answer: "Three strong examples are enough; that keeps the page useful without turning it into a noisy catalog dump.",
+      },
+    ];
+  }
+
+  const scope = categoryTitle || "this category";
+  return [
+    {
+      question: `What should someone look for in ${scope}?`,
+      answer:
+        "Start with the easiest win inside the category, then move into the subtopic that best matches the problem, budget, or routine.",
+    },
+    {
+      question: `How do I choose the right subtopic inside ${scope}?`,
+      answer:
+        "Pick the version of the category that matches the shopper's situation most closely, then use the product picks as a practical next step.",
+    },
+    {
+      question: `What should ${scope} link to next?`,
+      answer:
+        "Link to the parent category, one sibling topic, the most relevant collection route, and the first product in the featured set.",
+    },
+  ];
+}
+
+function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): EditorialAction[] {
+  if (kind === "hub") {
+    return [
+      { label: "Browse the guides", to: "/resources", primary: true },
+      { label: "Shop the catalog", to: "/shop" },
+      { label: "Contact us", to: "/contact" },
+    ];
+  }
+
+  const collectionTitle = getCollectionTitleFromRoute(collectionRoute);
+  return [
+    { label: `Shop ${collectionTitle || "collection"}`, to: collectionRoute, primary: true },
+    { label: "Resource Hub", to: "/resources" },
+    { label: "Contact us", to: "/contact" },
+  ];
+}
+
+function buildResourceAccent(kind: ResourcePageKind, title: string, summary: string, collectionTitle: string): EditorialPageContent["accent"] {
+  if (kind === "hub") {
+    return {
+      label: "Why this exists",
+      title: "Built for people who need a clear next step",
+      body:
+        "The Resource Hub gives shoppers and AI search engines one calm place to start. Each page answers one question, stays focused, and points to a real next click.",
+      bullets: ["One job per page", "Fast next step", "Real product routes"],
+    };
+  }
+
+  if (kind === "category") {
+    return {
+      label: "Category overview",
+      title: `Explore ${title} without losing the thread`,
+      body:
+        summary +
+        ` The category page keeps the route centered on ${collectionTitle || "the related collection"} so readers can move from a broad question into a tighter topic without restarting their search.`,
+      bullets: [
+        `${collectionTitle || title} collection route`,
+        "Topic drill-downs",
+        "Three featured products",
+      ],
+    };
+  }
+
+  return {
+    label: "Guide overview",
+    title: `What shoppers need to know about ${title.toLowerCase()}`,
+    body:
+      summary +
+      " The page is written to answer common pre-purchase questions quickly and point readers toward the most relevant collection family.",
+    bullets: [
+      `Focused ${collectionTitle || "collection"} context`,
+      "Clear answer first",
+      "Real product picks",
+    ],
+  };
+}
+
+function buildResourceChips(
+  kind: ResourcePageKind,
+  titles: string[],
+  collectionTitle?: string,
+): string[] {
+  if (kind === "hub") {
+    return titles;
+  }
+
+  if (kind === "category") {
+    return titles;
+  }
+
+  return [...titles.slice(0, 2), collectionTitle || "Collection", "Practical tips", "Product picks"];
+}
+
+function buildResourceFeaturedProducts(
+  featuredProducts: EditorialPageContent["featuredProducts"] | undefined,
+  collectionRoute?: string | null,
+): EditorialFeaturedProduct[] {
+  const collectionLabel = getCollectionTitleFromRoute(collectionRoute);
+  return (
+    featuredProducts?.map((product) => ({
+      handle: product.handle,
+      collectionLabel: collectionLabel || undefined,
+    })) || []
+  );
+}
+
 function buildResourceHubPageContent(): EditorialPageContent {
   return {
     handle: "resources",
     kicker: "Resource Hub",
     title: "Resource Hub",
-    summary:
-      "AEO/GEO-friendly guides that answer the questions shoppers ask before they buy, organize, or gift.",
+    seoTitle: "Resource Hub | SALT Online Store",
+    metaDescription: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
+    summary: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
     stats: [
       { label: "Guides", value: String(SITE_RESOURCE_GUIDES.length) },
       { label: "Goal", value: "Answer-first" },
       { label: "Format", value: "Editorial" },
     ],
-    accent: {
-      label: "Why this exists",
-      title: "Built for search, clarity, and useful answers",
-      body:
-        "The Resource Hub gives Google, AI search engines, and shoppers a clean place to find practical guidance around senior living, home organization, kitchen buying, pet care, and gifting.",
-      bullets: ["Question-led content", "Search-engine friendly", "Shopping support"],
-    },
-    introParagraphs: [
-      "Use the hub when the shopper wants advice first and a product second.",
-      "Each guide below is shaped to answer common intent, then point back to the right collection family or contact path.",
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Resource Hub" },
     ],
-    cardsTitle: "Hub categories",
-    cardsDescription: "Open a guide to read the full topic page.",
+    accent: buildResourceAccent("hub", "Resource Hub", "", ""),
+    introParagraphs: buildResourceIntroParagraphs("hub", "Use the hub when the shopper wants advice first and a product second.", ""),
+    cardsTitle: "Choose your path",
+    cardsDescription: "Start from the task, not the category label.",
     cards: SITE_RESOURCE_GUIDES.map((guide) => ({
       title: guide.title,
       detail: guide.summary,
@@ -245,60 +470,101 @@ function buildResourceHubPageContent(): EditorialPageContent {
     })),
     chipsTitle: "Search cues",
     chipsDescription: "The topics behind the hub pages.",
-    chips: SITE_RESOURCE_GUIDES.map((guide) => guide.title),
-    actions: [
-      { label: "Browse collections", to: "/collections", primary: true },
-      { label: "FAQ", to: "/faq" },
-      { label: "Contact us", to: "/contact" },
-    ],
+    chips: buildResourceChips("hub", SITE_RESOURCE_GUIDES.map((guide) => guide.title)),
+    featuredProductsTitle: "Useful starting products",
+    featuredProductsDescription: "A calm cross-category set that represents the hub's most useful routes.",
+    featuredProducts: RESOURCE_HUB_HUB_FEATURED_PRODUCTS.map((product) => ({
+      handle: product.handle,
+    })),
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers that help shoppers and answer engines move faster.",
+    faqs: buildResourceFaqs("hub", "Resource Hub"),
+    actions: buildResourceActions("hub", ""),
   };
 }
 
-function buildResourcePageContent(handle: string): EditorialPageContent | null {
-  const guide = SITE_RESOURCE_GUIDES.find((entry) => entry.handle === handle);
-  if (!guide) {
-    return null;
-  }
-
-  const relatedGuides = SITE_RESOURCE_GUIDES.filter((entry) => entry.handle !== guide.handle).slice(0, 3);
-
+function buildResourceCategoryPageContent(guide: SiteResourceGuide): EditorialPageContent {
+  const collectionTitle = getCollectionTitleFromRoute(guide.collectionRoute);
   return {
     handle: guide.handle,
     kicker: "Resource Hub",
     title: guide.title,
+    seoTitle: `${guide.title} | SALT Resource Hub`,
+    metaDescription: `${guide.summary} Explore the related collection, compare the topic pages, and use the product picks to move from research to shopping.`,
     summary: guide.summary,
     stats: [
-      { label: "Topic", value: guide.title },
+      { label: "Topics", value: String(guide.topics.length) },
+      { label: "Collection", value: collectionTitle || "Editorial route" },
       { label: "Intent", value: "AEO / GEO" },
-      { label: "Format", value: "Guided article" },
     ],
-    accent: {
-      label: "Guide overview",
-      title: `What shoppers need to know about ${guide.title.toLowerCase()}`,
-      body:
-        guide.summary +
-        " The page is written to answer common pre-purchase questions quickly and point readers toward the most relevant collection family.",
-      bullets: guide.bullets,
-    },
-    introParagraphs: [
-      `This guide covers the most common questions around ${guide.title.toLowerCase()} so the page can surface in answer engines and support shoppers who are still deciding.`,
-      `Use the links below to move from research to the right collection family or to another guide that covers a related question.`,
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Resource Hub", to: "/resources" },
+      { label: guide.title },
     ],
-    cardsTitle: "Related guides",
-    cardsDescription: "Keep reading in the same topic cluster.",
-    cards: relatedGuides.map((relatedGuide) => ({
-      title: relatedGuide.title,
-      detail: relatedGuide.summary,
-      to: buildResourceRoute(relatedGuide.handle),
+    accent: buildResourceAccent("category", guide.title, guide.summary, collectionTitle),
+    introParagraphs: buildResourceIntroParagraphs("category", guide.summary, collectionTitle),
+    cardsTitle: "Topic pages",
+    cardsDescription: "Open the question that matches the shopper's intent.",
+    cards: guide.topics.map((topic) => ({
+      title: topic.title,
+      detail: topic.summary,
+      to: buildResourceTopicRoute(guide.handle, topic.handle),
     })),
-    chipsTitle: "Search phrases",
-    chipsDescription: "The language this page is built to answer.",
-    chips: guide.searchQuery.split(" "),
-    actions: [
-      { label: "Resource Hub", to: "/resources", primary: true },
-      { label: "Browse collections", to: "/collections" },
-      { label: "Contact support", to: "/contact" },
+    chipsTitle: "Topic cues",
+    chipsDescription: "The subtopics behind this category.",
+    chips: buildResourceChips("category", guide.topics.map((topic) => topic.title)),
+    featuredProductsTitle: "Featured products",
+    featuredProductsDescription: "Three real products that match the category intent and link back to live store pages.",
+    featuredProducts: buildResourceFeaturedProducts(guide.featuredProducts, guide.collectionRoute),
+    faqsTitle: "Frequently asked",
+    faqsDescription: "Short answers that support shopping without losing the editorial thread.",
+    faqs: buildResourceFaqs("category", guide.title),
+    actions: buildResourceActions("category", guide.collectionRoute),
+  };
+}
+
+function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteResourceGuide["topics"][number]): EditorialPageContent {
+  const collectionTitle = getCollectionTitleFromRoute(topic.collectionRoute);
+  const siblingTopics = guide.topics.filter((entry) => entry.handle !== topic.handle).slice(0, 4);
+
+  return {
+    handle: `${guide.handle}/${topic.handle}`,
+    kicker: guide.title,
+    title: topic.title,
+    seoTitle: `${topic.title} | ${guide.title} | SALT Resource Hub`,
+    metaDescription: `${topic.summary} Use the collection route, sibling guides, and featured products to answer the question with a clear next step.`,
+    summary: topic.summary,
+    stats: [
+      { label: "Topic", value: topic.title },
+      { label: "Collection", value: collectionTitle || "Editorial route" },
+      { label: "Intent", value: "Focused browse" },
     ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Resource Hub", to: "/resources" },
+      { label: guide.title, to: buildResourceRoute(guide.handle) },
+      { label: topic.title },
+    ],
+    accent: buildResourceAccent("topic", topic.title, topic.summary, collectionTitle),
+    introParagraphs: buildResourceIntroParagraphs("topic", topic.summary, collectionTitle),
+    cardsTitle: "Related topics",
+    cardsDescription: "Branch sideways to keep the browse relevant.",
+    cards: siblingTopics.map((siblingTopic) => ({
+      title: siblingTopic.title,
+      detail: siblingTopic.summary,
+      to: buildResourceTopicRoute(guide.handle, siblingTopic.handle),
+    })),
+    chipsTitle: "Key search cues",
+    chipsDescription: "The language this page is built to answer.",
+    chips: buildResourceChips("topic", [guide.title, topic.title], collectionTitle),
+    featuredProductsTitle: "Featured products",
+    featuredProductsDescription: "Three useful products that fit the question and keep the path grounded in the real catalog.",
+    featuredProducts: buildResourceFeaturedProducts(topic.featuredProducts, topic.collectionRoute),
+    faqsTitle: "Frequently asked",
+    faqsDescription: "Short answers that reduce friction before the shopper moves on.",
+    faqs: buildResourceFaqs("topic", topic.title, guide.title),
+    actions: buildResourceActions("topic", topic.collectionRoute),
   };
 }
 
@@ -488,6 +754,21 @@ function buildTrackOrderPageContent(): EditorialPageContent {
     ],
   };
 }
+
+const resourceEditorialPages: Record<string, EditorialPageContent> = {
+  resources: buildResourceHubPageContent(),
+  ...Object.fromEntries(
+    SITE_RESOURCE_GUIDES.map((guide) => [guide.handle, buildResourceCategoryPageContent(guide)]),
+  ),
+  ...Object.fromEntries(
+    SITE_RESOURCE_GUIDES.flatMap((guide) =>
+      guide.topics.map((topic) => [
+        `${guide.handle}/${topic.handle}`,
+        buildResourceTopicPageContent(guide, topic),
+      ]),
+    ),
+  ),
+};
 
 const editorialPages: Record<string, EditorialPageContent> = {
   "about-us": {
@@ -721,9 +1002,7 @@ const editorialPages: Record<string, EditorialPageContent> = {
       ]),
     ),
   ),
-  ...Object.fromEntries(
-    SITE_RESOURCE_GUIDES.map((guide) => [guide.handle, buildResourcePageContent(guide.handle)!]),
-  ),
+  ...resourceEditorialPages,
 };
 
 export function getEditorialPageContent(handle: string): EditorialPageContent | null {
@@ -735,6 +1014,15 @@ export function getEditorialPageContent(handle: string): EditorialPageContent | 
   const directMatch = editorialPages[normalizedHandle];
   if (directMatch) {
     return directMatch;
+  }
+
+  const [resourceCategorySegment, resourceTopicSegment] = normalizedHandle.split("/", 2);
+  if (resourceCategorySegment && resourceTopicSegment) {
+    const resourceGuide = getResourceByHandle(resourceCategorySegment);
+    const resourceTopic = resourceGuide ? getResourceTopicByHandle(resourceCategorySegment, resourceTopicSegment) : null;
+    if (resourceGuide && resourceTopic) {
+      return editorialPages[`${resourceGuide.handle}/${resourceTopic.handle}`] || null;
+    }
   }
 
   const collectionMatch = getCollectionByHandle(normalizedHandle);

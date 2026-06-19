@@ -84,10 +84,34 @@ const AppShell = () => (
                       loadingSubtitle="Building the curated resource page."
                       errorTitle="Resource unavailable"
                       errorSubtitle="Please retry to refresh the resource page."
+                      />
+                    }
+                  />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route
+                  path="/resources/:category/:handle"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={(params) => `${params.category || ""}/${params.handle || ""}`}
+                      loadingTitle="Loading resource"
+                      loadingSubtitle="Building the curated resource page."
+                      errorTitle="Resource unavailable"
+                      errorSubtitle="Please retry to refresh the resource page."
                     />
                   }
                 />
-                <Route path="/faq" element={<FaqPage />} />
+                <Route
+                  path="/pages/resources/:category/:handle"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={(params) => `${params.category || ""}/${params.handle || ""}`}
+                      loadingTitle="Loading resource"
+                      loadingSubtitle="Building the curated resource page."
+                      errorTitle="Resource unavailable"
+                      errorSubtitle="Please retry to refresh the resource page."
+                    />
+                  }
+                />
                 <Route path="/pages/faq" element={<FaqPage />} />
                 <Route path="/wholesale-inquiries" element={<WholesaleInquiriesPage />} />
                 <Route path="/pages/wholesale-inquiries" element={<WholesaleInquiriesPage />} />

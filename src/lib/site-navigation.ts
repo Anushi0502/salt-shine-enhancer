@@ -1,3 +1,5 @@
+import { RESOURCE_HUB_GUIDES } from "@/lib/resource-hub-data";
+
 export type SiteSubcollection = {
   title: string;
   handle: string;
@@ -25,12 +27,25 @@ export type SiteCollection = {
   subcollections: SiteSubcollection[];
 };
 
+export type SiteResourceFeaturedProduct = {
+  handle: string;
+};
+
+export type SiteResourceTopic = {
+  title: string;
+  handle: string;
+  summary: string;
+  collectionRoute: string;
+  featuredProducts: SiteResourceFeaturedProduct[];
+};
+
 export type SiteResourceGuide = {
   title: string;
   handle: string;
   summary: string;
-  searchQuery: string;
-  bullets: string[];
+  collectionRoute: string;
+  featuredProducts: SiteResourceFeaturedProduct[];
+  topics: SiteResourceTopic[];
 };
 
 export type SiteFooterLink = {
@@ -491,43 +506,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
   },
 ];
 
-export const SITE_RESOURCE_GUIDES: SiteResourceGuide[] = [
-  {
-    title: "Senior Living Guides",
-    handle: "senior-living-guides",
-    summary: "Practical checklists and buyer-friendly advice for safer, calmer living at home.",
-    searchQuery: "senior living guides caregiving daily living safety",
-    bullets: ["Senior product checklists", "Caregiver planning tips", "Home safety buying cues"],
-  },
-  {
-    title: "Home Organization Ideas",
-    handle: "home-organization-ideas",
-    summary: "Simple systems for closets, counters, drawers, and small-space routines.",
-    searchQuery: "home organization ideas small apartment solutions",
-    bullets: ["Room-by-room ideas", "Small-space storage", "Declutter-first routines"],
-  },
-  {
-    title: "Kitchen Guides",
-    handle: "kitchen-guides",
-    summary: "Kitchen buying guides that make it easier to choose the right tools the first time.",
-    searchQuery: "kitchen guides best kitchen gadgets cooking essentials",
-    bullets: ["Tool comparison posts", "Cookware selection tips", "Cleanup-friendly routines"],
-  },
-  {
-    title: "Pet Care Guides",
-    handle: "pet-care-guides",
-    summary: "Feeding, travel, grooming, and organization advice for pets and their people.",
-    searchQuery: "pet care guides pet travel tips pet organization",
-    bullets: ["Feeding and travel", "Grooming and toys", "Pet organization"],
-  },
-  {
-    title: "Gift Guides",
-    handle: "gift-guides",
-    summary: "Occasion-led gift ideas for moms, dads, seniors, holidays, and housewarmings.",
-    searchQuery: "gift guides best gifts for mom best gifts for dad holiday gift ideas",
-    bullets: ["Occasion-led inspiration", "Budget and value choices", "Seasonal gift planning"],
-  },
-];
+export const SITE_RESOURCE_GUIDES: SiteResourceGuide[] = RESOURCE_HUB_GUIDES;
 
 export const SITE_FOOTER_COMPANY_LINKS: SiteFooterLink[] = [
   { label: "About SALT", to: "/about" },
@@ -634,8 +613,26 @@ export function getSubcollectionByHandle(collectionHandle: string, subcollection
 }
 
 export function getResourceByHandle(handle: string): SiteResourceGuide | null {
-  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const normalizedHandle = String(handle || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, "")
+    .split("/", 1)[0];
   return SITE_RESOURCE_GUIDES.find((guide) => guide.handle === normalizedHandle) || null;
+}
+
+export function getResourceTopicByHandle(resourceHandle: string, topicHandle: string): SiteResourceTopic | null {
+  const guide = getResourceByHandle(resourceHandle);
+  if (!guide) {
+    return null;
+  }
+
+  const normalizedHandle = String(topicHandle || "").trim().toLowerCase();
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  return guide.topics.find((topic) => topic.handle === normalizedHandle) || null;
 }
 
 export function isFeaturedCollectionHandle(handle: string): boolean {
@@ -664,7 +661,17 @@ export function buildSubcollectionRoute(collectionHandle: string, subcollectionH
 }
 
 export function buildResourceRoute(handle: string): string {
-  return `/resources/${String(handle || "").trim().toLowerCase()}`;
+  const normalized = String(handle || "").trim().toLowerCase().replace(/^\/+|\/+$/g, "");
+  if (!normalized) {
+    return "/resources";
+  }
+
+  const withoutPrefix = normalized.startsWith("resources/") ? normalized.slice("resources/".length) : normalized;
+  return withoutPrefix ? `/resources/${withoutPrefix}` : "/resources";
+}
+
+export function buildResourceTopicRoute(resourceHandle: string, topicHandle: string): string {
+  return buildResourceRoute(`${resourceHandle}/${topicHandle}`);
 }
 
 export function buildSearchQueryUrl(query: string): string {

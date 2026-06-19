@@ -169,7 +169,7 @@ const CartDrawer = () => {
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= getMinimumProductQuantity(item.handle)}
+                            disabled={item.quantity <= getMinimumProductQuantity(item.handle, item.unitPrice)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
                             aria-label="Decrease quantity"
                           >

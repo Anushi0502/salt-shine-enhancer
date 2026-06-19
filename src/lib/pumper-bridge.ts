@@ -371,7 +371,7 @@ export function installSaltPumperBridge(): void {
   };
 
   const getCurrentBundleMinimumQuantity = () =>
-    getMinimumProductQuantity(state.currentProductHandle || getCurrentProductHandle());
+    getMinimumProductQuantity(state.currentProductHandle || getCurrentProductHandle(), state.currentVariantPrice);
 
   const ensurePumperSoldOutStyle = () => {
     if (document.getElementById("salt-pumper-sold-out-style")) {

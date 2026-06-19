@@ -53,13 +53,13 @@ const AboutPage = () => {
   const heroMeta = (
     <div className="flex flex-wrap gap-2">
       <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
-        Founded 2024
+        Browse
       </span>
       <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
-        Courtney R. Jones
+        Save
       </span>
       <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
-        Mission-led retail
+        Checkout
       </span>
     </div>
   );
@@ -69,7 +69,7 @@ const AboutPage = () => {
       <div>
         <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">Story note</p>
         <p className="mt-2 text-sm leading-6 text-[#5C748F]">
-          The Shopify page title is kept as supporting copy, not the main headline, so the page feels like SALT.
+          The Shopify page title stays as supporting copy while the headline follows the cart-to-heart shopping flow.
         </p>
         <p className="mt-3 font-display text-[1.15rem] leading-[1.05] text-[#102A43]">{data.page.title}</p>
       </div>
@@ -84,16 +84,16 @@ const AboutPage = () => {
             Browse collections
           </Link>
           <Link
-            to="/resources"
+            to="/wishlist"
             className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
           >
-            Resource hub
+            Open wishlist
           </Link>
           <Link
-            to="/contact"
+            to="/cart"
             className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
           >
-            Contact us
+            View cart
           </Link>
         </div>
       </div>
@@ -112,14 +112,14 @@ const AboutPage = () => {
         { label: "About SALT" },
       ]}
       kicker="About SALT"
-      title="A calmer way to shop for practical products"
-      summary="SALT started as a mission-led extension of Senior and Living Today Services, LLC. The goal stays simple: keep useful products easy to find, easy to trust, and easy to buy."
+      title="From cart to heart, practical products stay easy to choose"
+      summary="SALT keeps useful products easy to find, easy to save, and easy to buy so the shopping path feels calm from start to finish."
       meta={heroMeta}
       aside={heroAside}
       actions={[
         { label: "Shop the catalog", to: "/shop", primary: true },
-        { label: "Resource hub", to: "/resources" },
-        { label: "Contact us", to: "/contact" },
+        { label: "Open wishlist", to: "/wishlist" },
+        { label: "View cart", to: "/cart" },
       ]}
     >
       <article
