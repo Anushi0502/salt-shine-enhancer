@@ -1272,10 +1272,10 @@ const HomePage = () => {
   }, [reviewLoopCopies, reviewTiles.length]);
 
   return (
-    <section className="mt-2 w-full pb-4 sm:mt-4 sm:pb-6 lg:pb-8">
+    <section className="mt-1 w-full pb-3 sm:mt-3 sm:pb-5 lg:pb-6">
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
-          <section className="border-b border-[#dce9ff] p-[10px] sm:p-[30px]">
+          <section className="border-b border-[#dce9ff] p-3 sm:p-4 lg:p-6">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.18fr)_minmax(280px,0.82fr)] lg:items-stretch">
               <div className="relative overflow-hidden rounded-[1.16rem] border border-[#c8dcff] bg-[#eaf3ff] shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)]">
                 <div
@@ -1360,7 +1360,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Best Sellers" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {bestSellerDisplayTiles.map((tile, index) => (
@@ -1383,7 +1383,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={120}>
-          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Gift Ideas For Loved Ones" />
             <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:gap-5">
               {giftTiles.map((tile, index) => (
@@ -1422,7 +1422,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={140}>
-          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Quirky Gift Picks" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {quirkyGiftDisplayTiles.map((tile, index) => (
@@ -1445,7 +1445,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={220}>
-          <section className="border-t border-[#dce9ff] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:gap-5 lg:items-start">
               <div className="space-y-3.5 sm:space-y-4">
                 <h2 className="text-left font-display text-[clamp(1.18rem,2vw,1.62rem)] leading-[1.06] text-[#183f84]">
@@ -1512,7 +1512,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={180}>
-          <section className="border-t border-[#dce9ff] p-4 sm:p-5 lg:p-8">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Everyday Essentials" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
               {everydayEssentialsDisplayTiles.map((tile, index) => (
@@ -1535,7 +1535,7 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={280}>
-          <section className="border-t border-[#dce9ff] p-5 sm:p-7 lg:p-10">
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="What Our Customers Are Saying" />
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[#2b5fae] sm:mt-5">
               <p className="inline-flex items-center rounded-full border border-[#cfe0ff] bg-white/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em]">
