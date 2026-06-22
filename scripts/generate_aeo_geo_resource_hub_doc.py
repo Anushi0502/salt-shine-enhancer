@@ -44,7 +44,6 @@ MEANINGFUL_COLLECTION_PRIORITY = [
     "personal-care",
     "medical-accessories",
     "tools",
-    "digital-products",
     "unique-products",
     "under-35",
 ]
@@ -55,7 +54,7 @@ VALIDATION_COLLECTION_HINTS: dict[str, set[str]] = {
     "Lifestyle & Wellness": {"books", "personal-care", "medical-accessories", "gloves"},
     "Gift Guides": {"books", "gifts", "home-decor", "cookware"},
     "Home Safety & Organization": {"home-decor", "medical-accessories", "tools", "cookware"},
-    "Family & Legacy": {"books", "gifts", "digital-products"},
+    "Family & Legacy": {"books", "gifts"},
     "Pet & Home Life": {"pet-assocerries", "gifts", "home-decor"},
 }
 
@@ -562,7 +561,7 @@ def validate_featured_products(
 
 def build_page_specs() -> list[dict[str, Any]]:
     PLANNER_2 = "the-living-legacy-planner-2nd-edition"
-    DAILY_BLOOM = "the-daily-bloom"
+    DAILY_BLOOM = "7-day-mood-mindfulness-tracker"
     MOOD_TRACKER = "7-day-mood-mindfulness-tracker"
     HEALTH_TRACKER = "7-day-health-medication-tracker"
     SOCIAL_TRACKER = "7-day-social-hobby-tracker"
@@ -580,7 +579,7 @@ def build_page_specs() -> list[dict[str, Any]]:
     STAINLESS_12 = "12pc-stainless-cookware-set-cook-n-home-kitchen"
     LAPTOP_STAND = "portable-aluminum-laptop-desk-stand-with-mouse-pad"
     MESH_BAGS = "hodr-mesh-bags-lightweight-mesh-stuff-sack-drawstring-storage-bags-compression-pouches-for-camping-hiking-laundry-grocery"
-    FOLDING_TOILET = "folding-toilet-portable-outdoor-storage-box-car-toilet-bucket-collapsible-trash-can-for-self-driving-travel-emergency-toilet"
+    FOLDING_TOILET = "can-opener-adjustable-stainless-steel-non-slip-manual-jar-bottle-bottle-lid-opener-gadget-home-kitchen-professional-gadgets-tool"
     CAT_HARNESS = "adjustable-cartoon-bee-cat-harness-with-leash-dogs-cats"
     PET_BRUSH = "3-in-1-pet-spray-brush-steam-massage-hair-removal-comb"
     DOG_POOP_BAGS = "dog-poop-bags-10-rolls-portable-pet-waste-bags"
@@ -594,8 +593,8 @@ def build_page_specs() -> list[dict[str, Any]]:
     MULTI_DIFFUSER = "multicolor-humidifier-aromatherapy-flame-diffuser"
     HELLO_KITTY_BOUQUET = "kawaii-hello-kitty-doll-with-artificial-flowers-sanrio-bouquet-gift"
     BRONZE_CANE = "bronze-snake-handle-walking-stick-decorative-cane"
-    LEGACY_BOOK = "relics-of-the-century"
-    MEDICAL_BAG = "portable-medical-storage-bag-3-pcs-camping-first-aid-kit"
+    LEGACY_BOOK = "the-living-legacy-planner"
+    MEDICAL_BAG = "portable-weekly-pill-box-8-grids-health-care-travel-organizer"
     VERTICAL_STAND = "vertical-laptop-stand-3-slots-universal-docking-station-for-macbook"
     HOT_WATER_BAG = "hot-water-bottle-bag-warm-belly-hands-feet"
     FOLDING_LUNCH_BOWL = "portable-folding-lunch-box-bowl-sets-silicone-3pcs-set-food-container-outdoor-camping-tableware-set-foldable-salad-bowl-with-lid"

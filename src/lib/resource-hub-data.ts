@@ -2,7 +2,7 @@ import type { SiteResourceGuide } from "@/lib/site-navigation";
 
 const P = {
   planner: "the-living-legacy-planner-2nd-edition",
-  dailyBloom: "the-daily-bloom",
+  dailyBloom: "7-day-mood-mindfulness-tracker",
   pillOrganizer: "7-day-pill-organizer-box-travel-friendly-medicine-dispenser",
   tcarePill: "tcare-travel-pill-organizer-moisture-proof-daily-pill-case-1",
   pillBox14: "14-grid-7-day-pill-box-weekly-organizer-for-vitamins-medicine",
@@ -15,7 +15,7 @@ const P = {
   meshBags:
     "hodr-mesh-bags-lightweight-mesh-stuff-sack-drawstring-storage-bags-compression-pouches-for-camping-hiking-laundry-grocery",
   foldingToilet:
-    "folding-toilet-portable-outdoor-storage-box-car-toilet-bucket-collapsible-trash-can-for-self-driving-travel-emergency-toilet",
+    "can-opener-adjustable-stainless-steel-non-slip-manual-jar-bottle-bottle-lid-opener-gadget-home-kitchen-professional-gadgets-tool",
   catHarness: "adjustable-cartoon-bee-cat-harness-with-leash-dogs-cats",
   petBrush: "3-in-1-pet-spray-brush-steam-massage-hair-removal-comb",
   dogPoopBags: "dog-poop-bags-10-rolls-portable-pet-waste-bags",
@@ -23,9 +23,9 @@ const P = {
   catBed: "cozy-winter-cat-bed-cave-nest-for-cats-small-dogs",
   petSeatBelt: "adjustable-pet-harness-cat-dog-seat-belt-for-travel",
   dogHarness: "soft-mesh-dog-harness-breathable-comfort-for-small-dogs-cats",
-  medicalBag: "portable-medical-storage-bag-3-pcs-camping-first-aid-kit",
+  medicalBag: "portable-weekly-pill-box-8-grids-health-care-travel-organizer",
   gpsTracker: "mini-gps-tracker-find-my-app-smart-tag-for-pets-keys",
-  relics: "relics-of-the-century",
+  relics: "the-living-legacy-planner",
   helloKitty: "kawaii-hello-kitty-doll-with-artificial-flowers-sanrio-bouquet-gift",
   bronzeCane: "bronze-snake-handle-walking-stick-decorative-cane",
   volcanoDiffuser: "volcano-flame-aroma-diffuser-360ml-jellyfish-humidifier",

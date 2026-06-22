@@ -71,7 +71,7 @@ export const HOME_COLLECTION_GROUPS: HomeCollectionGroupConfig[] = [
   {
     handle: "gifts",
     label: "Gifts & Lifestyle",
-    childHandles: ["unique-products", "summer-collection", "digital-products"],
+    childHandles: ["unique-products", "summer-collection"],
   },
   {
     handle: "shopping-bags-jute-bags",
@@ -79,7 +79,7 @@ export const HOME_COLLECTION_GROUPS: HomeCollectionGroupConfig[] = [
     childHandles: ["shopping-bag-market-trolley-bag-with-wheels-collapsible"],
   },
   {
-    handle: "winter-wear",
+    handle: "deals-sale",
     label: "Deals & Sale",
     childHandles: ["gloves", "under-35"],
   },
@@ -96,7 +96,7 @@ export const HOME_FEATURED_SHORTCUTS: FeaturedShortcutConfig[] = [
   },
   {
     label: "Today's Deals",
-    preferredHandles: ["todays-deals", "winter-wear"],
+    preferredHandles: ["todays-deals", "deals-sale"],
   },
 ];
 

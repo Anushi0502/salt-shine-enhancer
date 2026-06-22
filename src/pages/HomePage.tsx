@@ -150,29 +150,29 @@ const fallbackReviewTiles: ReviewTile[] = [
 const stars = Array.from({ length: 5 }, (_, index) => index);
 const featuredBookPriority = [
   {
-    key: "daily-bloom",
-    titleIncludes: ["daily bloom"],
-    handleIncludes: ["daily-bloom", "daily_bloom"],
+    key: "mood-mindfulness-tracker",
+    titleIncludes: ["mood mindfulness tracker", "mood tracker"],
+    handleIncludes: ["7-day-mood-mindfulness-tracker", "mood-mindfulness-tracker"],
   },
   {
-    key: "living-legacy-planner-second-edition",
+    key: "the-living-legacy-planner-2nd-edition",
     titleIncludes: ["living legacy planner", "second edition"],
-    handleIncludes: ["living-legacy-planner", "planner-second-edition", "second-edition"],
+    handleIncludes: ["the-living-legacy-planner-2nd-edition", "planner-second-edition", "second-edition"],
   },
 ] as const;
 
 const featuredCourtneyBookHandles = [
-  "relics-of-the-century",
+  "the-living-legacy-planner-2nd-edition",
   "the-living-legacy-planner",
-  "living-legacy-planner-second-edition",
-  "daily-bloom-journal",
+  "7-day-mood-mindfulness-tracker",
+  "7-day-health-medication-tracker",
 ] as const;
 
 const featuredCourtneyBookFallbackMeta = [
   {
-    handle: "relics-of-the-century",
-    title: "Relics of the Century",
-    price: "$19.99",
+    handle: "7-day-mood-mindfulness-tracker",
+    title: "7 Day Mood Mindfulness Tracker",
+    price: "$4.99",
   },
   {
     handle: "the-living-legacy-planner",
@@ -180,14 +180,14 @@ const featuredCourtneyBookFallbackMeta = [
     price: "$28.99",
   },
   {
-    handle: "living-legacy-planner-second-edition",
+    handle: "the-living-legacy-planner-2nd-edition",
     title: "The Living Legacy Planner 2nd Edition",
     price: "$55.99",
   },
   {
-    handle: "daily-bloom-journal",
-    title: "The Daily Bloom",
-    price: "$49.99",
+    handle: "7-day-health-medication-tracker",
+    title: "7 Day Health & Medication Tracker",
+    price: "$4.99",
   },
 ] as const;
 
@@ -675,11 +675,11 @@ const HomePage = () => {
 
     return cards.slice(0, 4);
   }, [featuredCourtneyBookFallbackImage, featuredCourtneyBooks, products]);
-  const dailyBloomFeatureCard = useMemo(() => {
+  const mindfulnessTrackerFeatureCard = useMemo(() => {
     const matchedCard = featuredCourtneyBookCards.find(
       (card) =>
-        /daily bloom/i.test(card.title) ||
-        card.to.includes("daily-bloom"),
+        /mood mindfulness|mindfulness tracker/i.test(card.title) ||
+        card.to.includes("7-day-mood-mindfulness-tracker"),
     );
 
     if (matchedCard) {
@@ -687,14 +687,14 @@ const HomePage = () => {
     }
 
     return {
-      key: "featured-courtney-book-daily-bloom-fallback",
-      title: "The Daily Bloom",
-      to: "/products/daily-bloom-journal",
-      price: "$49.99",
+      key: "featured-courtney-book-mindfulness-tracker-fallback",
+      title: "7 Day Mood Mindfulness Tracker",
+      to: "/products/7-day-mood-mindfulness-tracker",
+      price: "$4.99",
       image: featuredCourtneyBookFallbackImage,
     };
   }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
-  const { summary: dailyBloomFeatureSummary } = useJudgeMeProductRating(dailyBloomFeatureCard.productId);
+  const { summary: mindfulnessTrackerFeatureSummary } = useJudgeMeProductRating(mindfulnessTrackerFeatureCard.productId);
   const bestSellerProducts = useMemo(() => {
     if (!products.length) {
       return [];
@@ -1471,35 +1471,35 @@ const HomePage = () => {
 
               <Reveal delayMs={320}>
                 <Link
-                  to={dailyBloomFeatureCard.to}
+                  to={mindfulnessTrackerFeatureCard.to}
                   className="group relative hidden overflow-hidden rounded-[1rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] lg:block lg:h-[34rem] lg:self-start"
                 >
                   <ResilientImage
-                    src={dailyBloomFeatureCard.image}
-                    alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
+                    src={mindfulnessTrackerFeatureCard.image}
+                    alt={buildProductImageAltText(mindfulnessTrackerFeatureCard.title, "featured product spotlight")}
                     className="h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
                     fallback={
                       <img
                         src={featuredCourtneyBookFallbackImage}
-                        alt={buildProductImageAltText(dailyBloomFeatureCard.title, "featured book spotlight")}
+                        alt={buildProductImageAltText(mindfulnessTrackerFeatureCard.title, "featured product spotlight")}
                         className="h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
                       />
                     }
                   />
                   <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] px-4 py-2 text-center text-white sm:px-5 sm:py-2.5">
                     <p className="line-clamp-2 font-display text-[0.9rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[1rem]">
-                      {dailyBloomFeatureCard.title}
+                      {mindfulnessTrackerFeatureCard.title}
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.7rem] font-semibold text-white/92 sm:text-[0.78rem]">
                       <span className="text-[0.98rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.08rem]">
-                        {dailyBloomFeatureCard.price}
+                        {mindfulnessTrackerFeatureCard.price}
                       </span>
-                      {dailyBloomFeatureSummary && dailyBloomFeatureSummary.reviewCount > 0 ? (
+                      {mindfulnessTrackerFeatureSummary && mindfulnessTrackerFeatureSummary.reviewCount > 0 ? (
                         <>
                           <span className="text-white/40">·</span>
                           <span className="inline-flex items-center gap-1">
                             <Star className="h-4 w-4 fill-[#f2c100] text-[#f2c100]" />
-                            {dailyBloomFeatureSummary.rating.toFixed(1)}
+                            {mindfulnessTrackerFeatureSummary.rating.toFixed(1)}
                           </span>
                         </>
                       ) : null}

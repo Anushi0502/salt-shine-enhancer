@@ -56,7 +56,7 @@ describe("HomeCategoryHierarchy", () => {
                   makeCollection("candles", "CANDLES"),
                   makeCollection("new-arrivals", "New Arrivals"),
                   makeCollection("appplaza-best-sellers", "Best Sellers"),
-                  makeCollection("winter-wear", "Clearance"),
+                  makeCollection("deals-sale", "Deals & Sale"),
                 ]}
               />
             }
@@ -89,7 +89,7 @@ describe("HomeCategoryHierarchy", () => {
                   makeCollection("candles", "CANDLES"),
                   makeCollection("new-arrivals", "New Arrivals"),
                   makeCollection("appplaza-best-sellers", "Best Sellers"),
-                  makeCollection("winter-wear", "Clearance"),
+                  makeCollection("deals-sale", "Deals & Sale"),
                 ]}
               />
             }

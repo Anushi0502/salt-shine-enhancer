@@ -42,10 +42,9 @@ describe("buildHomeCollectionHierarchy", () => {
       makeCollection("gifts", "Gifts & Seasonal"),
       makeCollection("unique-products", "Trending Products"),
       makeCollection("summer-collection", "Summer Collection"),
-      makeCollection("digital-products", "DIGITAL PRODUCTS"),
       makeCollection("shopping-bags-jute-bags", "Travel Accessories"),
       makeCollection("shopping-bag-market-trolley-bag-with-wheels-collapsible", "Shopping Bag Market Trolley Bag with Wheels Collapsible"),
-      makeCollection("winter-wear", "Clearance"),
+      makeCollection("deals-sale", "Deals & Sale"),
       makeCollection("gloves", "Under $60"),
       makeCollection("under-35", "Under 35"),
       makeCollection("new-arrivals", "New Arrivals"),
@@ -75,7 +74,7 @@ describe("buildHomeCollectionHierarchy", () => {
       "medical-accessories",
       "gifts",
       "shopping-bags-jute-bags",
-      "winter-wear",
+      "deals-sale",
     ]);
     expect(hierarchy.categories[0].items.map((item) => item.handle)).toEqual([
       "cooking-essential",
@@ -102,7 +101,6 @@ describe("buildHomeCollectionHierarchy", () => {
     expect(hierarchy.categories[7].items.map((item) => item.handle)).toEqual([
       "unique-products",
       "summer-collection",
-      "digital-products",
     ]);
     expect(hierarchy.categories[8].items.map((item) => item.handle)).toEqual([
       "shopping-bag-market-trolley-bag-with-wheels-collapsible",
@@ -116,13 +114,13 @@ describe("buildHomeCollectionHierarchy", () => {
     const hierarchy = buildHomeCollectionHierarchy([
       makeCollection("new-arrivals", "New Arrivals"),
       makeCollection("appplaza-best-sellers", "Best Sellers"),
-      makeCollection("winter-wear", "Clearance"),
+      makeCollection("deals-sale", "Deals & Sale"),
     ]);
 
     expect(hierarchy.featuredShortcuts).toEqual([
       { label: "New Arrivals", handle: "new-arrivals", href: "/collections/new-arrivals" },
       { label: "Best Sellers", handle: "appplaza-best-sellers", href: "/collections/appplaza-best-sellers" },
-      { label: "Today's Deals", handle: "winter-wear", href: "/collections/winter-wear" },
+      { label: "Today's Deals", handle: "deals-sale", href: "/collections/deals-sale" },
     ]);
   });
 });

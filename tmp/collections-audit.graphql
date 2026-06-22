@@ -1,0 +1,24 @@
+query {
+  collections(first: 250) {
+    nodes {
+      id
+      title
+      handle
+      updatedAt
+      sortOrder
+      templateSuffix
+      productsCount {
+        count
+        precision
+      }
+      ruleSet {
+        appliedDisjunctively
+        rules {
+          column
+          relation
+          condition
+        }
+      }
+    }
+  }
+}

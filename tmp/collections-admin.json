@@ -1,0 +1,1491 @@
+{
+  "collections": {
+    "nodes": [
+      {
+        "id": "gid://shopify/Collection/284271575139",
+        "title": "Can and Jar Lid Screwer Non-slip Twist Bottle Opener",
+        "handle": "jaar-opener",
+        "updatedAt": "2026-06-22T14:02:28Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 7,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/284296478819",
+        "title": "Trolley Bags",
+        "handle": "shopping-bag-market-trolley-bag-with-wheels-collapsible",
+        "updatedAt": "2026-06-22T14:01:45Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 3,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/284296872035",
+        "title": "Artificial Aquarium Decor Plants",
+        "handle": "artificial-aquarium-decor-plants",
+        "updatedAt": "2026-06-22T14:02:14Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 10,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/285123117155",
+        "title": "Clearance",
+        "handle": "winter-wear",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 1000,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": "true"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/285123412067",
+        "title": "Home & Decor",
+        "handle": "home-decor",
+        "updatedAt": "2026-06-22T14:02:49Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 107,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "HOME DECOR"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "HOME DECOR"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "CANDLES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "CANDLES"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "CLOCK"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "CLOCK"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "WALL DECOR"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "WALL DECOR"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "WALL LAMP"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "WALL LAMP"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PLANT"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PLANT"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "BOUQUET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "BOUQUET"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "LED"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "LED"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/285291511907",
+        "title": "Kitchen & Dining",
+        "handle": "cookware",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 158,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "COOKWARE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "COOKWARE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "KITCHEN"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "KITCHEN"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "KITCHEN ACCESSORIES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "KITCHEN ACCESSORIES"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "KNIFE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "KNIFE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "BOWL SET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "BOWL SET"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "DISH"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "DISH"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "DINNER SET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "DINNER SET"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TEA SET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TEA SET"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/285389160547",
+        "title": "Under $60",
+        "handle": "gloves",
+        "updatedAt": "2026-06-22T14:04:04Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 918,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "60"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286183522403",
+        "title": "Garden & Tools",
+        "handle": "garden-tools",
+        "updatedAt": "2026-06-22T14:02:14Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 91,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Garden Tools"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Garden Tools"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TOOLS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TOOLS"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "HOE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "HOE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PRUNING SHEARS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PRUNING SHEARS"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "GARDENING GLOVES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "GARDENING GLOVES"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "SHOVEL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "SHOVEL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PLANT"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PLANT"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286183784547",
+        "title": "New Arrivals",
+        "handle": "new-arrivals",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 515,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "NEW"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286315872355",
+        "title": "Pet Supplies",
+        "handle": "pet-assocerries",
+        "updatedAt": "2026-06-22T13:59:10Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 32,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PET"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PET ACCESSORIES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PET ACCESSORIES"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286483873891",
+        "title": "All Products",
+        "handle": "all-products",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "CREATED_DESC",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 969,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_INVENTORY",
+              "relation": "EQUALS",
+              "condition": "0"
+            },
+            {
+              "column": "VARIANT_INVENTORY",
+              "relation": "GREATER_THAN",
+              "condition": "0"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286520803427",
+        "title": "Tools",
+        "handle": "tools",
+        "updatedAt": "2026-06-22T13:59:19Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 25,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TOOLS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TOOLS"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286767972451",
+        "title": "Hair Accessories",
+        "handle": "hair-accessories",
+        "updatedAt": "2026-06-22T13:55:45Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 7,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "HAIR"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286768070755",
+        "title": "Self-Care",
+        "handle": "personal-care",
+        "updatedAt": "2026-06-22T13:56:16Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 55,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PERSONAL"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/286768169059",
+        "title": "Health, Wellness & Planners",
+        "handle": "medical-accessories",
+        "updatedAt": "2026-06-22T14:03:46Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 99,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "MEDICAL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "MEDICAL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PERSONAL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PERSONAL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "FACE MASK"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "FACE MASK"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PLANNER"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PLANNER"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TRACKER"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TRACKER"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PILLBOX"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PILLBOX"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "GLASSES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "GLASSES"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "GLOVES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "GLOVES"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287617941603",
+        "title": "Summer Collection",
+        "handle": "summer-collection",
+        "updatedAt": "2026-06-22T14:03:01Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 137,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "SUMMER"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287618007139",
+        "title": "T-Shirts",
+        "handle": "t-shirt",
+        "updatedAt": "2026-06-22T13:54:03Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 23,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "T-SHIRT"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "T-SHIRT"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287618138211",
+        "title": "Trousers",
+        "handle": "trousers",
+        "updatedAt": "2026-06-22T13:53:25Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 46,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TROUSERS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TROUSERS"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287803244643",
+        "title": "Jeans",
+        "handle": "jeans",
+        "updatedAt": "2026-06-22T13:53:02Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 65,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "JEANS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "JEANS"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287928680547",
+        "title": "Men's Collection",
+        "handle": "men-collection",
+        "updatedAt": "2026-06-22T14:02:55Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 83,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "MEN"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "MEN"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/287952797795",
+        "title": "Face Masks",
+        "handle": "face-mask",
+        "updatedAt": "2026-06-22T13:49:39Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 34,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "FACE MASK"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "FACE MASK"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/288268320867",
+        "title": "Travel & Portable Essentials",
+        "handle": "shopping-bags-jute-bags",
+        "updatedAt": "2026-06-22T14:01:45Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 124,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TRAVEL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TRAVEL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "SHOPPING BAG"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "SHOPPING BAG"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "LUGGAGE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "LUGGAGE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "CART"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "CART"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "BOTTLE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "BOTTLE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PORTABLE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "PORTABLE"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/288888127587",
+        "title": "Unique Products",
+        "handle": "unique-products",
+        "updatedAt": "2026-06-22T14:01:52Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "gp-template-543985437614539870",
+        "productsCount": {
+          "count": 30,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "UNIQUE"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/289742487651",
+        "title": "Candles",
+        "handle": "candles",
+        "updatedAt": "2026-06-22T13:46:27Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 25,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "CANDLES"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "CANDLES"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/291396354147",
+        "title": "Best Sellers",
+        "handle": "appplaza-best-sellers",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 670,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_INVENTORY",
+              "relation": "LESS_THAN",
+              "condition": "50"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/293177589859",
+        "title": "Robes",
+        "handle": "robe",
+        "updatedAt": "2026-06-22T14:03:41Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 22,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "ROBE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "ROBE"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/293364203619",
+        "title": "Cooking Essentials",
+        "handle": "cooking-essential",
+        "updatedAt": "2026-06-22T14:02:50Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 98,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "KITCHEN"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/296701886563",
+        "title": "Gifts & Lifestyle",
+        "handle": "gifts",
+        "updatedAt": "2026-06-22T14:04:02Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 225,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Gift"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Gift"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Gift Idea"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Gift Idea"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "UNIQUE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "UNIQUE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "BOOK"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "BOOK"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "DIGITAL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "DIGITAL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "BOUQUET"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "BOUQUET"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298018766947",
+        "title": "Shoes & Accessories",
+        "handle": "shoes",
+        "updatedAt": "2026-06-22T14:03:48Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 22,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298109960291",
+        "title": "Books",
+        "handle": "books",
+        "updatedAt": "2026-06-22T13:43:52Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 4,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Book"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "PLANNER"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Goal Setting"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Self-Help"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "Legacy"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298110353507",
+        "title": "Under 35",
+        "handle": "under-35",
+        "updatedAt": "2026-06-22T14:04:04Z",
+        "sortOrder": "ALPHA_DESC",
+        "templateSuffix": "",
+        "productsCount": {
+          "count": 645,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "35"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216652899",
+        "title": "Clothing",
+        "handle": "apparel",
+        "updatedAt": "2026-06-22T14:03:41Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 166,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "MEN"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "MEN"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "JEANS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "JEANS"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "TROUSERS"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "TROUSERS"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "T-SHIRT"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "T-SHIRT"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "ROBE"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "ROBE"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "MENS COAT"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "MENS COAT"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "APPAREL"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "APPAREL"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "CLOTHING"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "CLOTHING"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216751203",
+        "title": "Deals & Sale",
+        "handle": "deals-sale",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "BEST_SELLING",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 925,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216783971",
+        "title": "Under $10",
+        "handle": "under-10",
+        "updatedAt": "2026-06-22T14:04:04Z",
+        "sortOrder": "PRICE_ASC",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 100,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "10.01"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216816739",
+        "title": "Under $25",
+        "handle": "under-25",
+        "updatedAt": "2026-06-22T14:04:04Z",
+        "sortOrder": "PRICE_ASC",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 363,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "25.01"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216849507",
+        "title": "Under $50",
+        "handle": "under-50",
+        "updatedAt": "2026-06-22T14:04:04Z",
+        "sortOrder": "PRICE_ASC",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 743,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "50.01"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216882275",
+        "title": "Under $100",
+        "handle": "under-100",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "PRICE_ASC",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 803,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "LESS_THAN",
+              "condition": "100.01"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216915043",
+        "title": "Premium Picks",
+        "handle": "premium-picks",
+        "updatedAt": "2026-06-22T14:02:50Z",
+        "sortOrder": "PRICE_DESC",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 39,
+          "precision": "EXACT"
+        },
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "VARIANT_PRICE",
+              "relation": "GREATER_THAN",
+              "condition": "99.99"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/298216947811",
+        "title": "Bundle Deals",
+        "handle": "bundle-deals",
+        "updatedAt": "2026-06-22T14:04:19Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 19,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298216980579",
+        "title": "Gifts for Her",
+        "handle": "gifts-for-her",
+        "updatedAt": "2026-06-22T14:03:38Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 23,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217013347",
+        "title": "Gifts for Him",
+        "handle": "gifts-for-him",
+        "updatedAt": "2026-06-22T14:01:36Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 23,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217046115",
+        "title": "Housewarming Gifts",
+        "handle": "housewarming-gifts",
+        "updatedAt": "2026-06-22T14:02:07Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 72,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217078883",
+        "title": "Travel Gifts",
+        "handle": "travel-gifts",
+        "updatedAt": "2026-06-22T14:01:45Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 23,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217111651",
+        "title": "Camping Gifts",
+        "handle": "camping-gifts",
+        "updatedAt": "2026-06-22T14:02:25Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 19,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217144419",
+        "title": "Pet Lover Gifts",
+        "handle": "pet-lover-gifts",
+        "updatedAt": "2026-06-22T14:00:32Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 20,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217177187",
+        "title": "Self-Care Gifts",
+        "handle": "self-care-gifts",
+        "updatedAt": "2026-06-22T14:03:38Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 23,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217209955",
+        "title": "Holiday Gifts",
+        "handle": "holiday-gifts",
+        "updatedAt": "2026-06-22T14:03:41Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 24,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      },
+      {
+        "id": "gid://shopify/Collection/298217242723",
+        "title": "Backyard & Garden Gifts",
+        "handle": "backyard-garden-gifts",
+        "updatedAt": "2026-06-22T13:56:27Z",
+        "sortOrder": "MANUAL",
+        "templateSuffix": null,
+        "productsCount": {
+          "count": 19,
+          "precision": "EXACT"
+        },
+        "ruleSet": null
+      }
+    ]
+  }
+}

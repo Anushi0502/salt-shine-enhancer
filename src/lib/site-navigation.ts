@@ -534,9 +534,9 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
   },
   {
     label: "Today's Deals",
-    routeHandle: "winter-wear",
-    activeCollectionHandles: ["winter-wear"],
-    to: `${buildCollectionRoute("winter-wear")}?collection=winter-wear`,
+    routeHandle: "deals-sale",
+    activeCollectionHandles: ["deals-sale"],
+    to: `${buildCollectionRoute("deals-sale")}?collection=deals-sale`,
   },
   {
     label: "Trending Now",
@@ -546,9 +546,9 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
   },
   {
     label: "Weekend Sale",
-    routeHandle: "winter-wear",
+    routeHandle: "deals-sale",
     activeCollectionHandles: ["under-35"],
-    to: `${buildSubcollectionRoute("winter-wear", "under-35")}&promo=weekend-sale`,
+    to: `${buildSubcollectionRoute("deals-sale", "under-35")}&promo=weekend-sale`,
   },
 ];
 

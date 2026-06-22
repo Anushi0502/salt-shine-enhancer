@@ -55,7 +55,7 @@ const ALLOWED_COLLECTIONS: Record<string, Set<string>> = {
   "Lifestyle & Wellness": new Set(["books", "personal-care", "medical-accessories", "gloves", "home-decor"]),
   "Gift Guides": new Set(["books", "gifts", "home-decor", "cookware", "unique-products", "personal-care", "medical-accessories", "tools"]),
   "Home Safety & Organization": new Set(["home-decor", "medical-accessories", "tools", "cookware", "travel-outdoor"]),
-  "Family & Legacy": new Set(["books", "gifts", "digital-products", "medical-accessories"]),
+  "Family & Legacy": new Set(["books", "gifts", "medical-accessories"]),
   "Pet & Home Life": new Set(["pet-assocerries", "gifts", "home-decor", "travel-outdoor", "tools"]),
 };
 

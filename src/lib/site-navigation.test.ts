@@ -50,9 +50,9 @@ describe("resolveCollectionFeedHandle", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.to)).toEqual([
       "/collections/trending-finds?collection=appplaza-best-sellers",
       "/collections/trending-finds?collection=new-arrivals",
-      "/collections/winter-wear?collection=winter-wear",
+      "/collections/deals-sale?collection=deals-sale",
       "/collections/trending-finds?collection=unique-products",
-      "/collections/winter-wear?collection=under-35&promo=weekend-sale",
+      "/collections/deals-sale?collection=under-35&promo=weekend-sale",
     ]);
   });
 
@@ -65,11 +65,7 @@ describe("resolveCollectionFeedHandle", () => {
       ),
     ).toBe(true);
     expect(
-      isSiteHeaderCollectionLinkActive(
-        "/collections/winter-wear",
-        "?collection=under-35",
-        SITE_HEADER_COLLECTION_LINKS[4],
-      ),
+      isSiteHeaderCollectionLinkActive("/collections/deals-sale", "?collection=under-35", SITE_HEADER_COLLECTION_LINKS[4]),
     ).toBe(true);
     expect(
       isSiteHeaderCollectionLinkActive(

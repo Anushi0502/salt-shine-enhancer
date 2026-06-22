@@ -1,0 +1,11 @@
+query ($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Product {
+      id
+      title
+      handle
+      productType
+      tags
+    }
+  }
+}

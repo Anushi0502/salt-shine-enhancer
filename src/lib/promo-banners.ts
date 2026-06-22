@@ -1,7 +1,7 @@
 import weekendSaleBannerImage from "@/assets/weekend-sale-banner.png";
 import { buildSubcollectionRoute } from "@/lib/site-navigation";
 
-const WEEKEND_SALE_COLLECTION_HANDLE = "winter-wear";
+const WEEKEND_SALE_COLLECTION_HANDLE = "deals-sale";
 const WEEKEND_SALE_SUBCOLLECTION_HANDLE = "under-35";
 
 function normalizeHandle(value: string | null | undefined): string {
