@@ -876,7 +876,7 @@ const MainHeader = () => {
 
             <button
               type="submit"
-              className="inline-flex h-full w-11 items-center justify-center rounded-r-[3px] border-l border-[#cdcdcd] bg-[#febd69] text-[#111111] transition hover:bg-[#f3a847]"
+              className="inline-flex h-full w-11 items-center justify-center rounded-r-[3px] border-l border-[#1749b0] bg-[#1f5bd3] text-white transition hover:bg-[#1849b0]"
             >
               <Search className="h-[1.08rem] w-[1.08rem]" />
               <span className="sr-only">Search</span>
