@@ -1,4 +1,9 @@
 import { stripHtml } from "@/lib/formatters";
+import {
+  SITE_HOME_COLLECTION_GROUPS,
+  SITE_HOME_FEATURED_SHORTCUTS,
+  buildCollectionRoute,
+} from "@/lib/site-navigation";
 import type { ShopifyCollection } from "@/types/shopify";
 
 type CollectionLike = Pick<ShopifyCollection, "description" | "handle" | "title">;
@@ -20,85 +25,6 @@ export interface HomeCollectionHierarchy {
   featuredShortcuts: HomeCollectionLink[];
   defaultCategoryHandle: string | null;
 }
-
-interface HomeCollectionGroupConfig {
-  handle: string;
-  label: string;
-  childHandles: string[];
-}
-
-interface FeaturedShortcutConfig {
-  label: string;
-  preferredHandles: string[];
-}
-
-export const HOME_COLLECTION_GROUPS: HomeCollectionGroupConfig[] = [
-  {
-    handle: "cookware",
-    label: "Kitchen & Dining",
-    childHandles: ["cooking-essential", "jaar-opener"],
-  },
-  {
-    handle: "home-decor",
-    label: "Home & Decor",
-    childHandles: ["candles", "artificial-aquarium-decor-plants"],
-  },
-  {
-    handle: "men-collection",
-    label: "Clothing",
-    childHandles: ["jeans", "t-shirt", "trousers", "robe"],
-  },
-  {
-    handle: "shoes",
-    label: "Shoes & Accessories",
-    childHandles: ["hair-accessories"],
-  },
-  {
-    handle: "garden-tools",
-    label: "Garden & Tools",
-    childHandles: ["tools"],
-  },
-  {
-    handle: "pet-assocerries",
-    label: "Pet Supplies",
-    childHandles: [],
-  },
-  {
-    handle: "medical-accessories",
-    label: "Health, Wellness & Planners",
-    childHandles: ["personal-care", "face-mask", "books"],
-  },
-  {
-    handle: "gifts",
-    label: "Gifts & Lifestyle",
-    childHandles: ["unique-products", "summer-collection"],
-  },
-  {
-    handle: "shopping-bags-jute-bags",
-    label: "Travel & Portable Essentials",
-    childHandles: ["shopping-bag-market-trolley-bag-with-wheels-collapsible"],
-  },
-  {
-    handle: "deals-sale",
-    label: "Deals & Sale",
-    childHandles: ["gloves", "under-35"],
-  },
-];
-
-export const HOME_FEATURED_SHORTCUTS: FeaturedShortcutConfig[] = [
-  {
-    label: "New Arrivals",
-    preferredHandles: ["new-arrivals"],
-  },
-  {
-    label: "Best Sellers",
-    preferredHandles: ["appplaza-best-sellers", "best-sellers"],
-  },
-  {
-    label: "Today's Deals",
-    preferredHandles: ["todays-deals", "deals-sale"],
-  },
-];
 
 function normalizeHandle(value: string | null | undefined): string {
   return String(value || "").trim().toLowerCase();
@@ -152,7 +78,7 @@ function buildLink(handle: string, label: string): HomeCollectionLink {
   return {
     handle,
     label,
-    href: `/collections/${handle}`,
+    href: buildCollectionRoute(handle),
   };
 }
 
@@ -161,7 +87,7 @@ export function buildHomeCollectionHierarchy(collections: ShopifyCollection[]): 
     collections.map((collection) => [normalizeHandle(collection.handle), collection] as const),
   );
 
-  const categories = HOME_COLLECTION_GROUPS.flatMap<HomeCollectionCategory>((group) => {
+  const categories = SITE_HOME_COLLECTION_GROUPS.flatMap<HomeCollectionCategory>((group) => {
     const liveCollection = liveCollectionsByHandle.get(normalizeHandle(group.handle));
     if (!liveCollection) {
       return [];
@@ -186,7 +112,7 @@ export function buildHomeCollectionHierarchy(collections: ShopifyCollection[]): 
     ];
   });
 
-  const featuredShortcuts = HOME_FEATURED_SHORTCUTS.flatMap<HomeCollectionLink>((shortcut) => {
+  const featuredShortcuts = SITE_HOME_FEATURED_SHORTCUTS.flatMap<HomeCollectionLink>((shortcut) => {
     const handle = shortcut.preferredHandles.find((candidate) => liveCollectionsByHandle.has(normalizeHandle(candidate)));
     if (!handle) {
       return [];

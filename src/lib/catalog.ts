@@ -1,4 +1,5 @@
 import { stripHtml } from "@/lib/formatters";
+import { getMergedCollectionHandles, resolveCollectionRouteHandle } from "@/lib/site-navigation";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const STOP_WORDS = new Set([
@@ -574,6 +575,8 @@ export function matchesCollection(
 
   const collection = collections.find((entry) => normalize(entry.handle) === handle);
   const collectionTitle = normalize(collection?.title).replace(/\s+/g, "-");
+  const mergedHandles = getMergedCollectionHandles(handle);
+  const canonicalHandle = resolveCollectionRouteHandle(handle);
 
   const productSpace = normalize(
     `${product.product_type} ${product.tags} ${product.title} ${product.handle}`,
@@ -582,6 +585,9 @@ export function matchesCollection(
   return (
     includeToken(productSpace, handle) ||
     includeToken(productSpace, handle.replace(/-/g, " ")) ||
+    includeToken(productSpace, canonicalHandle) ||
+    includeToken(productSpace, canonicalHandle.replace(/-/g, " ")) ||
+    mergedHandles.some((mergedHandle) => includeToken(productSpace, mergedHandle) || includeToken(productSpace, mergedHandle.replace(/-/g, " "))) ||
     includeToken(productSpace, collectionTitle) ||
     includeToken(productSpace, normalize(collection?.title))
   );

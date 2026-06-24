@@ -3,8 +3,10 @@ import {
   SITE_COLLECTIONS,
   SITE_HEADER_COLLECTION_LINKS,
   buildSubcollectionRoute,
+  getCollectionRoutePaths,
   isSiteHeaderCollectionLinkActive,
   resolveCollectionFeedHandle,
+  resolveCollectionRouteHandle,
 } from "@/lib/site-navigation";
 
 describe("resolveCollectionFeedHandle", () => {
@@ -24,6 +26,28 @@ describe("resolveCollectionFeedHandle", () => {
     expect(buildSubcollectionRoute("senior-living-solutions", "gifts-for-seniors")).toBe(
       "/collections/senior-living-solutions?collection=gifts",
     );
+  });
+
+  it("normalizes the legacy winter-wear handle to the live clearance route", () => {
+    expect(resolveCollectionRouteHandle("winter-wear")).toBe("clearance-archive");
+    expect(getCollectionRoutePaths("winter-wear")).toEqual([
+      "/collections/winter-wear",
+      "/collections/clearance-archive",
+    ]);
+  });
+
+  it("smart-merges overlapping legacy collection handles onto their canonical routes", () => {
+    expect(resolveCollectionRouteHandle("cooking-essential")).toBe("cookware");
+    expect(resolveCollectionRouteHandle("apparel")).toBe("men-collection");
+    expect(getCollectionRoutePaths("cookware")).toEqual([
+      "/collections/cookware",
+      "/collections/home-kitchen",
+      "/collections/cooking-essential",
+    ]);
+    expect(getCollectionRoutePaths("men-collection")).toEqual([
+      "/collections/men-collection",
+      "/collections/apparel",
+    ]);
   });
 
   it("keeps Senior Living Solutions below Travel & Outdoor in the collection order", () => {

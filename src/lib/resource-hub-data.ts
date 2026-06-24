@@ -2,7 +2,7 @@ import type { SiteResourceGuide } from "@/lib/site-navigation";
 
 const P = {
   planner: "the-living-legacy-planner-2nd-edition",
-  dailyBloom: "7-day-mood-mindfulness-tracker",
+  dailyBloom: "the-living-legacy-planner",
   pillOrganizer: "7-day-pill-organizer-box-travel-friendly-medicine-dispenser",
   tcarePill: "tcare-travel-pill-organizer-moisture-proof-daily-pill-case-1",
   pillBox14: "14-grid-7-day-pill-box-weekly-organizer-for-vitamins-medicine",

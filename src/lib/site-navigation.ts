@@ -62,6 +62,143 @@ function normalizeHandle(value: string | null | undefined): string {
     .toLowerCase();
 }
 
+export type SiteHomeCollectionGroup = {
+  handle: string;
+  label: string;
+  childHandles: string[];
+};
+
+export type SiteFeaturedShortcut = {
+  label: string;
+  preferredHandles: string[];
+};
+
+export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
+  {
+    handle: "cookware",
+    label: "Kitchen & Dining",
+    childHandles: ["cooking-essential", "jaar-opener"],
+  },
+  {
+    handle: "home-decor",
+    label: "Home & Decor",
+    childHandles: ["candles", "artificial-aquarium-decor-plants"],
+  },
+  {
+    handle: "men-collection",
+    label: "Clothing",
+    childHandles: ["jeans", "t-shirt", "trousers", "robe"],
+  },
+  {
+    handle: "shoes",
+    label: "Shoes & Accessories",
+    childHandles: ["hair-accessories"],
+  },
+  {
+    handle: "garden-tools",
+    label: "Garden & Tools",
+    childHandles: ["tools"],
+  },
+  {
+    handle: "pet-assocerries",
+    label: "Pet Supplies",
+    childHandles: [],
+  },
+  {
+    handle: "medical-accessories",
+    label: "Health, Wellness & Planners",
+    childHandles: ["personal-care", "face-mask", "books"],
+  },
+  {
+    handle: "gifts",
+    label: "Gifts & Lifestyle",
+    childHandles: ["unique-products", "summer-collection"],
+  },
+  {
+    handle: "shopping-bags-jute-bags",
+    label: "Travel & Portable Essentials",
+    childHandles: ["shopping-bag-market-trolley-bag-with-wheels-collapsible"],
+  },
+  {
+    handle: "deals-sale",
+    label: "Deals & Sale",
+    childHandles: ["gloves", "under-35"],
+  },
+];
+
+export const SITE_HOME_FEATURED_SHORTCUTS: SiteFeaturedShortcut[] = [
+  {
+    label: "New Arrivals",
+    preferredHandles: ["new-arrivals"],
+  },
+  {
+    label: "Best Sellers",
+    preferredHandles: ["appplaza-best-sellers", "best-sellers"],
+  },
+  {
+    label: "Today's Deals",
+    preferredHandles: ["todays-deals", "deals-sale"],
+  },
+];
+
+const COLLECTION_ROUTE_ALIASES: Record<string, string> = {
+  apparel: "men-collection",
+  "cooking-essential": "cookware",
+  "winter-wear": "clearance-archive",
+};
+
+const COLLECTION_ROUTE_ALIAS_SOURCES_BY_TARGET = Object.entries(COLLECTION_ROUTE_ALIASES).reduce<
+  Record<string, string[]>
+>((accumulator, [sourceHandle, targetHandle]) => {
+  const normalizedTargetHandle = normalizeHandle(targetHandle);
+  if (!normalizedTargetHandle) {
+    return accumulator;
+  }
+
+  const normalizedSourceHandle = normalizeHandle(sourceHandle);
+  if (!normalizedSourceHandle) {
+    return accumulator;
+  }
+
+  const sources = accumulator[normalizedTargetHandle] || [];
+  if (!sources.includes(normalizedSourceHandle)) {
+    sources.push(normalizedSourceHandle);
+  }
+
+  accumulator[normalizedTargetHandle] = sources;
+  return accumulator;
+}, {});
+
+function resolveCollectionRouteAlias(handle: string | null | undefined): string {
+  const normalizedHandle = normalizeHandle(handle);
+  if (!normalizedHandle) {
+    return "";
+  }
+
+  return COLLECTION_ROUTE_ALIASES[normalizedHandle] || normalizedHandle;
+}
+
+function getCollectionRouteAliasSources(handle: string | null | undefined): string[] {
+  const normalizedHandle = normalizeHandle(handle);
+  if (!normalizedHandle) {
+    return [];
+  }
+
+  return COLLECTION_ROUTE_ALIAS_SOURCES_BY_TARGET[normalizedHandle] || [];
+}
+
+export function getMergedCollectionHandles(handle: string): string[] {
+  const normalizedHandle = normalizeHandle(handle);
+  if (!normalizedHandle) {
+    return [];
+  }
+
+  const canonicalHandle = resolveCollectionRouteAlias(normalizedHandle);
+  const mergedHandles = [normalizedHandle, canonicalHandle, ...getCollectionRouteAliasSources(canonicalHandle)];
+
+  return Array.from(new Set(mergedHandles.map((entry) => normalizeHandle(entry)).filter(Boolean)));
+}
+
 export const SITE_COLLECTIONS: SiteCollection[] = [
   {
     title: "Home & Kitchen",
@@ -576,14 +713,20 @@ export const SITE_FOOTER_POLICY_LINKS: SiteFooterLink[] = [
 ];
 
 function findCollectionMatch(handle: string): SiteCollection | null {
-  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const normalizedHandle = normalizeHandle(handle);
   if (!normalizedHandle) {
     return null;
   }
 
+  const canonicalHandle = resolveCollectionRouteAlias(normalizedHandle);
+
   return (
     SITE_COLLECTIONS.find(
-      (collection) => collection.handle === normalizedHandle || collection.shopifyHandle === normalizedHandle,
+      (collection) =>
+        collection.handle === normalizedHandle ||
+        collection.shopifyHandle === normalizedHandle ||
+        collection.handle === canonicalHandle ||
+        collection.shopifyHandle === canonicalHandle,
     ) || null
   );
 }
@@ -606,9 +749,15 @@ export function getCollectionByHandle(handle: string): SiteCollection | null {
 }
 
 export function resolveCollectionRouteHandle(handle: string): string {
+  const normalizedHandle = normalizeHandle(handle);
+  const aliasHandle = COLLECTION_ROUTE_ALIASES[normalizedHandle];
+  if (aliasHandle) {
+    return aliasHandle;
+  }
+
   const collection = findCollectionMatch(handle);
   if (!collection) {
-    return String(handle || "").trim().toLowerCase();
+    return normalizedHandle;
   }
 
   return collection.handle;
@@ -640,13 +789,27 @@ export function resolveCollectionFeedHandle(collectionHandle: string, subcollect
 }
 
 export function getCollectionRoutePaths(handle: string): string[] {
+  const normalizedHandle = normalizeHandle(handle);
+  const aliasHandle = resolveCollectionRouteAlias(handle);
   const collection = findCollectionMatch(handle);
-  if (!collection) {
-    const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!collection && !aliasHandle) {
     return normalizedHandle ? [`/collections/${normalizedHandle}`] : [];
   }
 
-  return [...new Set([`/collections/${collection.handle}`, `/collections/${collection.shopifyHandle}`])];
+  return [
+    ...new Set(
+      [
+        normalizedHandle,
+        aliasHandle,
+        collection?.handle,
+        collection?.shopifyHandle,
+        ...getCollectionRouteAliasSources(aliasHandle),
+      ]
+        .map((routeHandle) => normalizeHandle(routeHandle))
+        .filter(Boolean)
+        .map((routeHandle) => `/collections/${routeHandle}`),
+    ),
+  ];
 }
 
 export function isSiteHeaderCollectionLinkActive(
@@ -742,4 +905,3 @@ export function buildSearchQueryUrl(query: string): string {
   const normalizedQuery = String(query || "").trim();
   return normalizedQuery ? `/shop?q=${encodeURIComponent(normalizedQuery)}` : "/shop";
 }
-

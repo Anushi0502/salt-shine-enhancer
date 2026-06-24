@@ -80,6 +80,7 @@ describe("buildHomeCollectionHierarchy", () => {
       "cooking-essential",
       "jaar-opener",
     ]);
+    expect(hierarchy.categories[0].items[0].href).toBe("/collections/cookware");
     expect(hierarchy.categories[1].items.map((item) => item.handle)).toEqual([
       "candles",
       "artificial-aquarium-decor-plants",

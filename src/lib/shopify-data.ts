@@ -18,6 +18,7 @@ import {
   getEditorialPageContent,
   type EditorialPagePayload,
 } from "@/lib/editorial-pages";
+import { getMergedCollectionHandles } from "@/lib/site-navigation";
 import {
   getRuntimeContext,
   getShopBaseOrigin,
@@ -393,21 +394,36 @@ async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollect
 
 async function fetchCollectionProductIdsFromLive(base: string, handle: string): Promise<number[]> {
   const productIds = new Set<number>();
-  let page = 1;
+  const mergedHandles = getMergedCollectionHandles(handle);
+  const handlesToFetch = mergedHandles.length ? mergedHandles : [String(handle || "").trim().toLowerCase()].filter(Boolean);
 
-  while (true) {
-    const url = `${base}/collections/${encodeURIComponent(handle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
-    const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
+  for (const currentHandle of handlesToFetch) {
+    let page = 1;
 
-    payload.products.forEach((product) => {
-      productIds.add(product.id);
-    });
+    while (true) {
+      const url = `${base}/collections/${encodeURIComponent(currentHandle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
 
-    if (payload.products.length < PAGE_LIMIT) {
-      break;
+      try {
+        const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
+
+        payload.products.forEach((product) => {
+          productIds.add(product.id);
+        });
+
+        if (payload.products.length < PAGE_LIMIT) {
+          break;
+        }
+
+        page += 1;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        if (message.includes("404")) {
+          break;
+        }
+
+        throw error;
+      }
     }
-
-    page += 1;
   }
 
   return Array.from(productIds);
@@ -883,24 +899,40 @@ async function fetchCollectionProductsMapFromCache(): Promise<CollectionProducts
 
 async function fetchCollectionProductIdsFromCache(handle: string): Promise<CollectionProductIdsPayload> {
   const payload = await fetchCollectionProductsMapFromCache();
-  const normalizedHandle = String(handle || "").trim().toLowerCase();
-  const match = Object.entries(payload.collections || {}).find(
-    ([entryHandle]) => entryHandle.trim().toLowerCase() === normalizedHandle,
-  );
+  const mergedHandles = getMergedCollectionHandles(handle);
+  const handlesToCheck = mergedHandles.length ? mergedHandles : [String(handle || "").trim().toLowerCase()].filter(Boolean);
+  const productIds = new Set<number>();
+  let matchedHandle = "";
 
-  if (!match) {
-    throw new Error(`Cached collection map missing handle "${normalizedHandle}"`);
+  for (const currentHandle of handlesToCheck) {
+    const match = Object.entries(payload.collections || {}).find(
+      ([entryHandle]) => entryHandle.trim().toLowerCase() === currentHandle,
+    );
+
+    if (!match) {
+      continue;
+    }
+
+    const [entryHandle, entry] = match;
+    if (!matchedHandle) {
+      matchedHandle = entryHandle;
+    }
+
+    (Array.isArray(entry.productIds) ? entry.productIds : []).forEach((productId) => {
+      productIds.add(productId);
+    });
   }
 
-  const [matchedHandle, entry] = match;
-  const productIds = Array.isArray(entry.productIds) ? entry.productIds : [];
+  if (!productIds.size) {
+    throw new Error(`Cached collection map missing handle "${String(handle || "").trim().toLowerCase()}"`);
+  }
 
   return {
     generatedAt: payload.generatedAt,
     source: payload.source,
-    handle: matchedHandle,
-    total: productIds.length,
-    productIds,
+    handle: matchedHandle || String(handle || "").trim().toLowerCase(),
+    total: productIds.size,
+    productIds: Array.from(productIds),
   };
 }
 

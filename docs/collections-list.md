@@ -1,6 +1,6 @@
 # SALT Collection List
 
-Source: `src/lib/site-navigation.ts`
+Source: `src/lib/site-navigation.ts` (canonical nav registry)
 
 ## Top-Level Collections
 
@@ -87,4 +87,6 @@ Source: `src/lib/site-navigation.ts`
 
 - Collection routes use `/collections/<handle>`.
 - Subcollection routes use `/collections/<collection-handle>?collection=<shopify-handle-or-subhandle>`.
+- Legacy `winter-wear` routes normalize to the live clearance collection (`clearance-archive`) for backward compatibility.
+- Smart-merge aliases normalize `cooking-essential` -> `cookware` and `apparel` -> `men-collection` so legacy links land on the canonical families.
 - The search page uses `/shop?q=<query>` when a direct search is needed.

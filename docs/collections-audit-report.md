@@ -1,69 +1,89 @@
 # Shopify Collection Audit Report
 
-> Generated from live Shopify Admin data and the storefront hierarchy config on 2026-06-22.
+> Generated from live Shopify Admin data, the checked-in storefront snapshots, and the canonical nav registry on 2026-06-24.
 
 ## Scope
 
-- Source of truth reviewed: `src/lib/collection-hierarchy.ts`, `src/lib/site-navigation.ts`, and live Shopify collection data fetched through Shopify CLI.
-- Goal: align live Shopify collections with the storefront mega menu, remove broken references, and reduce redundant promo collections without deleting anything.
+- Source of truth reviewed: `src/lib/site-navigation.ts`, `src/lib/collection-hierarchy.ts`, `public/data/collections.json`, `public/data/collection-products.json`, and the live Admin snapshot captured through Shopify CLI.
+- Goal: keep the eight primary mega-menu collections stable, preserve SEO-friendly routes, and isolate legacy promo buckets without deleting anything.
 
-## What I Found
+## Audit Summary
 
-### Live collections that already match the mega menu
+- Live Shopify Admin collections inspected: 48
+- Missing mega-menu handles in live Admin: 0
+- Live zero-count collections: 0
+- Extra live collections outside the primary mega menu: 25
 
-- `cookware` for Kitchen & Dining
-- `home-decor` for Home & Decor
-- `men-collection` for Clothing
-- `shoes` for Shoes & Accessories
-- `garden-tools` for Garden & Tools
-- `pet-assocerries` for Pet Supplies
-- `medical-accessories` for Health, Wellness & Planners
-- `gifts` for Gifts & Lifestyle
-- `shopping-bags-jute-bags` for Travel & Portable Essentials
-- `new-arrivals` for New Arrivals
-- `appplaza-best-sellers` for Best Sellers
-- `unique-products` for Trending Now
+## Canonical Mega-Menu Collections
 
-### Problems
+- `books` for Senior Living Solutions
+- `cookware` for Home & Kitchen
+- `home-decor` for Home Decor & Lighting
+- `pet-assocerries` for Pet Essentials
+- `face-mask` for Health & Wellness
+- `shopping-bags-jute-bags` for Travel & Outdoor
+- `gifts` for Gifts Collection
+- `unique-products` for Trending Finds
 
-- `digital-products` was referenced in the storefront hierarchy but does not exist as a live Shopify collection.
-- `winter-wear` and `deals-sale` were overlapping promo collections. The storefront code was still pointing at `winter-wear`, while `deals-sale` was the clearer canonical handle/title pair.
-- Several collections outside the mega menu remain in Shopify as intended holdouts or legacy topical pages:
-  - `all-products`
-  - `apparel`
-  - `bundle-deals`
-  - `deals-sale`
-  - `gifts-for-her`
-  - `gifts-for-him`
-  - `housewarming-gifts`
-  - `travel-gifts`
-  - `camping-gifts`
-  - `pet-lover-gifts`
-  - `self-care-gifts`
-  - `holiday-gifts`
-  - `backyard-garden-gifts`
-  - `under-10`
-  - `under-25`
-  - `under-50`
-  - `under-100`
-  - `premium-picks`
+## Live Collections Outside the Primary Mega Menu
 
-## Proposed Merge / Reassignment
+These remain in Shopify as legacy, promotional, or broader browse buckets:
 
-- Keep `deals-sale` as the canonical promo collection used by the storefront.
-- Rename `winter-wear` to a legacy/archive handle with redirect preserved, instead of deleting it.
-- Remove the broken `digital-products` branch from the storefront hierarchy and related validation code.
-- Leave non-menu collections in place until there is explicit confirmation to remove or repurpose them.
+- `all-products`
+- `apparel`
+- `appplaza-best-sellers`
+- `backyard-garden-gifts`
+- `bundle-deals`
+- `camping-gifts`
+- `candles`
+- `cooking-essential`
+- `garden-tools`
+- `gifts-for-her`
+- `gifts-for-him`
+- `gloves`
+- `holiday-gifts`
+- `housewarming-gifts`
+- `medical-accessories`
+- `men-collection`
+- `pet-lover-gifts`
+- `premium-picks`
+- `self-care-gifts`
+- `shoes`
+- `shopping-bag-market-trolley-bag-with-wheels-collapsible`
+- `summer-collection`
+- `travel-gifts`
+- `under-10`
+- `under-100`
+- `under-25`
+- `under-50`
+- `clearance-archive`
 
-## Applied Code Changes
+## Overlap Findings
 
-- Updated the storefront hierarchy to use `deals-sale` instead of `winter-wear`.
-- Removed `digital-products` from the live hierarchy path and resource hub validation hints.
-- Updated the promo banner and header link tests to match the new canonical promo route.
+- `cooking-essential` is a focused subset of `cookware` and should stay treated as a sub-route, not a separate top-level family.
+- `apparel` overlaps strongly with `men-collection`, `jeans`, `t-shirt`, `trousers`, and `robe`; it should remain a legacy fashion bucket rather than a menu-facing family.
+- `deals-sale`, `under-10`, `under-25`, `under-35`, `under-50`, `under-100`, and the clearance bucket are broad promo-style buckets and should stay secondary to the eight primary collections.
+- The live Admin snapshot uses `clearance-archive` for the clearance bucket; `winter-wear` is the legacy alias so old links keep working while the live handle stays canonical.
 
-## Applied Shopify Admin Work
+## Proposed Reconciliation
 
-- Updated the live `deals-sale` collection to the canonical promo title, SEO text, and price-reduced rule.
-- Renamed the old `winter-wear` collection to `clearance-archive` with redirect preservation.
-- Refreshed `public/data/collections.json` and `public/data/collection-products.json` from the storefront endpoints so VS Code now reflects the live handles.
+- Keep the current eight canonical mega-menu families unchanged.
+- Treat `winter-wear` as a legacy alias of `clearance-archive` in the storefront code and preserve redirects for old URLs.
+- Smart-merge the obvious overlap buckets so the storefront treats them as one family at route and product-matching time:
+  - `cooking-essential` -> `cookware`
+  - `apparel` -> `men-collection`
+  - `winter-wear` -> `clearance-archive`
+- Keep `deals-sale` as the canonical promo collection used by the header and featured routes.
+- Leave all non-menu collections in place until there is an explicit request to merge, retitle, or delete them in Shopify Admin.
 
+## Applied Repository Changes
+
+- Lifted the home hierarchy registry into `src/lib/site-navigation.ts` so the header, drawer, and homepage now consume one shared collection map.
+- Added smart-merge handle normalization so `cooking-essential`, `apparel`, and `winter-wear` resolve to their canonical routes while preserving legacy URLs.
+- Added merge-aware collection matching and merged product-id lookups so Shopify CLI-driven dashboard syncs treat overlapping buckets as one family.
+- Updated the collection audit and navigation tests to assert the canonical route behavior.
+
+## Snapshot Sync
+
+- `public/data/collections.json` and `public/data/collection-products.json` were refreshed locally from the live storefront/Admin source through the Shopify CLI sync flow on 2026-06-24.
+- Re-run the same sync command after future collection changes so the checked-in snapshots stay aligned with Admin.
