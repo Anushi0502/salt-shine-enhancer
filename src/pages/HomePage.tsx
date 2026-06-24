@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
+import GiftBanner from "@/components/salt/GiftBanner";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeProductRating, useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
@@ -40,6 +41,7 @@ const HERO_BANNER_ROTATE_MS = 3500;
 const HOME_REVIEW_TARGET = 280;
 const HOME_REVIEW_FETCH_LIMIT = 48;
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
+const showExclusiveBooks = false;
 
 const fallbackBestSellerTiles: ProductTile[] = [
   {
@@ -89,6 +91,30 @@ const fallbackBestSellerTiles: ProductTile[] = [
     price: "$49.99",
     image: productDock,
     to: "/shop?q=journal",
+  },
+  {
+    title: "The Living Legacy Planner 2nd Edition",
+    price: "$74.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/7.png?v=1775419181",
+    to: "/products/the-living-legacy-planner-2nd-edition",
+  },
+  {
+    title: "The Living Legacy Planner 1st Edition",
+    price: "$79.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/61NdkykyfIL.jpg?v=1744878864",
+    to: "/products/the-living-legacy-planner",
+  },
+  {
+    title: "Artificial Peony & Rose Bouquet",
+    price: "$27.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4ad3a49ff40f43c0a52369044c915242Z.webp?v=1755072030",
+    to: "/products/artificial-peony-rose-bouquet-silk-flowers-for-home-wedding-decor",
+  },
+  {
+    title: "Crystal Healing Chakra Stones Pillar Set",
+    price: "$14.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc81f5c21220c4cf3bcffd4f8ffb11774q.webp?v=1741261264",
+    to: "/products/crystal-healing-chakra-stones-pillar-set-yoga-energy-home-decor-gift",
   },
 ];
 
@@ -261,6 +287,30 @@ const fallbackQuirkyGiftTiles: ProductTile[] = [
     image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
     to: "/shop?q=gift+set",
   },
+  {
+    title: "Car Clock Luminous Auto Watch",
+    price: "$24.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9ac055022d034193b5b64e8e6862c439H_4102ff65-1f47-41d8-a1c6-029679a94427.webp?v=1734772996",
+    to: "/products/car-clock-luminous-automobiles-internal-stick-on-mini-digital-watch-mechanics-quartz-clocks-auto-ornament-car-accessories-gifts-1",
+  },
+  {
+    title: "Mini Square Alarm Clock",
+    price: "$19.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf8ec3b1d65b44358a64ccfd9837a3537n_36a273ce-588e-4658-8d28-2cb1b30695f9.webp?v=1734772995",
+    to: "/products/mini-square-alarm-clock-mute-analog-non-ticking-operated-clocks-1",
+  },
+  {
+    title: "DIY Acrylic Mirror Wall Clock",
+    price: "$34.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S556ce54ac93c4cd1bf12940bb9a758d4e.webp?v=1739959319",
+    to: "/products/diy-acrylic-mirror-wall-clock-3d-roman-numeral-quartz-clock",
+  },
+  {
+    title: "Elegant 40cm Wall Clock",
+    price: "$41.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sb7dabcefed8a410197d37e2f363daea5f.webp?v=1734614700",
+    to: "/products/elegant-40cm-wall-clock-for-living-room-home-decoration",
+  },
 ];
 
 const fallbackEverydayEssentialTiles: ProductTile[] = [
@@ -311,6 +361,30 @@ const fallbackEverydayEssentialTiles: ProductTile[] = [
     price: "$29.99",
     image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S389aefb33b994d24b48805e9ed82ea34s.webp?v=1741065546",
     to: "/products/garden-water-nozzle-car-wash-yard-sprayer-multifunctional-tool",
+  },
+  {
+    title: "Mini Soil Moisture Meter",
+    price: "$40.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0176d58c74d34f50afa5a85504cabab7R.webp?v=1741351238",
+    to: "/products/mini-soil-moisture-meter-gardening-water-analyzer-tool",
+  },
+  {
+    title: "13-Piece Ceramic Cookware Set",
+    price: "$80.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
+    to: "/products/13-piece-ceramic-cookware-set-nonstick-detachable-handles",
+  },
+  {
+    title: "Silicone Cookware Set",
+    price: "$22.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se8d03ac0ad7640748e0f998372a876fe0.webp?v=1740734869",
+    to: "/products/silicone-cookware-set-shovel-spoon-scraper-for-kitchen-baking",
+  },
+  {
+    title: "Small Hoe with Wooden Handle",
+    price: "$18.99",
+    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S308b0a0d778a4dbe9edb7a366d560081H.webp?v=1741347254",
+    to: "/products/small-hoe-with-short-wooden-handle-handheld-garden-tool-for-loosening-weeding-soil",
   },
 ];
 
@@ -732,7 +806,7 @@ const HomePage = () => {
       uniqueProducts.push(product);
     });
 
-    return uniqueProducts.slice(0, 8);
+    return uniqueProducts.slice(0, 12);
   }, [bestSellerProductIds, productById, products]);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
     if (!bestSellerProducts.length) {
@@ -748,7 +822,7 @@ const HomePage = () => {
     }));
   }, [bestSellerProducts]);
   const bestSellerDisplayTiles = useMemo(
-    () => padProductTiles(bestSellerTiles, fallbackBestSellerTiles, 10),
+    () => padProductTiles(bestSellerTiles, fallbackBestSellerTiles, 12),
     [bestSellerTiles],
   );
   const bestSellerHeroImage =
@@ -860,7 +934,7 @@ const HomePage = () => {
         return right.freshnessScore - left.freshnessScore;
       });
 
-    return rankedProducts.slice(0, 8).map((entry) => entry.product);
+    return rankedProducts.slice(0, 12).map((entry) => entry.product);
   }, [bestSellerProducts, featuredCourtneyBooks, products]);
   const everydayEssentialsTiles = useMemo<ProductTile[]>(() => {
     if (!everydayEssentialProducts.length) {
@@ -932,11 +1006,11 @@ const HomePage = () => {
     }));
   }, [bestSellerHeroImage, quirkyGiftProducts]);
   const quirkyGiftDisplayTiles = useMemo(
-    () => padProductTiles(quirkyGiftTiles, fallbackQuirkyGiftTiles, 10),
+    () => padProductTiles(quirkyGiftTiles, fallbackQuirkyGiftTiles, 12),
     [quirkyGiftTiles],
   );
   const everydayEssentialsDisplayTiles = useMemo(
-    () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 10),
+    () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 12),
     [everydayEssentialsTiles],
   );
   const testimonialCandidateProductIds = useMemo(
@@ -1360,9 +1434,9 @@ const HomePage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+          <section className="border-t border-[#dce9ff] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
               {bestSellerDisplayTiles.map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={120 + index * 50}>
                   <OverlayProductCard
@@ -1374,11 +1448,17 @@ const HomePage = () => {
                     fallbackImage={bestSellerHeroImage}
                     imageAlt={buildProductImageAltText(tile.title, "best sellers")}
                     compact
-                    className="w-full"
+                    className="w-full max-w-[11rem] justify-self-center"
                   />
                 </Reveal>
               ))}
             </div>
+          </section>
+        </Reveal>
+
+        <Reveal delayMs={110}>
+          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+            <GiftBanner />
           </section>
         </Reveal>
 
@@ -1424,7 +1504,7 @@ const HomePage = () => {
         <Reveal delayMs={140}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Quirky Gift Picks" />
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
               {quirkyGiftDisplayTiles.map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={140 + index * 50}>
                   <OverlayProductCard
@@ -1444,7 +1524,7 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        {false && (
+        {showExclusiveBooks && (
         <Reveal delayMs={220}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:gap-5 lg:items-start">
@@ -1516,7 +1596,7 @@ const HomePage = () => {
         <Reveal delayMs={180}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Everyday Essentials" />
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
               {everydayEssentialsDisplayTiles.map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={180 + index * 50}>
                   <OverlayProductCard
