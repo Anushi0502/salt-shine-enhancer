@@ -1,5 +1,5 @@
 import { stripHtml } from "@/lib/formatters";
-import { getMergedCollectionHandles, resolveCollectionRouteHandle } from "@/lib/site-navigation";
+import { getCollectionByHandle, getMergedCollectionHandles, resolveCollectionRouteHandle } from "@/lib/site-navigation";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const STOP_WORDS = new Set([
@@ -86,6 +86,55 @@ function includeToken(haystack: string, needle: string): boolean {
   }
 
   return haystack.includes(needle);
+}
+
+function normalizeScopeText(input: string): string {
+  return normalize(input)
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function scopeTextMatchesTerm(haystack: string, term: string): boolean {
+  const normalizedTerm = normalizeScopeText(term);
+  if (!normalizedTerm) {
+    return false;
+  }
+
+  if (haystack.includes(normalizedTerm)) {
+    return true;
+  }
+
+  const compactHaystack = haystack.replace(/\s+/g, "");
+  const compactTerm = normalizedTerm.replace(/\s+/g, "");
+  return compactTerm.length > 2 && compactHaystack.includes(compactTerm);
+}
+
+type CollectionScopeRule = {
+  include: string[];
+  exclude: string[];
+};
+
+function productScopeText(product: ShopifyProduct): string {
+  return normalizeScopeText(
+    `${product.product_type} ${product.tags} ${product.title} ${product.handle}`,
+  );
+}
+
+function collectionScopeMatches(productText: string, scope?: CollectionScopeRule | null): boolean {
+  if (!scope) {
+    return true;
+  }
+
+  if (scope.exclude.some((term) => scopeTextMatchesTerm(productText, term))) {
+    return false;
+  }
+
+  if (!scope.include.length) {
+    return true;
+  }
+
+  return scope.include.some((term) => scopeTextMatchesTerm(productText, term));
 }
 
 function tokenize(input: string): string[] {
@@ -569,27 +618,35 @@ export function matchesCollection(
     return true;
   }
 
-  if (Array.isArray(collectionProductIds)) {
-    return collectionProductIds.includes(product.id);
-  }
-
   const collection = collections.find((entry) => normalize(entry.handle) === handle);
+  const registryCollection = getCollectionByHandle(handle) || getCollectionByHandle(resolveCollectionRouteHandle(handle));
+  const scope = registryCollection?.scope || null;
   const collectionTitle = normalize(collection?.title).replace(/\s+/g, "-");
   const mergedHandles = getMergedCollectionHandles(handle);
   const canonicalHandle = resolveCollectionRouteHandle(handle);
 
-  const productSpace = normalize(
-    `${product.product_type} ${product.tags} ${product.title} ${product.handle}`,
-  );
+  const productSpace = productScopeText(product);
+  const scopeMatches = collectionScopeMatches(productSpace, scope);
+
+  if (Array.isArray(collectionProductIds)) {
+    return collectionProductIds.includes(product.id) && scopeMatches;
+  }
 
   return (
-    includeToken(productSpace, handle) ||
-    includeToken(productSpace, handle.replace(/-/g, " ")) ||
-    includeToken(productSpace, canonicalHandle) ||
-    includeToken(productSpace, canonicalHandle.replace(/-/g, " ")) ||
-    mergedHandles.some((mergedHandle) => includeToken(productSpace, mergedHandle) || includeToken(productSpace, mergedHandle.replace(/-/g, " "))) ||
-    includeToken(productSpace, collectionTitle) ||
-    includeToken(productSpace, normalize(collection?.title))
+    scopeMatches &&
+    (
+      includeToken(productSpace, handle) ||
+      includeToken(productSpace, handle.replace(/-/g, " ")) ||
+      includeToken(productSpace, canonicalHandle) ||
+      includeToken(productSpace, canonicalHandle.replace(/-/g, " ")) ||
+      mergedHandles.some(
+        (mergedHandle) =>
+          includeToken(productSpace, mergedHandle) ||
+          includeToken(productSpace, mergedHandle.replace(/-/g, " ")),
+      ) ||
+      includeToken(productSpace, collectionTitle) ||
+      includeToken(productSpace, normalize(collection?.title))
+    )
   );
 }
 

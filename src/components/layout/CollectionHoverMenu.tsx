@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -19,7 +19,25 @@ function normalizeHandle(value: string | null | undefined): string {
 }
 
 export function CollectionHoverMenu({ collections, className, onLinkClick }: CollectionHoverMenuProps) {
-  const [activeCollectionHandle, setActiveCollectionHandle] = useState<string | null>(null);
+  const [activeCollectionHandle, setActiveCollectionHandle] = useState<string | null>(
+    () => normalizeHandle(collections[0]?.handle),
+  );
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearCloseTimer() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setActiveCollectionHandle(null);
+      closeTimerRef.current = null;
+    }, 150);
+  }
 
   useEffect(() => {
     if (!collections.length) {
@@ -32,6 +50,12 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
       setActiveCollectionHandle(null);
     }
   }, [activeCollectionHandle, collections]);
+
+  useEffect(() => {
+    return () => {
+      clearCloseTimer();
+    };
+  }, []);
 
   if (!collections.length) {
     return null;
@@ -63,6 +87,11 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                 <PopoverTrigger asChild>
                   <button
                     type="button"
+                    onMouseEnter={() => {
+                      clearCloseTimer();
+                      setActiveCollectionHandle(collectionHandle);
+                    }}
+                    onMouseLeave={scheduleClose}
                     className={cn(
                       "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8df7] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                       isActive
@@ -82,10 +111,15 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                 </PopoverTrigger>
 
                 <PopoverContent
+                  forceMount
                   align="start"
                   side="right"
                   sideOffset={12}
                   collisionPadding={12}
+                  aria-hidden={!isActive}
+                  data-testid="collection-hover-submenu"
+                  onMouseEnter={clearCloseTimer}
+                  onMouseLeave={scheduleClose}
                   className="z-50 w-[min(15.5rem,calc(100vw-1rem))] max-w-[min(15.5rem,calc(100vw-1rem))] rounded-[0.85rem] border border-[#d8e6f5] bg-[#eef5ff] p-2.5 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)]"
                 >
                   <div className="flex items-start justify-between gap-2 border-b border-[#dbe8f6] pb-2.5">

@@ -747,27 +747,31 @@ const ShopPage = () => {
 
       <Reveal>
         <div
-          className={`salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5${
-            selectedCollectionImage ? " salt-editorial-shell--image" : ""
-          }`}
+          className="salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6"
         >
           <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
-          {selectedCollectionImage ? (
-            <img
-              src={selectedCollectionImage}
-              alt={selectedCollectionImageAlt}
-              className="salt-editorial-image"
-            />
-          ) : null}
-          <div className={`salt-editorial-wash salt-shop-channel-wash${selectedCollectionImage ? " salt-shop-channel-wash--image" : ""}`} />
+          <div
+            className={`grid gap-4 lg:gap-5${selectedCollectionImage ? " lg:grid-cols-[minmax(0,1.1fr)_minmax(17rem,0.9fr)] lg:items-center" : ""}`}
+          >
+            <div className="relative z-10">
+              <SectionHeading
+                className="mt-3"
+                title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
+                action={''}
+              />
+              <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
+            </div>
 
-          <div className="relative">
-            <SectionHeading
-              className="mt-3"
-              title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
-              action={''}
-            />
-            <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
+            {selectedCollectionImage ? (
+              <div className="relative order-first aspect-[5/4] overflow-hidden rounded-[1.15rem] border border-white/35 bg-white/40 shadow-[0_16px_34px_-28px_rgba(12,32,72,0.22)] lg:order-none">
+                <img
+                  src={selectedCollectionImage}
+                  alt={selectedCollectionImageAlt}
+                  className="h-full w-full object-cover object-center transition duration-500"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(8,22,48,0.08)_54%,rgba(8,22,48,0.28))]" />
+              </div>
+            ) : null}
           </div>
         </div>
       </Reveal>

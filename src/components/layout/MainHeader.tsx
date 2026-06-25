@@ -5,13 +5,9 @@ import {
   ChevronDown,
   ChevronRight,
   CircleUserRound,
-  Flag,
-  Globe,
   Heart,
-  LifeBuoy,
   Menu,
   Search,
-  Settings2,
   ShoppingCart,
 } from "lucide-react";
 import { filterProducts } from "@/lib/catalog";
@@ -330,56 +326,6 @@ function HeaderMenuDrawer({
               </div>
             </section>
 
-            <section>
-              <div className="flex items-center justify-between gap-2">
-                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
-                  <Settings2 className="h-3 w-3" />
-                  Help & Settings
-                </p>
-              </div>
-
-              <div className="mt-2 grid gap-0.5">
-                <div className="flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left">
-                  <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
-                    <Globe className="h-3.5 w-3.5 text-[#7d90aa]" />
-                    English
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left">
-                  <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
-                    <Flag className="h-3.5 w-3.5 text-[#7d90aa]" />
-                    United States
-                  </span>
-                </div>
-
-                <SheetClose asChild>
-                  <a
-                    href="/contact"
-                    className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
-                  >
-                    <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
-                      <LifeBuoy className="h-3.5 w-3.5 text-[#7d90aa]" />
-                      Customer Service
-                    </span>
-                    <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                  </a>
-                </SheetClose>
-
-                <SheetClose asChild>
-                  <a
-                    href={accountRoutes.login}
-                    className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
-                  >
-                    <span className="inline-flex items-center gap-2 text-[0.82rem] font-medium leading-5 text-[#102A43]">
-                      <CircleUserRound className="h-3.5 w-3.5 text-[#7d90aa]" />
-                      Sign in
-                    </span>
-                    <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                  </a>
-                </SheetClose>
-              </div>
-            </section>
           </div>
         </div>
       </SheetContent>

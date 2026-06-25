@@ -6,6 +6,7 @@
 
 - Source of truth reviewed: `src/lib/site-navigation.ts`, `src/lib/collection-hierarchy.ts`, `public/data/collections.json`, `public/data/collection-products.json`, and the live Admin snapshot captured through Shopify CLI.
 - Goal: keep the eight primary mega-menu collections stable, preserve SEO-friendly routes, and isolate legacy promo buckets without deleting anything.
+- Sidebar and header routes are treated as the canonical browsing surface; missing subcollection pages stay route-driven in the storefront until a live Shopify collection is explicitly added.
 
 ## Audit Summary
 
@@ -13,6 +14,7 @@
 - Missing mega-menu handles in live Admin: 0
 - Live zero-count collections: 0
 - Extra live collections outside the primary mega menu: 25
+- Product leakage is being constrained at the storefront matcher layer so live collection membership can no longer override the registry when the metadata is clearly out of category.
 
 ## Canonical Mega-Menu Collections
 
@@ -78,12 +80,13 @@ These remain in Shopify as legacy, promotional, or broader browse buckets:
 
 ## Applied Repository Changes
 
-- Lifted the home hierarchy registry into `src/lib/site-navigation.ts` so the header, drawer, and homepage now consume one shared collection map.
-- Added smart-merge handle normalization so `cooking-essential`, `apparel`, and `winter-wear` resolve to their canonical routes while preserving legacy URLs.
-- Added merge-aware collection matching and merged product-id lookups so Shopify CLI-driven dashboard syncs treat overlapping buckets as one family.
-- Updated the collection audit and navigation tests to assert the canonical route behavior.
+- Added scope-aware collection matching so live collection IDs no longer let unrelated products leak into canonical families.
+- Removed the sidebar Help & Settings block so the drawer only exposes browse and account/navigation items.
+- Updated the collection hero to use a cleaner split banner frame with a 5:4 image panel for selected collection artwork and weekend-sale promos.
+- Kept the collection registry and route aliases as the canonical map for main collections and subcategory routes.
 
 ## Snapshot Sync
 
 - `public/data/collections.json` and `public/data/collection-products.json` were refreshed locally from the live storefront/Admin source through the Shopify CLI sync flow on 2026-06-24.
 - Re-run the same sync command after future collection changes so the checked-in snapshots stay aligned with Admin.
+- No new live Shopify collections were created in this reconciliation pass.

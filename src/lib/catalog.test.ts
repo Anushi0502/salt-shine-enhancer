@@ -174,4 +174,35 @@ describe("filterProducts search relevance", () => {
 
     expect(hasPetResult).toBe(false);
   });
+
+  it("drops out-of-category products even when a live collection contains them", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 10,
+          title: "Nonstick Fry Pan",
+          handle: "nonstick-fry-pan",
+          product_type: "kitchen tools",
+          tags: ["kitchen", "cookware", "pan"],
+        }),
+        makeProduct({
+          id: 11,
+          title: "Classic Cotton Shirt",
+          handle: "classic-cotton-shirt",
+          product_type: "apparel",
+          tags: ["shirt", "cotton"],
+        }),
+      ],
+      {
+        collection: "cookware",
+        collections: [],
+        collectionProductIds: [10, 11],
+      },
+    );
+
+    const handles = results.map((entry) => entry.handle);
+
+    expect(handles).toContain("nonstick-fry-pan");
+    expect(handles).not.toContain("classic-cotton-shirt");
+  });
 });

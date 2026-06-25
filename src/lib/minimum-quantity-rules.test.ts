@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getMinimumProductQuantity, isMinimumTwoBundleProduct } from "@/lib/minimum-quantity-rules";
 
 describe("minimum quantity bundle rules", () => {
-  it("forces the special bundle handles to minimum quantity 2", () => {
+  it("forces the special bundle handles to minimum quantity 2 when price does not override it", () => {
     expect(getMinimumProductQuantity("star-magic-payment-wand-extendable-touchscreen-pointer")).toBe(2);
     expect(getMinimumProductQuantity("graduation-money-box-gift-holder-pull-out-cash-surprise")).toBe(2);
     expect(getMinimumProductQuantity("motorcycle-face-mask-balaclava-windproof-breathable")).toBe(2);
@@ -14,9 +14,19 @@ describe("minimum quantity bundle rules", () => {
     expect(isMinimumTwoBundleProduct("some-other-product")).toBe(false);
   });
 
+  it("forces any product under $15 to minimum quantity 3", () => {
+    expect(getMinimumProductQuantity("some-other-product", 14.99)).toBe(3);
+    expect(getMinimumProductQuantity("some-other-product", "14.99")).toBe(3);
+    expect(getMinimumProductQuantity("some-other-product", 15)).toBe(2);
+  });
+
   it("forces any product under $25 to minimum quantity 2", () => {
     expect(getMinimumProductQuantity("some-other-product", 24.99)).toBe(2);
     expect(isMinimumTwoBundleProduct("some-other-product", 24.99)).toBe(true);
     expect(getMinimumProductQuantity("some-other-product", 25)).toBe(1);
+  });
+
+  it("lets the price tier override the older bundle handle floor", () => {
+    expect(getMinimumProductQuantity("motorcycle-face-mask-balaclava-windproof-breathable", 14.99)).toBe(3);
   });
 });

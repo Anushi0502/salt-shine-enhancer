@@ -18,7 +18,8 @@ const MINIMUM_TWO_BUNDLE_PRODUCT_HANDLES = new Set([
   "outdoors-silicone-folding-cup-with-hanging-hole-creative-water-cup-travel-portable-washing-cup-fashion-travel-silicone-cup",
 ]);
 
-const MINIMUM_PRICE_THRESHOLD = 25;
+const MINIMUM_THREE_PRICE_THRESHOLD = 15;
+const MINIMUM_TWO_PRICE_THRESHOLD = 25;
 
 function normalizeHandle(handle: string | null | undefined): string {
   return String(handle || "").trim().toLowerCase();
@@ -30,14 +31,18 @@ function normalizePrice(price: number | string | null | undefined): number {
 }
 
 export function getMinimumProductQuantity(handle: string | null | undefined, sellPrice?: number | string | null): number {
-  const normalizedHandle = normalizeHandle(handle);
   const price = normalizePrice(sellPrice);
 
-  if (MINIMUM_TWO_BUNDLE_PRODUCT_HANDLES.has(normalizedHandle)) {
+  if (Number.isFinite(price) && price > 0 && price < MINIMUM_THREE_PRICE_THRESHOLD) {
+    return 3;
+  }
+
+  if (Number.isFinite(price) && price > 0 && price < MINIMUM_TWO_PRICE_THRESHOLD) {
     return 2;
   }
 
-  if (Number.isFinite(price) && price > 0 && price < MINIMUM_PRICE_THRESHOLD) {
+  const normalizedHandle = normalizeHandle(handle);
+  if (MINIMUM_TWO_BUNDLE_PRODUCT_HANDLES.has(normalizedHandle)) {
     return 2;
   }
 

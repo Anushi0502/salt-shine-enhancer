@@ -18,6 +18,10 @@ export type SiteCollection = {
   shopifyHandle: string;
   summary: string;
   searchQuery: string;
+  scope?: {
+    include: string[];
+    exclude: string[];
+  };
   accent: {
     label: string;
     title: string;
@@ -61,6 +65,157 @@ function normalizeHandle(value: string | null | undefined): string {
     .trim()
     .toLowerCase();
 }
+
+const APPAREL_SCOPE_EXCLUDES = [
+  "shirt",
+  "t-shirt",
+  "tee",
+  "top",
+  "dress",
+  "robe",
+  "trouser",
+  "trousers",
+  "pant",
+  "pants",
+  "jeans",
+  "skirt",
+  "jacket",
+  "hoodie",
+  "sweatshirt",
+  "blouse",
+  "shorts",
+];
+
+const HOME_KITCHEN_SCOPE_INCLUDES = [
+  "kitchen",
+  "cookware",
+  "cook",
+  "pan",
+  "pot",
+  "bowl",
+  "utensil",
+  "spoon",
+  "spatula",
+  "jar",
+  "opener",
+  "lid",
+  "storage",
+  "organizer",
+  "coffee",
+  "tea",
+  "dining",
+  "cleaning",
+  "sink",
+];
+
+const HOME_DECOR_SCOPE_INCLUDES = [
+  "decor",
+  "lighting",
+  "light",
+  "lamp",
+  "wall",
+  "art",
+  "candle",
+  "seasonal",
+  "accent",
+  "vase",
+  "smart",
+];
+
+const PET_SCOPE_INCLUDES = [
+  "pet",
+  "dog",
+  "cat",
+  "feeding",
+  "feed",
+  "groom",
+  "toy",
+  "travel",
+  "bowl",
+  "carrier",
+  "collar",
+  "leash",
+  "mat",
+  "care",
+];
+
+const HEALTH_SCOPE_INCLUDES = [
+  "mask",
+  "balaclava",
+  "thermal",
+  "breath",
+  "posture",
+  "sleep",
+  "relax",
+  "massage",
+  "wellness",
+  "support",
+  "recovery",
+  "neck",
+  "winter",
+];
+
+const TRAVEL_SCOPE_INCLUDES = [
+  "travel",
+  "outdoor",
+  "camp",
+  "camping",
+  "portable",
+  "bag",
+  "trolley",
+  "car",
+  "organizer",
+  "road",
+  "gadget",
+  "pack",
+];
+
+const SENIOR_SCOPE_INCLUDES = [
+  "senior",
+  "living",
+  "daily",
+  "caregiver",
+  "memory",
+  "organization",
+  "organizer",
+  "planner",
+  "book",
+  "books",
+  "safety",
+  "mobility",
+  "support",
+  "aid",
+  "reach",
+  "grip",
+];
+
+const GIFT_SCOPE_INCLUDES = [
+  "gift",
+  "gifts",
+  "housewarming",
+  "birthday",
+  "holiday",
+  "mom",
+  "dad",
+  "senior",
+  "present",
+  "giftable",
+];
+
+const TRENDING_SCOPE_INCLUDES = [
+  "viral",
+  "trending",
+  "best",
+  "new",
+  "staff",
+  "under",
+  "deal",
+  "sale",
+  "bestseller",
+  "unique",
+  "pick",
+  "find",
+];
 
 export type SiteHomeCollectionGroup = {
   handle: string;
@@ -207,6 +362,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     summary:
       "Useful kitchen, dining, storage, and clean-up essentials that make everyday routines easier to manage.",
     searchQuery: "cookware",
+    scope: {
+      include: HOME_KITCHEN_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Kitchen route",
       title: "Built for daily use, not clutter",
@@ -268,6 +427,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     summary:
       "Lighting and decorative touches that warm a room, highlight a wall, and finish a space with intention.",
     searchQuery: "decor",
+    scope: {
+      include: HOME_DECOR_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Decor route",
       title: "Finish the room, not just fill it",
@@ -327,6 +490,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     shopifyHandle: "pet-assocerries",
     summary: "Feeding, grooming, travel, and play basics for dogs and cats that keep pet care straightforward.",
     searchQuery: "pet",
+    scope: {
+      include: PET_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Pet route",
       title: "Care that feels simple for pets and people",
@@ -386,6 +553,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     shopifyHandle: "face-mask",
     summary: "Sleep, posture, relaxation, and recovery-focused products for everyday wellbeing.",
     searchQuery: "mask",
+    scope: {
+      include: HEALTH_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Wellness route",
       title: "Comfort-oriented products for calmer routines",
@@ -439,6 +610,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     shopifyHandle: "shopping-bags-jute-bags",
     summary: "Portable helpers for road trips, camping, and organized travel days that stay easy to pack.",
     searchQuery: "travel",
+    scope: {
+      include: TRAVEL_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Travel route",
       title: "Pack lighter and move easier",
@@ -486,6 +661,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     summary:
       "Practical daily supports for easier routines, safer rooms, stronger organization, and more confident independent living.",
     searchQuery: "planner",
+    scope: {
+      include: SENIOR_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Senior living route",
       title: "A calmer way to shop for everyday support",
@@ -540,6 +719,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     summary:
       "Giftable finds for birthdays, holidays, housewarmings, and everyday surprises that feel useful and thoughtful.",
     searchQuery: "gift",
+    scope: {
+      include: GIFT_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Gift route",
       title: "Choose a present people can actually use",
@@ -593,6 +776,10 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     summary:
       "What’s moving now: viral picks, best sellers, new arrivals, staff picks, and budget-friendly favorites.",
     searchQuery: "humidifier",
+    scope: {
+      include: TRENDING_SCOPE_INCLUDES,
+      exclude: APPAREL_SCOPE_EXCLUDES,
+    },
     accent: {
       label: "Trending route",
       title: "Keep the page fresh without rebuilding the catalog",
