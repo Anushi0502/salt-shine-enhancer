@@ -49,14 +49,14 @@ describe("HomeCategoryHierarchy", () => {
             path="/"
             element={
               <HomeRoute
-                collections={[
-                  makeCollection("cookware", "Kitchen Essentials", "<p>Practical kitchen tools and cookware for daily use.</p>"),
-                  makeCollection("cooking-essential", "COOKING ESSENTIAL"),
-                  makeCollection("home-decor", "Home & Living", "<p>Curated home essentials for everyday living.</p>"),
-                  makeCollection("candles", "CANDLES"),
+              collections={[
+                  makeCollection("cookware", "Home & Kitchen", "<p>Practical kitchen tools and cookware for daily use.</p>"),
+                  makeCollection("kitchen-gadgets", "Kitchen Gadgets"),
+                  makeCollection("storage-organization", "Storage & Organization"),
+                  makeCollection("home-decor", "Home Decor & Lighting", "<p>Curated home essentials for everyday living.</p>"),
+                  makeCollection("wall-lights", "Wall Lights"),
                   makeCollection("new-arrivals", "New Arrivals"),
                   makeCollection("appplaza-best-sellers", "Best Sellers"),
-                  makeCollection("deals-sale", "Deals & Sale"),
                 ]}
               />
             }
@@ -69,7 +69,7 @@ describe("HomeCategoryHierarchy", () => {
     await waitFor(() => expect(screen.getByTestId("location-search")).toHaveTextContent("category=cookware"));
     expect(screen.getByRole("link", { name: /View all/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Home & Decor/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Home Decor & Lighting/i }));
 
     expect(screen.getByTestId("location-search")).toHaveTextContent("category=home-decor");
   });
@@ -82,14 +82,14 @@ describe("HomeCategoryHierarchy", () => {
             path="/"
             element={
               <HomeRoute
-                collections={[
-                  makeCollection("cookware", "Kitchen Essentials"),
-                  makeCollection("cooking-essential", "COOKING ESSENTIAL"),
-                  makeCollection("home-decor", "Home & Living"),
-                  makeCollection("candles", "CANDLES"),
+              collections={[
+                  makeCollection("cookware", "Home & Kitchen"),
+                  makeCollection("kitchen-gadgets", "Kitchen Gadgets"),
+                  makeCollection("storage-organization", "Storage & Organization"),
+                  makeCollection("home-decor", "Home Decor & Lighting"),
+                  makeCollection("wall-lights", "Wall Lights"),
                   makeCollection("new-arrivals", "New Arrivals"),
                   makeCollection("appplaza-best-sellers", "Best Sellers"),
-                  makeCollection("deals-sale", "Deals & Sale"),
                 ]}
               />
             }
@@ -99,7 +99,7 @@ describe("HomeCategoryHierarchy", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Home & Decor/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Home Decor & Lighting/i }));
     fireEvent.click(screen.getByRole("link", { name: /View all/i }));
 
     expect(screen.getByTestId("collection-route")).toHaveTextContent("home-decor");

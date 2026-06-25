@@ -231,53 +231,70 @@ export type SiteFeaturedShortcut = {
 export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
   {
     handle: "cookware",
-    label: "Kitchen & Dining",
-    childHandles: ["cooking-essential", "jaar-opener"],
+    label: "Home & Kitchen",
+    childHandles: [
+      "kitchen-gadgets",
+      "cookware",
+      "storage-organization",
+      "coffee-tea-accessories",
+      "dining-essentials",
+      "cleaning-tools",
+    ],
   },
   {
     handle: "home-decor",
-    label: "Home & Decor",
-    childHandles: ["candles", "artificial-aquarium-decor-plants"],
-  },
-  {
-    handle: "men-collection",
-    label: "Clothing",
-    childHandles: ["jeans", "t-shirt", "trousers", "robe"],
-  },
-  {
-    handle: "shoes",
-    label: "Shoes & Accessories",
-    childHandles: ["hair-accessories"],
-  },
-  {
-    handle: "garden-tools",
-    label: "Garden & Tools",
-    childHandles: ["tools"],
+    label: "Home Decor & Lighting",
+    childHandles: [
+      "wall-lights",
+      "decorative-lamps",
+      "wall-art",
+      "seasonal-decor",
+      "smart-lighting",
+      "decorative-accessories",
+    ],
   },
   {
     handle: "pet-assocerries",
-    label: "Pet Supplies",
-    childHandles: [],
+    label: "Pet Essentials",
+    childHandles: ["dog-supplies", "cat-supplies", "pet-travel", "pet-feeding", "pet-grooming", "pet-toys"],
   },
   {
-    handle: "medical-accessories",
-    label: "Health, Wellness & Planners",
-    childHandles: ["personal-care", "face-mask", "books"],
-  },
-  {
-    handle: "gifts",
-    label: "Gifts & Lifestyle",
-    childHandles: ["unique-products", "summer-collection"],
+    handle: "face-mask",
+    label: "Health & Wellness",
+    childHandles: [
+      "posture-support",
+      "sleep-essentials",
+      "relaxation-products",
+      "massage-tools",
+      "wellness-accessories",
+    ],
   },
   {
     handle: "shopping-bags-jute-bags",
-    label: "Travel & Portable Essentials",
-    childHandles: ["shopping-bag-market-trolley-bag-with-wheels-collapsible"],
+    label: "Travel & Outdoor",
+    childHandles: ["travel-organizers", "car-accessories", "camping-gear", "portable-gadgets", "outdoor-essentials"],
   },
   {
-    handle: "deals-sale",
-    label: "Deals & Sale",
-    childHandles: ["gloves", "under-35"],
+    handle: "books",
+    label: "Senior Living Solutions",
+    childHandles: [
+      "daily-living-aids",
+      "home-safety",
+      "memory-organization",
+      "caregiver-essentials",
+      "gifts-for-seniors",
+      "mobility-support",
+    ],
+  },
+  {
+    handle: "gifts",
+    label: "Gifts Collection",
+    childHandles: ["gifts-for-mom", "gifts-for-dad", "gifts-for-seniors", "housewarming-gifts", "birthday-gifts", "holiday-gifts"],
+  },
+  {
+    handle: "unique-products",
+    label: "Trending Finds",
+    childHandles: ["viral-tiktok-products", "appplaza-best-sellers", "new-arrivals", "staff-picks", "under-25", "under-50"],
   },
 ];
 
@@ -857,10 +874,10 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
     to: buildSubcollectionRoute("trending-finds", "new-arrivals"),
   },
   {
-    label: "Today's Deals",
-    routeHandle: "deals-sale",
-    activeCollectionHandles: ["deals-sale"],
-    to: `${buildCollectionRoute("deals-sale")}?collection=deals-sale`,
+    label: "Under $25",
+    routeHandle: "trending-finds",
+    activeCollectionHandles: ["under-25"],
+    to: buildSubcollectionRoute("trending-finds", "under-25"),
   },
   {
     label: "Trending Now",
@@ -869,10 +886,10 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
     to: `${buildCollectionRoute("trending-finds")}?collection=unique-products`,
   },
   {
-    label: "Weekend Sale",
-    routeHandle: "deals-sale",
-    activeCollectionHandles: ["under-35"],
-    to: `${buildSubcollectionRoute("deals-sale", "under-35")}&promo=weekend-sale`,
+    label: "Under $50",
+    routeHandle: "trending-finds",
+    activeCollectionHandles: ["under-50"],
+    to: buildSubcollectionRoute("trending-finds", "under-50"),
   },
 ];
 

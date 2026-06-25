@@ -34,26 +34,15 @@ const searchScopeOptions = [
     label: "All",
     collection: "all-products",
   },
-  {
-    label: "New Arrivals",
-    collection: "new-arrivals",
-  },
-  {
-    label: "Cookware",
-    collection: "cookware",
-  },
-  {
-    label: "Home Decor",
-    collection: "home-decor",
-  },
-  {
-    label: "Apparel",
-    collection: "apparel",
-  },
-  {
-    label: "Gifts",
-    collection: "gifts",
-  },
+  { label: "Senior Living Solutions", collection: "books" },
+  { label: "Home & Kitchen", collection: "cookware" },
+  { label: "Home Decor & Lighting", collection: "home-decor" },
+  { label: "Pet Essentials", collection: "pet-assocerries" },
+  { label: "Health & Wellness", collection: "face-mask" },
+  { label: "Travel & Outdoor", collection: "shopping-bags-jute-bags" },
+  { label: "Gifts Collection", collection: "gifts" },
+  { label: "Trending Finds", collection: "unique-products" },
+  { label: "New Arrivals", collection: "new-arrivals" },
 ] as const;
 
 type HeaderSearchScope = (typeof searchScopeOptions)[number]["collection"];

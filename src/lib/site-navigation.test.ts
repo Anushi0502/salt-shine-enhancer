@@ -64,9 +64,9 @@ describe("resolveCollectionFeedHandle", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.label)).toEqual([
       "Best Sellers",
       "New Arrivals",
-      "Today's Deals",
+      "Under $25",
       "Trending Now",
-      "Weekend Sale",
+      "Under $50",
     ]);
   });
 
@@ -74,9 +74,9 @@ describe("resolveCollectionFeedHandle", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.to)).toEqual([
       "/collections/trending-finds?collection=appplaza-best-sellers",
       "/collections/trending-finds?collection=new-arrivals",
-      "/collections/deals-sale?collection=deals-sale",
+      "/collections/trending-finds?collection=under-25",
       "/collections/trending-finds?collection=unique-products",
-      "/collections/deals-sale?collection=under-35&promo=weekend-sale",
+      "/collections/trending-finds?collection=under-50",
     ]);
   });
 
@@ -89,7 +89,7 @@ describe("resolveCollectionFeedHandle", () => {
       ),
     ).toBe(true);
     expect(
-      isSiteHeaderCollectionLinkActive("/collections/deals-sale", "?collection=under-35", SITE_HEADER_COLLECTION_LINKS[4]),
+      isSiteHeaderCollectionLinkActive("/collections/trending-finds", "?collection=under-50", SITE_HEADER_COLLECTION_LINKS[4]),
     ).toBe(true);
     expect(
       isSiteHeaderCollectionLinkActive(
