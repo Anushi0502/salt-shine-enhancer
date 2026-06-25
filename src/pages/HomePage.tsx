@@ -238,81 +238,6 @@ const HERO_EXTRA_BANNERS: ImageTile[] = [
   },
 ];
 
-const fallbackQuirkyGiftTiles: ProductTile[] = [
-  {
-    title: "Portable LED Night Light",
-    price: "$25.99",
-    image: productTripod,
-    to: "/shop?q=quirky+gifts",
-  },
-  {
-    title: "Laptop Phone Mount",
-    price: "$16.99",
-    image: productLaptopStand,
-    to: "/shop?q=unique+products",
-  },
-  {
-    title: "Living Legacy Planner",
-    price: "$55.99",
-    image: productPortableStand,
-    to: "/shop?q=gift+ideas",
-  },
-  {
-    title: "Daily Bloom Journal",
-    price: "$49.99",
-    image: productDock,
-    to: "/shop?q=book+gift",
-  },
-  {
-    title: "Aroma Diffuser",
-    price: "$35.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4b2af5f653b447a580f6b1509d15acd6I.webp?v=1741589663",
-    to: "/shop?q=home+gift",
-  },
-  {
-    title: "Ceramic Bowl Set",
-    price: "$40.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8652b5fe8d4042aba9342aef6e7b8468m.webp?v=1755687078",
-    to: "/shop?q=unique+kitchen+gift",
-  },
-  {
-    title: "Cozy Home Layer",
-    price: "$29.99",
-    image: collectionApparel,
-    to: "/shop?q=cozy+gift",
-  },
-  {
-    title: "Ceramic Cookware Set",
-    price: "$80.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
-    to: "/shop?q=gift+set",
-  },
-  {
-    title: "Car Clock Luminous Auto Watch",
-    price: "$24.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9ac055022d034193b5b64e8e6862c439H_4102ff65-1f47-41d8-a1c6-029679a94427.webp?v=1734772996",
-    to: "/products/car-clock-luminous-automobiles-internal-stick-on-mini-digital-watch-mechanics-quartz-clocks-auto-ornament-car-accessories-gifts-1",
-  },
-  {
-    title: "Mini Square Alarm Clock",
-    price: "$19.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf8ec3b1d65b44358a64ccfd9837a3537n_36a273ce-588e-4658-8d28-2cb1b30695f9.webp?v=1734772995",
-    to: "/products/mini-square-alarm-clock-mute-analog-non-ticking-operated-clocks-1",
-  },
-  {
-    title: "DIY Acrylic Mirror Wall Clock",
-    price: "$34.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S556ce54ac93c4cd1bf12940bb9a758d4e.webp?v=1739959319",
-    to: "/products/diy-acrylic-mirror-wall-clock-3d-roman-numeral-quartz-clock",
-  },
-  {
-    title: "Elegant 40cm Wall Clock",
-    price: "$41.99",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sb7dabcefed8a410197d37e2f363daea5f.webp?v=1734614700",
-    to: "/products/elegant-40cm-wall-clock-for-living-room-home-decoration",
-  },
-];
-
 const fallbackEverydayEssentialTiles: ProductTile[] = [
   {
     title: "Mini Soil Moisture Meter",
@@ -618,23 +543,13 @@ const HomePage = () => {
   const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
   const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
   const { data: booksIdsPayload } = useCollectionProductIds("books", true);
-  const { data: uniqueProductsIdsPayload } = useCollectionProductIds("unique-products", true);
-  const { data: uniqueFindsIdsPayload } = useCollectionProductIds("unique-finds", true);
   const bestSellerProductIds = useMemo(
     () => bestSellerIdsPayload?.productIds ?? [],
     [bestSellerIdsPayload],
   );
   const quirkyGiftProductIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...(uniqueProductsIdsPayload?.productIds ?? []),
-          ...(uniqueFindsIdsPayload?.productIds ?? []),
-          ...(giftsIdsPayload?.productIds ?? []),
-          ...(giftIdsPayload?.productIds ?? []),
-        ]),
-      ),
-    [giftIdsPayload, giftsIdsPayload, uniqueFindsIdsPayload, uniqueProductsIdsPayload],
+    () => giftsIdsPayload?.productIds ?? [],
+    [giftsIdsPayload],
   );
   const collectionProductIdsByHandle = useMemo(() => {
     const map = new Map<string, number[]>();
@@ -993,10 +908,6 @@ const HomePage = () => {
     return combinedProducts.slice(0, 8);
   }, [productById, products, quirkyGiftProductIds]);
   const quirkyGiftTiles = useMemo<ProductTile[]>(() => {
-    if (!quirkyGiftProducts.length) {
-      return fallbackQuirkyGiftTiles;
-    }
-
     return quirkyGiftProducts.map((product) => ({
       productId: product.id,
       title: product.title,
@@ -1005,10 +916,7 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerHeroImage, quirkyGiftProducts]);
-  const quirkyGiftDisplayTiles = useMemo(
-    () => padProductTiles(quirkyGiftTiles, fallbackQuirkyGiftTiles, 12),
-    [quirkyGiftTiles],
-  );
+  const quirkyGiftDisplayTiles = quirkyGiftTiles;
   const everydayEssentialsDisplayTiles = useMemo(
     () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 12),
     [everydayEssentialsTiles],
@@ -1501,28 +1409,30 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={140}>
-          <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
-            <SectionTitle title="Quirky Gift Picks" />
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
-              {quirkyGiftDisplayTiles.map((tile, index) => (
-                <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={140 + index * 50}>
-                  <OverlayProductCard
-                    title={tile.title}
-                    image={tile.image}
-                    to={tile.to}
-                    price={tile.price}
-                    productId={tile.productId}
-                    fallbackImage={bestSellerHeroImage}
-                    imageAlt={buildProductImageAltText(tile.title, "quirky gift picks")}
-                    compact
-                    className="w-full"
-                  />
-                </Reveal>
-              ))}
-            </div>
-          </section>
-        </Reveal>
+        {quirkyGiftDisplayTiles.length > 0 ? (
+          <Reveal delayMs={140}>
+            <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+              <SectionTitle title="Quirky Gift Picks" />
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
+                {quirkyGiftDisplayTiles.map((tile, index) => (
+                  <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={140 + index * 50}>
+                    <OverlayProductCard
+                      title={tile.title}
+                      image={tile.image}
+                      to={tile.to}
+                      price={tile.price}
+                      productId={tile.productId}
+                      fallbackImage={bestSellerHeroImage}
+                      imageAlt={buildProductImageAltText(tile.title, "quirky gift picks")}
+                      compact
+                      className="w-full"
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          </Reveal>
+        ) : null}
 
         {showExclusiveBooks && (
         <Reveal delayMs={220}>
