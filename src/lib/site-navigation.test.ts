@@ -94,43 +94,53 @@ describe("resolveCollectionFeedHandle", () => {
     ]);
   });
 
-  it("exposes the featured header shortcuts in the requested order", () => {
+  it("exposes the header collections in the requested order", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.label)).toEqual([
-      "Best Sellers",
-      "New Arrivals",
-      "Under $25",
-      "Trending Now",
-      "Under $50",
+      "Home & Kitchen",
+      "Home Decor & Lighting",
+      "Pet Essentials",
+      "Health & Wellness",
+      "Travel & Outdoor",
+      "Senior Living Solutions",
+      "Gifts Collection",
+      "Trending Finds",
     ]);
   });
 
-  it("points the featured header shortcuts at live collection routes", () => {
+  it("points the header collections at live collection routes", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.to)).toEqual([
-      "/collections/trending-finds?collection=appplaza-best-sellers",
-      "/collections/trending-finds?collection=new-arrivals",
-      "/collections/trending-finds?collection=under-25",
-      "/collections/trending-finds?collection=unique-products",
-      "/collections/trending-finds?collection=under-50",
+      "/collections/cookware",
+      "/collections/home-decor",
+      "/collections/pet-assocerries",
+      "/collections/face-mask",
+      "/collections/shopping-bags-jute-bags",
+      "/collections/books",
+      "/collections/gifts",
+      "/collections/unique-products",
     ]);
   });
 
-  it("marks the featured header shortcuts active for their collection feeds", () => {
+  it("marks the header collections active on their route and subcategory feeds", () => {
     expect(
       isSiteHeaderCollectionLinkActive(
-        "/collections/trending-finds",
+        "/collections/cookware",
+        "",
+        SITE_HEADER_COLLECTION_LINKS[0],
+      ),
+    ).toBe(true);
+    expect(
+      isSiteHeaderCollectionLinkActive(
+        "/collections/cookware",
+        "?collection=kitchen-gadgets",
+        SITE_HEADER_COLLECTION_LINKS[0],
+      ),
+    ).toBe(true);
+    expect(
+      isSiteHeaderCollectionLinkActive(
+        "/collections/unique-products",
         "?collection=appplaza-best-sellers",
-        SITE_HEADER_COLLECTION_LINKS[0],
+        SITE_HEADER_COLLECTION_LINKS[7],
       ),
     ).toBe(true);
-    expect(
-      isSiteHeaderCollectionLinkActive("/collections/trending-finds", "?collection=under-50", SITE_HEADER_COLLECTION_LINKS[4]),
-    ).toBe(true);
-    expect(
-      isSiteHeaderCollectionLinkActive(
-        "/collections/trending-finds",
-        "?collection=new-arrivals",
-        SITE_HEADER_COLLECTION_LINKS[0],
-      ),
-    ).toBe(false);
   });
 });

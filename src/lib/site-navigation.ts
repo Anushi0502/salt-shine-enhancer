@@ -832,38 +832,19 @@ export type SiteHeaderCollectionLink = {
   to: string;
 };
 
-export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = [
-  {
-    label: "Best Sellers",
-    routeHandle: "trending-finds",
-    activeCollectionHandles: ["appplaza-best-sellers"],
-    to: buildSubcollectionRoute("trending-finds", "best-sellers"),
-  },
-  {
-    label: "New Arrivals",
-    routeHandle: "trending-finds",
-    activeCollectionHandles: ["new-arrivals"],
-    to: buildSubcollectionRoute("trending-finds", "new-arrivals"),
-  },
-  {
-    label: "Under $25",
-    routeHandle: "trending-finds",
-    activeCollectionHandles: ["under-25"],
-    to: buildSubcollectionRoute("trending-finds", "under-25"),
-  },
-  {
-    label: "Trending Now",
-    routeHandle: "trending-finds",
-    activeCollectionHandles: ["unique-products"],
-    to: `${buildCollectionRoute("trending-finds")}?collection=unique-products`,
-  },
-  {
-    label: "Under $50",
-    routeHandle: "trending-finds",
-    activeCollectionHandles: ["under-50"],
-    to: buildSubcollectionRoute("trending-finds", "under-50"),
-  },
-];
+export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = SITE_COLLECTIONS.map((collection) => ({
+  label: collection.title,
+  routeHandle: collection.shopifyHandle || collection.handle,
+  activeCollectionHandles: Array.from(
+    new Set([
+      collection.handle,
+      collection.shopifyHandle,
+      ...collection.subcollections.map((subcollection) => subcollection.handle),
+      ...collection.subcollections.map((subcollection) => subcollection.shopifyHandle),
+    ].filter(Boolean)),
+  ),
+  to: `/collections/${normalizeHandle(collection.shopifyHandle || collection.handle)}`,
+}));
 
 export const SITE_RESOURCE_GUIDES: SiteResourceGuide[] = RESOURCE_HUB_GUIDES;
 
@@ -1000,7 +981,7 @@ export function isSiteHeaderCollectionLinkActive(
 
   const currentCollection = normalizeHandle(new URLSearchParams(search).get("collection"));
   if (!currentCollection) {
-    return false;
+    return true;
   }
 
   return link.activeCollectionHandles.some((candidate) => normalizeHandle(candidate) === currentCollection);
