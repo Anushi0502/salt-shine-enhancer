@@ -428,13 +428,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         summary: "Practical tools for the jobs that keep kitchens and homes feeling fresh.",
         searchQuery: "cleaning",
       },
-      {
-        title: "Home Decor & Lighting",
-        handle: "home-decor-lighting",
-        shopifyHandle: "home-decor",
-        summary: "Warm accents and lighting that make the room feel finished.",
-        searchQuery: "decor",
-      },
     ],
   },
   {
@@ -492,13 +485,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         summary: "Small accents that bring the room together without overfilling it.",
         searchQuery: "decor",
       },
-      {
-        title: "Pet Essentials",
-        handle: "pet-essentials",
-        shopifyHandle: "pet-assocerries",
-        summary: "A practical cross-shop for pet-friendly home routines and organization.",
-        searchQuery: "pet",
-      },
     ],
   },
   {
@@ -555,13 +541,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         summary: "Play-first picks that help pets stay engaged and active.",
         searchQuery: "toy",
       },
-      {
-        title: "Health & Wellness",
-        handle: "health-wellness",
-        shopifyHandle: "face-mask",
-        summary: "Pet wellness overlap for everyday care and comfort.",
-        searchQuery: "mask",
-      },
     ],
   },
   {
@@ -611,13 +590,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         handle: "wellness-accessories",
         summary: "Small accessories that support balance, consistency, and self-care.",
         searchQuery: "uv",
-      },
-      {
-        title: "Travel & Outdoor",
-        handle: "travel-outdoor",
-        shopifyHandle: "shopping-bags-jute-bags",
-        summary: "Portable support for on-the-go routines and outdoor days.",
-        searchQuery: "travel",
       },
     ],
   },

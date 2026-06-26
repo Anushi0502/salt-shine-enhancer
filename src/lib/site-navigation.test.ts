@@ -60,6 +60,40 @@ describe("resolveCollectionFeedHandle", () => {
     expect(seniorLivingIndex).toBeGreaterThan(travelIndex);
   });
 
+  it("keeps sidebar subcollections scoped to their own parent collection", () => {
+    expect(SITE_COLLECTIONS.find((collection) => collection.handle === "home-kitchen")?.subcollections.map((entry) => entry.title)).toEqual([
+      "Kitchen Gadgets",
+      "Cookware",
+      "Storage & Organization",
+      "Coffee & Tea Accessories",
+      "Dining Essentials",
+      "Cleaning Tools",
+    ]);
+    expect(SITE_COLLECTIONS.find((collection) => collection.handle === "home-decor-lighting")?.subcollections.map((entry) => entry.title)).toEqual([
+      "Wall Lights",
+      "Decorative Lamps",
+      "Wall Art",
+      "Seasonal Decor",
+      "Smart Lighting",
+      "Decorative Accessories",
+    ]);
+    expect(SITE_COLLECTIONS.find((collection) => collection.handle === "pet-essentials")?.subcollections.map((entry) => entry.title)).toEqual([
+      "Dog Supplies",
+      "Cat Supplies",
+      "Pet Travel",
+      "Pet Feeding",
+      "Pet Grooming",
+      "Pet Toys",
+    ]);
+    expect(SITE_COLLECTIONS.find((collection) => collection.handle === "health-wellness")?.subcollections.map((entry) => entry.title)).toEqual([
+      "Posture Support",
+      "Sleep Essentials",
+      "Relaxation Products",
+      "Massage Tools",
+      "Wellness Accessories",
+    ]);
+  });
+
   it("exposes the featured header shortcuts in the requested order", () => {
     expect(SITE_HEADER_COLLECTION_LINKS.map((link) => link.label)).toEqual([
       "Best Sellers",
