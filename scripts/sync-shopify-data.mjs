@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
@@ -89,11 +89,11 @@ async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts
   const response = await runSerializedRequest(() => fetch(url));
 
   if (!response.ok) {
-    if (response.status === 429 && attempt < maxAttempts - 1) {
+    if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt < maxAttempts - 1) {
       const backoffDelay = computeRetryDelayMs(response, attempt, publicRetryBaseDelayMs);
 
       process.stdout.write(
-        `Rate limited on ${url}; retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+        `Transient failure on ${url}; retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
       );
       await sleep(backoffDelay);
       return fetchJsonUrl(url, { attempt: attempt + 1, maxAttempts });
@@ -105,13 +105,50 @@ async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts
   return response.json();
 }
 
-async function fetchAdminJson(path, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
+async function fetchCollectionProductIdsFromCachedFile(handle) {
+  const raw = await readFile(collectionProductsPath, "utf8");
+  const payload = JSON.parse(raw);
+  const entry = payload?.collections?.[handle];
+  const productIds = Array.isArray(entry?.productIds) ? entry.productIds : [];
+
+  if (!productIds.length) {
+    throw new Error(`Cached collection products payload missing handle "${handle}"`);
+  }
+
+  process.stdout.write(`Using cached collection ids for "${handle}" with ${productIds.length} products\n`);
+  return productIds;
+}
+
+function buildAdminUrl(pathOrUrl) {
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
+
+  const adminBase = new URL(baseUrl).origin;
+  return `${adminBase}/admin/api/${adminApiVersion}${pathOrUrl}`;
+}
+
+function extractNextPageUrl(linkHeader) {
+  if (!linkHeader) {
+    return null;
+  }
+
+  for (const entry of linkHeader.split(",")) {
+    const match = entry.match(/<([^>]+)>\s*;\s*rel="?next"?/i);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
   if (!adminAccessToken) {
     throw new Error("Shopify Admin API token not configured");
   }
 
-  const adminBase = new URL(baseUrl).origin;
-  const url = `${adminBase}/admin/api/${adminApiVersion}${path}`;
+  const url = buildAdminUrl(pathOrUrl);
   const response = await runSerializedRequest(() =>
     fetch(url, {
       headers: {
@@ -135,7 +172,38 @@ async function fetchAdminJson(path, { attempt = 0, maxAttempts = maxRequestAttem
     throw new Error(`Admin request failed (${response.status}) for ${url}`);
   }
 
+  return response;
+}
+
+async function fetchAdminJson(path, options = {}) {
+  const response = await fetchAdminResponse(path, options);
   return response.json();
+}
+
+async function fetchAdminPaged(key, endpoint) {
+  if (!adminAccessToken) {
+    throw new Error("Shopify Admin API token not configured");
+  }
+
+  const rows = [];
+  let nextUrl = (() => {
+    const url = new URL(buildAdminUrl(endpoint));
+    url.searchParams.set("limit", String(limit));
+    return url.toString();
+  })();
+
+  while (nextUrl) {
+    const response = await fetchAdminResponse(nextUrl);
+    const json = await response.json();
+    const chunk = Array.isArray(json[key]) ? json[key] : [];
+
+    rows.push(...chunk);
+    process.stdout.write(`Fetched admin ${key} page: ${chunk.length}\n`);
+
+    nextUrl = extractNextPageUrl(response.headers.get("link"));
+  }
+
+  return rows;
 }
 
 async function fetchPaged(key, endpoint) {
@@ -161,21 +229,40 @@ async function fetchPaged(key, endpoint) {
 }
 
 async function fetchCollectionProductIds(handle) {
+  try {
+    return await fetchCollectionProductIdsFromCachedFile(handle);
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    process.stdout.write(`Cached collection ids unavailable for "${handle}"; falling back to live fetch (${cacheMessage})\n`);
+  }
+
   const ids = [];
   let page = 1;
 
-  while (true) {
-    const url = `${baseUrl}/collections/${handle}/products.json?limit=${limit}&page=${page}`;
-    const payload = await fetchJsonUrl(url);
-    const products = Array.isArray(payload.products) ? payload.products : [];
+  try {
+    while (true) {
+      const url = `${baseUrl}/collections/${handle}/products.json?limit=${limit}&page=${page}`;
+      const payload = await fetchJsonUrl(url);
+      const products = Array.isArray(payload.products) ? payload.products : [];
 
-    ids.push(...products.map((product) => product.id));
+      ids.push(...products.map((product) => product.id));
 
-    if (products.length < limit) {
-      break;
+      if (products.length < limit) {
+        break;
+      }
+
+      page += 1;
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    process.stdout.write(`Live collection ids failed for "${handle}"; trying cached mapping (${message})\n`);
 
-    page += 1;
+    try {
+      return await fetchCollectionProductIdsFromCachedFile(handle);
+    } catch (cacheError) {
+      const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+      throw new Error(`Request failed for ${baseUrl}/collections/${handle}/products.json. ${message}. Cached fallback failed: ${cacheMessage}`);
+    }
   }
 
   return ids;
@@ -287,33 +374,47 @@ function parseBlogEntriesFromAtom(atomXml) {
 }
 
 async function fetchAboutPage() {
-  const response = await fetch(`${baseUrl}/pages/${aboutHandle}.json`);
-  if (response.status === 404) {
+  const endpoint = `${baseUrl}/pages/${aboutHandle}.json`;
+
+  try {
+    const response = await fetch(endpoint);
+    if (response.status === 404) {
+      throw new Error(`Request failed (404) for ${endpoint}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status}) for ${endpoint}`);
+    }
+
+    const payload = await response.json();
+    const page = payload?.page || {};
+
     return {
-      id: 0,
-      handle: aboutHandle,
-      title: "About",
-      bodyHtml: "",
-      publishedAt: "",
-      updatedAt: "",
+      id: Number(page.id || 0),
+      handle: page.handle || aboutHandle,
+      title: page.title || "About",
+      bodyHtml: page.body_html || "",
+      publishedAt: page.published_at || "",
+      updatedAt: page.updated_at || "",
     };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+
+    try {
+      return await fetchAboutPageFromCachedFile();
+    } catch (cacheError) {
+      const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+      process.stdout.write(`About page fetch failed; using blank fallback (${message}; ${cacheMessage})\n`);
+      return {
+        id: 0,
+        handle: aboutHandle,
+        title: "About",
+        bodyHtml: "",
+        publishedAt: "",
+        updatedAt: "",
+      };
+    }
   }
-
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${baseUrl}/pages/${aboutHandle}.json`);
-  }
-
-  const payload = await response.json();
-  const page = payload?.page || {};
-
-  return {
-    id: Number(page.id || 0),
-    handle: page.handle || aboutHandle,
-    title: page.title || "About",
-    bodyHtml: page.body_html || "",
-    publishedAt: page.published_at || "",
-    updatedAt: page.updated_at || "",
-  };
 }
 
 async function fetchBlogPostsFromAdmin() {
@@ -383,46 +484,171 @@ async function fetchBlogPosts() {
   }
 
   for (const handle of blogHandles) {
-    const response = await fetch(`${baseUrl}/blogs/${handle}.atom`);
-    if (response.status === 404) {
-      process.stdout.write(`Blog handle "${handle}" not found on ${baseUrl}\n`);
-      continue;
+    try {
+      const response = await fetch(`${baseUrl}/blogs/${handle}.atom`);
+      if (response.status === 404) {
+        process.stdout.write(`Blog handle "${handle}" not found on ${baseUrl}\n`);
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Request failed (${response.status}) for ${baseUrl}/blogs/${handle}.atom`);
+      }
+
+      const atom = await response.text();
+      const posts = parseBlogEntriesFromAtom(atom);
+
+      if (!posts.length) {
+        process.stdout.write(`Blog handle "${handle}" returned 0 published posts\n`);
+        continue;
+      }
+
+      process.stdout.write(`Using blog handle "${handle}" with ${posts.length} posts\n`);
+      return {
+        blogHandle: handle,
+        source: baseUrl,
+        posts,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      process.stdout.write(`Blog handle "${handle}" fetch failed (${message})\n`);
     }
-
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status}) for ${baseUrl}/blogs/${handle}.atom`);
-    }
-
-    const atom = await response.text();
-    const posts = parseBlogEntriesFromAtom(atom);
-
-    if (!posts.length) {
-      process.stdout.write(`Blog handle "${handle}" returned 0 published posts\n`);
-      continue;
-    }
-
-    process.stdout.write(`Using blog handle "${handle}" with ${posts.length} posts\n`);
-    return {
-      blogHandle: handle,
-      source: baseUrl,
-      posts,
-    };
   }
 
-  process.stdout.write("No public blog feed found; saving zero live posts\n");
+  try {
+    return await fetchBlogPostsFromCachedFile();
+  } catch (cacheError) {
+    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    process.stdout.write(`No public blog feed found; saving zero live posts (${cacheMessage})\n`);
+    return {
+      blogHandle: blogHandles[0] || "posts",
+      source: baseUrl,
+      posts: [],
+    };
+  }
+}
+
+async function fetchProductsFromCachedFile() {
+  const raw = await readFile(productsPath, "utf8");
+  const payload = JSON.parse(raw);
+  const products = Array.isArray(payload.products) ? payload.products : [];
+
+  if (!products.length) {
+    throw new Error("Cached product payload is empty");
+  }
+
+  process.stdout.write(`Using cached product payload with ${products.length} products\n`);
+  return products;
+}
+
+async function fetchCollectionsFromCachedFile() {
+  const raw = await readFile(collectionsPath, "utf8");
+  const payload = JSON.parse(raw);
+  const collections = Array.isArray(payload.collections) ? payload.collections : [];
+
+  if (!collections.length) {
+    throw new Error("Cached collections payload is empty");
+  }
+
+  process.stdout.write(`Using cached collections payload with ${collections.length} collections\n`);
+  return collections;
+}
+
+async function fetchAboutPageFromCachedFile() {
+  const raw = await readFile(aboutPath, "utf8");
+  const payload = JSON.parse(raw);
+  const page = payload?.page || {};
+
+  if (!page?.title) {
+    throw new Error("Cached about payload is empty");
+  }
+
+  process.stdout.write("Using cached About page payload\n");
   return {
-    blogHandle: blogHandles[0] || "posts",
-    source: baseUrl,
-    posts: [],
+    id: Number(page.id || 0),
+    handle: page.handle || aboutHandle,
+    title: page.title || "About",
+    bodyHtml: page.bodyHtml || "",
+    publishedAt: page.publishedAt || "",
+    updatedAt: page.updatedAt || "",
   };
+}
+
+async function fetchBlogPostsFromCachedFile() {
+  const raw = await readFile(blogPostsPath, "utf8");
+  const payload = JSON.parse(raw);
+  const posts = Array.isArray(payload.posts) ? payload.posts : [];
+
+  if (!posts.length) {
+    throw new Error("Cached blog payload is empty");
+  }
+
+  process.stdout.write(`Using cached blog payload with ${posts.length} posts\n`);
+  return {
+    blogHandle: payload.blogHandle || blogHandles[0] || "posts",
+    source: payload.source || baseUrl,
+    posts,
+  };
+}
+
+async function fetchProductsForSync() {
+  if (adminAccessToken) {
+    try {
+      const products = await fetchAdminPaged("products", "/products.json");
+      if (products.length) {
+        process.stdout.write(`Using Admin API product feed with ${products.length} products\n`);
+        return products;
+      }
+
+      process.stdout.write("Admin product feed returned 0 products; falling back to storefront JSON\n");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      process.stdout.write(`Admin product feed failed; falling back to storefront JSON (${message})\n`);
+    }
+  }
+
+  try {
+    return await fetchProductsFromCachedFile();
+  } catch (cacheError) {
+    const message = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    process.stdout.write(`Cached product payload unavailable; falling back to storefront JSON (${message})\n`);
+  }
+
+  return fetchPaged("products", "/products.json");
+}
+
+async function fetchCollectionsForSync() {
+  if (adminAccessToken) {
+    try {
+      const collections = await fetchAdminPaged("collections", "/collections.json");
+      if (collections.length) {
+        process.stdout.write(`Using Admin API collections feed with ${collections.length} collections\n`);
+        return collections;
+      }
+
+      process.stdout.write("Admin collections feed returned 0 collections; falling back to storefront JSON\n");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      process.stdout.write(`Admin collections feed failed; falling back to storefront JSON (${message})\n`);
+    }
+  }
+
+  try {
+    return await fetchCollectionsFromCachedFile();
+  } catch (cacheError) {
+    const message = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+    process.stdout.write(`Cached collections payload unavailable; falling back to storefront JSON (${message})\n`);
+  }
+
+  return fetchPaged("collections", "/collections.json");
 }
 
 async function main() {
   const startedAt = new Date().toISOString();
 
   const [products, collections, aboutPage, blogResult] = await Promise.all([
-    fetchPaged("products", "/products.json"),
-    fetchPaged("collections", "/collections.json"),
+    fetchProductsForSync(),
+    fetchCollectionsForSync(),
     fetchAboutPage(),
     fetchBlogPosts(),
   ]);

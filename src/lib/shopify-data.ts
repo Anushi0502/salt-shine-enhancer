@@ -997,105 +997,104 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
-  const endpointErrors: string[] = [];
-
-  for (const base of getLiveCatalogBases()) {
-    try {
-      const products = await fetchAllProductsFromLive(base);
-      return normalizeProductsPayload({
-        generatedAt: new Date().toISOString(),
-        source: base,
-        total: products.length,
-        products,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "unknown error";
-      endpointErrors.push(`${base} -> ${message}`);
-    }
-  }
-
-  const details =
-    endpointErrors.length > 0
-      ? endpointErrors.slice(0, 4).join(" | ")
-      : "No reachable live products endpoints.";
-
   try {
     return await fetchProductsFromCache();
   } catch (cacheError) {
+    const endpointErrors: string[] = [];
+
+    for (const base of getLiveCatalogBases()) {
+      try {
+        const products = await fetchAllProductsFromLive(base);
+        return normalizeProductsPayload({
+          generatedAt: new Date().toISOString(),
+          source: base,
+          total: products.length,
+          products,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        endpointErrors.push(`${base} -> ${message}`);
+      }
+    }
+
+    const details =
+      endpointErrors.length > 0
+        ? endpointErrors.slice(0, 4).join(" | ")
+        : "No reachable live products endpoints.";
+
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live products fetch failed. ${details}. Cached products fetch failed: ${cacheMessage}`);
   }
 }
 
 export async function loadCollections(): Promise<CollectionsPayload> {
-  const endpointErrors: string[] = [];
-
-  for (const base of getLiveCatalogBases()) {
-    try {
-      const collections = await fetchAllCollectionsFromLive(base);
-      return normalizeCollectionsPayload({
-        generatedAt: new Date().toISOString(),
-        source: base,
-        total: collections.length,
-        collections,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "unknown error";
-      endpointErrors.push(`${base} -> ${message}`);
-    }
-  }
-
-  const details =
-    endpointErrors.length > 0
-      ? endpointErrors.slice(0, 4).join(" | ")
-      : "No reachable live collections endpoints.";
-
   try {
     return await fetchCollectionsFromCache();
   } catch (cacheError) {
+    const endpointErrors: string[] = [];
+
+    for (const base of getLiveCatalogBases()) {
+      try {
+        const collections = await fetchAllCollectionsFromLive(base);
+        return normalizeCollectionsPayload({
+          generatedAt: new Date().toISOString(),
+          source: base,
+          total: collections.length,
+          collections,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        endpointErrors.push(`${base} -> ${message}`);
+      }
+    }
+
+    const details =
+      endpointErrors.length > 0
+        ? endpointErrors.slice(0, 4).join(" | ")
+        : "No reachable live collections endpoints.";
+
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live collections fetch failed. ${details}. Cached collections fetch failed: ${cacheMessage}`);
   }
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
-  const endpointErrors: string[] = [];
-
-  for (const base of getLiveCatalogBases()) {
-    try {
-      const collections = await fetchAllCollectionsFromLive(base);
-      const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
-        const productIds = await fetchCollectionProductIdsFromLive(base, collection.handle);
-        return [
-          collection.handle,
-          {
-            title: polishPlainText(collection.title),
-            productIds,
-          },
-        ] as const;
-      });
-
-      return {
-        generatedAt: new Date().toISOString(),
-        source: base,
-        totalCollections: collections.length,
-        collections: Object.fromEntries(mappedEntries),
-      };
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "unknown error";
-      endpointErrors.push(`${base} -> ${message}`);
-    }
-  }
-
-  const details =
-    endpointErrors.length > 0
-      ? endpointErrors.slice(0, 4).join(" | ")
-      : "No reachable live collection products endpoints.";
-
   try {
     return await fetchCollectionProductsMapFromCache();
   } catch (cacheError) {
+    const endpointErrors: string[] = [];
+
+    for (const base of getLiveCatalogBases()) {
+      try {
+        const collections = await fetchAllCollectionsFromLive(base);
+        const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
+          const productIds = await fetchCollectionProductIdsFromLive(base, collection.handle);
+          return [
+            collection.handle,
+            {
+              title: polishPlainText(collection.title),
+              productIds,
+            },
+          ] as const;
+        });
+
+        return {
+          generatedAt: new Date().toISOString(),
+          source: base,
+          totalCollections: collections.length,
+          collections: Object.fromEntries(mappedEntries),
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        endpointErrors.push(`${base} -> ${message}`);
+      }
+    }
+
+    const details =
+      endpointErrors.length > 0
+        ? endpointErrors.slice(0, 4).join(" | ")
+        : "No reachable live collection products endpoints.";
+
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live collection products map fetch failed. ${details}. Cached collection map fetch failed: ${cacheMessage}`);
   }
@@ -1107,32 +1106,32 @@ async function loadCollectionProductIds(handle: string): Promise<CollectionProdu
     throw new Error("Collection handle is required");
   }
 
-  const endpointErrors: string[] = [];
-
-  for (const base of getLiveCatalogBases()) {
-    try {
-      const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
-      return {
-        generatedAt: new Date().toISOString(),
-        source: base,
-        handle: normalizedHandle,
-        total: productIds.length,
-        productIds,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "unknown error";
-      endpointErrors.push(`${base} -> ${message}`);
-    }
-  }
-
-  const details =
-    endpointErrors.length > 0
-      ? endpointErrors.slice(0, 4).join(" | ")
-      : "No reachable live collection products endpoints.";
-
   try {
     return await fetchCollectionProductIdsFromCache(normalizedHandle);
   } catch (cacheError) {
+    const endpointErrors: string[] = [];
+
+    for (const base of getLiveCatalogBases()) {
+      try {
+        const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
+        return {
+          generatedAt: new Date().toISOString(),
+          source: base,
+          handle: normalizedHandle,
+          total: productIds.length,
+          productIds,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        endpointErrors.push(`${base} -> ${message}`);
+      }
+    }
+
+    const details =
+      endpointErrors.length > 0
+        ? endpointErrors.slice(0, 4).join(" | ")
+        : "No reachable live collection products endpoints.";
+
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live collection products fetch failed for "${normalizedHandle}". ${details}. Cached collection ids fetch failed: ${cacheMessage}`);
   }

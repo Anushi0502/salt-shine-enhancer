@@ -15,10 +15,11 @@ import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import {
-  SITE_HEADER_COLLECTION_LINKS,
   SITE_COLLECTIONS,
+  buildCollectionRoute,
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
+  type SiteHeaderCollectionLink,
 } from "@/lib/site-navigation";
 import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
 import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
@@ -67,18 +68,48 @@ function isCollectionRouteActive(pathname: string, search: string, collection: H
   );
 }
 
-const secondaryNavItems: HeaderNavItem[] = [
+const headerShortcutLinks: SiteHeaderCollectionLink[] = [
   {
-    label: "All products",
-    to: "/shop?collection=all-products",
-    kind: "link",
-    isActive: (pathname, search) => {
-      const params = new URLSearchParams(search);
-      const collection = params.get("collection");
-
-      return (pathname === "/shop" || pathname === "/search") && (!collection || collection === "all-products");
-    },
+    label: "Best Sellers",
+    routeHandle: "unique-products",
+    activeCollectionHandles: ["best-sellers", "appplaza-best-sellers"],
+    to: buildSubcollectionRoute("unique-products", "best-sellers"),
   },
+  {
+    label: "New Arrivals",
+    routeHandle: "unique-products",
+    activeCollectionHandles: ["new-arrivals"],
+    to: buildSubcollectionRoute("unique-products", "new-arrivals"),
+  },
+  {
+    label: "Under $25",
+    routeHandle: "unique-products",
+    activeCollectionHandles: ["under-25"],
+    to: buildSubcollectionRoute("unique-products", "under-25"),
+  },
+  {
+    label: "Trending Now",
+    routeHandle: "unique-products",
+    activeCollectionHandles: [
+      "viral-tiktok-products",
+      "best-sellers",
+      "appplaza-best-sellers",
+      "new-arrivals",
+      "staff-picks",
+      "under-25",
+      "under-50",
+    ],
+    to: buildCollectionRoute("unique-products"),
+  },
+  {
+    label: "Under $50",
+    routeHandle: "unique-products",
+    activeCollectionHandles: ["under-50"],
+    to: buildSubcollectionRoute("unique-products", "under-50"),
+  },
+];
+
+const utilityNavItems: HeaderNavItem[] = [
   {
     label: "Resources",
     to: "/resources",
@@ -379,8 +410,8 @@ const MainHeader = () => {
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
   const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const hasSearchQuery = Boolean(searchQuery.trim());
-  const resourcesNavItem = secondaryNavItems.find((item) => item.label === "Resources") || secondaryNavItems[0];
-  const supportNavItem = secondaryNavItems.find((item) => item.label === "Support") || secondaryNavItems[0];
+  const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
+  const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -1025,51 +1056,48 @@ const MainHeader = () => {
       </div>
 
         <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
-        <nav
-          aria-label="Secondary navigation"
-          className="salt-header-secondary-nav text-white"
-        >
-          <button
-            type="button"
-            onClick={openMenu}
-            className={collectionNavItemClass(menuOpen)}
-            aria-expanded={menuOpen}
-            aria-controls="salt-header-menu"
-          >
-            <Menu className="h-4 w-4 shrink-0" />
-            <span>All</span>
-          </button>
+          <nav aria-label="Secondary navigation" className="salt-header-secondary-nav text-white">
+            <button
+              type="button"
+              onClick={openMenu}
+              className={collectionNavItemClass(menuOpen)}
+              aria-expanded={menuOpen}
+              aria-controls="salt-header-menu"
+            >
+              <Menu className="h-4 w-4 shrink-0" />
+              <span>All</span>
+            </button>
 
-          {SITE_HEADER_COLLECTION_LINKS.map((link) => {
-            const isActive = isSiteHeaderCollectionLinkActive(location.pathname, location.search, link);
+            {headerShortcutLinks.map((link) => {
+              const isActive = isSiteHeaderCollectionLinkActive(location.pathname, location.search, link);
 
-            return (
-              <Link
-                key={link.label}
-                to={link.to}
-                className={collectionNavItemClass(isActive)}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className={collectionNavItemClass(isActive)}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
 
-          <Link
-            to="/resources"
-            className={utilityNavItemClass(isActiveNavItem(resourcesNavItem, location.pathname, location.search))}
-            aria-current={isActiveNavItem(resourcesNavItem, location.pathname, location.search) ? "page" : undefined}
-          >
-            <span>Resources</span>
-          </Link>
+            <Link
+              to="/resources"
+              className={utilityNavItemClass(isActiveNavItem(resourcesNavItem, location.pathname, location.search))}
+              aria-current={isActiveNavItem(resourcesNavItem, location.pathname, location.search) ? "page" : undefined}
+            >
+              <span>Resources</span>
+            </Link>
 
-          <Link
-            to="/contact"
-            className={utilityNavItemClass(isActiveNavItem(supportNavItem, location.pathname, location.search))}
-            aria-current={isActiveNavItem(supportNavItem, location.pathname, location.search) ? "page" : undefined}
-          >
-            <span>Support</span>
-          </Link>
+            <Link
+              to="/contact"
+              className={utilityNavItemClass(isActiveNavItem(supportNavItem, location.pathname, location.search))}
+              aria-current={isActiveNavItem(supportNavItem, location.pathname, location.search) ? "page" : undefined}
+            >
+              <span>Support</span>
+            </Link>
           </nav>
         </div>
       </header>
