@@ -249,37 +249,6 @@ function HeaderMenuDrawer({
           <div className="grid gap-2 px-2.5 py-2.5 sm:px-3">
             <section className="border-b border-[#e2edf8] pb-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
-                  <ArrowDownUp className="h-3 w-3" />
-                  Filter
-                </p>
-                <SheetClose asChild>
-                  <Link
-                    to="/shop"
-                    className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
-                  >
-                    View shop
-                  </Link>
-                </SheetClose>
-              </div>
-
-              <div className="mt-2 grid gap-1">
-                {drawerFilterOptions.map((option) => (
-                  <SheetClose asChild key={option.sort}>
-                    <Link
-                      to={`/shop?sort=${option.sort}`}
-                      className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
-                    >
-                      <span className="text-[0.82rem] font-medium leading-5 text-[#102A43]">{option.label}</span>
-                      <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
-                    </Link>
-                  </SheetClose>
-                ))}
-              </div>
-            </section>
-
-            <section className="border-b border-[#e2edf8] pb-2">
-              <div className="flex items-center justify-between gap-2">
                 <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
                 <SheetClose asChild>
                   <Link
@@ -343,6 +312,37 @@ function HeaderMenuDrawer({
 
               <div className="mt-2 hidden lg:block">
                 <CollectionHoverMenu collections={SITE_COLLECTIONS} onLinkClick={() => setMenuOpen(false)} />
+              </div>
+            </section>
+
+            <section className="border-b border-[#e2edf8] pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                  <ArrowDownUp className="h-3 w-3" />
+                  Filter
+                </p>
+                <SheetClose asChild>
+                  <Link
+                    to="/shop"
+                    className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                  >
+                    View shop
+                  </Link>
+                </SheetClose>
+              </div>
+
+              <div className="mt-2 grid gap-1">
+                {drawerFilterOptions.map((option) => (
+                  <SheetClose asChild key={option.sort}>
+                    <Link
+                      to={`/shop?sort=${option.sort}`}
+                      className="group flex items-center justify-between rounded-[0.65rem] border border-[#e2edf8] bg-white px-2.5 py-1.5 text-left transition hover:bg-[#f5faff]"
+                    >
+                      <span className="text-[0.82rem] font-medium leading-5 text-[#102A43]">{option.label}</span>
+                      <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                    </Link>
+                  </SheetClose>
+                ))}
               </div>
             </section>
 
