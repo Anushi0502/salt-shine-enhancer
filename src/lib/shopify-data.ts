@@ -333,7 +333,7 @@ function liveQueryRetryDelay(attemptIndex: number): number {
 
 async function fetchJson<T>(url: string): Promise<T> {
   const resolvedUrl = resolveThemeAsset(url);
-  const response = await fetch(resolvedUrl);
+  const response = await fetch(resolvedUrl, { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}) for ${resolvedUrl}`);
@@ -997,26 +997,27 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
-  try {
-    return await fetchProductsFromCache();
-  } catch (cacheError) {
-    const endpointErrors: string[] = [];
+  const endpointErrors: string[] = [];
 
-    for (const base of getLiveCatalogBases()) {
-      try {
-        const products = await fetchAllProductsFromLive(base);
-        return normalizeProductsPayload({
-          generatedAt: new Date().toISOString(),
-          source: base,
-          total: products.length,
-          products,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "unknown error";
-        endpointErrors.push(`${base} -> ${message}`);
-      }
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const products = await fetchAllProductsFromLive(base);
+      return normalizeProductsPayload({
+        generatedAt: new Date().toISOString(),
+        source: base,
+        total: products.length,
+        products,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
     }
+  }
 
+  try {
+    const cached = await fetchProductsFromCache();
+    return cached;
+  } catch (cacheError) {
     const details =
       endpointErrors.length > 0
         ? endpointErrors.slice(0, 4).join(" | ")
@@ -1028,26 +1029,27 @@ export async function loadProducts(): Promise<ProductsPayload> {
 }
 
 export async function loadCollections(): Promise<CollectionsPayload> {
-  try {
-    return await fetchCollectionsFromCache();
-  } catch (cacheError) {
-    const endpointErrors: string[] = [];
+  const endpointErrors: string[] = [];
 
-    for (const base of getLiveCatalogBases()) {
-      try {
-        const collections = await fetchAllCollectionsFromLive(base);
-        return normalizeCollectionsPayload({
-          generatedAt: new Date().toISOString(),
-          source: base,
-          total: collections.length,
-          collections,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "unknown error";
-        endpointErrors.push(`${base} -> ${message}`);
-      }
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const collections = await fetchAllCollectionsFromLive(base);
+      return normalizeCollectionsPayload({
+        generatedAt: new Date().toISOString(),
+        source: base,
+        total: collections.length,
+        collections,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
     }
+  }
 
+  try {
+    const cached = await fetchCollectionsFromCache();
+    return cached;
+  } catch (cacheError) {
     const details =
       endpointErrors.length > 0
         ? endpointErrors.slice(0, 4).join(" | ")
@@ -1059,37 +1061,38 @@ export async function loadCollections(): Promise<CollectionsPayload> {
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
-  try {
-    return await fetchCollectionProductsMapFromCache();
-  } catch (cacheError) {
-    const endpointErrors: string[] = [];
+  const endpointErrors: string[] = [];
 
-    for (const base of getLiveCatalogBases()) {
-      try {
-        const collections = await fetchAllCollectionsFromLive(base);
-        const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
-          const productIds = await fetchCollectionProductIdsFromLive(base, collection.handle);
-          return [
-            collection.handle,
-            {
-              title: polishPlainText(collection.title),
-              productIds,
-            },
-          ] as const;
-        });
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const collections = await fetchAllCollectionsFromLive(base);
+      const mappedEntries = await mapWithConcurrency(collections, 6, async (collection) => {
+        const productIds = await fetchCollectionProductIdsFromLive(base, collection.handle);
+        return [
+          collection.handle,
+          {
+            title: polishPlainText(collection.title),
+            productIds,
+          },
+        ] as const;
+      });
 
-        return {
-          generatedAt: new Date().toISOString(),
-          source: base,
-          totalCollections: collections.length,
-          collections: Object.fromEntries(mappedEntries),
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "unknown error";
-        endpointErrors.push(`${base} -> ${message}`);
-      }
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        totalCollections: collections.length,
+        collections: Object.fromEntries(mappedEntries),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
     }
+  }
 
+  try {
+    const cached = await fetchCollectionProductsMapFromCache();
+    return cached;
+  } catch (cacheError) {
     const details =
       endpointErrors.length > 0
         ? endpointErrors.slice(0, 4).join(" | ")

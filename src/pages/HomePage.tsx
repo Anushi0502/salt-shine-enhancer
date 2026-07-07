@@ -7,6 +7,7 @@ import GiftBanner from "@/components/salt/GiftBanner";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeProductRating, useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
+import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
 import collectionDecor from "@/assets/collection-decor.jpg";
@@ -448,16 +449,8 @@ function isPriorityBookMatch(
 }
 
 function findBestSellerCollection(collections: ShopifyCollection[]): ShopifyCollection | null {
-  const priorityHandles = [
-    "appplaza-best-sellers",
-    "best-sellers",
-    "best-seller",
-    "bestsellers",
-    "bestseller",
-  ];
-
   const byHandle = collections.find((collection) =>
-    priorityHandles.includes(normalizeHandle(collection.handle)),
+    isBestSellerCollectionHandle(collection.handle),
   );
   if (byHandle) {
     return byHandle;
@@ -534,19 +527,10 @@ const HomePage = () => {
     () => findBestSellerCollection(collections),
     [collections],
   );
-  const bestSellerCollectionHandle = bestSellerCollection?.handle || "";
-  const { data: bestSellerIdsPayload } = useCollectionProductIds(
-    bestSellerCollectionHandle,
-    Boolean(bestSellerCollectionHandle),
-  );
   const { data: homeDecorIdsPayload } = useCollectionProductIds("home-decor", true);
   const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
   const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
   const { data: booksIdsPayload } = useCollectionProductIds("books", true);
-  const bestSellerProductIds = useMemo(
-    () => bestSellerIdsPayload?.productIds ?? [],
-    [bestSellerIdsPayload],
-  );
   const quirkyGiftProductIds = useMemo(
     () => giftsIdsPayload?.productIds ?? [],
     [giftsIdsPayload],
@@ -559,6 +543,7 @@ const HomePage = () => {
     return map;
   }, [giftIdsPayload, giftsIdsPayload, homeDecorIdsPayload]);
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const bestSellerProducts = useMemo(() => selectBestSellerProducts(products, 12), [products]);
   const featuredCourtneyBooks = useMemo(() => {
     if (!products.length) {
       return [];
@@ -684,45 +669,6 @@ const HomePage = () => {
     };
   }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
   const { summary: mindfulnessTrackerFeatureSummary } = useJudgeMeProductRating(mindfulnessTrackerFeatureCard.productId);
-  const bestSellerProducts = useMemo(() => {
-    if (!products.length) {
-      return [];
-    }
-
-    const bestSellerCandidates =
-      bestSellerProductIds.length > 0
-        ? bestSellerProductIds
-            .map((productId) => productById.get(productId))
-            .filter((product): product is ShopifyProduct => Boolean(product))
-        : [];
-
-    const priorityBooks = featuredBookPriority
-      .map((target) => products.find((product) => isPriorityBookMatch(product, target)) || null)
-      .filter((product): product is ShopifyProduct => Boolean(product));
-
-    const rankedFallback = [...products]
-      .sort((left, right) => {
-        const savingsDiff = savingsPercent(right) - savingsPercent(left);
-        if (savingsDiff !== 0) {
-          return savingsDiff;
-        }
-
-        return minPrice(left) - minPrice(right);
-      });
-
-    const uniqueProducts: ShopifyProduct[] = [];
-    const seenProductIds = new Set<number>();
-    [...priorityBooks, ...bestSellerCandidates, ...rankedFallback].forEach((product) => {
-      if (seenProductIds.has(product.id)) {
-        return;
-      }
-
-      seenProductIds.add(product.id);
-      uniqueProducts.push(product);
-    });
-
-    return uniqueProducts.slice(0, 12);
-  }, [bestSellerProductIds, productById, products]);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
     if (!bestSellerProducts.length) {
       return fallbackBestSellerTiles;
@@ -929,7 +875,6 @@ const HomePage = () => {
           ...bestSellerProducts.map((product) => product.id),
           ...everydayEssentialProducts.map((product) => product.id),
           ...quirkyGiftProducts.map((product) => product.id),
-          ...bestSellerProductIds.slice(0, 24),
           ...quirkyGiftProductIds.slice(0, 24),
           ...products.slice(0, 120).map((product) => product.id),
         ]),
@@ -938,7 +883,6 @@ const HomePage = () => {
         .filter((value) => Number.isFinite(value) && value > 0)
         .slice(0, 160),
     [
-      bestSellerProductIds,
       bestSellerProducts,
       everydayEssentialProducts,
       featuredCourtneyBooks,

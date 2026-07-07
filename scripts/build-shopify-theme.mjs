@@ -104,8 +104,9 @@ async function writeThemeScaffold() {
 </html>
 `;
 
-  const sectionLiquid = `<div id="root"></div>
+const sectionLiquid = `<div id="root"></div>
 <script>
+  window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
     "/brand-salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }}

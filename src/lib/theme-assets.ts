@@ -1,5 +1,6 @@
 declare global {
   interface Window {
+    SALT_THEME_ASSET_BASE?: string;
     SALT_THEME_ASSETS?: Record<string, string>;
     SALT_RUNTIME_CONTEXT?: Partial<SaltRuntimeContext>;
   }
@@ -216,12 +217,41 @@ export function getShopBaseOrigin(): string {
   return SHOP_BASE_ORIGIN;
 }
 
+function normalizeThemeAssetBase(input: string | null | undefined): string | null {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  return raw.endsWith("/") ? raw : `${raw}/`;
+}
+
+function getThemeAssetBase(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return normalizeThemeAssetBase(window.SALT_THEME_ASSET_BASE);
+}
+
 export function resolveThemeAsset(path: string): string {
   if (typeof window === "undefined") {
     return path;
   }
 
-  return window.SALT_THEME_ASSETS?.[path] || path;
+  const mappedAsset = window.SALT_THEME_ASSETS?.[path];
+  if (mappedAsset) {
+    return mappedAsset;
+  }
+
+  if (path.startsWith("/assets/")) {
+    const themeAssetBase = getThemeAssetBase();
+    if (themeAssetBase) {
+      return `${themeAssetBase}${path.slice("/assets/".length)}`;
+    }
+  }
+
+  return path;
 }
 
 export function normalizeShopifyAssetUrl(input: string | null | undefined): string | null {

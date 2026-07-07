@@ -29,6 +29,7 @@ import {
   resolveCollectionFeedHandle,
   resolveCollectionShopifyHandle,
 } from "@/lib/site-navigation";
+import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
 
 const sortOptions = [
@@ -150,6 +151,7 @@ const ShopPage = () => {
   const collectionHandle = resolveCollectionShopifyHandle(
     explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : ""),
   );
+  const isBestSellerCollection = isBestSellerCollectionHandle(collectionHandle);
   const curatedCollection = getCollectionByHandle(routeCollectionAlias || activeCollectionParam || routeFeedHandle);
   const curatedSubcollection = routeCollectionAlias
     ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias || activeCollectionParam)
@@ -214,12 +216,22 @@ const ShopPage = () => {
     isLoading: collectionProductIdsLoading,
     error: collectionProductIdsError,
     refetch: refetchCollectionProductIds,
-  } = useCollectionProductIds(collectionHandle, Boolean(collectionHandle));
+  } = useCollectionProductIds(collectionHandle, Boolean(collectionHandle) && !isBestSellerCollection);
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
-  const selectedCollectionProductIds = useMemo(() => collectionProductIdsPayload?.productIds ?? null, [collectionProductIdsPayload]);
+  const bestSellerProductIds = useMemo(
+    () => selectBestSellerProducts(products, 12).map((product) => product.id),
+    [products],
+  );
+  const selectedCollectionProductIds = useMemo(() => {
+    if (isBestSellerCollection) {
+      return bestSellerProductIds;
+    }
+
+    return collectionProductIdsPayload?.productIds ?? null;
+  }, [bestSellerProductIds, collectionProductIdsPayload, isBestSellerCollection]);
   const selectedCollectionOrder = useMemo(() => {
     if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
       return null;

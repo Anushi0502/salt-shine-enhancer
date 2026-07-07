@@ -1,11 +1,11 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import os from "os";
 import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const workspaceRoot = process.cwd();
+  const env = loadEnv(mode, workspaceRoot, "");
   const fallbackShopBase = "https://0309d3-72.myshopify.com";
   const rawShopBase = env.VITE_SALT_SHOP_URL || env.VITE_SHOPIFY_STOREFRONT_URL || fallbackShopBase;
   const normalizedShopBase = (() => {
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    cacheDir: path.resolve(os.tmpdir(), "salt-shine-vite-cache"),
+    cacheDir: path.resolve(workspaceRoot, ".vite"),
     optimizeDeps: {
       include: [
         "react",
@@ -84,7 +84,7 @@ export default defineConfig(({ mode }) => {
       alias: [
         {
           find: /^@\/(.*)$/,
-          replacement: path.resolve(__dirname, "./src") + "/$1",
+          replacement: path.resolve(workspaceRoot, "./src") + "/$1",
         },
       ],
     },
