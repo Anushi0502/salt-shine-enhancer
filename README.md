@@ -83,6 +83,21 @@ Outputs:
 - `public/data/about.json`
 - `public/data/blog-posts.json`
 
+## Shopify orders bundle update
+
+Apply the 35% price uplift and buy-more-save-more tiers from the orders export:
+
+```bash
+npm run shopify:orders-bundle:dry-run -- --input /Users/mac/Downloads/orders_export_1.csv
+npm run shopify:orders-bundle:apply -- --input /Users/mac/Downloads/orders_export_1.csv
+```
+
+Default manifest output:
+
+- `output/orders_export_1.bundle-manifest.json`
+
+The script resolves Shopify products by handle first, then falls back to title search, and updates matching variants with `productVariantsBulkUpdate`.
+
 ## Judge.me reviews behavior
 
 - Product-level review counts are sourced from Judge.me preview badge data.
