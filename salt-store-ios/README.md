@@ -7,5 +7,5 @@ Run from the repository root:
 ```bash
 npm run build
 cd salt-store-ios
-npx cap sync ios
+node ../node_modules/@capacitor/cli/bin/capacitor sync ios
 ```

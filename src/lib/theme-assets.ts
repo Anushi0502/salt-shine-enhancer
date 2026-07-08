@@ -234,24 +234,41 @@ function getThemeAssetBase(): string | null {
   return normalizeThemeAssetBase(window.SALT_THEME_ASSET_BASE);
 }
 
+function splitAssetPath(input: string): { path: string; suffix: string } {
+  const raw = String(input || "");
+  const match = raw.match(/^([^?#]+)([?#].*)?$/);
+  return {
+    path: match?.[1] || raw,
+    suffix: match?.[2] || "",
+  };
+}
+
 export function resolveThemeAsset(path: string): string {
   if (typeof window === "undefined") {
     return path;
   }
 
-  const mappedAsset = window.SALT_THEME_ASSETS?.[path];
+  const { path: assetPath, suffix } = splitAssetPath(path);
+  const mappedAsset = window.SALT_THEME_ASSETS?.[assetPath];
   if (mappedAsset) {
-    return mappedAsset;
+    return `${mappedAsset}${suffix}`;
   }
 
-  if (path.startsWith("/assets/")) {
+  if (assetPath.startsWith("/assets/")) {
     const themeAssetBase = getThemeAssetBase();
     if (themeAssetBase) {
-      return `${themeAssetBase}${path.slice("/assets/".length)}`;
+      return `${themeAssetBase}${assetPath.slice("/assets/".length)}${suffix}`;
     }
   }
 
-  return path;
+  if (assetPath.startsWith("/data/")) {
+    const themeAssetBase = getThemeAssetBase();
+    if (themeAssetBase) {
+      return `${themeAssetBase}data-${assetPath.slice("/data/".length).replace(/\//g, "-")}${suffix}`;
+    }
+  }
+
+  return `${assetPath}${suffix}`;
 }
 
 export function normalizeShopifyAssetUrl(input: string | null | undefined): string | null {

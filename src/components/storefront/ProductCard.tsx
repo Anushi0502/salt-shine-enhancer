@@ -41,11 +41,20 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
   const wishlisted = isWishlisted(product.handle);
   const summary = reviewSummaryProvided ? reviewSummary ?? null : fetchedSummary;
+  const fallbackSummary =
+    Number(product.average_rating || 0) > 0 && Number(product.total_reviews || 0) > 0
+      ? {
+          rating: Number(product.average_rating || 0),
+          reviewCount: Number(product.total_reviews || 0),
+          purchasedLastMonth: 0,
+        }
+      : null;
+  const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
   const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
   const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
   const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
-  const hasReviews = Boolean(summary && summary.reviewCount > 0);
-  const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
+  const hasReviews = Boolean(displaySummary && displaySummary.reviewCount > 0);
+  const formattedRating = hasReviews ? displaySummary.rating.toFixed(1) : "";
 
   if (isShop) {
     return (
@@ -177,12 +186,12 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
           {product.product_type || "Curated pick"}
         </p>
 
-        {summary && summary.reviewCount > 0 ? (
+        {displaySummary && displaySummary.reviewCount > 0 ? (
           <div className="mt-1 flex items-center gap-1 text-[#f2c100]">
             {Array.from({ length: 5 }, (_, index) => (
               <Star
                 key={index}
-                className={`h-3 w-3 ${index < summary.rating ? "fill-current" : ""}`}
+                className={`h-3 w-3 ${index < displaySummary.rating ? "fill-current" : ""}`}
               />
             ))}
           </div>

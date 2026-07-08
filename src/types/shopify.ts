@@ -16,6 +16,40 @@ export interface ShopifyVariant {
   requires_shipping?: boolean;
 }
 
+export interface ShopifyProductReference {
+  id: string;
+  legacyResourceId?: number | null;
+  handle: string;
+  title: string;
+  productType?: string | null;
+  vendor?: string | null;
+  image?: string | null;
+  referenceType?: string | null;
+  fields?: Record<string, unknown>;
+}
+
+export interface ShopifyProductMetafieldRecord {
+  namespace: string;
+  key: string;
+  type: string;
+  value?: string;
+  jsonValue?: unknown;
+  reference?: ShopifyProductReference | null;
+  references?: ShopifyProductReference[];
+}
+
+export interface ShopifyProductCustomData {
+  rating?: number | null;
+  ratingCount?: number | null;
+  relatedProductsDisplay?: string | null;
+  relatedProducts?: ShopifyProductReference[];
+  complementaryProducts?: ShopifyProductReference[];
+  searchProductBoosts?: string[];
+  googleCustomProduct?: boolean | null;
+  diaperType?: unknown;
+  metafields?: Record<string, ShopifyProductMetafieldRecord>;
+}
+
 export interface ShopifyProduct {
   id: number;
   title: string;
@@ -32,6 +66,7 @@ export interface ShopifyProduct {
   image?: ShopifyImage | null;
   total_reviews?: number;
   average_rating?: number;
+  customData?: ShopifyProductCustomData | null;
 }
 
 export interface ShopifyCollection {

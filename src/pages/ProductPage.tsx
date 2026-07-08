@@ -56,6 +56,7 @@ import {
 } from "@/lib/order-history";
 import { useProducts } from "@/lib/shopify-data";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
+import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 function displayVariantTitle(title?: string): string {
   const normalized = (title || "").trim();
@@ -84,6 +85,87 @@ type ProductSpecPair = {
   label: string;
   value: string;
 };
+
+type ProductReviewSummary = {
+  rating: number;
+  reviewCount: number;
+  purchasedLastMonth: number;
+};
+
+function extractNumericId(input?: string | number | null): string {
+  const text = String(input ?? "").trim();
+  if (!text) {
+    return "";
+  }
+
+  const match = text.match(/\d+/);
+  return match?.[0] || text;
+}
+
+function referenceMatchesProduct(reference: ShopifyProductReference | null | undefined, product: ShopifyProduct): boolean {
+  if (!reference) {
+    return false;
+  }
+
+  const referenceId = extractNumericId(reference.legacyResourceId ?? reference.id);
+  if (referenceId && referenceId === String(product.id)) {
+    return true;
+  }
+
+  const referenceHandle = String(reference.handle || "").trim().toLowerCase();
+  return referenceHandle ? referenceHandle === String(product.handle || "").trim().toLowerCase() : false;
+}
+
+function resolveProductReferences(
+  references: ShopifyProductReference[] | null | undefined,
+  products: ShopifyProduct[],
+): ShopifyProduct[] {
+  if (!Array.isArray(references) || !references.length) {
+    return [];
+  }
+
+  const seen = new Set<number>();
+  const resolved: ShopifyProduct[] = [];
+
+  for (const reference of references) {
+    const match = products.find((product) => referenceMatchesProduct(reference, product));
+    if (!match || seen.has(match.id)) {
+      continue;
+    }
+
+    seen.add(match.id);
+    resolved.push(match);
+  }
+
+  return resolved;
+}
+
+function dedupeProducts(products: ShopifyProduct[]): ShopifyProduct[] {
+  const seen = new Set<number>();
+  return products.filter((product) => {
+    if (seen.has(product.id)) {
+      return false;
+    }
+
+    seen.add(product.id);
+    return true;
+  });
+}
+
+function buildReviewSummaryFallback(product: ShopifyProduct | null | undefined): ProductReviewSummary | null {
+  const rating = Number(product?.average_rating || 0);
+  const reviewCount = Number(product?.total_reviews || 0);
+
+  if (rating <= 0 && reviewCount <= 0) {
+    return null;
+  }
+
+  return {
+    rating,
+    reviewCount,
+    purchasedLastMonth: 0,
+  };
+}
 
 function normalizeProductBodyText(input: string): string {
   return input
@@ -214,7 +296,12 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
-  const { summary: reviewSummary } = useJudgeMeProductRating(product?.id);
+  const { summary: judgeMeReviewSummary } = useJudgeMeProductRating(product?.id);
+  const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
+  const reviewSummary = useMemo(
+    () => (judgeMeReviewSummary && judgeMeReviewSummary.reviewCount > 0 ? judgeMeReviewSummary : productMetafieldReviewSummary),
+    [judgeMeReviewSummary, productMetafieldReviewSummary],
+  );
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
@@ -291,7 +378,15 @@ const ProductPage = () => {
     );
   }, [product, selectedVariant]);
 
-  const relatedProducts = useMemo(
+  const manualRelatedProducts = useMemo(
+    () => resolveProductReferences(product?.customData?.relatedProducts, products).filter((entry) => entry.id !== product?.id),
+    [product?.customData?.relatedProducts, product?.id, products],
+  );
+  const manualComplementaryProducts = useMemo(
+    () => resolveProductReferences(product?.customData?.complementaryProducts, products).filter((entry) => entry.id !== product?.id),
+    [product?.customData?.complementaryProducts, product?.id, products],
+  );
+  const automaticRelatedProducts = useMemo(
     () =>
       product
         ? products
@@ -299,6 +394,32 @@ const ProductPage = () => {
             .slice(0, 5)
         : [],
     [product, products],
+  );
+  const relatedProducts = useMemo(() => {
+    if (!product) {
+      return [];
+    }
+
+    const displayMode = String(product.customData?.relatedProductsDisplay || "").trim().toLowerCase();
+    if (displayMode === "only manual") {
+      return manualRelatedProducts.slice(0, 5);
+    }
+
+    const combined =
+      displayMode === "ahead"
+        ? [...manualRelatedProducts, ...automaticRelatedProducts]
+        : manualRelatedProducts.length
+          ? [...manualRelatedProducts, ...automaticRelatedProducts]
+          : automaticRelatedProducts;
+
+    return dedupeProducts(combined).slice(0, 5);
+  }, [automaticRelatedProducts, manualRelatedProducts, product]);
+  const complementaryProducts = useMemo(
+    () =>
+      manualComplementaryProducts.filter(
+        (entry) => entry.id !== product?.id && !relatedProducts.some((related) => related.id === entry.id),
+      ),
+    [manualComplementaryProducts, product?.id, relatedProducts],
   );
   const recentlyViewedProducts = useMemo(
     () =>
@@ -316,10 +437,11 @@ const ProductPage = () => {
       Array.from(
         new Set([
           ...relatedProducts.map((entry) => entry.id),
+          ...complementaryProducts.map((entry) => entry.id),
           ...recentlyViewedProducts.map((entry) => entry.id),
         ]),
       ),
-    [recentlyViewedProducts, relatedProducts],
+    [complementaryProducts, recentlyViewedProducts, relatedProducts],
   );
   const productCardRatingsQuery = useJudgeMeRatings(productCardRatingIds);
   const productCardRatingsById = productCardRatingsQuery.data ?? {};
@@ -953,6 +1075,32 @@ const ProductPage = () => {
                     product={related}
                     variant="shop"
                     reviewSummary={productCardRatingsById[related.id] ?? null}
+                  />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {complementaryProducts.length > 0 ? (
+        <section className="mt-8">
+          <Reveal>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Bundle</p>
+                <h2 className="font-display text-[clamp(1.7rem,2.6vw,2.5rem)]">Pairs well with this product</h2>
+              </div>
+            </div>
+          </Reveal>
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
+              {complementaryProducts.map((entry, index) => (
+                <Reveal key={entry.id} delayMs={index * 70} className="h-full">
+                  <ProductCard
+                    product={entry}
+                    variant="shop"
+                    reviewSummary={productCardRatingsById[entry.id] ?? null}
                   />
                 </Reveal>
               ))}

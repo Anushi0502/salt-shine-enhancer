@@ -21,6 +21,54 @@ describe("loadProducts", () => {
         const url = String(input);
         requests.push({ url, cache: init?.cache });
 
+        if (url.includes("/data/products.json")) {
+          return jsonResponse({
+            generatedAt: "2026-07-01T00:00:00.000Z",
+            source: "/data/products.json",
+            total: 1,
+            products: [
+              {
+                id: 2,
+                title: "Cached Product",
+                handle: "live-product",
+                body_html: null,
+                vendor: "SALT",
+                product_type: "Cached",
+                tags: [],
+                created_at: "2026-07-01T00:00:00.000Z",
+                published_at: "2026-07-01T00:00:00.000Z",
+                updated_at: "2026-07-01T00:00:00.000Z",
+                customData: {
+                  rating: 4.8,
+                  ratingCount: 18,
+                  relatedProductsDisplay: "ahead",
+                  relatedProducts: [
+                    {
+                      id: "gid://shopify/Product/5",
+                      legacyResourceId: 5,
+                      handle: "related-product",
+                      title: "Related Product",
+                    },
+                  ],
+                  searchProductBoosts: ["daily tech", "wearable"],
+                  googleCustomProduct: true,
+                },
+                variants: [
+                  {
+                    id: 11,
+                    title: "Default Title",
+                    price: "12.99",
+                    compare_at_price: null,
+                    available: true,
+                  },
+                ],
+                images: [],
+                image: null,
+              },
+            ],
+          });
+        }
+
         if (url.includes("/products.json")) {
           return jsonResponse({
             products: [
@@ -51,39 +99,6 @@ describe("loadProducts", () => {
           });
         }
 
-        if (url.includes("/data/products.json")) {
-          return jsonResponse({
-            generatedAt: "2026-07-01T00:00:00.000Z",
-            source: "/data/products.json",
-            total: 1,
-            products: [
-              {
-                id: 1,
-                title: "Cached Product",
-                handle: "cached-product",
-                body_html: null,
-                vendor: "SALT",
-                product_type: "Cached",
-                tags: [],
-                created_at: "2026-07-01T00:00:00.000Z",
-                published_at: "2026-07-01T00:00:00.000Z",
-                updated_at: "2026-07-01T00:00:00.000Z",
-                variants: [
-                  {
-                    id: 11,
-                    title: "Default Title",
-                    price: "12.99",
-                    compare_at_price: null,
-                    available: true,
-                  },
-                ],
-                images: [],
-                image: null,
-              },
-            ],
-          });
-        }
-
         throw new Error(`Unexpected fetch URL: ${url}`);
       }),
     );
@@ -101,8 +116,13 @@ describe("loadProducts", () => {
     expect(payload.products).toHaveLength(1);
     expect(payload.products[0].title).toBe("Live Product");
     expect(payload.products[0].handle).toBe("live-product");
-    expect(requests).toHaveLength(1);
+    expect(payload.products[0].average_rating).toBe(4.8);
+    expect(payload.products[0].total_reviews).toBe(18);
+    expect(payload.products[0].customData?.relatedProductsDisplay).toBe("ahead");
+    expect(payload.products[0].customData?.searchProductBoosts).toEqual(["daily tech", "wearable"]);
+    expect(requests).toHaveLength(2);
     expect(requests[0]?.url).toContain("/products.json");
+    expect(requests[1]?.url).toContain("/data/products.json");
     expect(requests[0]?.cache).toBe("no-store");
   });
 });

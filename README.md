@@ -40,6 +40,7 @@ Dev server defaults:
 - `npm run build:dev`: development-mode build.
 - `npm run test`: run Vitest once.
 - `npm run test:watch`: run Vitest in watch mode.
+- `npm run shopify:product-metafields:ensure`: ensure the product metafield definitions used by the storefront exist in Shopify through Shopify CLI store auth.
 - `npm run sync:data`: pull Shopify snapshot JSON into `public/data`.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
@@ -82,6 +83,8 @@ Outputs:
 - `public/data/collection-products.json`
 - `public/data/about.json`
 - `public/data/blog-posts.json`
+
+The sync path also ensures the product metafield definitions required by the storefront are present in Shopify before it refreshes the local snapshot files.
 
 ## Shopify orders bundle update
 
@@ -147,13 +150,20 @@ npm run release
 
 That single command:
 
-1. Refreshes Shopify snapshot data.
-2. Builds the Vite web app.
-3. Generates the Shopify theme bundle.
-4. Syncs the iOS Capacitor shell.
-5. Syncs the Android Capacitor shell.
+1. Ensures the Shopify product metafield definitions.
+2. Refreshes Shopify snapshot data.
+3. Builds the Vite web app.
+4. Generates the Shopify theme bundle.
+5. Syncs the iOS Capacitor shell.
+6. Syncs the Android Capacitor shell.
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
+
+The metafield-definition stage uses Shopify CLI store auth. If the store session is missing, run:
+
+```bash
+shopify store auth --store 0309d3-72.myshopify.com
+```
 
 ## Quality checks
 

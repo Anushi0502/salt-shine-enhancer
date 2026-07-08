@@ -26,6 +26,26 @@ function resolveThemeDir() {
 const themeDir = resolveThemeDir();
 const themeAssetsDir = resolve(themeDir, "assets");
 const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
+const themeDataAssets = [
+  { source: "products.json", asset: "data-products.json", themePath: "/data/products.json" },
+  { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
+  {
+    source: "collection-products.json",
+    asset: "data-collection-products.json",
+    themePath: "/data/collection-products.json",
+  },
+  { source: "about.json", asset: "data-about.json", themePath: "/data/about.json" },
+  { source: "blog-posts.json", asset: "data-blog-posts.json", themePath: "/data/blog-posts.json" },
+];
+
+function buildThemeAssetMapEntries() {
+  return themeDataAssets
+    .map(
+      ({ themePath, asset }) =>
+        `    ${JSON.stringify(themePath)}: {{ '${asset}' | asset_url | json }}`,
+    )
+    .join(",\n");
+}
 
 function parseEntryAssets(indexHtml) {
   const jsMatch = indexHtml.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/i);
@@ -109,7 +129,8 @@ const sectionLiquid = `<div id="root"></div>
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
-    "/brand-salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }}
+    "/brand-salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
+${buildThemeAssetMapEntries()}
   };
 </script>
 <script type="module" src="{{ 'salt-app.js' | asset_url }}"></script>
@@ -172,6 +193,10 @@ async function copyAssets(entryJsPath, entryCssPath) {
     resolve(publicDir, "shopify-meta-pixel-customer-events.js"),
     resolve(themeAssetsDir, "shopify-meta-pixel-customer-events.js"),
   );
+
+  for (const asset of themeDataAssets) {
+    await cp(resolve(publicDir, "data", asset.source), resolve(themeAssetsDir, asset.asset));
+  }
 }
 
 async function main() {

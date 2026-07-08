@@ -411,6 +411,9 @@ type ProductSearchIndex = {
   tagTokens: string[];
   body: string;
   bodyTokens: string[];
+  searchBoostTerms: string[];
+  searchBoosts: string;
+  searchBoostTokens: string[];
 };
 
 const searchIndexCache = new WeakMap<ShopifyProduct, ProductSearchIndex>();
@@ -427,7 +430,19 @@ function buildSearchIndex(product: ShopifyProduct): ProductSearchIndex {
   const productType = normalize(product.product_type);
   const tags = normalize(product.tags);
   const body = normalize(stripHtml(product.body_html)).slice(0, 500);
-  const coreTokens = tokenize([title, handle, productType, tags].join(" "));
+  const searchBoostValues = Array.isArray(product.customData?.searchProductBoosts)
+    ? Array.from(
+        new Set(
+          product.customData.searchProductBoosts
+            .map((value) => normalizeScopeText(value))
+            .filter(Boolean),
+        ),
+      )
+    : [];
+  const searchBoostTerms = searchBoostValues;
+  const searchBoosts = searchBoostTerms.join(" ");
+  const searchBoostTokens = tokenize(searchBoosts);
+  const coreTokens = tokenize([title, handle, productType, tags, searchBoosts].join(" "));
 
   const index: ProductSearchIndex = {
     coreText: normalize([title, handle, productType, tags].join(" ")),
@@ -444,6 +459,9 @@ function buildSearchIndex(product: ShopifyProduct): ProductSearchIndex {
     tagTokens: tokenize(tags),
     body,
     bodyTokens: tokenize(body).slice(0, 80),
+    searchBoostTerms,
+    searchBoosts,
+    searchBoostTokens,
   };
 
   searchIndexCache.set(product, index);
@@ -467,6 +485,10 @@ function phraseBonus(query: string, index: ProductSearchIndex): number {
     return 72;
   }
 
+  if (index.searchBoostTerms.some((term) => term === query)) {
+    return 92;
+  }
+
   return 0;
 }
 
@@ -484,6 +506,7 @@ function bestGroupScore(
       scoreTermAgainstField(term, index.handle, index.handleTokens, Math.round(38 * coreWeightScale)),
       scoreTermAgainstField(term, index.productType, index.productTypeTokens, Math.round(30 * coreWeightScale)),
       scoreTermAgainstField(term, index.tags, index.tagTokens, Math.round(28 * coreWeightScale)),
+      scoreTermAgainstField(term, index.searchBoosts, index.searchBoostTokens, Math.round(32 * coreWeightScale)),
     ];
     const secondaryScores = [
       scoreTermAgainstField(term, index.vendor, index.vendorTokens, 18, false),
@@ -507,7 +530,12 @@ function bestGroupScore(
 
 function matchesAnyTokenGroup(index: ProductSearchIndex, groups: string[][]): boolean {
   return groups.some((group) =>
-    group.some((token) => index.coreTokenSet.has(token) || (token.length >= 6 && index.coreText.includes(token))),
+    group.some(
+      (token) =>
+        index.coreTokenSet.has(token) ||
+        index.bodyTokens.includes(token) ||
+        (token.length >= 6 && (index.coreText.includes(token) || index.body.includes(token))),
+    ),
   );
 }
 
@@ -600,6 +628,7 @@ export function searchableText(product: ShopifyProduct): string {
       product.vendor,
       product.product_type,
       product.tags,
+      product.customData?.searchProductBoosts || [],
       stripHtml(product.body_html),
       product.handle,
     ].join(" "),

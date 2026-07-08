@@ -2,6 +2,7 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { normalizeProductCustomData } from "../src/lib/product-custom-data.js";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -9,6 +10,7 @@ const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const adminAccessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2025-01";
+const adminGraphqlUrl = `${new URL(baseUrl).origin}/admin/api/${adminApiVersion}/graphql.json`;
 const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
 const blogHandleInput = process.env.SALT_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
 const blogHandles = Array.from(
@@ -166,7 +168,7 @@ async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxReq
         `Rate limited on ${url}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
       );
       await sleep(delayMs);
-      return fetchAdminJson(path, { attempt: attempt + 1, maxAttempts });
+      return fetchAdminJson(pathOrUrl, { attempt: attempt + 1, maxAttempts });
     }
 
     throw new Error(`Admin request failed (${response.status}) for ${url}`);
@@ -178,6 +180,45 @@ async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxReq
 async function fetchAdminJson(path, options = {}) {
   const response = await fetchAdminResponse(path, options);
   return response.json();
+}
+
+async function fetchAdminGraphQL(query, variables = {}, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
+  if (!adminAccessToken) {
+    throw new Error("Shopify Admin API token not configured");
+  }
+
+  const response = await runSerializedRequest(() =>
+    fetch(adminGraphqlUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": adminAccessToken,
+      },
+      body: JSON.stringify({ query, variables }),
+    }),
+  );
+
+  if (!response.ok) {
+    if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt < maxAttempts - 1) {
+      const delayMs = computeRetryDelayMs(response, attempt, adminRetryBaseDelayMs);
+      process.stdout.write(
+        `GraphQL request failed on ${adminGraphqlUrl}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+      return fetchAdminGraphQL(query, variables, { attempt: attempt + 1, maxAttempts });
+    }
+
+    throw new Error(`Admin GraphQL request failed (${response.status}) for ${adminGraphqlUrl}`);
+  }
+
+  const payload = await response.json();
+  if (payload.errors?.length) {
+    const message = payload.errors.map((error) => error.message || "Unknown GraphQL error").join(" | ");
+    throw new Error(`Admin GraphQL errors for ${adminGraphqlUrl}: ${message}`);
+  }
+
+  return payload.data || {};
 }
 
 async function fetchAdminPaged(key, endpoint) {
@@ -226,6 +267,280 @@ async function fetchPaged(key, endpoint) {
   }
 
   return rows;
+}
+
+const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
+  query ProductCustomData($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Product {
+        id
+        legacyResourceId
+        handle
+        title
+        rating: metafield(namespace: "reviews", key: "rating") {
+          jsonValue
+          value
+        }
+        ratingCount: metafield(namespace: "reviews", key: "rating_count") {
+          jsonValue
+          value
+        }
+        relatedProductsDisplay: metafield(
+          namespace: "shopify--discovery--product_recommendation"
+          key: "related_products_display"
+        ) {
+          jsonValue
+          value
+        }
+        relatedProducts: metafield(
+          namespace: "shopify--discovery--product_recommendation"
+          key: "related_products"
+        ) {
+          references(first: 50) {
+            nodes {
+              ... on Product {
+                id
+                legacyResourceId
+                handle
+                title
+                productType
+                vendor
+              }
+            }
+          }
+        }
+        complementaryProducts: metafield(
+          namespace: "shopify--discovery--product_recommendation"
+          key: "complementary_products"
+        ) {
+          references(first: 50) {
+            nodes {
+              ... on Product {
+                id
+                legacyResourceId
+                handle
+                title
+                productType
+                vendor
+              }
+            }
+          }
+        }
+        searchProductBoosts: metafield(
+          namespace: "shopify--discovery--product_search_boost"
+          key: "queries"
+        ) {
+          jsonValue
+          value
+        }
+        googleCustomProduct: metafield(namespace: "google", key: "custom_product") {
+          jsonValue
+          value
+        }
+        diaperType: metafield(namespace: "shopify", key: "diaper-type") {
+          jsonValue
+          value
+          references(first: 50) {
+            nodes {
+              ... on Metaobject {
+                id
+                handle
+                displayName
+                type
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+function chunkArray(items, size) {
+  const chunks = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function extractNumericId(input) {
+  const text = String(input || "").trim();
+  if (!text) {
+    return "";
+  }
+
+  const match = text.match(/\d+/);
+  return match?.[0] || text;
+}
+
+function toShopifyGid(type, value) {
+  const normalizedType = String(type || "Product").trim() || "Product";
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+
+  if (/^gid:\/\/shopify\/[a-z0-9_]+\/\d+$/i.test(text)) {
+    return text;
+  }
+
+  const numeric = extractNumericId(text);
+  if (!numeric) {
+    return "";
+  }
+
+  return `gid://shopify/${normalizedType}/${numeric}`;
+}
+
+function normalizeMetafieldReferenceNode(node) {
+  if (!node || typeof node !== "object") {
+    return null;
+  }
+
+  return {
+    id: String(node.id || "").trim(),
+    legacyResourceId: Number(node.legacyResourceId || 0) || null,
+    handle: String(node.handle || "").trim(),
+    title: String(node.title || node.displayName || node.name || "").trim(),
+    productType: String(node.productType || "").trim(),
+    vendor: String(node.vendor || "").trim(),
+    referenceType: String(node.__typename || node.type || "").trim(),
+  };
+}
+
+function normalizeMetafieldReferenceList(nodes) {
+  const references = Array.isArray(nodes) ? nodes : [];
+  const seen = new Set();
+  const result = [];
+
+  for (const node of references) {
+    const normalized = normalizeMetafieldReferenceNode(node);
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.legacyResourceId ? String(normalized.legacyResourceId) : normalized.id || normalized.handle;
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+function parseBooleanValue(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["true", "1", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return null;
+}
+
+function normalizeStringList(value) {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(
+        value
+          .flatMap((entry) => String(entry || "").split(/[\n,;|]+/g))
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      raw
+        .split(/[\n,;|]+/g)
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function normalizeCustomDataNode(node) {
+  if (!node) {
+    return null;
+  }
+
+  const diaperTypeReferences = normalizeMetafieldReferenceList(node.diaperType?.references?.nodes || []);
+
+  return normalizeProductCustomData({
+    rating: node.rating?.jsonValue ?? node.rating?.value ?? null,
+    ratingCount: node.ratingCount?.jsonValue ?? node.ratingCount?.value ?? null,
+    relatedProductsDisplay:
+      node.relatedProductsDisplay?.jsonValue ?? node.relatedProductsDisplay?.value ?? null,
+    relatedProducts: normalizeMetafieldReferenceList(
+      node.relatedProducts?.references?.nodes || [],
+    ),
+    complementaryProducts: normalizeMetafieldReferenceList(
+      node.complementaryProducts?.references?.nodes || [],
+    ),
+    searchProductBoosts: normalizeStringList(
+      node.searchProductBoosts?.jsonValue ?? node.searchProductBoosts?.value ?? [],
+    ),
+    googleCustomProduct: parseBooleanValue(
+      node.googleCustomProduct?.jsonValue ?? node.googleCustomProduct?.value ?? null,
+    ),
+    diaperType:
+      node.diaperType?.jsonValue ??
+      node.diaperType?.value ??
+      (diaperTypeReferences.length ? diaperTypeReferences : null) ??
+      null,
+  });
+}
+
+async function fetchProductCustomDataMap(products) {
+  if (!adminAccessToken || !Array.isArray(products) || !products.length) {
+    return new Map();
+  }
+
+  const productIds = products
+    .map((product) => product.admin_graphql_api_id || toShopifyGid("Product", product.id))
+    .filter(Boolean);
+
+  const batches = chunkArray(productIds, 50);
+  const records = new Map();
+
+  for (const batch of batches) {
+    const payload = await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch });
+    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
+
+    for (const node of nodes) {
+      if (!node?.legacyResourceId) {
+        continue;
+      }
+
+      const customData = normalizeCustomDataNode(node);
+      if (!customData) {
+        continue;
+      }
+
+      records.set(String(node.legacyResourceId), customData);
+    }
+  }
+
+  return records;
 }
 
 async function fetchCollectionProductIds(handle) {
@@ -596,8 +911,34 @@ async function fetchProductsForSync() {
     try {
       const products = await fetchAdminPaged("products", "/products.json");
       if (products.length) {
-        process.stdout.write(`Using Admin API product feed with ${products.length} products\n`);
-        return products;
+        try {
+          const customDataMap = await fetchProductCustomDataMap(products);
+          const enrichedProducts = products.map((product) => {
+            const customData = customDataMap.get(String(product.id)) || null;
+            if (!customData) {
+              return product;
+            }
+
+            return {
+              ...product,
+              customData,
+              average_rating: product.average_rating ?? customData.rating ?? undefined,
+              total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
+            };
+          });
+
+          process.stdout.write(
+            `Using Admin API product feed with ${products.length} products and ${customDataMap.size} metafield payloads\n`,
+          );
+          return enrichedProducts;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown error";
+          process.stdout.write(
+            `Admin product metafield fetch failed; returning product feed without custom data (${message})\n`,
+          );
+          process.stdout.write(`Using Admin API product feed with ${products.length} products\n`);
+          return products;
+        }
       }
 
       process.stdout.write("Admin product feed returned 0 products; falling back to storefront JSON\n");

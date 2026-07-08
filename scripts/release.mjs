@@ -11,9 +11,10 @@ const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, "..");
 const iosDir = resolve(rootDir, "salt-store-ios");
 const androidDir = resolve(rootDir, "salt-store-android");
+const capacitorCliBin = resolve(rootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor");
 const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
-const npxBin = process.platform === "win32" ? "npx.cmd" : "npx";
+const nodeBin = process.execPath;
 const require = createRequire(import.meta.url);
 
 function formatCommand(command, args) {
@@ -83,6 +84,12 @@ async function main() {
 
   const steps = [
     {
+      label: "Ensure Shopify product metafield definitions",
+      command: npmBin,
+      args: ["run", "shopify:product-metafields:ensure"],
+      cwd: rootDir,
+    },
+    {
       label: "Refresh Shopify data",
       command: npmBin,
       args: ["run", "sync:data"],
@@ -102,14 +109,14 @@ async function main() {
     },
     {
       label: "Sync iOS Capacitor shell",
-      command: npxBin,
-      args: ["cap", "sync", "ios"],
+      command: nodeBin,
+      args: [capacitorCliBin, "sync", "ios"],
       cwd: iosDir,
     },
     {
       label: "Sync Android Capacitor shell",
-      command: npxBin,
-      args: ["cap", "sync", "android"],
+      command: nodeBin,
+      args: [capacitorCliBin, "sync", "android"],
       cwd: androidDir,
     },
   ];
@@ -121,7 +128,7 @@ async function main() {
       total: steps.length,
     });
 
-    if (index === 1) {
+    if (step.label === "Build web app") {
       await ensurePathExists(resolve(rootDir, "dist", "index.html"), "Vite build output");
     }
   }

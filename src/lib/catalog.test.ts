@@ -11,6 +11,7 @@ function makeProduct(input: {
   product_type?: string;
   tags?: string[];
   body_html?: string;
+  customData?: ShopifyProduct["customData"];
 }): ShopifyProduct {
   return {
     id: input.id,
@@ -26,6 +27,7 @@ function makeProduct(input: {
     variants: [],
     images: [],
     image: null,
+    customData: input.customData || null,
   };
 }
 
@@ -85,6 +87,16 @@ const products: ShopifyProduct[] = [
     handle: "waterproof-pet-feeding-mat",
     product_type: "pet",
     tags: ["pet", "mat"],
+  }),
+  makeProduct({
+    id: 9,
+    title: "Compact Travel Bottle",
+    handle: "compact-travel-bottle",
+    product_type: "lifestyle",
+    tags: ["bottle"],
+    customData: {
+      searchProductBoosts: ["outdoor", "commute", "day trip"],
+    },
   }),
 ];
 
@@ -170,9 +182,16 @@ describe("filterProducts search relevance", () => {
 
   it("supports real-catalog exclusion with operators", () => {
     const results = filterProducts(catalogFixture.products, { query: "mat -pet" }).slice(0, 40);
-    const hasPetResult = results.some((entry) => /pet/i.test(`${entry.title} ${entry.handle} ${entry.tags}`));
+    const hasPetResult = results.some((entry) => /\bpet\b/i.test(`${entry.title} ${entry.handle} ${entry.tags}`));
 
     expect(hasPetResult).toBe(false);
+  });
+
+  it("uses dashboard search boosts to surface products that do not match the title", () => {
+    const results = filterProducts(products, { query: "outdoor" });
+    const handles = results.map((entry) => entry.handle);
+
+    expect(handles[0]).toBe("compact-travel-bottle");
   });
 
   it("drops out-of-category products even when a live collection contains them", () => {

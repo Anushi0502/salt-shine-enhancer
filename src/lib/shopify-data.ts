@@ -25,6 +25,10 @@ import {
   normalizeShopifyAssetUrl,
   resolveThemeAsset,
 } from "@/lib/theme-assets";
+import {
+  mergeProductCustomData,
+  normalizeProductCustomData,
+} from "@/lib/product-custom-data.js";
 import { isNativeApp } from "@/lib/mobile";
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
@@ -500,8 +504,12 @@ function normalizeVariantRecord(variant: ShopifyVariant): ShopifyVariant {
 }
 
 function normalizeProductRecord(product: ShopifyProduct): ShopifyProduct {
+  const customData = normalizeProductCustomData(product.customData);
   return {
     ...product,
+    average_rating: product.average_rating ?? customData?.rating ?? undefined,
+    total_reviews: product.total_reviews ?? customData?.ratingCount ?? undefined,
+    customData,
     title: polishPlainText(product.title),
     handle: String(product.handle || "").trim(),
     vendor: polishPlainText(product.vendor),
@@ -514,6 +522,17 @@ function normalizeProductRecord(product: ShopifyProduct): ShopifyProduct {
     images: Array.isArray(product.images) ? product.images.map(normalizeImageRecord) : [],
     image: product.image ? normalizeImageRecord(product.image) : product.image,
   };
+}
+
+function mergeProductRecords(primary: ShopifyProduct, overlay?: ShopifyProduct | null): ShopifyProduct {
+  const mergedCustomData = mergeProductCustomData(overlay?.customData ?? null, primary.customData ?? null);
+  return normalizeProductRecord({
+    ...(overlay || {}),
+    ...primary,
+    customData: mergedCustomData,
+    average_rating: primary.average_rating ?? overlay?.average_rating,
+    total_reviews: primary.total_reviews ?? overlay?.total_reviews,
+  });
 }
 
 function normalizeCollectionRecord(collection: ShopifyCollection): ShopifyCollection {
@@ -1002,12 +1021,34 @@ export async function loadProducts(): Promise<ProductsPayload> {
   for (const base of getLiveCatalogBases()) {
     try {
       const products = await fetchAllProductsFromLive(base);
-      return normalizeProductsPayload({
+      const livePayload = normalizeProductsPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         total: products.length,
         products,
       });
+
+      try {
+        const cached = await fetchProductsFromCache();
+        const cachedById = new Map(cached.products.map((product) => [String(product.id), product]));
+        const cachedByHandle = new Map(
+          cached.products.map((product) => [String(product.handle || "").trim().toLowerCase(), product]),
+        );
+
+        return normalizeProductsPayload({
+          ...livePayload,
+          products: livePayload.products.map((product) => {
+            const cachedMatch =
+              cachedById.get(String(product.id)) ||
+              cachedByHandle.get(String(product.handle || "").trim().toLowerCase()) ||
+              null;
+
+            return mergeProductRecords(product, cachedMatch);
+          }),
+        });
+      } catch {
+        return livePayload;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
