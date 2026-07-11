@@ -64,7 +64,7 @@ const ALLOWED_COLLECTIONS: Record<string, Set<string>> = {
     "travel-outdoor",
   ]),
   "Family & Legacy": new Set(["books", "gifts", "medical-accessories"]),
-  "Pet & Home Life": new Set(["pet-assocerries", "gifts", "home-decor", "travel-outdoor", "tools"]),
+  "Pet & Home Life": new Set(["pet-assocerries", "pet-travel", "gifts", "home-decor", "travel-outdoor", "tools"]),
 };
 
 function expectCuratedProduct(handle: string, allowedCollections: Set<string>) {
