@@ -4,6 +4,7 @@ export interface ShopifyImage {
   alt?: string | null;
   width?: number;
   height?: number;
+  variant_ids?: number[];
 }
 
 export interface ShopifyVariant {
@@ -14,6 +15,7 @@ export interface ShopifyVariant {
   available: boolean;
   sku?: string;
   requires_shipping?: boolean;
+  featured_image?: ShopifyImage | null;
 }
 
 export interface ShopifyProductReference {
@@ -39,6 +41,9 @@ export interface ShopifyProductMetafieldRecord {
 }
 
 export interface ShopifyProductCustomData {
+  subtitle?: string | null;
+  badgeText?: string | null;
+  highlights?: string[];
   rating?: number | null;
   ratingCount?: number | null;
   relatedProductsDisplay?: string | null;
@@ -46,7 +51,17 @@ export interface ShopifyProductCustomData {
   complementaryProducts?: ShopifyProductReference[];
   searchProductBoosts?: string[];
   googleCustomProduct?: boolean | null;
+  shopChannelMinimumQuantity?: number | null;
+  collectionSignal?: string | null;
   diaperType?: unknown;
+  metafields?: Record<string, ShopifyProductMetafieldRecord>;
+}
+
+export interface ShopifyCollectionCustomData {
+  heroKicker?: string | null;
+  heroSummary?: string | null;
+  featuredProducts?: ShopifyProductReference[];
+  trustStrip?: string[];
   metafields?: Record<string, ShopifyProductMetafieldRecord>;
 }
 
@@ -78,6 +93,19 @@ export interface ShopifyCollection {
   updated_at: string;
   image?: ShopifyImage | null;
   products_count: number;
+  customData?: ShopifyCollectionCustomData | null;
+}
+
+export interface ShopifyShopCustomData {
+  bannerText?: string | null;
+  trustStrip?: string[];
+  metafields?: Record<string, ShopifyProductMetafieldRecord>;
+}
+
+export interface ShopifyShop {
+  id: string;
+  name: string;
+  customData?: ShopifyShopCustomData | null;
 }
 
 export interface ProductsPayload {
@@ -92,6 +120,12 @@ export interface CollectionsPayload {
   source: string;
   total: number;
   collections: ShopifyCollection[];
+}
+
+export interface ShopPayload {
+  generatedAt: string;
+  source: string;
+  shop: ShopifyShop;
 }
 
 export interface CollectionProductsPayload {

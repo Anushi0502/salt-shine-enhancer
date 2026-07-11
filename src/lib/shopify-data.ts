@@ -7,11 +7,15 @@ import type {
   CollectionProductsPayload,
   CollectionsPayload,
   ProductsPayload,
+  ShopPayload,
+  ShopifyCollectionCustomData,
   ShopifyCollection,
   ShopifyImage,
   ShopifyPolicyPayload,
   ShopifyProduct,
   ShopifyVariant,
+  ShopifyShop,
+  ShopifyShopCustomData,
 } from "@/types/shopify";
 import { firstImageSrcFromHtml, polishPlainText, stripHtml } from "@/lib/formatters";
 import {
@@ -27,7 +31,9 @@ import {
 } from "@/lib/theme-assets";
 import {
   mergeProductCustomData,
+  normalizeCollectionCustomData,
   normalizeProductCustomData,
+  normalizeShopCustomData,
 } from "@/lib/product-custom-data.js";
 import { isNativeApp } from "@/lib/mobile";
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
@@ -54,6 +60,7 @@ const COLLECTIONS_DATA_PATH = "/data/collections.json";
 const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
 const ABOUT_DATA_PATH = "/data/about.json";
 const BLOG_POSTS_DATA_PATH = "/data/blog-posts.json";
+const SHOP_DATA_PATH = "/data/shop.json";
 const LIVE_STALE_TIME_MS = 0;
 const LIVE_PRODUCTS_REFRESH_MS = isNativeApp() ? 30 * 1000 : 60 * 1000;
 const LIVE_CONTENT_REFRESH_MS = isNativeApp() ? 2 * 60 * 1000 : 5 * 60 * 1000;
@@ -69,6 +76,7 @@ export const LIVE_SHOPIFY_QUERY_PREFIXES = [
   "collection-products-by-handle",
   "about-page",
   "blog-posts",
+  "shop",
   "policy-page",
 ] as const;
 
@@ -97,6 +105,10 @@ export const LIVE_SHOPIFY_PRIME_QUERIES = [
   {
     queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
     queryFn: loadBlogPosts,
+  },
+  {
+    queryKey: ["shop", DATA_MODE],
+    queryFn: loadShop,
   },
 ] satisfies ReadonlyArray<LiveShopifyPrimeQuery>;
 
@@ -535,6 +547,14 @@ function mergeProductRecords(primary: ShopifyProduct, overlay?: ShopifyProduct |
   });
 }
 
+function mergeCollectionRecords(primary: ShopifyCollection, overlay?: ShopifyCollection | null): ShopifyCollection {
+  return normalizeCollectionRecord({
+    ...(overlay || {}),
+    ...primary,
+    customData: primary.customData ?? overlay?.customData ?? null,
+  });
+}
+
 function normalizeCollectionRecord(collection: ShopifyCollection): ShopifyCollection {
   return {
     ...collection,
@@ -542,6 +562,15 @@ function normalizeCollectionRecord(collection: ShopifyCollection): ShopifyCollec
     handle: String(collection.handle || "").trim(),
     description: polishPlainText(collection.description),
     image: collection.image ? normalizeImageRecord(collection.image) : collection.image,
+    customData: normalizeCollectionCustomData(collection.customData),
+  };
+}
+
+function normalizeShopRecord(shop: ShopifyShop): ShopifyShop {
+  return {
+    ...shop,
+    name: polishPlainText(shop.name) || "SALT",
+    customData: normalizeShopCustomData(shop.customData),
   };
 }
 
@@ -561,6 +590,38 @@ function normalizeCollectionsPayload(payload: CollectionsPayload): CollectionsPa
     total: payload.total || collections.length,
     collections,
   };
+}
+
+function normalizeShopPayload(payload: ShopPayload): ShopPayload {
+  return {
+    ...payload,
+    shop: normalizeShopRecord(payload.shop),
+  };
+}
+
+async function fetchShopFromCache(): Promise<ShopPayload> {
+  try {
+    const payload = await fetchJson<ShopPayload>(cacheBustedPath(SHOP_DATA_PATH));
+    if (!payload?.shop?.name) {
+      throw new Error("Cached shop payload is empty");
+    }
+
+    return normalizeShopPayload({
+      generatedAt: payload.generatedAt || new Date().toISOString(),
+      source: `cache:${payload.source || SHOP_DATA_PATH}`,
+      shop: payload.shop,
+    });
+  } catch {
+    return normalizeShopPayload({
+      generatedAt: new Date().toISOString(),
+      source: `cache:${SHOP_DATA_PATH}`,
+      shop: {
+        id: "shop",
+        name: "SALT",
+        customData: null,
+      },
+    });
+  }
 }
 
 function normalizeAboutPayload(payload: AboutPagePayload): AboutPagePayload {
@@ -1075,12 +1136,34 @@ export async function loadCollections(): Promise<CollectionsPayload> {
   for (const base of getLiveCatalogBases()) {
     try {
       const collections = await fetchAllCollectionsFromLive(base);
-      return normalizeCollectionsPayload({
+      const livePayload = normalizeCollectionsPayload({
         generatedAt: new Date().toISOString(),
         source: base,
         total: collections.length,
         collections,
       });
+
+      try {
+        const cached = await fetchCollectionsFromCache();
+        const cachedById = new Map(cached.collections.map((collection) => [String(collection.id), collection]));
+        const cachedByHandle = new Map(
+          cached.collections.map((collection) => [String(collection.handle || "").trim().toLowerCase(), collection]),
+        );
+
+        return normalizeCollectionsPayload({
+          ...livePayload,
+          collections: livePayload.collections.map((collection) => {
+            const cachedMatch =
+              cachedById.get(String(collection.id)) ||
+              cachedByHandle.get(String(collection.handle || "").trim().toLowerCase()) ||
+              null;
+
+            return mergeCollectionRecords(collection, cachedMatch);
+          }),
+        });
+      } catch {
+        return livePayload;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
@@ -1099,6 +1182,10 @@ export async function loadCollections(): Promise<CollectionsPayload> {
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live collections fetch failed. ${details}. Cached collections fetch failed: ${cacheMessage}`);
   }
+}
+
+export async function loadShop(): Promise<ShopPayload> {
+  return fetchShopFromCache();
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
@@ -1277,6 +1364,22 @@ export function useCollections(enabled = true) {
     refetchOnReconnect: true,
     refetchIntervalInBackground: true,
     refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+}
+
+export function useShop(enabled = true) {
+  return useQuery({
+    queryKey: ["shop", DATA_MODE],
+    queryFn: loadShop,
+    enabled,
+    staleTime: LIVE_STALE_TIME_MS,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchIntervalInBackground: true,
+    refetchInterval: LIVE_CONTENT_REFRESH_MS,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });

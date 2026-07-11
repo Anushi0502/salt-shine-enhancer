@@ -1,12 +1,12 @@
 import type { SiteResourceGuide } from "@/lib/site-navigation";
 
 const P = {
-  planner: "the-living-legacy-planner-2nd-edition",
+  planner: "scented-decorative-candle-aromatherapy-nordic-room-decor",
   dailyBloom: "the-living-legacy-planner",
   pillOrganizer: "7-day-pill-organizer-box-travel-friendly-medicine-dispenser",
   tcarePill: "tcare-travel-pill-organizer-moisture-proof-daily-pill-case-1",
   pillBox14: "14-grid-7-day-pill-box-weekly-organizer-for-vitamins-medicine",
-  arthritisGloves: "compression-arthritis-gloves-wrist-support-carpal-tunnel-relief",
+  arthritisGloves: "square-ball-shaped-scented-candle-handcrafted-colorful-birthday-gift",
   laopaoLamp: "laopao-10w-wireless-charging-led-desk-lamp-dimmable-with-night-light",
   digitalClock: "digital-wall-clock-time-day-and-temperature-display",
   nonstickCookware: "9-piece-nonstick-cookware-set-champagne-lightweight-durable",
@@ -27,16 +27,14 @@ const P = {
   gpsTracker: "mini-gps-tracker-find-my-app-smart-tag-for-pets-keys",
   relics: "the-living-legacy-planner",
   helloKitty: "kawaii-hello-kitty-doll-with-artificial-flowers-sanrio-bouquet-gift",
-  bronzeCane: "bronze-snake-handle-walking-stick-decorative-cane",
   volcanoDiffuser: "volcano-flame-aroma-diffuser-360ml-jellyfish-humidifier",
+  miniTrainDiffuser: "mini-train-shape-aromatherapy-diffuser-with-led-lamp",
   multicolorDiffuser: "multicolor-humidifier-aromatherapy-flame-diffuser",
   paamaaLamp:
-    "paamaa-bedside-lamp-night-light-eu-us-plug-led-night-light-ac220v-bedroom-lamp-gift-for-children-cute-night-lamp-for-corridor-wc",
-  miniNightLight:
-    "2-pc-led-mini-night-light-switch-plug-in-led-lighting-eye-protection-night-lamp-use-for-bedside-baby-feeding-decoration-bedroom",
+    "square-ball-shaped-scented-candle-handcrafted-colorful-birthday-gift",
   aierwillHumidifier: "aierwill-train-humidifier-ultrasonic-aromatherapy-diffuser",
   titanicDiffuser: "titanic-ship-model-air-humidifier-250ml-essential-oil-diffuser",
-  verticalStand: "vertical-laptop-stand-3-slots-universal-docking-station-for-macbook",
+  verticalStand: "scented-candle-painting-kit-diy-creative-modeling-materials",
   hotWaterBag: "hot-water-bottle-bag-warm-belly-hands-feet",
   foldingLunchBowl:
     "portable-folding-lunch-box-bowl-sets-silicone-3pcs-set-food-container-outdoor-camping-tableware-set-foldable-salad-bowl-with-lid",
@@ -67,7 +65,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         summary:
           "A thoughtful guide to gifts that feel useful, comfortable, and respectful, with products that support everyday routines instead of collecting dust.",
         collectionRoute: "/collections/gifts",
-        featuredProducts: featured(P.planner, P.dailyBloom, P.bronzeCane),
+        featuredProducts: featured(P.planner, P.dailyBloom, P.medicalBag),
       },
       {
         title: "Home Safety Tips",
@@ -75,7 +73,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         summary:
           "A calm starting point for safer rooms, gentler night-time navigation, and small upgrades that reduce avoidable friction at home.",
         collectionRoute: "/collections/home-decor-lighting",
-        featuredProducts: featured(P.miniNightLight, P.digitalClock, P.medicalBag),
+        featuredProducts: featured(P.laopaoLamp, P.digitalClock, P.medicalBag),
       },
       {
         title: "Caregiver Resources",
@@ -120,7 +118,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "creating-a-comfortable-living-space",
         summary: "Ideas for adding warmth, light, and small comforts so the home feels inviting without becoming busy.",
         collectionRoute: "/collections/home-decor-lighting",
-        featuredProducts: featured(P.laopaoLamp, P.paamaaLamp, P.volcanoDiffuser),
+        featuredProducts: featured(P.laopaoLamp, P.paamaaLamp, P.miniTrainDiffuser),
       },
     ],
   },
@@ -136,7 +134,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "simple-habits-for-a-less-stressful-life",
         summary: "A gentle reset for people who want less noise in the day and more rhythm without turning life into a project.",
         collectionRoute: "/collections/health-wellness",
-        featuredProducts: featured(P.dailyBloom, P.multicolorDiffuser, P.hotWaterBag),
+        featuredProducts: featured(P.dailyBloom, P.volcanoDiffuser, P.hotWaterBag),
       },
       {
         title: "Creating Better Daily Routines",
@@ -157,7 +155,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "self-care-at-home",
         summary: "Low-effort comfort ideas for the moments when you need rest, a pause, or a more soothing environment.",
         collectionRoute: "/collections/health-wellness",
-        featuredProducts: featured(P.hotWaterBag, P.multicolorDiffuser, P.aierwillHumidifier),
+        featuredProducts: featured(P.hotWaterBag, P.volcanoDiffuser, P.titanicDiffuser),
       },
     ],
   },
@@ -187,7 +185,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "best-gifts-for-grandparents",
         summary: "Comfort-first gift ideas for grandparents that feel kind, easy to enjoy, and simple to incorporate into daily life.",
         collectionRoute: "/collections/gifts",
-        featuredProducts: featured(P.planner, P.relics, P.bronzeCane),
+        featuredProducts: featured(P.planner, P.relics, P.medicalBag),
       },
       {
         title: "Housewarming Gift Ideas",
@@ -210,7 +208,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
     handle: "home-safety-organization",
     summary: "Straightforward guidance for keeping the home safer, important items easier to find, and routines easier to maintain.",
     collectionRoute: "/collections/home-kitchen",
-    featuredProducts: featured(P.miniNightLight, P.digitalClock, P.medicalBag),
+    featuredProducts: featured(P.laopaoLamp, P.digitalClock, P.medicalBag),
     topics: [
       {
         title: "Home Safety Tips for Every Age",
@@ -275,7 +273,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "planning-for-the-future",
         summary: "A calm, practical page that helps families think ahead without making the conversation feel heavy.",
         collectionRoute: "/collections/senior-living-solutions",
-        featuredProducts: featured(P.planner, P.digitalClock, P.bronzeCane),
+        featuredProducts: featured(P.planner, P.digitalClock, P.medicalBag),
       },
     ],
   },

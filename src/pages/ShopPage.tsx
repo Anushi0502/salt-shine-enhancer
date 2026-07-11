@@ -13,6 +13,7 @@ import {
 import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import ProductCard from "@/components/storefront/ProductCard";
 import Reveal from "@/components/storefront/Reveal";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import TrustStrip from "@/components/storefront/TrustStrip";
 
@@ -31,6 +32,11 @@ import {
 } from "@/lib/site-navigation";
 import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
 import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
+import {
+  buildBreadcrumbStructuredData,
+  buildCollectionStructuredData,
+  rankProductsForShopChannel,
+} from "@/lib/sales-optimization";
 
 const sortOptions = [
   { value: "title-asc", label: "A to Z" },
@@ -285,22 +291,31 @@ const ShopPage = () => {
       return base.sort((a, b) => b.title.localeCompare(a.title));
     }
 
-    if (sort === "featured" && selectedCollectionOrder) {
-      return base.sort((a, b) => {
-        const leftRank = selectedCollectionOrder.get(a.id);
-        const rightRank = selectedCollectionOrder.get(b.id);
-        const leftHasRank = leftRank != null;
-        const rightHasRank = rightRank != null;
+    if (sort === "featured") {
+      if (selectedCollectionOrder) {
+        return base.sort((a, b) => {
+          const leftRank = selectedCollectionOrder.get(a.id);
+          const rightRank = selectedCollectionOrder.get(b.id);
+          const leftHasRank = leftRank != null;
+          const rightHasRank = rightRank != null;
 
-        if (leftHasRank && rightHasRank && leftRank !== rightRank) {
-          return leftRank - rightRank;
-        }
+          if (leftHasRank && rightHasRank && leftRank !== rightRank) {
+            return leftRank - rightRank;
+          }
 
-        if (leftHasRank !== rightHasRank) {
-          return leftHasRank ? -1 : 1;
-        }
+          if (leftHasRank !== rightHasRank) {
+            return leftHasRank ? -1 : 1;
+          }
 
-        return 0;
+          return 0;
+        });
+      }
+
+      return rankProductsForShopChannel(base, {
+        query: deferredQuery,
+        focusTerms: [curatedSubcollection?.title || curatedCollection?.title || collectionHandle, typeFilter].filter(
+          Boolean,
+        ),
       });
     }
 
@@ -328,6 +343,39 @@ const ShopPage = () => {
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
+  const featuredCollectionProducts = useMemo(() => {
+    const references = selectedCollection?.customData?.featuredProducts || [];
+    if (!references.length) {
+      return [];
+    }
+
+    const productsById = new Map(products.map((product) => [String(product.id), product]));
+    const productsByHandle = new Map(products.map((product) => [String(product.handle || "").trim().toLowerCase(), product]));
+
+    return references
+      .map((reference) =>
+        productsById.get(String(reference.legacyResourceId || reference.id || "")) ||
+        productsByHandle.get(String(reference.handle || "").trim().toLowerCase()) ||
+        null,
+      )
+      .filter((entry): entry is (typeof products)[number] => Boolean(entry));
+  }, [products, selectedCollection?.customData?.featuredProducts]);
+  const collectionHeroKicker =
+    selectedCollection?.customData?.heroKicker ||
+    curatedSubcollection?.title ||
+    curatedCollection?.title ||
+    "Explore the full SALT catalog";
+  const collectionHeroSummary =
+    selectedCollection?.customData?.heroSummary ||
+    formatCollectionDescription(
+      curatedSubcollection?.description ||
+        curatedCollection?.description ||
+        selectedCollection?.description ||
+        "",
+    );
+  const collectionTrustStrip = selectedCollection?.customData?.trustStrip?.length
+    ? selectedCollection.customData.trustStrip
+    : ["US shipping included", "Secure checkout", "Curated by category"];
   const bannerImageSelection = useMemo(
     () =>
       resolveShopBannerImageSelection({
@@ -361,6 +409,30 @@ const ShopPage = () => {
   const visibleRatingsQuery = useJudgeMeRatings(deferredVisibleProductIds);
   const visibleRatingsByProductId = visibleRatingsQuery.data ?? {};
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const seoStructuredData = useMemo(() => {
+    if (!origin) {
+      return [];
+    }
+
+    return [
+      buildBreadcrumbStructuredData([
+        { name: "Home", url: `${origin}/` },
+        { name: "Shop", url: `${origin}/shop` },
+        {
+          name: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Catalog",
+          url: `${origin}${location.pathname}`,
+        },
+      ]),
+      ...(selectedCollection ? buildCollectionStructuredData(selectedCollection, origin, featuredCollectionProducts) : []),
+    ].filter(Boolean);
+  }, [curatedCollection?.title, curatedSubcollection?.title, featuredCollectionProducts, location.pathname, origin, selectedCollection]);
+  const seoTitle = query.trim()
+    ? `Search "${query.trim()}" | SALT Online Store`
+    : `${curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Shop"} | SALT Online Store`;
+  const seoDescription = query.trim()
+    ? `Search ${query.trim()} across ${totalResults.toLocaleString()} products with smarter ranking, filters, and merchandising signals.`
+    : collectionHeroSummary;
 
   useEffect(() => {
     if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
@@ -753,6 +825,13 @@ const ShopPage = () => {
 
   return (
     <section className="mt-4 w-full px-3 pb-8 sm:mt-6 sm:px-4 lg:px-5 xl:px-6">
+      <SeoMetadata
+        title={seoTitle}
+        description={seoDescription}
+        canonicalPath={location.pathname}
+        image={selectedCollectionImage || undefined}
+        structuredData={seoStructuredData}
+      />
       <Reveal>
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
@@ -768,10 +847,20 @@ const ShopPage = () => {
             <div className="relative z-10">
               <SectionHeading
                 className="mt-3"
+                kicker={collectionHeroKicker}
                 title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
-                action={''}
+                description={collectionHeroSummary}
               />
-              <TrustStrip className="mt-4" items={[{ icon: Truck, label: "US shipping included" }, { icon: ShieldCheck, label: "Secure checkout" }, { icon: Sparkles, label: "Curated by category" }]} />
+              <TrustStrip
+                className="mt-4"
+                items={collectionTrustStrip.slice(0, 3).map((label, index) => ({
+                  icon: [Truck, ShieldCheck, Sparkles][index] || Sparkles,
+                  label,
+                }))}
+              />
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Shop floor: sub-$25 products default to buy 2 and remain editable per product in Shopify.
+              </p>
             </div>
 
             {selectedCollectionImage ? (
@@ -787,6 +876,22 @@ const ShopPage = () => {
           </div>
         </div>
       </Reveal>
+      {featuredCollectionProducts.length > 0 ? (
+        <Reveal delayMs={90}>
+          <div className="mt-4">
+            <SectionHeading
+              kicker="Featured picks"
+              title="Top products in this collection"
+              description="These products are pulled from the collection metafield so the page always has a stronger merchandising anchor."
+            />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {featuredCollectionProducts.slice(0, 3).map((product) => (
+                <ProductCard key={product.id} product={product} variant="shop" />
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      ) : null}
       <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[252px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
 
 

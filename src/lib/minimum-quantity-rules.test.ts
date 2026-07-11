@@ -14,19 +14,19 @@ describe("minimum quantity bundle rules", () => {
     expect(isMinimumTwoBundleProduct("some-other-product")).toBe(false);
   });
 
-  it("forces any product under $15 to minimum quantity 3", () => {
-    expect(getMinimumProductQuantity("some-other-product", 14.99)).toBe(3);
-    expect(getMinimumProductQuantity("some-other-product", "14.99")).toBe(3);
-    expect(getMinimumProductQuantity("some-other-product", 15)).toBe(2);
-  });
-
   it("forces any product under $25 to minimum quantity 2", () => {
     expect(getMinimumProductQuantity("some-other-product", 24.99)).toBe(2);
     expect(isMinimumTwoBundleProduct("some-other-product", 24.99)).toBe(true);
     expect(getMinimumProductQuantity("some-other-product", 25)).toBe(1);
   });
 
+  it("respects an explicit minimum quantity override", () => {
+    expect(getMinimumProductQuantity("some-other-product", 24.99, 1)).toBe(1);
+    expect(getMinimumProductQuantity("some-other-product", 75, 4)).toBe(4);
+    expect(isMinimumTwoBundleProduct("some-other-product", 24.99, 1)).toBe(false);
+  });
+
   it("lets the price tier override the older bundle handle floor", () => {
-    expect(getMinimumProductQuantity("motorcycle-face-mask-balaclava-windproof-breathable", 14.99)).toBe(3);
+    expect(getMinimumProductQuantity("motorcycle-face-mask-balaclava-windproof-breathable", 14.99)).toBe(2);
   });
 });

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeProductRating, useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
@@ -975,6 +976,9 @@ const HomePage = () => {
       })),
     ).flat();
   }, [reviewLoopCopies, reviewTiles]);
+  const homeDescription = polishPlainText(
+    `Shop ${products.length.toLocaleString()} products across ${collections.length.toLocaleString()} collections with smarter merchandising, clearer discovery, and gift-ready finds.`,
+  );
   const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
   const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
   const collectionImageByHandle = useMemo(() => {
@@ -1199,6 +1203,12 @@ const HomePage = () => {
 
   return (
     <section className="mt-1 w-full px-3 pb-3 sm:mt-3 sm:px-4 sm:pb-5 lg:px-5 lg:pb-6 xl:px-6">
+      <SeoMetadata
+        title="SALT Online Store | Curated essentials and giftable finds"
+        description={homeDescription}
+        canonicalPath="/"
+        image={heroMain}
+      />
       <div className="overflow-hidden rounded-[1.1rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)] sm:rounded-[1.4rem] lg:rounded-[1.6rem]">
         <Reveal>
           <section className="border-b border-[#dce9ff] p-3 sm:p-4 lg:p-6">

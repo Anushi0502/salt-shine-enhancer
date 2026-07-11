@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Generated Shopify snapshots and backfill reports are kept local.
+public/data/products.json
+output/product-metafield-backfill-manifest.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

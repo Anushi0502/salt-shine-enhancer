@@ -1,16 +1,28 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { normalizeProductCustomData } from "../src/lib/product-custom-data.js";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { promisify } from "node:util";
+import {
+  normalizeCollectionCustomData,
+  normalizeProductCustomData,
+  normalizeProductReferenceList,
+  normalizeShopCustomData,
+} from "../src/lib/product-custom-data.js";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
+const shopDomain = new URL(baseUrl).hostname;
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const adminAccessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
-const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2025-01";
+const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 const adminGraphqlUrl = `${new URL(baseUrl).origin}/admin/api/${adminApiVersion}/graphql.json`;
+const shopifyCliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
+const shopifyCliAgentIds =
+  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-shine-enhancer`;
 const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
 const blogHandleInput = process.env.SALT_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
 const blogHandles = Array.from(
@@ -32,7 +44,9 @@ const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
+const shopPath = resolve(outDir, "shop.json");
 let requestQueue = Promise.resolve();
+const execFileAsync = promisify(execFile);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -114,7 +128,8 @@ async function fetchCollectionProductIdsFromCachedFile(handle) {
   const productIds = Array.isArray(entry?.productIds) ? entry.productIds : [];
 
   if (!productIds.length) {
-    throw new Error(`Cached collection products payload missing handle "${handle}"`);
+    process.stdout.write(`Cached collection products payload missing handle "${handle}"\n`);
+    return [];
   }
 
   process.stdout.write(`Using cached collection ids for "${handle}" with ${productIds.length} products\n`);
@@ -221,6 +236,84 @@ async function fetchAdminGraphQL(query, variables = {}, { attempt = 0, maxAttemp
   return payload.data || {};
 }
 
+function getShopifyCliEnv() {
+  return {
+    ...process.env,
+    SHOPIFY_CLI_AGENT_INFO: shopifyCliAgentInfo,
+    SHOPIFY_CLI_AGENT_IDS: shopifyCliAgentIds,
+  };
+}
+
+async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false } = {}) {
+  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-sync-"));
+  const queryFile = join(tempDir, "operation.graphql");
+  const outputFile = join(tempDir, "result.json");
+  const variableFile = join(tempDir, "variables.json");
+  const serializedVariables = variables && Object.keys(variables).length ? variables : null;
+
+  try {
+    await writeFile(queryFile, query, "utf8");
+    if (serializedVariables) {
+      await writeFile(variableFile, JSON.stringify(serializedVariables, null, 2), "utf8");
+    }
+
+    const args = [
+      "store",
+      "execute",
+      "--store",
+      shopDomain,
+      "--version",
+      adminApiVersion,
+      "--query-file",
+      queryFile,
+      "--output-file",
+      outputFile,
+      "--json",
+    ];
+
+    if (serializedVariables) {
+      args.push("--variable-file", variableFile);
+    }
+
+    if (allowMutations) {
+      args.push("--allow-mutations");
+    }
+
+    await execFileAsync("shopify", args, {
+      env: getShopifyCliEnv(),
+      maxBuffer: 10 * 1024 * 1024,
+    });
+
+    const rawOutput = await readFile(outputFile, "utf8");
+    const parsedOutput = JSON.parse(rawOutput);
+    if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
+      const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
+      throw new Error(`Shopify CLI GraphQL errors for ${shopDomain}: ${message}`);
+    }
+
+    return parsedOutput.data || parsedOutput || {};
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+const SHOP_CUSTOM_DATA_QUERY = /* GraphQL */ `
+  query ShopCustomData {
+    shop {
+      id
+      name
+      bannerText: metafield(namespace: "salt-marketing", key: "banner_text") {
+        jsonValue
+        value
+      }
+      trustStrip: metafield(namespace: "salt-marketing", key: "trust_strip") {
+        jsonValue
+        value
+      }
+    }
+  }
+`;
+
 async function fetchAdminPaged(key, endpoint) {
   if (!adminAccessToken) {
     throw new Error("Shopify Admin API token not configured");
@@ -277,6 +370,22 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
         legacyResourceId
         handle
         title
+        subtitle: metafield(namespace: "descriptors", key: "subtitle") {
+          jsonValue
+          value
+        }
+        badgeText: metafield(namespace: "salt-marketing", key: "badge_text") {
+          jsonValue
+          value
+        }
+        highlights: metafield(namespace: "salt-marketing", key: "highlights") {
+          jsonValue
+          value
+        }
+        collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") {
+          jsonValue
+          value
+        }
         rating: metafield(namespace: "reviews", key: "rating") {
           jsonValue
           value
@@ -333,7 +442,14 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           jsonValue
           value
         }
-        googleCustomProduct: metafield(namespace: "google", key: "custom_product") {
+        googleCustomProduct: metafield(namespace: "mm-google-shopping", key: "custom_product") {
+          jsonValue
+          value
+        }
+        shopChannelMinimumQuantity: metafield(
+          namespace: "salt-marketing"
+          key: "shop_channel_minimum_quantity"
+        ) {
           jsonValue
           value
         }
@@ -350,6 +466,45 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
               }
             }
           }
+        }
+      }
+    }
+  }
+`;
+
+const COLLECTION_CUSTOM_DATA_QUERY = /* GraphQL */ `
+  query CollectionCustomData($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Collection {
+        id
+        legacyResourceId
+        handle
+        title
+        heroKicker: metafield(namespace: "salt-marketing", key: "hero_kicker") {
+          jsonValue
+          value
+        }
+        heroSummary: metafield(namespace: "salt-marketing", key: "hero_summary") {
+          jsonValue
+          value
+        }
+        featuredProducts: metafield(namespace: "salt-marketing", key: "featured_products") {
+          references(first: 50) {
+            nodes {
+              ... on Product {
+                id
+                legacyResourceId
+                handle
+                title
+                productType
+                vendor
+              }
+            }
+          }
+        }
+        trustStrip: metafield(namespace: "salt-marketing", key: "trust_strip") {
+          jsonValue
+          value
         }
       }
     }
@@ -486,6 +641,10 @@ function normalizeCustomDataNode(node) {
   const diaperTypeReferences = normalizeMetafieldReferenceList(node.diaperType?.references?.nodes || []);
 
   return normalizeProductCustomData({
+    subtitle: node.subtitle?.jsonValue ?? node.subtitle?.value ?? null,
+    badgeText: node.badgeText?.jsonValue ?? node.badgeText?.value ?? null,
+    highlights: normalizeStringList(node.highlights?.jsonValue ?? node.highlights?.value ?? []),
+    collectionSignal: node.collectionSignal?.jsonValue ?? node.collectionSignal?.value ?? null,
     rating: node.rating?.jsonValue ?? node.rating?.value ?? null,
     ratingCount: node.ratingCount?.jsonValue ?? node.ratingCount?.value ?? null,
     relatedProductsDisplay:
@@ -502,6 +661,7 @@ function normalizeCustomDataNode(node) {
     googleCustomProduct: parseBooleanValue(
       node.googleCustomProduct?.jsonValue ?? node.googleCustomProduct?.value ?? null,
     ),
+    shopChannelMinimumQuantity: node.shopChannelMinimumQuantity?.jsonValue ?? node.shopChannelMinimumQuantity?.value ?? null,
     diaperType:
       node.diaperType?.jsonValue ??
       node.diaperType?.value ??
@@ -510,8 +670,21 @@ function normalizeCustomDataNode(node) {
   });
 }
 
+function normalizeCollectionCustomDataNode(node) {
+  if (!node) {
+    return null;
+  }
+
+  return normalizeCollectionCustomData({
+    heroKicker: node.heroKicker?.jsonValue ?? node.heroKicker?.value ?? null,
+    heroSummary: node.heroSummary?.jsonValue ?? node.heroSummary?.value ?? null,
+    featuredProducts: normalizeMetafieldReferenceList(node.featuredProducts?.references?.nodes || []),
+    trustStrip: normalizeStringList(node.trustStrip?.jsonValue ?? node.trustStrip?.value ?? []),
+  });
+}
+
 async function fetchProductCustomDataMap(products) {
-  if (!adminAccessToken || !Array.isArray(products) || !products.length) {
+  if (!Array.isArray(products) || !products.length) {
     return new Map();
   }
 
@@ -523,7 +696,9 @@ async function fetchProductCustomDataMap(products) {
   const records = new Map();
 
   for (const batch of batches) {
-    const payload = await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch });
+    const payload = adminAccessToken
+      ? await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch })
+      : await runShopifyStoreGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch });
     const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
 
     for (const node of nodes) {
@@ -541,6 +716,82 @@ async function fetchProductCustomDataMap(products) {
   }
 
   return records;
+}
+
+async function fetchCollectionCustomDataMap(collections) {
+  if (!Array.isArray(collections) || !collections.length) {
+    return new Map();
+  }
+
+  const collectionIds = collections
+    .map((collection) => collection.admin_graphql_api_id || toShopifyGid("Collection", collection.id))
+    .filter(Boolean);
+
+  const batches = chunkArray(collectionIds, 50);
+  const records = new Map();
+
+  for (const batch of batches) {
+    const payload = adminAccessToken
+      ? await fetchAdminGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch })
+      : await runShopifyStoreGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch });
+    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
+
+    for (const node of nodes) {
+      if (!node?.legacyResourceId) {
+        continue;
+      }
+
+      const customData = normalizeCollectionCustomDataNode(node);
+      if (!customData) {
+        continue;
+      }
+
+      records.set(String(node.legacyResourceId), customData);
+    }
+  }
+
+  return records;
+}
+
+async function fetchShopCustomData() {
+  if (!adminAccessToken) {
+    try {
+      const payload = await runShopifyStoreGraphQL(SHOP_CUSTOM_DATA_QUERY);
+      const shop = payload?.shop || {};
+
+      return {
+        id: String(shop.id || "shop"),
+        name: String(shop.name || "SALT"),
+        customData: normalizeShopCustomData({
+          bannerText: shop.bannerText?.jsonValue ?? shop.bannerText?.value ?? null,
+          trustStrip: normalizeStringList(shop.trustStrip?.jsonValue ?? shop.trustStrip?.value ?? []),
+        }),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      process.stdout.write(`Shopify CLI shop lookup failed; using fallback shop payload (${message})\n`);
+      return {
+        id: "shop",
+        name: "SALT",
+        customData: normalizeShopCustomData({
+          bannerText: "",
+          trustStrip: [],
+        }),
+      };
+    }
+  }
+
+  const payload = await fetchAdminGraphQL(SHOP_CUSTOM_DATA_QUERY);
+  const shop = payload?.shop || {};
+
+  return {
+    id: String(shop.id || "shop"),
+    name: String(shop.name || "SALT"),
+    customData: normalizeShopCustomData({
+      bannerText: shop.bannerText?.jsonValue ?? shop.bannerText?.value ?? null,
+      trustStrip: normalizeStringList(shop.trustStrip?.jsonValue ?? shop.trustStrip?.value ?? []),
+    }),
+  };
 }
 
 async function fetchCollectionProductIds(handle) {
@@ -576,7 +827,10 @@ async function fetchCollectionProductIds(handle) {
       return await fetchCollectionProductIdsFromCachedFile(handle);
     } catch (cacheError) {
       const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
-      throw new Error(`Request failed for ${baseUrl}/collections/${handle}/products.json. ${message}. Cached fallback failed: ${cacheMessage}`);
+      process.stdout.write(
+        `Skipping collection "${handle}" after live and cached lookups failed (${message}; ${cacheMessage})\n`,
+      );
+      return [];
     }
   }
 
@@ -907,45 +1161,52 @@ async function fetchBlogPostsFromCachedFile() {
 }
 
 async function fetchProductsForSync() {
-  if (adminAccessToken) {
-    try {
-      const products = await fetchAdminPaged("products", "/products.json");
-      if (products.length) {
-        try {
-          const customDataMap = await fetchProductCustomDataMap(products);
-          const enrichedProducts = products.map((product) => {
-            const customData = customDataMap.get(String(product.id)) || null;
-            if (!customData) {
-              return product;
-            }
+  try {
+    const products = adminAccessToken
+      ? await fetchAdminPaged("products", "/products.json")
+      : await fetchPaged("products", "/products.json");
 
-            return {
-              ...product,
-              customData,
-              average_rating: product.average_rating ?? customData.rating ?? undefined,
-              total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
-            };
-          });
+    if (products.length) {
+      try {
+        const customDataMap = await fetchProductCustomDataMap(products);
+        const enrichedProducts = products.map((product) => {
+          const customData = customDataMap.get(String(product.id)) || null;
+          if (!customData) {
+            return product;
+          }
 
-          process.stdout.write(
-            `Using Admin API product feed with ${products.length} products and ${customDataMap.size} metafield payloads\n`,
-          );
-          return enrichedProducts;
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "unknown error";
-          process.stdout.write(
-            `Admin product metafield fetch failed; returning product feed without custom data (${message})\n`,
-          );
-          process.stdout.write(`Using Admin API product feed with ${products.length} products\n`);
-          return products;
-        }
+          return {
+            ...product,
+            customData,
+            average_rating: product.average_rating ?? customData.rating ?? undefined,
+            total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
+          };
+        });
+
+        process.stdout.write(
+          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products and ${customDataMap.size} metafield payloads\n`,
+        );
+        return enrichedProducts;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        process.stdout.write(
+          `${adminAccessToken ? "Admin" : "CLI"} product metafield fetch failed; returning product feed without custom data (${message})\n`,
+        );
+        process.stdout.write(
+          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products\n`,
+        );
+        return products;
       }
-
-      process.stdout.write("Admin product feed returned 0 products; falling back to storefront JSON\n");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "unknown error";
-      process.stdout.write(`Admin product feed failed; falling back to storefront JSON (${message})\n`);
     }
+
+    process.stdout.write(
+      `${adminAccessToken ? "Admin API" : "Storefront"} product feed returned 0 products; falling back to storefront JSON\n`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    process.stdout.write(
+      `${adminAccessToken ? "Admin" : "CLI"} product feed failed; falling back to cached/storefront JSON (${message})\n`,
+    );
   }
 
   try {
@@ -959,19 +1220,50 @@ async function fetchProductsForSync() {
 }
 
 async function fetchCollectionsForSync() {
-  if (adminAccessToken) {
-    try {
-      const collections = await fetchAdminPaged("collections", "/collections.json");
-      if (collections.length) {
-        process.stdout.write(`Using Admin API collections feed with ${collections.length} collections\n`);
+  try {
+    const collections = adminAccessToken
+      ? await fetchAdminPaged("collections", "/collections.json")
+      : await fetchPaged("collections", "/collections.json");
+
+    if (collections.length) {
+      try {
+        const customDataMap = await fetchCollectionCustomDataMap(collections);
+        const enrichedCollections = collections.map((collection) => {
+          const customData = customDataMap.get(String(collection.id)) || null;
+          if (!customData) {
+            return collection;
+          }
+
+          return {
+            ...collection,
+            customData,
+          };
+        });
+
+        process.stdout.write(
+          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} collections feed with ${collections.length} collections and ${customDataMap.size} metafield payloads\n`,
+        );
+        return enrichedCollections;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        process.stdout.write(
+          `${adminAccessToken ? "Admin" : "CLI"} collection metafield fetch failed; returning collection feed without custom data (${message})\n`,
+        );
+        process.stdout.write(
+          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} collections feed with ${collections.length} collections\n`,
+        );
         return collections;
       }
-
-      process.stdout.write("Admin collections feed returned 0 collections; falling back to storefront JSON\n");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "unknown error";
-      process.stdout.write(`Admin collections feed failed; falling back to storefront JSON (${message})\n`);
     }
+
+    process.stdout.write(
+      `${adminAccessToken ? "Admin API" : "Storefront"} collections feed returned 0 collections; falling back to storefront JSON\n`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    process.stdout.write(
+      `${adminAccessToken ? "Admin" : "CLI"} collections feed failed; falling back to cached/storefront JSON (${message})\n`,
+    );
   }
 
   try {
@@ -984,14 +1276,32 @@ async function fetchCollectionsForSync() {
   return fetchPaged("collections", "/collections.json");
 }
 
+async function fetchShopForSync() {
+  try {
+    return await fetchShopCustomData();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    process.stdout.write(`Shop custom data fetch failed; using fallback shop payload (${message})\n`);
+    return {
+      id: "shop",
+      name: "SALT",
+      customData: normalizeShopCustomData({
+        bannerText: "",
+        trustStrip: [],
+      }),
+    };
+  }
+}
+
 async function main() {
   const startedAt = new Date().toISOString();
 
-  const [products, collections, aboutPage, blogResult] = await Promise.all([
+  const [products, collections, aboutPage, blogResult, shop] = await Promise.all([
     fetchProductsForSync(),
     fetchCollectionsForSync(),
     fetchAboutPage(),
     fetchBlogPosts(),
+    fetchShopForSync(),
   ]);
 
   const productPayload = {
@@ -1029,6 +1339,12 @@ async function main() {
     posts: blogResult.posts,
   };
 
+  const shopPayload = {
+    generatedAt: startedAt,
+    source: baseUrl,
+    shop,
+  };
+
   for (const collection of collections) {
     const ids = await fetchCollectionProductIds(collection.handle);
     collectionProductMap.collections[collection.handle] = {
@@ -1047,6 +1363,7 @@ async function main() {
   await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
   await writeFile(aboutPath, JSON.stringify(aboutPayload));
   await writeFile(blogPostsPath, JSON.stringify(blogPayload));
+  await writeFile(shopPath, JSON.stringify(shopPayload));
 
   process.stdout.write(`Saved ${productPayload.total} products to public/data/products.json\n`);
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
@@ -1055,6 +1372,7 @@ async function main() {
   );
   process.stdout.write(`Saved About page to public/data/about.json\n`);
   process.stdout.write(`Saved ${blogPayload.total} blog posts to public/data/blog-posts.json\n`);
+  process.stdout.write(`Saved shop metadata to public/data/shop.json\n`);
 }
 
 main().catch((error) => {

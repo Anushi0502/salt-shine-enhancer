@@ -1,140 +1,204 @@
 import { describe, expect, it } from "vitest";
-import { buildSeoBatchPlan } from "@/lib/shopify-seo-batch";
+import {
+  buildSeoBatchExportRows,
+  buildSeoBatchManifest,
+  buildSeoBatchPlan,
+  createSeoCatalogContext,
+} from "@/lib/shopify-seo-batch-intelligence";
 
-describe("shopify SEO batch plan", () => {
-  it("derives a retail price from supplier cost when the sheet omits Variant Price", async () => {
-    const [plan] = (
-      await buildSeoBatchPlan([
-        {
-          Handle: "sample-handle",
-          Title: "Sample Title",
-          "Body (HTML)": "<p>Sample</p>",
-          Type: "Home Decor",
-          Tags: "tag-one, tag-two",
-          "SEO Title": "Sample SEO Title",
-          "SEO Description": "Sample SEO Description",
-          "Cost per item": "2.50",
-          "Variant Price": "",
-          "Variant Compare At Price": "",
-          "Variant SKU": "SAMPLE-1",
-        },
-      ])
-    ).products;
-
-    expect(plan.handle).toBe("sample-handle");
-    expect(plan.variantUpdates).toHaveLength(1);
-    expect(plan.variantUpdates[0]?.price).toBe("19.99");
-  });
-
-  it("passes approved category values through the resolver without touching protected fields", async () => {
-    const [plan] = (
-      await buildSeoBatchPlan(
-        [
+function makeCatalogContext() {
+  return createSeoCatalogContext({
+    products: [
+      {
+        id: 101,
+        handle: "modern-arc-floor-lamp",
+        title: "Modern Arc Floor Lamp",
+        body_html: "<p>Catalog copy for a modern arc floor lamp.</p>",
+        product_type: "Lighting",
+        tags: ["floor lamp", "arc", "living room"],
+        variants: [
           {
-            Handle: "another-sample",
-            Title: "Another Sample",
-            "Google Shopping / Google Product Category": "Home & Garden > Decor",
-            "Variant Price": "19.99",
-            "Variant Compare At Price": "29.99",
-            "Variant SKU": "SKU-1",
-            "Variant ID": "123456789",
+            id: 1001,
+            price: "10.00",
           },
         ],
-        {
-          resolveCategoryId: async (categoryQuery) => {
-            expect(categoryQuery).toBe("Home & Garden > Decor");
-            return "gid://shopify/TaxonomyCategory/123";
-          },
+        customData: {
+          subtitle: "Curated floor lamp for living rooms",
+          highlights: ["modern", "arc", "floor lamp"],
+          searchProductBoosts: ["modern arc lamp", "living room lamp", "floor lamp"],
+          rating: 4.8,
+          ratingCount: 42,
+          collectionSignal: "Living Room",
         },
-      )
-    ).products;
-
-    expect(plan.categoryQuery).toBe("Home & Garden > Decor");
-    expect(plan.categoryId).toBe("gid://shopify/TaxonomyCategory/123");
-    expect(plan.variantUpdates[0]?.sku).toBe("SKU-1");
-    expect(plan.variantUpdates[0]?.variantId).toBe("gid://shopify/ProductVariant/123456789");
+      },
+    ],
+    collections: [
+      {
+        id: 1,
+        title: "Living Room",
+        handle: "living-room",
+        products_count: 1,
+      },
+      {
+        id: 2,
+        title: "Modern Lighting",
+        handle: "modern-lighting",
+        products_count: 1,
+      },
+    ],
+    collectionProducts: {
+      collections: {
+        "living-room": {
+          title: "Living Room",
+          productIds: [101],
+        },
+        "modern-lighting": {
+          title: "Modern Lighting",
+          productIds: [101],
+        },
+      },
+    },
   });
+}
 
-  it("enforces a $20 minimum price on earring products", async () => {
-    const [plan] = (
-      await buildSeoBatchPlan([
+describe("shopify SEO batch intelligence", () => {
+  it("prefers handle and catalog evidence over a stale source title", async () => {
+    const catalogContext = makeCatalogContext();
+    const planResult = await buildSeoBatchPlan(
+      [
         {
-          Handle: "pearl-pointed-twisted-teardrop-dangle-earrings",
-          Title: "Pearl Pointed Twisted Teardrop Dangle Earrings",
-          Type: "EARRINGS",
-          "Product Category": "Apparel & Accessories > Jewelry > Earrings",
+          Handle: "modern-arc-floor-lamp",
+          "Product ID": "101",
+          Title: "Completely Wrong Title",
+          "Body (HTML)": "<p>Outdated copy.</p>",
+          Type: "Decor",
+          Tags: "home decor",
+          "SEO Title": "Old SEO",
+          "SEO Description": "Old SEO description",
+          "Variant SKU": "LAMP-1",
+          "Variant Price": "10.00",
+          "Variant Compare At Price": "12.00",
         },
-        {
-          Handle: "pearl-pointed-twisted-teardrop-dangle-earrings",
-          "Variant Price": "12.99",
-          "Variant Compare At Price": "20.99",
-          "Variant SKU": "EARRING-1",
-        },
-        {
-          Handle: "pearl-pointed-twisted-teardrop-dangle-earrings",
-          "Option1 Value": "rhodium-white",
-          "Variant Price": "12.99",
-          "Variant Compare At Price": "20.99",
-          "Variant SKU": "EARRING-2",
-        },
-      ])
-    ).products;
-
-    expect(plan.variantUpdates).toHaveLength(2);
-    expect(plan.variantUpdates[0]?.price).toBe("20.00");
-    expect(plan.variantUpdates[1]?.price).toBe("20.00");
-    expect(plan.variantUpdates[0]?.compareAtPrice).toBe("28.99");
-    expect(plan.variantUpdates[1]?.compareAtPrice).toBe("28.99");
-  });
-
-  it("enhances product titles and descriptions while skipping title-only rows", async () => {
-    const [plan] = (
-      await buildSeoBatchPlan([
-        {
-          Handle: "simple-wall-light",
-          Title: "Simple Wall Light",
-          "Body (HTML)": "<p>Original body copy.</p>",
-          Type: "Home Decor",
-          Tags: "wall light, decor, lighting",
-        },
-        {
-          Handle: "simple-wall-light",
-          "Variant SKU": "WALL-1",
-          "Variant Price": "19.99",
-          "Variant Compare At Price": "24.99",
-        },
-      ])
-    ).products;
-
-    expect(plan.productInput.title).toBe("Simple Wall Light - Home Decor");
-    expect(plan.productInput.descriptionHtml).toContain("<strong>Simple Wall Light</strong>");
-    expect(plan.productInput.descriptionHtml).toContain("Original body copy.");
-    expect(plan.productInput.descriptionHtml).toContain("Popular search terms:");
-    expect(plan.productInput.descriptionHtml).toMatch(/(clearer, cleaner|polished|tighter product brief|refined listing|presented as a refined|cleaner copy block)/i);
-    expect(plan.productInput.descriptionHtml).not.toContain(
-      "This structure keeps the listing concise for shoppers and descriptive enough for search.",
+      ],
+      { catalogContext },
     );
-    expect(plan.productInput.descriptionHtml).not.toMatch(/Ã.|Â./);
-    expect(plan.variantUpdates).toHaveLength(1);
-    expect(plan.variantUpdates[0]?.price).toBe("19.99");
-    expect(plan.variantUpdates[0]?.compareAtPrice).toBe("24.99");
+
+    const [plan] = planResult.products;
+
+    expect(plan).toBeTruthy();
+    expect(plan.rewriteLevel).toBe("high");
+    expect(plan.confidence).toBeGreaterThanOrEqual(70);
+    expect(plan.intelligence.canonicalTitle).toContain("Modern Arc Floor Lamp");
+    expect(plan.productInput.title).toContain("Modern Arc Floor Lamp");
+    expect(plan.productInput.title).not.toBe("Completely Wrong Title");
+    expect(plan.productInput.descriptionHtml).toContain("trusted reviews");
+    expect(plan.productInput.seo.title).toContain("Modern Arc Floor Lamp");
+    expect(plan.productInput.seo.description).toMatch(/4\.8 stars from 42 trusted reviews/);
+    expect(plan.intelligence.reviewSummary).toEqual(
+      expect.objectContaining({
+        rating: 4.8,
+        ratingCount: 42,
+        source: "catalog",
+      }),
+    );
+    expect(plan.reasons.join(" ")).toMatch(/catalog-anchor/);
   });
 
-  it("shortens keyword-stuffed titles to a cleaner display title", async () => {
-    const [plan] = (
-      await buildSeoBatchPlan([
-        {
-          Handle: "y2k-lace-suspender-dress-fashion-sexy-lace-long-dresses-party-evening-club-beach-clothing-for-women",
-          Title: "Y2K Lace Suspender Dress Fashion Sexy Lace Long Dresses Party Evening Club Beach Clothing for Women",
-          Type: "Dresses",
-          "Variant SKU": "DRESS-1",
-          "Variant Price": "41.99",
-          "Variant Compare At Price": "59.99",
-        },
-      ])
-    ).products;
+  it("preserves low-confidence rows without rewriting title or SEO", async () => {
+    const planResult = await buildSeoBatchPlan([
+      {
+        Handle: "item-123",
+        Title: "Product",
+        "Body (HTML)": "",
+        Type: "",
+        Tags: "",
+        "Variant SKU": "SKU-1",
+      },
+    ]);
 
-    expect(plan.productInput.title).toBe("Y2K Lace Suspender Dress");
-    expect(plan.productInput.title.length).toBeLessThanOrEqual(54);
+    const [plan] = planResult.products;
+
+    expect(plan.rewriteLevel).toBe("low");
+    expect(plan.productInput.title).toBeUndefined();
+    expect(plan.productInput.descriptionHtml).toBeUndefined();
+    expect(plan.productInput.seo).toBeUndefined();
+    expect(plan.variantUpdates).toHaveLength(0);
+  });
+
+  it("exports patched rows and lifts variant pricing from the catalog anchor", async () => {
+    const catalogContext = makeCatalogContext();
+    const rows = [
+      {
+        Handle: "modern-arc-floor-lamp",
+        "Product ID": "101",
+        Title: "Completely Wrong Title",
+        "Body (HTML)": "<p>Old body.</p>",
+        Type: "Decor",
+        Tags: "home decor",
+        "SEO Title": "Old SEO",
+        "SEO Description": "Old SEO description",
+        "Variant SKU": "LAMP-1",
+        "Variant Price": "10.00",
+        "Variant Compare At Price": "12.00",
+      },
+      {
+        Handle: "modern-arc-floor-lamp",
+        "Product ID": "101",
+        "Variant SKU": "LAMP-2",
+        "Variant Price": "10.00",
+        "Variant Compare At Price": "12.00",
+      },
+    ];
+
+    const planResult = await buildSeoBatchPlan(rows, { catalogContext });
+    const exportRows = buildSeoBatchExportRows(rows, planResult);
+
+    expect(exportRows[0].Title).not.toBe(rows[0].Title);
+    expect(exportRows[0]["SEO Title"]).toContain("Modern Arc Floor Lamp");
+    expect(exportRows[0]["SEO Description"]).toMatch(/trusted reviews/);
+    expect(exportRows[1]["Variant Price"]).toBe("13.99");
+    expect(exportRows[1]["Variant Compare At Price"]).toBe("14.00");
+    expect(rows[0].Title).toBe("Completely Wrong Title");
+    expect(Object.keys(exportRows[0])).toEqual(Object.keys(rows[0]));
+  });
+
+  it("builds a manifest with reasons, skipped fields, and write counts", async () => {
+    const catalogContext = makeCatalogContext();
+    const planResult = await buildSeoBatchPlan(
+      [
+        {
+          Handle: "modern-arc-floor-lamp",
+          "Product ID": "101",
+          Title: "Completely Wrong Title",
+          "Body (HTML)": "<p>Outdated copy.</p>",
+          Type: "Decor",
+          Tags: "home decor",
+          "SEO Title": "Old SEO",
+          "SEO Description": "Old SEO description",
+          "Variant SKU": "LAMP-1",
+          "Variant Price": "10.00",
+          "Variant Compare At Price": "12.00",
+        },
+      ],
+      { catalogContext },
+    );
+
+    const manifest = buildSeoBatchManifest(planResult, {
+      inputPath: "/tmp/input.csv",
+      mode: "export",
+    });
+
+    expect(manifest.mode).toBe("export");
+    expect(manifest.summary.handleGroups).toBe(1);
+    expect(manifest.products[0].writeCount).toBeGreaterThan(0);
+    expect(manifest.products[0].reasons.join(" ")).toMatch(/reviews:4.8\/42/);
+    expect(Array.isArray(manifest.products[0].skippedFields)).toBe(true);
+    expect(manifest.products[0].reviewSummary).toEqual(
+      expect.objectContaining({
+        rating: 4.8,
+        ratingCount: 42,
+        source: "catalog",
+      }),
+    );
   });
 });

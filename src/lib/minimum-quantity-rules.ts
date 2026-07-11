@@ -18,7 +18,6 @@ const MINIMUM_TWO_BUNDLE_PRODUCT_HANDLES = new Set([
   "outdoors-silicone-folding-cup-with-hanging-hole-creative-water-cup-travel-portable-washing-cup-fashion-travel-silicone-cup",
 ]);
 
-const MINIMUM_THREE_PRICE_THRESHOLD = 15;
 const MINIMUM_TWO_PRICE_THRESHOLD = 25;
 
 function normalizeHandle(handle: string | null | undefined): string {
@@ -30,12 +29,30 @@ function normalizePrice(price: number | string | null | undefined): number {
   return Number.isFinite(value) ? value : NaN;
 }
 
-export function getMinimumProductQuantity(handle: string | null | undefined, sellPrice?: number | string | null): number {
-  const price = normalizePrice(sellPrice);
-
-  if (Number.isFinite(price) && price > 0 && price < MINIMUM_THREE_PRICE_THRESHOLD) {
-    return 3;
+function normalizeOverride(minimumQuantity?: number | string | null): number | null {
+  if (minimumQuantity == null || minimumQuantity === "") {
+    return null;
   }
+
+  const value = typeof minimumQuantity === "number" ? minimumQuantity : Number(String(minimumQuantity).trim());
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return Math.max(1, Math.floor(value));
+}
+
+export function getMinimumProductQuantity(
+  handle: string | null | undefined,
+  sellPrice?: number | string | null,
+  minimumQuantityOverride?: number | string | null,
+): number {
+  const override = normalizeOverride(minimumQuantityOverride);
+  if (override != null) {
+    return override;
+  }
+
+  const price = normalizePrice(sellPrice);
 
   if (Number.isFinite(price) && price > 0 && price < MINIMUM_TWO_PRICE_THRESHOLD) {
     return 2;
@@ -49,6 +66,10 @@ export function getMinimumProductQuantity(handle: string | null | undefined, sel
   return 1;
 }
 
-export function isMinimumTwoBundleProduct(handle: string | null | undefined, sellPrice?: number | string | null): boolean {
-  return getMinimumProductQuantity(handle, sellPrice) > 1;
+export function isMinimumTwoBundleProduct(
+  handle: string | null | undefined,
+  sellPrice?: number | string | null,
+  minimumQuantityOverride?: number | string | null,
+): boolean {
+  return getMinimumProductQuantity(handle, sellPrice, minimumQuantityOverride) > 1;
 }

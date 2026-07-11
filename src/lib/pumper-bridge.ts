@@ -371,7 +371,14 @@ export function installSaltPumperBridge(): void {
   };
 
   const getCurrentBundleMinimumQuantity = () =>
-    getMinimumProductQuantity(state.currentProductHandle || getCurrentProductHandle(), state.currentVariantPrice);
+    (() => {
+      const asideQuantity = Number(getProductAside()?.dataset.saltMinimumQuantity || "");
+      if (Number.isFinite(asideQuantity) && asideQuantity > 0) {
+        return Math.max(1, Math.floor(asideQuantity));
+      }
+
+      return getMinimumProductQuantity(state.currentProductHandle || getCurrentProductHandle(), state.currentVariantPrice);
+    })();
 
   const ensurePumperSoldOutStyle = () => {
     if (document.getElementById("salt-pumper-sold-out-style")) {

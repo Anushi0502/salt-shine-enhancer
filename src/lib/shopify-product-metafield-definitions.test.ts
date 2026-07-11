@@ -11,12 +11,17 @@ describe("shopify product metafield definitions", () => {
     expect(PRODUCT_METAFIELD_DEFINITIONS.map(getProductMetafieldDefinitionId)).toEqual([
       "reviews.rating",
       "reviews.rating_count",
+      "descriptors.subtitle",
       "shopify--discovery--product_recommendation.related_products",
       "shopify--discovery--product_recommendation.related_products_display",
       "shopify--discovery--product_search_boost.queries",
       "shopify--discovery--product_recommendation.complementary_products",
       "shopify.diaper-type",
-      "google.custom_product",
+      "salt-marketing.badge_text",
+      "salt-marketing.highlights",
+      "salt-marketing.collection_signal",
+      "mm-google-shopping.custom_product",
+      "salt-marketing.shop_channel_minimum_quantity",
     ]);
   });
 
@@ -25,12 +30,13 @@ describe("shopify product metafield definitions", () => {
       (definition) => definition.kind === "standard",
     );
 
-    expect(standardDefinitions).toHaveLength(6);
+    expect(standardDefinitions).toHaveLength(7);
     expect(
       standardDefinitions.map((definition) => getStandardMetafieldTemplateGid(definition.standardTemplateId)),
     ).toEqual([
       "gid://shopify/StandardMetafieldDefinitionTemplate/6",
       "gid://shopify/StandardMetafieldDefinitionTemplate/7",
+      "gid://shopify/StandardMetafieldDefinitionTemplate/1",
       "gid://shopify/StandardMetafieldDefinitionTemplate/14",
       "gid://shopify/StandardMetafieldDefinitionTemplate/15",
       "gid://shopify/StandardMetafieldDefinitionTemplate/16",

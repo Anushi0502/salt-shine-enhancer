@@ -20,6 +20,7 @@ export type CartItem = {
   quantity: number;
   shopifyVariantId?: number;
   productType?: string;
+  minimumQuantity?: number;
 };
 
 type CartContextValue = {
@@ -174,7 +175,13 @@ function sanitizeCartItems(items: CartItem[]): CartItem[] {
     )
     .map((entry) => ({
       ...entry,
-      quantity: Math.max(getMinimumProductQuantity(entry.handle, entry.unitPrice), Math.floor(entry.quantity || 1)),
+      minimumQuantity: typeof entry.minimumQuantity === "number" && Number.isFinite(entry.minimumQuantity) && entry.minimumQuantity > 0
+        ? Math.max(1, Math.floor(entry.minimumQuantity))
+        : undefined,
+      quantity: Math.max(
+        getMinimumProductQuantity(entry.handle, entry.unitPrice, entry.minimumQuantity),
+        Math.floor(entry.quantity || 1),
+      ),
       shopifyVariantId: isValidShopifyVariantId(entry.shopifyVariantId)
         ? entry.shopifyVariantId
         : isValidShopifyVariantId(entry.id)
@@ -269,7 +276,14 @@ export function CartProvider({ children }: PropsWithChildren) {
       subtotal,
       isDrawerOpen,
       addItem: (newItem, quantity = 1, options) => {
-        const safeQuantity = Math.max(getMinimumProductQuantity(newItem.handle, newItem.unitPrice), Math.floor(quantity || 1));
+        const safeQuantity = Math.max(
+          getMinimumProductQuantity(newItem.handle, newItem.unitPrice, newItem.minimumQuantity),
+          Math.floor(quantity || 1),
+        );
+        const normalizedMinimumQuantity =
+          typeof newItem.minimumQuantity === "number" && Number.isFinite(newItem.minimumQuantity) && newItem.minimumQuantity > 0
+            ? Math.max(1, Math.floor(newItem.minimumQuantity))
+            : undefined;
 
         setItems((current) => {
           const existing = current.find((entry) => entry.id === newItem.id);
@@ -279,13 +293,21 @@ export function CartProvider({ children }: PropsWithChildren) {
               entry.id === newItem.id
                 ? {
                     ...entry,
+                    minimumQuantity: normalizedMinimumQuantity ?? entry.minimumQuantity,
                     quantity: Math.max(1, entry.quantity + safeQuantity),
                   }
                 : entry,
             );
           }
 
-          return [...current, { ...newItem, quantity: safeQuantity }];
+          return [
+            ...current,
+            {
+              ...newItem,
+              minimumQuantity: normalizedMinimumQuantity,
+              quantity: safeQuantity,
+            },
+          ];
         });
 
         trackMetaPixelAddToCart({
@@ -304,7 +326,7 @@ export function CartProvider({ children }: PropsWithChildren) {
               return [entry];
             }
 
-            const minimumQuantity = getMinimumProductQuantity(entry.handle, entry.unitPrice);
+            const minimumQuantity = getMinimumProductQuantity(entry.handle, entry.unitPrice, entry.minimumQuantity);
             const nextQuantity = Math.floor(quantity || 0);
 
             if (nextQuantity <= 0 && minimumQuantity === 1) {

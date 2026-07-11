@@ -12,6 +12,7 @@ import {
   productImage,
   savingsPercent,
 } from "@/lib/formatters";
+import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
@@ -39,6 +40,13 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
   const compare = compareAt(product);
   const image = productImage(product);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
+  const subtitle = conciseTitle(product.customData?.subtitle || product.product_type || "Curated pick", isShop ? 44 : 58);
+  const minimumQuantity = getMinimumProductQuantity(
+    product.handle,
+    min,
+    product.customData?.shopChannelMinimumQuantity,
+  );
+  const highlights = (product.customData?.highlights || []).filter(Boolean).slice(0, 2);
   const wishlisted = isWishlisted(product.handle);
   const summary = reviewSummaryProvided ? reviewSummary ?? null : fetchedSummary;
   const fallbackSummary =
@@ -52,7 +60,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
   const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
   const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
   const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
-  const badgeLabel = sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick";
+  const badgeLabel = product.customData?.badgeText?.trim() || (sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick");
   const hasReviews = Boolean(displaySummary && displaySummary.reviewCount > 0);
   const formattedRating = hasReviews ? displaySummary.rating.toFixed(1) : "";
 
@@ -93,6 +101,11 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
             <h3 className="line-clamp-2 font-display text-[0.7rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem] sm:leading-[1.12]">
               {title}
             </h3>
+            {subtitle ? (
+              <p className="mt-0.5 line-clamp-1 text-[0.54rem] font-medium tracking-[0.08em] text-white/74 sm:text-[0.72rem]">
+                {subtitle}
+              </p>
+            ) : null}
             <div className="mt-1.25 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 text-[0.58rem] font-semibold text-white/92 sm:gap-x-1.5 sm:gap-y-1 sm:text-[0.78rem]">
               <span className="text-[0.96rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.2rem]">
                 {formatMoney(min)}
@@ -107,6 +120,11 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
                 </>
               ) : null}
             </div>
+            {minimumQuantity > 1 ? (
+              <p className="mt-0.5 inline-flex items-center justify-center rounded-full border border-white/20 bg-white/12 px-2 py-0.5 text-[0.5rem] font-bold uppercase tracking-[0.12em] text-white/80">
+                Buy {minimumQuantity}
+              </p>
+            ) : null}
           </div>
         </Link>
       </article>
@@ -182,9 +200,26 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
         <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-[#131313]" : "text-[#1f4f9b]"}`}>
           {title}
         </p>
+        {subtitle ? (
+          <p className="mt-0.5 line-clamp-1 text-[0.64rem] font-medium tracking-[0.08em] text-muted-foreground">
+            {subtitle}
+          </p>
+        ) : null}
         <p className="mt-0.5 line-clamp-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           {product.product_type || "Curated pick"}
         </p>
+        {highlights.length > 0 ? (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {highlights.map((highlight) => (
+              <span
+                key={highlight}
+                className="rounded-full border border-border/70 bg-background px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+              >
+                {highlight}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         {displaySummary && displaySummary.reviewCount > 0 ? (
           <div className="mt-1 flex items-center gap-1 text-[#f2c100]">
@@ -220,6 +255,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
                     unitPrice: min,
                     shopifyVariantId: product.variants[0]?.id,
                     productType: product.product_type,
+                    minimumQuantity,
                   },
                   1,
                   { openDrawer: true },

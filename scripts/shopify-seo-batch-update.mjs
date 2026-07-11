@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, resolve } from "node:path";
 import XLSX from "xlsx";
 import {
   buildMediaUpdateTargets,
+  buildSeoBatchExportRows,
+  buildSeoBatchManifest,
   buildSeoBatchPlan,
+  createSeoCatalogContext,
+} from "../src/lib/shopify-seo-batch-intelligence.js";
+import {
   formatMoneyValue,
   normalizeHtmlValue,
   normalizeHandleValue,
@@ -139,7 +145,9 @@ function parseArgs(argv) {
   const args = {
     input: "",
     apply: false,
+    export: false,
     dryRun: true,
+    output: "",
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -155,12 +163,27 @@ function parseArgs(argv) {
     if (token === "--apply") {
       args.apply = true;
       args.dryRun = false;
+      args.export = false;
+      continue;
+    }
+
+    if (token === "--export") {
+      args.export = true;
+      args.apply = false;
+      args.dryRun = true;
       continue;
     }
 
     if (token === "--dry-run") {
       args.dryRun = true;
       args.apply = false;
+      args.export = false;
+      continue;
+    }
+
+    if (token === "--output" || token === "-o") {
+      args.output = next || "";
+      index += 1;
       continue;
     }
   }
@@ -170,6 +193,43 @@ function parseArgs(argv) {
   }
 
   return args;
+}
+
+function getModeLabel(args) {
+  if (args.apply) {
+    return "apply";
+  }
+
+  if (args.export) {
+    return "export";
+  }
+
+  return "dry-run";
+}
+
+function stripKnownExtension(filePath) {
+  const extension = extname(filePath);
+  if (!extension) {
+    return filePath;
+  }
+
+  return filePath.slice(0, -extension.length);
+}
+
+function deriveOutputTargets(inputPath, outputPath) {
+  const defaultBaseName = stripKnownExtension(basename(inputPath));
+  const defaultDir = resolve(process.cwd(), "output");
+  const csvPath = outputPath
+    ? resolve(process.cwd(), outputPath)
+    : resolve(defaultDir, `${defaultBaseName}.seo-batch.csv`);
+  const manifestPath = outputPath
+    ? `${stripKnownExtension(csvPath)}.manifest.json`
+    : resolve(defaultDir, `${defaultBaseName}.seo-batch-manifest.json`);
+
+  return {
+    csvPath,
+    manifestPath,
+  };
 }
 
 function requireInputPath(inputPath) {
@@ -184,6 +244,7 @@ async function readRowsFromSpreadsheet(filePath) {
   const workbook = XLSX.readFile(filePath, {
     cellDates: true,
     raw: false,
+    ...(extname(filePath).toLowerCase() === ".csv" ? { codepage: 65001 } : {}),
   });
 
   const firstSheetName = workbook.SheetNames[0];
@@ -192,6 +253,11 @@ async function readRowsFromSpreadsheet(filePath) {
   }
 
   const sheet = workbook.Sheets[firstSheetName];
+  const headerRows = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: false,
+    defval: "",
+  });
   const rows = XLSX.utils.sheet_to_json(sheet, {
     raw: false,
     defval: "",
@@ -201,7 +267,70 @@ async function readRowsFromSpreadsheet(filePath) {
     throw new Error(`No readable rows found in ${filePath}`);
   }
 
-  return rows;
+  return {
+    rows,
+    header: Array.isArray(headerRows[0]) ? headerRows[0].map((column) => String(column ?? "")) : [],
+  };
+}
+
+async function readJsonFileIfExists(filePath, fallbackValue) {
+  try {
+    const raw = await readFile(filePath, "utf8");
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return fallbackValue;
+    }
+
+    throw error;
+  }
+}
+
+async function loadLocalCatalogSnapshot() {
+  const productsPath = resolve(process.cwd(), "public/data/products.json");
+  const collectionsPath = resolve(process.cwd(), "public/data/collections.json");
+  const collectionProductsPath = resolve(process.cwd(), "public/data/collection-products.json");
+
+  const [products, collections, collectionProducts] = await Promise.all([
+    readJsonFileIfExists(productsPath, {}),
+    readJsonFileIfExists(collectionsPath, {}),
+    readJsonFileIfExists(collectionProductsPath, {}),
+  ]);
+
+  return {
+    products,
+    collections,
+    collectionProducts,
+  };
+}
+
+async function writeTextFile(filePath, contents) {
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, contents, "utf8");
+}
+
+async function writeJsonFile(filePath, payload) {
+  await writeTextFile(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+function escapeCsvValue(value) {
+  const text = value == null ? "" : String(value);
+  if (!/[",\r\n]/.test(text)) {
+    return text;
+  }
+
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildCsvFromRows(rows, headerOrder) {
+  const headers = Array.isArray(headerOrder) ? headerOrder.map((header) => String(header ?? "")) : [];
+  const lines = [headers.map(escapeCsvValue).join(",")];
+
+  for (const row of rows) {
+    lines.push(headers.map((header) => escapeCsvValue(row?.[header])).join(","));
+  }
+
+  return `${lines.join("\r\n")}\r\n`;
 }
 
 function getShopifyCliEnv() {
@@ -505,11 +634,15 @@ function buildProductUpdateInput(product, productPlan, categoryId) {
   return input;
 }
 
-function printPlanSummary(plan, { apply = false } = {}) {
-  const mode = apply ? "APPLY" : "DRY RUN";
-  process.stdout.write(`\n[${mode}] ${plan.products.length} handle group(s) from spreadsheet\n`);
+function printPlanSummary(plan, { mode = "dry-run", maxProducts = 25 } = {}) {
+  const modeLabel = String(mode || "dry-run").toUpperCase();
+  process.stdout.write(`\n[${modeLabel}] ${plan.products.length} handle group(s) from spreadsheet\n`);
 
-  for (const productPlan of plan.products) {
+  const productDetails = Number.isFinite(maxProducts)
+    ? plan.products.slice(0, Math.max(0, Math.floor(maxProducts)))
+    : plan.products;
+
+  for (const productPlan of productDetails) {
     const updateBits = [];
 
     if (normalizePlainText(productPlan.productInput.title)) {
@@ -542,7 +675,10 @@ function printPlanSummary(plan, { apply = false } = {}) {
       (entry) => `${entry.imageSrc} -> ${entry.alt.slice(0, 48)}${entry.alt.length > 48 ? "…" : ""}`,
     );
 
+    const confidenceLabel = `${productPlan.rewriteLevel || "low"} confidence ${Number(productPlan.confidence || 0)} / 100`;
+
     process.stdout.write(`- ${productPlan.handle}\n`);
+    process.stdout.write(`  ${confidenceLabel}\n`);
     if (updateBits.length) {
       process.stdout.write(`  fields: ${updateBits.join(", ")}\n`);
     }
@@ -563,6 +699,16 @@ function printPlanSummary(plan, { apply = false } = {}) {
         `  category: ${productPlan.categoryQuery}${productPlan.categoryId ? ` -> ${productPlan.categoryId}` : ""}\n`,
       );
     }
+    if (Array.isArray(productPlan.reasons) && productPlan.reasons.length) {
+      process.stdout.write(`  reasons: ${productPlan.reasons.slice(0, 5).join(" | ")}\n`);
+    }
+    process.stdout.write(`  write-count: ${productPlan.writeCount || 0}\n`);
+  }
+
+  if (productDetails.length < plan.products.length) {
+    process.stdout.write(
+      `  ... ${plan.products.length - productDetails.length} additional handle group(s) are recorded in the manifest.\n`,
+    );
   }
 
   if (plan.warnings.length) {
@@ -825,15 +971,39 @@ async function applyProductPlan(productPlan, categoryCache) {
 async function main() {
   const args = parseArgs(process.argv);
   const inputPath = requireInputPath(args.input);
-  const rows = await readRowsFromSpreadsheet(inputPath);
-
+  const { rows, header } = await readRowsFromSpreadsheet(inputPath);
+  const outputTargets = deriveOutputTargets(inputPath, args.output);
+  const catalogSnapshot = await loadLocalCatalogSnapshot();
+  const catalogContext = createSeoCatalogContext(catalogSnapshot);
   const categoryCache = new Map();
+  const mode = getModeLabel(args);
+  const resolveCategories = !args.export;
+
   const plan = await buildSeoBatchPlan(rows, {
-    resolveCategoryId: async (categoryQuery) => resolveCategoryIdLive(categoryQuery, categoryCache),
-    suppressCategoryWarnings: false,
+    resolveCategoryId: resolveCategories
+      ? async (categoryQuery) => resolveCategoryIdLive(categoryQuery, categoryCache)
+      : undefined,
+    suppressCategoryWarnings: !resolveCategories,
+    catalogContext,
   });
 
-  printPlanSummary(plan, { apply: args.apply });
+  const manifest = buildSeoBatchManifest(plan, {
+    inputPath,
+    mode,
+  });
+
+  await writeJsonFile(outputTargets.manifestPath, manifest);
+  printPlanSummary(plan, { mode, maxProducts: 25 });
+  process.stdout.write(`\nManifest written to ${outputTargets.manifestPath}\n`);
+
+  if (args.export) {
+    const exportRows = buildSeoBatchExportRows(rows, plan);
+    const csv = buildCsvFromRows(exportRows, header);
+    await writeTextFile(outputTargets.csvPath, csv);
+    process.stdout.write(`Export written to ${outputTargets.csvPath}\n`);
+    process.stdout.write("Export complete. No Shopify writes were made.\n");
+    return;
+  }
 
   if (args.dryRun) {
     process.stdout.write("\nDry run complete. No Shopify writes were made.\n");

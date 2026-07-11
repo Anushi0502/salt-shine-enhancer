@@ -96,6 +96,24 @@ async function main() {
       cwd: rootDir,
     },
     {
+      label: "Apply Shopify merchandising metafield backfill",
+      command: npmBin,
+      args: ["run", "shopify:product-metafields:backfill:apply"],
+      cwd: rootDir,
+    },
+    {
+      label: "Refresh Shopify data after backfill",
+      command: npmBin,
+      args: ["run", "sync:data"],
+      cwd: rootDir,
+    },
+    {
+      label: "Verify Shopify merchandising backfill",
+      command: npmBin,
+      args: ["run", "shopify:merchandising:verify"],
+      cwd: rootDir,
+    },
+    {
       label: "Build web app",
       command: npmBin,
       args: ["run", "build:web"],

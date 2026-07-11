@@ -225,6 +225,18 @@ function normalizeProductCustomData(input) {
   }
 
   const rawMetafields = normalizeRawMetafieldMap(input.metafields);
+  const subtitle = asString(
+    input.subtitle ??
+      getMetafieldValue(rawMetafields, "descriptors", "subtitle"),
+  );
+  const badgeText = asString(
+    input.badgeText ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "badge_text"),
+  );
+  const highlights = normalizeStringList(
+    input.highlights ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "highlights"),
+  );
   const rating = asNumber(
     input.rating ??
       input.averageRating ??
@@ -271,7 +283,15 @@ function normalizeProductCustomData(input) {
   );
   const googleCustomProduct = asBoolean(
     input.googleCustomProduct ??
-      getMetafieldValue(rawMetafields, "google", "custom_product"),
+      getMetafieldValue(rawMetafields, "mm-google-shopping", "custom_product"),
+  );
+  const shopChannelMinimumQuantity = asNumber(
+    input.shopChannelMinimumQuantity ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "shop_channel_minimum_quantity"),
+  );
+  const collectionSignal = asString(
+    input.collectionSignal ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "collection_signal"),
   );
 
   const diaperType =
@@ -286,6 +306,9 @@ function normalizeProductCustomData(input) {
     null;
 
   return {
+    subtitle: subtitle || null,
+    badgeText: badgeText || null,
+    highlights,
     rating,
     ratingCount,
     relatedProductsDisplay: relatedProductsDisplay || null,
@@ -293,6 +316,8 @@ function normalizeProductCustomData(input) {
     complementaryProducts: complementaryProducts.length ? complementaryProducts : [],
     searchProductBoosts,
     googleCustomProduct,
+    shopChannelMinimumQuantity,
+    collectionSignal: collectionSignal || null,
     diaperType,
     metafields: rawMetafields,
   };
@@ -322,6 +347,9 @@ function mergeProductCustomData(base, override) {
   };
 
   return {
+    subtitle: pickValue(normalizedOverride.subtitle, normalizedBase.subtitle),
+    badgeText: pickValue(normalizedOverride.badgeText, normalizedBase.badgeText),
+    highlights: pickArray(normalizedOverride.highlights, normalizedBase.highlights),
     rating: pickValue(normalizedOverride.rating, normalizedBase.rating),
     ratingCount: pickValue(normalizedOverride.ratingCount, normalizedBase.ratingCount),
     relatedProductsDisplay: pickValue(
@@ -341,14 +369,78 @@ function mergeProductCustomData(base, override) {
       normalizedOverride.googleCustomProduct,
       normalizedBase.googleCustomProduct,
     ),
+    shopChannelMinimumQuantity: pickValue(
+      normalizedOverride.shopChannelMinimumQuantity,
+      normalizedBase.shopChannelMinimumQuantity,
+    ),
+    collectionSignal: pickValue(
+      normalizedOverride.collectionSignal,
+      normalizedBase.collectionSignal,
+    ),
     diaperType: pickValue(normalizedOverride.diaperType, normalizedBase.diaperType),
     metafields: mergedMetafields,
+  };
+}
+
+function normalizeCollectionCustomData(input) {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const rawMetafields = normalizeRawMetafieldMap(input.metafields);
+  const heroKicker = asString(
+    input.heroKicker ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "hero_kicker"),
+  );
+  const heroSummary = asString(
+    input.heroSummary ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "hero_summary"),
+  );
+  const featuredProducts = normalizeProductReferenceList(
+    input.featuredProducts ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "featured_products") ??
+      rawMetafields["salt-marketing.featured_products"]?.references,
+  );
+  const trustStrip = normalizeStringList(
+    input.trustStrip ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "trust_strip"),
+  );
+
+  return {
+    heroKicker: heroKicker || null,
+    heroSummary: heroSummary || null,
+    featuredProducts,
+    trustStrip,
+    metafields: rawMetafields,
+  };
+}
+
+function normalizeShopCustomData(input) {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const rawMetafields = normalizeRawMetafieldMap(input.metafields);
+  const bannerText = asString(
+    input.bannerText ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "banner_text"),
+  );
+  const trustStrip = normalizeStringList(
+    input.trustStrip ??
+      getMetafieldValue(rawMetafields, "salt-marketing", "trust_strip"),
+  );
+
+  return {
+    bannerText: bannerText || null,
+    trustStrip,
+    metafields: rawMetafields,
   };
 }
 
 export {
   getMetafieldValue,
   mergeProductCustomData,
+  normalizeCollectionCustomData,
   normalizeMetafieldReference,
   normalizeProductCustomData,
   normalizeProductReference,
@@ -356,4 +448,5 @@ export {
   normalizeRawMetafieldEntry,
   normalizeRawMetafieldMap,
   normalizeStringList,
+  normalizeShopCustomData,
 };

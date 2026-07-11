@@ -12,7 +12,11 @@ import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { openExternalUrl } from "@/lib/mobile";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
-import { useProducts } from "@/lib/shopify-data";
+import { useCollectionProductsMap, useProducts } from "@/lib/shopify-data";
+import {
+  buildCartRecommendations,
+  buildProductCollectionIndex,
+} from "@/lib/sales-optimization";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const CartDrawer = () => {
@@ -28,26 +32,34 @@ const CartDrawer = () => {
     addItem,
   } = useCart();
   const { data: productsPayload } = useProducts(isDrawerOpen);
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
+  const collectionIndex = useMemo(
+    () => buildProductCollectionIndex(collectionProductsMapPayload),
+    [collectionProductsMapPayload],
+  );
 
   useEffect(() => {
     closeCartDrawer();
   }, [location.pathname, location.search]);
 
-  const cartHandleSet = useMemo(
-    () => new Set(items.map((item) => item.handle.trim().toLowerCase()).filter(Boolean)),
-    [items],
+  const recommendationPlan = useMemo(
+    () =>
+      isDrawerOpen
+        ? buildCartRecommendations(items, productsPayload?.products || [], collectionIndex, {
+            focusLimit: 2,
+            relatedLimit: 3,
+            complementaryLimit: 3,
+          })
+        : {
+            focusProducts: [],
+            relatedProducts: [],
+            complementaryProducts: [],
+          },
+    [collectionIndex, isDrawerOpen, items, productsPayload?.products],
   );
   const recommendedProducts = useMemo(
-    () => {
-      if (!isDrawerOpen) {
-        return [];
-      }
-
-      return (productsPayload?.products || [])
-        .filter((product) => !cartHandleSet.has(product.handle.trim().toLowerCase()))
-        .slice(0, 3);
-    },
-    [cartHandleSet, isDrawerOpen, productsPayload],
+    () => [...recommendationPlan.relatedProducts, ...recommendationPlan.complementaryProducts],
+    [recommendationPlan],
   );
 
   const invalidItemCount = items.filter((item) => !isValidShopifyVariantId(item.shopifyVariantId)).length;
@@ -128,79 +140,90 @@ const CartDrawer = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {items.map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-[1.5rem] border border-border/70 bg-card/85 p-4 shadow-[0_22px_40px_-34px_rgba(15,23,42,0.16)]"
-                  >
-                    <div className="flex gap-3">
-                      <div className="h-24 w-20 overflow-hidden rounded-[1rem] border border-border/70 bg-muted">
-                        {item.image ? (
-                          <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="grid h-full w-full place-items-center text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                            No image
-                          </div>
-                        )}
-                      </div>
+                {items.map((item) => {
+                  const minimumQuantity = getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity);
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="line-clamp-2 text-base font-semibold leading-6 text-foreground">
-                              {item.title}
-                            </p>
-                            <p className="mt-1 text-[0.76rem] uppercase tracking-[0.12em] text-muted-foreground">
-                              Unit price {formatMoney(item.unitPrice)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/85 text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
-                            aria-label={`Remove ${item.title}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                  return (
+                    <article
+                      key={item.id}
+                      className="rounded-[1.5rem] border border-border/70 bg-card/85 p-4 shadow-[0_22px_40px_-34px_rgba(15,23,42,0.16)]"
+                    >
+                      <div className="flex gap-3">
+                        <div className="h-24 w-20 overflow-hidden rounded-[1rem] border border-border/70 bg-muted">
+                          {item.image ? (
+                            <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="grid h-full w-full place-items-center text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                              No image
+                            </div>
+                          )}
                         </div>
 
-                        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-                        <div className="inline-flex h-10 items-center rounded-full border border-border/70 bg-background/90 px-1">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= getMinimumProductQuantity(item.handle, item.unitPrice)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
-                            aria-label="Decrease quantity"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                            <span className="min-w-8 text-center text-sm font-semibold text-foreground">
-                              {item.quantity}
-                            </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="line-clamp-2 text-base font-semibold leading-6 text-foreground">
+                                {item.title}
+                              </p>
+                              <p className="mt-1 text-[0.76rem] uppercase tracking-[0.12em] text-muted-foreground">
+                                Unit price {formatMoney(item.unitPrice)}
+                              </p>
+                            </div>
                             <button
                               type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
-                              aria-label="Increase quantity"
+                              onClick={() => removeItem(item.id)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/85 text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                              aria-label={`Remove ${item.title}`}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
 
-                          <div className="text-right">
-                            <p className="text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">
-                              Line total
-                            </p>
-                            <p className="mt-1 font-display text-xl text-foreground">
-                              {formatMoney(item.unitPrice * item.quantity)}
-                            </p>
+                          <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="inline-flex h-10 items-center rounded-full border border-border/70 bg-background/90 px-1">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  disabled={item.quantity <= minimumQuantity}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="min-w-8 text-center text-sm font-semibold text-foreground">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+                                  aria-label="Increase quantity"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                              {minimumQuantity > 1 ? (
+                                <p className="text-[0.68rem] font-medium text-muted-foreground">
+                                  Shop floor: buy {minimumQuantity}.
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="text-right">
+                              <p className="text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">
+                                Line total
+                              </p>
+                              <p className="mt-1 font-display text-xl text-foreground">
+                                {formatMoney(item.unitPrice * item.quantity)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             )}
 
@@ -278,6 +301,11 @@ const CartDrawer = () => {
                                 image: image || "",
                                 unitPrice: Number(defaultVariant.price || 0),
                                 productType: product.product_type,
+                                minimumQuantity: getMinimumProductQuantity(
+                                  product.handle,
+                                  Number(defaultVariant.price || 0),
+                                  product.customData?.shopChannelMinimumQuantity,
+                                ),
                               },
                               1,
                             );

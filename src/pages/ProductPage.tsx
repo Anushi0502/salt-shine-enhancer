@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
 import TrustStrip from "@/components/storefront/TrustStrip";
@@ -54,8 +55,19 @@ import {
   recordDeviceOrderHistory,
   useDeviceOrderHistory,
 } from "@/lib/order-history";
-import { useProducts } from "@/lib/shopify-data";
+import {
+  useCollectionProductsMap,
+  useProducts,
+} from "@/lib/shopify-data";
+import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
+import {
+  buildBreadcrumbStructuredData,
+  buildProductCollectionIndex,
+  buildProductStructuredData,
+  pickComplementaryProducts,
+  pickRelatedProducts,
+} from "@/lib/sales-optimization";
 import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 function displayVariantTitle(title?: string): string {
@@ -79,6 +91,15 @@ function variantOptionTokens(title?: string): string[] {
   }
 
   return parts.slice(0, 3);
+}
+
+function productVariantImage(product: ShopifyProduct, variant?: ShopifyProduct["variants"][number] | null): string | null {
+  if (!variant) {
+    return productImage(product);
+  }
+
+  const linkedImage = product.images.find((image) => image.variant_ids?.includes(variant.id));
+  return normalizeShopifyAssetUrl(variant.featured_image?.src || linkedImage?.src) || productImage(product);
 }
 
 type ProductSpecPair = {
@@ -284,13 +305,22 @@ const ProductPage = () => {
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   const { data, isLoading, error, refetch } = useProducts();
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
 
   const products = useMemo(() => data?.products ?? [], [data]);
   const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
+  const collectionIndex = useMemo(
+    () => buildProductCollectionIndex(collectionProductsMapPayload),
+    [collectionProductsMapPayload],
+  );
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
+  const initialVariant = useMemo(
+    () => variants.find((variant) => variant.available) || variants[0],
+    [variants],
+  );
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
@@ -307,8 +337,13 @@ const ProductPage = () => {
     [selectedVariantId, variants],
   );
   const quantityFloor = useMemo(
-    () => getMinimumProductQuantity(product?.handle, Number(selectedVariant?.price || 0)),
-    [product?.handle, selectedVariant?.price],
+    () =>
+      getMinimumProductQuantity(
+        product?.handle,
+        Number(selectedVariant?.price || 0),
+        product?.customData?.shopChannelMinimumQuantity,
+      ),
+    [product?.customData?.shopChannelMinimumQuantity, product?.handle, selectedVariant?.price],
   );
 
   useEffect(() => {
@@ -316,11 +351,24 @@ const ProductPage = () => {
       return;
     }
 
-    const firstVariant = variants.find((variant) => variant.available) || variants[0];
-    setSelectedVariantId(firstVariant?.id || 0);
-    setQuantity(quantityFloor);
-    setActiveImage(productImage(product) || "");
-  }, [product, quantityFloor, variants]);
+    setSelectedVariantId(initialVariant?.id || 0);
+    setQuantity(
+      getMinimumProductQuantity(
+        product.handle,
+        Number(initialVariant?.price || 0),
+        product.customData?.shopChannelMinimumQuantity,
+      ),
+    );
+    setActiveImage(productVariantImage(product, initialVariant) || "");
+  }, [initialVariant, product]);
+
+  useEffect(() => {
+    if (!product || !selectedVariant) {
+      return;
+    }
+
+    setActiveImage(productVariantImage(product, selectedVariant) || "");
+  }, [product, selectedVariant]);
 
   useEffect(() => {
     if (!showAvailableOnly || !selectedVariantId) {
@@ -389,11 +437,13 @@ const ProductPage = () => {
   const automaticRelatedProducts = useMemo(
     () =>
       product
-        ? products
-            .filter((entry) => entry.id !== product.id && entry.product_type === product.product_type)
-            .slice(0, 5)
+        ? pickRelatedProducts(product, products, {
+            collectionIndex,
+            limit: 5,
+            excludedIds: new Set<number>([...manualRelatedProducts.map((entry) => entry.id), product.id]),
+          })
         : [],
-    [product, products],
+    [collectionIndex, manualRelatedProducts, product, products],
   );
   const relatedProducts = useMemo(() => {
     if (!product) {
@@ -414,12 +464,29 @@ const ProductPage = () => {
 
     return dedupeProducts(combined).slice(0, 5);
   }, [automaticRelatedProducts, manualRelatedProducts, product]);
+  const automaticComplementaryProducts = useMemo(
+    () =>
+      product
+        ? pickComplementaryProducts(product, products, {
+            collectionIndex,
+            limit: 5,
+            excludedIds: new Set<number>([
+              product.id,
+              ...relatedProducts.map((entry) => entry.id),
+              ...manualComplementaryProducts.map((entry) => entry.id),
+            ]),
+          })
+        : [],
+    [collectionIndex, manualComplementaryProducts, product, products, relatedProducts],
+  );
   const complementaryProducts = useMemo(
     () =>
-      manualComplementaryProducts.filter(
-        (entry) => entry.id !== product?.id && !relatedProducts.some((related) => related.id === entry.id),
-      ),
-    [manualComplementaryProducts, product?.id, relatedProducts],
+      dedupeProducts(
+        [...manualComplementaryProducts, ...automaticComplementaryProducts].filter(
+          (entry) => entry.id !== product?.id && !relatedProducts.some((related) => related.id === entry.id),
+        ),
+      ).slice(0, 5),
+    [automaticComplementaryProducts, manualComplementaryProducts, product?.id, relatedProducts],
   );
   const recentlyViewedProducts = useMemo(
     () =>
@@ -445,6 +512,21 @@ const ProductPage = () => {
   );
   const productCardRatingsQuery = useJudgeMeRatings(productCardRatingIds);
   const productCardRatingsById = productCardRatingsQuery.data ?? {};
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const seoStructuredData = useMemo(() => {
+    if (!origin || !product) {
+      return [];
+    }
+
+    return [
+      buildBreadcrumbStructuredData([
+        { name: "Home", url: `${origin}/` },
+        { name: "Shop", url: `${origin}/shop` },
+        { name: product.title, url: `${origin}/products/${product.handle}` },
+      ]),
+      buildProductStructuredData(product, origin, reviewSummary),
+    ].filter(Boolean);
+  }, [origin, product, reviewSummary]);
 
   if (isLoading) {
     return <LoadingState title="Loading product" subtitle="Preparing details, variants, and delivery info." />;
@@ -536,11 +618,9 @@ const ProductPage = () => {
   const imageSources = (product.images.length
     ? product.images.map((image) => image.src)
     : [primaryImage]).filter(Boolean);
-
-  const highlights = [
-    product.product_type ? `${product.product_type} essential` : "Curated essential",
-    ...productTagList(product).slice(0, 2),
-  ];
+  const subtitle = product.customData?.subtitle?.trim() || product.product_type || "Featured";
+  const badgeText = product.customData?.badgeText?.trim() || "";
+  const customHighlights = (product.customData?.highlights || []).map((entry) => entry.trim()).filter(Boolean);
   const productSummary = productBenefitText(product, 170);
   const detailBullets = extractProductBullets(product.body_html, productSummary);
   const productSpecs = extractProductSpecs(product.body_html, product.product_type || "", variants.length);
@@ -607,6 +687,7 @@ const ProductPage = () => {
         image: activeImage || primaryImage,
         unitPrice: price,
         productType: product.product_type,
+        minimumQuantity: product.customData?.shopChannelMinimumQuantity || quantityFloor,
       },
       selectedQuantity,
     );
@@ -618,6 +699,14 @@ const ProductPage = () => {
 
   return (
     <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-8">
+      <SeoMetadata
+        title={`${product.title} | SALT Online Store`}
+        description={`${productSummary}${subtitle ? ` ${subtitle}.` : ""}`}
+        canonicalPath={`/products/${product.handle}`}
+        image={primaryImage || undefined}
+        ogType="product"
+        structuredData={seoStructuredData}
+      />
       <Reveal>
         <InnerBreadcrumbs
           className="hidden sm:flex"
@@ -674,9 +763,18 @@ const ProductPage = () => {
         </Reveal>
 
         <Reveal delayMs={80}>
-          <aside className="salt-panel-shell rounded-[1.3rem] p-3.5 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24">
+          <aside
+            className="salt-panel-shell rounded-[1.3rem] p-3.5 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24"
+            data-salt-minimum-quantity={quantityFloor}
+          >
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
             <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
+            <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">{subtitle}</p>
+            {badgeText ? (
+              <div className="mt-2 inline-flex items-center rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary">
+                {badgeText}
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
               {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
@@ -725,6 +823,11 @@ const ProductPage = () => {
                 {isAvailable ? "In stock" : "Out of stock"}
               </p>
             </div>
+            {quantityFloor > 1 ? (
+              <p className="mt-2 text-xs font-medium text-muted-foreground">
+                Shop floor: buy {quantityFloor}.
+              </p>
+            ) : null}
 
             {!nativeApp ? (
               <div className="mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
@@ -738,6 +841,18 @@ const ProductPage = () => {
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">{productSummary}</p>
+                {customHighlights.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {customHighlights.slice(0, 3).map((highlight) => (
+                      <span
+                        key={highlight}
+                        className="rounded-full border border-border/70 bg-background px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-foreground"
+                      >
+                        {highlight}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {detailBullets.length > 0 ? (
                   <ul className="mt-3 space-y-2">
                     {detailBullets.slice(0, 2).map((bullet, index) => (
@@ -764,6 +879,18 @@ const ProductPage = () => {
                     </span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{productSummary}</p>
+                  {customHighlights.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {customHighlights.slice(0, 3).map((highlight) => (
+                        <span
+                          key={highlight}
+                          className="rounded-full border border-border/70 bg-background px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-foreground"
+                        >
+                          {highlight}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {detailBullets.length > 0 ? (
                     <ul className="mt-3 space-y-2">
                       {detailBullets.slice(0, 2).map((bullet, index) => (
@@ -952,7 +1079,7 @@ const ProductPage = () => {
               </div>
               {quantityFloor > 1 ? (
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Minimum quantity {quantityFloor}.
+                  Shop floor: buy {quantityFloor}.
                 </p>
               ) : null}
             </div>

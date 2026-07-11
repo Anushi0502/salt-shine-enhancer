@@ -13,6 +13,10 @@ import {
   isCustomProductMetafieldDefinition,
   isStandardProductMetafieldDefinition,
 } from "../src/lib/shopify-product-metafield-definitions.js";
+import {
+  COLLECTION_MARKETING_METAFIELD_DEFINITIONS,
+  SHOP_MARKETING_METAFIELD_DEFINITIONS,
+} from "../src/lib/shopify-marketing-metafield-definitions.js";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -29,6 +33,15 @@ const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS 
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const execFileAsync = promisify(execFile);
+const LEGACY_PRODUCT_METAFIELD_DEFINITIONS_TO_DELETE = [
+  {
+    ownerType: "PRODUCT",
+    namespace: "google",
+    key: "custom_product",
+    name: "Google: Custom Product",
+    deleteAllAssociatedMetafields: true,
+  },
+];
 
 let requestQueue = Promise.resolve();
 
@@ -179,10 +192,22 @@ async function fetchAdminGraphQL(
 
 async function fetchExistingProductMetafieldDefinitions() {
   const records = new Map();
+  for (const ownerType of ["PRODUCT", "COLLECTION", "SHOP"]) {
+    const ownerRecords = await fetchExistingMetafieldDefinitions(ownerType);
+    for (const [key, value] of ownerRecords.entries()) {
+      records.set(key, value);
+    }
+  }
+
+  return records;
+}
+
+async function fetchExistingMetafieldDefinitions(ownerType) {
+  const records = new Map();
   let after = null;
   const query = /* GraphQL */ `
-    query ProductMetafieldDefinitions($first: Int!, $after: String) {
-      metafieldDefinitions(first: $first, ownerType: PRODUCT, after: $after) {
+    query ProductMetafieldDefinitions($first: Int!, $after: String, $ownerType: MetafieldOwnerType!) {
+      metafieldDefinitions(first: $first, ownerType: $ownerType, after: $after) {
         edges {
           node {
             id
@@ -203,6 +228,7 @@ async function fetchExistingProductMetafieldDefinitions() {
     const payload = await fetchAdminGraphQL(query, {
       first: 250,
       after,
+      ownerType,
     });
 
     const connection = payload.metafieldDefinitions;
@@ -296,6 +322,17 @@ async function createCustomProductMetafieldDefinition(definition) {
     }
   `;
 
+  const access = definition.access
+    ? {
+        ...definition.access,
+        ...(definition.access.admin === "MERCHANT_READ_WRITE" ? { admin: undefined } : {}),
+      }
+    : undefined;
+
+  if (access?.admin === undefined) {
+    delete access.admin;
+  }
+
   const payload = await fetchAdminGraphQL(mutation, {
     definition: {
       name: definition.name,
@@ -304,7 +341,7 @@ async function createCustomProductMetafieldDefinition(definition) {
       description: definition.description,
       type: definition.type,
       ownerType: definition.ownerType,
-      access: definition.access,
+      ...(access ? { access } : {}),
       pin: definition.pin ?? false,
       ...(Array.isArray(definition.validations) && definition.validations.length
         ? { validations: definition.validations }
@@ -323,14 +360,62 @@ async function createCustomProductMetafieldDefinition(definition) {
   return result?.createdDefinition || null;
 }
 
+async function deleteLegacyProductMetafieldDefinition(definition) {
+  const mutation = /* GraphQL */ `
+    mutation DeleteProductMetafieldDefinition(
+      $identifier: MetafieldDefinitionIdentifierInput!
+      $deleteAllAssociatedMetafields: Boolean!
+    ) {
+      metafieldDefinitionDelete(
+        identifier: $identifier
+        deleteAllAssociatedMetafields: $deleteAllAssociatedMetafields
+      ) {
+        deletedDefinitionId
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+
+  const payload = await fetchAdminGraphQL(mutation, {
+    identifier: {
+      ownerType: definition.ownerType,
+      namespace: definition.namespace,
+      key: definition.key,
+    },
+    deleteAllAssociatedMetafields: definition.deleteAllAssociatedMetafields ?? false,
+  }, { allowMutations: true });
+
+  const result = payload.metafieldDefinitionDelete;
+  if (Array.isArray(result?.userErrors) && result.userErrors.length) {
+    const message = result.userErrors
+      .map((error) => `${error.field?.join(".") || "definition"}: ${error.message}`)
+      .join(" | ");
+    throw new Error(`Failed to delete metafield definition "${definition.name}": ${message}`);
+  }
+
+  return result?.deletedDefinitionId || null;
+}
+
 async function ensureProductMetafieldDefinitions() {
-  process.stdout.write(`Ensuring product metafield definitions on ${shopifyStoreDomain} via Shopify CLI\n`);
+  const allDefinitions = [
+    ...PRODUCT_METAFIELD_DEFINITIONS,
+    ...COLLECTION_MARKETING_METAFIELD_DEFINITIONS,
+    ...SHOP_MARKETING_METAFIELD_DEFINITIONS,
+  ];
+
+  process.stdout.write(
+    `Ensuring Shopify product, collection, and shop metafield definitions on ${shopifyStoreDomain} via Shopify CLI\n`,
+  );
   const existingDefinitions = await fetchExistingProductMetafieldDefinitions();
 
   let createdCount = 0;
   let existingCount = 0;
 
-  for (const definition of PRODUCT_METAFIELD_DEFINITIONS) {
+  for (const definition of allDefinitions) {
     const definitionId = getProductMetafieldDefinitionId(definition);
     const existing = existingDefinitions.get(definitionId);
 
@@ -357,8 +442,23 @@ async function ensureProductMetafieldDefinitions() {
     throw new Error(`Unsupported metafield definition kind for "${definition.name}"`);
   }
 
+  let deletedCount = 0;
+  for (const definition of LEGACY_PRODUCT_METAFIELD_DEFINITIONS_TO_DELETE) {
+    const definitionId = getProductMetafieldDefinitionId(definition);
+    const existing = existingDefinitions.get(definitionId);
+
+    if (!existing) {
+      process.stdout.write(`Legacy definition already absent ${definition.name} (${definitionId})\n`);
+      continue;
+    }
+
+    await deleteLegacyProductMetafieldDefinition(definition);
+    deletedCount += 1;
+    logDefinition(definition, "Deleted legacy");
+  }
+
   process.stdout.write(
-    `Product metafield definitions ensured: ${existingCount} existing, ${createdCount} created.\n`,
+    `Metafield definitions ensured: ${existingCount} existing, ${createdCount} created, ${deletedCount} deleted.\n`,
   );
 }
 

@@ -8,12 +8,16 @@ import {
   isValidShopifyVariantId,
   useCart,
 } from "@/lib/cart";
-import { formatMoney } from "@/lib/formatters";
+import { formatMoney, productImage } from "@/lib/formatters";
 import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
-import { useProducts } from "@/lib/shopify-data";
+import { useCollectionProductsMap, useProducts } from "@/lib/shopify-data";
+import {
+  buildCartRecommendations,
+  buildProductCollectionIndex,
+} from "@/lib/sales-optimization";
 
 function normalizeHandleLookup(input: string): string {
   return input
@@ -32,6 +36,11 @@ function normalizeTitleLookup(input: string): string {
 const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
   const { data: productsPayload } = useProducts();
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
+  const collectionIndex = useMemo(
+    () => buildProductCollectionIndex(collectionProductsMapPayload),
+    [collectionProductsMapPayload],
+  );
 
   const catalogLookup = useMemo(() => {
     const byHandle = new Map<string, { variantId: number; handle: string }>();
@@ -132,6 +141,19 @@ const CartPage = () => {
     [unresolvedShopifyLinks],
   );
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
+  const recommendationPlan = useMemo(
+    () =>
+      buildCartRecommendations(items, productsPayload?.products || [], collectionIndex, {
+        focusLimit: 2,
+        relatedLimit: 3,
+        complementaryLimit: 3,
+      }),
+    [collectionIndex, items, productsPayload?.products],
+  );
+  const recommendedProducts = useMemo(
+    () => [...recommendationPlan.relatedProducts, ...recommendationPlan.complementaryProducts],
+    [recommendationPlan],
+  );
 
   const checkoutHandoffUrl = buildShopifyCheckoutUrl(checkoutItems);
   const freeShippingThreshold = 120;
@@ -321,7 +343,7 @@ const CartPage = () => {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= getMinimumProductQuantity(item.handle)}
+                          disabled={item.quantity <= getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity)}
                           className="inline-flex h-10 w-10 items-center justify-center text-[#102A43] disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label="Decrease quantity"
                         >
@@ -337,6 +359,11 @@ const CartPage = () => {
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
+                      {getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity) > 1 ? (
+                        <p className="mt-1 text-[0.72rem] text-[#5C748F]">
+                          Shop floor: buy {getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity)}.
+                        </p>
+                      ) : null}
 
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -449,6 +476,48 @@ const CartPage = () => {
           >
             Continue shopping
           </Link>
+
+          {recommendedProducts.length > 0 ? (
+            <div className="mt-5 rounded-[1rem] border border-[#d8e6f5] bg-[#f7fbff] p-4">
+              <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-[#5C748F]">
+                Pair with these picks
+              </p>
+              <div className="mt-3 space-y-3">
+                {recommendedProducts.slice(0, 3).map((product) => {
+                  const image = productImage(product);
+
+                  return (
+                    <Link
+                      key={product.id}
+                      to={`/products/${product.handle}`}
+                      className="flex items-center gap-3 rounded-[0.95rem] border border-[#d8e6f5] bg-white p-2.5 transition hover:border-[#bfd7f2] hover:bg-[#fbfdff]"
+                    >
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[0.8rem] border border-[#e2edf8] bg-[#f1f7ff]">
+                        {image ? (
+                          <img src={image} alt={product.title} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="grid h-full w-full place-items-center text-[0.52rem] font-bold uppercase tracking-[0.08em] text-[#5C748F]">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-[#102A43]">
+                          {product.title}
+                        </p>
+                        <p className="mt-1 text-[0.66rem] uppercase tracking-[0.12em] text-[#5C748F]">
+                          {product.product_type || "Curated pick"}
+                        </p>
+                      </div>
+                      <strong className="shrink-0 text-sm text-[#15479a]">
+                        {formatMoney(Number(product.variants[0]?.price || 0))}
+                      </strong>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           <Link
             to="/contact"
