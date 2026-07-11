@@ -215,7 +215,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "home-safety-tips-for-every-age",
         summary: "A family-friendly guide to safer home details that matter at every stage of life, from lighting to organization.",
         collectionRoute: "/collections/home-decor-lighting",
-        featuredProducts: featured(P.miniNightLight, P.digitalClock, P.gpsTracker),
+        featuredProducts: featured(P.laopaoLamp, P.digitalClock, P.gpsTracker),
       },
       {
         title: "Organizing Important Documents",
@@ -273,7 +273,7 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         handle: "planning-for-the-future",
         summary: "A calm, practical page that helps families think ahead without making the conversation feel heavy.",
         collectionRoute: "/collections/senior-living-solutions",
-        featuredProducts: featured(P.planner, P.digitalClock, P.medicalBag),
+        featuredProducts: featured(P.planner, P.pillBox14, P.medicalBag),
       },
     ],
   },
