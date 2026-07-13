@@ -17,7 +17,7 @@ import { getRuntimeContext } from "@/lib/theme-assets";
 const supportTopics = ["Order tracking", "Returns and exchanges", "Product recommendation", "Bulk order request"];
 const runtimeContext = getRuntimeContext();
 const supportEmail = runtimeContext.supportEmail || "support@saltonlinestore.com";
-const contactPolicyHref = runtimeContext.contactPolicyUrl || "/policies/contact-information";
+const contactPolicyHref = "/pages/contact-information";
 
 const ContactPage = () => {
   const [submitted, setSubmitted] = useState(false);

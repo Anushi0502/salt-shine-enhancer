@@ -140,6 +140,10 @@ const AppShell = () => (
                   path="/policies/contact-information"
                   element={<ContactInformationPolicyPage />}
                 />
+                <Route
+                  path="/pages/contact-information"
+                  element={<ContactInformationPolicyPage />}
+                />
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
