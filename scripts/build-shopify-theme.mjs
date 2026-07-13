@@ -327,7 +327,12 @@ async function copyAssets(entryJsPath, entryCssPath) {
 
     const assetPath = resolve(themeAssetsDir, asset);
     const assetSource = await readFile(assetPath, "utf8");
-    const rewrittenAssetSource = assetSource.replaceAll(`./${entryJs}`, `./${themeEntryJs}`);
+    const rewrittenAssetSource = assetSource
+      .replaceAll(`./${entryJs}`, `./${themeEntryJs}`)
+      // A prior theme build may already have rewritten a lazy chunk to an
+      // older salt-entry file. Repoint every such import so React has exactly
+      // one runtime across the app shell and route chunks.
+      .replace(/\.\/salt-entry-[A-Za-z0-9_-]+\.js/g, `./${themeEntryJs}`);
     if (rewrittenAssetSource !== assetSource) {
       await writeFile(assetPath, rewrittenAssetSource);
     }
