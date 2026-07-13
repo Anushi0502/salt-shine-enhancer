@@ -294,7 +294,17 @@ async function copyAssets(entryJsPath, entryCssPath) {
   // In Shopify, the entry is served from /cdn/shop/.../assets, so make those
   // paths relative to the entry file instead. This keeps lazy chunks on the
   // Shopify CDN instead of requesting non-existent /assets/* URLs.
-  await writeFile(entryAssetPath, entrySource.replace(/(["'])assets\//g, "$1./"));
+  const themeEntrySource = entrySource
+    .replace(/(["'])assets\//g, "$1./")
+    // Vite's preload helper prefixes every dependency with "/". That works
+    // when assets live at /assets, but makes Shopify request the storefront
+    // root instead of the theme CDN. Dependencies above are now relative, so
+    // keep them relative when the helper creates modulepreload links too.
+    .replace(
+      /(="modulepreload",[A-Za-z_$][\w$]*=function\((\w+)\)\{return)"\/"\+\2(\})/,
+      "$1$2$3",
+    );
+  await writeFile(entryAssetPath, themeEntrySource);
 
   // Do not duplicate the Vite entry bundle under a second filename. Lazy
   // chunks import the original hashed entry, and copying it to salt-app.js
