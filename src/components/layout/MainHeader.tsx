@@ -83,7 +83,7 @@ const headerShortcutLinks: SiteHeaderCollectionLink[] = [
     label: "Under $25",
     routeHandle: "unique-products",
     activeCollectionHandles: ["under-25"],
-    to: buildSubcollectionRoute("unique-products", "under-25"),
+    to: buildCollectionRoute("under-25"),
   },
   {
     label: "Trending Now",
@@ -103,7 +103,7 @@ const headerShortcutLinks: SiteHeaderCollectionLink[] = [
     label: "Under $50",
     routeHandle: "unique-products",
     activeCollectionHandles: ["under-50"],
-    to: buildSubcollectionRoute("unique-products", "under-50"),
+    to: buildCollectionRoute("under-50"),
   },
 ];
 
