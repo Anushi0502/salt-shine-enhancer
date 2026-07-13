@@ -473,7 +473,7 @@ export async function fetchJudgeMeTestimonials(
     .slice(0, limit);
 }
 
-export function useJudgeMeRatings(productIds: number[]) {
+export function useJudgeMeRatings(productIds: number[], enabled = true) {
   const normalizedIds = useMemo(
     () =>
       Array.from(
@@ -489,7 +489,7 @@ export function useJudgeMeRatings(productIds: number[]) {
   return useQuery({
     queryKey: ["judgeme-preview-badges", normalizedIds.join(",")],
     queryFn: () => fetchJudgeMeRatings(normalizedIds),
-    enabled: normalizedIds.length > 0,
+    enabled: enabled && normalizedIds.length > 0,
     staleTime: JUDGEME_STALE_TIME_MS,
     refetchInterval: JUDGEME_AUTO_REFRESH_MS,
     refetchIntervalInBackground: true,

@@ -242,8 +242,13 @@ const ShopPage = () => {
     isLoading: collectionProductIdsLoading,
     error: collectionProductIdsError,
     refetch: refetchCollectionProductIds,
-  } = useCollectionProductIds(collectionHandle, Boolean(collectionHandle) && !isBestSellerCollection);
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap(Boolean(collectionHandle) && !isBestSellerCollection);
+  } = useCollectionProductIds(
+    collectionHandle,
+    Boolean(collectionHandle) && collectionHandle !== DEFAULT_COLLECTION_HANDLE && !isBestSellerCollection,
+  );
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(
+    Boolean(collectionHandle) && collectionHandle !== DEFAULT_COLLECTION_HANDLE && !isBestSellerCollection,
+  );
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
@@ -414,7 +419,12 @@ const ShopPage = () => {
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
   const visibleProductIds = useMemo(() => visibleProducts.map((product) => product.id), [visibleProducts]);
   const deferredVisibleProductIds = useDeferredValue(visibleProductIds);
-  const visibleRatingsQuery = useJudgeMeRatings(deferredVisibleProductIds);
+  const [shouldLoadRatings, setShouldLoadRatings] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShouldLoadRatings(true), 1_500);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const visibleRatingsQuery = useJudgeMeRatings(deferredVisibleProductIds, shouldLoadRatings);
   const visibleRatingsByProductId = visibleRatingsQuery.data ?? {};
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
