@@ -331,7 +331,14 @@ async function copyAssets(entryJsPath, entryCssPath) {
   // chunks import the original hashed entry, and copying it to salt-app.js
   // creates a second React runtime (which causes invalid-hook/removeChild
   // crashes). The stable Shopify asset is only a module loader.
-  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${themeEntryJs}";\n`);
+  // Shopify can resolve a relative module import against the storefront URL
+  // (for example, /products/) instead of the theme asset URL. Start the Vite
+  // entry from the absolute theme asset base exposed by the Liquid section so
+  // every lazy product-page chunk stays on the Shopify CDN.
+  await writeFile(
+    resolve(themeAssetsDir, "salt-app.js"),
+    `const base = globalThis.SALT_THEME_ASSET_BASE || new URL("./", import.meta.url).href;\nimport(new URL(${JSON.stringify(themeEntryJs)}, base).href);\n`,
+  );
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
