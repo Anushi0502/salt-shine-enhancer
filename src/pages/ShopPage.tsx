@@ -407,9 +407,9 @@ const ShopPage = () => {
           url: `${origin}${location.pathname}`,
         },
       ]),
-      ...(selectedCollection ? buildCollectionStructuredData(selectedCollection, origin, featuredCollectionProducts) : []),
+      ...(selectedCollection ? buildCollectionStructuredData(selectedCollection, origin) : []),
     ].filter(Boolean);
-  }, [curatedCollection?.title, curatedSubcollection?.title, featuredCollectionProducts, location.pathname, origin, selectedCollection]);
+  }, [curatedCollection?.title, curatedSubcollection?.title, location.pathname, origin, selectedCollection]);
   const seoTitle = query.trim()
     ? `Search "${query.trim()}" | SALT Online Store`
     : `${curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Shop"} | SALT Online Store`;
