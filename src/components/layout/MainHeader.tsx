@@ -191,9 +191,9 @@ function HeaderMenuDrawer({
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(17rem,calc(100vw-1rem))] lg:max-w-[min(17rem,calc(100vw-1rem))]"
+        className="h-[100dvh] max-h-[100dvh] w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overscroll-contain overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(17rem,calc(100vw-1rem))] lg:max-w-[min(17rem,calc(100vw-1rem))]"
       >
-        <div className="flex min-h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
           <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-2.5 py-1.5 text-white sm:px-3 sm:py-2">
             <SheetClose asChild>
               <a
@@ -237,8 +237,8 @@ function HeaderMenuDrawer({
             </SheetClose>
           </div>
 
-          <div className="grid gap-2 px-2.5 py-2.5 sm:px-3">
-            <section className="border-b border-[#e2edf8] pb-2">
+          <div className="grid min-h-0 flex-1 gap-2 px-2.5 py-2.5 sm:px-3">
+            <section className="flex min-h-0 flex-1 flex-col border-b border-[#e2edf8] pb-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
                 <SheetClose asChild>
@@ -251,7 +251,7 @@ function HeaderMenuDrawer({
                 </SheetClose>
               </div>
 
-              <div className="mt-2 grid gap-1.5 lg:hidden">
+              <div className="mt-2 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto pb-4 pr-1 lg:hidden">
                 {SITE_COLLECTIONS.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
 
