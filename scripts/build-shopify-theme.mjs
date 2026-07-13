@@ -2,6 +2,7 @@
 
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { basename, resolve } from "node:path";
 
 const rootDir = process.cwd();
@@ -303,14 +304,15 @@ async function copyAssets(entryJsPath, entryCssPath) {
     .replace(
       /(="modulepreload",[A-Za-z_$][\w$]*=function\((\w+)\)\{return)"\/"\+\2(\})/,
       "$1 $2$3",
-    );
+  );
   await writeFile(entryAssetPath, themeEntrySource);
+  const entryCacheKey = createHash("sha256").update(themeEntrySource).digest("hex").slice(0, 12);
 
   // Do not duplicate the Vite entry bundle under a second filename. Lazy
   // chunks import the original hashed entry, and copying it to salt-app.js
   // creates a second React runtime (which causes invalid-hook/removeChild
   // crashes). The stable Shopify asset is only a module loader.
-  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${entryJs}";\n`);
+  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${entryJs}?theme-entry=${entryCacheKey}";\n`);
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
