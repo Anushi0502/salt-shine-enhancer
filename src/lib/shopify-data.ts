@@ -377,6 +377,18 @@ async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]>
   return allProducts;
 }
 
+async function fetchProductByHandleFromLive(base: string, handle: string): Promise<ShopifyProduct> {
+  const normalizedHandle = String(handle || "").trim();
+  if (!normalizedHandle) {
+    throw new Error("Product handle is required");
+  }
+
+  // Shopify's product JSON route contains the complete product, including all
+  // variants and media, without making a product page wait for the catalogue
+  // snapshot used by search and merchandising.
+  return fetchJson<ShopifyProduct>(`${base}/products/${encodeURIComponent(normalizedHandle)}.js`);
+}
+
 async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollection[]> {
   const allCollections: ShopifyCollection[] = [];
   let page = 1;
@@ -1142,6 +1154,34 @@ export async function loadProducts(): Promise<ProductsPayload> {
   }
 }
 
+export async function loadProductByHandle(handle: string): Promise<ShopifyProduct> {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle) {
+    throw new Error("Product handle is required");
+  }
+
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      return normalizeProductRecord(await fetchProductByHandleFromLive(base, normalizedHandle));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
+  }
+
+  // Keep the versioned theme snapshot as a recovery path for local previews or
+  // stores where Shopify's public product endpoint is temporarily unavailable.
+  const cached = await fetchProductsFromCache();
+  const cachedProduct = cached.products.find((product) => String(product.handle || "").trim().toLowerCase() === normalizedHandle);
+  if (cachedProduct) {
+    return cachedProduct;
+  }
+
+  throw new Error(`Product "${normalizedHandle}" is unavailable. ${endpointErrors.slice(0, 3).join(" | ")}`);
+}
+
 export async function loadProductSearchIndex(): Promise<ProductsPayload> {
   try {
     return await fetchProductSearchIndexFromCache();
@@ -1353,6 +1393,23 @@ export function useProducts(enabled = true) {
     queryKey: ["products", DATA_MODE],
     queryFn: loadProducts,
     enabled,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+}
+
+export function useProductByHandle(handle: string | undefined, enabled = true) {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+
+  return useQuery({
+    queryKey: ["product", normalizedHandle, DATA_MODE],
+    queryFn: () => loadProductByHandle(normalizedHandle),
+    enabled: enabled && Boolean(normalizedHandle),
     staleTime: CATALOG_STALE_TIME_MS,
     refetchOnMount: false,
     refetchOnWindowFocus: false,

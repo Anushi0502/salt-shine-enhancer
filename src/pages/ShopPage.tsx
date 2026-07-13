@@ -26,12 +26,13 @@ import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
+  getMergedCollectionHandles,
   getSubcollectionByHandle,
   resolveCollectionFeedHandle,
   resolveCollectionShopifyHandle,
 } from "@/lib/site-navigation";
 import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
-import { useCollections, useCollectionProductIds, useProducts } from "@/lib/shopify-data";
+import { useCollectionProductsMap, useCollections, useCollectionProductIds, useProductSearchIndex } from "@/lib/shopify-data";
 import {
   buildBreadcrumbStructuredData,
   buildCollectionStructuredData,
@@ -58,6 +59,23 @@ const priceRangeOptions = [
 
 const PAGE_SIZE = 36;
 const DEFAULT_COLLECTION_HANDLE = "all-products";
+
+function getCachedCollectionProductIds(
+  collections: Record<string, { productIds: number[] }> | undefined,
+  handle: string | null,
+): number[] | null {
+  if (!collections || !handle) {
+    return null;
+  }
+
+  const ids = new Set<number>();
+  for (const expectedHandle of getMergedCollectionHandles(handle)) {
+    const entry = Object.entries(collections).find(([entryHandle]) => normalizeHandle(entryHandle) === expectedHandle)?.[1];
+    entry?.productIds.forEach((id) => ids.add(id));
+  }
+
+  return ids.size ? Array.from(ids) : null;
+}
 
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
@@ -215,7 +233,9 @@ const ShopPage = () => {
     }
   }, [isDefaultSearchCollection, searchParams, setSearchParams]);
 
-  const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
+  // The compact catalog carries every search/filter/sort field this grid needs
+  // at a fraction of the full product-detail snapshot's transfer size.
+  const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProductSearchIndex();
   const { data: collectionsPayload, isLoading: collectionsLoading, error: collectionsError, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
@@ -223,6 +243,7 @@ const ShopPage = () => {
     error: collectionProductIdsError,
     refetch: refetchCollectionProductIds,
   } = useCollectionProductIds(collectionHandle, Boolean(collectionHandle) && !isBestSellerCollection);
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(Boolean(collectionHandle) && !isBestSellerCollection);
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
@@ -231,13 +252,17 @@ const ShopPage = () => {
     () => selectBestSellerProducts(products, 12).map((product) => product.id),
     [products],
   );
+  const cachedCollectionProductIds = useMemo(
+    () => getCachedCollectionProductIds(collectionProductsMapPayload?.collections, collectionHandle),
+    [collectionHandle, collectionProductsMapPayload?.collections],
+  );
   const selectedCollectionProductIds = useMemo(() => {
     if (isBestSellerCollection) {
       return bestSellerProductIds;
     }
 
-    return collectionProductIdsPayload?.productIds ?? null;
-  }, [bestSellerProductIds, collectionProductIdsPayload, isBestSellerCollection]);
+    return collectionProductIdsPayload?.productIds ?? cachedCollectionProductIds;
+  }, [bestSellerProductIds, cachedCollectionProductIds, collectionProductIdsPayload, isBestSellerCollection]);
   const selectedCollectionOrder = useMemo(() => {
     if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
       return null;
@@ -416,13 +441,18 @@ const ShopPage = () => {
   const seoDescription = query.trim()
     ? `Search ${query.trim()} across ${totalResults.toLocaleString()} products with smarter ranking, filters, and merchandising signals.`
     : collectionHeroSummary;
+  // Use the bundled collection membership for the first render. The live
+  // request remains active and replaces it as soon as Shopify returns the
+  // current manual ordering.
+  const waitingForCollectionIds = Boolean(collectionHandle) && collectionProductIdsLoading && !cachedCollectionProductIds;
+  const hasBlockingCollectionError = Boolean(collectionHandle) && Boolean(collectionProductIdsError) && !cachedCollectionProductIds;
 
   useEffect(() => {
-    if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
+    if (productsLoading || collectionsLoading || waitingForCollectionIds) {
       return;
     }
 
-    if (productsError || collectionsError || (Boolean(collectionHandle) && collectionProductIdsError)) {
+    if (productsError || collectionsError || hasBlockingCollectionError) {
       return;
     }
 
@@ -441,8 +471,8 @@ const ShopPage = () => {
     trackMetaPixelSearch(normalizedQuery, totalResults);
   }, [
     collectionHandle,
-    collectionProductIdsError,
-    collectionProductIdsLoading,
+    hasBlockingCollectionError,
+    waitingForCollectionIds,
     collectionsError,
     collectionsLoading,
     productsError,
@@ -450,7 +480,7 @@ const ShopPage = () => {
     deferredQuery,
     totalResults,
   ]);
-  if (productsLoading || collectionsLoading || (Boolean(collectionHandle) && collectionProductIdsLoading)) {
+  if (productsLoading || collectionsLoading || waitingForCollectionIds) {
     return (
       <LoadingState
         title="Loading products"
@@ -459,7 +489,7 @@ const ShopPage = () => {
     );
   }
 
-  if (productsError || collectionsError || (Boolean(collectionHandle) && collectionProductIdsError)) {
+  if (productsError || collectionsError || hasBlockingCollectionError) {
     return (
       <ErrorState
         title="Catalog unavailable"

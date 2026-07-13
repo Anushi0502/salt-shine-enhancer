@@ -57,7 +57,8 @@ import {
 } from "@/lib/order-history";
 import {
   useCollectionProductsMap,
-  useProducts,
+  useProductByHandle,
+  useProductSearchIndex,
 } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
@@ -304,13 +305,17 @@ const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
-  const { data, isLoading, error, refetch } = useProducts();
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
+  const { data: productData, isLoading, error, refetch } = useProductByHandle(handle);
+  const { data: productSearchPayload } = useProductSearchIndex(Boolean(productData));
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(Boolean(productData));
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
 
-  const products = useMemo(() => data?.products ?? [], [data]);
-  const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
+  const products = useMemo(() => productSearchPayload?.products ?? [], [productSearchPayload]);
+  const product = useMemo(
+    () => productData || products.find((entry) => entry.handle === handle),
+    [handle, productData, products],
+  );
   const primaryProductImage = product ? productImage(product) || "" : "";
   const heroImageRef = useRef<HTMLImageElement | null>(null);
   const collectionIndex = useMemo(
