@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, resolve } from "node:path";
@@ -305,14 +305,33 @@ async function copyAssets(entryJsPath, entryCssPath) {
       /(="modulepreload",[A-Za-z_$][\w$]*=function\((\w+)\)\{return)"\/"\+\2(\})/,
       "$1 $2$3",
   );
-  await writeFile(entryAssetPath, themeEntrySource);
   const entryCacheKey = createHash("sha256").update(themeEntrySource).digest("hex").slice(0, 12);
+  const themeEntryJs = `salt-entry-${entryCacheKey}.js`;
+  const themeEntryAssetPath = resolve(themeAssetsDir, themeEntryJs);
+  await writeFile(themeEntryAssetPath, themeEntrySource);
+  await rm(entryAssetPath);
+
+  // Some lazy chunks import the Vite entry directly. Point every one at the
+  // processed, content-addressed entry so the theme has exactly one React
+  // runtime and Shopify's CDN cannot retain a stale entry bundle.
+  for (const asset of await readdir(themeAssetsDir)) {
+    if (!asset.endsWith(".js") || asset === themeEntryJs) {
+      continue;
+    }
+
+    const assetPath = resolve(themeAssetsDir, asset);
+    const assetSource = await readFile(assetPath, "utf8");
+    const rewrittenAssetSource = assetSource.replaceAll(`./${entryJs}`, `./${themeEntryJs}`);
+    if (rewrittenAssetSource !== assetSource) {
+      await writeFile(assetPath, rewrittenAssetSource);
+    }
+  }
 
   // Do not duplicate the Vite entry bundle under a second filename. Lazy
   // chunks import the original hashed entry, and copying it to salt-app.js
   // creates a second React runtime (which causes invalid-hook/removeChild
   // crashes). The stable Shopify asset is only a module loader.
-  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${entryJs}?theme-entry=${entryCacheKey}";\n`);
+  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${themeEntryJs}";\n`);
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
