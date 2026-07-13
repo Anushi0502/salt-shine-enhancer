@@ -809,7 +809,7 @@ async function fetchCollectionProductIds(handle) {
 
   try {
     while (true) {
-      const url = `${baseUrl}/collections/${handle}/products.json?limit=${limit}&page=${page}`;
+      const url = `${baseUrl}/collections/${handle}/products.json?limit=${limit}&page=${page}&sort_by=manual`;
       const payload = await fetchJsonUrl(url);
       const products = Array.isArray(payload.products) ? payload.products : [];
 

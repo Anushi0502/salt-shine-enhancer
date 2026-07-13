@@ -65,6 +65,9 @@ const SHOP_DATA_PATH = "/data/shop.json";
 // Theme data assets use Shopify's versioned asset URLs. Treat them as stable for
 // the current browser session instead of repeatedly rebuilding the full catalog.
 const CATALOG_STALE_TIME_MS = isNativeApp() ? 10 * 60 * 1000 : 30 * 60 * 1000;
+// Merchandisers set collection order in Shopify. Do not keep that order behind
+// the longer catalog snapshot cache: refresh it on every collection page visit.
+const COLLECTION_ORDER_STALE_TIME_MS = 0;
 const LIVE_QUERY_MAX_RETRIES = 4;
 const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
 const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
@@ -403,7 +406,7 @@ async function fetchCollectionProductIdsFromLive(base: string, handle: string): 
     let page = 1;
 
     while (true) {
-      const url = `${base}/collections/${encodeURIComponent(currentHandle)}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
+      const url = `${base}/collections/${encodeURIComponent(currentHandle)}/products.json?limit=${PAGE_LIMIT}&page=${page}&sort_by=manual`;
 
       try {
         const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
@@ -1268,32 +1271,31 @@ async function loadCollectionProductIds(handle: string): Promise<CollectionProdu
     throw new Error("Collection handle is required");
   }
 
+  const endpointErrors: string[] = [];
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        handle: normalizedHandle,
+        total: productIds.length,
+        productIds,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
+  }
+
   try {
     return await fetchCollectionProductIdsFromCache(normalizedHandle);
   } catch (cacheError) {
-    const endpointErrors: string[] = [];
-
-    for (const base of getLiveCatalogBases()) {
-      try {
-        const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
-        return {
-          generatedAt: new Date().toISOString(),
-          source: base,
-          handle: normalizedHandle,
-          total: productIds.length,
-          productIds,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "unknown error";
-        endpointErrors.push(`${base} -> ${message}`);
-      }
-    }
-
     const details =
       endpointErrors.length > 0
         ? endpointErrors.slice(0, 4).join(" | ")
         : "No reachable live collection products endpoints.";
-
     const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     throw new Error(`Live collection products fetch failed for "${normalizedHandle}". ${details}. Cached collection ids fetch failed: ${cacheMessage}`);
   }
@@ -1428,8 +1430,8 @@ export function useCollectionProductIds(handle: string, enabled = true) {
     queryKey: ["collection-products-by-handle", DATA_MODE, normalizedHandle],
     queryFn: () => loadCollectionProductIds(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    staleTime: CATALOG_STALE_TIME_MS,
-    refetchOnMount: false,
+    staleTime: COLLECTION_ORDER_STALE_TIME_MS,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,
