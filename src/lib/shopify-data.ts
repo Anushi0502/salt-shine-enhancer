@@ -410,6 +410,21 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
         .filter((image): image is ShopifyImage => Boolean(image))
     : [];
   const primaryImage = imageRecord(product.image ?? product.featured_image ?? images[0], 0);
+  const formatStorefrontMoney = (value: unknown): string => {
+    const cents = Number(value);
+    return Number.isFinite(cents) ? (cents / 100).toFixed(2) : "0.00";
+  };
+  const variants = Array.isArray(product.variants)
+    ? product.variants.map((variant) => {
+        const record = variant as Record<string, unknown>;
+        return {
+          ...record,
+          price: formatStorefrontMoney(record.price),
+          compare_at_price:
+            record.compare_at_price == null ? null : formatStorefrontMoney(record.compare_at_price),
+        };
+      })
+    : [];
 
   // `.js` uses storefront field names (`description`, `type`, URL images),
   // while the app's richer catalog format uses `body_html`, `product_type`,
@@ -420,6 +435,7 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
     product_type: typeof product.product_type === "string" ? product.product_type : String(product.type || ""),
     images,
     image: primaryImage,
+    variants,
   } as ShopifyProduct;
 }
 
