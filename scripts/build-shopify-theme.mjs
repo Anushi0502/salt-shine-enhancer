@@ -337,7 +337,7 @@ async function copyAssets(entryJsPath, entryCssPath) {
   // every lazy product-page chunk stays on the Shopify CDN.
   await writeFile(
     resolve(themeAssetsDir, "salt-app.js"),
-    `const base = globalThis.SALT_THEME_ASSET_BASE || new URL("./", import.meta.url).href;\nimport(new URL(${JSON.stringify(themeEntryJs)}, base).href);\n`,
+    `const rawBase = globalThis.SALT_THEME_ASSET_BASE || new URL("./", import.meta.url).href;\nconst base = rawBase.startsWith("//") ? window.location.protocol + rawBase : rawBase;\nimport(new URL(${JSON.stringify(themeEntryJs)}, base).href);\n`,
   );
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
