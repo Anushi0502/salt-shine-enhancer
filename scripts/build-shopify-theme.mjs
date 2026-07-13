@@ -288,7 +288,19 @@ async function copyAssets(entryJsPath, entryCssPath) {
   const entryJs = basename(entryJsPath);
   const entryCss = basename(entryCssPath);
 
-  await cp(resolve(distDir, "assets", entryJs), resolve(themeAssetsDir, "salt-app.js"));
+  const entryAssetPath = resolve(themeAssetsDir, entryJs);
+  const entrySource = await readFile(entryAssetPath, "utf8");
+  // Vite emits lazy-chunk preload paths relative to the web root ("assets/").
+  // In Shopify, the entry is served from /cdn/shop/.../assets, so make those
+  // paths relative to the entry file instead. This keeps lazy chunks on the
+  // Shopify CDN instead of requesting non-existent /assets/* URLs.
+  await writeFile(entryAssetPath, entrySource.replace(/(["'])assets\//g, "$1./"));
+
+  // Do not duplicate the Vite entry bundle under a second filename. Lazy
+  // chunks import the original hashed entry, and copying it to salt-app.js
+  // creates a second React runtime (which causes invalid-hook/removeChild
+  // crashes). The stable Shopify asset is only a module loader.
+  await writeFile(resolve(themeAssetsDir, "salt-app.js"), `import "./${entryJs}";\n`);
   await cp(resolve(distDir, "assets", entryCss), resolve(themeAssetsDir, "salt-app.css"));
 
   await cp(resolve(publicDir, "brand", "salt-logo.png"), resolve(themeAssetsDir, "brand-salt-logo.png"));
