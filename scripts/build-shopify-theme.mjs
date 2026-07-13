@@ -295,8 +295,14 @@ async function copyAssets(entryJsPath, entryCssPath) {
   // In Shopify, the entry is served from /cdn/shop/.../assets, so make those
   // paths relative to the entry file instead. This keeps lazy chunks on the
   // Shopify CDN instead of requesting non-existent /assets/* URLs.
-  const themeEntrySource = entrySource
+  const themeAssetResolver = `const __saltThemeAsset=(path)=>{const rawBase=globalThis.SALT_THEME_ASSET_BASE||new URL("./",import.meta.url).href;const base=rawBase.startsWith("//")?window.location.protocol+rawBase:rawBase;const file=String(path);return new URL(file.startsWith("./")?file.slice(2):file,base).href};\n`;
+  const themeEntrySource = themeAssetResolver + entrySource
     .replace(/(["'])assets\//g, "$1./")
+    // The lazy route imports and their modulepreload maps are generated as
+    // relative URLs. Shopify resolves these from the current storefront path
+    // on product pages, so point both mechanisms at the theme CDN explicitly.
+    .replace(/import\("\.\/([^"\n]+)"\)/g, 'import(__saltThemeAsset("$1"))')
+    .replace(/=>i\.map\(i=>d\[i\]\)/g, '=>i.map(i=>__saltThemeAsset(d[i]))')
     // Vite's preload helper prefixes every dependency with "/". That works
     // when assets live at /assets, but makes Shopify request the storefront
     // root instead of the theme CDN. Dependencies above are now relative, so
