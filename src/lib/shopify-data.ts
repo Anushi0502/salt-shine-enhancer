@@ -344,7 +344,11 @@ async function fetchJson<T>(url: string, cache: RequestCache = "no-store"): Prom
   }
 
   const contentType = response.headers.get("content-type") || "";
-  if (!/json/i.test(contentType)) {
+  // Shopify's `/products/:handle.js` endpoint returns a JSON body with a
+  // `text/javascript` MIME type. Treat that documented response shape as JSON
+  // so PDPs use the direct product payload instead of falling back to the
+  // large catalog cache.
+  if (!/(json|(?:java|ecma)script)/i.test(contentType)) {
     throw new Error(`Expected JSON but received ${contentType || "unknown content type"} for ${resolvedUrl}`);
   }
 
