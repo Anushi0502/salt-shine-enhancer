@@ -302,7 +302,7 @@ async function copyAssets(entryJsPath, entryCssPath) {
     // keep them relative when the helper creates modulepreload links too.
     .replace(
       /(="modulepreload",[A-Za-z_$][\w$]*=function\((\w+)\)\{return)"\/"\+\2(\})/,
-      "$1$2$3",
+      "$1 $2$3",
     );
   await writeFile(entryAssetPath, themeEntrySource);
 
