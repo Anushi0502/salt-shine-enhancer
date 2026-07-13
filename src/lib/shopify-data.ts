@@ -390,7 +390,37 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
   // Shopify's product JSON route contains the complete product, including all
   // variants and media, without making a product page wait for the catalogue
   // snapshot used by search and merchandising.
-  return fetchJson<ShopifyProduct>(`${base}/products/${encodeURIComponent(normalizedHandle)}.js`);
+  const product = await fetchJson<Record<string, unknown>>(
+    `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
+  );
+  const imageRecord = (value: unknown, index: number): ShopifyImage | null => {
+    if (typeof value === "string" && value.trim()) {
+      return { id: -(index + 1), src: value, alt: null };
+    }
+
+    if (value && typeof value === "object" && typeof (value as ShopifyImage).src === "string") {
+      return value as ShopifyImage;
+    }
+
+    return null;
+  };
+  const images = Array.isArray(product.images)
+    ? product.images
+        .map((image, index) => imageRecord(image, index))
+        .filter((image): image is ShopifyImage => Boolean(image))
+    : [];
+  const primaryImage = imageRecord(product.image ?? product.featured_image ?? images[0], 0);
+
+  // `.js` uses storefront field names (`description`, `type`, URL images),
+  // while the app's richer catalog format uses `body_html`, `product_type`,
+  // and ShopifyImage records.
+  return {
+    ...product,
+    body_html: typeof product.body_html === "string" ? product.body_html : String(product.description || ""),
+    product_type: typeof product.product_type === "string" ? product.product_type : String(product.type || ""),
+    images,
+    image: primaryImage,
+  } as ShopifyProduct;
 }
 
 async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollection[]> {
