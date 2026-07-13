@@ -28,6 +28,12 @@ const themeAssetsDir = resolve(themeDir, "assets");
 const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
 const themeDataAssets = [
   { source: "products.json", asset: "data-products.json", themePath: "/data/products.json" },
+  {
+    source: "home-featured-products.json",
+    asset: "data-home-featured-products.json",
+    themePath: "/data/home-featured-products.json",
+  },
+  { source: "product-search.json", asset: "data-product-search.json", themePath: "/data/product-search.json" },
   { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
   {
     source: "collection-products.json",
@@ -36,6 +42,7 @@ const themeDataAssets = [
   },
   { source: "about.json", asset: "data-about.json", themePath: "/data/about.json" },
   { source: "blog-posts.json", asset: "data-blog-posts.json", themePath: "/data/blog-posts.json" },
+  { source: "shop.json", asset: "data-shop.json", themePath: "/data/shop.json" },
 ];
 
 function buildThemeAssetMapEntries() {
@@ -83,7 +90,7 @@ function templateJson(sectionType = "salt-app") {
   );
 }
 
-async function writeThemeScaffold() {
+async function writeThemeScaffold(settingsData = null) {
   await mkdir(resolve(themeDir, "layout"), { recursive: true });
   await mkdir(resolve(themeDir, "sections"), { recursive: true });
   await mkdir(resolve(themeDir, "templates"), { recursive: true });
@@ -114,6 +121,106 @@ async function writeThemeScaffold() {
       'https://connect.facebook.net/en_US/fbevents.js');
       window.SALT_META_PIXEL_ID = '1147374030261395';
       fbq('init', window.SALT_META_PIXEL_ID);
+    </script>
+    <script>
+      (function () {
+        var selector = '#svelte-bundle-widget, #pumper_bundle_svelte';
+        var pending = /^\\/products?(?:\\/|$)/.test(window.location.pathname);
+        var observer = null;
+        var originalDisplays = new WeakMap();
+
+        function rememberAndHide(element) {
+          if (!(element instanceof HTMLElement)) return;
+
+          if (!originalDisplays.has(element)) {
+            originalDisplays.set(element, {
+              value: element.style.getPropertyValue('display'),
+              priority: element.style.getPropertyPriority('display'),
+            });
+          }
+
+          if (
+            element.style.getPropertyValue('display') !== 'none' ||
+            element.style.getPropertyPriority('display') !== 'important'
+          ) {
+            element.style.setProperty('display', 'none', 'important');
+          }
+        }
+
+        function hideWidgets(scope) {
+          if (!pending) return;
+
+          if (scope && scope.nodeType === 1 && scope.matches(selector)) {
+            rememberAndHide(scope);
+          }
+
+          var root = scope && scope.querySelectorAll ? scope : document;
+          root.querySelectorAll(selector).forEach(rememberAndHide);
+        }
+
+        function observeWidgets() {
+          if (observer || !document.documentElement) return;
+
+          observer = new MutationObserver(function (records) {
+            if (!pending) return;
+
+            records.forEach(function (record) {
+              if (record.type === 'attributes') {
+                hideWidgets(record.target);
+                return;
+              }
+
+              record.addedNodes.forEach(hideWidgets);
+            });
+          });
+
+          observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['id', 'style'],
+          });
+        }
+
+        function gatePumper() {
+          pending = true;
+          document.documentElement.setAttribute('data-salt-product-media', 'loading');
+          observeWidgets();
+          hideWidgets(document);
+        }
+
+        function releasePumper() {
+          pending = false;
+          document.documentElement.removeAttribute('data-salt-product-media');
+
+          if (observer) {
+            observer.disconnect();
+            observer = null;
+          }
+
+          document.querySelectorAll(selector).forEach(function (element) {
+            var original = originalDisplays.get(element);
+            if (!original) return;
+
+            if (original.value) {
+              element.style.setProperty('display', original.value, original.priority);
+            } else {
+              element.style.removeProperty('display');
+            }
+
+            originalDisplays.delete(element);
+          });
+
+          window.setTimeout(function () {
+            window.dispatchEvent(new Event('resize'));
+          }, 0);
+        }
+
+        window.addEventListener('salt:product-media-loading', gatePumper);
+        window.addEventListener('salt:product-media-ready', releasePumper);
+
+        if (pending) gatePumper();
+      })();
     </script>
     {{ content_for_header }}
     {{ 'salt-app.css' | asset_url | stylesheet_tag }}
@@ -168,7 +275,10 @@ ${buildThemeAssetMapEntries()}
       2,
     ),
   );
-  await writeFile(resolve(themeDir, "config", "settings_data.json"), JSON.stringify({ current: {} }, null, 2));
+  await writeFile(
+    resolve(themeDir, "config", "settings_data.json"),
+    settingsData || JSON.stringify({ current: {} }, null, 2),
+  );
   await writeFile(resolve(themeDir, "locales", "en.default.json"), JSON.stringify({}, null, 2));
 }
 
@@ -203,6 +313,8 @@ async function main() {
   await ensureDistExists();
   const indexHtml = await readFile(resolve(distDir, "index.html"), "utf8");
   const { jsPath, cssPath } = parseEntryAssets(indexHtml);
+  const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
+  const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
 
   await mkdir(themeDir, { recursive: true });
   await Promise.all(
@@ -210,7 +322,9 @@ async function main() {
       rm(resolve(themeDir, entry), { recursive: true, force: true }),
     ),
   );
-  await writeThemeScaffold();
+  // Keep Shopify-admin app embeds and theme-editor state intact. The generated
+  // app bundle owns the app assets, not config/settings_data.json.
+  await writeThemeScaffold(settingsData);
   await copyAssets(jsPath, cssPath);
 
   process.stdout.write(`Shopify theme bundle generated at ${themeDir}\n`);

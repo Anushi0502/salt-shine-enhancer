@@ -343,23 +343,6 @@ const ShopPage = () => {
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
   );
-  const featuredCollectionProducts = useMemo(() => {
-    const references = selectedCollection?.customData?.featuredProducts || [];
-    if (!references.length) {
-      return [];
-    }
-
-    const productsById = new Map(products.map((product) => [String(product.id), product]));
-    const productsByHandle = new Map(products.map((product) => [String(product.handle || "").trim().toLowerCase(), product]));
-
-    return references
-      .map((reference) =>
-        productsById.get(String(reference.legacyResourceId || reference.id || "")) ||
-        productsByHandle.get(String(reference.handle || "").trim().toLowerCase()) ||
-        null,
-      )
-      .filter((entry): entry is (typeof products)[number] => Boolean(entry));
-  }, [products, selectedCollection?.customData?.featuredProducts]);
   const collectionHeroKicker =
     selectedCollection?.customData?.heroKicker ||
     curatedSubcollection?.title ||
@@ -876,22 +859,6 @@ const ShopPage = () => {
           </div>
         </div>
       </Reveal>
-      {featuredCollectionProducts.length > 0 ? (
-        <Reveal delayMs={90}>
-          <div className="mt-4">
-            <SectionHeading
-              kicker="Featured picks"
-              title="Top products in this collection"
-              description="These products are pulled from the collection metafield so the page always has a stronger merchandising anchor."
-            />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {featuredCollectionProducts.slice(0, 3).map((product) => (
-                <ProductCard key={product.id} product={product} variant="shop" />
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      ) : null}
       <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[252px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
 
 

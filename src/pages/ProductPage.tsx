@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -311,6 +311,8 @@ const ProductPage = () => {
 
   const products = useMemo(() => data?.products ?? [], [data]);
   const product = useMemo(() => products.find((entry) => entry.handle === handle), [handle, products]);
+  const primaryProductImage = product ? productImage(product) || "" : "";
+  const heroImageRef = useRef<HTMLImageElement | null>(null);
   const collectionIndex = useMemo(
     () => buildProductCollectionIndex(collectionProductsMapPayload),
     [collectionProductsMapPayload],
@@ -345,6 +347,32 @@ const ProductPage = () => {
       ),
     [product?.customData?.shopChannelMinimumQuantity, product?.handle, selectedVariant?.price],
   );
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    // The Shopify Pumper app renders outside the React root. Tell the theme's
+    // critical gate to keep it hidden until the first product image is ready.
+    window.dispatchEvent(new Event("salt:product-media-loading"));
+
+    return () => {
+      window.dispatchEvent(new Event("salt:product-media-ready"));
+    };
+  }, [handle]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isLoading) {
+      return;
+    }
+
+    // Do not leave the external widget hidden for error, not-found, or
+    // intentionally image-less products.
+    if (error || !product || !primaryProductImage || heroImageRef.current?.complete) {
+      window.dispatchEvent(new Event("salt:product-media-ready"));
+    }
+  }, [activeImage, error, isLoading, primaryProductImage, product]);
 
   useEffect(() => {
     if (!product) {
@@ -614,7 +642,7 @@ const ProductPage = () => {
         ? "Emerging trust signal"
         : "";
 
-  const primaryImage = productImage(product) || "";
+  const primaryImage = primaryProductImage;
   const imageSources = (product.images.length
     ? product.images.map((image) => image.src)
     : [primaryImage]).filter(Boolean);
@@ -730,9 +758,13 @@ const ProductPage = () => {
             <div className="overflow-hidden rounded-[1.15rem] border border-border bg-muted sm:rounded-[1.4rem]">
               {activeImage || primaryImage ? (
                 <img
+                  ref={heroImageRef}
                   src={activeImage || primaryImage}
                   alt={product.title}
                   className="aspect-square w-full object-cover"
+                  decoding="async"
+                  onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
+                  onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
                 />
               ) : (
                 <div className="grid aspect-square w-full place-items-center bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-blue)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">

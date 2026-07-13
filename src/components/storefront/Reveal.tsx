@@ -1,5 +1,4 @@
 import type { PropsWithChildren } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
  
 type RevealProps = PropsWithChildren<{
@@ -7,27 +6,8 @@ type RevealProps = PropsWithChildren<{
   className?: string;
 }>;
 
-const Reveal = ({ children, delayMs = 0, className }: RevealProps) => {
-  const reduceMotion = useReducedMotion();
-
-  if (reduceMotion) {
-    return <div className={cn(className)}>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 22, scale: 0.985, filter: "blur(6px)" }}
-      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      transition={{
-        duration: 0.62,
-        delay: delayMs / 1000,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className={cn("will-change-transform", className)}
-    >
-      {children}
-    </motion.div>
-  );
-};
+// A home page can render dozens of these wrappers. Keeping it as a normal DOM
+// node avoids shipping and running a motion runtime before shoppers can browse.
+const Reveal = ({ children, className }: RevealProps) => <div className={cn(className)}>{children}</div>;
 
 export default Reveal;

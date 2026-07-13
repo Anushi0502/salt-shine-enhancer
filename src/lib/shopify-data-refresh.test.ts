@@ -109,20 +109,20 @@ describe("loadProducts", () => {
     vi.restoreAllMocks();
   });
 
-  it("prefers live Shopify products over the cached JSON payload", async () => {
+  it("uses the versioned cached JSON payload before attempting live Shopify", async () => {
     const payload = await loadProducts();
     const requests = (globalThis as typeof globalThis & { __SALT_TEST_REQUESTS__?: Array<{ url: string; cache?: RequestCache }> }).__SALT_TEST_REQUESTS__ ?? [];
 
     expect(payload.products).toHaveLength(1);
-    expect(payload.products[0].title).toBe("Live Product");
+    expect(payload.products[0].title).toBe("Cached Product");
     expect(payload.products[0].handle).toBe("live-product");
     expect(payload.products[0].average_rating).toBe(4.8);
     expect(payload.products[0].total_reviews).toBe(18);
     expect(payload.products[0].customData?.relatedProductsDisplay).toBe("ahead");
     expect(payload.products[0].customData?.searchProductBoosts).toEqual(["daily tech", "wearable"]);
-    expect(requests).toHaveLength(2);
-    expect(requests[0]?.url).toContain("/products.json");
-    expect(requests[1]?.url).toContain("/data/products.json");
-    expect(requests[0]?.cache).toBe("no-store");
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toContain("/data/products.json");
+    expect(requests[0]?.url).not.toContain("?ts=");
+    expect(requests[0]?.cache).toBe("force-cache");
   });
 });

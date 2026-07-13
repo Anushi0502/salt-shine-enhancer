@@ -11,6 +11,7 @@ import {
   normalizeProductReferenceList,
   normalizeShopCustomData,
 } from "../src/lib/product-custom-data.js";
+import { buildProductSearchPayload } from "./product-search-index.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -40,6 +41,7 @@ const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const productsPath = resolve(outDir, "products.json");
+const productSearchPath = resolve(outDir, "product-search.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const aboutPath = resolve(outDir, "about.json");
@@ -1310,6 +1312,7 @@ async function main() {
     total: products.length,
     products: sortByUpdatedAt(products),
   };
+  const productSearchPayload = buildProductSearchPayload(productPayload);
 
   const collectionPayload = {
     generatedAt: startedAt,
@@ -1359,6 +1362,7 @@ async function main() {
 
   await mkdir(outDir, { recursive: true });
   await writeFile(productsPath, JSON.stringify(productPayload));
+  await writeFile(productSearchPath, JSON.stringify(productSearchPayload));
   await writeFile(collectionsPath, JSON.stringify(collectionPayload));
   await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
   await writeFile(aboutPath, JSON.stringify(aboutPayload));
@@ -1366,6 +1370,7 @@ async function main() {
   await writeFile(shopPath, JSON.stringify(shopPayload));
 
   process.stdout.write(`Saved ${productPayload.total} products to public/data/products.json\n`);
+  process.stdout.write(`Saved ${productSearchPayload.total} compact search products to public/data/product-search.json\n`);
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
   process.stdout.write(
     `Saved collection product mapping to public/data/collection-products.json\n`,

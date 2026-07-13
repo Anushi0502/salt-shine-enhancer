@@ -1,7 +1,8 @@
 import { ArrowRight, Gift } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import beautifulGiftsBanner from "@/assets/beautiful-gifts-banner.png";
+import beautifulGiftsBanner from "@/assets/beautiful-gifts-banner.jpg";
+import { resolveThemeAsset } from "@/lib/theme-assets";
 import { cn } from "@/lib/utils";
 
 type GiftBannerProps = {
@@ -18,8 +19,10 @@ const GiftBanner = ({ className }: GiftBannerProps) => {
       <div className="overflow-hidden rounded-[1.4rem] border border-[#ead7bc] bg-[#fbf4ea] shadow-[0_18px_42px_-34px_rgba(127,89,45,0.34)]">
         <div className="relative h-[9.25rem] overflow-hidden sm:h-[11rem] lg:h-[12.5rem]">
           <img
-            src={beautifulGiftsBanner}
+            src={resolveThemeAsset(beautifulGiftsBanner)}
             alt="Beautiful gifts banner with wrapped presents and a shop now call to action"
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
           />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(252,247,239,0.84)_0%,rgba(252,247,239,0.56)_32%,rgba(252,247,239,0.12)_62%,rgba(252,247,239,0.02)_100%)]" />

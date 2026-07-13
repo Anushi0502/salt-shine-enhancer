@@ -5,9 +5,9 @@ import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import GiftBanner from "@/components/salt/GiftBanner";
-import { formatMoney, minPrice, polishPlainText, productImage, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeProductRating, useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
-import { useCollectionProductIds, useCollections, useProducts } from "@/lib/shopify-data";
+import { formatMoney, minPrice, polishPlainText, productImage } from "@/lib/formatters";
+import { useCollections } from "@/lib/collections-data";
+import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
@@ -40,8 +40,6 @@ type ReviewTile = {
 };
 
 const HERO_BANNER_ROTATE_MS = 3500;
-const HOME_REVIEW_TARGET = 280;
-const HOME_REVIEW_FETCH_LIMIT = 48;
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
 const showExclusiveBooks = false;
 
@@ -350,11 +348,8 @@ function OverlayProductCard({
   compact?: boolean;
   tight?: boolean;
 }) {
-  const { summary } = useJudgeMeProductRating(productId);
   const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
   const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
-  const hasReviews = Boolean(summary && summary.reviewCount > 0);
-  const formattedRating = hasReviews ? summary.rating.toFixed(1) : "";
   const resolvedAlt = imageAlt || `${title} product image from SALT Online Store`;
   const shellClass = tight || compact
     ? "border border-[#d2e4ff] bg-[#f4f8ff] shadow-[0_12px_26px_-22px_rgba(14,48,109,0.28)]"
@@ -392,11 +387,15 @@ function OverlayProductCard({
         <ResilientImage
           src={imageSrc}
           alt={resolvedAlt}
+          loading="lazy"
+          decoding="async"
           className={imageClass}
           fallback={
             <img
               src={fallbackSrc}
               alt={resolvedAlt}
+              loading="lazy"
+              decoding="async"
               className={imageClass}
             />
           }
@@ -410,15 +409,6 @@ function OverlayProductCard({
           <span className={priceClass}>
             {price}
           </span>
-          {hasReviews ? (
-            <>
-              <span className="text-white/40">·</span>
-              <span className="inline-flex items-center gap-1">
-                <Star className="h-3.5 w-3.5 fill-[#f2c100] text-[#f2c100]" />
-                {formattedRating}
-              </span>
-            </>
-          ) : null}
         </div>
       </div>
     </Link>
@@ -520,39 +510,21 @@ function padProductTiles(primary: ProductTile[], fallback: ProductTile[], target
 }
 
 const HomePage = () => {
-  const { data: productsPayload } = useProducts();
+  // Do not download the full 6k-product catalog just to render curated homepage cards.
+  // Full catalog loading remains on search, collection, and product routes.
   const { data: collectionsPayload } = useCollections();
-  const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
+  const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
+  const products: ShopifyProduct[] = [];
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const bestSellerCollection = useMemo(
     () => findBestSellerCollection(collections),
     [collections],
   );
-  const { data: homeDecorIdsPayload } = useCollectionProductIds("home-decor", true);
-  const { data: giftsIdsPayload } = useCollectionProductIds("gifts", true);
-  const { data: giftIdsPayload } = useCollectionProductIds("gift", true);
-  const { data: booksIdsPayload } = useCollectionProductIds("books", true);
-  const quirkyGiftProductIds = useMemo(
-    () => giftsIdsPayload?.productIds ?? [],
-    [giftsIdsPayload],
-  );
-  const collectionProductIdsByHandle = useMemo(() => {
-    const map = new Map<string, number[]>();
-    map.set("home-decor", homeDecorIdsPayload?.productIds ?? []);
-    map.set("gifts", giftsIdsPayload?.productIds ?? []);
-    map.set("gift", giftIdsPayload?.productIds ?? []);
-    return map;
-  }, [giftIdsPayload, giftsIdsPayload, homeDecorIdsPayload]);
-  const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const bestSellerProducts = useMemo(() => selectBestSellerProducts(products, 12), [products]);
   const featuredCourtneyBooks = useMemo(() => {
     if (!products.length) {
       return [];
     }
-
-    const fromBooksCollection = (booksIdsPayload?.productIds ?? [])
-      .map((productId) => productById.get(productId))
-      .filter((product): product is ShopifyProduct => Boolean(product));
 
     const prioritizedByHandle = featuredCourtneyBookHandles
       .map((targetHandle) =>
@@ -576,7 +548,7 @@ const HomePage = () => {
 
     const uniqueBooks: ShopifyProduct[] = [];
     const seenProductIds = new Set<number>();
-    [...fromBooksCollection, ...prioritizedByHandle, ...keywordFallback].forEach((product) => {
+    [...prioritizedByHandle, ...keywordFallback].forEach((product) => {
       if (seenProductIds.has(product.id)) {
         return;
       }
@@ -586,7 +558,7 @@ const HomePage = () => {
     });
 
     return uniqueBooks.slice(0, 4);
-  }, [booksIdsPayload, productById, products]);
+  }, [products]);
   const featuredCourtneyBookFallbackImage = useMemo(() => {
     const firstBook = featuredCourtneyBooks[0];
     if (!firstBook) {
@@ -669,7 +641,6 @@ const HomePage = () => {
       image: featuredCourtneyBookFallbackImage,
     };
   }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
-  const { summary: mindfulnessTrackerFeatureSummary } = useJudgeMeProductRating(mindfulnessTrackerFeatureCard.productId);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
     if (!bestSellerProducts.length) {
       return fallbackBestSellerTiles;
@@ -811,148 +782,27 @@ const HomePage = () => {
       to: `/products/${product.handle}`,
     }));
   }, [bestSellerHeroImage, everydayEssentialProducts]);
-  const quirkyGiftProducts = useMemo(() => {
-    if (!products.length) {
-      return [];
-    }
-
-    const uniqueById = new Set<number>();
-    const quirkyKeywordTokens = ["quirky", "unique", "gift", "novelty", "fun", "decor", "gadget"];
-
-    const collectionMatches = quirkyGiftProductIds
-      .map((productId) => productById.get(productId))
-      .filter((product): product is ShopifyProduct => Boolean(product));
-
-    const keywordMatches = [...products]
-      .map((product) => {
-        const searchText = productSearchText(product);
-        const matchScore = quirkyKeywordTokens.reduce(
-          (score, token) => (searchText.includes(token) ? score + 1 : score),
-          0,
-        );
-        return matchScore > 0 ? { product, matchScore } : null;
-      })
-      .filter((entry): entry is { product: ShopifyProduct; matchScore: number } => Boolean(entry))
-      .sort((left, right) => {
-        const scoreDiff = right.matchScore - left.matchScore;
-        if (scoreDiff !== 0) {
-          return scoreDiff;
-        }
-        return savingsPercent(right.product) - savingsPercent(left.product);
-      })
-      .map((entry) => entry.product);
-
-    const combinedProducts: ShopifyProduct[] = [];
-    [...collectionMatches, ...keywordMatches].forEach((product) => {
-      if (uniqueById.has(product.id)) {
-        return;
-      }
-
-      uniqueById.add(product.id);
-      combinedProducts.push(product);
-    });
-
-    return combinedProducts.slice(0, 8);
-  }, [productById, products, quirkyGiftProductIds]);
   const quirkyGiftTiles = useMemo<ProductTile[]>(() => {
-    return quirkyGiftProducts.map((product) => ({
+    return (homeFeaturedProductsPayload?.quirkyGiftPicks || []).slice(0, 12).map((product) => ({
       productId: product.id,
       title: product.title,
-      price: formatMoney(minPrice(product)),
-      image: productImage(product) || bestSellerHeroImage,
+      price: formatMoney(product.price),
+      image: product.image,
       to: `/products/${product.handle}`,
     }));
-  }, [bestSellerHeroImage, quirkyGiftProducts]);
-  const quirkyGiftDisplayTiles = quirkyGiftTiles;
+  }, [homeFeaturedProductsPayload?.quirkyGiftPicks]);
+  const quirkyGiftDisplayTiles = useMemo(
+    () => quirkyGiftTiles.slice(0, 12),
+    [quirkyGiftTiles],
+  );
   const everydayEssentialsDisplayTiles = useMemo(
     () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 12),
     [everydayEssentialsTiles],
   );
-  const testimonialCandidateProductIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...featuredCourtneyBooks.map((product) => product.id),
-          ...bestSellerProducts.map((product) => product.id),
-          ...everydayEssentialProducts.map((product) => product.id),
-          ...quirkyGiftProducts.map((product) => product.id),
-          ...quirkyGiftProductIds.slice(0, 24),
-          ...products.slice(0, 120).map((product) => product.id),
-        ]),
-      )
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value) && value > 0)
-        .slice(0, 160),
-    [
-      bestSellerProducts,
-      everydayEssentialProducts,
-      featuredCourtneyBooks,
-      products,
-      quirkyGiftProductIds,
-      quirkyGiftProducts,
-    ],
-  );
-  const homepageRatingsQuery = useJudgeMeRatings(testimonialCandidateProductIds);
-  const testimonialProductIds = useMemo(() => {
-    const ratedIds = Object.values(homepageRatingsQuery.data ?? {})
-      .filter((summary) => summary.reviewCount > 0)
-      .sort((left, right) => {
-        const reviewDiff = right.reviewCount - left.reviewCount;
-        if (reviewDiff !== 0) {
-          return reviewDiff;
-        }
-
-        return right.rating - left.rating;
-      })
-      .map((summary) => summary.productId);
-
-    return Array.from(
-      new Set([
-        ...ratedIds,
-        ...featuredCourtneyBooks.map((product) => product.id),
-        ...bestSellerProducts.map((product) => product.id),
-        ...everydayEssentialProducts.map((product) => product.id),
-        ...quirkyGiftProducts.map((product) => product.id),
-        ...testimonialCandidateProductIds,
-      ]),
-    ).slice(0, 120);
-  }, [
-    bestSellerProducts,
-    everydayEssentialProducts,
-    featuredCourtneyBooks,
-    homepageRatingsQuery.data,
-    quirkyGiftProducts,
-    testimonialCandidateProductIds,
-  ]);
-  const testimonialsQuery = useJudgeMeTestimonials(testimonialProductIds, HOME_REVIEW_FETCH_LIMIT);
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
-  const reviewTiles = useMemo<ReviewTile[]>(() => {
-    const liveTestimonials = testimonialsQuery.data ?? [];
-    const baseTiles: ReviewTile[] = liveTestimonials.length
-      ? liveTestimonials.map((review, index) => ({
-          key: `judgeme-home-${review.productId}-${review.id}-${index}`,
-          quote: polishPlainText(review.body || review.title),
-          author: polishPlainText(review.author || "Verified shopper"),
-          rating: Math.max(1, Math.min(5, Math.round(review.rating) || 5)),
-          verifiedBuyer: Boolean(review.verifiedBuyer),
-        }))
-      : fallbackReviewTiles;
-
-    if (!baseTiles.length) {
-      return [];
-    }
-
-    const seenTiles = new Set<string>();
-    return baseTiles.filter((tile) => {
-      const fingerprint = `${tile.author.toLowerCase()}|${tile.quote.toLowerCase()}`;
-      if (seenTiles.has(fingerprint)) {
-        return false;
-      }
-
-      seenTiles.add(fingerprint);
-      return true;
-    });
-  }, [testimonialsQuery.data]);
+  // Homepage must not fan out to one external review request per product. Static
+  // testimonials keep the section instant; full Judge.me detail remains on product pages.
+  const reviewTiles = fallbackReviewTiles;
   const reviewLoopCopies = useMemo(() => {
     if (reviewTiles.length >= 10) {
       return 2;
@@ -977,7 +827,9 @@ const HomePage = () => {
     ).flat();
   }, [reviewLoopCopies, reviewTiles]);
   const homeDescription = polishPlainText(
-    `Shop ${products.length.toLocaleString()} products across ${collections.length.toLocaleString()} collections with smarter merchandising, clearer discovery, and gift-ready finds.`,
+    products.length
+      ? `Shop ${products.length.toLocaleString()} products across ${collections.length.toLocaleString()} collections with smarter merchandising, clearer discovery, and gift-ready finds.`
+      : "Shop curated essentials and gift-ready finds with clearer discovery and faster checkout.",
   );
   const heroPosterTiles = useMemo<ImageTile[]>(() => [...HERO_EXTRA_BANNERS], []);
   const [activeHeroPosterIndex, setActiveHeroPosterIndex] = useState(0);
@@ -1035,50 +887,12 @@ const HomePage = () => {
     },
     [rankedProductsWithImages],
   );
-  const findCollectionProductImage = useCallback(
-    (collectionHandles: string[], usedProductIds?: Set<number>): string | null => {
-      const normalizedHandles = collectionHandles.map((handle) => normalizeHandle(handle)).filter(Boolean);
-
-      for (const handle of normalizedHandles) {
-        const productIds = collectionProductIdsByHandle.get(handle) || [];
-        for (const productId of productIds) {
-          if (usedProductIds?.has(productId)) {
-            continue;
-          }
-
-          const product = productById.get(productId);
-          const image = product ? productImage(product) : null;
-          if (image) {
-            usedProductIds?.add(productId);
-            return image;
-          }
-        }
-      }
-
-      for (const handle of normalizedHandles) {
-        const productIds = collectionProductIdsByHandle.get(handle) || [];
-        const reusedProduct = productIds
-          .map((productId) => productById.get(productId))
-          .find((product): product is ShopifyProduct => Boolean(product && productImage(product)));
-        if (reusedProduct) {
-          return productImage(reusedProduct);
-        }
-      }
-
-      return null;
-    },
-    [collectionProductIdsByHandle, productById],
-  );
-
   const giftTiles = useMemo<ImageTile[]>(() => {
     const usedGiftProductIds = new Set<number>();
 
     const tiles = giftTileConfigs.map((tile) => {
       const curatedImage = tile.image || null;
-      const imageFromCollectionProduct = findCollectionProductImage(tile.collectionHandles, usedGiftProductIds);
-      const imageFromProduct = imageFromCollectionProduct
-        ? null
-        : findProductImageByKeywords(tile.productKeywords, usedGiftProductIds);
+      const imageFromProduct = findProductImageByKeywords(tile.productKeywords, usedGiftProductIds);
       const imageFromCollection =
         tile.collectionHandles
           .map((handle) => collectionImageByHandle.get(normalizeHandle(handle)) || null)
@@ -1089,7 +903,6 @@ const HomePage = () => {
         to: tile.to,
         image:
           curatedImage ||
-          imageFromCollectionProduct ||
           imageFromProduct ||
           imageFromCollection ||
           bestSellerHeroImage,
@@ -1097,7 +910,7 @@ const HomePage = () => {
     });
 
     return tiles;
-  }, [bestSellerHeroImage, collectionImageByHandle, findCollectionProductImage, findProductImageByKeywords]);
+  }, [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords]);
   const heroSpotlightCards = useMemo<ImageTile[]>(
     () => [
       {
@@ -1229,11 +1042,15 @@ const HomePage = () => {
                         <ResilientImage
                           src={tile.image}
                           alt={buildBannerImageAltText(tile)}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          decoding="async"
                           className="block h-auto w-full transition duration-700 ease-out group-hover:scale-[1.01]"
                           fallback={
                             <img
                               src={bestSellerHeroImage}
                               alt={buildBannerImageAltText(tile)}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              decoding="async"
                               className="block h-auto w-full transition duration-700 ease-out group-hover:scale-[1.01]"
                             />
                           }
@@ -1367,7 +1184,7 @@ const HomePage = () => {
           <Reveal delayMs={140}>
             <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
               <SectionTitle title="Quirky Gift Picks" />
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6 lg:gap-4">
                 {quirkyGiftDisplayTiles.map((tile, index) => (
                   <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={140 + index * 50}>
                     <OverlayProductCard
@@ -1439,15 +1256,6 @@ const HomePage = () => {
                       <span className="text-[0.98rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.08rem]">
                         {mindfulnessTrackerFeatureCard.price}
                       </span>
-                      {mindfulnessTrackerFeatureSummary && mindfulnessTrackerFeatureSummary.reviewCount > 0 ? (
-                        <>
-                          <span className="text-white/40">·</span>
-                          <span className="inline-flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-[#f2c100] text-[#f2c100]" />
-                            {mindfulnessTrackerFeatureSummary.rating.toFixed(1)}
-                          </span>
-                        </>
-                      ) : null}
                     </div>
                   </div>
                 </Link>

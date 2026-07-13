@@ -524,11 +524,20 @@ function buildSearchBoostCandidates(product, collectionRefs) {
   const productTypeTokens = splitTextIntoTokens(getProductProductType(product));
   const tagTokens = normalizeTagList(product?.tags).flatMap((entry) => splitTextIntoTokens(entry));
   const bodyTokens = splitTextIntoTokens(getProductBodyText(product)).slice(0, 18);
+  const primaryTokens = titleTokens.length ? titleTokens : handleTokens;
 
   phrases.push(...generatePhrasesFromTokens(handleTokens));
   phrases.push(...generatePhrasesFromTokens(titleTokens));
   phrases.push(...generatePhrasesFromTokens(productTypeTokens));
   phrases.push(...generatePhrasesFromTokens(bodyTokens));
+
+  if (primaryTokens.length) {
+    const primary = primaryTokens.slice(0, 5).join(" ");
+    phrases.push(`shop ${primary}`);
+    phrases.push(`buy ${primary}`);
+    phrases.push(`${primary} for everyday use`);
+    phrases.push(`${primary} gift idea`);
+  }
 
   const sortedCollections = [...(Array.isArray(collectionRefs) ? collectionRefs : [])]
     .filter((entry) => !entry?.isGeneric)
@@ -560,6 +569,7 @@ function buildSearchBoostCandidates(product, collectionRefs) {
 
 function buildProductSubtitle(product, collectionTitles = [], productType = "") {
   const title = getProductTitle(product);
+  const handleTokens = getProductHandleTokens(product);
   const collections = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry)));
   const topCollection = collections.find((entry) => entry) || "";
   const cleanType = normalizePlainText(productType || getProductProductType(product));
@@ -570,6 +580,8 @@ function buildProductSubtitle(product, collectionTitles = [], productType = "") 
   }
   if (cleanType && cleanType !== topCollection) {
     parts.push(cleanType);
+  } else if (handleTokens.length) {
+    parts.push(handleTokens.slice(0, 4).join(" "));
   }
 
   if (!parts.length) {
@@ -608,6 +620,7 @@ function buildProductHighlights(product, collectionTitles = [], reviewSummary = 
   const highlights = [];
   const cleanType = normalizePlainText(getProductProductType(product));
   const title = getProductTitle(product);
+  const handleTokens = getProductHandleTokens(product);
   const tags = normalizeTagList(product?.tags);
   const topCollection = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry))).find(Boolean);
 
@@ -629,6 +642,10 @@ function buildProductHighlights(product, collectionTitles = [], reviewSummary = 
 
   if (title) {
     highlights.push(splitTextIntoTokens(title).slice(0, 2).join(" "));
+  }
+
+  if (handleTokens.length) {
+    highlights.push(`Search focus: ${handleTokens.slice(0, 4).join(" ")}`);
   }
 
   return uniqueValues(

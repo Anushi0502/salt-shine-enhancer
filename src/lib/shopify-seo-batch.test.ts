@@ -4,7 +4,13 @@ import {
   buildSeoBatchManifest,
   buildSeoBatchPlan,
   createSeoCatalogContext,
+  PER_ORDER_OVERHEAD,
 } from "@/lib/shopify-seo-batch-intelligence";
+import {
+  enforceMarketplaceTitle,
+  PRODUCT_CONTENT_KNOWLEDGE_VERSION,
+  resolveProductKnowledge,
+} from "@/lib/shopify-product-content-knowledge";
 
 function makeCatalogContext() {
   return createSeoCatalogContext({
@@ -62,6 +68,45 @@ function makeCatalogContext() {
 }
 
 describe("shopify SEO batch intelligence", () => {
+  it("resolves handle-first marketplace knowledge without using stale tags", () => {
+    expect(resolveProductKnowledge("facial-mist-sprayer-usb-charging").id).toBe("skin-care");
+    expect(resolveProductKnowledge("logitech-wireless-bluetooth-mouse").id).toBe("computer-peripheral");
+    expect(resolveProductKnowledge("stainless-steel-camping-cook-kit").id).toBe("kitchen-cookware");
+    expect(resolveProductKnowledge("shockproof-case-for-iphone-17-pro-max").id).toBe("phone-device-accessory");
+    expect(resolveProductKnowledge("waterproof-laptop-sleeve-bag-for-macbook").id).toBe("bag-storage");
+    expect(resolveProductKnowledge("automatic-mechanical-watch-for-men").id).toBe("watch");
+    expect(resolveProductKnowledge("electric-beard-trimmer-for-men").id).toBe("personal-grooming");
+    expect(resolveProductKnowledge("heavy-duty-knee-pads-for-work").id).toBe("tool-protective-gear");
+    expect(PRODUCT_CONTENT_KNOWLEDGE_VERSION).toMatch(/^2026-/);
+  });
+
+  it("applies marketplace title repetition and character guardrails", () => {
+    const title = enforceMarketplaceTitle("Premium! Mouse Mouse Mouse $ Wireless Office Mouse", 68);
+    expect(title).not.toMatch(/[!$]/);
+    expect(title.toLowerCase().match(/mouse/g)).toHaveLength(2);
+    expect(title.length).toBeLessThanOrEqual(68);
+  });
+
+  it("removes unsafe supplier claims and repairs family-mismatched titles", async () => {
+    const plan = await buildSeoBatchPlan([{
+      Handle: "knee-brace-maximum-knee-pain-support-fast-recovery-for-men-women",
+      "Product ID": "202",
+      Title: "Fresh Signature Scent Perfume for Daily Wear",
+      "Body (HTML)": "<p>Maximum pain relief with fast recovery.</p>",
+      "Variant SKU": "KNEE-1",
+      "Variant Price": "29.99",
+      "Option1 Value": "Buy 2 Get 1 Free",
+    }]);
+    const product = plan.products[0];
+    const generated = `${product.intelligence.canonicalTitle} ${product.intelligence.canonicalDescriptionHtml}`;
+
+    expect(product.intelligence.knowledge.family).toBe("tool-protective-gear");
+    expect(product.intelligence.canonicalTitle).toMatch(/knee brace/i);
+    expect(generated).not.toMatch(/maximum|pain relief|pain support|fast recovery/i);
+    expect(product.intelligence.canonicalTitle).not.toMatch(/perfume/i);
+    expect(product.intelligence.canonicalDescriptionHtml).not.toMatch(/Buy 2|Get 1 Free/i);
+  });
+
   it("prefers handle and catalog evidence over a stale source title", async () => {
     const catalogContext = makeCatalogContext();
     const planResult = await buildSeoBatchPlan(
@@ -102,6 +147,10 @@ describe("shopify SEO batch intelligence", () => {
       }),
     );
     expect(plan.reasons.join(" ")).toMatch(/catalog-anchor/);
+    expect(plan.intelligence.knowledge).toEqual(expect.objectContaining({
+      family: "home-lighting",
+      version: PRODUCT_CONTENT_KNOWLEDGE_VERSION,
+    }));
   });
 
   it("preserves low-confidence rows without rewriting title or SEO", async () => {
@@ -158,8 +207,25 @@ describe("shopify SEO batch intelligence", () => {
     expect(exportRows[0]["SEO Description"]).toMatch(/trusted reviews/);
     expect(exportRows[1]["Variant Price"]).toBe("13.99");
     expect(exportRows[1]["Variant Compare At Price"]).toBe("14.00");
+    expect(planResult.products[0].productInput).not.toHaveProperty("tags");
+    expect(exportRows[0].Tags).toBe(rows[0].Tags);
     expect(rows[0].Title).toBe("Completely Wrong Title");
     expect(Object.keys(exportRows[0])).toEqual(Object.keys(rows[0]));
+  });
+
+  it("keeps supplier-cost pricing above the per-order overhead floor", async () => {
+    const rows = [{
+      Handle: "modern-arc-floor-lamp",
+      "Product ID": "101",
+      Title: "Modern Arc Floor Lamp",
+      "Variant SKU": "LAMP-COST",
+      "Variant Price": "10.00",
+      "Cost per item": "10.00",
+    }];
+    const plan = await buildSeoBatchPlan(rows, { catalogContext: makeCatalogContext() });
+    const [exported] = buildSeoBatchExportRows(rows, plan);
+    expect(Number(exported["Variant Price"])).toBeGreaterThanOrEqual(10 + PER_ORDER_OVERHEAD);
+    expect(PER_ORDER_OVERHEAD).toBe(12);
   });
 
   it("builds a manifest with reasons, skipped fields, and write counts", async () => {
@@ -200,5 +266,7 @@ describe("shopify SEO batch intelligence", () => {
         source: "catalog",
       }),
     );
+    expect(manifest.knowledgeBank.version).toBe(PRODUCT_CONTENT_KNOWLEDGE_VERSION);
+    expect(manifest.products[0].knowledge.family).toBe("home-lighting");
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import type { MouseEvent } from "react";
@@ -31,16 +31,36 @@ const CartDrawer = () => {
     removeItem,
     addItem,
   } = useCart();
-  const { data: productsPayload } = useProducts(isDrawerOpen);
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
+  const previousRouteRef = useRef(`${location.pathname}${location.search}`);
+  const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
+  const { data: productsPayload } = useProducts(shouldLoadRecommendations);
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
   const collectionIndex = useMemo(
     () => buildProductCollectionIndex(collectionProductsMapPayload),
     [collectionProductsMapPayload],
   );
 
   useEffect(() => {
+    const currentRoute = `${location.pathname}${location.search}`;
+    if (previousRouteRef.current === currentRoute) {
+      return;
+    }
+
+    previousRouteRef.current = currentRoute;
     closeCartDrawer();
-  }, [location.pathname, location.search]);
+  }, [closeCartDrawer, location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isDrawerOpen || items.length === 0) {
+      setShouldLoadRecommendations(false);
+      return undefined;
+    }
+
+    // Let the drawer paint before loading the recommendation data. This keeps
+    // an empty cart instant and avoids a catalog fetch until it can be useful.
+    const timer = window.setTimeout(() => setShouldLoadRecommendations(true), 700);
+    return () => window.clearTimeout(timer);
+  }, [isDrawerOpen, items.length]);
 
   const recommendationPlan = useMemo(
     () =>

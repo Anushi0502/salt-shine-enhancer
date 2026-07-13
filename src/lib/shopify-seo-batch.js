@@ -465,7 +465,6 @@ function createBlankProductPlan(handle) {
       title: "",
       descriptionHtml: "",
       productType: "",
-      tags: [],
       seo: {
         title: "",
         description: "",
@@ -508,7 +507,6 @@ function mergeProductInput(target, row) {
     getRowValue(row, ["Handle"]),
   );
   const productType = normalizePlainText(firstNonEmpty(getRowValue(row, ["Type"]), getRowValue(row, ["Product Type"])));
-  const tags = splitTags(getRowValue(row, ["Tags"]));
   const seoTitle = normalizePlainText(getRowValue(row, ["SEO Title"]));
   const seoDescription = normalizePlainText(getRowValue(row, ["SEO Description"]));
   const productId = toShopifyGid("Product", firstNonEmpty(getRowValue(row, ["Product ID"]), getRowValue(row, ["ID"])));
@@ -530,10 +528,6 @@ function mergeProductInput(target, row) {
 
   if (productType && !target.productInput.productType) {
     target.productInput.productType = productType;
-  }
-
-  if (tags.length && !target.productInput.tags.length) {
-    target.productInput.tags = tags;
   }
 
   if (seoTitle && !target.productInput.seo.title) {

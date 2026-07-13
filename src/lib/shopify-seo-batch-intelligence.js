@@ -8,6 +8,18 @@ import {
   parseMoneyValue,
   toShopifyGid,
 } from "./shopify-seo-batch.js";
+import {
+  containsUnsafeMarketplaceClaim,
+  enforceMarketplaceTitle,
+  isTitleAlignedWithKnowledge,
+  MARKETPLACE_CONTENT_POLICY,
+  prioritizeProductFacts,
+  PRODUCT_CONTENT_KNOWLEDGE_VERSION,
+  resolveProductKnowledge,
+  sanitizeMarketplaceClaims,
+} from "./shopify-product-content-knowledge.js";
+
+export const PER_ORDER_OVERHEAD = 12;
 
 const GENERIC_TITLE_WORDS = new Set([
   "a",
@@ -81,8 +93,61 @@ const GENERIC_TITLE_PHRASES = [
   /best seller/i,
   /new arrival/i,
   /product listing/i,
+  /beauty product/i,
+  /bath personal care item/i,
+  /personal care item/i,
+  /personal care/i,
+  /for everyday/i,
+  /practical use/i,
+  /wardrobe use/i,
+  /business and office looks/i,
+  /face makeup looks/i,
   /shop now/i,
 ];
+
+const HANDLE_TITLE_OVERRIDES = new Map([
+  ["case-for-iphone-13-case-iphone-11-12-13-mini-14-15-16-pro-max-cover-funda-tpu-cases-matte-liquid-silicone-cover-iphone-13", "Matte Silicone iPhone Case for Multiple Models"],
+  ["case-for-iphone-15-plus-case-iphone-11-12-13-mini-14-15-16-pro-max-cover-shockproof-soft-silicone-cover-iphone-15plus", "Shockproof Silicone iPhone Case for Multiple Models"],
+  ["12-24-card-holder-card-holder-multi-card-holder-mens-and-womens-card-holder-change-bag-for-men-and-women", "12-24 Slot Card Holder for Men and Women"],
+  ["mirror-lip-gloss-lip-gloss-lip-moisturizing-liquid-lipstick-waterproof-long-lasting-brightening-and-non-fading-lip-gloss", "Waterproof Mirror-Finish Lip Gloss"],
+  ["j-m-ld-lb-l-dd-d-c-curl-false-eyelash-extensions-salons-fox-eyes-faux-mink-matte-black-8-15mm-mix-soft-natural-makeup-lashes", "Faux Mink False Eyelash Extensions 8-15mm Mix"],
+  [
+    "moisturizing-conditioner-moisturizing-conditioner-moisturizing-conditioner-moisturizing-conditioner",
+    "Moisturizing Hair Conditioner",
+  ],
+  ["moisture-surge-hydrating-concentrate-48ml", "48ml Hydrating Concentrate"],
+  ["glue-free-false-eyelash-clusters-self-adhesive-multiple-styles-easy-to-apply-portable-for-daily-party-makeup-looks", "Self-Adhesive False Eyelash Clusters for Daily Makeup"],
+  ["men-women-smart-watch", "Smart Watch for Men and Women"],
+  ["minimalist-long-strip-led-wall-lamp", "Minimalist Long Strip LED Wall Lamp"],
+  ["young-beautiful-and-wrinkle-free", "False Eyelashes for Eye Makeup"],
+  ["4-pcs-box-hair-comb-set-eco-friendly-bamboo-wooden-air-cushion-massage-comb-for-adult-children-wide-tooth-and-pointed-tail-cmb", "4-Piece Bamboo Hair Comb Set for Adults and Children"],
+  ["womens-shoes-womens-sports-shoes-2025-womens-shoes-breathable-single-mesh-dad-shoes-womens-casual-and-versatile-sports-shoe", "Women's Breathable Mesh Sports Shoes for Casual Wear"],
+  ["hair-growth-spray-anti-hair-loss-baldness-hair-root-repair-damaged-scalp-treatment-serum-liquid-thickening-longer-beauty-health", "Hair and Scalp Care Spray, 120ml or 240ml"],
+  ["batana-oil-for-hair-growth-dr-sebi-organic-raw-batana-oil-from-honduras-100-pure-natural-for-thicker-stronger-hair", "Batana Hair Oil from Honduras"],
+  ["new-mens-belt-fashion-automatic-buckle-business-leather-belts-for-men-jeans-high-quality-strap", "Men's Leather Belt with Automatic Buckle"],
+  ["male-belts-for-men-nylon-canvas-high-quality-tactical-belt-casual-mens-jeans-belts-multi-color-can-use-two-sides-of-the-strap", "Men's Reversible Nylon Canvas Tactical Belt"],
+  ["high-quality-travel-bags-vintage-men-travel-totes-for-women-suitcases-handbags-hand-large-capacity-luggage-travel-duffle-bags", "Large Capacity Vintage Travel Duffle Bag"],
+  ["h-l-since-1990-high-quality-eyebrow-extension-false-eyebrows-4-color-with-12-rows-per-set-and-no-eyelash-curling", "12-Row False Eyebrow Extension Set, 4 Colors"],
+  ["h-l-since-1990-high-quality-eyebrow-extension-false-eyebrows-4-color-with-12-rows-per-set-and-no-eyelash-curling-1", "12-Row False Eyebrow Extension Set, 4 Colors"],
+  ["32-rows-high-quality-beauty-10-12mm-c-curled-natural-false-eyeslashes-extension-personal-eyelash-professional", "32-Row C-Curl False Eyelash Extensions, 10-12mm"],
+  ["mens-watches-luxury-brand-watches-for-mens-fashion-high-quality-luxury-simple-wristwatch-business-full-steel-sports-male-clock", "Men's Stainless Steel Business Wristwatch"],
+  ["ghk-cu-cream-anti-aging-facial-moisturizer-firming-and-moisturizing-for-all-skin-types-suitable-for-men-and-women", "GHK-Cu Facial Moisturizer for Daily Skin Care"],
+  ["garlic-hair-growth-oil-100ml-hair-regrowth-serum-for-thinning-hair-scalp-root-care-anti-hair-loss-fuller-thicker-hair-unisex", "Garlic Hair and Scalp Oil, 100ml"],
+  ["hair-growth-inhibitor-serum-oil-stop-hair-growth-permanent-hair-removal-reduction-for-face-body-painless-moisturizing-skin-care", "Post Hair Removal Face and Body Care Serum Oil"],
+  ["stylish-wave-led-wall-lamp", "Stylish Wave LED Wall Lamp"],
+  ["denim-baseball-cap-men-women", "Denim Baseball Cap for Men and Women"],
+  ["embroidery-messenger-bags-women-leather-handbags-bags-for-women-sac-a-main-ladies-hair-ball-hand-bag", "Women's Embroidered Messenger Handbag with Hair Ball Detail"],
+  ["facial-mist-sprayer-facial-mist-sprayer-abs-housing-size-usb-charging-water-face-humidifier-for-hydration", "USB Facial Mist Sprayer and Face Humidifier"],
+  ["case-for-iphone-16-15-14-13-12-pro-11-pro-xs-max-x-17-air-plus-iface-classic-smooth-glossy-shockproof-luxury-back-cover-coque", "Glossy Shockproof iPhone Case for Multiple Models"],
+  ["mouse-customized-for-keyboard-br", "Customized Mouse for Keyboard and Computer Use"],
+  ["7-in-1-hair-oil-high-gloss-hair-oil-that-can-be-quickly-absorbed-and-deeply-nourishes-the-hair-making-it-strong-and-elastic", "7-in-1 High Gloss Nourishing Hair Oil"],
+  ["men-hair-replacement-100-human-hair-mono-base-6-inch-short-pu-edge-lace-mesh-with-clips-fully-hand-tied-off-black-wig", "Men's Short Black Hair Replacement Wig with Clips"],
+  ["super-soft-leave-in-conditioner-spray-hair-scalp-treatment-smoothing-straightening-shiny-repair-damaged-hair-care-hair-oil-spray", "Leave-In Conditioner and Hair Oil Spray for Damaged Hair"],
+  ["hair-dye-shampoo-for-gray-hair-for-women-men-natural-hair-dye-kit-semi-permanent-hair-dye-shampoo-black-brown-purple-200ml", "200ml Hair Dye Shampoo for Gray Hair"],
+  ["nail-pens-nail-paint-pen-12-colors-portable-tools-decoration-drawing-for-kids-art-practice-salon-manicure-home-women", "12-Color Nail Paint Pens for Art and Manicure"],
+  ["logitech-mx-master-3s-wireless-bluetooth-mouse-high-end-cross-screen-laptop", "Logitech MX Master 3S Wireless Bluetooth Mouse for Laptops"],
+  ["logitech-mx-master-3s-wireless-bluetooth-mouse-business-office-softtone-mouse-ergonomic-business-office-mouse", "Logitech MX Master 3S Ergonomic Wireless Mouse for Office Use"],
+]);
 
 const FAMILY_PRIORITY_WORDS = new Set([
   "apron",
@@ -105,8 +170,47 @@ const FAMILY_PRIORITY_WORDS = new Set([
   "organizer",
   "organiser",
   "bag",
+  "tote",
+  "backpack",
+  "gloves",
   "bottle",
+  "pot",
+  "pots",
+  "pan",
+  "pans",
+  "cookware",
+  "kitchen",
+  "utensil",
+  "utensils",
+  "mouse",
+  "mice",
+  "mirror",
+  "wig",
+  "wigs",
+  "oil",
+  "suit",
+  "suits",
+  "trouser",
+  "trousers",
+  "wallet",
+  "wallets",
+  "toothbrush",
+  "holder",
+  "lipstick",
+  "lipgloss",
+  "gloss",
+  "blush",
+  "nail",
+  "sleeve",
   "bowl",
+  "cup",
+  "jug",
+  "kit",
+  "mask",
+  "balm",
+  "sprayer",
+  "sweatshirt",
+  "outfit",
   "mat",
   "rug",
   "dress",
@@ -118,6 +222,8 @@ const FAMILY_PRIORITY_WORDS = new Set([
   "socks",
   "sandals",
   "hat",
+  "hats",
+  "caps",
   "bonnet",
   "beanie",
   "wig",
@@ -349,6 +455,13 @@ function scorePhraseCandidate(phrase, signals) {
     return Number.NEGATIVE_INFINITY;
   }
 
+  const meaningfulTokens = tokens.filter(
+    (token) => token.length >= 3 && !GENERIC_TITLE_WORDS.has(token) && !/^\d+$/.test(token),
+  );
+  if (!meaningfulTokens.length) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
   let score = 0;
   for (const token of tokens) {
     score += scoreToken(token, signals);
@@ -380,7 +493,86 @@ function scorePhraseCandidate(phrase, signals) {
 }
 
 function selectHandleFamilyPhrase(signals) {
-  const candidates = buildPhraseCandidates([...signals.handleTokens]);
+  const handleText = normalizePlainText(signals.handle || [...signals.handleTokens].join(" "))
+    .toLowerCase()
+    .replace(/[-_]+/g, " ");
+  const compactHandleText = handleText.replace(/\s+/g, "");
+  const compactFamilyRules = [
+    ["eyelashcurler", "Eyelash Curler"],
+    ["lashcurler", "Eyelash Curler"],
+    ["falseeyelash", "False Eyelashes"],
+    ["falselashes", "False Eyelashes"],
+    ["makeupmirror", "Makeup Mirror"],
+    ["vanitymirror", "Makeup Mirror"],
+    ["lipgloss", "Lip Gloss"],
+    ["lipplumper", "Lip Gloss"],
+    ["mascara", "Mascara"],
+    ["hairclip", "Hair Clip"],
+    ["barrette", "Hair Clip"],
+    ["phonecase", "Phone Case"],
+    ["hairdyeshampoo", "Hair Dye Shampoo"],
+  ];
+  const compactFamily = compactFamilyRules.find(([needle]) => compactHandleText.includes(needle));
+  if (compactFamily) {
+    return compactFamily[1];
+  }
+  const exactFamilies = [
+    [/measuring\s+cup|measuring\s+jug/, "Measuring Cup"],
+    [/camping\s+cook\s+kit|camping\s+pot\s+set|cook\s+kit/, "Camping Cookware Set"],
+    [/facial\s+mist\s+sprayer|face\s+mist\s+sprayer/, "Facial Mist Sprayer"],
+    [/lip\s+balm/, "Lip Balm"],
+    [/hair\s+oil|anti\s+frizz\s+hair\s+oil/, "Hair Oil"],
+    [/sport\s+outfit|sports?\s+suit|hooded\s+sweatshirt/, "Sports Outfit"],
+    [/dog\s+nail\s+file|pet\s+nail\s+file/, "Dog Nail File"],
+    [/raincoat|rain\s+coat|rain\s+poncho|rainwear/, "Raincoat"],
+    [/screen\s+protector|tempered\s+glass|hydrogel\s+film/, "Screen Protector"],
+    [/mouse\s+jiggler|mouse\s+mover|mouse\s+shaker/, "Mouse Jiggler"],
+    [/mouse\s+ring|scrolling\s+ring|mouse\s+remote/, "Mouse Remote"],
+    [/gaming\s+mouse|wired\s+mouse|wireless\s+mouse|bluetooth\s+mouse/, "Computer Mouse"],
+    [/(?:case|cover).*iphone|iphone.*(?:case|cover)/, "iPhone Case"],
+    [/eyelash\s+curler|lash\s+curler/, "Eyelash Curler"],
+    [/false\s+eyelash|false\s+lashes/, "False Eyelashes"],
+    [/makeup\s+mirror|vanity\s+mirror/, "Makeup Mirror"],
+    [/lip\s+gloss|lip\s+plumper|lipstick/, "Lip Gloss"],
+    [/blush\s+powder|blush\s+palette/, "Blush"],
+    [/mascara/, "Mascara"],
+    [/hair\s+clip|barrette/, "Hair Clip"],
+    [/phone\s+case/, "Phone Case"],
+    [/trousers|pants/, "Pants"],
+    [/perfume|fragrance/, "Perfume"],
+  ];
+  for (const [pattern, label] of exactFamilies) {
+    const compactPattern = new RegExp(pattern.source.replace(/\\s\+/g, ""));
+    if (pattern.test(handleText) || compactPattern.test(compactHandleText)) {
+      return label;
+    }
+  }
+  const meaningfulHandleTokens = [...signals.handleTokens].filter((token) => !GENERIC_TITLE_WORDS.has(token));
+  const priorityIndex = meaningfulHandleTokens.findIndex((token) => FAMILY_PRIORITY_WORDS.has(token));
+  if (priorityIndex >= 0) {
+    const current = meaningfulHandleTokens[priorityIndex];
+    const previous = meaningfulHandleTokens
+      .slice(0, priorityIndex)
+      .filter((token) => token !== "piece" && !/^\d+$/.test(token))
+      .slice(-2);
+    const next = meaningfulHandleTokens[priorityIndex + 1];
+    const familyTokens = [...previous, current];
+
+    if (next && FAMILY_PRIORITY_WORDS.has(next)) {
+      if (familyTokens.length >= 3) {
+        familyTokens.shift();
+      }
+      familyTokens.push(next);
+    }
+
+    if (familyTokens.length) {
+      return titleCase(familyTokens.join(" "));
+    }
+  }
+
+  const candidates = buildPhraseCandidates(meaningfulHandleTokens.length ? meaningfulHandleTokens : [...signals.handleTokens], {
+    maxLength: 2,
+  });
   if (!candidates.length) {
     return "";
   }
@@ -397,6 +589,84 @@ function selectHandleFamilyPhrase(signals) {
   }
 
   return bestScore > Number.NEGATIVE_INFINITY ? titleCase(bestCandidate) : "";
+}
+
+function buildHandleAlignedTitle(signals) {
+  const exactHandleFamily = /^(Eyelash Curler|False Eyelashes|Makeup Mirror|Lip Gloss|Lip Balm|Mascara|Hair Clip|Hair Oil|Phone Case|iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Pants|Perfume)$/i.test(
+    normalizePlainText(signals.handlePhrase),
+  );
+  if (!signals.handlePhrase || (!exactHandleFamily && !hasHandleTitleConflict(signals))) {
+    return "";
+  }
+  if (exactHandleFamily) {
+    const familyTokens = buildTokenSet(signals.handlePhrase);
+    const informativeSource = [signals.sourceTitle, signals.catalogTitle]
+      .map((candidate) => normalizePlainText(candidate))
+      .find((candidate) => {
+        const candidateTokens = buildTokenSet(candidate);
+        return candidate && [...familyTokens].some((token) => candidateTokens.has(token)) && !GENERIC_TITLE_PHRASES.some((pattern) => pattern.test(normalizeComparableText(candidate)));
+      });
+    if (informativeSource) {
+      return informativeSource;
+    }
+    const handleWords = normalizePlainText(signals.handle || "")
+      .toLowerCase()
+      .split(/[-_\s]+/)
+      .filter((word) => word && !GENERIC_TITLE_WORDS.has(word) && !/^\d+$/.test(word));
+    const familyWords = normalizePlainText(signals.handlePhrase).toLowerCase().split(/\s+/);
+    const familyStart = handleWords.findIndex((word, index) => familyWords.every((familyWord, offset) => handleWords[index + offset] === familyWord));
+    if (familyStart > 0) {
+      const modifiers = handleWords.slice(Math.max(0, familyStart - 3), familyStart).slice(-2);
+      if (modifiers.length) {
+        return titleCase(`${modifiers.join(" ")} ${signals.handlePhrase}`);
+      }
+    }
+  }
+
+  const productType = firstNonEmpty(signals.sourceProductType, signals.catalogProductType);
+  const formattedType = productType ? titleCase(productType.toLowerCase()) : "";
+  const typeTokens = buildTokenSet(productType);
+  const handleTokens = buildTokenSet(signals.handlePhrase);
+  const typeAgreesWithHandle =
+    [...typeTokens].some((token) => handleTokens.has(token)) ||
+    (typeTokens.has("cookware") && ["pot", "pots", "pan", "pans", "kitchen"].some((token) => handleTokens.has(token)));
+  return typeAgreesWithHandle
+    ? appendProductTypeCandidate(signals.handlePhrase, formattedType) || signals.handlePhrase
+    : signals.handlePhrase;
+}
+
+function buildSafeHandleTitle(signals) {
+  const words = normalizePlainText(signals.handle || "")
+    .toLowerCase()
+    .split(/[-_\s]+/)
+    .filter((word) => word && !GENERIC_TITLE_WORDS.has(word) && !/^\d+$/.test(word));
+  if (!words.length) {
+    return "";
+  }
+
+  const familyIndex = words.findIndex((word) => FAMILY_PRIORITY_WORDS.has(word));
+  const selected = familyIndex >= 0
+    ? words.slice(Math.max(0, familyIndex - 3), Math.min(words.length, familyIndex + 5))
+    : words.slice(0, 6);
+  const phrase = uniqueValues(selected).slice(0, 6).join(" ");
+  return shortenAtWordBoundary(titleCase(phrase), 68);
+}
+
+function titleHandleOverlap(title, signals) {
+  const handleTokens = new Set(
+    [...signals.handleTokens].filter(
+      (token) => token.length >= 3 && !GENERIC_TITLE_WORDS.has(token) && !/^\d+$/.test(token),
+    ),
+  );
+  return countOverlap(handleTokens, buildTokenSet(title));
+}
+
+function buildCanonicalSeoTitle(canonicalTitle) {
+  const title = normalizePlainText(canonicalTitle);
+  if (!title) {
+    return "";
+  }
+  return shortenAtWordBoundary(title, MARKETPLACE_CONTENT_POLICY.seo.titleLength[1]);
 }
 
 function selectBestTitleCandidate(candidates, signals, sourceTitle) {
@@ -457,15 +727,60 @@ function selectBestTitleCandidate(candidates, signals, sourceTitle) {
   };
 }
 
+function appendProductTypeCandidate(title, productType) {
+  const normalizedTitle = normalizeComparableText(title);
+  const normalizedType = normalizeComparableText(productType);
+  if (!normalizedTitle || !normalizedType || normalizedTitle.includes(normalizedType)) {
+    return "";
+  }
+
+  return `${title} - ${productType}`;
+}
+
+function hasHandleTitleConflict(signals) {
+  const meaningfulHandleTokens = new Set(
+    [...signals.handleTokens].filter(
+      (token) => token.length >= 3 && !GENERIC_TITLE_WORDS.has(token) && !/^\d+$/.test(token),
+    ),
+  );
+  if (!meaningfulHandleTokens.size) {
+    return false;
+  }
+
+  const combinedTitleTokens = new Set([...signals.sourceTitleTokens, ...signals.catalogTitleTokens]);
+  const semanticFamilies = [
+    { handle: ["pot", "pots", "pan", "pans", "kitchen"], title: ["cookware"] },
+    { handle: ["trouser", "trousers"], title: ["pants"] },
+    { handle: ["pants"], title: ["trouser", "trousers"] },
+    { handle: ["case", "cover"], title: ["case", "cover"] },
+    { handle: ["bag"], title: ["purse", "handbag", "tote"] },
+    { handle: ["lipstick", "lipgloss", "gloss"], title: ["lipstick", "lip", "gloss"] },
+  ];
+  if (semanticFamilies.some((family) =>
+    family.handle.some((token) => meaningfulHandleTokens.has(token)) &&
+    family.title.some((token) => combinedTitleTokens.has(token)))) {
+    return false;
+  }
+
+  const titleSources = [signals.sourceTitleTokens, signals.catalogTitleTokens].filter((tokens) => tokens?.size);
+  return titleSources.length > 0 && titleSources.every((tokens) => countOverlap(meaningfulHandleTokens, tokens) === 0);
+}
+
 function buildSearchPhrases(signals) {
+  const titleConflict = hasHandleTitleConflict(signals);
+  const handleSearchTokens = titleConflict
+    ? [...signals.handleTokens].filter((token) => !GENERIC_TITLE_WORDS.has(token))
+    : [...signals.handleTokens];
+  const boostSources = titleConflict
+    ? []
+    : (signals.catalogSearchBoosts || []).map((value) => tokenizeText(value)).filter((tokens) => tokens.length);
   const sources = [
-    [...signals.handleTokens],
-    [...signals.sourceTitleTokens],
-    [...signals.catalogTitleTokens],
+    handleSearchTokens,
+    ...(titleConflict ? [] : [[...signals.sourceTitleTokens], [...signals.catalogTitleTokens]]),
     [...signals.productTypeTokens],
     [...signals.tagTokens],
     [...signals.collectionTokens],
-    [...(signals.catalogSearchBoosts || [])],
+    ...boostSources,
   ];
 
   const phrases = [];
@@ -484,62 +799,258 @@ function buildSearchPhrases(signals) {
 }
 
 function buildSeoDescription(title, signals, searchPhrases) {
-  const parts = [];
   const titleText = normalizePlainText(title);
-  const typeText = normalizePlainText(signals.productTypeText);
-  const collectionText = signals.collectionTitles.length
-    ? signals.collectionTitles.slice(0, 2).join(" and ")
-    : "";
-
-  if (titleText) {
-    parts.push(
-      `${titleText}${typeText ? ` is presented as a ${typeText.toLowerCase()}` : " is presented as a product"} listing${collectionText ? ` with context from ${collectionText}` : ""}`,
-    );
-  }
-
+  const knowledge = resolveProductKnowledge(signals.handle);
+  const facts = prioritizeProductFacts(extractSupportedProductFacts(signals), knowledge)
+    .filter((fact) => fact.label !== "Product focus");
+  const factClauses = facts.slice(0, 3).map((fact) => {
+    if (fact.label === "Device compatibility") return `compatible with ${fact.value}`;
+    if (fact.label === "Size or capacity") return `available in ${fact.value}`;
+    if (fact.label === "Material") return `made with the stated ${fact.value} material`;
+    if (fact.label === "Supported features") return `with ${fact.value}`;
+    if (fact.label === "Available options") return `with options including ${fact.value}`;
+    return `${fact.label.toLowerCase()} includes ${fact.value}`;
+  });
+  let sentence = `Shop ${titleText}.`;
   if (signals.reviewSummary) {
-    parts.push(
-      `${signals.reviewSummary.rating.toFixed(1)} stars from ${signals.reviewSummary.ratingCount} trusted reviews`,
-    );
+    sentence += ` ${signals.reviewSummary.rating.toFixed(1)} stars from ${signals.reviewSummary.ratingCount} trusted reviews.`;
   }
-
-  if (searchPhrases.length) {
-    parts.push(`Search phrases: ${searchPhrases.slice(0, 4).join(", ")}`);
+  if (factClauses.length) sentence += ` Details include ${factClauses.slice(0, 2).join(" and ")}.`;
+  sentence += ` ${knowledge.copy.benefit}`;
+  sentence += " Compare available options and choose the right fit.";
+  if (sentence.length < 135) {
+    sentence += ". Order online from SALT";
   }
+  const shortened = shortenAtWordBoundary(sentence || titleText, 159)
+    .replace(/\b(and|or|the|a|an|for|with|to|of|before|that|your|intended)$/i, "")
+    .trim();
+  return shortened && !/[.!?]$/.test(shortened) ? `${shortened}.` : shortened;
+}
 
-  const sentence = parts.join(". ");
-  return shortenAtWordBoundary(sentence || titleText, 155);
+function extractSupportedProductFacts(signals) {
+  // Handles are canonical. Tags, collections, and types can contain unrelated legacy classifications.
+  const source = normalizePlainText(signals.handle || "").toLowerCase().replace(/[-_]+/g, " ");
+  const facts = [];
+  const hasTerm = (term) => new RegExp(`(?:^|\\s)${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\ /g, "\\s+")}(?:$|\\s)`, "i").test(source);
+  const add = (label, values) => {
+    const clean = uniqueValues(values.map((value) => normalizePlainText(value)).filter(Boolean));
+    if (clean.length) facts.push({ label, value: clean.slice(0, 5).join(", ") });
+  };
+  const productFocus = sanitizeMarketplaceClaims(normalizePlainText(signals.handle || "").replace(/[-_]+/g, " "))
+    .toLowerCase()
+    .split(/[-_\s]+/)
+    .filter((word) => word.length >= 2 && !GENERIC_TITLE_WORDS.has(word))
+    .slice(0, 10)
+    .join(" ");
+  add("Product focus", [productFocus]);
+  add("Size or capacity", [...source.matchAll(/\b\d+(?:\.\d+)?\s?(?:ml|l|oz|g|kg|cm|mm|inch|inches|pcs|piece|pieces|pairs?|pack)\b/gi)].map((match) => match[0]));
+  add("Material", ["cotton", "linen", "silicone", "stainless steel", "glass", "plastic", "wood", "wooden", "leather", "faux leather", "pu leather", "canvas", "nylon", "polyester", "rubber", "ceramic", "metal", "satin", "wool"].filter(hasTerm));
+  add("Supported features", ["waterproof", "water resistant", "leakproof", "foldable", "portable", "adjustable", "reusable", "insulated", "rechargeable", "wireless", "shockproof", "non slip", "quick dry", "wide brim", "large capacity", "double strap", "drawstring", "zipper", "magnetic closure", "with straw", "time marker", "reflective", "collapsible"].filter(hasTerm));
+  add("Intended user", ["women", "men", "unisex", "girls", "boys", "kids", "children", "baby", "toddler", "pet", "dog", "cat"].filter((term) => new RegExp(`\\b${term}\\b`).test(source)));
+  add("Use or occasion", ["everyday", "casual", "work", "office", "travel", "gym", "fitness", "running", "cycling", "hiking", "camping", "outdoor", "beach", "school", "wedding", "party", "evening", "makeup", "skin care", "hair care", "kitchen", "gardening", "construction", "flooring"].filter(hasTerm));
+  add("Style or design", ["vintage", "retro", "minimalist", "bohemian", "floral", "solid color", "woven", "braided", "wide leg", "slim fit", "hooded", "long sleeve", "short sleeve", "crossbody", "shoulder", "tote", "backpack"].filter(hasTerm));
+  add("Placement or setting", ["living room", "bedroom", "bathroom", "kitchen", "office", "desk", "tabletop", "floor", "wall", "ceiling", "car", "garden", "patio"].filter(hasTerm));
+  add("Device compatibility", uniqueValues([...source.matchAll(/\b(?:iphone|ipad|samsung|galaxy|android)\s*(?:\d{1,2}|pro|max|plus|mini|air)?\b/gi)].map((match) => match[0])));
+  add("Pack format", [...source.matchAll(/\b(?:\d+\s*(?:pcs|pieces|pairs|pack)|pack of \d+|set of \d+)\b/gi)].map((match) => match[0]));
+  const optionValues = (signals.sourceRows || []).flatMap((row) => [
+    getRowValue(row, ["Option1 Value"]),
+    getRowValue(row, ["Option2 Value"]),
+    getRowValue(row, ["Option3 Value"]),
+  ]).map((value) => sanitizeMarketplaceClaims(normalizePlainText(value))).filter((value) =>
+    value &&
+    !/^default title$/i.test(value) &&
+    !/^(?:set|option|style)$/i.test(value) &&
+    !/\b(?:buy\s*\d+|get\s*\d+)\b/i.test(value),
+  );
+  add("Available options", optionValues);
+  return prioritizeProductFacts(facts, resolveProductKnowledge(signals.handle));
+}
+
+function stableCopyIndex(value, length) {
+  let hash = 2166136261;
+  for (const character of String(value || "")) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0) % Math.max(1, length);
+}
+
+function factToSentence(fact) {
+  const labels = {
+    "Size or capacity": `Available size or capacity: ${fact.value}.`,
+    Material: `Identified material: ${fact.value}.`,
+    "Supported features": `Functional details include ${fact.value}.`,
+    "Intended user": `Intended for ${fact.value}.`,
+    "Use or occasion": `Relevant for ${fact.value}.`,
+    "Style or design": `Design direction: ${fact.value}.`,
+    "Placement or setting": `Suitable setting: ${fact.value}.`,
+    "Device compatibility": `Device compatibility includes ${fact.value}.`,
+    "Pack format": `Pack format: ${fact.value}.`,
+    "Available options": `Available choices include ${fact.value}.`,
+  };
+  return labels[fact.label] || `${fact.label}: ${fact.value}.`;
 }
 
 function buildDescriptionHtml(title, signals, searchPhrases) {
   const titleText = normalizePlainText(title);
-  const typeText = normalizePlainText(signals.productTypeText);
-  const collectionText = signals.collectionTitles.length
-    ? signals.collectionTitles.slice(0, 2).join(" and ")
-    : "";
-
-  const paragraphs = [];
-  if (titleText) {
-    paragraphs.push(
-      `<p><strong>${escapeHtml(titleText)}</strong>${typeText ? ` is presented as a ${escapeHtml(typeText.toLowerCase())}` : " is presented as a product"} listing${collectionText ? ` with context from ${escapeHtml(collectionText)}` : ""}.</p>`,
-    );
+  const knowledge = resolveProductKnowledge(signals.handle);
+  const rawTypeText = sanitizeMarketplaceClaims(normalizePlainText(signals.productTypeText));
+  const typeText = rawTypeText && isTitleAlignedWithKnowledge(rawTypeText, knowledge)
+    ? rawTypeText
+    : knowledge.id === "general"
+      ? rawTypeText
+      : knowledge.productNouns[0];
+  const collectionText = signals.collectionTitles.length ? signals.collectionTitles.slice(0, 2).join(" and ") : "";
+  const evidence = uniqueValues(
+    (Array.isArray(signals.catalogHighlights) ? signals.catalogHighlights : [])
+      .map((value) => sanitizeMarketplaceClaims(value))
+      .filter((value) => value && !containsUnsafeMarketplaceClaim(value)),
+  ).slice(0, 8);
+  const family = normalizePlainText(signals.handle || signals.handlePhrase || "").toLowerCase().replace(/[-_]+/g, " ");
+  const familyHas = (term) => new RegExp(`(?:^|\\s)${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\ /g, "\\s+")}(?:$|\\s)`, "i").test(family);
+  const handleIdentity = sanitizeMarketplaceClaims(normalizePlainText(signals.handlePhrase || titleText || "product"));
+  const handleDescriptorPhrase = sanitizeMarketplaceClaims(normalizePlainText(signals.handle || "").replace(/[-_]+/g, " "))
+    .toLowerCase()
+    .split(/[-_\s]+/)
+    .filter((word) => word.length >= 3 && !GENERIC_TITLE_WORDS.has(word) && !/^\d+$/.test(word))
+    .slice(0, 7)
+    .join(" ");
+  const rawDetailText = normalizePlainText(stripHtml(signals.sourceBodyHtml || signals.catalogBodyHtml || ""));
+  const sourceDetailText = /product overview|key features|who is this for|why customers|faqs|straightforward way|product listing|easy to compare|personal care item|without extra guesswork|material details such as pu/i.test(rawDetailText)
+    ? ""
+    : rawDetailText;
+  const detailSentences = sourceDetailText
+    .split(/[.!?]+/)
+    .map((sentence) => normalizePlainText(sentence))
+    .filter((sentence) => sentence.length >= 24 && !/^product overview$/i.test(sentence))
+    .filter((sentence) => !containsUnsafeMarketplaceClaim(sentence))
+    .slice(0, 3);
+  const detailPhrase = detailSentences.length ? detailSentences.join(". ") : "";
+  const fashion = ["dress", "top", "shirt", "blouse", "jacket", "coat", "blazer", "pants", "trouser", "jean", "skirt", "legging", "shoe", "sandal", "boot", "sneaker", "handbag", "bag", "jewelry", "ring", "necklace", "earring", "hat", "scarf", "belt"].some(familyHas);
+  const useLabel = fashion ? "Style, Use & Occasion" : "How It Fits Into Your Routine";
+  const fallbackDetails = fashion
+    ? "Please refer to the product details or packaging for complete material, sizing, and care information."
+    : "Please refer to the product details or packaging for complete specifications, materials, sizing, and care information.";
+  const careText = fashion && /shoe|sandal|boot|sneaker/.test(family)
+    ? "Store shoes in a clean, dry place when not in use. Avoid excessive moisture, heavy pressure, and rough storage conditions when possible. Wipe gently with a soft cloth if needed and follow any care instructions provided with the product."
+    : fashion && /accessory|bag|jewelry|ring|necklace|earring|hat|scarf|belt|hair/.test(family)
+      ? "Store accessories in a clean, dry place when not in use. Keep away from excessive moisture, heavy pressure, and harsh chemicals when possible. Wipe gently with a soft cloth if needed and follow the care instructions provided with the product."
+      : fashion
+        ? "Wash or clean according to the care instructions provided with the product. Store in a clean, dry place and avoid harsh handling that may affect the fabric, shape, color, or finish."
+        : "Use and store the product according to the care or usage instructions provided with the item. Keep it in a clean, dry place when not in use and avoid harsh handling when possible.";
+  const category = (() => {
+    if (["perfume", "fragrance", "cologne", "eau de parfum", "eau de toilette"].some(familyHas)) return "fragrance";
+    if (["shampoo", "conditioner", "hair dye", "hair oil", "hair mask", "scalp", "wig"].some(familyHas)) return "hair-care";
+    if (["blush", "makeup", "cosmetic", "lipstick", "lip gloss", "lip balm", "eyeliner", "mascara", "foundation", "eyelash"].some(familyHas)) return "makeup";
+    if (["face cream", "serum", "moisturizer", "skin care", "skincare", "cleanser", "body scrub", "body wash", "soap", "facial mist", "face mist"].some(familyHas)) return "skin-care";
+    if (["water bottle", "shaker", "flask", "thermos", "tumbler", "hydration"].some(familyHas)) return "drinkware";
+    if (["knee pad", "brace", "support sleeve", "protective gear"].some(familyHas)) return "protective-gear";
+    if (["bag", "backpack", "tote", "wallet", "purse", "organizer"].some(familyHas)) return "bag";
+    if (["shoe", "sandal", "boot", "sneaker", "slipper"].some(familyHas)) return "footwear";
+    if (["dress", "top", "shirt", "blouse", "jacket", "coat", "blazer", "pants", "trouser", "jean", "skirt", "legging", "raincoat", "swimwear", "sweatshirt", "outfit", "suit"].some(familyHas)) return "apparel";
+    if (["ring", "necklace", "earring", "bracelet", "jewelry", "brooch"].some(familyHas)) return "jewelry";
+    if (["phone case", "iphone case", "tablet case", "keyboard", "mouse", "charger", "cable", "headphone", "earphone"].some(familyHas)) return "electronics-accessory";
+    if (["lamp", "light", "lighting", "lantern"].some(familyHas)) return "lighting";
+    if (["kitchen", "cookware", "cook kit", "pan", "pot", "utensil", "measuring cup", "measuring jug", "cutter", "peeler", "spatula"].some(familyHas)) return "kitchen";
+    if (["pet", "dog", "cat", "aquarium"].some(familyHas)) return "pet";
+    if (["baby", "toddler", "diaper", "stroller", "kids", "children"].some(familyHas)) return "baby-kids";
+    if (["comb", "brush", "tool", "wrench", "screwdriver", "drill", "cutter", "scraper"].some(familyHas)) return "tool";
+    return fashion ? "fashion-accessory" : "general";
+  })();
+  let categoryCopy = {
+    fragrance: { purpose: "adds a defined scent option to a personal fragrance routine", use: "Apply only as directed to the appropriate pulse points or clothing areas specified by the product instructions.", benefit: "Its scent format makes it easy to compare for daily wear, evenings, travel, or gifting.", audience: ["Fragrance shoppers exploring a specific scent profile", "People choosing a personal or occasion fragrance", "Gift buyers comparing fragrance options"] },
+    "hair-care": { purpose: "supports the hair or scalp step identified by its product type", use: "Use it at the relevant cleansing, conditioning, coloring, styling, or scalp-care step and follow the supplied directions for timing and application.", benefit: "Its clearly defined hair-care format helps shoppers place it within an existing routine.", audience: ["Shoppers building a focused hair-care routine", "People looking for the specific hair-use format named here", "Buyers comparing hair-care options by purpose and size"] },
+    makeup: { purpose: "serves the stated makeup, application, or grooming step", use: "Use the item only for the stated makeup or grooming task, follow the supplied technique, and clean or remove it appropriately after use.", benefit: "Its format supports a defined eye, lip, cheek, complexion, application, or grooming task.", audience: ["Makeup shoppers choosing a product for a specific step", "People refining an everyday or occasion look", "Beauty buyers choosing a stated format or applicator"] },
+    "skin-care": { purpose: "fits into the cleansing, moisturizing, exfoliating, or body-care step identified by the product", use: "Use it only for the skin-care step and body area stated in the product directions, and follow all supplied application and rinse-off guidance.", benefit: "Its product format makes routine placement and comparison straightforward without relying on unsupported treatment claims.", audience: ["Shoppers building a focused skin-care or body-care routine", "People comparing products by format and intended step", "Buyers looking for the specific care item named here"] },
+    drinkware: { purpose: "provides a reusable format for carrying or serving drinks in the setting identified by the product", use: "Fill, close, carry, and clean it according to the supplied instructions, capacity limits, temperature guidance, and lid design.", benefit: "Its capacity and carry format help shoppers compare it for gym, travel, work, school, or outdoor use.", audience: ["Shoppers choosing drinkware by capacity and lid format", "People preparing for gym, travel, work, or outdoor routines", "Buyers comparing reusable hydration options"] },
+    "protective-gear": { purpose: "adds task-specific coverage for the body area named in the product", use: "Position and secure it according to the supplied fitting instructions before the intended work or activity, then inspect it regularly for wear.", benefit: "Its protective format helps shoppers compare coverage, fastening, and intended activity without implying medical results.", audience: ["Workers comparing task-specific protective equipment", "Garden, flooring, construction, or activity users where supported", "Shoppers choosing protection by fit and fastening format"] },
+    bag: { purpose: "organizes and carries the items appropriate to its size, strap style, and compartment layout", use: "Load it within the supported capacity, use the provided handles or straps as intended, and organize contents around the available compartments.", benefit: "Its carry format helps shoppers compare everyday, work, travel, school, gym, or occasion use.", audience: ["Shoppers choosing a bag for a specific carrying routine", "People comparing capacity, strap, and compartment formats", "Gift buyers looking for a practical carry option"] },
+    footwear: { purpose: "completes outfits for the use and styling context supported by the product", use: "Choose the appropriate listed size and pair it with outfits suited to the footwear type and intended setting.", benefit: "Its silhouette and listed options make it easier to compare for casual, work, travel, or occasion styling.", audience: ["Footwear shoppers comparing style and listed size options", "People completing a specific casual or occasion outfit", "Buyers choosing shoes by silhouette and use case"] },
+    apparel: { purpose: "builds an outfit around the garment type, silhouette, and occasion supported by the product", use: "Select from the listed options and style it with layers, footwear, or accessories appropriate to the garment and intended occasion.", benefit: "Its garment format supports focused comparison for everyday, work, travel, seasonal, or event dressing.", audience: ["Shoppers building an outfit around this garment type", "People comparing listed style and size options", "Buyers choosing a piece for the supported occasion"] },
+    jewelry: { purpose: "adds a defined jewelry detail to everyday or occasion styling", use: "Wear it in the position intended for the jewelry type and coordinate it with other pieces without assuming unlisted materials or finishes.", benefit: "Its jewelry format helps shoppers compare scale, motif, color, and styling role where those details are provided.", audience: ["Jewelry shoppers choosing a specific accessory type", "People finishing an everyday or occasion look", "Gift buyers comparing wearable accessories"] },
+    "electronics-accessory": { purpose: "supports the device or electronic task identified in the product name", use: "Confirm device compatibility and use the accessory according to the supplied connection, fitting, charging, or setup instructions.", benefit: "Its device context helps shoppers compare compatibility and function before purchase.", audience: ["Shoppers looking for an accessory for a specific device", "People comparing compatibility and setup format", "Buyers replacing or adding a practical electronics accessory"] },
+    lighting: { purpose: "adds task, accent, or ambient light in the setting supported by the product", use: "Install or place it according to the electrical, mounting, and location instructions supplied with the product.", benefit: "Its lighting format helps shoppers compare placement, room use, and control style where supported.", audience: ["Shoppers planning lighting for a specific room or task", "People comparing lamp placement and format", "Buyers adding functional or decorative light"] },
+    kitchen: { purpose: "supports the preparation, cooking, serving, or storage task named in the product", use: "Use it only for the intended kitchen task and follow the supplied handling, heat, cleaning, and storage instructions.", benefit: "Its task-specific format makes it easier to compare with similar kitchen tools.", audience: ["Home cooks looking for a tool for a defined task", "Shoppers comparing kitchen formats and sizes", "Gift buyers choosing a practical kitchen item"] },
+    pet: { purpose: "supports the pet-care, feeding, play, grooming, or travel task identified by the product", use: "Choose the appropriate listed option for the animal and use it under the care and supervision guidance supplied with the product.", benefit: "Its pet-use context helps shoppers compare suitability by task, animal, and format.", audience: ["Pet owners shopping for a specific care or activity need", "People comparing pet products by size or format", "Gift buyers choosing a practical pet item"] },
+    "baby-kids": { purpose: "supports the child, parent, travel, clothing, or care use identified by the product", use: "Select the appropriate listed age or size option and follow all supplied adult-supervision, fitting, care, and safety guidance.", benefit: "Its age and use context helps caregivers compare the available options carefully.", audience: ["Parents and caregivers comparing a specific child-use item", "Shoppers checking listed age, size, or format options", "Gift buyers choosing an age-appropriate product"] },
+    tool: { purpose: "supports the specific grooming, household, workshop, or maintenance task named in the product", use: "Use it only for its stated task and follow the supplied handling, cleaning, storage, and safety instructions.", benefit: "Its task-focused format helps shoppers compare operation and intended use directly.", audience: ["Shoppers looking for a tool for a defined task", "People comparing tool formats and listed options", "Buyers adding a practical item to a routine or kit"] },
+    "fashion-accessory": { purpose: "adds a specific finishing detail to an outfit or daily routine", use: "Style or wear it according to the accessory type and coordinate it with the listed color, size, or design options.", benefit: "Its accessory format makes it easy to compare for everyday, travel, work, or occasion styling.", audience: ["Shoppers finishing a specific outfit", "People comparing accessory styles and listed options", "Gift buyers choosing a wearable or practical accessory"] },
+    general: { purpose: "serves the specific everyday task identified by the product name", use: "Use it only for the stated purpose and follow the supplied setup, handling, care, and storage instructions.", benefit: "Its product format and listed options support direct comparison for the intended routine.", audience: ["Shoppers looking for this specific product type", "People comparing options for the stated task", "Gift buyers choosing a practical item"] },
+  }[category];
+  categoryCopy = knowledge.copy || categoryCopy;
+  if (category === "makeup") {
+    if (/brush|applicator|sponge|tweezer|curler/.test(family)) categoryCopy = { ...categoryCopy, purpose: "applies, blends, shapes, or handles the specific makeup product named in the handle", use: "Use the tool for the stated foundation, powder, blush, lash, brow, or complexion step, then clean and store it according to the supplied care directions." };
+    else if (/lip gloss|lipgloss|lip plumper/.test(family)) categoryCopy = { ...categoryCopy, purpose: "adds the stated gloss, tint, or finish to the lips", use: "Apply a light layer to clean lips, build only as needed for the stated finish, and remove it during the usual makeup-cleansing routine." };
+    else if (/lipstick|lip balm/.test(family)) categoryCopy = { ...categoryCopy, purpose: "adds the stated lip color or balm format to a lip-care or makeup routine", use: "Apply directly to clean lips according to the product directions and reapply only as needed." };
+    else if (/eyeliner/.test(family)) categoryCopy = { ...categoryCopy, purpose: "defines the lash line in the format stated by the product", use: "Apply along the lash line with controlled strokes and remove it with an appropriate eye-makeup remover." };
+    else if (/mascara/.test(family)) categoryCopy = { ...categoryCopy, purpose: "coats the eyelashes for the finish stated by the product", use: "Apply from lash base toward the tips without sharing the applicator, then remove it as part of the eye-makeup routine." };
+    else if (/blush/.test(family)) categoryCopy = { ...categoryCopy, purpose: "adds the stated color format to the cheeks", use: "Apply lightly to the cheek area and build gradually according to the desired look." };
+    else if (/foundation|primer/.test(family)) categoryCopy = { ...categoryCopy, purpose: "forms the stated complexion base within a makeup routine", use: "Apply an even layer to prepared skin according to the supplied directions and remove it during cleansing." };
   }
-
-  if (signals.reviewSummary) {
-    paragraphs.push(
-      `<p>Customer review data shows a ${escapeHtml(signals.reviewSummary.rating.toFixed(1))}-star average from ${escapeHtml(String(signals.reviewSummary.ratingCount))} trusted reviews.</p>`,
-    );
+  if (category === "electronics-accessory" && /mouse/.test(family)) {
+    categoryCopy = { ...categoryCopy, purpose: "controls pointer movement and computer input using the wired, wireless, gaming, or remote format stated by the product", use: "Confirm computer compatibility, connect it using the stated interface, and configure supported controls before use." };
   }
-
-  if (searchPhrases.length) {
-    paragraphs.push(`<p>Search phrases: ${searchPhrases.map((phrase) => escapeHtml(phrase)).join(", ")}.</p>`);
+  if (category === "hair-care" && /hair oil/.test(family)) {
+    categoryCopy = { ...categoryCopy, purpose: "adds the stated oil or spray format to a hair-length or styling routine", use: "Apply only the directed amount to the stated hair area, avoid the eyes, and follow the supplied leave-in or rinse-out directions." };
   }
-
-  if (!paragraphs.length) {
-    return "";
+  if (category === "skin-care" && /facial mist|face mist/.test(family)) {
+    categoryCopy = { ...categoryCopy, purpose: "dispenses the stated facial mist format during a skin-care routine", use: "Fill or charge the sprayer only as directed, hold it at the instructed distance, avoid direct eye contact, and clean the reservoir or nozzle after use." };
   }
-
-  return paragraphs.join("\n");
+  if (category === "kitchen" && /measuring cup|measuring jug/.test(family)) {
+    categoryCopy = { ...categoryCopy, purpose: "measures and pours liquids using the stated cup or jug capacities", use: "Select the required capacity, measure on a level surface, pour through the stated spout, and clean it according to the supplied material guidance." };
+  } else if (category === "kitchen" && /camping|cook kit/.test(family)) {
+    categoryCopy = { ...categoryCopy, purpose: "combines the stated pot or cookware format for camping meal preparation", use: "Use each cookware piece only with a supported heat source and follow the supplied cleaning, packing, and storage guidance." };
+  }
+  const facts = prioritizeProductFacts(extractSupportedProductFacts(signals), knowledge);
+  const productFocusFact = facts.find((fact) => fact.label === "Product focus");
+  const visibleFacts = facts.length > 1 ? facts.filter((fact) => fact.label !== "Product focus") : facts;
+  const factText = visibleFacts.map((fact) => `${fact.label.toLowerCase()}: ${fact.value}`).join("; ");
+  const featureFact = facts.find((fact) => fact.label === "Supported features");
+  const useFact = facts.find((fact) => fact.label === "Use or occasion");
+  const audienceFact = facts.find((fact) => fact.label === "Intended user");
+  const productSpecificUse = `${titleText} ${categoryCopy.purpose}. ${categoryCopy.use}`;
+  const featureItems = uniqueValues([
+    ...visibleFacts.map((fact) => `${fact.label}: ${fact.value}`),
+    typeText ? `Product type: ${typeText}` : "",
+    detailSentences.length ? detailSentences[0] : "",
+    ...evidence,
+  ]).slice(0, 7);
+  const audience = audienceFact
+    ? [`Designed for: ${audienceFact.value}`, ...(useFact ? [`Relevant settings: ${useFact.value}`] : []), ...categoryCopy.audience.slice(0, 2)]
+    : categoryCopy.audience;
+  const copyVariant = stableCopyIndex(signals.handle, 6);
+  const focus = productFocusFact?.value || handleDescriptorPhrase || handleIdentity.toLowerCase();
+  const introOpeners = [
+    `<strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}. Its form and function are centered on ${escapeHtml(focus)}.`,
+    `Designed around ${escapeHtml(focus)}, <strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}.`,
+    `<strong>${escapeHtml(titleText)}</strong> brings the ${escapeHtml(focus)} format into a focused, clearly defined use case: it ${escapeHtml(categoryCopy.purpose)}.`,
+    `For shoppers seeking ${escapeHtml(focus)}, <strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}.`,
+    `<strong>${escapeHtml(titleText)}</strong> is built around ${escapeHtml(focus)} and ${escapeHtml(categoryCopy.purpose)}.`,
+    `The core function of <strong>${escapeHtml(titleText)}</strong> comes directly from its ${escapeHtml(focus)} format: it ${escapeHtml(categoryCopy.purpose)}.`,
+  ];
+  const intro = titleText ? `<p>${introOpeners[copyVariant]}</p>` : "";
+  const naturalFacts = visibleFacts.map(factToSentence).join(" ");
+  const second = `<p>${naturalFacts ? `${escapeHtml(naturalFacts)} ` : ""}${escapeHtml(categoryCopy.use)}${detailPhrase ? ` ${escapeHtml(detailPhrase)}.` : ""}</p>`;
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  const faq = [
+    [`What is ${titleText}?`, `${titleText} is ${typeText ? `a ${typeText.toLowerCase()}` : handleIdentity} that ${categoryCopy.purpose}.`],
+    ["How can it be used or styled?", productSpecificUse],
+    [`When should I choose ${titleText}?`, useFact ? `Choose it for ${useFact.value} when its format and available choices fit the intended task.` : `Choose it when you need an item that ${categoryCopy.purpose}.`],
+    ["What specifications are identified?", factText || detailPhrase || (evidence.length ? evidence.slice(0, 3).join(", ") : fallbackDetails)],
+    ["How should it be cared for?", careText],
+    ["Which option should I choose?", facts.length ? `Use the ${visibleFacts.slice(0, 3).map((fact) => fact.label.toLowerCase()).join(", ")} together with the available variant choices to select the best fit for the intended task.` : "Select from the available variants according to the intended use and confirmed details."],
+  ];
+  return [
+    "<h2>Product Overview</h2>", intro, second,
+    "<h3>Key Features & Benefits</h3>", list(featureItems),
+    `<h3>${useLabel}</h3>`, `<p>${escapeHtml(productSpecificUse)}</p>`,
+    "<h3>Materials, Fabric or Product Details</h3>", `<p>${detailPhrase ? escapeHtml(detailPhrase) : visibleFacts.length ? escapeHtml(visibleFacts.map((fact) => `${fact.label}: ${fact.value}`).join(". ")) : evidence.length ? `Confirmed details: ${escapeHtml(evidence.join(", "))}.` : fallbackDetails}</p>`,
+    "<h3>How To Use or Wear</h3>", `<p>${escapeHtml(productSpecificUse)}</p>`,
+    "<h3>Care Tips</h3>", `<p>${escapeHtml(careText)}</p>`,
+    "<h3>Who Is This For?</h3>", list(audience),
+    "<h3>Why Customers Choose It</h3>", `<p>${signals.reviewSummary ? `trusted reviews record a ${signals.reviewSummary.rating.toFixed(1)}-star average from ${signals.reviewSummary.ratingCount} reviews. ` : ""}${useFact ? `${escapeHtml(titleText)} directly supports ${escapeHtml(useFact.value)} use. ` : ""}${featureFact ? `Its ${escapeHtml(featureFact.value)} details shape how it functions. ` : ""}${visibleFacts.length ? `${escapeHtml(factToSentence(visibleFacts[copyVariant % visibleFacts.length]))}` : `${escapeHtml(titleText)} ${escapeHtml(categoryCopy.purpose)}.`}</p>`,
+    "<h3>FAQs</h3>", faq.map(([question, answer]) => `<p><strong>Q: ${escapeHtml(question)}</strong></p><p>A: ${escapeHtml(answer)}</p>`).join("\n"),
+  ].filter(Boolean).join("\n");
 }
 
 function shortenAtWordBoundary(value, maxLength) {
@@ -621,7 +1132,7 @@ function suggestRetailPriceFromSignals({
     return "";
   }
 
-  const campaignCost = 7;
+  const campaignCost = PER_ORDER_OVERHEAD;
   let derivedFromCost = null;
   if (Number.isFinite(numericCost) && numericCost > 0) {
     const multiplier = numericCost < 5 ? 4.2 : numericCost < 15 ? 3.25 : numericCost < 30 ? 2.75 : numericCost < 50 ? 2.35 : 1.95;
@@ -647,8 +1158,12 @@ function suggestRetailPriceFromSignals({
   if (reference && target < reference * 1.15) {
     target = reference * 1.15;
   }
-  if (reference && target > reference * 1.85) {
+  if (!derivedFromCost && reference && target > reference * 1.85) {
     target = reference * 1.85;
+  }
+
+  if (derivedFromCost) {
+    target = Math.max(target, numericCost + PER_ORDER_OVERHEAD);
   }
 
   return roundPsychologicalPrice(target);
@@ -1040,10 +1555,18 @@ function computeConfidence(signals) {
         signals.sourceTitle,
         signals.catalogTitle,
         signals.handlePhrase,
-        signals.handlePhrase && signals.sourceProductType ? `${signals.handlePhrase} - ${signals.sourceProductType}` : "",
-        signals.handlePhrase && signals.catalogProductType ? `${signals.handlePhrase} - ${signals.catalogProductType}` : "",
-        signals.sourceTitle && signals.sourceProductType ? `${signals.sourceTitle} - ${signals.sourceProductType}` : "",
-        signals.catalogTitle && signals.catalogProductType ? `${signals.catalogTitle} - ${signals.catalogProductType}` : "",
+        signals.handlePhrase && signals.sourceProductType
+          ? appendProductTypeCandidate(signals.handlePhrase, signals.sourceProductType)
+          : "",
+        signals.handlePhrase && signals.catalogProductType
+          ? appendProductTypeCandidate(signals.handlePhrase, signals.catalogProductType)
+          : "",
+        signals.sourceTitle && signals.sourceProductType
+          ? appendProductTypeCandidate(signals.sourceTitle, signals.sourceProductType)
+          : "",
+        signals.catalogTitle && signals.catalogProductType
+          ? appendProductTypeCandidate(signals.catalogTitle, signals.catalogProductType)
+          : "",
       ]),
       signals,
       signals.sourceTitle,
@@ -1056,14 +1579,30 @@ function computeConfidence(signals) {
 }
 
 function selectCanonicalTitle(signals) {
+  const handleAlignedTitle = buildHandleAlignedTitle(signals);
+  if (handleAlignedTitle) {
+    return {
+      candidate: titleCase(handleAlignedTitle),
+      score: 1000,
+    };
+  }
+
   const candidates = uniqueValues([
     signals.sourceTitle,
     signals.catalogTitle,
     signals.handlePhrase,
-    signals.handlePhrase && signals.sourceProductType ? `${signals.handlePhrase} - ${signals.sourceProductType}` : "",
-    signals.handlePhrase && signals.catalogProductType ? `${signals.handlePhrase} - ${signals.catalogProductType}` : "",
-    signals.sourceTitle && signals.sourceProductType ? `${signals.sourceTitle} - ${signals.sourceProductType}` : "",
-    signals.catalogTitle && signals.catalogProductType ? `${signals.catalogTitle} - ${signals.catalogProductType}` : "",
+    signals.handlePhrase && signals.sourceProductType
+      ? appendProductTypeCandidate(signals.handlePhrase, signals.sourceProductType)
+      : "",
+    signals.handlePhrase && signals.catalogProductType
+      ? appendProductTypeCandidate(signals.handlePhrase, signals.catalogProductType)
+      : "",
+    signals.sourceTitle && signals.sourceProductType
+      ? appendProductTypeCandidate(signals.sourceTitle, signals.sourceProductType)
+      : "",
+    signals.catalogTitle && signals.catalogProductType
+      ? appendProductTypeCandidate(signals.catalogTitle, signals.catalogProductType)
+      : "",
   ]);
 
   return selectBestTitleCandidate(candidates, signals, signals.sourceTitle);
@@ -1075,7 +1614,9 @@ function buildCanonicalAltText(signals, canonicalTitle) {
     return "";
   }
 
-  const typeText = normalizePlainText(signals.productTypeText);
+  const knowledge = resolveProductKnowledge(signals.handle);
+  const candidateType = sanitizeMarketplaceClaims(normalizePlainText(signals.productTypeText));
+  const typeText = isTitleAlignedWithKnowledge(candidateType, knowledge) ? candidateType : "";
   if (typeText && !normalizeComparableText(titleText).includes(normalizeComparableText(typeText))) {
     return `${titleText} ${typeText.toLowerCase()}`.trim();
   }
@@ -1085,10 +1626,29 @@ function buildCanonicalAltText(signals, canonicalTitle) {
 
 function buildProductProfile(signals) {
   const confidence = computeConfidence(signals);
-  const rewriteLevel = confidence >= 70 ? "high" : confidence >= 45 ? "medium" : "low";
-  const canonicalTitle = normalizePlainText(selectCanonicalTitle(signals).candidate || signals.sourceTitle || signals.catalogTitle);
+  const knowledge = resolveProductKnowledge(signals.handle);
+  const explicitTitle = HANDLE_TITLE_OVERRIDES.get(signals.handle) || "";
+  const recognizedHandleFamily = /^(iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Lip Balm|Hair Oil)$/i.test(normalizePlainText(signals.handlePhrase));
+  const rewriteLevel = explicitTitle || recognizedHandleFamily ? "high" : confidence >= 70 ? "high" : confidence >= 45 ? "medium" : "low";
+  const selectedTitle = normalizePlainText(selectCanonicalTitle(signals).candidate || signals.sourceTitle || signals.catalogTitle);
+  const safeHandleTitle = buildSafeHandleTitle(signals);
+  const selectedTitleIsWeak =
+    selectedTitle.length < 20 ||
+    GENERIC_TITLE_PHRASES.some((pattern) => pattern.test(selectedTitle));
+  const titleCandidate = explicitTitle ||
+    ((selectedTitleIsWeak || !isTitleAlignedWithKnowledge(selectedTitle, knowledge)) && safeHandleTitle
+      ? safeHandleTitle
+      : selectedTitle);
+  const guardedTitle = enforceMarketplaceTitle(
+    normalizePlainText(titleCandidate),
+    68,
+  );
+  const safeGuardedTitle = enforceMarketplaceTitle(safeHandleTitle, 68);
+  const canonicalTitle = guardedTitle.length >= 20 || safeGuardedTitle.length <= guardedTitle.length
+    ? guardedTitle
+    : safeGuardedTitle;
   const searchPhrases = buildSearchPhrases(signals);
-  const seoTitle = canonicalTitle ? shortenAtWordBoundary(canonicalTitle, 70) : "";
+  const seoTitle = buildCanonicalSeoTitle(canonicalTitle);
   const seoDescription = buildSeoDescription(canonicalTitle, signals, searchPhrases);
   const descriptionHtml = buildDescriptionHtml(canonicalTitle, signals, searchPhrases);
   const altText = buildCanonicalAltText(signals, canonicalTitle);
@@ -1103,6 +1663,7 @@ function buildProductProfile(signals) {
   if (signals.handlePhrase) {
     reasons.push(`handle:${signals.handlePhrase}`);
   }
+  reasons.push(`knowledge:${knowledge.id}@${PRODUCT_CONTENT_KNOWLEDGE_VERSION}`);
   if (signals.catalogProduct) {
     reasons.push("catalog-anchor");
   }
@@ -1123,10 +1684,19 @@ function buildProductProfile(signals) {
     title: "",
     descriptionHtml: "",
     productType,
-    tags,
     seo: {
       title: "",
       description: "",
+    },
+  };
+
+  const desiredProductInput = {
+    title: rewriteLevel === "high" ? canonicalTitle : "",
+    descriptionHtml: rewriteLevel === "high" ? descriptionHtml : "",
+    productType,
+    seo: {
+      title: rewriteLevel !== "low" ? seoTitle : "",
+      description: rewriteLevel !== "low" ? seoDescription : "",
     },
   };
 
@@ -1184,6 +1754,9 @@ function buildProductProfile(signals) {
 
   return {
     handle: signals.handle,
+    sourceTitle: signals.sourceTitle,
+    catalogTitle: signals.catalogTitle,
+    handlePhrase: signals.handlePhrase,
     confidence,
     rewriteLevel,
     canonicalTitle,
@@ -1195,6 +1768,14 @@ function buildProductProfile(signals) {
     tags,
     reviewSummary: signals.reviewSummary || null,
     searchPhrases,
+    knowledge: {
+      version: PRODUCT_CONTENT_KNOWLEDGE_VERSION,
+      family: knowledge.id,
+      priorityFacts: knowledge.priorityFacts,
+      factCount: extractSupportedProductFacts(signals).length,
+      policy: MARKETPLACE_CONTENT_POLICY.market,
+      titleOverride: Boolean(explicitTitle),
+    },
     reasons,
     changedFields,
     skippedFields,
@@ -1206,7 +1787,7 @@ function buildProductProfile(signals) {
       compareAtPrice: "",
       rationale:
         price && signals.sourceCost
-          ? `Cost ${formatMoneyValue(signals.sourceCost)} plus $7 campaign cost, with a 35%+ uplift guarded by the current catalog anchor`
+          ? `Cost ${formatMoneyValue(signals.sourceCost)} plus $${PER_ORDER_OVERHEAD} per-order overhead, with a 35%+ uplift guarded by the current catalog anchor`
           : price && signals.anchorPrice
             ? `Current catalog anchor lifted by 35% with psychological rounding`
             : price
@@ -1214,11 +1795,12 @@ function buildProductProfile(signals) {
               : "No reliable pricing signal",
     },
     productInput,
+    desiredProductInput,
     mediaTargets: [],
   };
 }
 
-function buildVariantPlanFromRow(row, profile) {
+function buildVariantPlanFromRow(row, profile, { includeAligned = false, preserveCurrentPrice = false } = {}) {
   const variantId = toShopifyGid("ProductVariant", getRowValue(row, ["Variant ID", "ID"]));
   const sku = normalizePlainText(getRowValue(row, ["Variant SKU"]));
   const optionValues = [
@@ -1238,26 +1820,34 @@ function buildVariantPlanFromRow(row, profile) {
     firstNonEmpty(getRowValue(row, ["Variant Compare At Price"]), getRowValue(row, ["Compare At Price / International"])),
   );
   const sourceCost = parseMoneyValue(getRowValue(row, ["Cost per item"]));
-  const price = suggestRetailPriceFromSignals({
-    cost: sourceCost,
-    anchorPrice: profile?.pricing?.anchorPrice ? parseMoneyValue(profile.pricing.anchorPrice) : null,
-    currentPrice: explicitPrice,
-    confidence: profile?.confidence ?? 0,
-  });
+  const price = preserveCurrentPrice
+    ? formatMoneyValue(explicitPrice)
+    : suggestRetailPriceFromSignals({
+        cost: sourceCost,
+        anchorPrice: profile?.pricing?.anchorPrice ? parseMoneyValue(profile.pricing.anchorPrice) : null,
+        currentPrice: explicitPrice,
+        confidence: profile?.confidence ?? 0,
+      });
 
   if (!hasVariantIdentity || !price) {
     return null;
   }
 
-  const compareAtPrice =
-    explicitCompareAt != null
+  const compareAtPrice = preserveCurrentPrice
+    ? formatMoneyValue(explicitCompareAt)
+    : explicitCompareAt != null
       ? enforceCompareAtValue(explicitCompareAt, price, row)
       : "";
   const normalizedExplicitPrice = formatMoneyValue(explicitPrice);
   const normalizedPrice = formatMoneyValue(price);
   const normalizedCompareAt = formatMoneyValue(compareAtPrice);
 
-  if (normalizedPrice && normalizedPrice === normalizedExplicitPrice && (!normalizedCompareAt || normalizedCompareAt === formatMoneyValue(explicitCompareAt))) {
+  if (
+    !includeAligned &&
+    normalizedPrice &&
+    normalizedPrice === normalizedExplicitPrice &&
+    (!normalizedCompareAt || normalizedCompareAt === formatMoneyValue(explicitCompareAt))
+  ) {
     return null;
   }
 
@@ -1272,7 +1862,7 @@ function buildVariantPlanFromRow(row, profile) {
   };
 }
 
-function buildMediaPlanFromRow(row, profile) {
+function buildMediaPlanFromRow(row, profile, { includeAligned = false } = {}) {
   if ((profile?.rewriteLevel || "low") !== "high") {
     return null;
   }
@@ -1288,7 +1878,7 @@ function buildMediaPlanFromRow(row, profile) {
   }
 
   const existingAlt = normalizePlainText(getRowValue(row, ["Image Alt Text"]));
-  if (existingAlt && normalizeComparableText(existingAlt) === normalizeComparableText(alt)) {
+  if (!includeAligned && existingAlt && normalizeComparableText(existingAlt) === normalizeComparableText(alt)) {
     return null;
   }
 
@@ -1440,10 +2030,6 @@ export async function buildSeoBatchPlan(
       productInput.productType = profile.productType;
     }
 
-    if (profile.tags.length) {
-      productInput.tags = profile.tags;
-    }
-
     if (profile.productInput.title) {
       productInput.title = profile.productInput.title;
     }
@@ -1488,6 +2074,49 @@ export async function buildSeoBatchPlan(
       (entry) => entry.imageSrc,
     );
 
+    const desiredProductInput = {
+      id: productId,
+    };
+
+    if (profile.desiredProductInput.title) {
+      desiredProductInput.title = profile.desiredProductInput.title;
+    }
+
+    if (profile.desiredProductInput.descriptionHtml) {
+      desiredProductInput.descriptionHtml = profile.desiredProductInput.descriptionHtml;
+    }
+
+    if (profile.desiredProductInput.productType) {
+      desiredProductInput.productType = profile.desiredProductInput.productType;
+    }
+
+    if (profile.desiredProductInput.seo?.title || profile.desiredProductInput.seo?.description) {
+      desiredProductInput.seo = {
+        ...(profile.desiredProductInput.seo.title ? { title: profile.desiredProductInput.seo.title } : {}),
+        ...(profile.desiredProductInput.seo.description
+          ? { description: profile.desiredProductInput.seo.description }
+          : {}),
+      };
+    }
+
+    if (productInput.category) {
+      desiredProductInput.category = productInput.category;
+    }
+
+    const desiredVariantUpdates = dedupeByKey(
+      group.rows
+        .map((entry) => buildVariantPlanFromRow(entry.row, profile, { includeAligned: true, preserveCurrentPrice: true }))
+        .filter(Boolean),
+      (entry) => [entry.variantId || "", entry.sku || "", entry.label || ""].join("|"),
+    );
+
+    const desiredMediaTargets = dedupeByKey(
+      group.rows
+        .map((entry) => buildMediaPlanFromRow(entry.row, profile, { includeAligned: true }))
+        .filter(Boolean),
+      (entry) => entry.imageSrc,
+    );
+
     const writeCount =
       (profile.productInput.title ? 1 : 0) +
       (profile.productInput.descriptionHtml ? 1 : 0) +
@@ -1505,8 +2134,11 @@ export async function buildSeoBatchPlan(
       confidence: profile.confidence,
       rewriteLevel: profile.rewriteLevel,
       productInput,
+      desiredProductInput,
       variantUpdates,
+      desiredVariantUpdates,
       mediaTargets,
+      desiredMediaTargets,
       categoryQuery: signals.categoryQuery,
       categoryId: productInput.category || "",
       intelligence: profile,
@@ -1597,23 +2229,21 @@ export function buildSeoBatchExportRows(rows, plan) {
       sourcePrice: getSourceExplicitPrice([row]),
     };
     const isPrimaryRow = firstRowIndexByHandle.get(handle) === index;
+    const exportSeoTitle = (() => {
+      const desired = normalizePlainText(productPlan.productInput?.seo?.title || productPlan.productInput?.title || "");
+      if (!desired) return "";
+      const withIntent = desired.length < 35 ? `Shop ${desired} for Everyday Use` : desired;
+      return shortenAtWordBoundary(withIntent, 60);
+    })();
 
     if (isPrimaryRow && productPlan.rewriteLevel === "high") {
       setPreferredField(nextRow, ["Title"], productPlan.productInput?.title || "");
       setPreferredField(nextRow, ["Body (HTML)"], productPlan.productInput?.descriptionHtml || "");
-      setPreferredField(nextRow, ["SEO Title"], productPlan.productInput?.seo?.title || "");
+      setPreferredField(nextRow, ["SEO Title"], exportSeoTitle);
       setPreferredField(nextRow, ["SEO Description"], productPlan.productInput?.seo?.description || "");
     } else if (isPrimaryRow && productPlan.rewriteLevel === "medium") {
-      setPreferredField(nextRow, ["SEO Title"], productPlan.productInput?.seo?.title || "");
+      setPreferredField(nextRow, ["SEO Title"], exportSeoTitle);
       setPreferredField(nextRow, ["SEO Description"], productPlan.productInput?.seo?.description || "");
-    }
-
-    if (productPlan.productInput?.productType) {
-      setPreferredField(nextRow, ["Type", "Product Type"], productPlan.productInput.productType);
-    }
-
-    if (Array.isArray(productPlan.productInput?.tags) && productPlan.productInput.tags.length) {
-      setPreferredField(nextRow, ["Tags"], productPlan.productInput.tags.join(", "));
     }
 
     if (productPlan.rewriteLevel === "high") {
@@ -1641,7 +2271,12 @@ export function buildSeoBatchExportRows(rows, plan) {
 
 export function buildSeoBatchManifest(plan, { inputPath = "", mode = "dry-run" } = {}) {
   return {
-    title: "Handle-First Shopify Product Intelligence",
+    title: "Handle-First US Marketplace Product Intelligence",
+    knowledgeBank: {
+      version: PRODUCT_CONTENT_KNOWLEDGE_VERSION,
+      market: MARKETPLACE_CONTENT_POLICY.market,
+      sources: MARKETPLACE_CONTENT_POLICY.sources,
+    },
     generatedAt: new Date().toISOString(),
     mode,
     inputPath,
@@ -1670,6 +2305,7 @@ export function buildSeoBatchManifest(plan, { inputPath = "", mode = "dry-run" }
       reasons: entry.reasons || [],
       pricing: entry.intelligence?.pricing || null,
       reviewSummary: entry.intelligence?.reviewSummary || null,
+      knowledge: entry.intelligence?.knowledge || null,
       seo: {
         title: entry.productInput?.seo?.title || "",
         description: entry.productInput?.seo?.description || "",

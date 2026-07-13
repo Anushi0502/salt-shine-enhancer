@@ -600,7 +600,6 @@ function buildProductUpdateInput(product, productPlan, categoryId) {
   const title = normalizePlainText(productPlan.productInput.title);
   const descriptionHtml = normalizeHtmlValue(productPlan.productInput.descriptionHtml);
   const productType = normalizePlainText(productPlan.productInput.productType);
-  const tags = Array.isArray(productPlan.productInput.tags) ? productPlan.productInput.tags : [];
   const seoTitle = normalizePlainText(productPlan.productInput.seo?.title);
   const seoDescription = normalizePlainText(productPlan.productInput.seo?.description);
 
@@ -614,10 +613,6 @@ function buildProductUpdateInput(product, productPlan, categoryId) {
 
   if (productType) {
     input.productType = productType;
-  }
-
-  if (tags.length) {
-    input.tags = tags;
   }
 
   if (seoTitle || seoDescription) {
@@ -653,9 +648,6 @@ function printPlanSummary(plan, { mode = "dry-run", maxProducts = 25 } = {}) {
     }
     if (normalizePlainText(productPlan.productInput.productType)) {
       updateBits.push("type");
-    }
-    if (Array.isArray(productPlan.productInput.tags) && productPlan.productInput.tags.length) {
-      updateBits.push("tags");
     }
     if (productPlan.productInput.seo?.title || productPlan.productInput.seo?.description) {
       updateBits.push("seo");

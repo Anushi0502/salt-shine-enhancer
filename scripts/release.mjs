@@ -4,15 +4,11 @@ import { execFileSync, spawn } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, "..");
-const iosDir = resolve(rootDir, "salt-store-ios");
-const androidDir = resolve(rootDir, "salt-store-android");
-const capacitorCliBin = resolve(rootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor");
-const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const nodeBin = process.execPath;
 const require = createRequire(import.meta.url);
@@ -67,63 +63,60 @@ async function ensurePathExists(path, label) {
   }
 }
 
-async function main() {
-  const packageJson = JSON.parse(await readFile(resolve(rootDir, "package.json"), "utf8"));
-  const viteVersion = require("vite/package.json").version;
-  const capacitorCliVersion = require("@capacitor/cli/package.json").version;
-  const npmVersion = execFileSync(npmBin, ["--version"], { encoding: "utf8" }).trim();
-  await ensurePathExists(shopifyThemeDir, "Shopify theme folder");
+export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
+  const iosDir = resolve(releaseRootDir, "salt-store-ios");
+  const androidDir = resolve(releaseRootDir, "salt-store-android");
+  const capacitorCliBin = resolve(releaseRootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor");
+  const shopifyThemeDir = resolve(releaseRootDir, "..", "salt-online-store-shopify");
 
-  process.stdout.write("SALT release workflow\n");
-  process.stdout.write(`  app: ${packageJson.version}\n`);
-  process.stdout.write(`  node: ${process.version}\n`);
-  process.stdout.write(`  npm: ${npmVersion}\n`);
-  process.stdout.write(`  vite: ${viteVersion}\n`);
-  process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
-  process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
-
-  const steps = [
+  return [
     {
       label: "Ensure Shopify product metafield definitions",
       command: npmBin,
       args: ["run", "shopify:product-metafields:ensure"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Refresh Shopify data",
       command: npmBin,
       args: ["run", "sync:data"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Reconcile and verify Shopify SEO/product fields",
+      command: npmBin,
+      args: ["run", "shopify:seo:release"],
+      cwd: releaseRootDir,
     },
     {
       label: "Apply Shopify merchandising metafield backfill",
       command: npmBin,
       args: ["run", "shopify:product-metafields:backfill:apply"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Refresh Shopify data after backfill",
       command: npmBin,
       args: ["run", "sync:data"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Verify Shopify merchandising backfill",
       command: npmBin,
       args: ["run", "shopify:merchandising:verify"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Build web app",
       command: npmBin,
       args: ["run", "build:web"],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Generate Shopify theme bundle",
       command: npmBin,
       args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
-      cwd: rootDir,
+      cwd: releaseRootDir,
     },
     {
       label: "Sync iOS Capacitor shell",
@@ -138,6 +131,25 @@ async function main() {
       cwd: androidDir,
     },
   ];
+}
+
+async function main() {
+  const packageJson = JSON.parse(await readFile(resolve(rootDir, "package.json"), "utf8"));
+  const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
+  const viteVersion = require("vite/package.json").version;
+  const capacitorCliVersion = require("@capacitor/cli/package.json").version;
+  const npmVersion = execFileSync(npmBin, ["--version"], { encoding: "utf8" }).trim();
+  await ensurePathExists(shopifyThemeDir, "Shopify theme folder");
+
+  process.stdout.write("SALT release workflow\n");
+  process.stdout.write(`  app: ${packageJson.version}\n`);
+  process.stdout.write(`  node: ${process.version}\n`);
+  process.stdout.write(`  npm: ${npmVersion}\n`);
+  process.stdout.write(`  vite: ${viteVersion}\n`);
+  process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
+  process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
+
+  const steps = buildReleaseSteps({ rootDir });
 
   for (const [index, step] of steps.entries()) {
     await runStage({
@@ -154,7 +166,9 @@ async function main() {
   process.stdout.write("\nRelease complete.\n");
 }
 
-main().catch((error) => {
-  console.error(`\n${error.message}`);
-  process.exit(1);
-});
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  main().catch((error) => {
+    console.error(`\n${error.message}`);
+    process.exit(1);
+  });
+}

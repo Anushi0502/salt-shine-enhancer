@@ -56,21 +56,22 @@ const BLOG_HANDLES = Array.from(
 );
 const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
 const PRODUCTS_DATA_PATH = "/data/products.json";
+const PRODUCT_SEARCH_DATA_PATH = "/data/product-search.json";
 const COLLECTIONS_DATA_PATH = "/data/collections.json";
 const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
 const ABOUT_DATA_PATH = "/data/about.json";
 const BLOG_POSTS_DATA_PATH = "/data/blog-posts.json";
 const SHOP_DATA_PATH = "/data/shop.json";
-const LIVE_STALE_TIME_MS = 0;
-const LIVE_PRODUCTS_REFRESH_MS = isNativeApp() ? 30 * 1000 : 60 * 1000;
-const LIVE_CONTENT_REFRESH_MS = isNativeApp() ? 2 * 60 * 1000 : 5 * 60 * 1000;
-const LIVE_COLLECTION_MAP_REFRESH_MS = isNativeApp() ? 2 * 60 * 1000 : 10 * 60 * 1000;
+// Theme data assets use Shopify's versioned asset URLs. Treat them as stable for
+// the current browser session instead of repeatedly rebuilding the full catalog.
+const CATALOG_STALE_TIME_MS = isNativeApp() ? 10 * 60 * 1000 : 30 * 60 * 1000;
 const LIVE_QUERY_MAX_RETRIES = 4;
 const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
 const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
 
 export const LIVE_SHOPIFY_QUERY_PREFIXES = [
   "products",
+  "product-search",
   "collections",
   "collection-products",
   "collection-products-by-handle",
@@ -87,24 +88,8 @@ type LiveShopifyPrimeQuery = {
 
 export const LIVE_SHOPIFY_PRIME_QUERIES = [
   {
-    queryKey: ["products", DATA_MODE],
-    queryFn: loadProducts,
-  },
-  {
     queryKey: ["collections", DATA_MODE],
     queryFn: loadCollections,
-  },
-  {
-    queryKey: ["collection-products", DATA_MODE],
-    queryFn: loadCollectionProductsMap,
-  },
-  {
-    queryKey: ["about-page", DATA_MODE, ABOUT_HANDLE],
-    queryFn: loadAboutPage,
-  },
-  {
-    queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
-    queryFn: loadBlogPosts,
   },
   {
     queryKey: ["shop", DATA_MODE],
@@ -141,7 +126,7 @@ export async function primeLiveShopifyData(queryClient: Pick<QueryClient, "fetch
       queryClient.fetchQuery({
         queryKey: query.queryKey,
         queryFn: query.queryFn,
-        staleTime: LIVE_STALE_TIME_MS,
+        staleTime: CATALOG_STALE_TIME_MS,
       }),
     ),
   );
@@ -347,9 +332,9 @@ function liveQueryRetryDelay(attemptIndex: number): number {
   return Math.min(exponentialDelay + jitter, LIVE_QUERY_MAX_RETRY_DELAY_MS);
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchJson<T>(url: string, cache: RequestCache = "no-store"): Promise<T> {
   const resolvedUrl = resolveThemeAsset(url);
-  const response = await fetch(resolvedUrl, { cache: "no-store" });
+  const response = await fetch(resolvedUrl, { cache });
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}) for ${resolvedUrl}`);
@@ -363,9 +348,10 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-function cacheBustedPath(path: string): string {
-  const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}ts=${Date.now()}`;
+function fetchThemeJson<T>(path: string): Promise<T> {
+  // Shopify asset URLs already carry a version query. Let the browser reuse
+  // that immutable response instead of bypassing its cache on every query.
+  return fetchJson<T>(path, "force-cache");
 }
 
 async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {
@@ -601,7 +587,7 @@ function normalizeShopPayload(payload: ShopPayload): ShopPayload {
 
 async function fetchShopFromCache(): Promise<ShopPayload> {
   try {
-    const payload = await fetchJson<ShopPayload>(cacheBustedPath(SHOP_DATA_PATH));
+    const payload = await fetchThemeJson<ShopPayload>(SHOP_DATA_PATH);
     if (!payload?.shop?.name) {
       throw new Error("Cached shop payload is empty");
     }
@@ -904,7 +890,7 @@ async function fetchBlogPostsFromLive(): Promise<BlogPostsPayload> {
 }
 
 async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
-  const payload = await fetchJson<BlogPostsPayload>(`${BLOG_POSTS_DATA_PATH}?ts=${Date.now()}`);
+  const payload = await fetchThemeJson<BlogPostsPayload>(BLOG_POSTS_DATA_PATH);
   const posts = Array.isArray(payload.posts) ? payload.posts : [];
 
   if (!posts.length) {
@@ -921,7 +907,7 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
 }
 
 async function fetchProductsFromCache(): Promise<ProductsPayload> {
-  const payload = await fetchJson<ProductsPayload>(cacheBustedPath(PRODUCTS_DATA_PATH));
+  const payload = await fetchThemeJson<ProductsPayload>(PRODUCTS_DATA_PATH);
   const products = Array.isArray(payload.products) ? payload.products : [];
 
   if (!products.length) {
@@ -936,8 +922,24 @@ async function fetchProductsFromCache(): Promise<ProductsPayload> {
   });
 }
 
+async function fetchProductSearchIndexFromCache(): Promise<ProductsPayload> {
+  const payload = await fetchThemeJson<ProductsPayload>(PRODUCT_SEARCH_DATA_PATH);
+  const products = Array.isArray(payload.products) ? payload.products : [];
+
+  if (!products.length) {
+    throw new Error("Cached product search payload is empty");
+  }
+
+  return normalizeProductsPayload({
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: `cache:${payload.source || PRODUCT_SEARCH_DATA_PATH}`,
+    total: payload.total || products.length,
+    products,
+  });
+}
+
 async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
-  const payload = await fetchJson<CollectionsPayload>(cacheBustedPath(COLLECTIONS_DATA_PATH));
+  const payload = await fetchThemeJson<CollectionsPayload>(COLLECTIONS_DATA_PATH);
   const collections = Array.isArray(payload.collections) ? payload.collections : [];
 
   if (!collections.length) {
@@ -953,7 +955,7 @@ async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
 }
 
 async function fetchCollectionProductsMapFromCache(): Promise<CollectionProductsPayload> {
-  const payload = await fetchJson<CollectionProductsPayload>(cacheBustedPath(COLLECTION_PRODUCTS_DATA_PATH));
+  const payload = await fetchThemeJson<CollectionProductsPayload>(COLLECTION_PRODUCTS_DATA_PATH);
   const collections = Object.fromEntries(
     Object.entries(payload.collections || {}).map(([handle, entry]) => [
       handle,
@@ -1017,7 +1019,7 @@ async function fetchCollectionProductIdsFromCache(handle: string): Promise<Colle
 }
 
 async function fetchAboutPageFromCache(): Promise<AboutPagePayload> {
-  const payload = await fetchJson<AboutPagePayload>(cacheBustedPath(ABOUT_DATA_PATH));
+  const payload = await fetchThemeJson<AboutPagePayload>(ABOUT_DATA_PATH);
 
   if (!payload?.page?.title) {
     throw new Error("Cached about payload is empty");
@@ -1077,6 +1079,13 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
+  try {
+    return await fetchProductsFromCache();
+  } catch {
+    // A local build or an incomplete theme can be missing the snapshot; use the
+    // live Storefront fallback only in that recovery path.
+  }
+
   const endpointErrors: string[] = [];
 
   for (const base of getLiveCatalogBases()) {
@@ -1130,7 +1139,23 @@ export async function loadProducts(): Promise<ProductsPayload> {
   }
 }
 
+export async function loadProductSearchIndex(): Promise<ProductsPayload> {
+  try {
+    return await fetchProductSearchIndexFromCache();
+  } catch {
+    // Preserve a working search UI if an older local bundle lacks the compact
+    // index. Published bundles ship the smaller index instead of this fallback.
+    return loadProducts();
+  }
+}
+
 export async function loadCollections(): Promise<CollectionsPayload> {
+  try {
+    return await fetchCollectionsFromCache();
+  } catch {
+    // Fall through to live Shopify only when the bundled snapshot is unavailable.
+  }
+
   const endpointErrors: string[] = [];
 
   for (const base of getLiveCatalogBases()) {
@@ -1189,6 +1214,12 @@ export async function loadShop(): Promise<ShopPayload> {
 }
 
 export async function loadCollectionProductsMap(): Promise<CollectionProductsPayload> {
+  try {
+    return await fetchCollectionProductsMapFromCache();
+  } catch {
+    // Fall through to the expensive live crawl only when no snapshot was bundled.
+  }
+
   const endpointErrors: string[] = [];
 
   for (const base of getLiveCatalogBases()) {
@@ -1285,41 +1316,19 @@ export async function loadEditorialPage(handle: string): Promise<EditorialPagePa
 
 export async function loadAboutPage(): Promise<AboutPagePayload> {
   try {
-    return await fetchAboutPageFromLive();
-  } catch (liveError) {
-    const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live about-page error";
-
-    try {
-      const cached = await fetchAboutPageFromCache();
-      return {
-        ...cached,
-        source: `cache:${cached.source}`,
-      };
-    } catch (cacheError) {
-      const cacheMessage =
-        cacheError instanceof Error ? cacheError.message : "Unknown cached about-page error";
-      throw new Error(`Live about page fetch failed: ${liveMessage}. Cached about fallback failed: ${cacheMessage}`);
-    }
+    return await fetchAboutPageFromCache();
+  } catch {
+    // Only reach Shopify when a local development build or incomplete bundle
+    // does not include the static snapshot.
+    return fetchAboutPageFromLive();
   }
 }
 
 export async function loadBlogPosts(): Promise<BlogPostsPayload> {
   try {
-    return await fetchBlogPostsFromLive();
-  } catch (liveError) {
-    const liveMessage = liveError instanceof Error ? liveError.message : "Unknown live blog error";
-
-    try {
-      const cached = await fetchBlogPostsFromCache();
-      return {
-        ...cached,
-        source: `cache:${cached.source}`,
-      };
-    } catch (cacheError) {
-      const cacheMessage =
-        cacheError instanceof Error ? cacheError.message : "Unknown cached blog error";
-      throw new Error(`Live blog fetch failed: ${liveMessage}. Cached blog fallback failed: ${cacheMessage}`);
-    }
+    return await fetchBlogPostsFromCache();
+  } catch {
+    return fetchBlogPostsFromLive();
   }
 }
 
@@ -1342,12 +1351,26 @@ export function useProducts(enabled = true) {
     queryKey: ["products", DATA_MODE],
     queryFn: loadProducts,
     enabled,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+}
+
+export function useProductSearchIndex(enabled = true) {
+  return useQuery({
+    queryKey: ["product-search", DATA_MODE],
+    queryFn: loadProductSearchIndex,
+    enabled,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1358,12 +1381,11 @@ export function useCollections(enabled = true) {
     queryKey: ["collections", DATA_MODE],
     queryFn: loadCollections,
     enabled,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_PRODUCTS_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1374,27 +1396,26 @@ export function useShop(enabled = true) {
     queryKey: ["shop", DATA_MODE],
     queryFn: loadShop,
     enabled,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
 }
 
-export function useCollectionProductsMap() {
+export function useCollectionProductsMap(enabled = true) {
   return useQuery({
     queryKey: ["collection-products", DATA_MODE],
     queryFn: loadCollectionProductsMap,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
+    enabled,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1407,12 +1428,11 @@ export function useCollectionProductIds(handle: string, enabled = true) {
     queryKey: ["collection-products-by-handle", DATA_MODE, normalizedHandle],
     queryFn: () => loadCollectionProductIds(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_COLLECTION_MAP_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1422,12 +1442,11 @@ export function useAboutPage() {
   return useQuery({
     queryKey: ["about-page", DATA_MODE, ABOUT_HANDLE],
     queryFn: loadAboutPage,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1439,12 +1458,11 @@ export function useEditorialPage(handle: string) {
   return useQuery({
     queryKey: ["editorial-page", DATA_MODE, normalizedHandle],
     queryFn: () => loadEditorialPage(normalizedHandle),
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1454,12 +1472,11 @@ export function useBlogPosts() {
   return useQuery({
     queryKey: ["blog-posts", DATA_MODE, BLOG_HANDLE],
     queryFn: loadBlogPosts,
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
@@ -1469,12 +1486,11 @@ export function usePolicyPage(path: string, fallbackTitle: string) {
   return useQuery({
     queryKey: ["policy-page", DATA_MODE, path],
     queryFn: () => loadPolicyPage(path, fallbackTitle),
-    staleTime: LIVE_STALE_TIME_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: true,
-    refetchInterval: LIVE_CONTENT_REFRESH_MS,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });

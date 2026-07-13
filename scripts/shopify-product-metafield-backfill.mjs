@@ -818,6 +818,29 @@ async function loadJson(filePath, label) {
   return payload;
 }
 
+async function loadOptionalJson(filePath) {
+  try {
+    return await loadJson(filePath, "Shopify SEO live catalog");
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return null;
+    }
+    process.stdout.write(`Optional live catalog unavailable at ${filePath}: ${error.message}\n`);
+    return null;
+  }
+}
+
+function mergeReleaseCatalogProducts(localProducts, liveCatalogProducts) {
+  const local = Array.isArray(localProducts) ? [...localProducts] : [];
+  const handles = new Set(local.map((product) => normalizeHandleValue(product?.handle || "")).filter(Boolean));
+  const liveOnly = (Array.isArray(liveCatalogProducts) ? liveCatalogProducts : []).filter((product) => {
+    const handle = normalizeHandleValue(product?.handle || "");
+    return handle && !handles.has(handle);
+  });
+
+  return [...local, ...liveOnly];
+}
+
 function filterProducts(products, { productIds, productHandles, limitProducts }) {
   let filtered = Array.isArray(products) ? [...products] : [];
 
@@ -1037,16 +1060,20 @@ async function applyBatches(batches) {
 async function main() {
   const args = parseArgs(process.argv);
   const productsPath = resolve(args.inputDir, "products.json");
+  const releaseCatalogPath =
+    process.env.SALT_SHOPIFY_SEO_LIVE_CATALOG || resolve(process.cwd(), "output", ".shopify-seo-live-catalog.json");
   const collectionsPath = resolve(args.inputDir, "collections.json");
   const collectionProductsPath = resolve(args.inputDir, "collection-products.json");
   const shopPath = resolve(args.inputDir, "shop.json");
 
   const productsPayload = await loadJson(productsPath, "products payload");
+  const releaseCatalogPayload = await loadOptionalJson(releaseCatalogPath);
   const collectionsPayload = await loadJson(collectionsPath, "collections payload");
   const collectionProductsPayload = await loadJson(collectionProductsPath, "collection-products payload");
   const shopPayload = await loadJson(shopPath, "shop payload");
 
-  const allProducts = Array.isArray(productsPayload.products) ? productsPayload.products : [];
+  const localProducts = Array.isArray(productsPayload.products) ? productsPayload.products : [];
+  const allProducts = mergeReleaseCatalogProducts(localProducts, releaseCatalogPayload?.products);
   const selectedProducts = filterProducts(allProducts, args);
   if (!selectedProducts.length) {
     throw new Error("No products matched the backfill selection");
@@ -1094,6 +1121,7 @@ async function main() {
     dryRun: args.dryRun,
     input: {
       productsPath,
+      releaseCatalogPath,
       collectionsPath,
       collectionProductsPath,
       shopPath,
@@ -1102,6 +1130,7 @@ async function main() {
         productHandles: args.productHandles,
         limitProducts: args.limitProducts,
       },
+      catalogAugmentedProducts: Math.max(0, allProducts.length - localProducts.length),
     },
     discovery: {
       diaperType: diaperDiscovery.discovered

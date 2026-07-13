@@ -125,14 +125,22 @@ const ChatBootstrap = () => {
 
     const allowChatOnHost = isAllowedChatHost();
 
-    if ((ENABLE_SHOPIFY_INBOX || Boolean(window.Shopify)) && allowChatOnHost) {
-      appendInboxContainerOnce();
-      appendScriptOnce("salt-shopify-inbox-loader", INBOX_SCRIPT_URL);
-    }
+    // Chat is helpful, but its third-party loader is not needed to paint the
+    // storefront. Let the browser settle the page before requesting it.
+    const bootstrapTimer = window.setTimeout(() => {
+      if ((ENABLE_SHOPIFY_INBOX || Boolean(window.Shopify)) && allowChatOnHost) {
+        appendInboxContainerOnce();
+        appendScriptOnce("salt-shopify-inbox-loader", INBOX_SCRIPT_URL);
+      }
 
-    if (ENABLE_MOOSEDESK && allowChatOnHost) {
-      appendScriptOnce("salt-moosedesk-loader", MOOSE_SCRIPT_URL);
-    }
+      if (ENABLE_MOOSEDESK && allowChatOnHost) {
+        appendScriptOnce("salt-moosedesk-loader", MOOSE_SCRIPT_URL);
+      }
+    }, 2_500);
+
+    return () => {
+      window.clearTimeout(bootstrapTimer);
+    };
   }, [location.pathname]);
 
   return null;
