@@ -62,8 +62,8 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
   }
 
   return (
-    <div className={cn("relative", className)}>
-      <div className="rounded-[0.85rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
+    <div className={cn("relative flex min-h-0 flex-col", className)}>
+      <div className="flex min-h-0 flex-1 flex-col rounded-[0.85rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
         <div className="flex items-center justify-between border-b border-[#e2edf8] px-2.5 py-2">
           <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
           <p className="text-[0.48rem] font-semibold uppercase tracking-[0.14em] text-[#8a99aa]">
@@ -71,7 +71,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
           </p>
         </div>
 
-        <div className="max-h-[15rem] space-y-0.5 overflow-y-auto p-1.5 pr-1">
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-1.5 pr-1">
           {collections.map((collection) => {
             const collectionHandle = normalizeHandle(collection.handle);
             const isActive = activeCollectionHandle === collectionHandle;

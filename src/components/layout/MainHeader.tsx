@@ -301,8 +301,12 @@ function HeaderMenuDrawer({
                 })}
               </div>
 
-              <div className="mt-2 hidden lg:block">
-                <CollectionHoverMenu collections={SITE_COLLECTIONS} onLinkClick={() => setMenuOpen(false)} />
+              <div className="mt-2 hidden min-h-0 flex-1 lg:flex">
+                <CollectionHoverMenu
+                  className="min-h-0 flex-1"
+                  collections={SITE_COLLECTIONS}
+                  onLinkClick={() => setMenuOpen(false)}
+                />
               </div>
             </section>
 

@@ -389,6 +389,7 @@ function OverlayProductCard({
           alt={resolvedAlt}
           loading="lazy"
           decoding="async"
+          deferUntilNearViewport
           className={imageClass}
           fallback={
             <img
@@ -1155,6 +1156,9 @@ const HomePage = () => {
                       <ResilientImage
                         src={tile.image}
                         alt={buildCollectionImageAltText(tile.title, "gift ideas")}
+                        loading="lazy"
+                        decoding="async"
+                        deferUntilNearViewport
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                         fallback={
                           <img
@@ -1239,6 +1243,9 @@ const HomePage = () => {
                   <ResilientImage
                     src={mindfulnessTrackerFeatureCard.image}
                     alt={buildProductImageAltText(mindfulnessTrackerFeatureCard.title, "featured product spotlight")}
+                    loading="lazy"
+                    decoding="async"
+                    deferUntilNearViewport
                     className="h-full w-full object-fill transition duration-700 group-hover:scale-[1.01]"
                     fallback={
                       <img
