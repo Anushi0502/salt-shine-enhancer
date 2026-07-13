@@ -71,6 +71,10 @@ import {
 } from "@/lib/sales-optimization";
 import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
+// Keep the deployed PDP chunk independently versioned so Shopify's CDN never
+// reuses a pre-runtime-fix module after a theme upload.
+const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-13.2";
+
 function displayVariantTitle(title?: string): string {
   const normalized = (title || "").trim();
   if (!normalized || normalized.toLowerCase() === "default title") {
@@ -731,7 +735,10 @@ const ProductPage = () => {
   };
 
   return (
-    <section className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-8">
+    <section
+      data-salt-product-runtime={PRODUCT_PAGE_RUNTIME_VERSION}
+      className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-8"
+    >
       <SeoMetadata
         title={`${product.title} | SALT Online Store`}
         description={`${productSummary}${subtitle ? ` ${subtitle}.` : ""}`}
