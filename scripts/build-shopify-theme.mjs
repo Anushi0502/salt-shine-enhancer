@@ -99,6 +99,11 @@ async function writeThemeScaffold(settingsData = null) {
   await mkdir(resolve(themeDir, "locales"), { recursive: true });
   await mkdir(themeAssetsDir, { recursive: true });
 
+  // Shopify's rendered section cache can otherwise retain an older
+  // `salt-app.js` asset_url version after a theme upload. Stamp the section on
+  // every bundle so the new loader is referenced immediately.
+  const themeBuildStamp = Date.now().toString(36);
+
   const themeLiquid = `<!doctype html>
 <html lang="{{ request.locale.iso_code }}">
   <head>
@@ -252,6 +257,7 @@ async function writeThemeScaffold(settingsData = null) {
 
 const sectionLiquid = `<div id="root"></div>
 <script>
+  window.SALT_THEME_BUILD = ${JSON.stringify(themeBuildStamp)};
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
