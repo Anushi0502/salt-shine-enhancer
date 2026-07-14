@@ -62,6 +62,7 @@ function parseArgs(argv) {
     limitProducts: 0,
     productIds: [],
     productHandles: [],
+    productHandlesFile: "",
     skipLiveReviews: false,
   };
 
@@ -127,6 +128,15 @@ function parseArgs(argv) {
           .map((value) => normalizeHandleValue(value))
           .filter(Boolean),
       );
+      index += 1;
+      continue;
+    }
+
+    if (token === "--product-handles-file") {
+      if (!next) {
+        throw new Error("Missing value for --product-handles-file");
+      }
+      args.productHandlesFile = resolve(process.cwd(), next);
       index += 1;
       continue;
     }
@@ -1059,6 +1069,20 @@ async function applyBatches(batches) {
 
 async function main() {
   const args = parseArgs(process.argv);
+  if (args.productHandlesFile) {
+    const rawHandles = await readFile(args.productHandlesFile, "utf8");
+    let parsedHandles;
+    try {
+      parsedHandles = JSON.parse(rawHandles);
+    } catch {
+      parsedHandles = rawHandles.split(/\r?\n/);
+    }
+    if (!Array.isArray(parsedHandles)) {
+      throw new Error(`Product handles file must contain a JSON array or one handle per line: ${args.productHandlesFile}`);
+    }
+    args.productHandles.push(...parsedHandles.map((value) => normalizeHandleValue(value)).filter(Boolean));
+    args.productHandles = [...new Set(args.productHandles)];
+  }
   const productsPath = resolve(args.inputDir, "products.json");
   const releaseCatalogPath =
     process.env.SALT_SHOPIFY_SEO_LIVE_CATALOG || resolve(process.cwd(), "output", ".shopify-seo-live-catalog.json");
@@ -1128,6 +1152,7 @@ async function main() {
       selection: {
         productIds: args.productIds,
         productHandles: args.productHandles,
+        productHandlesFile: args.productHandlesFile || null,
         limitProducts: args.limitProducts,
       },
       catalogAugmentedProducts: Math.max(0, allProducts.length - localProducts.length),
