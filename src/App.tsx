@@ -28,7 +28,18 @@ const MissionVisionPage = lazy(() => import("@/pages/MissionVisionPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const OrderHistoryPage = lazy(() => import("@/pages/OrderHistoryPage"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
-const ProductPage = lazy(() => import("@/pages/ProductPage"));
+// Product detail pages are the highest-intent route. Warm the route module as
+// soon as the app entry evaluates on a PDP so React does not wait for the
+// router to render before it starts the chunk request.
+let productPageModule: Promise<typeof import("@/pages/ProductPage")> | null = null;
+const loadProductPage = () => (productPageModule ??= import("@/pages/ProductPage"));
+const isInitialProductRoute = /^\/products?\/[^/]+\/?$/.test(window.location.pathname);
+
+if (isInitialProductRoute) {
+  void loadProductPage();
+}
+
+const ProductPage = lazy(loadProductPage);
 const ProductReviewsPage = lazy(() => import("@/pages/ProductReviewsPage"));
 const RecentlyViewedPage = lazy(() => import("@/pages/RecentlyViewedPage"));
 const RefundPolicyPage = lazy(() => import("@/pages/RefundPolicyPage"));

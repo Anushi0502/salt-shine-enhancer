@@ -392,6 +392,10 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
   // snapshot used by search and merchandising.
   const product = await fetchJson<Record<string, unknown>>(
     `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
+    // Honour Shopify's normal HTTP cache directives for repeat PDP visits.
+    // This keeps price data fresh when Shopify says it changed while avoiding
+    // a needless second network round-trip on browser back/forward navigation.
+    "default",
   );
   const imageRecord = (value: unknown, index: number): ShopifyImage | null => {
     if (typeof value === "string" && value.trim()) {

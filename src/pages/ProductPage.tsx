@@ -72,8 +72,11 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
-const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-14.2";
-const PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS = 700;
+const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-14.3";
+// Keep catalogue-wide merchandising and remote review requests out of the
+// initial PDP network window. They remain available shortly after the buyer
+// can see and use the product controls.
+const PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS = 1_800;
 
 const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
 
@@ -761,6 +764,7 @@ const ProductPage = () => {
                   src={activeImage || primaryImage}
                   alt={product.title}
                   className="aspect-square w-full object-cover"
+                  fetchPriority="high"
                   decoding="async"
                   onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
                   onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
@@ -786,7 +790,13 @@ const ProductPage = () => {
                   }`}
                   aria-label={`View product image ${index + 1}`}
                 >
-                  <img src={source} alt={`${product.title} view ${index + 1}`} className="aspect-square w-full object-cover" />
+                  <img
+                    src={source}
+                    alt={`${product.title} view ${index + 1}`}
+                    className="aspect-square w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </button>
               ))}
             </div>
