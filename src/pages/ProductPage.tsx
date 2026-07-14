@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -22,7 +22,6 @@ import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import SectionHeading from "@/components/storefront/SectionHeading";
-import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
 import TrustStrip from "@/components/storefront/TrustStrip";
 import {
   Accordion,
@@ -31,6 +30,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import { useMinimumDelay } from "@/hooks/useMinimumDelay";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
 import {
   compareAt,
@@ -44,7 +44,6 @@ import {
   sortVariantsByPrice,
   stripHtml,
 } from "@/lib/formatters";
-import { useJudgeMeProductRating, useJudgeMeRatings } from "@/lib/judgeme";
 import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
@@ -74,6 +73,9 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
 const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-13.2";
+const PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS = 700;
+
+const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
 
 function displayVariantTitle(title?: string): string {
   const normalized = (title || "").trim();
@@ -310,8 +312,10 @@ const ProductPage = () => {
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   const { data: productData, isLoading, error, refetch } = useProductByHandle(handle);
-  const { data: productSearchPayload } = useProductSearchIndex(Boolean(productData));
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap(Boolean(productData));
+  const loadSecondaryContent = useMinimumDelay(PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS);
+  const shouldLoadMerchandisingData = Boolean(productData && loadSecondaryContent);
+  const { data: productSearchPayload } = useProductSearchIndex(shouldLoadMerchandisingData);
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadMerchandisingData);
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
 
@@ -337,12 +341,8 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
-  const { summary: judgeMeReviewSummary } = useJudgeMeProductRating(product?.id);
   const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
-  const reviewSummary = useMemo(
-    () => (judgeMeReviewSummary && judgeMeReviewSummary.reviewCount > 0 ? judgeMeReviewSummary : productMetafieldReviewSummary),
-    [judgeMeReviewSummary, productMetafieldReviewSummary],
-  );
+  const reviewSummary = productMetafieldReviewSummary;
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
@@ -536,19 +536,6 @@ const ProductPage = () => {
         : [],
     [product, products, recentHandles],
   );
-  const productCardRatingIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...relatedProducts.map((entry) => entry.id),
-          ...complementaryProducts.map((entry) => entry.id),
-          ...recentlyViewedProducts.map((entry) => entry.id),
-        ]),
-      ),
-    [complementaryProducts, recentlyViewedProducts, relatedProducts],
-  );
-  const productCardRatingsQuery = useJudgeMeRatings(productCardRatingIds);
-  const productCardRatingsById = productCardRatingsQuery.data ?? {};
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const seoStructuredData = useMemo(() => {
     if (!origin || !product) {
@@ -1226,7 +1213,11 @@ const ProductPage = () => {
       </div>
 
 
-      <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
+      {loadSecondaryContent ? (
+        <Suspense fallback={null}>
+          <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
+        </Suspense>
+      ) : null}
 
       {relatedProducts.length > 0 ? (
         <section className="mt-10">
@@ -1245,7 +1236,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={related}
                     variant="shop"
-                    reviewSummary={productCardRatingsById[related.id] ?? null}
+                    reviewSummary={null}
                   />
                 </Reveal>
               ))}
@@ -1271,7 +1262,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={productCardRatingsById[entry.id] ?? null}
+                    reviewSummary={null}
                   />
                 </Reveal>
               ))}
@@ -1299,7 +1290,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={productCardRatingsById[entry.id] ?? null}
+                    reviewSummary={null}
                   />
                 </Reveal>
               ))}
