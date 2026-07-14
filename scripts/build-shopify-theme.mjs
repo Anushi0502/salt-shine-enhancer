@@ -327,7 +327,8 @@ async function copyAssets(entryJsPath, entryCssPath) {
 
     const assetPath = resolve(themeAssetsDir, asset);
     const assetSource = await readFile(assetPath, "utf8");
-    const rewrittenAssetSource = assetSource
+    const needsVitePreloadResolver = assetSource.includes("__vite__mapDeps");
+    const rewrittenAssetBody = assetSource
       // Vite's nested lazy chunks keep preload maps such as
       // "assets/index-*.css". Shopify serves the chunk from its asset folder,
       // so those must be relative to that chunk rather than nested under a
@@ -338,6 +339,10 @@ async function copyAssets(entryJsPath, entryCssPath) {
       // older salt-entry file. Repoint every such import so React has exactly
       // one runtime across the app shell and route chunks.
       .replace(/\.\/salt-entry-[A-Za-z0-9_-]+\.js/g, `./${themeEntryJs}`);
+    const rewrittenAssetSource = needsVitePreloadResolver
+      ? `const __saltThemeAsset=(path)=>{const value=String(path);return new URL(value.startsWith("./")?value.slice(2):value,import.meta.url).href};\n${rewrittenAssetBody}`
+          .replace(/=>i\.map\(i=>d\[i\]\)/g, "=>i.map(i=>__saltThemeAsset(d[i]))")
+      : rewrittenAssetBody;
     if (rewrittenAssetSource !== assetSource) {
       await writeFile(assetPath, rewrittenAssetSource);
     }
