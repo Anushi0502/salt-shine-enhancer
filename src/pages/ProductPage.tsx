@@ -72,7 +72,7 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
-const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-13.2";
+const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-14.1";
 const PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS = 700;
 
 const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
