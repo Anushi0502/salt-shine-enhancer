@@ -240,6 +240,26 @@ function getLiveCatalogBases(): string[] {
   });
 }
 
+function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<string, unknown>> | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  // The Shopify theme starts this request in the document head on PDPs. Reuse
+  // the exact in-flight payload so the React route does not create a second
+  // request after its module has loaded.
+  const prefetch = (window as Window & {
+    __SALT_PRODUCT_PREFETCH__?: { handle?: string; payload?: Promise<Record<string, unknown>> };
+  }).__SALT_PRODUCT_PREFETCH__;
+  const isCurrentStore = new URL(base, window.location.origin).origin === window.location.origin;
+
+  if (!isCurrentStore || prefetch?.handle !== handle || !prefetch.payload) {
+    return null;
+  }
+
+  return prefetch.payload;
+}
+
 function getLivePolicyBases(): string[] {
   if (typeof window === "undefined") {
     return [requireShopBase()];
@@ -390,13 +410,13 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
   // Shopify's product JSON route contains the complete product, including all
   // variants and media, without making a product page wait for the catalogue
   // snapshot used by search and merchandising.
-  const product = await fetchJson<Record<string, unknown>>(
+  const product = await (getHeadPreloadedProduct(normalizedHandle, base) ?? fetchJson<Record<string, unknown>>(
     `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
     // Honour Shopify's normal HTTP cache directives for repeat PDP visits.
     // This keeps price data fresh when Shopify says it changed while avoiding
     // a needless second network round-trip on browser back/forward navigation.
     "default",
-  );
+  ));
   const imageRecord = (value: unknown, index: number): ShopifyImage | null => {
     if (typeof value === "string" && value.trim()) {
       return { id: -(index + 1), src: value, alt: null };

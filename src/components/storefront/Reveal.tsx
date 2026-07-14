@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from "react";
+import type { CSSProperties, PropsWithChildren } from "react";
 import { cn } from "@/lib/utils";
  
 type RevealProps = PropsWithChildren<{
@@ -6,8 +6,15 @@ type RevealProps = PropsWithChildren<{
   className?: string;
 }>;
 
-// A home page can render dozens of these wrappers. Keeping it as a normal DOM
-// node avoids shipping and running a motion runtime before shoppers can browse.
-const Reveal = ({ children, className }: RevealProps) => <div className={cn(className)}>{children}</div>;
+// A home page can render dozens of these wrappers. CSS-only opacity/transform
+// motion keeps page entry smooth without a JavaScript animation runtime.
+const Reveal = ({ children, className, delayMs = 0 }: RevealProps) => (
+  <div
+    className={cn("salt-reveal", className)}
+    style={{ "--salt-reveal-delay": `${Math.max(0, delayMs)}ms` } as CSSProperties}
+  >
+    {children}
+  </div>
+);
 
 export default Reveal;
