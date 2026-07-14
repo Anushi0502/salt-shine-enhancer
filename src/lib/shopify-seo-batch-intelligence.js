@@ -18,6 +18,11 @@ import {
   resolveProductKnowledge,
   sanitizeMarketplaceClaims,
 } from "./shopify-product-content-knowledge.js";
+import {
+  getMinimumQuantityTagForPrices,
+  normalizeShopifyTags,
+  reconcileManagedMinimumQuantityTags,
+} from "./shopify-seo-managed-tags.js";
 
 export const PER_ORDER_OVERHEAD = 12;
 
@@ -2117,12 +2122,32 @@ export async function buildSeoBatchPlan(
       (entry) => entry.imageSrc,
     );
 
+    const effectiveVariantPrices = desiredVariantUpdates.map((desiredVariant) => {
+      const desiredIdentity = [desiredVariant.variantId, desiredVariant.sku, desiredVariant.label]
+        .map((value) => normalizePlainText(value).toLowerCase())
+        .filter(Boolean);
+      const plannedVariant = variantUpdates.find((candidate) => {
+        const candidateIdentity = [candidate.variantId, candidate.sku, candidate.label]
+          .map((value) => normalizePlainText(value).toLowerCase())
+          .filter(Boolean);
+        return desiredIdentity.some((identity) => candidateIdentity.includes(identity));
+      });
+      return plannedVariant?.price || desiredVariant.price;
+    });
+    const desiredQuantityTag = getMinimumQuantityTagForPrices(effectiveVariantPrices);
+    const sourceQuantityTags = signals.sourceTags.length ? signals.sourceTags : signals.catalogTags;
+    const reconciledQuantityTags = reconcileManagedMinimumQuantityTags(sourceQuantityTags, desiredQuantityTag);
+    const managedQuantityTagChange =
+      normalizeShopifyTags(sourceQuantityTags).map((tag) => tag.toLowerCase()).join("|") !==
+      reconciledQuantityTags.map((tag) => tag.toLowerCase()).join("|");
+
     const writeCount =
       (profile.productInput.title ? 1 : 0) +
       (profile.productInput.descriptionHtml ? 1 : 0) +
       (profile.productInput.seo?.title ? 1 : 0) +
       (profile.productInput.seo?.description ? 1 : 0) +
       (productInput.category ? 1 : 0) +
+      (managedQuantityTagChange ? 1 : 0) +
       variantUpdates.length +
       mediaTargets.length;
 
@@ -2139,6 +2164,8 @@ export async function buildSeoBatchPlan(
       desiredVariantUpdates,
       mediaTargets,
       desiredMediaTargets,
+      desiredQuantityTag,
+      managedQuantityTagChange,
       categoryQuery: signals.categoryQuery,
       categoryId: productInput.category || "",
       intelligence: profile,
@@ -2161,7 +2188,8 @@ export async function buildSeoBatchPlan(
         (entry.productInput?.descriptionHtml ? 1 : 0) +
         (entry.productInput?.seo?.title ? 1 : 0) +
         (entry.productInput?.seo?.description ? 1 : 0) +
-        (entry.categoryId ? 1 : 0),
+        (entry.categoryId ? 1 : 0) +
+        (entry.managedQuantityTagChange ? 1 : 0),
       0,
     ),
     totalVariantWrites: productsOut.reduce((count, entry) => count + entry.variantUpdates.length, 0),
@@ -2246,6 +2274,10 @@ export function buildSeoBatchExportRows(rows, plan) {
       setPreferredField(nextRow, ["SEO Description"], productPlan.productInput?.seo?.description || "");
     }
 
+    if (isPrimaryRow && Object.prototype.hasOwnProperty.call(nextRow, "Tags")) {
+      nextRow.Tags = reconcileManagedMinimumQuantityTags(nextRow.Tags, productPlan.desiredQuantityTag).join(", ");
+    }
+
     if (productPlan.rewriteLevel === "high") {
       const mediaUpdate = buildMediaPlanFromRow(row, profile);
       if (mediaUpdate) {
@@ -2299,6 +2331,7 @@ export function buildSeoBatchManifest(plan, { inputPath = "", mode = "dry-run" }
         entry.categoryId ? "category" : "",
         entry.variantUpdates?.length ? "price" : "",
         entry.mediaTargets?.length ? "image-alt" : "",
+        entry.managedQuantityTagChange ? "managed-minimum-quantity-tag" : "",
       ].filter(Boolean),
       skippedFields: entry.skipped || [],
       writeCount: entry.writeCount || 0,
@@ -2310,6 +2343,8 @@ export function buildSeoBatchManifest(plan, { inputPath = "", mode = "dry-run" }
         title: entry.productInput?.seo?.title || "",
         description: entry.productInput?.seo?.description || "",
       },
+      desiredQuantityTag: entry.desiredQuantityTag || "",
+      managedQuantityTagChange: Boolean(entry.managedQuantityTagChange),
     })),
   };
 }

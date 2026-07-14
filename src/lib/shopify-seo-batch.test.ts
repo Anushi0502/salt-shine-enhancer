@@ -208,7 +208,8 @@ describe("shopify SEO batch intelligence", () => {
     expect(exportRows[1]["Variant Price"]).toBe("13.99");
     expect(exportRows[1]["Variant Compare At Price"]).toBe("14.00");
     expect(planResult.products[0].productInput).not.toHaveProperty("tags");
-    expect(exportRows[0].Tags).toBe(rows[0].Tags);
+    expect(exportRows[0].Tags).toBe("home decor, minimum-qty-3");
+    expect(exportRows[1]).not.toHaveProperty("Tags");
     expect(rows[0].Title).toBe("Completely Wrong Title");
     expect(Object.keys(exportRows[0])).toEqual(Object.keys(rows[0]));
   });
@@ -268,5 +269,6 @@ describe("shopify SEO batch intelligence", () => {
     );
     expect(manifest.knowledgeBank.version).toBe(PRODUCT_CONTENT_KNOWLEDGE_VERSION);
     expect(manifest.products[0].knowledge.family).toBe("home-lighting");
+    expect(manifest.products[0].desiredQuantityTag).toBe("minimum-qty-3");
   });
 });

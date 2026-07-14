@@ -20,6 +20,11 @@ import {
   parseMoneyValue,
   toShopifyGid,
 } from "../src/lib/shopify-seo-batch.js";
+import {
+  managedMinimumQuantityTagFromTags,
+  normalizeShopifyTags,
+  reconcileManagedMinimumQuantityTags,
+} from "../src/lib/shopify-seo-managed-tags.js";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -624,6 +629,14 @@ function buildProductUpdateInput(product, productPlan, categoryId) {
 
   if (categoryId) {
     input.category = categoryId;
+  }
+
+  const nextTags = reconcileManagedMinimumQuantityTags(product.tags, productPlan.desiredQuantityTag);
+  const currentManagedTags = normalizeShopifyTags(product.tags).filter((tag) => /^minimum-qty-[23]$/i.test(tag));
+  const currentManagedTag = managedMinimumQuantityTagFromTags(currentManagedTags);
+  const desiredManagedTag = String(productPlan.desiredQuantityTag || "").toLowerCase();
+  if (currentManagedTag !== desiredManagedTag || currentManagedTags.length !== (desiredManagedTag ? 1 : 0)) {
+    input.tags = nextTags;
   }
 
   return input;

@@ -131,6 +131,7 @@ const PRODUCT_VERIFY_SELECTION = /* GraphQL */ `
   title
   descriptionHtml
   productType
+  tags
   category {
     id
   }
@@ -313,6 +314,10 @@ function parseArgs(argv) {
     output: outputPath,
     sample: 0,
     preservePrices: false,
+    tagsOnly: false,
+    fullCatalog: false,
+    frozenCatalog: "",
+    newProductsOnly: false,
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -337,6 +342,23 @@ function parseArgs(argv) {
     }
     if (token === "--preserve-prices") {
       args.preservePrices = true;
+      continue;
+    }
+    if (token === "--tags-only") {
+      args.tagsOnly = true;
+      continue;
+    }
+    if (token === "--full-catalog") {
+      args.fullCatalog = true;
+      continue;
+    }
+    if (token === "--frozen-catalog") {
+      args.frozenCatalog = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
+      continue;
+    }
+    if (token === "--new-products-only") {
+      args.newProductsOnly = true;
     }
   }
 
@@ -471,6 +493,20 @@ async function loadCatalogSnapshot() {
   ]);
 
   return { products, collections, collectionProducts };
+}
+
+async function loadFrozenCatalogSnapshot(filePath, baseSnapshot) {
+  if (!filePath) {
+    return baseSnapshot;
+  }
+
+  const payload = JSON.parse(await readFile(filePath, "utf8"));
+  const products = Array.isArray(payload) ? payload : payload?.products;
+  if (!Array.isArray(products) || !products.length) {
+    throw new Error(`Frozen catalog contains no products: ${filePath}`);
+  }
+
+  return { ...baseSnapshot, products };
 }
 
 async function fetchAllProducts(retryInfo) {
@@ -654,8 +690,13 @@ function getKnownPriorHandles(priorManifest) {
   );
 }
 
-function buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest) {
-  const initialFullCatalogPass = !priorManifest?.policy?.initialFullCatalogPassComplete;
+function buildScopedPlanForLiveCatalog(
+  plan,
+  liveProducts,
+  priorManifest,
+  { forceFullCatalog = false, newProductsOnly = false } = {},
+) {
+  const initialFullCatalogPass = forceFullCatalog || !priorManifest?.policy?.initialFullCatalogPassComplete;
   const knownHandles = getKnownPriorHandles(priorManifest);
   const liveByHandle = new Map(
     liveProducts
@@ -668,13 +709,30 @@ function buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest) {
     products: plan.products.map((productPlan) => {
       const liveProduct = liveByHandle.get(productPlan.handle);
       const isNewProduct = !initialFullCatalogPass && !knownHandles.has(productPlan.handle);
-      return buildEligibilityScopedReleasePlan(productPlan, {
+      const scopedProduct = buildEligibilityScopedReleasePlan(productPlan, {
         status: liveProduct?.status || "",
         publishedSalesChannels: getPublishedSalesChannelCount(liveProduct),
         isNewProduct,
         handleMismatch: isHandleContentMismatch(productPlan),
         initialFullCatalogPass,
       });
+
+      if (!newProductsOnly || isNewProduct) {
+        return scopedProduct;
+      }
+
+      return {
+        ...scopedProduct,
+        desiredProductInput: {},
+        desiredVariantUpdates: [],
+        desiredMediaTargets: [],
+        eligibility: {
+          ...scopedProduct.eligibility,
+          fullSeoEligible: false,
+          metaDescriptionOnly: false,
+          reason: "existing baseline product preserved by new-products-only policy",
+        },
+      };
     }),
   };
 }
@@ -786,6 +844,14 @@ function assertMutationReadback(product, operation, input) {
         }
         continue;
       }
+      if (field === "tags") {
+        const expected = [...(Array.isArray(input.tags) ? input.tags : [])].map(normalizePlainText).sort();
+        const actual = [...(Array.isArray(product.tags) ? product.tags : [])].map(normalizePlainText).sort();
+        if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+          mismatches.push(field);
+        }
+        continue;
+      }
       const normalizer = field === "descriptionHtml" ? normalizeComparableHtml : normalizePlainText;
       const expected = normalizer(input[field]);
       const actual = normalizer(product[field]);
@@ -863,6 +929,7 @@ function createManifest({ mode, output, plan, priorManifest }) {
     productId: productPlan.productId || "",
     confidence: productPlan.confidence,
     rewriteLevel: productPlan.rewriteLevel,
+    desiredQuantityTag: productPlan.desiredQuantityTag || "",
     desiredFingerprint: buildDesiredFingerprint(productPlan),
     liveFingerprint: "",
     status: "pending-live-read",
@@ -898,13 +965,14 @@ function createManifest({ mode, output, plan, priorManifest }) {
       failOnMissingHandle: true,
       failOnUnresolvedIdentity: true,
       failOnReadbackMismatch: true,
-      tags: "preserve and never send tag updates",
+      tags: "preserve merchant tags; reconcile only minimum-qty-2 and minimum-qty-3 from effective price",
       category: "authoritative source only",
       saltJson: "untouched",
       initialFullCatalogPassComplete: Boolean(priorManifest?.policy?.initialFullCatalogPassComplete),
       metaDescriptionBackfillComplete: Boolean(priorManifest?.policy?.metaDescriptionBackfillComplete),
       merchandisingMetafields: "fill missing values for the full catalog, then preserve existing values",
       subsequentSeoScope: "draft, zero published channels, new handles, or handle/content mismatch",
+      managedQuantityTagsScope: "all products on every SEO release dry-run/apply",
     },
     output,
     summary: {
@@ -930,10 +998,12 @@ function createManifest({ mode, output, plan, priorManifest }) {
       zeroSalesChannelProducts: 0,
       liveOnlyProducts: 0,
       sourceOnlyProducts: 0,
+      sourceOnlyExcluded: 0,
       productWrites: 0,
       variantWrites: 0,
       mediaWrites: 0,
       totalWrites: 0,
+      managedQuantityTagWrites: 0,
     },
     failures: [],
     retryInfo: [],
@@ -990,6 +1060,9 @@ function refreshSummary(manifest) {
   manifest.summary.variantWrites = products.reduce((total, entry) => total + (entry.writeCounts?.variants || 0), 0);
   manifest.summary.mediaWrites = products.reduce((total, entry) => total + (entry.writeCounts?.media || 0), 0);
   manifest.summary.totalWrites = products.reduce((total, entry) => total + (entry.writeCounts?.total || 0), 0);
+  manifest.summary.managedQuantityTagWrites = products.filter((entry) =>
+    (entry.changedFields || []).includes("managed-minimum-quantity-tag"),
+  ).length;
 }
 
 function markFailure(manifest, entry, status, error) {
@@ -1027,10 +1100,6 @@ function auditLiveSeoPlan(plan, manifest) {
     const proposesSeoContent = Boolean(
       desired.title || desired.descriptionHtml || desired.seo?.title || desired.seo?.description,
     );
-    if (Object.prototype.hasOwnProperty.call(desired, "tags")) {
-      markFailure(manifest, manifest.products.find((entry) => entry.handle === product.handle), "failed-quality-audit", new Error("tags-mutation-prohibited"));
-      continue;
-    }
     if (!proposesSeoContent) {
       passed += 1;
       continue;
@@ -1325,13 +1394,27 @@ async function applyPlan({ plan, manifest, output }) {
   }
 }
 
-export async function runShopifySeoRelease({ mode = "dry-run", output = outputPath, sample = 0, preservePrices = false } = {}) {
+export async function runShopifySeoRelease({
+  mode = "dry-run",
+  output = outputPath,
+  sample = 0,
+  preservePrices = false,
+  tagsOnly = false,
+  fullCatalog = false,
+  frozenCatalog = "",
+  newProductsOnly = false,
+} = {}) {
   const priorManifest = await readPriorManifest(output);
-  const snapshot = await loadCatalogSnapshot();
+  const localSnapshot = await loadCatalogSnapshot();
+  const snapshot = await loadFrozenCatalogSnapshot(frozenCatalog, localSnapshot);
   const localPlan = await buildShopifySeoReleasePlan(snapshot);
   const localPlanSelection = sample > 0 ? { ...localPlan, products: localPlan.products.slice(0, sample) } : localPlan;
   let manifest = createManifest({ mode, output, plan: localPlanSelection, priorManifest });
   manifest.policy.sample = sample || null;
+  manifest.policy.tagsOnly = tagsOnly;
+  manifest.policy.forceFullCatalog = fullCatalog;
+  manifest.policy.frozenCatalog = frozenCatalog || null;
+  manifest.policy.newProductsOnly = newProductsOnly;
   manifest.summary.sourceProducts = localPlan.summary.sourceProducts;
   manifest.summary.localCatalogProducts = localPlan.summary.sourceProducts;
   await writeManifest(output, manifest);
@@ -1349,7 +1432,11 @@ export async function runShopifySeoRelease({ mode = "dry-run", output = outputPa
     await writeManifest(output, manifest);
     throw error;
   }
-  const mergedSnapshot = mergeCatalogSnapshotWithLiveProducts(snapshot, liveProducts);
+  // A frozen catalog is the immutable pre-apply source of truth for safe resume.
+  // Never merge current live prices into it or a resumed run could compound pricing.
+  const mergedSnapshot = frozenCatalog
+    ? { ...snapshot, liveOnlyProducts: [] }
+    : mergeCatalogSnapshotWithLiveProducts(snapshot, liveProducts);
   await writeJsonFile(liveCatalogPath, {
     generatedAt: new Date().toISOString(),
     source: `Shopify CLI ${storeDomain}`,
@@ -1358,27 +1445,58 @@ export async function runShopifySeoRelease({ mode = "dry-run", output = outputPa
   });
   const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot);
   const selectedHandles = new Set(localPlanSelection.products.map((entry) => entry.handle));
-  const plan =
+  const selectedPlan =
     sample > 0
       ? { ...mergedPlan, products: mergedPlan.products.filter((entry) => selectedHandles.has(entry.handle)) }
       : mergedPlan;
+  const liveHandleSet = new Set(liveProducts.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
+  const sourceOnlyExcluded = tagsOnly
+    ? selectedPlan.products.filter((entry) => !liveHandleSet.has(entry.handle)).length
+    : 0;
+  const plan = tagsOnly
+    ? { ...selectedPlan, products: selectedPlan.products.filter((entry) => liveHandleSet.has(entry.handle)) }
+    : selectedPlan;
   manifest = createManifest({ mode, output, plan, priorManifest });
   manifest.policy.sample = sample || null;
+  manifest.policy.tagsOnly = tagsOnly;
+  manifest.policy.forceFullCatalog = fullCatalog;
+  manifest.policy.frozenCatalog = frozenCatalog || null;
+  manifest.policy.newProductsOnly = newProductsOnly;
   manifest.policy.catalogAugmentedFromLive = true;
   manifest.retryInfo = retryInfo;
   manifest.summary.sourceProducts = plan.summary.sourceProducts;
   manifest.summary.localCatalogProducts = localPlan.summary.sourceProducts;
   manifest.summary.catalogAugmentedProducts = mergedSnapshot.liveOnlyProducts?.length || 0;
+  manifest.summary.sourceOnlyExcluded = sourceOnlyExcluded;
   await writeManifest(output, manifest);
 
-  const eligibilityPlan = buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest);
-  const scopedPlan = preservePrices
+  const eligibilityPlan = buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest, {
+    forceFullCatalog: fullCatalog,
+    newProductsOnly,
+  });
+  const pricingScopedPlan = preservePrices
     ? {
         ...eligibilityPlan,
-        products: eligibilityPlan.products.map((product) => ({ ...product, desiredVariantUpdates: [] })),
+        products: eligibilityPlan.products.map((product) => ({
+          ...product,
+          desiredVariantUpdates: [],
+          desiredQuantityTag: product.currentQuantityTag || "",
+        })),
       }
     : eligibilityPlan;
+  const scopedPlan = tagsOnly
+    ? {
+        ...pricingScopedPlan,
+        products: pricingScopedPlan.products.map((product) => ({
+          ...product,
+          desiredProductInput: {},
+          desiredVariantUpdates: [],
+          desiredMediaTargets: [],
+        })),
+      }
+    : pricingScopedPlan;
   manifest.policy.pricing = preservePrices ? "preserved; no variant price or compare-at mutations" : "planner-controlled";
+  manifest.policy.mutationScope = tagsOnly ? "managed minimum-quantity tags only" : "eligible SEO plus managed tags";
   await preflight({ plan: scopedPlan, manifest, liveProducts, output: { mode, path: output } });
 
   if (mode === "dry-run") {

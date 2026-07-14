@@ -10,6 +10,11 @@ import {
   normalizeUrlForMatch,
   toShopifyGid,
 } from "./shopify-seo-batch.js";
+import {
+  getMinimumQuantityTagForPrices,
+  managedMinimumQuantityTagFromTags,
+  reconcileManagedMinimumQuantityTags,
+} from "./shopify-seo-managed-tags.js";
 
 const PRODUCT_FIELDS = ["title", "descriptionHtml", "productType"];
 const SEO_FIELDS = ["title", "description"];
@@ -156,7 +161,6 @@ function buildCatalogRow(product, variant, images) {
 /**
  * Converts the refreshed Shopify REST snapshot into the row contract used by
  * the handle-first planner. The adapter never drops variant identity or tags.
- * Tags are evidence only and are never included in a mutation payload.
  */
 export function buildCatalogRowsFromSnapshot(snapshot) {
   const rows = [];
@@ -309,6 +313,41 @@ function buildReleaseDesiredVariants(productPlan) {
   });
 }
 
+function variantPlanMatches(left, right) {
+  const leftId = normalizeIdentity(left?.variantId, "ProductVariant");
+  const rightId = normalizeIdentity(right?.variantId, "ProductVariant");
+  if (leftId && rightId) {
+    return leftId === rightId;
+  }
+
+  const leftSku = normalizeComparableText(left?.sku);
+  const rightSku = normalizeComparableText(right?.sku);
+  if (leftSku && rightSku) {
+    return leftSku === rightSku;
+  }
+
+  return Boolean(
+    normalizeComparableText(left?.label) &&
+      normalizeComparableText(left?.label) === normalizeComparableText(right?.label),
+  );
+}
+
+function buildReleasePlannedVariants(productPlan, currentVariants) {
+  const plannedVariants = Array.isArray(productPlan?.variantUpdates) ? productPlan.variantUpdates : [];
+  return currentVariants.map((current) => {
+    const planned = plannedVariants.find((candidate) => variantPlanMatches(current, candidate));
+    if (!planned) {
+      return current;
+    }
+
+    return {
+      ...current,
+      price: planned.price || current.price,
+      compareAtPrice: planned.compareAtPrice || current.compareAtPrice,
+    };
+  });
+}
+
 export async function buildShopifySeoReleasePlan(snapshot) {
   const rows = buildCatalogRowsFromSnapshot(snapshot);
   const catalogContext = createSeoCatalogContext({
@@ -321,13 +360,20 @@ export async function buildShopifySeoReleasePlan(snapshot) {
     suppressCategoryWarnings: true,
   });
 
-  const products = basePlan.products.map((productPlan) => ({
-    ...productPlan,
-    desiredProductInput: buildReleaseDesiredProductInput(productPlan),
-    desiredVariantUpdates: buildReleaseDesiredVariants(productPlan),
-    desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
-    categoryAuthoritative: Boolean(productPlan.categoryId && productPlan.categoryQuery),
-  }));
+  const products = basePlan.products.map((productPlan) => {
+    const currentVariantUpdates = buildReleaseDesiredVariants(productPlan);
+    const desiredVariantUpdates = buildReleasePlannedVariants(productPlan, currentVariantUpdates);
+    return {
+      ...productPlan,
+      desiredProductInput: buildReleaseDesiredProductInput(productPlan),
+      desiredVariantUpdates,
+      currentVariantUpdates,
+      desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
+      desiredQuantityTag: getMinimumQuantityTagForPrices(desiredVariantUpdates.map((variant) => variant.price)),
+      currentQuantityTag: getMinimumQuantityTagForPrices(currentVariantUpdates.map((variant) => variant.price)),
+      categoryAuthoritative: Boolean(productPlan.categoryId && productPlan.categoryQuery),
+    };
+  });
 
   return {
     ...basePlan,
@@ -397,6 +443,7 @@ export function buildEligibilityScopedReleasePlan(
     desiredProductInput: scopedDesired,
     desiredVariantUpdates: fullSeoEligible ? productPlan.desiredVariantUpdates || [] : [],
     desiredMediaTargets: fullSeoEligible ? productPlan.desiredMediaTargets || [] : [],
+    desiredQuantityTag: productPlan.desiredQuantityTag || "",
     eligibility: {
       status: normalizedStatus || "UNKNOWN",
       isDraft,
@@ -562,6 +609,16 @@ function buildProductDiff(liveProduct, productPlan) {
     }
   }
 
+  const desiredQuantityTag = productPlan?.desiredQuantityTag || "";
+  const liveTags = asArray(liveProduct?.tags).map((tag) => normalizePlainText(tag)).filter(Boolean);
+  const liveQuantityTag = managedMinimumQuantityTagFromTags(liveTags);
+  if (liveQuantityTag === desiredQuantityTag) {
+    skippedFields.push({ field: "managed-minimum-quantity-tag", reason: "already aligned" });
+  } else {
+    input.tags = reconcileManagedMinimumQuantityTags(liveTags, desiredQuantityTag);
+    changedFields.push("managed-minimum-quantity-tag");
+  }
+
   return { input, changedFields, skippedFields };
 }
 
@@ -650,7 +707,8 @@ function buildMediaDiff(liveProduct, productPlan, changedFields, skippedFields) 
 
 /**
  * Compares one live Shopify product with the plan. The returned mutation
- * inputs contain only actual field-level differences and never contain tags.
+ * inputs contain only actual field-level differences. Tag writes are limited to
+ * reconciling the two managed minimum-quantity tags while preserving all others.
  */
 export function compareLiveProductToPlan(liveProduct, productPlan) {
   const productDiff = buildProductDiff(liveProduct, productPlan);
@@ -717,6 +775,7 @@ export function buildDesiredFingerprint(productPlan) {
       description: normalizeComparableText(desired.seo?.description),
     },
     category: normalizePlainText(desired.category),
+    managedMinimumQuantityTag: productPlan?.desiredQuantityTag || "",
     variants: (productPlan?.desiredVariantUpdates || [])
       .map((variant) => ({
         id: normalizeIdentity(variant.variantId, "ProductVariant"),
@@ -757,6 +816,7 @@ export function buildLiveFingerprint(liveProduct) {
       description: normalizeComparableText(liveProduct?.seo?.description),
     },
     category: normalizePlainText(liveProduct?.category?.id),
+    managedMinimumQuantityTag: managedMinimumQuantityTagFromTags(liveProduct?.tags),
     variants: variants
       .map((variant) => ({
         id: normalizeIdentity(variant.id, "ProductVariant"),

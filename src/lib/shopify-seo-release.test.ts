@@ -53,13 +53,14 @@ function makeSnapshot() {
 async function makePlanAndLive() {
   const plan = await buildShopifySeoReleasePlan(makeSnapshot());
   const productPlan = plan.products[0];
+  const desiredVariant = productPlan.desiredVariantUpdates[0];
   const liveProduct = {
     id: "gid://shopify/Product/101",
     handle: productPlan.handle,
     title: productPlan.desiredProductInput.title,
     descriptionHtml: productPlan.desiredProductInput.descriptionHtml,
     productType: productPlan.desiredProductInput.productType,
-    tags: ["merchant-tag", "do-not-change"],
+    tags: ["merchant-tag", "do-not-change", productPlan.desiredQuantityTag],
     seo: {
       title: productPlan.desiredProductInput.seo.title,
       description: productPlan.desiredProductInput.seo.description,
@@ -70,8 +71,8 @@ async function makePlanAndLive() {
           id: "gid://shopify/ProductVariant/1001",
           title: "Default Title",
           sku: "LAMP-1",
-          price: "13.99",
-          compareAtPrice: "19.99",
+          price: desiredVariant.price,
+          compareAtPrice: desiredVariant.compareAtPrice || null,
           selectedOptions: [{ name: "Title", value: "Default Title" }],
         },
       ],
@@ -180,6 +181,38 @@ describe("Shopify SEO release reconciliation", () => {
     expect(JSON.stringify(diff.productInput)).not.toContain("tags");
   });
 
+  it("uses the reviewed pricing plan and derives quantity tags from the final price", async () => {
+    const { productPlan } = await makePlanAndLive();
+
+    expect(Number(productPlan.currentVariantUpdates[0].price)).toBe(13.99);
+    expect(Number(productPlan.desiredVariantUpdates[0].price)).toBeGreaterThan(13.99);
+    expect(productPlan.currentQuantityTag).toBe("minimum-qty-3");
+    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-2");
+  });
+
+  it("adds the managed quantity tag without changing merchant tags", async () => {
+    const { productPlan, liveProduct } = await makePlanAndLive();
+    const diff = compareLiveProductToPlan(
+      { ...liveProduct, tags: ["merchant-tag", "do-not-change"] },
+      productPlan,
+    );
+
+    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-2");
+    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-2"]);
+    expect(diff.changedFields).toEqual(["managed-minimum-quantity-tag"]);
+  });
+
+  it("replaces a stale managed quantity tag and preserves merchant tags", async () => {
+    const { productPlan, liveProduct } = await makePlanAndLive();
+    const diff = compareLiveProductToPlan(
+      { ...liveProduct, tags: ["merchant-tag", "minimum-qty-3", "do-not-change"] },
+      productPlan,
+    );
+
+    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-2"]);
+    expect(diff.productInput.tags).not.toContain("minimum-qty-3");
+  });
+
   it("writes only missing SEO fields", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan({ ...liveProduct, seo: { title: "", description: "" } }, productPlan);
@@ -274,7 +307,9 @@ describe("Shopify SEO release reconciliation", () => {
     );
 
     expect(diff.productInput).toEqual({ id: "gid://shopify/Product/101" });
-    expect(diff.variantInputs).toEqual([{ id: "gid://shopify/ProductVariant/1001", price: "13.99" }]);
+    expect(diff.variantInputs).toEqual([
+      { id: "gid://shopify/ProductVariant/1001", price: productPlan.desiredVariantUpdates[0].price },
+    ]);
     expect(diff.changedFields).toEqual(["variant:gid://shopify/ProductVariant/1001:price"]);
   });
 
