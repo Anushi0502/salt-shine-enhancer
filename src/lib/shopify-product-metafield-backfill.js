@@ -4,6 +4,10 @@ import {
   getProductMetafieldDefinitionId,
 } from "./shopify-product-metafield-definitions.js";
 import { normalizeProductCustomData } from "./product-custom-data.js";
+import {
+  inferApprovedDisclosureReferences,
+  inferShopifyTaxonomyCategory,
+} from "./shopify-product-category.js";
 
 const FIELD_DEFINITIONS = Object.fromEntries(
   PRODUCT_METAFIELD_DEFINITIONS.map((definition) => [getProductMetafieldDefinitionId(definition), definition]),
@@ -23,6 +27,7 @@ const BACKFILL_FIELD_IDS = {
   diaperType: "shopify.diaper-type",
   googleCustomProduct: "mm-google-shopping.custom_product",
   shopChannelMinimumQuantity: "salt-marketing.shop_channel_minimum_quantity",
+  disclosures: "shopify.disclosure",
 };
 
 const BACKFILL_FIELDS = Object.fromEntries(
@@ -569,24 +574,21 @@ function buildSearchBoostCandidates(product, collectionRefs) {
 
 function buildProductSubtitle(product, collectionTitles = [], productType = "") {
   const title = getProductTitle(product);
-  const handleTokens = getProductHandleTokens(product);
   const collections = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry)));
   const topCollection = collections.find((entry) => entry) || "";
   const cleanType = normalizePlainText(productType || getProductProductType(product));
+  const taxonomyName = inferShopifyTaxonomyCategory(product)?.name || "";
+  const titlePhrase = normalizePlainText(title).split(/\s+/).slice(0, 7).join(" ");
 
-  const parts = [];
-  if (topCollection) {
-    parts.push(topCollection);
-  }
-  if (cleanType && cleanType !== topCollection) {
-    parts.push(cleanType);
-  } else if (handleTokens.length) {
-    parts.push(handleTokens.slice(0, 4).join(" "));
-  }
+  const parts = uniqueValues([
+    titlePhrase,
+    taxonomyName,
+    cleanType && normalizeKey(cleanType) !== normalizeKey(taxonomyName) ? cleanType : "",
+    !taxonomyName && !cleanType ? topCollection : "",
+  ]);
 
   if (!parts.length) {
-    const fallback = cleanType ? `Curated ${cleanType}` : `Curated ${title || "product"}`;
-    return normalizePlainText(fallback).slice(0, 80);
+    return "";
   }
 
   return normalizePlainText(parts.join(" • ")).slice(0, 80);
@@ -618,34 +620,60 @@ function buildProductBadgeText(product, reviewSummary = null, existing = null) {
 
 function buildProductHighlights(product, collectionTitles = [], reviewSummary = null) {
   const highlights = [];
-  const cleanType = normalizePlainText(getProductProductType(product));
   const title = getProductTitle(product);
-  const handleTokens = getProductHandleTokens(product);
-  const tags = normalizeTagList(product?.tags);
-  const topCollection = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry))).find(Boolean);
+  const evidence = normalizePlainText(`${product?.handle || ""} ${title}`).replace(/[-_]+/g, " ");
+  const category = inferShopifyTaxonomyCategory(product);
+  const identityNoise = new Set(["cheap", "fashionable", "high", "latest", "quality", "stylish"]);
+  const handleIdentity = uniqueValues(
+    splitTextIntoTokens(product?.handle || "")
+      .filter((token) => !/^20\d{2}$/.test(token))
+      .filter((token) => !identityNoise.has(token)),
+  )
+    .slice(0, 6)
+    .join(" ");
+  const titleIdentity = uniqueValues(splitTextIntoTokens(title)).slice(0, 5).join(" ");
 
-  if (cleanType) {
-    highlights.push(`${cleanType} pick`);
+  if (category?.name) {
+    highlights.push(category.name);
   }
+  highlights.push(handleIdentity || titleIdentity);
 
-  if (topCollection) {
-    highlights.push(`${topCollection} favorite`);
-  }
+  const useSignals = [
+    [/\brunning\b/i, "Running style"],
+    [/\bschool\b/i, "School use"],
+    [/\btravel\b/i, "Travel use"],
+    [/\boutdoor\b/i, "Outdoor use"],
+    [/\bgaming\b/i, "Gaming setup"],
+    [/\b(?:gym|fitness)\b/i, "Fitness use"],
+    [/\b(?:car|vehicle|automotive)\b/i, "Vehicle use"],
+    [/\b(?:bath|bathing)\b/i, "Bath-time use"],
+    [/\b(?:kitchen|cooking)\b/i, "Kitchen use"],
+  ];
+  const featureSignals = [
+    [/\bfast charg(?:e|er|ing)\b/i, "Fast charging"],
+    [/\bwireless charg(?:e|er|ing)\b/i, "Wireless charging"],
+    [/\brechargeable\b/i, "Rechargeable"],
+    [/\bportable\b/i, "Portable format"],
+    [/\bfoldable\b/i, "Foldable format"],
+    [/\badjustable\b/i, "Adjustable design"],
+    [/\bnon[- ]?slip\b/i, "Non-slip design"],
+    [/\bwide toe\b/i, "Wide-toe design"],
+    [/\bsoft sole\b/i, "Soft-sole design"],
+    [/\bmulti[- ]?port\b/i, "Multi-port design"],
+  ];
 
-  if (tags.length) {
-    highlights.push(tags[0]);
+  const useSignal = useSignals.find(([pattern]) => pattern.test(evidence));
+  const featureSignal = featureSignals.find(([pattern]) => pattern.test(evidence));
+  if (useSignal) highlights.push(useSignal[1]);
+  if (featureSignal) highlights.push(featureSignal[1]);
+
+  const specification = evidence.match(/\b\d+(?:\.\d+)?\s*(?:tb|gb|mah|ml|oz|kw|w|v|a|pcs?|pieces?|ports?)\b/i)?.[0];
+  if (specification) {
+    highlights.push(normalizePlainText(specification).toUpperCase());
   }
 
   if (reviewSummary?.reviewCount >= 10) {
     highlights.push(`Rated ${Number(reviewSummary.rating || 0).toFixed(1)}`);
-  }
-
-  if (title) {
-    highlights.push(splitTextIntoTokens(title).slice(0, 2).join(" "));
-  }
-
-  if (handleTokens.length) {
-    highlights.push(`Search focus: ${handleTokens.slice(0, 4).join(" ")}`);
   }
 
   return uniqueValues(
@@ -659,13 +687,15 @@ function buildCollectionSignal(product, collectionTitles = []) {
   const tokens = [];
   const cleanType = normalizePlainText(getProductProductType(product));
   const cleanCollections = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry)));
-  const tags = normalizeTagList(product?.tags);
+  const taxonomyName = inferShopifyTaxonomyCategory(product)?.name || "";
 
+  if (taxonomyName) {
+    tokens.push(taxonomyName);
+  }
   cleanCollections.slice(0, 3).forEach((entry) => tokens.push(entry));
   if (cleanType) {
     tokens.push(cleanType);
   }
-  tags.slice(0, 3).forEach((entry) => tokens.push(entry));
 
   return uniqueValues(tokens.map((entry) => normalizePlainText(entry)).filter(Boolean)).join(", ");
 }
@@ -688,6 +718,34 @@ function hasMeaningfulValue(value) {
   }
 
   return value != null;
+}
+
+function hasLegacyGeneratedHighlights(value) {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  const knownLowQualityPhrases = new Set([
+    "beauty and makeups",
+    "home home",
+    "kitchen tool",
+    "lifestyle ready",
+    "shockproof phone",
+    "women faishon",
+  ]);
+
+  return value.some((entry) => {
+    const normalized = normalizePlainText(entry).toLowerCase();
+    const words = normalized.split(/\s+/).filter(Boolean);
+    const hasRepeatedAdjacentWord = words.some((word, index) => index > 0 && word === words[index - 1]);
+
+    return (
+      /(?:\bpick|\bfavorite)$|^search focus:/i.test(normalized) ||
+      /^minimum-qty-\d+$/i.test(normalized) ||
+      hasRepeatedAdjacentWord ||
+      knownLowQualityPhrases.has(normalized)
+    );
+  });
 }
 
 function serializeRatingValue(rating) {
@@ -846,6 +904,7 @@ function inferDiaperTypeReference(product, diaperTypeOptions = []) {
 
 function buildProductPlan(product, context) {
   const existing = getProductExistingCustomData(product);
+  const existingDisclosures = Array.isArray(product?.disclosures) ? product.disclosures : [];
   const collectionRefs = context.productCollectionsById.get(product.id) || [];
   const collectionTitles = context.productCollectionTitlesById.get(product.id) || [];
   const collectionMap = context.collectionMap;
@@ -923,6 +982,7 @@ function buildProductPlan(product, context) {
   const subtitle = buildProductSubtitle(product, collectionTitles, productType);
   const badgeText = buildProductBadgeText(product, reviewSummary, existing);
   const highlights = buildProductHighlights(product, collectionTitles, reviewSummary);
+  const refreshLegacyHighlights = hasLegacyGeneratedHighlights(existing.highlights);
   const collectionSignal = buildCollectionSignal(product, collectionTitles);
   const rating = hasMeaningfulValue(existing.rating) ? existing.rating : reviewSummary?.rating ?? null;
   const ratingCount = hasMeaningfulValue(existing.ratingCount) ? existing.ratingCount : reviewSummary?.reviewCount ?? null;
@@ -948,6 +1008,9 @@ function buildProductPlan(product, context) {
         context.diaperTypeOptions,
       )
     : null;
+  const disclosureReferenceIds = !hasMeaningfulValue(existingDisclosures)
+    ? inferApprovedDisclosureReferences(product, context.disclosureOptions)
+    : [];
 
   const writes = [];
   const skipped = [];
@@ -985,7 +1048,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.badgeText, reason: "already set" });
   }
 
-  if (highlights.length && !hasMeaningfulValue(existing.highlights)) {
+  if (highlights.length && (!hasMeaningfulValue(existing.highlights) || refreshLegacyHighlights)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.highlights,
       label: BACKFILL_FIELDS.highlights?.name || "Product highlights",
@@ -994,7 +1057,9 @@ function buildProductPlan(product, context) {
       type: BACKFILL_FIELDS.highlights?.type || "list.single_line_text_field",
       ownerId: toShopifyGid("Product", product.id),
       value: serializeListValue(highlights),
-      reason: "Generated short shopper-friendly highlights from product and collection context",
+      reason: refreshLegacyHighlights
+        ? "Replaced legacy generic highlights with product-specific evidence"
+        : "Generated product-specific highlights from handle and catalog evidence",
     });
     reasons.push("highlights");
   } else if (hasMeaningfulValue(existing.highlights)) {
@@ -1181,6 +1246,26 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.diaperType, reason: "schema missing or no high-confidence taxonomy match" });
   }
 
+  if (disclosureReferenceIds.length) {
+    writes.push({
+      fieldId: BACKFILL_FIELD_IDS.disclosures,
+      label: "Disclosures",
+      namespace: "shopify",
+      key: "disclosure",
+      type: "list.disclosure_reference",
+      ownerId: toShopifyGid("Product", product.id),
+      value: serializeMetaobjectReferenceList(disclosureReferenceIds),
+      reason: "Explicit warning evidence matched an approved Shopify disclosure object",
+    });
+    reasons.push("disclosures");
+  } else if (hasMeaningfulValue(existingDisclosures)) {
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.disclosures, reason: "already set" });
+  } else if (!context.disclosureOptions.length) {
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.disclosures, reason: "no approved Shopify disclosure objects exist" });
+  } else {
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.disclosures, reason: "no explicit disclosure evidence" });
+  }
+
   const candidateSummary = relatedCandidates.slice(0, 5).map((entry) => ({
     id: entry.product.id,
     handle: entry.product.handle,
@@ -1210,6 +1295,7 @@ function createCatalogContext({
   collectionProducts = null,
   reviewSummaries = new Map(),
   diaperTypeOptions = [],
+  disclosureOptions = [],
 } = {}) {
   const { collectionMap, productCollectionsById, productCollectionTitlesById } = buildCollectionIndex(
     collections,
@@ -1289,6 +1375,7 @@ function createCatalogContext({
     productIndexes,
     reviewSummaries: normalizedReviewSummaries,
     diaperTypeOptions: normalizeDiaperTypeOptions(diaperTypeOptions),
+    disclosureOptions: Array.isArray(disclosureOptions) ? disclosureOptions : [],
   };
 }
 
@@ -1327,7 +1414,7 @@ function buildBackfillPlan(input = {}) {
       totalWrites,
       writesByField,
       skippedByReason,
-      skippedDefinitions: ["Disclosures"],
+      skippedDefinitions: context.disclosureOptions.length ? [] : ["Disclosures: no approved reference objects"],
       diaperTypeDiscovery:
         context.diaperTypeOptions.length > 0
           ? {

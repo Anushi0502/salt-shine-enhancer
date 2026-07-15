@@ -83,6 +83,16 @@ const family = ({
 
 export const PRODUCT_CONTENT_FAMILIES = Object.freeze([
   family({
+    id: "adult-bib-apron",
+    terms: ["adult bib", "adult apron", "clothing protector", "mealtime bib"],
+    nouns: ["adult bib", "protective apron", "clothing protector"],
+    facts: ["Product focus", "Supported features", "Material", "Intended user", "Available options"],
+    purpose: "helps cover clothing during the meal, grooming, or household use identified by the product",
+    use: "Position and fasten it as directed before the intended task, then remove and clean it according to the supplied care instructions.",
+    benefit: "Its coverage and fastening format help shoppers compare it for a specific daily routine.",
+    audience: ["Adults choosing clothing protection for meals or daily routines", "Caregivers comparing bib and apron formats", "Shoppers checking coverage and fastening options"],
+  }),
+  family({
     id: "phone-device-accessory",
     terms: ["iphone", "iphone case", "case for iphone", "cover for iphone", "phone case", "tablet case", "screen protector", "phone cover", "charger", "charging cable"],
     nouns: ["phone case", "screen protector", "charger", "device accessory"],
@@ -126,7 +136,7 @@ export const PRODUCT_CONTENT_FAMILIES = Object.freeze([
   }),
   family({
     id: "hair-care",
-    terms: ["shampoo", "conditioner", "hair dye", "hair oil", "hair mask", "hair mousse", "hair gel", "hair spray", "hair root", "hair loss", "baldness", "hair styling", "pomade", "hair treatment", "hair moisturizing", "scalp", "wig", "hair replacement"],
+    terms: ["shampoo", "conditioner", "hair dye", "hair oil", "rosemary hair", "hair strengthening oil", "hair mask", "hair mousse", "hair gel", "hair spray", "hair root", "hair loss", "baldness", "hair styling", "pomade", "hair treatment", "hair moisturizing", "scalp", "wig", "hair replacement"],
     nouns: ["hair care product", "hair treatment format", "wig"],
     facts: ["Product focus", "Size or capacity", "Supported features", "Intended user", "Available options"],
     purpose: "supports the cleansing, conditioning, coloring, styling, scalp, or hair-replacement step named by the product",

@@ -597,6 +597,11 @@ function selectHandleFamilyPhrase(signals) {
 }
 
 function buildHandleAlignedTitle(signals) {
+  const cookwareCount = normalizeHandleValue(signals.handle).match(/^(\d+)-(?:piece|pc|pcs)-pots?-and-pans?-set(?:-|$)/i);
+  if (cookwareCount) {
+    return `${cookwareCount[1]}-Piece Pots and Pans Set`;
+  }
+
   const exactHandleFamily = /^(Eyelash Curler|False Eyelashes|Makeup Mirror|Lip Gloss|Lip Balm|Mascara|Hair Clip|Hair Oil|Phone Case|iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Pants|Perfume)$/i.test(
     normalizePlainText(signals.handlePhrase),
   );
@@ -768,7 +773,15 @@ function hasHandleTitleConflict(signals) {
   }
 
   const titleSources = [signals.sourceTitleTokens, signals.catalogTitleTokens].filter((tokens) => tokens?.size);
-  return titleSources.length > 0 && titleSources.every((tokens) => countOverlap(meaningfulHandleTokens, tokens) === 0);
+  if (!titleSources.length) {
+    return false;
+  }
+
+  const overlapCounts = titleSources.map((tokens) => countOverlap(meaningfulHandleTokens, tokens));
+  return (
+    overlapCounts.every((count) => count === 0) ||
+    (meaningfulHandleTokens.size >= 5 && Math.max(...overlapCounts) <= 1)
+  );
 }
 
 function buildSearchPhrases(signals) {
@@ -841,12 +854,11 @@ function extractSupportedProductFacts(signals) {
     const clean = uniqueValues(values.map((value) => normalizePlainText(value)).filter(Boolean));
     if (clean.length) facts.push({ label, value: clean.slice(0, 5).join(", ") });
   };
-  const productFocus = sanitizeMarketplaceClaims(normalizePlainText(signals.handle || "").replace(/[-_]+/g, " "))
+  const productFocusTokens = sanitizeMarketplaceClaims(normalizePlainText(signals.handle || "").replace(/[-_]+/g, " "))
     .toLowerCase()
     .split(/[-_\s]+/)
     .filter((word) => word.length >= 2 && !GENERIC_TITLE_WORDS.has(word))
-    .slice(0, 10)
-    .join(" ");
+  const productFocus = uniqueValues(productFocusTokens).slice(0, 10).join(" ");
   add("Product focus", [productFocus]);
   add("Size or capacity", [...source.matchAll(/\b\d+(?:\.\d+)?\s?(?:ml|l|oz|g|kg|cm|mm|inch|inches|pcs|piece|pieces|pairs?|pack)\b/gi)].map((match) => match[0]));
   add("Material", ["cotton", "linen", "silicone", "stainless steel", "glass", "plastic", "wood", "wooden", "leather", "faux leather", "pu leather", "canvas", "nylon", "polyester", "rubber", "ceramic", "metal", "satin", "wool"].filter(hasTerm));
@@ -871,15 +883,6 @@ function extractSupportedProductFacts(signals) {
   return prioritizeProductFacts(facts, resolveProductKnowledge(signals.handle));
 }
 
-function stableCopyIndex(value, length) {
-  let hash = 2166136261;
-  for (const character of String(value || "")) {
-    hash ^= character.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash >>> 0) % Math.max(1, length);
-}
-
 function factToSentence(fact) {
   const labels = {
     "Size or capacity": `Available size or capacity: ${fact.value}.`,
@@ -896,16 +899,10 @@ function factToSentence(fact) {
   return labels[fact.label] || `${fact.label}: ${fact.value}.`;
 }
 
-function buildDescriptionHtml(title, signals, searchPhrases) {
+function buildDescriptionHtml(title, signals) {
   const titleText = normalizePlainText(title);
   const knowledge = resolveProductKnowledge(signals.handle);
   const rawTypeText = sanitizeMarketplaceClaims(normalizePlainText(signals.productTypeText));
-  const typeText = rawTypeText && isTitleAlignedWithKnowledge(rawTypeText, knowledge)
-    ? rawTypeText
-    : knowledge.id === "general"
-      ? rawTypeText
-      : knowledge.productNouns[0];
-  const collectionText = signals.collectionTitles.length ? signals.collectionTitles.slice(0, 2).join(" and ") : "";
   const evidence = uniqueValues(
     (Array.isArray(signals.catalogHighlights) ? signals.catalogHighlights : [])
       .map((value) => sanitizeMarketplaceClaims(value))
@@ -913,6 +910,14 @@ function buildDescriptionHtml(title, signals, searchPhrases) {
   ).slice(0, 8);
   const family = normalizePlainText(signals.handle || signals.handlePhrase || "").toLowerCase().replace(/[-_]+/g, " ");
   const familyHas = (term) => new RegExp(`(?:^|\\s)${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\ /g, "\\s+")}(?:$|\\s)`, "i").test(family);
+  const knowledgeNoun = knowledge.id === "makeup" && /\b(?:lipstick|lipliner|lip gloss|lipgloss|lip balm)\b/.test(family)
+    ? "lip product"
+    : knowledge.productNouns.find((noun) => familyHas(noun)) || knowledge.productNouns[0] || "";
+  const typeText = rawTypeText && isTitleAlignedWithKnowledge(rawTypeText, knowledge)
+    ? rawTypeText
+    : knowledge.id === "general"
+      ? rawTypeText
+      : knowledgeNoun;
   const handleIdentity = sanitizeMarketplaceClaims(normalizePlainText(signals.handlePhrase || titleText || "product"));
   const handleDescriptorPhrase = sanitizeMarketplaceClaims(normalizePlainText(signals.handle || "").replace(/[-_]+/g, " "))
     .toLowerCase()
@@ -932,7 +937,6 @@ function buildDescriptionHtml(title, signals, searchPhrases) {
     .slice(0, 3);
   const detailPhrase = detailSentences.length ? detailSentences.join(". ") : "";
   const fashion = ["dress", "top", "shirt", "blouse", "jacket", "coat", "blazer", "pants", "trouser", "jean", "skirt", "legging", "shoe", "sandal", "boot", "sneaker", "handbag", "bag", "jewelry", "ring", "necklace", "earring", "hat", "scarf", "belt"].some(familyHas);
-  const useLabel = fashion ? "Style, Use & Occasion" : "How It Fits Into Your Routine";
   const fallbackDetails = fashion
     ? "Please refer to the product details or packaging for complete material, sizing, and care information."
     : "Please refer to the product details or packaging for complete specifications, materials, sizing, and care information.";
@@ -994,6 +998,13 @@ function buildDescriptionHtml(title, signals, searchPhrases) {
   }
   if (category === "electronics-accessory" && /mouse/.test(family)) {
     categoryCopy = { ...categoryCopy, purpose: "controls pointer movement and computer input using the wired, wireless, gaming, or remote format stated by the product", use: "Confirm computer compatibility, connect it using the stated interface, and configure supported controls before use." };
+  } else if (category === "electronics-accessory" && /charger|charging|charge dock/.test(family)) {
+    categoryCopy = {
+      ...categoryCopy,
+      purpose: "provides the charging or dock function identified for the supported device",
+      use: "Confirm device, connector, and power compatibility before ordering, then connect and use it according to the supplied charging instructions.",
+      benefit: "Its device and connection details help shoppers confirm compatibility before purchase.",
+    };
   }
   if (category === "hair-care" && /hair oil/.test(family)) {
     categoryCopy = { ...categoryCopy, purpose: "adds the stated oil or spray format to a hair-length or styling routine", use: "Apply only the directed amount to the stated hair area, avoid the eyes, and follow the supplied leave-in or rinse-out directions." };
@@ -1010,50 +1021,50 @@ function buildDescriptionHtml(title, signals, searchPhrases) {
   const productFocusFact = facts.find((fact) => fact.label === "Product focus");
   const visibleFacts = facts.length > 1 ? facts.filter((fact) => fact.label !== "Product focus") : facts;
   const factText = visibleFacts.map((fact) => `${fact.label.toLowerCase()}: ${fact.value}`).join("; ");
-  const featureFact = facts.find((fact) => fact.label === "Supported features");
   const useFact = facts.find((fact) => fact.label === "Use or occasion");
   const audienceFact = facts.find((fact) => fact.label === "Intended user");
-  const productSpecificUse = `${titleText} ${categoryCopy.purpose}. ${categoryCopy.use}`;
-  const featureItems = uniqueValues([
+  const focus = productFocusFact?.value || handleDescriptorPhrase || handleIdentity.toLowerCase();
+  const reviewText = signals.reviewSummary
+    ? ` Current review data records a ${signals.reviewSummary.rating.toFixed(1)}-star average from ${signals.reviewSummary.ratingCount} trusted reviews.`
+    : "";
+  const overview = `<p><strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}. ${escapeHtml(categoryCopy.benefit)}${escapeHtml(reviewText)}</p>`;
+  const factualDetails = uniqueValues([
     ...visibleFacts.map((fact) => `${fact.label}: ${fact.value}`),
     typeText ? `Product type: ${typeText}` : "",
     detailSentences.length ? detailSentences[0] : "",
-    ...evidence,
-  ]).slice(0, 7);
-  const audience = audienceFact
-    ? [`Designed for: ${audienceFact.value}`, ...(useFact ? [`Relevant settings: ${useFact.value}`] : []), ...categoryCopy.audience.slice(0, 2)]
-    : categoryCopy.audience;
-  const copyVariant = stableCopyIndex(signals.handle, 6);
-  const focus = productFocusFact?.value || handleDescriptorPhrase || handleIdentity.toLowerCase();
-  const introOpeners = [
-    `<strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}. Its form and function are centered on ${escapeHtml(focus)}.`,
-    `Designed around ${escapeHtml(focus)}, <strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}.`,
-    `<strong>${escapeHtml(titleText)}</strong> brings the ${escapeHtml(focus)} format into a focused, clearly defined use case: it ${escapeHtml(categoryCopy.purpose)}.`,
-    `For shoppers seeking ${escapeHtml(focus)}, <strong>${escapeHtml(titleText)}</strong> ${escapeHtml(categoryCopy.purpose)}.`,
-    `<strong>${escapeHtml(titleText)}</strong> is built around ${escapeHtml(focus)} and ${escapeHtml(categoryCopy.purpose)}.`,
-    `The core function of <strong>${escapeHtml(titleText)}</strong> comes directly from its ${escapeHtml(focus)} format: it ${escapeHtml(categoryCopy.purpose)}.`,
-  ];
-  const intro = titleText ? `<p>${introOpeners[copyVariant]}</p>` : "";
-  const naturalFacts = visibleFacts.map(factToSentence).join(" ");
-  const second = `<p>${naturalFacts ? `${escapeHtml(naturalFacts)} ` : ""}${escapeHtml(categoryCopy.use)}${detailPhrase ? ` ${escapeHtml(detailPhrase)}.` : ""}</p>`;
+    evidence.length ? evidence[0] : "",
+  ])
+    .filter((item) => normalizePlainText(item).length >= 6)
+    .slice(0, 5);
+  if (!factualDetails.length) {
+    factualDetails.push(`Product focus: ${focus}`);
+  }
+  const bestFor = uniqueValues(categoryCopy.audience.slice(0, 2));
+  if (bestFor.length) {
+    factualDetails.push(`Best for: ${bestFor.join("; ")}`);
+  }
   const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  const typePhrase = (() => {
+    const normalizedType = normalizePlainText(typeText).toLowerCase();
+    if (!normalizedType) return handleIdentity;
+    if (/^(?:shoe|shoes|sandals?|boots?|sneakers?|slippers?)$/.test(normalizedType)) return "footwear";
+    if (/^(?:pants|trousers|jeans|shorts|leggings)$/.test(normalizedType)) return "apparel";
+    if (/\b(?:apparel|cookware|footwear|jewelry|equipment|drinkware)$/.test(normalizedType) || /s$/.test(normalizedType)) {
+      return normalizedType;
+    }
+    return `${/^[aeiou]/.test(normalizedType) ? "an" : "a"} ${normalizedType}`;
+  })();
+  const orderingDetails = visibleFacts.length
+    ? visibleFacts.slice(0, 3).map(factToSentence).join(" ")
+    : detailPhrase || (evidence.length ? `Confirmed details include ${evidence.slice(0, 2).join(", ")}.` : fallbackDetails);
   const faq = [
-    [`What is ${titleText}?`, `${titleText} is ${typeText ? `a ${typeText.toLowerCase()}` : handleIdentity} that ${categoryCopy.purpose}.`],
-    ["How can it be used or styled?", productSpecificUse],
-    [`When should I choose ${titleText}?`, useFact ? `Choose it for ${useFact.value} when its format and available choices fit the intended task.` : `Choose it when you need an item that ${categoryCopy.purpose}.`],
-    ["What specifications are identified?", factText || detailPhrase || (evidence.length ? evidence.slice(0, 3).join(", ") : fallbackDetails)],
-    ["How should it be cared for?", careText],
-    ["Which option should I choose?", facts.length ? `Use the ${visibleFacts.slice(0, 3).map((fact) => fact.label.toLowerCase()).join(", ")} together with the available variant choices to select the best fit for the intended task.` : "Select from the available variants according to the intended use and confirmed details."],
+    [`What is ${titleText}?`, `${titleText} is ${typePhrase}. It ${categoryCopy.purpose}.`],
+    ["What should I check before ordering?", orderingDetails],
   ];
   return [
-    "<h2>Product Overview</h2>", intro, second,
-    "<h3>Key Features & Benefits</h3>", list(featureItems),
-    `<h3>${useLabel}</h3>`, `<p>${escapeHtml(productSpecificUse)}</p>`,
-    "<h3>Materials, Fabric or Product Details</h3>", `<p>${detailPhrase ? escapeHtml(detailPhrase) : visibleFacts.length ? escapeHtml(visibleFacts.map((fact) => `${fact.label}: ${fact.value}`).join(". ")) : evidence.length ? `Confirmed details: ${escapeHtml(evidence.join(", "))}.` : fallbackDetails}</p>`,
-    "<h3>How To Use or Wear</h3>", `<p>${escapeHtml(productSpecificUse)}</p>`,
-    "<h3>Care Tips</h3>", `<p>${escapeHtml(careText)}</p>`,
-    "<h3>Who Is This For?</h3>", list(audience),
-    "<h3>Why Customers Choose It</h3>", `<p>${signals.reviewSummary ? `trusted reviews record a ${signals.reviewSummary.rating.toFixed(1)}-star average from ${signals.reviewSummary.ratingCount} reviews. ` : ""}${useFact ? `${escapeHtml(titleText)} directly supports ${escapeHtml(useFact.value)} use. ` : ""}${featureFact ? `Its ${escapeHtml(featureFact.value)} details shape how it functions. ` : ""}${visibleFacts.length ? `${escapeHtml(factToSentence(visibleFacts[copyVariant % visibleFacts.length]))}` : `${escapeHtml(titleText)} ${escapeHtml(categoryCopy.purpose)}.`}</p>`,
+    `<h2>About ${escapeHtml(titleText)}</h2>`, overview,
+    "<h3>Key Details</h3>", list(factualDetails.slice(0, 6)),
+    "<h3>Use &amp; Care</h3>", `<p>${escapeHtml(categoryCopy.use)} ${escapeHtml(careText)}</p>`,
     "<h3>FAQs</h3>", faq.map(([question, answer]) => `<p><strong>Q: ${escapeHtml(question)}</strong></p><p>A: ${escapeHtml(answer)}</p>`).join("\n"),
   ].filter(Boolean).join("\n");
 }
@@ -1655,7 +1666,7 @@ function buildProductProfile(signals) {
   const searchPhrases = buildSearchPhrases(signals);
   const seoTitle = buildCanonicalSeoTitle(canonicalTitle);
   const seoDescription = buildSeoDescription(canonicalTitle, signals, searchPhrases);
-  const descriptionHtml = buildDescriptionHtml(canonicalTitle, signals, searchPhrases);
+  const descriptionHtml = buildDescriptionHtml(canonicalTitle, signals);
   const altText = buildCanonicalAltText(signals, canonicalTitle);
 
   const productType = normalizePlainText(firstNonEmpty(signals.sourceProductType, signals.catalogProductType));

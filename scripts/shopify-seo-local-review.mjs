@@ -158,7 +158,7 @@ function auditProducts(rows, fileName, plans) {
     const seoTitle = get(row, ["SEO Title"]);
     const seoDescription = get(row, ["SEO Description"]);
     const body = String(row["Body (HTML)"] || "");
-    const plainBody = normalizePlainText(body.replace(/<[^>]+>/g, " "));
+    const plainBody = normalizePlainText(body.replace(/<[^>]+>/g, " ").replace(/&amp;/gi, "&"));
     const searchable = normalizePlainText(`${title} ${seoTitle} ${seoDescription} ${plainBody}`).toLowerCase();
     const handleTokens = handle
       .split(/[-_]+/)
@@ -168,7 +168,8 @@ function auditProducts(rows, fileName, plans) {
     if (title.length < 20 || title.length > 75) issues.push("title-length");
     if (seoTitle.length < 35 || seoTitle.length > 65) issues.push("seo-title-length");
     if (seoDescription.length < 120 || seoDescription.length > 170) issues.push("seo-description-length");
-    if (!["Product Overview", "Key Features", "Who Is This For", "FAQs"].every((section) => plainBody.toLowerCase().includes(section.toLowerCase()))) issues.push("description-structure");
+    if (!["About", "Key Details", "Use & Care", "FAQs"].every((section) => plainBody.toLowerCase().includes(section.toLowerCase()))) issues.push("description-structure");
+    if ((body.match(/<h[23]>/gi) || []).length > 5) issues.push("cluttered-description-structure");
     if (!htmlIsApproved(body)) issues.push("unsupported-html");
     if (/product identity|catalog context|listing data|shopper intent|easy to compare|straightforward product page/i.test(plainBody)) issues.push("generic-description-copy");
     const factLabels = ["product focus", "size or capacity", "material", "supported features", "intended user", "use or occasion", "style or design", "placement or setting", "device compatibility", "pack format"];

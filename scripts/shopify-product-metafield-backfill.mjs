@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 import { normalizeHandleValue, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
+import { inferShopifyTaxonomyCategory } from "../src/lib/shopify-product-category.js";
 import { mergeProductCustomData, normalizeProductCustomData, normalizeShopCustomData } from "../src/lib/product-custom-data.js";
 import {
   buildMarketingBackfillPlan,
@@ -21,6 +22,8 @@ import {
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const DEFAULT_OUTPUT_FILE = resolve(process.cwd(), "output", "product-metafield-backfill-manifest.json");
 const DEFAULT_INPUT_DIR = resolve(process.cwd(), "public", "data");
+const PRODUCT_CATALOG_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-live-catalog.json");
+const PRODUCT_CUSTOM_DATA_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-custom-data.json");
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
 const SHOPIFY_ADMIN_API_VERSION = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
@@ -33,7 +36,7 @@ const JUDGEME_PUBLIC_TOKEN =
   process.env.JUDGEME_PUBLIC_TOKEN ||
   process.env.SALT_JUDGEME_PUBLIC_TOKEN ||
   "TQ0rk940ADN89zj_f83SKuTYIfY";
-const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 4));
+const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 1));
 const JUDGEME_SHOP_DOMAINS = Array.from(
   new Set(
     [
@@ -63,6 +66,7 @@ function parseArgs(argv) {
     productIds: [],
     productHandles: [],
     productHandlesFile: "",
+    onlyFields: [],
     skipLiveReviews: false,
   };
 
@@ -137,6 +141,15 @@ function parseArgs(argv) {
         throw new Error("Missing value for --product-handles-file");
       }
       args.productHandlesFile = resolve(process.cwd(), next);
+      index += 1;
+      continue;
+    }
+
+    if (token === "--only-field") {
+      if (!next) {
+        throw new Error("Missing value for --only-field");
+      }
+      args.onlyFields.push(...String(next).split(",").map((value) => value.trim()).filter(Boolean));
       index += 1;
       continue;
     }
@@ -341,6 +354,11 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
         legacyResourceId
         handle
         title
+        category {
+          id
+          name
+          fullName
+        }
         subtitle: metafield(namespace: "descriptors", key: "subtitle") {
           jsonValue
           value
@@ -417,6 +435,13 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           jsonValue
           value
         }
+        shopChannelMinimumQuantity: metafield(
+          namespace: "salt-marketing"
+          key: "shop_channel_minimum_quantity"
+        ) {
+          jsonValue
+          value
+        }
         diaperType: metafield(namespace: "shopify", key: "diaper-type") {
           jsonValue
           value
@@ -429,6 +454,55 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
                 type
               }
             }
+          }
+        }
+        disclosures: metafield(namespace: "shopify", key: "disclosure") {
+          references(first: 50) {
+            nodes {
+              ... on Metaobject {
+                id
+                handle
+                displayName
+                type
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const PRODUCT_CATALOG_QUERY = /* GraphQL */ `
+  query ProductMetafieldCatalog($first: Int!, $after: String) {
+    products(first: $first, after: $after, sortKey: ID) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        legacyResourceId
+        handle
+        title
+        descriptionHtml
+        productType
+        vendor
+        tags
+        status
+        createdAt
+        updatedAt
+        publishedAt
+        variants(first: 1) {
+          nodes {
+            id
+            legacyResourceId
+            title
+            price
+            compareAtPrice
+            availableForSale
+            sku
+            barcode
           }
         }
       }
@@ -567,6 +641,8 @@ function normalizeLiveProductCustomDataNode(node) {
     complementaryProducts: normalizeMetafieldReferenceList(node.complementaryProducts?.references?.nodes || []),
     searchProductBoosts: normalizeStringList(node.searchProductBoosts?.jsonValue ?? node.searchProductBoosts?.value ?? []),
     googleCustomProduct: parseBooleanValue(node.googleCustomProduct?.jsonValue ?? node.googleCustomProduct?.value ?? null),
+    shopChannelMinimumQuantity:
+      node.shopChannelMinimumQuantity?.jsonValue ?? node.shopChannelMinimumQuantity?.value ?? null,
     diaperType:
       node.diaperType?.jsonValue ??
       node.diaperType?.value ??
@@ -584,8 +660,29 @@ async function fetchLiveProductCustomDataMap(products) {
         .filter(Boolean)
     : [];
 
+  const fingerprint = `${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
+  try {
+    const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
+    const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
+    if (
+      checkpoint?.complete &&
+      checkpoint?.fingerprint === fingerprint &&
+      Number.isFinite(age) &&
+      age >= 0 &&
+      age < 6 * 60 * 60 * 1000 &&
+      Array.isArray(checkpoint.records)
+    ) {
+      process.stdout.write(`Using fresh metafield readback checkpoint for ${checkpoint.records.length} products\n`);
+      return new Map(checkpoint.records);
+    }
+  } catch {
+    // Missing or stale checkpoints fall through to live Shopify reads.
+  }
+
   const records = new Map();
-  for (const batch of chunkArray(productIds, 50)) {
+  const batches = chunkArray(productIds, 50);
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const batch = batches[batchIndex];
     if (!batch.length) {
       continue;
     }
@@ -600,16 +697,124 @@ async function fetchLiveProductCustomDataMap(products) {
         continue;
       }
 
-      const customData = normalizeLiveProductCustomDataNode(node);
-      if (!customData) {
-        continue;
-      }
+      const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
+      records.set(Number(node.legacyResourceId), {
+        customData,
+        category: node.category
+          ? {
+              id: String(node.category.id || ""),
+              name: String(node.category.name || ""),
+              fullName: String(node.category.fullName || ""),
+            }
+          : null,
+        disclosures: normalizeMetafieldReferenceList(node.disclosures?.references?.nodes || []),
+      });
+    }
 
-      records.set(Number(node.legacyResourceId), customData);
+    if ((batchIndex + 1) % 10 === 0 || batchIndex + 1 === batches.length) {
+      process.stdout.write(`Read live metafields batch ${batchIndex + 1}/${batches.length} (${records.size} products)\n`);
     }
   }
 
+  await mkdir(dirname(PRODUCT_CUSTOM_DATA_CHECKPOINT), { recursive: true });
+  await writeFile(
+    PRODUCT_CUSTOM_DATA_CHECKPOINT,
+    `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      complete: true,
+      fingerprint,
+      records: Array.from(records.entries()),
+    })}\n`,
+    "utf8",
+  );
+
   return records;
+}
+
+function normalizeLiveCatalogProduct(node) {
+  const id = Number(node?.legacyResourceId || 0);
+  if (!id || !node?.handle) {
+    return null;
+  }
+
+  const variants = (node.variants?.nodes || []).map((variant) => ({
+    id: Number(variant.legacyResourceId || 0),
+    title: String(variant.title || ""),
+    price: String(variant.price || ""),
+    compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
+    available: Boolean(variant.availableForSale),
+    sku: String(variant.sku || ""),
+    barcode: String(variant.barcode || ""),
+  }));
+
+  return {
+    id,
+    admin_graphql_api_id: String(node.id || toShopifyGid("Product", id)),
+    handle: normalizeHandleValue(node.handle),
+    title: String(node.title || ""),
+    body_html: String(node.descriptionHtml || ""),
+    product_type: String(node.productType || ""),
+    vendor: String(node.vendor || ""),
+    tags: Array.isArray(node.tags) ? node.tags : [],
+    status: String(node.status || "").toLowerCase(),
+    created_at: node.createdAt || null,
+    updated_at: node.updatedAt || null,
+    published_at: node.publishedAt || null,
+    variants,
+    images: [],
+    image: null,
+  };
+}
+
+async function fetchLiveProductCatalog() {
+  let checkpoint = null;
+  try {
+    checkpoint = await loadJson(PRODUCT_CATALOG_CHECKPOINT, "metafield live catalog checkpoint");
+  } catch {
+    checkpoint = null;
+  }
+
+  const checkpointAge = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
+  const checkpointIsFresh = Number.isFinite(checkpointAge) && checkpointAge >= 0 && checkpointAge < 6 * 60 * 60 * 1000;
+  if (checkpointIsFresh && checkpoint?.complete && Array.isArray(checkpoint.products) && checkpoint.products.length) {
+    process.stdout.write(`Using fresh Admin product catalog checkpoint with ${checkpoint.products.length} products\n`);
+    return checkpoint.products;
+  }
+
+  const products = checkpointIsFresh && !checkpoint?.complete && Array.isArray(checkpoint?.products)
+    ? checkpoint.products
+    : [];
+  let after = products.length ? checkpoint?.endCursor || null : null;
+  let page = Number(checkpointIsFresh ? checkpoint?.page || 0 : 0);
+
+  if (products.length) {
+    process.stdout.write(`Resuming Admin product catalog after ${products.length} products\n`);
+  }
+
+  do {
+    const payload = await runShopifyStoreGraphQL(PRODUCT_CATALOG_QUERY, { first: 250, after });
+    const connection = payload?.products || {};
+    const pageProducts = (connection.nodes || []).map(normalizeLiveCatalogProduct).filter(Boolean);
+    products.push(...pageProducts);
+    page += 1;
+    process.stdout.write(`Fetched Admin product catalog page ${page}: ${pageProducts.length} (${products.length} total)\n`);
+    after = connection.pageInfo?.hasNextPage ? connection.pageInfo.endCursor : null;
+
+    await mkdir(dirname(PRODUCT_CATALOG_CHECKPOINT), { recursive: true });
+    await writeFile(
+      PRODUCT_CATALOG_CHECKPOINT,
+      `${JSON.stringify({
+        generatedAt: checkpointIsFresh && checkpoint?.generatedAt ? checkpoint.generatedAt : new Date().toISOString(),
+        complete: !after,
+        page,
+        endCursor: after,
+        products,
+      })}\n`,
+      "utf8",
+    );
+  } while (after);
+
+  return products;
 }
 
 function parseJudgeMeBadge(html) {
@@ -937,6 +1142,118 @@ async function discoverDiaperTypeOptions() {
   }
 }
 
+const DISCLOSURE_METAOBJECT_TYPES = [
+  "shopify--disclosure-us-cpsc-choking_small_parts",
+  "shopify--disclosure-us-cpsc-choking_balloons",
+  "shopify--disclosure-us-cpsc-choking_marbles",
+  "shopify--disclosure-us-cpsc-choking_small_balls",
+  "shopify--disclosure-us-ca-prop65-cancer",
+  "shopify--disclosure-us-ca-prop65-reproductive",
+  "shopify--disclosure-us-ca-prop65-cancer_reproductive",
+  "shopify--disclosure-us-ca-prop65-alcohol",
+  "shopify--disclosure-custom",
+];
+
+async function discoverDisclosureOptions() {
+  const query = /* GraphQL */ `
+    query DisclosureMetaobjects($type: String!, $first: Int!) {
+      metaobjects(type: $type, first: $first) {
+        nodes {
+          id
+          handle
+          displayName
+          type
+        }
+      }
+    }
+  `;
+  const options = [];
+
+  for (const type of DISCLOSURE_METAOBJECT_TYPES) {
+    try {
+      const payload = await runShopifyStoreGraphQL(query, { type, first: 100 });
+      for (const node of payload?.metaobjects?.nodes || []) {
+        if (node?.id) {
+          options.push({
+            id: String(node.id),
+            handle: String(node.handle || ""),
+            displayName: String(node.displayName || ""),
+            type: String(node.type || type),
+          });
+        }
+      }
+    } catch (error) {
+      process.stdout.write(`Disclosure discovery skipped for ${type}: ${error.message}\n`);
+    }
+  }
+
+  return { discovered: options.length > 0, options };
+}
+
+function buildCategoryPlans(products) {
+  return (Array.isArray(products) ? products : [])
+    .filter((product) => !product?.shopifyCategory?.id)
+    .map((product) => ({ product, category: inferShopifyTaxonomyCategory(product) }))
+    .filter((entry) => entry.category)
+    .map(({ product, category }) => ({
+      productId: Number(product.id),
+      productGid: toShopifyGid("Product", product.id),
+      handle: normalizeHandleValue(product.handle || ""),
+      title: String(product.title || ""),
+      categoryId: category.id,
+      categoryName: category.name,
+      confidence: category.confidence,
+      reason: category.reason,
+    }));
+}
+
+async function applyCategoryPlans(plans) {
+  const results = [];
+  const batches = chunkArray(plans, 15);
+
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const batch = batches[batchIndex];
+    const declarations = batch.map((_, index) => `$p${index}: ProductUpdateInput!`).join(", ");
+    const fields = batch
+      .map(
+        (_, index) => `p${index}: productUpdate(product: $p${index}) {
+          product { id category { id name fullName } }
+          userErrors { field message }
+        }`,
+      )
+      .join("\n");
+    const variables = Object.fromEntries(
+      batch.map((plan, index) => [`p${index}`, { id: plan.productGid, category: plan.categoryId }]),
+    );
+    const payload = await runShopifyStoreGraphQL(
+      `mutation ProductCategoryBackfill(${declarations}) { ${fields} }`,
+      variables,
+      { allowMutations: true },
+    );
+
+    for (let index = 0; index < batch.length; index += 1) {
+      const plan = batch[index];
+      const response = payload?.[`p${index}`] || {};
+      const errors = Array.isArray(response.userErrors) ? response.userErrors : [];
+      if (errors.length) {
+        throw new Error(`${plan.handle}: category update failed: ${formatMetafieldUserErrors(errors)}`);
+      }
+      if (response.product?.category?.id !== plan.categoryId) {
+        throw new Error(`${plan.handle}: category readback mismatch`);
+      }
+      results.push({
+        ...plan,
+        verifiedCategoryId: response.product.category.id,
+        verifiedAt: new Date().toISOString(),
+      });
+    }
+
+    process.stdout.write(`Category batch ${batchIndex + 1}/${batches.length} verified (${batch.length} products)\n`);
+  }
+
+  return results;
+}
+
 async function writeManifest(filePath, manifest) {
   await mkdir(dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -1025,7 +1342,6 @@ async function applySingleBatch(batch, batchIndex, batchTotal) {
       nextPendingEntries.push(entry);
     });
 
-    appliedEntries += pendingEntries.length - nextPendingEntries.length;
     pendingEntries = nextPendingEntries;
 
     if (pendingEntries.length) {
@@ -1097,27 +1413,38 @@ async function main() {
   const shopPayload = await loadJson(shopPath, "shop payload");
 
   const localProducts = Array.isArray(productsPayload.products) ? productsPayload.products : [];
-  const allProducts = mergeReleaseCatalogProducts(localProducts, releaseCatalogPayload?.products);
-  const selectedProducts = filterProducts(allProducts, args);
-  if (!selectedProducts.length) {
+  const hasExplicitSelection = Boolean(args.productIds.length || args.productHandles.length || args.productHandlesFile);
+  const liveCatalogProducts = hasExplicitSelection
+    ? releaseCatalogPayload?.products
+    : await fetchLiveProductCatalog();
+  const allProducts = mergeReleaseCatalogProducts(localProducts, liveCatalogProducts);
+  const requestedProducts = filterProducts(allProducts, args);
+  if (!requestedProducts.length) {
     throw new Error("No products matched the backfill selection");
   }
 
-  const liveCustomDataMap = await fetchLiveProductCustomDataMap(selectedProducts);
+  const liveCustomDataMap = await fetchLiveProductCustomDataMap(requestedProducts);
+  const selectedProducts = requestedProducts.filter((product) => liveCustomDataMap.has(Number(product.id)));
+  if (!selectedProducts.length) {
+    throw new Error("No selected products still exist in Shopify");
+  }
   const hydratedProducts = selectedProducts.map((product) => {
-    const liveCustomData = liveCustomDataMap.get(Number(product.id));
-    if (!liveCustomData) {
+    const liveRecord = liveCustomDataMap.get(Number(product.id));
+    if (!liveRecord) {
       return product;
     }
 
     return {
       ...product,
-      customData: mergeProductCustomData(product.customData, liveCustomData),
+      customData: mergeProductCustomData(product.customData, liveRecord.customData),
+      shopifyCategory: liveRecord.category,
+      disclosures: liveRecord.disclosures,
     };
   });
 
   const reviewSummaries = args.skipLiveReviews ? new Map() : await collectJudgeMeSummaries(hydratedProducts);
   const diaperDiscovery = await discoverDiaperTypeOptions();
+  const disclosureDiscovery = await discoverDisclosureOptions();
 
   const backfillPlan = buildBackfillPlan({
     products: hydratedProducts,
@@ -1125,6 +1452,7 @@ async function main() {
     collectionProducts: collectionProductsPayload,
     reviewSummaries,
     diaperTypeOptions: diaperDiscovery.options,
+    disclosureOptions: disclosureDiscovery.options,
   });
   const marketingBackfillPlan = buildMarketingBackfillPlan({
     products: hydratedProducts,
@@ -1136,9 +1464,36 @@ async function main() {
         : await fetchLiveShopRecord(),
   });
 
-  const productBatches = buildMetafieldSetBatches(backfillPlan.productPlans, 25);
-  const marketingBatches = buildMarketingMetafieldSetBatches(marketingBackfillPlan.ownerPlans, 25);
+  const onlyFields = new Set(args.onlyFields);
+  const scopeWrites = (plans) =>
+    !onlyFields.size
+      ? plans
+      : plans
+          .map((plan) => ({
+            ...plan,
+            writes: (plan.writes || []).filter((write) => onlyFields.has(write.fieldId)),
+          }))
+          .filter((plan) => plan.writes.length);
+  const productPlans = scopeWrites(backfillPlan.productPlans);
+  const marketingPlans = scopeWrites(marketingBackfillPlan.ownerPlans);
+  const productBatches = buildMetafieldSetBatches(productPlans, 25);
+  const marketingBatches = buildMarketingMetafieldSetBatches(marketingPlans, 25);
   const batches = [...productBatches, ...marketingBatches];
+  const categoryPlans = onlyFields.size ? [] : buildCategoryPlans(hydratedProducts);
+  const scopedWritesByField = {};
+  for (const plan of productPlans) {
+    for (const write of plan.writes || []) {
+      scopedWritesByField[write.fieldId] = (scopedWritesByField[write.fieldId] || 0) + 1;
+    }
+  }
+  const scopedProductSummary = onlyFields.size
+    ? {
+        ...backfillPlan.summary,
+        productsWithWrites: productPlans.length,
+        totalWrites: productPlans.reduce((sum, plan) => sum + plan.writes.length, 0),
+        writesByField: scopedWritesByField,
+      }
+    : backfillPlan.summary;
   const manifest = {
     generatedAt: new Date().toISOString(),
     mode: args.apply ? "apply" : "dry-run",
@@ -1154,6 +1509,13 @@ async function main() {
         productHandles: args.productHandles,
         productHandlesFile: args.productHandlesFile || null,
         limitProducts: args.limitProducts,
+        onlyFields: args.onlyFields,
+        requestedProductCount: requestedProducts.length,
+        liveProductCount: selectedProducts.length,
+        missingLiveHandles: requestedProducts
+          .filter((product) => !liveCustomDataMap.has(Number(product.id)))
+          .map((product) => normalizeHandleValue(product.handle || ""))
+          .filter(Boolean),
       },
       catalogAugmentedProducts: Math.max(0, allProducts.length - localProducts.length),
     },
@@ -1173,17 +1535,24 @@ async function main() {
             type: null,
             optionCount: 0,
           },
-      skippedDefinitions: ["Disclosures"],
+      disclosures: {
+        discovered: disclosureDiscovery.discovered,
+        optionCount: disclosureDiscovery.options.length,
+        policy: "approved references plus explicit warning evidence only",
+      },
+      skippedDefinitions: disclosureDiscovery.discovered ? [] : ["Disclosures: no approved reference objects"],
     },
     summary: {
-      ...backfillPlan.summary,
+      ...scopedProductSummary,
       marketing: marketingBackfillPlan.summary,
       batchesPlanned: batches.length,
       productBatchesPlanned: productBatches.length,
       marketingBatchesPlanned: marketingBatches.length,
+      categoryUpdatesPlanned: categoryPlans.length,
     },
-    products: backfillPlan.productPlans,
-    marketing: marketingBackfillPlan.ownerPlans,
+    products: productPlans,
+    marketing: marketingPlans,
+    categories: categoryPlans,
     batches: batches.map((batch, index) => ({
       batch: index + 1,
       owners: batch.ownerDescriptors || batch.productIds || [],
@@ -1205,7 +1574,7 @@ async function main() {
   await writeManifest(args.outputFile, manifest);
   process.stdout.write(`Manifest written to ${args.outputFile}\n`);
   process.stdout.write(
-    `Dry-run plan: ${backfillPlan.summary.totalWrites + marketingBackfillPlan.summary.totalWrites} metafield write(s) across ${backfillPlan.summary.productsWithWrites} product(s) and ${marketingBackfillPlan.summary.scannedCollections} collection(s)\n`,
+    `Dry-run plan: ${scopedProductSummary.totalWrites + marketingPlans.reduce((sum, plan) => sum + plan.writes.length, 0)} metafield write(s) and ${categoryPlans.length} category update(s) across ${scopedProductSummary.productsWithWrites} product(s) and ${marketingBackfillPlan.summary.scannedCollections} collection(s)\n`,
   );
 
   if (!args.apply) {
@@ -1213,20 +1582,24 @@ async function main() {
     return;
   }
 
-  if (!batches.length) {
-    process.stdout.write("No metafield writes were needed.\n");
+  if (!batches.length && !categoryPlans.length) {
+    process.stdout.write("No metafield or category writes were needed.\n");
     return;
   }
 
-  const applyResults = await applyBatches(batches);
+  const applyResults = batches.length ? await applyBatches(batches) : [];
+  const categoryResults = categoryPlans.length ? await applyCategoryPlans(categoryPlans) : [];
   manifest.applied = {
     completedAt: new Date().toISOString(),
     batchCount: applyResults.length,
     writeCount: applyResults.reduce((sum, entry) => sum + entry.writeCount, 0),
     skippedWriteCount: applyResults.reduce((sum, entry) => sum + (entry.skippedWriteCount || 0), 0),
     batches: applyResults,
+    categoryCount: categoryResults.length,
+    categories: categoryResults,
   };
   await writeManifest(args.outputFile, manifest);
+  await rm(PRODUCT_CUSTOM_DATA_CHECKPOINT, { force: true });
   process.stdout.write(`Apply complete. Updated manifest written to ${args.outputFile}\n`);
 }
 

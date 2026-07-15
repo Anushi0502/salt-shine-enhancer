@@ -1112,7 +1112,8 @@ function auditLiveSeoPlan(plan, manifest) {
     if (!title || title.length > 75 || genericTitle.test(title)) issues.push("invalid-title");
     if (!seoTitle || seoTitle.length > 70 || genericTitle.test(seoTitle)) issues.push("invalid-seo-title");
     if (!seoDescription || seoDescription.length < 120 || seoDescription.length > 170) issues.push("invalid-seo-description");
-    if (!body || !/Product Overview/i.test(body) || !/Key Features/i.test(body) || !/FAQs/i.test(body)) issues.push("invalid-description-structure");
+    if (!body || !/<h2>About /i.test(body) || !/Key Details/i.test(body) || !/Use &amp; Care|Use & Care/i.test(body) || !/FAQs/i.test(body)) issues.push("invalid-description-structure");
+    if ((body.match(/<h[23]>/gi) || []).length > 5) issues.push("cluttered-description-structure");
     for (const match of body.matchAll(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi)) {
       if (!allowedTags.has(match[1].toLowerCase())) issues.push(`unsupported-html:${match[1].toLowerCase()}`);
     }

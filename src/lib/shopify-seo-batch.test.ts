@@ -137,6 +137,11 @@ describe("shopify SEO batch intelligence", () => {
     expect(plan.productInput.title).toContain("Modern Arc Floor Lamp");
     expect(plan.productInput.title).not.toBe("Completely Wrong Title");
     expect(plan.productInput.descriptionHtml).toContain("trusted reviews");
+    expect(plan.productInput.descriptionHtml).toContain("Key Details");
+    expect(plan.productInput.descriptionHtml).toContain("Use &amp; Care");
+    expect(plan.productInput.descriptionHtml).not.toContain("Why Customers Choose It");
+    expect(plan.productInput.descriptionHtml).not.toContain("Who Is This For?");
+    expect((plan.productInput.descriptionHtml.match(/<h[23]>/g) || [])).toHaveLength(4);
     expect(plan.productInput.seo.title).toContain("Modern Arc Floor Lamp");
     expect(plan.productInput.seo.description).toMatch(/4\.8 stars from 42 trusted reviews/);
     expect(plan.intelligence.reviewSummary).toEqual(

@@ -291,6 +291,113 @@ describe("shopify product metafield backfill planner", () => {
     expect(boosts).toEqual(expect.arrayContaining(["waterproof apron", "apron unisex"]));
   });
 
+  it("generates product-specific merchandising fields without generic filler", () => {
+    const plan = buildBackfillPlan({
+      products: [
+        makeProduct({
+          id: 111,
+          title: "Kids Running Shoes with Soft Sole",
+          handle: "kids-running-shoes-soft-sole-for-school-outdoor-use",
+          product_type: "Children's Shoes",
+          tags: ["new", "featured"],
+        }),
+      ],
+      collections: [],
+      collectionProducts: { collections: {} },
+      reviewSummaries: new Map(),
+      diaperTypeOptions: [],
+    });
+
+    const product = plan.productPlans[0];
+    const subtitle = product?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.subtitle)?.value || "";
+    const highlights = JSON.parse(
+      product?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights)?.value || "[]",
+    ) as string[];
+    const collectionSignal =
+      product?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.collectionSignal)?.value || "";
+
+    expect(subtitle).toContain("Kids Running Shoes");
+    expect(highlights).toEqual(
+      expect.arrayContaining(["Baby & Children's Athletic Shoes", "Running style", "Soft-sole design"]),
+    );
+    expect(highlights.join(" ")).not.toMatch(/pick|favorite|search focus/i);
+    expect(collectionSignal).toContain("Baby & Children's Athletic Shoes");
+    expect(collectionSignal).not.toContain("featured");
+  });
+
+  it("refreshes only unmistakable legacy generated highlights", () => {
+    const legacy = makeProduct({
+      id: 112,
+      title: "Portable Wireless Charger",
+      handle: "portable-wireless-charger-15w-for-travel",
+      customData: { highlights: ["Accessories pick", "Search focus: portable wireless charger"] },
+    });
+    const merchant = makeProduct({
+      id: 113,
+      title: "Portable Wireless Charger",
+      handle: "portable-wireless-charger-20w-for-travel",
+      customData: { highlights: ["Compact charging companion"] },
+    });
+    const plan = buildBackfillPlan({
+      products: [legacy, merchant],
+      collections: [],
+      collectionProducts: { collections: {} },
+      reviewSummaries: new Map(),
+      diaperTypeOptions: [],
+    });
+
+    const legacyWrite = plan.productPlans[0]?.writes.find(
+      (entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights,
+    );
+    const merchantWrite = plan.productPlans[1]?.writes.find(
+      (entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights,
+    );
+
+    expect(legacyWrite?.reason).toContain("Replaced legacy generic highlights");
+    expect(legacyWrite?.value).not.toMatch(/pick|favorite|search focus/i);
+    expect(merchantWrite).toBeUndefined();
+  });
+
+  it("repairs malformed generated highlights without replacing merchant prose", () => {
+    const malformed = [
+      makeProduct({
+        id: 114,
+        title: "Waterproof Apron Bib",
+        handle: "stain-resistant-waterproof-apron-unisex-adult-bib-for-home",
+        customData: { highlights: ["home home"] },
+      }),
+      makeProduct({
+        id: 115,
+        title: "Magnetic Phone Case",
+        handle: "magnetic-shockproof-phone-case-for-iphone",
+        customData: { highlights: ["minimum-qty-2", "shockproof phone"] },
+      }),
+      makeProduct({
+        id: 116,
+        title: "Compact Travel Organizer",
+        handle: "compact-travel-organizer-for-daily-essentials",
+        customData: { highlights: ["Keeps small essentials organized"] },
+      }),
+    ];
+    const plan = buildBackfillPlan({
+      products: malformed,
+      collections: [],
+      collectionProducts: { collections: {} },
+      reviewSummaries: new Map(),
+      diaperTypeOptions: [],
+    });
+
+    const repairedWrites = plan.productPlans
+      .map((productPlan) => productPlan.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights))
+      .filter(Boolean);
+
+    expect(repairedWrites).toHaveLength(2);
+    expect(repairedWrites.map((entry) => entry.value).join(" ")).not.toMatch(
+      /home home|minimum-qty|shockproof phone/i,
+    );
+    expect(plan.productPlans[2]?.writes.some((entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights)).toBe(false);
+  });
+
   it("keeps room for complementary products when the candidate pool is small", () => {
     const products = [
       makeProduct({
