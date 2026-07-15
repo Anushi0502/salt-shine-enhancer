@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-product-search-index.mjs",
     "dev": "vite",
     "build": "npm run sync:data && npm run build:web",
     "build:web": "node scripts/build-home-featured-products.mjs && node scripts/build-product-search-index.mjs && vite build && node scripts/postbuild-compat.mjs",
