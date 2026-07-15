@@ -236,7 +236,7 @@ const ShopPage = () => {
   // The compact catalog carries every search/filter/sort field this grid needs
   // at a fraction of the full product-detail snapshot's transfer size.
   const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProductSearchIndex();
-  const { data: collectionsPayload, isLoading: collectionsLoading, error: collectionsError, refetch: refetchCollections } = useCollections();
+  const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
     isLoading: collectionProductIdsLoading,
@@ -419,12 +419,13 @@ const ShopPage = () => {
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
   const visibleProductIds = useMemo(() => visibleProducts.map((product) => product.id), [visibleProducts]);
   const deferredVisibleProductIds = useDeferredValue(visibleProductIds);
+  const visibleProductRatingIds = useMemo(() => deferredVisibleProductIds.slice(0, 12), [deferredVisibleProductIds]);
   const [shouldLoadRatings, setShouldLoadRatings] = useState(false);
   useEffect(() => {
-    const timer = window.setTimeout(() => setShouldLoadRatings(true), 1_500);
+    const timer = window.setTimeout(() => setShouldLoadRatings(true), 2_500);
     return () => window.clearTimeout(timer);
   }, []);
-  const visibleRatingsQuery = useJudgeMeRatings(deferredVisibleProductIds, shouldLoadRatings);
+  const visibleRatingsQuery = useJudgeMeRatings(visibleProductRatingIds, shouldLoadRatings);
   const visibleRatingsByProductId = visibleRatingsQuery.data ?? {};
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -458,11 +459,11 @@ const ShopPage = () => {
   const hasBlockingCollectionError = Boolean(collectionHandle) && Boolean(collectionProductIdsError) && !cachedCollectionProductIds;
 
   useEffect(() => {
-    if (productsLoading || collectionsLoading || waitingForCollectionIds) {
+    if (productsLoading || waitingForCollectionIds) {
       return;
     }
 
-    if (productsError || collectionsError || hasBlockingCollectionError) {
+    if (productsError || hasBlockingCollectionError) {
       return;
     }
 
@@ -483,14 +484,12 @@ const ShopPage = () => {
     collectionHandle,
     hasBlockingCollectionError,
     waitingForCollectionIds,
-    collectionsError,
-    collectionsLoading,
     productsError,
     productsLoading,
     deferredQuery,
     totalResults,
   ]);
-  if (productsLoading || collectionsLoading || waitingForCollectionIds) {
+  if (productsLoading || waitingForCollectionIds) {
     return (
       <LoadingState
         title="Loading products"
@@ -499,7 +498,7 @@ const ShopPage = () => {
     );
   }
 
-  if (productsError || collectionsError || hasBlockingCollectionError) {
+  if (productsError || hasBlockingCollectionError) {
     return (
       <ErrorState
         title="Catalog unavailable"
