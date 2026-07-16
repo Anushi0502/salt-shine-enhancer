@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Heart, ShoppingBag, Sparkles, Star } from "lucide-react";
@@ -16,6 +16,7 @@ import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { useProductByHandle } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 export type ProductCardVariant = "default" | "dense" | "shop";
@@ -26,7 +27,52 @@ type ProductCardProps = {
   reviewSummary?: JudgeMeReviewSummary | null;
 };
 
-const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCardProps) => {
+const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSummary }: ProductCardProps) => {
+  const cardRef = useRef<HTMLElement | null>(null);
+  const [shouldRefreshLive, setShouldRefreshLive] = useState(false);
+
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setShouldRefreshLive(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        setShouldRefreshLive(true);
+        observer.disconnect();
+      },
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const { data: liveProduct } = useProductByHandle(snapshotProduct.handle, shouldRefreshLive, true);
+  const product = useMemo<ShopifyProduct>(() => {
+    if (!liveProduct) {
+      return snapshotProduct;
+    }
+
+    // Shopify owns operational fields in real time. Keep curated merchandising
+    // copy from the instant local snapshot when the public product endpoint
+    // does not expose those app-managed metafields.
+    return {
+      ...snapshotProduct,
+      ...liveProduct,
+      body_html: liveProduct.body_html || snapshotProduct.body_html,
+      product_type: liveProduct.product_type || snapshotProduct.product_type,
+      customData: snapshotProduct.customData,
+      images: liveProduct.images.length ? liveProduct.images : snapshotProduct.images,
+      variants: liveProduct.variants.length ? liveProduct.variants : snapshotProduct.variants,
+    };
+  }, [liveProduct, snapshotProduct]);
   const { addItem } = useCart();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
@@ -66,7 +112,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
 
   if (isShop) {
     return (
-      <article className="h-full">
+      <article ref={cardRef} className="h-full">
         <Link
           to={`/products/${product.handle}`}
           className={`group relative block h-full overflow-hidden shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${
@@ -133,6 +179,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary }: ProductCar
 
   return (
     <article
+      ref={cardRef}
       className={`group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 sm:p-2 ${
         nativeApp
           ? "border border-[#ded6ca] bg-[#ffffff] hover:border-[#c8beb2] hover:shadow-[0_22px_48px_-32px_rgba(17,17,17,0.16)]"

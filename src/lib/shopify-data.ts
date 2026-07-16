@@ -1477,17 +1477,17 @@ export function useProducts(enabled = true) {
   });
 }
 
-export function useProductByHandle(handle: string | undefined, enabled = true) {
+export function useProductByHandle(handle: string | undefined, enabled = true, liveRefresh = false) {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
 
   return useQuery({
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    staleTime: CATALOG_STALE_TIME_MS,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
+    refetchOnMount: liveRefresh ? "always" : false,
+    refetchOnWindowFocus: liveRefresh,
+    refetchOnReconnect: liveRefresh,
     refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
