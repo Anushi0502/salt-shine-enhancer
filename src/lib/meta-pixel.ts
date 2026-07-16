@@ -8,6 +8,7 @@ declare global {
     _fbq?: (...args: unknown[]) => void;
     SALT_META_PIXEL_ID?: string;
     __saltMetaPixelBootstrapped?: boolean;
+    __saltMetaPixelManagedExternally?: boolean;
     Shopify?: { currency?: { active?: string } };
   }
 }
@@ -98,6 +99,13 @@ export function ensureMetaPixel(): boolean {
   }
 
   if (typeof window.fbq === "function") {
+    // Shopify's Customer Events Meta pixel already tracks the same commerce
+    // lifecycle on the live store. Do not duplicate those events from React.
+    if (!window.__saltMetaPixelBootstrapped) {
+      window.__saltMetaPixelManagedExternally = true;
+      return false;
+    }
+
     return true;
   }
 
