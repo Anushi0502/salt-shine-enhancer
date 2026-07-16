@@ -10,7 +10,16 @@ import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
 import { ThemeProvider } from "@/lib/theme";
 import { WishlistProvider } from "@/lib/wishlist";
-import HomePage from "@/pages/HomePage";
+
+let homePageModule: Promise<typeof import("@/pages/HomePage")> | null = null;
+const loadHomePage = () => (homePageModule ??= import("@/pages/HomePage"));
+const isInitialHomeRoute = window.location.pathname === "/";
+
+if (isInitialHomeRoute) {
+  void loadHomePage();
+}
+
+const HomePage = lazy(loadHomePage);
 
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const AffiliateProgramPage = lazy(() => import("@/pages/AffiliateProgramPage"));

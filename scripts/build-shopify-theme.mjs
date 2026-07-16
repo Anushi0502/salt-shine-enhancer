@@ -91,7 +91,7 @@ function templateJson(sectionType = "salt-app") {
   );
 }
 
-async function writeThemeScaffold(settingsData = null) {
+async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
   await mkdir(resolve(themeDir, "layout"), { recursive: true });
   await mkdir(resolve(themeDir, "sections"), { recursive: true });
   await mkdir(resolve(themeDir, "templates"), { recursive: true });
@@ -117,6 +117,11 @@ async function writeThemeScaffold(settingsData = null) {
     <link rel="apple-touch-icon" sizes="180x180" href="{{ 'apple-touch-icon.png' | asset_url }}">
     <link rel="manifest" href="{{ 'site.webmanifest' | asset_url }}">
     <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+    {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url }}">
+    {% elsif request.page_type == 'index' and ${JSON.stringify(routeAssets.home || "")} != blank %}
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url }}">
+    {% endif %}
     <script>
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -424,6 +429,11 @@ async function main() {
   const { jsPath, cssPath } = parseEntryAssets(indexHtml);
   const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
   const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
+  const distAssets = await readdir(resolve(distDir, "assets"));
+  const routeAssets = {
+    home: distAssets.find((asset) => /^HomePage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
+    product: distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
+  };
 
   await mkdir(themeDir, { recursive: true });
   await Promise.all(
@@ -433,7 +443,7 @@ async function main() {
   );
   // Keep Shopify-admin app embeds and theme-editor state intact. The generated
   // app bundle owns the app assets, not config/settings_data.json.
-  await writeThemeScaffold(settingsData);
+  await writeThemeScaffold(settingsData, routeAssets);
   await copyAssets(jsPath, cssPath);
 
   process.stdout.write(`Shopify theme bundle generated at ${themeDir}\n`);
