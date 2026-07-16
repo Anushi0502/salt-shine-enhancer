@@ -113,12 +113,17 @@ function productVariantImage(product: ShopifyProduct, variant?: ShopifyProduct["
 
 function productImageAtWidth(source: string | null | undefined, width: number): string {
   const normalized = normalizeShopifyAssetUrl(source) || "";
-  if (!normalized || !/cdn\.shopify\.com/i.test(normalized)) {
+  if (!normalized) {
     return normalized;
   }
 
   try {
     const url = new URL(normalized);
+    const isShopifyImage = /cdn\.shopify\.com$/i.test(url.hostname) || url.pathname.startsWith("/cdn/shop/");
+    if (!isShopifyImage) {
+      return normalized;
+    }
+
     url.searchParams.set("width", String(width));
     return url.toString();
   } catch {
