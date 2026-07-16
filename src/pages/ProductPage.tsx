@@ -112,6 +112,32 @@ function productVariantImage(product: ShopifyProduct, variant?: ShopifyProduct["
   return normalizeShopifyAssetUrl(variant.featured_image?.src || linkedImage?.src) || productImage(product);
 }
 
+function productImageAtWidth(source: string | null | undefined, width: number): string {
+  const normalized = normalizeShopifyAssetUrl(source) || "";
+  if (!normalized || !/cdn\.shopify\.com/i.test(normalized)) {
+    return normalized;
+  }
+
+  try {
+    const url = new URL(normalized);
+    url.searchParams.set("width", String(width));
+    return url.toString();
+  } catch {
+    return normalized;
+  }
+}
+
+function productImageSrcSet(source: string | null | undefined): string | undefined {
+  const normalized = normalizeShopifyAssetUrl(source) || "";
+  if (!normalized || !/cdn\.shopify\.com/i.test(normalized)) {
+    return undefined;
+  }
+
+  return [640, 960, 1280]
+    .map((width) => `${productImageAtWidth(normalized, width)} ${width}w`)
+    .join(", ");
+}
+
 type ProductSpecPair = {
   label: string;
   value: string;
@@ -642,6 +668,7 @@ const ProductPage = () => {
         : "";
 
   const primaryImage = primaryProductImage;
+  const displayedImage = activeImage || primaryImage;
   const imageSources = (product.images.length
     ? product.images.map((image) => image.src)
     : [primaryImage]).filter(Boolean);
@@ -755,13 +782,15 @@ const ProductPage = () => {
       </Reveal>
 
       <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-        <Reveal>
+        <Reveal className="salt-reveal-instant">
           <div className="salt-panel-shell rounded-[1.3rem] p-2.5 sm:rounded-[1.8rem] sm:p-4">
             <div className="overflow-hidden rounded-[1.15rem] border border-border bg-muted sm:rounded-[1.4rem]">
               {activeImage || primaryImage ? (
                 <img
                   ref={heroImageRef}
-                  src={activeImage || primaryImage}
+                  src={productImageAtWidth(displayedImage, 960)}
+                  srcSet={productImageSrcSet(displayedImage)}
+                  sizes="(min-width: 1024px) 52vw, 100vw"
                   alt={product.title}
                   className="aspect-square w-full object-cover"
                   fetchPriority="high"
@@ -791,7 +820,7 @@ const ProductPage = () => {
                   aria-label={`View product image ${index + 1}`}
                 >
                   <img
-                    src={source}
+                    src={productImageAtWidth(source, 180)}
                     alt={`${product.title} view ${index + 1}`}
                     className="aspect-square w-full object-cover"
                     loading="lazy"
@@ -803,7 +832,7 @@ const ProductPage = () => {
           </div>
         </Reveal>
 
-        <Reveal delayMs={80}>
+        <Reveal className="salt-reveal-instant">
           <aside
             className="salt-panel-shell rounded-[1.3rem] p-3.5 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24"
             data-salt-minimum-quantity={quantityFloor}

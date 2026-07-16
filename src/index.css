@@ -256,6 +256,13 @@
     will-change: opacity, transform;
   }
 
+  /* Above-the-fold purchase controls should paint immediately; motion is kept
+     for secondary content below the buying decision. */
+  .salt-reveal.salt-reveal-instant {
+    animation: none;
+    will-change: auto;
+  }
+
   @keyframes salt-reveal-in {
     from {
       opacity: 0;
