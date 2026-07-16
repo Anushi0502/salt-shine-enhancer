@@ -24,7 +24,7 @@ export type MetaPixelCartItem = {
 };
 
 const DEFAULT_META_PIXEL_ID = "1147374030261395";
-const DEFAULT_CURRENCY_CODE = "CAD";
+const DEFAULT_CURRENCY_CODE = "USD";
 
 function getMetaPixelId(): string {
   const runtimeId = typeof window !== "undefined" ? String(window.SALT_META_PIXEL_ID ?? "").trim() : "";
@@ -36,7 +36,7 @@ function getMetaPixelId(): string {
   return envId || DEFAULT_META_PIXEL_ID;
 }
 
-function getCurrencyCode(): string {
+export function getStoreCurrencyCode(): string {
   const runtimeContext = getRuntimeContext();
   const candidates = [
     runtimeContext.currency,
@@ -206,7 +206,7 @@ export function trackMetaPixelViewContent(product: ShopifyProduct, variant?: Sho
     content_name: product.title,
     content_category: product.product_type || undefined,
     content_type: "product",
-    currency: getCurrencyCode(),
+    currency: getStoreCurrencyCode(),
     value,
   });
 }
@@ -242,7 +242,7 @@ export function trackMetaPixelAddToCart(item: MetaPixelCartItem): void {
           },
         ]
       : undefined,
-    currency: getCurrencyCode(),
+    currency: getStoreCurrencyCode(),
     value: unitPrice * quantity,
   });
 }
@@ -264,7 +264,7 @@ export function trackMetaPixelInitiateCheckout(items: MetaPixelCartItem[]): void
     content_ids: contentIds,
     contents,
     content_type: "product",
-    currency: getCurrencyCode(),
+    currency: getStoreCurrencyCode(),
     num_items: quantity,
     value,
   });

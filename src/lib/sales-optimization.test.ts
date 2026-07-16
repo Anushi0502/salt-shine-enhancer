@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCartRecommendations,
   buildProductCollectionIndex,
+  buildProductStructuredData,
   pickRelatedProducts,
   rankProductsForMerchandising,
   rankProductsForShopChannel,
@@ -261,5 +262,22 @@ describe("sales optimization", () => {
     });
 
     expect(ranked[0]?.id).toBe(shopFloorPick.id);
+  });
+
+  it("keeps product structured-data currency aligned with the Shopify storefront", () => {
+    const product = makeProduct({
+      id: 40,
+      title: "Storefront Currency Product",
+      handle: "storefront-currency-product",
+      price: "19.99",
+      compareAtPrice: "29.99",
+    });
+
+    const structuredData = buildProductStructuredData(product, "https://example.com", null, "usd");
+    const offers = structuredData.offers as Record<string, unknown>;
+    const priceSpecification = offers.priceSpecification as Record<string, unknown>;
+
+    expect(offers.priceCurrency).toBe("USD");
+    expect(priceSpecification.priceCurrency).toBe("USD");
   });
 });

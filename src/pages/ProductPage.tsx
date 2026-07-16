@@ -47,6 +47,7 @@ import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import {
+  getStoreCurrencyCode,
   scheduleMetaPixelTask,
   trackMetaPixelInitiateCheckout,
   trackMetaPixelViewContent,
@@ -605,7 +606,7 @@ const ProductPage = () => {
         { name: "Shop", url: `${origin}/shop` },
         { name: product.title, url: `${origin}/products/${product.handle}` },
       ]),
-      buildProductStructuredData(product, origin, reviewSummary),
+      buildProductStructuredData(product, origin, reviewSummary, getStoreCurrencyCode()),
     ].filter(Boolean);
   }, [origin, product, reviewSummary]);
 

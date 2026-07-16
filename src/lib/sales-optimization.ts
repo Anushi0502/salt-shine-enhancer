@@ -577,6 +577,7 @@ export function buildProductStructuredData(
   product: ShopifyProduct,
   origin: string,
   ratingSummary?: RatingSummaryLike | null,
+  currencyCode = "USD",
 ): StructuredData {
   const rating = ratingSummary?.rating ?? getProductRating(product);
   const reviewCount = ratingSummary?.reviewCount ?? getProductReviewCount(product);
@@ -585,6 +586,9 @@ export function buildProductStructuredData(
   const comparePrice = compareAt(product);
   const image = productImage(product);
   const description = stripHtml(product.body_html).slice(0, 500);
+  const normalizedCurrency = /^[A-Z]{3}$/.test(currencyCode.trim().toUpperCase())
+    ? currencyCode.trim().toUpperCase()
+    : "USD";
 
   return {
     "@context": "https://schema.org",
@@ -600,7 +604,7 @@ export function buildProductStructuredData(
     url: `${origin}/products/${product.handle}`,
     offers: {
       "@type": "Offer",
-      priceCurrency: "CAD",
+      priceCurrency: normalizedCurrency,
       price: asNumber(currentPrice),
       availability,
       url: `${origin}/products/${product.handle}`,
@@ -609,7 +613,7 @@ export function buildProductStructuredData(
         ? {
             priceSpecification: {
               "@type": "UnitPriceSpecification",
-              priceCurrency: "CAD",
+              priceCurrency: normalizedCurrency,
               price: asNumber(comparePrice),
             },
           }
