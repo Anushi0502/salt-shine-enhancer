@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
 describe("Judge.me proxy URL builder", () => {
-  it("routes through the same-origin proxy and strips cache-busting timestamps", () => {
+  it("uses Judge.me's cacheable CORS API directly and strips cache-busting timestamps", () => {
     const url = buildJudgeMeProxyUrl(
       "widgets/product_review",
       new URLSearchParams({
@@ -16,7 +16,7 @@ describe("Judge.me proxy URL builder", () => {
     );
 
     expect(url).toBe(
-      "https://www.saltonlinestore.com/api/judgeme/widgets/product_review?api_token=test-token&shop_domain=example.myshopify.com&external_id=123&page=1&per_page=100",
+      "https://api.judge.me/api/v1/widgets/product_review?api_token=test-token&shop_domain=example.myshopify.com&external_id=123&page=1&per_page=100",
     );
   });
 });

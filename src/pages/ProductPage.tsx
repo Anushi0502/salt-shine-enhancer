@@ -30,7 +30,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { useMinimumDelay } from "@/hooks/useMinimumDelay";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
 import {
   compareAt,
@@ -47,7 +46,11 @@ import {
 import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
-import { trackMetaPixelInitiateCheckout, trackMetaPixelViewContent } from "@/lib/meta-pixel";
+import {
+  scheduleMetaPixelTask,
+  trackMetaPixelInitiateCheckout,
+  trackMetaPixelViewContent,
+} from "@/lib/meta-pixel";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import {
   getProductPurchasesLast30Days,
@@ -73,11 +76,6 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
 const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-14.3";
-// Keep catalogue-wide merchandising and remote review requests out of the
-// initial PDP network window. They remain available shortly after the buyer
-// can see and use the product controls.
-const PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS = 1_800;
-
 const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
 
 function displayVariantTitle(title?: string): string {
@@ -239,7 +237,7 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function stripContentLabel(input: string): string {
-  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:\-]?\s*/i, "").trim();
+  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:-]?\s*/i, "").trim();
 }
 
 function extractProductBullets(bodyHtml: string, fallback: string): string[] {
@@ -341,7 +339,9 @@ const ProductPage = () => {
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   const { data: productData, isLoading, error, refetch } = useProductByHandle(handle);
-  const loadSecondaryContent = useMinimumDelay(PRODUCT_PAGE_SECONDARY_LOAD_DELAY_MS);
+  const secondaryContentAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [secondaryContentProductId, setSecondaryContentProductId] = useState<number | null>(null);
+  const loadSecondaryContent = Boolean(productData?.id && secondaryContentProductId === productData.id);
   const shouldLoadMerchandisingData = Boolean(productData && loadSecondaryContent);
   const { data: productSearchPayload } = useProductSearchIndex(shouldLoadMerchandisingData);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadMerchandisingData);
@@ -359,6 +359,34 @@ const ProductPage = () => {
     () => buildProductCollectionIndex(collectionProductsMapPayload),
     [collectionProductsMapPayload],
   );
+
+  useEffect(() => {
+    const node = secondaryContentAnchorRef.current;
+    const productId = Number(productData?.id || 0);
+    setSecondaryContentProductId(null);
+
+    if (!node || !productId || typeof IntersectionObserver === "undefined") {
+      if (productId) {
+        setSecondaryContentProductId(productId);
+      }
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        setSecondaryContentProductId(productId);
+        observer.disconnect();
+      },
+      { rootMargin: "180px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [handle, productData?.id]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
   const initialVariant = useMemo(
@@ -465,7 +493,7 @@ const ProductPage = () => {
       return;
     }
 
-    trackMetaPixelViewContent(product, selectedVariant);
+    return scheduleMetaPixelTask(() => trackMetaPixelViewContent(product, selectedVariant));
   }, [product, selectedVariant]);
 
   useEffect(() => {
@@ -1251,7 +1279,7 @@ const ProductPage = () => {
         </Reveal>
       </div>
 
-
+      <div ref={secondaryContentAnchorRef} aria-hidden="true" className="h-px" />
       {loadSecondaryContent ? (
         <Suspense fallback={null}>
           <ShopifyProductReviews productId={product.id} productHandle={product.handle} />

@@ -33,4 +33,18 @@ describe("buildLiveShopifyBaseCandidates", () => {
       "http://127.0.0.1:4173",
     ]);
   });
+
+  it("uses the current Shopify custom domain first in production", () => {
+    expect(
+      buildLiveShopifyBaseCandidates({
+        browserOrigin: "https://www.saltonlinestore.com",
+        shopBaseOrigin: "https://www.saltonlinestore.com",
+        shopApiBase: "https://0309d3-72.myshopify.com",
+        native: false,
+      }),
+    ).toEqual([
+      "https://www.saltonlinestore.com",
+      "https://0309d3-72.myshopify.com",
+    ]);
+  });
 });

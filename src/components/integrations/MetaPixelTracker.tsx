@@ -1,13 +1,12 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { ensureMetaPixel, trackMetaPixelPageView } from "@/lib/meta-pixel";
+import { scheduleMetaPixelTask, trackMetaPixelPageView } from "@/lib/meta-pixel";
 
 const MetaPixelTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
-    ensureMetaPixel();
-    trackMetaPixelPageView();
+    return scheduleMetaPixelTask(trackMetaPixelPageView);
   }, [location.pathname, location.search]);
 
   return null;

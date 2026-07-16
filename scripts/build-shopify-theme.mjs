@@ -123,18 +123,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url }}">
     {% endif %}
     <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      window.SALT_META_PIXEL_ID = '1147374030261395';
-      fbq('init', window.SALT_META_PIXEL_ID);
-    </script>
-    <script>
       (function () {
         var selector = '#svelte-bundle-widget, #pumper_bundle_svelte';
         var pending = /^\\/products?(?:\\/|$)/.test(window.location.pathname);
@@ -275,7 +263,15 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
 </html>
 `;
 
-const sectionLiquid = `<div id="root"></div>
+const sectionLiquid = `<div
+  id="root"
+  data-shop-base-url="https://{{ request.host | escape }}"
+  data-shop-domain="{{ shop.permanent_domain | escape }}"
+  data-shop-name="{{ shop.name | escape }}"
+  data-judgeme-shop-domain="{{ shop.permanent_domain | escape }}"
+  data-judgeme-public-token="TQ0rk940ADN89zj_f83SKuTYIfY"
+  data-currency="{{ cart.currency.iso_code | default: shop.currency | escape }}"
+></div>
 <script>
   window.SALT_THEME_BUILD = ${JSON.stringify(themeBuildStamp)};
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};

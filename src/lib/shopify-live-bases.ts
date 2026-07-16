@@ -60,6 +60,13 @@ export function buildLiveShopifyBaseCandidates({
     bases.push(browserProxyBase);
   }
 
+  // A published Shopify custom domain can serve product JSON directly. Put it
+  // first so PDPs reuse the Liquid-inlined product promise instead of taking a
+  // myshopify redirect plus a second product request.
+  if (!localHost && browserBase && browserBase === brandedBase) {
+    bases.push(browserBase);
+  }
+
   if (brandedProxyBase && brandedProxyBase !== browserProxyBase) {
     bases.push(brandedProxyBase);
   }

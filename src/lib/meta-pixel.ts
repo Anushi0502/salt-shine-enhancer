@@ -8,6 +8,7 @@ declare global {
     _fbq?: (...args: unknown[]) => void;
     SALT_META_PIXEL_ID?: string;
     __saltMetaPixelBootstrapped?: boolean;
+    Shopify?: { currency?: { active?: string } };
   }
 }
 
@@ -22,6 +23,7 @@ export type MetaPixelCartItem = {
 };
 
 const DEFAULT_META_PIXEL_ID = "1147374030261395";
+const DEFAULT_CURRENCY_CODE = "CAD";
 
 function getMetaPixelId(): string {
   const runtimeId = typeof window !== "undefined" ? String(window.SALT_META_PIXEL_ID ?? "").trim() : "";
@@ -35,9 +37,21 @@ function getMetaPixelId(): string {
 
 function getCurrencyCode(): string {
   const runtimeContext = getRuntimeContext();
-  return String(runtimeContext.currency || import.meta.env.VITE_CURRENCY || "USD")
-    .trim()
-    .toUpperCase();
+  const candidates = [
+    runtimeContext.currency,
+    typeof window !== "undefined" ? window.Shopify?.currency?.active : "",
+    import.meta.env.VITE_CURRENCY,
+    DEFAULT_CURRENCY_CODE,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(normalized)) {
+      return normalized;
+    }
+  }
+
+  return DEFAULT_CURRENCY_CODE;
 }
 
 function asNumber(value: unknown): number {
@@ -126,13 +140,36 @@ export function ensureMetaPixel(): boolean {
     script.async = true;
     script.src = scriptUrl;
     script.id = "salt-meta-pixel-script";
+    script.setAttribute("fetchpriority", "low");
 
     const firstScript = d.getElementsByTagName(tagName)[0];
     firstScript?.parentNode?.insertBefore(script, firstScript);
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
 
+  // Keep explicit commerce events while disabling Meta's large automatic DOM
+  // scrape payload, which can overflow Safari's keepalive beacon queue.
+  window.fbq?.("set", "autoConfig", false, pixelId);
   window.fbq?.("init", pixelId);
   return true;
+}
+
+export function scheduleMetaPixelTask(task: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+
+  if (idleWindow.requestIdleCallback) {
+    const idleId = idleWindow.requestIdleCallback(task, { timeout: 1_500 });
+    return () => idleWindow.cancelIdleCallback?.(idleId);
+  }
+
+  const timer = window.setTimeout(task, 700);
+  return () => window.clearTimeout(timer);
 }
 
 export function trackMetaPixel(eventName: string, params?: Record<string, unknown>): void {
