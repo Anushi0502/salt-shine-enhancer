@@ -106,7 +106,29 @@ type CollectionProductIdsPayload = {
   handle: string;
   total: number;
   productIds: number[];
+  complete?: boolean;
 };
+
+type HeadPreloadedCollection = {
+  handle?: string;
+  generatedAt?: string;
+  complete?: boolean;
+  currentPage?: number;
+  total?: number;
+  productIds?: number[];
+  products?: Array<Record<string, unknown>>;
+};
+
+type SaltPreloadWindow = Window & {
+  __SALT_PRODUCT_PREFETCH__?: {
+    handle?: string;
+    payload?: Promise<Record<string, unknown>>;
+  };
+  __SALT_COLLECTION_PREFETCH__?: HeadPreloadedCollection;
+};
+
+let normalizedHeadCollectionSource: HeadPreloadedCollection | null = null;
+let normalizedHeadCollectionProducts: ShopifyProduct[] = [];
 
 function normalizeBaseUrl(input: string | undefined | null): string | null {
   const raw = String(input || "").trim();
@@ -240,6 +262,33 @@ function getLiveCatalogBases(): string[] {
   });
 }
 
+function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (base) {
+    const isCurrentStore = new URL(base, window.location.origin).origin === window.location.origin;
+    if (!isCurrentStore) {
+      return null;
+    }
+  }
+
+  const prefetch = (window as SaltPreloadWindow).__SALT_COLLECTION_PREFETCH__;
+  const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
+  const routeMatch = window.location.pathname.match(/^\/collections\/([^/?#]+)\/?$/i);
+  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
+
+  // A collection bootstrap belongs to the Shopify document that rendered it.
+  // Reject it after client-side navigation so a previous route can never leak
+  // its ordering or operational product data into the next collection.
+  if (!prefetch || !prefetchedHandle || routeHandle !== prefetchedHandle) {
+    return null;
+  }
+
+  return prefetch;
+}
+
 function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<string, unknown>> | null {
   if (typeof window === "undefined") {
     return null;
@@ -248,16 +297,25 @@ function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<s
   // The Shopify theme starts this request in the document head on PDPs. Reuse
   // the exact in-flight payload so the React route does not create a second
   // request after its module has loaded.
-  const prefetch = (window as Window & {
-    __SALT_PRODUCT_PREFETCH__?: { handle?: string; payload?: Promise<Record<string, unknown>> };
-  }).__SALT_PRODUCT_PREFETCH__;
+  const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
   const isCurrentStore = new URL(base, window.location.origin).origin === window.location.origin;
 
-  if (!isCurrentStore || prefetch?.handle !== handle || !prefetch.payload) {
+  if (!isCurrentStore) {
     return null;
   }
 
-  return prefetch.payload;
+  if (prefetch?.handle === handle && prefetch.payload) {
+    return prefetch.payload;
+  }
+
+  // Collection pages already carry the current Shopify records for the first
+  // viewport. Product cards reuse those records instead of issuing one
+  // `/products/:handle.js` request per visible card.
+  const collectionProduct = getHeadPreloadedCollection(base)?.products?.find(
+    (product) => String(product.handle || "").trim().toLowerCase() === handle,
+  );
+
+  return collectionProduct ? Promise.resolve(collectionProduct) : null;
 }
 
 function getLivePolicyBases(): string[] {
@@ -401,22 +459,7 @@ async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]>
   return allProducts;
 }
 
-async function fetchProductByHandleFromLive(base: string, handle: string): Promise<ShopifyProduct> {
-  const normalizedHandle = String(handle || "").trim();
-  if (!normalizedHandle) {
-    throw new Error("Product handle is required");
-  }
-
-  // Shopify's product JSON route contains the complete product, including all
-  // variants and media, without making a product page wait for the catalogue
-  // snapshot used by search and merchandising.
-  const product = await (getHeadPreloadedProduct(normalizedHandle, base) ?? fetchJson<Record<string, unknown>>(
-    `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
-    // Honour Shopify's normal HTTP cache directives for repeat PDP visits.
-    // This keeps price data fresh when Shopify says it changed while avoiding
-    // a needless second network round-trip on browser back/forward navigation.
-    "default",
-  ));
+function normalizeStorefrontProductPayload(product: Record<string, unknown>): ShopifyProduct {
   const imageRecord = (value: unknown, index: number): ShopifyImage | null => {
     if (typeof value === "string" && value.trim()) {
       return { id: -(index + 1), src: value, alt: null };
@@ -461,6 +504,26 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
     image: primaryImage,
     variants,
   } as ShopifyProduct;
+}
+
+async function fetchProductByHandleFromLive(base: string, handle: string): Promise<ShopifyProduct> {
+  const normalizedHandle = String(handle || "").trim();
+  if (!normalizedHandle) {
+    throw new Error("Product handle is required");
+  }
+
+  // Shopify's product JSON route contains the complete product, including all
+  // variants and media, without making a product page wait for the catalogue
+  // snapshot used by search and merchandising.
+  const product = await (getHeadPreloadedProduct(normalizedHandle, base) ?? fetchJson<Record<string, unknown>>(
+    `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
+    // Honour Shopify's normal HTTP cache directives for repeat PDP visits.
+    // This keeps price data fresh when Shopify says it changed while avoiding
+    // a needless second network round-trip on browser back/forward navigation.
+    "default",
+  ));
+
+  return normalizeStorefrontProductPayload(product);
 }
 
 async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollection[]> {
@@ -619,6 +682,92 @@ function mergeProductRecords(primary: ShopifyProduct, overlay?: ShopifyProduct |
     customData: mergedCustomData,
     average_rating: primary.average_rating ?? overlay?.average_rating,
     total_reviews: primary.total_reviews ?? overlay?.total_reviews,
+  });
+}
+
+function getNormalizedHeadPreloadedCollectionProducts(): ShopifyProduct[] {
+  const prefetch = getHeadPreloadedCollection();
+  if (!prefetch) {
+    return [];
+  }
+
+  if (prefetch === normalizedHeadCollectionSource) {
+    return normalizedHeadCollectionProducts;
+  }
+
+  const rawProducts = Array.isArray(prefetch.products) ? prefetch.products : [];
+  normalizedHeadCollectionProducts = rawProducts.flatMap((product) => {
+    try {
+      const normalized = normalizeProductRecord(normalizeStorefrontProductPayload(product));
+      return normalized.id && normalized.handle ? [normalized] : [];
+    } catch {
+      return [];
+    }
+  });
+  normalizedHeadCollectionSource = prefetch;
+  return normalizedHeadCollectionProducts;
+}
+
+function getHeadPreloadedProductsPayload(): ProductsPayload | undefined {
+  const prefetch = getHeadPreloadedCollection();
+  const products = getNormalizedHeadPreloadedCollectionProducts();
+  if (!prefetch || !products.length) {
+    return undefined;
+  }
+
+  return {
+    generatedAt: prefetch.generatedAt || new Date().toISOString(),
+    source: `shopify-liquid:${prefetch.handle || "collection"}`,
+    total: products.length,
+    products,
+  };
+}
+
+function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): ProductsPayload {
+  const prefetch = getHeadPreloadedCollection();
+  const liveProducts = getNormalizedHeadPreloadedCollectionProducts();
+  if (!liveProducts.length) {
+    return payload;
+  }
+  const liveById = new Map(liveProducts.map((product) => [String(product.id), product]));
+  const liveByHandle = new Map(
+    liveProducts.map((product) => [String(product.handle || "").trim().toLowerCase(), product]),
+  );
+  const mergedIds = new Set<string>();
+  const mergedHandles = new Set<string>();
+
+  const products = payload.products.map((cachedProduct) => {
+    const normalizedHandle = String(cachedProduct.handle || "").trim().toLowerCase();
+    const liveProduct = liveById.get(String(cachedProduct.id)) || liveByHandle.get(normalizedHandle);
+    if (!liveProduct) {
+      return cachedProduct;
+    }
+
+    mergedIds.add(String(liveProduct.id));
+    mergedHandles.add(String(liveProduct.handle || "").trim().toLowerCase());
+    return mergeProductRecords(liveProduct, cachedProduct);
+  });
+
+  // A product added in Shopify after the static index was built should still
+  // appear immediately on its collection page. Collection ordering below will
+  // place the appended live record in the correct merchandiser-defined slot.
+  liveProducts.forEach((liveProduct) => {
+    const normalizedHandle = String(liveProduct.handle || "").trim().toLowerCase();
+    if (mergedIds.has(String(liveProduct.id)) || mergedHandles.has(normalizedHandle)) {
+      return;
+    }
+
+    products.push(liveProduct);
+    mergedIds.add(String(liveProduct.id));
+    mergedHandles.add(normalizedHandle);
+  });
+
+  return normalizeProductsPayload({
+    ...payload,
+    generatedAt: prefetch?.generatedAt || payload.generatedAt,
+    source: `shopify-liquid:${prefetch?.handle || "collection"}+${payload.source}`,
+    total: products.length,
+    products,
   });
 }
 
@@ -1258,11 +1407,11 @@ export async function loadProductByHandle(handle: string): Promise<ShopifyProduc
 
 export async function loadProductSearchIndex(): Promise<ProductsPayload> {
   try {
-    return await fetchProductSearchIndexFromCache();
+    return mergeHeadPreloadedCollectionProducts(await fetchProductSearchIndexFromCache());
   } catch {
     // Preserve a working search UI if an older local bundle lacks the compact
     // index. Published bundles ship the smaller index instead of this fallback.
-    return loadProducts();
+    return mergeHeadPreloadedCollectionProducts(await loadProducts());
   }
 }
 
@@ -1379,10 +1528,50 @@ export async function loadCollectionProductsMap(): Promise<CollectionProductsPay
   }
 }
 
-async function loadCollectionProductIds(handle: string): Promise<CollectionProductIdsPayload> {
+function getHeadPreloadedCollectionIdsPayload(
+  handle: string,
+  allowPartial = false,
+): CollectionProductIdsPayload | null {
+  const normalizedHandle = String(handle || "").trim();
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  const inlineCollection = getHeadPreloadedCollection();
+  const inlineHandle = String(inlineCollection?.handle || "").trim().toLowerCase();
+  const mergedHandles = getMergedCollectionHandles(normalizedHandle);
+  const matchesInlineCollection =
+    Number(inlineCollection?.currentPage || 1) === 1 &&
+    inlineHandle === normalizedHandle &&
+    mergedHandles.length === 1 &&
+    mergedHandles[0] === normalizedHandle;
+  const inlineProductIds = Array.isArray(inlineCollection?.productIds)
+    ? inlineCollection.productIds.filter((productId) => Number.isFinite(productId) && productId > 0)
+    : [];
+
+  if (!matchesInlineCollection || (!allowPartial && inlineCollection?.complete !== true)) {
+    return null;
+  }
+
+  return {
+    generatedAt: inlineCollection?.generatedAt || new Date().toISOString(),
+    source: `shopify-liquid${inlineCollection?.complete ? "" : "-partial"}:${normalizedHandle}`,
+    handle: normalizedHandle,
+    total: inlineProductIds.length,
+    productIds: inlineProductIds,
+    complete: inlineCollection?.complete === true,
+  };
+}
+
+export async function loadCollectionProductIds(handle: string): Promise<CollectionProductIdsPayload> {
   const normalizedHandle = String(handle || "").trim();
   if (!normalizedHandle) {
     throw new Error("Collection handle is required");
+  }
+
+  const inlinePayload = getHeadPreloadedCollectionIdsPayload(normalizedHandle);
+  if (inlinePayload) {
+    return inlinePayload;
   }
 
   const endpointErrors: string[] = [];
@@ -1495,12 +1684,19 @@ export function useProductByHandle(handle: string | undefined, enabled = true, l
 }
 
 export function useProductSearchIndex(enabled = true) {
+  const inlineProducts = getHeadPreloadedProductsPayload();
+
   return useQuery({
     queryKey: ["product-search", DATA_MODE],
     queryFn: loadProductSearchIndex,
     enabled,
-    staleTime: CATALOG_STALE_TIME_MS,
-    refetchOnMount: false,
+    // Render the current Shopify collection immediately from Liquid, then
+    // merge the complete compact catalog in the background. This keeps the
+    // first viewport live without delaying search, filters, or later pages.
+    initialData: inlineProducts,
+    initialDataUpdatedAt: inlineProducts ? 0 : undefined,
+    staleTime: inlineProducts ? 0 : CATALOG_STALE_TIME_MS,
+    refetchOnMount: inlineProducts ? "always" : false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,
@@ -1556,13 +1752,19 @@ export function useCollectionProductsMap(enabled = true) {
 
 export function useCollectionProductIds(handle: string, enabled = true) {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const inlineCollection = getHeadPreloadedCollectionIdsPayload(normalizedHandle, true) || undefined;
+  const hasCompleteInlineCollection = inlineCollection?.complete === true;
 
   return useQuery({
     queryKey: ["collection-products-by-handle", DATA_MODE, normalizedHandle],
     queryFn: () => loadCollectionProductIds(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    staleTime: COLLECTION_ORDER_STALE_TIME_MS,
-    refetchOnMount: "always",
+    // The Liquid payload is generated by Shopify for this exact request, so it
+    // is both newer and faster than repeating the public collection crawl.
+    initialData: inlineCollection,
+    initialDataUpdatedAt: inlineCollection ? Date.now() : undefined,
+    staleTime: hasCompleteInlineCollection ? CATALOG_STALE_TIME_MS : COLLECTION_ORDER_STALE_TIME_MS,
+    refetchOnMount: hasCompleteInlineCollection ? false : "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,
