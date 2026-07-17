@@ -39,6 +39,11 @@ const themeDataAssets = [
     asset: "data-home-collection-products.json",
     themePath: "/data/home-collection-products.json",
   },
+  {
+    source: "recently-ordered-products.json",
+    asset: "data-recently-ordered-products.json",
+    themePath: "/data/recently-ordered-products.json",
+  },
   { source: "product-search.json", asset: "data-product-search.json", themePath: "/data/product-search.json" },
   { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
   {

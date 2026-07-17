@@ -9,6 +9,7 @@ import { formatMoney, minPrice, polishPlainText, productImage } from "@/lib/form
 import { useCollections } from "@/lib/collections-data";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
+import { useRecentlyOrderedProducts } from "@/lib/recently-ordered-products";
 import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
@@ -25,6 +26,7 @@ import productDock from "@/assets/product-dock.jpg";
 import productLaptopStand from "@/assets/product-laptop-stand.jpg";
 import productPortableStand from "@/assets/product-portable-stand.jpg";
 import productTripod from "@/assets/product-tripod.jpg";
+import recentlyOrderedRibbon from "@/assets/recently-ordered-ribbon.png";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 type ImageTile = {
@@ -37,6 +39,11 @@ type ImageTile = {
 type ProductTile = ImageTile & {
   price: string;
   productId?: number;
+};
+
+type HeroSpotlightTile = ImageTile & {
+  price?: string;
+  ribbonLabel?: string;
 };
 
 type ReviewTile = {
@@ -530,6 +537,7 @@ const HomePage = () => {
   const { data: collectionsPayload } = useCollections();
   const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
   const { data: homeCollectionProductsPayload } = useHomeCollectionProducts();
+  const { data: recentlyOrderedProductsPayload } = useRecentlyOrderedProducts();
   const products: ShopifyProduct[] = [];
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const bestSellerCollection = useMemo(
@@ -951,8 +959,20 @@ const HomePage = () => {
 
     return tiles;
   }, [bestSellerHeroImage, collectionImageByHandle, findProductImageByKeywords]);
-  const heroSpotlightCards = useMemo<ImageTile[]>(
-    () => [
+  const heroSpotlightCards = useMemo<HeroSpotlightTile[]>(() => {
+    const recentlyOrdered = recentlyOrderedProductsPayload?.products.slice(0, 4) || [];
+    if (recentlyOrdered.length === 4) {
+      return recentlyOrdered.map((product) => ({
+        title: product.title,
+        image: product.image,
+        alt: product.imageAlt,
+        price: product.price ? formatMoney(product.price) : undefined,
+        ribbonLabel: "Buy 2 get one free",
+        to: `/products/${product.handle}`,
+      }));
+    }
+
+    return [
       {
         title: "Best Sellers",
         image: bestSellerHeroImage,
@@ -973,15 +993,15 @@ const HomePage = () => {
         image: giftTiles[0]?.image || collectionDecor,
         to: "/collections/gifts",
       },
-    ],
-    [
+    ];
+  }, [
       bestSellerCollection,
       bestSellerHeroImage,
       collectionImageByHandle,
       featuredCourtneyBookFallbackImage,
       giftTiles,
-    ],
-  );
+      recentlyOrderedProductsPayload?.products,
+    ]);
 
   useEffect(() => {
     if (heroPosterTiles.length <= 1) {
@@ -1124,14 +1144,14 @@ const HomePage = () => {
                     <div className="aspect-[1.08/0.8] overflow-hidden">
                       <ResilientImage
                         src={tile.image}
-                        alt={buildCollectionImageAltText(tile.title, "hero spotlight")}
+                        alt={tile.alt || buildCollectionImageAltText(tile.title, "hero spotlight")}
                         loading="lazy"
                         decoding="async"
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                         fallback={
                           <img
                             src={bestSellerHeroImage}
-                            alt={buildCollectionImageAltText(tile.title, "hero spotlight")}
+                            alt={tile.alt || buildCollectionImageAltText(tile.title, "hero spotlight")}
                             loading="lazy"
                             decoding="async"
                             className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
@@ -1140,10 +1160,27 @@ const HomePage = () => {
                       />
                     </div>
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.1),rgba(8,30,73,0.2)_44%,rgba(8,30,73,0.88))]" />
+                    {tile.ribbonLabel ? (
+                      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
+                        <img
+                          src={recentlyOrderedRibbon}
+                          alt=""
+                          className="absolute -left-[18%] -top-[24%] h-auto w-[68%] drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
+                        />
+                        <span className="absolute left-[-2.55rem] top-[2.15rem] w-[11rem] -rotate-45 text-center text-[0.42rem] font-bold uppercase tracking-[0.08em] text-white drop-shadow-sm sm:left-[-2.3rem] sm:top-[2.35rem] sm:text-[0.48rem]">
+                          {tile.ribbonLabel}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
                       <p className="line-clamp-2 font-display text-[0.92rem] font-semibold leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)] sm:text-[1rem]">
                         {tile.title}
                       </p>
+                      {tile.price ? (
+                        <p className="mt-1 text-[0.72rem] font-bold text-[#ffd761] drop-shadow-[0_2px_5px_rgba(0,0,0,0.55)] sm:text-[0.78rem]">
+                          {tile.price}
+                        </p>
+                      ) : null}
                     </div>
                   </Link>
                 ))}
