@@ -117,10 +117,73 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     <link rel="apple-touch-icon" sizes="180x180" href="{{ 'apple-touch-icon.png' | asset_url }}">
     <link rel="manifest" href="{{ 'site.webmanifest' | asset_url }}">
     <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+    {{ 'salt-app.css' | asset_url | stylesheet_tag }}
+    {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
+    {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
     {% elsif request.page_type == 'index' and ${JSON.stringify(routeAssets.home || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
+    {% endif %}
+    {% if request.page_type == 'product' %}
+      {% if product.featured_image %}
+        <link
+          rel="preload"
+          as="image"
+          href="{{ product.featured_image | image_url: width: 960 }}"
+          imagesrcset="{{ product.featured_image | image_url: width: 640 }} 640w, {{ product.featured_image | image_url: width: 960 }} 960w, {{ product.featured_image | image_url: width: 1280 }} 1280w"
+          imagesizes="(min-width: 1024px) 52vw, 100vw"
+          fetchpriority="high"
+        >
+      {% endif %}
+      <link rel="preconnect" href="https://magecomp.us" crossorigin>
+      <link rel="dns-prefetch" href="//magecomp.us">
+      <script>
+        (function () {
+          // LimitQtyHelper is injected by a Shopify app with defer, but its
+          // origin can take more than a second to respond. Keep the quantity
+          // feature and its execution order independent from DOM readiness so
+          // the React product page never waits on that third-party server.
+          function isLimitQtyHelper(node) {
+            if (!(node instanceof HTMLScriptElement) || !node.src) return false;
+
+            try {
+              var url = new URL(node.src, window.location.href);
+              return url.hostname === 'magecomp.us' && url.pathname === '/js/LimitQtyHelper.js';
+            } catch (error) {
+              return false;
+            }
+          }
+
+          function makeNonBlocking(node) {
+            if (isLimitQtyHelper(node)) {
+              node.async = true;
+              node.defer = false;
+              node.setAttribute('data-salt-nonblocking', 'true');
+            }
+
+            if (!node || !node.querySelectorAll) return;
+            node.querySelectorAll('script[src]').forEach(function (script) {
+              if (!isLimitQtyHelper(script)) return;
+              script.async = true;
+              script.defer = false;
+              script.setAttribute('data-salt-nonblocking', 'true');
+            });
+          }
+
+          var observer = new MutationObserver(function (records) {
+            records.forEach(function (record) {
+              record.addedNodes.forEach(makeNonBlocking);
+            });
+          });
+
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+          document.addEventListener('DOMContentLoaded', function () {
+            observer.disconnect();
+          }, { once: true });
+        })();
+      </script>
     {% endif %}
     <script>
       (function () {
@@ -251,16 +314,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     </script>
     {{ content_for_header }}
     {% if request.page_type == 'product' %}
-      {% if product.featured_image %}
-        <link
-          rel="preload"
-          as="image"
-          href="{{ product.featured_image | image_url: width: 960 }}"
-          imagesrcset="{{ product.featured_image | image_url: width: 640 }} 640w, {{ product.featured_image | image_url: width: 960 }} 960w, {{ product.featured_image | image_url: width: 1280 }} 1280w"
-          imagesizes="(min-width: 1024px) 52vw, 100vw"
-          fetchpriority="high"
-        >
-      {% endif %}
       <script>
         (function () {
           var match = window.location.pathname.match(/^\\/products?\\/([^\\/?#]+)\\/?$/);
@@ -281,7 +334,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         })();
       </script>
     {% endif %}
-    {{ 'salt-app.css' | asset_url | stylesheet_tag }}
     <script type="module" src="{{ 'salt-app.js' | asset_url }}"></script>
   </head>
   <body>
@@ -444,6 +496,8 @@ async function copyAssets(entryJsPath, entryCssPath) {
   for (const asset of themeDataAssets) {
     await cp(resolve(publicDir, "data", asset.source), resolve(themeAssetsDir, asset.asset));
   }
+
+  return themeEntryJs;
 }
 
 async function main() {
@@ -466,8 +520,8 @@ async function main() {
   );
   // Keep Shopify-admin app embeds and theme-editor state intact. The generated
   // app bundle owns the app assets, not config/settings_data.json.
-  await writeThemeScaffold(settingsData, routeAssets);
-  await copyAssets(jsPath, cssPath);
+  const themeEntryJs = await copyAssets(jsPath, cssPath);
+  await writeThemeScaffold(settingsData, { ...routeAssets, entry: themeEntryJs });
 
   process.stdout.write(`Shopify theme bundle generated at ${themeDir}\n`);
 }
