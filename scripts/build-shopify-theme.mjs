@@ -69,6 +69,25 @@ function parseEntryAssets(indexHtml) {
   };
 }
 
+async function collectStaticChunkImports(entryAsset, excludedAssets = new Set()) {
+  const discovered = new Set();
+
+  async function visit(asset) {
+    if (!asset || discovered.has(asset) || excludedAssets.has(asset)) return;
+    discovered.add(asset);
+    const source = await readFile(resolve(distDir, "assets", asset), "utf8");
+    const imports = Array.from(
+      source.matchAll(/(?:from|import)\s*["']\.\/([^"']+\.js)["']/g),
+      (match) => match[1],
+    );
+    await Promise.all(imports.map(visit));
+  }
+
+  await visit(entryAsset);
+  discovered.delete(entryAsset);
+  return Array.from(discovered).sort();
+}
+
 async function ensureDistExists() {
   if (!existsSync(resolve(distDir, "index.html"))) {
     throw new Error("dist/index.html not found. Run `npm run build` first.");
@@ -123,6 +142,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
+      ${Array.isArray(routeAssets.productImports) ? routeAssets.productImports.map((asset) => `<link rel="modulepreload" href="{{ ${JSON.stringify(asset)} | asset_url | split: '?' | first }}">`).join("\n      ") : ""}
     {% elsif request.page_type == 'index' and ${JSON.stringify(routeAssets.home || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
     {% endif %}
@@ -715,9 +735,15 @@ async function main() {
   const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
   const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
   const distAssets = await readdir(resolve(distDir, "assets"));
+  const entryAsset = basename(jsPath);
+  const productAsset = distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "";
+  const productImports = productAsset
+    ? await collectStaticChunkImports(productAsset, new Set([entryAsset]))
+    : [];
   const routeAssets = {
     home: distAssets.find((asset) => /^HomePage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
-    product: distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
+    product: productAsset,
+    productImports,
   };
 
   await mkdir(themeDir, { recursive: true });
