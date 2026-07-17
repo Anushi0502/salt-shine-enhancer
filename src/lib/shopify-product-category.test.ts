@@ -21,6 +21,21 @@ describe("Shopify product taxonomy classifier", () => {
     expect(inferShopifyTaxonomyCategory({ handle: "baby-health-grooming-kit" })?.id).toBe(
       "gid://shopify/TaxonomyCategory/bt-3-1",
     );
+    expect(inferShopifyTaxonomyCategory({ handle: "wireless-bluetooth-earbuds-with-microphone" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/el",
+    );
+    expect(inferShopifyTaxonomyCategory({ handle: "large-capacity-pencil-case-for-school" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/os-3-16",
+    );
+    expect(inferShopifyTaxonomyCategory({ handle: "61-key-digital-electronic-piano-keyboard" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/ae",
+    );
+    expect(inferShopifyTaxonomyCategory({ handle: "usb-air-humidifier-aroma-diffuser" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hb-3-21-3",
+    );
+    expect(inferShopifyTaxonomyCategory({ handle: "mechanical-gaming-keyboard-stabilizer-pad" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/el",
+    );
   });
 
   it("does not guess when no high-confidence family matches", () => {

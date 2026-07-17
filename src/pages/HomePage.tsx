@@ -7,11 +7,19 @@ import SeoMetadata from "@/components/storefront/SeoMetadata";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { formatMoney, minPrice, polishPlainText, productImage } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
+import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
 import collectionDecor from "@/assets/collection-decor.jpg";
+import giftCollectionImage from "@/assets/gift-collection-v2.jpg";
+import giftHomeDecorImage from "@/assets/gift-home-decor-v2.jpg";
+import giftUniqueFindsImage from "@/assets/gift-unique-finds-v2.jpg";
+import heroEverydayEssentials from "@/assets/hero-everyday-essentials.jpg";
+import heroPortableGadgets from "@/assets/hero-portable-gadgets.jpg";
+import heroTravelOutdoor from "@/assets/hero-travel-outdoor.jpg";
+import heroWomensBeauty from "@/assets/hero-womens-beauty.jpg";
 import heroMain from "@/assets/hero-main.jpg";
 import productDock from "@/assets/product-dock.jpg";
 import productLaptopStand from "@/assets/product-laptop-stand.jpg";
@@ -121,21 +129,21 @@ const fallbackBestSellerTiles: ProductTile[] = [
 const giftTileConfigs = [
   {
     title: "Home Decor",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/home_decor.png",
+    image: giftHomeDecorImage,
     to: "/collections/home-decor",
     collectionHandles: ["home-decor", "home", "decor"],
     productKeywords: ["home", "decor", "candle", "wall", "vase"],
   },
   {
     title: "Gifts",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/gifts.png",
+    image: giftCollectionImage,
     to: "/collections/gifts",
     collectionHandles: ["gifts", "gift"],
     productKeywords: ["gift", "present", "planner", "set"],
   },
   {
     title: "Fun & Unique Finds",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/unique_gifts.png",
+    image: giftUniqueFindsImage,
     to: "/shop?q=unique+gift",
     collectionHandles: ["home-decor", "gifts", "gift"],
     productKeywords: ["unique", "home", "decor", "gift"],
@@ -219,22 +227,28 @@ const featuredCourtneyBookFallbackMeta = [
 
 const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
-    title: "Garden Tools",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_1.png?v=1777028872",
-    to: "/collections/garden-tools",
-    alt: "Spring garden tools collection banner with gloves, raised beds, planters, and outdoor decor.",
+    title: "Everyday Essentials",
+    image: heroEverydayEssentials,
+    to: "/collections/everyday-essentials",
+    alt: "Everyday Essentials collection banner featuring practical home, kitchen, organization, and daily-use products.",
   },
   {
-    title: "Unique Finds",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_2.png",
-    to: "/collections/unique-products",
-    alt: "Unique home decor and gift collection banner featuring distinctive statement pieces.",
+    title: "Women's Beauty Essentials",
+    image: heroWomensBeauty,
+    to: "/collections/womens-beauty-essentials",
+    alt: "Women's Beauty Essentials collection banner featuring skincare, makeup, and beauty tools.",
   },
   {
-    title: "Summer Collection",
-    image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_3.png",
-    to: "/shop?q=summer",
-    alt: "Summer collection banner featuring seasonal lifestyle, outdoor, and home essentials.",
+    title: "Portable Gadgets",
+    image: heroPortableGadgets,
+    to: "/collections/portable-gadgets",
+    alt: "Portable Gadgets collection banner featuring compact smart technology for everyday travel.",
+  },
+  {
+    title: "Travel & Outdoor",
+    image: heroTravelOutdoor,
+    to: "/collections/travel-outdoor",
+    alt: "Travel and Outdoor collection banner featuring camping, road-trip, and journey essentials.",
   },
 ];
 
@@ -313,12 +327,12 @@ const fallbackEverydayEssentialTiles: ProductTile[] = [
   },
 ];
 
-function SectionTitle({ title }: { title: string }) {
+function SectionTitle({ title, to }: { title: string; to?: string }) {
   return (
     <div className="grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] items-center gap-2.5 sm:gap-4">
       <span className="h-px bg-[#bfd4fb]" />
       <h2 className="font-display text-[clamp(1.12rem,3.15vw,1.65rem)] leading-none text-[#1c4b96]">
-        {title}
+        {to ? <Link to={to} className="transition hover:text-[#0d3578] hover:underline">{title}</Link> : title}
       </h2>
       <span className="h-px bg-[#bfd4fb]" />
     </div>
@@ -515,6 +529,7 @@ const HomePage = () => {
   // Full catalog loading remains on search, collection, and product routes.
   const { data: collectionsPayload } = useCollections();
   const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
+  const { data: homeCollectionProductsPayload } = useHomeCollectionProducts();
   const products: ShopifyProduct[] = [];
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const bestSellerCollection = useMemo(
@@ -767,6 +782,17 @@ const HomePage = () => {
     return rankedProducts.slice(0, 12).map((entry) => entry.product);
   }, [bestSellerProducts, featuredCourtneyBooks, products]);
   const everydayEssentialsTiles = useMemo<ProductTile[]>(() => {
+    const curatedProducts = homeCollectionProductsPayload?.sections.everydayEssentials.products || [];
+    if (curatedProducts.length) {
+      return curatedProducts.slice(0, 12).map((product) => ({
+        productId: product.id,
+        title: product.title,
+        price: formatMoney(product.price),
+        image: product.image,
+        to: `/products/${product.handle}`,
+      }));
+    }
+
     return (homeFeaturedProductsPayload?.everydayEssentialProducts || []).slice(0, 12).map((product) => ({
       productId: product.id,
       title: product.title,
@@ -774,7 +800,7 @@ const HomePage = () => {
       image: product.image,
       to: `/products/${product.handle}`,
     }));
-  }, [homeFeaturedProductsPayload?.everydayEssentialProducts]);
+  }, [homeCollectionProductsPayload?.sections.everydayEssentials.products, homeFeaturedProductsPayload?.everydayEssentialProducts]);
   const quirkyGiftTiles = useMemo<ProductTile[]>(() => {
     return (homeFeaturedProductsPayload?.quirkyGiftPicks || []).slice(0, 12).map((product) => ({
       productId: product.id,
@@ -791,6 +817,27 @@ const HomePage = () => {
   const everydayEssentialsDisplayTiles = useMemo(
     () => everydayEssentialsTiles.slice(0, 12),
     [everydayEssentialsTiles],
+  );
+  const homeCollectionSections = useMemo(
+    () =>
+      homeCollectionProductsPayload
+        ? [
+            homeCollectionProductsPayload.sections.womensBeautyEssentials,
+            homeCollectionProductsPayload.sections.portableGadgets,
+            homeCollectionProductsPayload.sections.travelOutdoor,
+          ].map((section) => ({
+            title: section.title,
+            to: `/collections/${section.handle}`,
+            tiles: section.products.slice(0, 12).map((product) => ({
+              productId: product.id,
+              title: product.title,
+              price: formatMoney(product.price),
+              image: product.image,
+              to: `/products/${product.handle}`,
+            })),
+          }))
+        : [],
+    [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   // Homepage must not fan out to one external review request per product. Static
@@ -1128,6 +1175,33 @@ const HomePage = () => {
           </section>
         </Reveal> : null}
 
+        {homeCollectionSections.map((section, sectionIndex) =>
+          section.tiles.length > 0 ? (
+            <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
+              <section className="border-t border-[#dce9ff] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                <SectionTitle title={section.title} to={section.to} />
+                <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
+                  {section.tiles.map((tile, index) => (
+                    <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={120 + index * 50}>
+                      <OverlayProductCard
+                        title={tile.title}
+                        image={tile.image}
+                        to={tile.to}
+                        price={tile.price}
+                        productId={tile.productId}
+                        fallbackImage={bestSellerHeroImage}
+                        imageAlt={buildProductImageAltText(tile.title, section.title)}
+                        compact
+                        className="w-full max-w-[11rem] justify-self-center"
+                      />
+                    </Reveal>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          ) : null,
+        )}
+
         <Reveal delayMs={110}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <GiftBanner />
@@ -1266,7 +1340,7 @@ const HomePage = () => {
 
         {everydayEssentialsDisplayTiles.length > 0 ? <Reveal delayMs={180}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
-            <SectionTitle title="Everyday Essentials" />
+            <SectionTitle title="Everyday Essentials" to="/collections/everyday-essentials" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
               {everydayEssentialsDisplayTiles.map((tile, index) => (
                 <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={180 + index * 50}>

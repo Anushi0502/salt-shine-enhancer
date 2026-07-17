@@ -354,6 +354,26 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
         legacyResourceId
         handle
         title
+        descriptionHtml
+        productType
+        vendor
+        tags
+        status
+        createdAt
+        updatedAt
+        publishedAt
+        variants(first: 100) {
+          nodes {
+            id
+            legacyResourceId
+            title
+            price
+            compareAtPrice
+            availableForSale
+            sku
+            barcode
+          }
+        }
         category {
           id
           name
@@ -660,7 +680,7 @@ async function fetchLiveProductCustomDataMap(products) {
         .filter(Boolean)
     : [];
 
-  const fingerprint = `${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
+  const fingerprint = `v3:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
   try {
     const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
     const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
@@ -699,6 +719,28 @@ async function fetchLiveProductCustomDataMap(products) {
 
       const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
       records.set(Number(node.legacyResourceId), {
+        liveProduct: {
+          id: Number(node.legacyResourceId),
+          handle: String(node.handle || ""),
+          title: String(node.title || ""),
+          body_html: String(node.descriptionHtml || ""),
+          product_type: String(node.productType || ""),
+          vendor: String(node.vendor || ""),
+          tags: Array.isArray(node.tags) ? node.tags : [],
+          status: String(node.status || "").toLowerCase(),
+          created_at: node.createdAt || null,
+          updated_at: node.updatedAt || null,
+          published_at: node.publishedAt || null,
+          variants: (node.variants?.nodes || []).map((variant) => ({
+            id: Number(variant.legacyResourceId),
+            title: String(variant.title || ""),
+            price: String(variant.price || ""),
+            compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
+            available: Boolean(variant.availableForSale),
+            sku: String(variant.sku || ""),
+            barcode: String(variant.barcode || ""),
+          })),
+        },
         customData,
         category: node.category
           ? {
@@ -1436,6 +1478,7 @@ async function main() {
 
     return {
       ...product,
+      ...liveRecord.liveProduct,
       customData: mergeProductCustomData(product.customData, liveRecord.customData),
       shopifyCategory: liveRecord.category,
       disclosures: liveRecord.disclosures,
@@ -1587,8 +1630,10 @@ async function main() {
     return;
   }
 
-  const applyResults = batches.length ? await applyBatches(batches) : [];
   const categoryResults = categoryPlans.length ? await applyCategoryPlans(categoryPlans) : [];
+  // Conditional standard metafields validate against the live product category.
+  // Categories must be committed and read back before those metafields are set.
+  const applyResults = batches.length ? await applyBatches(batches) : [];
   manifest.applied = {
     completedAt: new Date().toISOString(),
     batchCount: applyResults.length,

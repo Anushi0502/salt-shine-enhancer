@@ -210,10 +210,11 @@ describe("shopify SEO batch intelligence", () => {
     expect(exportRows[0].Title).not.toBe(rows[0].Title);
     expect(exportRows[0]["SEO Title"]).toContain("Modern Arc Floor Lamp");
     expect(exportRows[0]["SEO Description"]).toMatch(/trusted reviews/);
-    expect(exportRows[1]["Variant Price"]).toBe("13.99");
-    expect(exportRows[1]["Variant Compare At Price"]).toBe("14.00");
+    expect(exportRows[1]["Variant Price"]).toBe("22.99");
+    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeGreaterThanOrEqual(22.99 * 1.2 - 0.02);
+    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeLessThanOrEqual(22.99 * 1.4 + 0.02);
     expect(planResult.products[0].productInput).not.toHaveProperty("tags");
-    expect(exportRows[0].Tags).toBe("home decor, minimum-qty-3");
+    expect(exportRows[0].Tags).toBe("home decor, minimum-qty-2");
     expect(exportRows[1]).not.toHaveProperty("Tags");
     expect(rows[0].Title).toBe("Completely Wrong Title");
     expect(Object.keys(exportRows[0])).toEqual(Object.keys(rows[0]));
@@ -274,6 +275,6 @@ describe("shopify SEO batch intelligence", () => {
     );
     expect(manifest.knowledgeBank.version).toBe(PRODUCT_CONTENT_KNOWLEDGE_VERSION);
     expect(manifest.products[0].knowledge.family).toBe("home-lighting");
-    expect(manifest.products[0].desiredQuantityTag).toBe("minimum-qty-3");
+    expect(manifest.products[0].desiredQuantityTag).toBe("minimum-qty-2");
   });
 });

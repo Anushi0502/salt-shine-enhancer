@@ -126,7 +126,6 @@ type SaltPreloadWindow = Window & {
     payload?: Promise<Record<string, unknown>>;
   };
   __SALT_COLLECTION_PREFETCH__?: HeadPreloadedCollection;
-  __SALT_PRODUCT_ROUTE_WARM__?: Record<string, Promise<Record<string, unknown>>>;
 };
 
 let normalizedHeadCollectionSource: HeadPreloadedCollection | null = null;
@@ -279,11 +278,7 @@ function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | nu
   const prefetch = (window as SaltPreloadWindow).__SALT_COLLECTION_PREFETCH__;
   const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
   const routeMatch = window.location.pathname.match(/^\/collections\/([^/?#]+)\/?$/i);
-  const routeHandle = routeMatch
-    ? decodeURIComponent(routeMatch[1]).trim().toLowerCase()
-    : /^\/shop\/?$/i.test(window.location.pathname)
-      ? "all-products"
-      : "";
+  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
 
   // A collection bootstrap belongs to the Shopify document that rendered it.
   // Reject it after client-side navigation so a previous route can never leak
@@ -314,11 +309,6 @@ function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<s
     return prefetch.payload;
   }
 
-  const warmedRoute = (window as SaltPreloadWindow).__SALT_PRODUCT_ROUTE_WARM__?.[handle];
-  if (warmedRoute) {
-    return warmedRoute;
-  }
-
   // Collection pages already carry the current Shopify records for the first
   // viewport. Product cards reuse those records instead of issuing one
   // `/products/:handle.js` request per visible card.
@@ -330,13 +320,24 @@ function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<s
 }
 
 function getHeadPreloadedProductRecord(handle: string): ShopifyProduct | undefined {
-  if (typeof window === "undefined") return undefined;
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
   const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
   const routeMatch = window.location.pathname.match(/^\/products?\/([^/?#]+)\/?$/i);
   const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
   const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
-  if (!prefetch?.raw || !prefetchedHandle || prefetchedHandle !== handle || routeHandle !== handle) return undefined;
-  try { return normalizeProductRecord(prefetch.raw as unknown as ShopifyProduct); } catch { return undefined; }
+
+  if (!prefetch?.raw || !prefetchedHandle || prefetchedHandle !== handle || routeHandle !== handle) {
+    return undefined;
+  }
+
+  try {
+    return normalizeProductRecord(prefetch.raw as unknown as ShopifyProduct);
+  } catch {
+    return undefined;
+  }
 }
 
 function getLivePolicyBases(): string[] {
@@ -1426,22 +1427,38 @@ async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct>
   throw new Error(`Product "${normalizedHandle}" is unavailable. ${endpointErrors.slice(0, 3).join(" | ")}`);
 }
 
-const warmedProductRequests = new Map<string, { startedAt: number; promise: Promise<ShopifyProduct> }>();
+const warmedProductRequests = new Map<
+  string,
+  { startedAt: number; promise: Promise<ShopifyProduct> }
+>();
 const WARMED_PRODUCT_REQUEST_TTL_MS = 15_000;
 
 export function loadProductByHandle(handle: string): Promise<ShopifyProduct> {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
-  if (!normalizedHandle) return Promise.reject(new Error("Product handle is required"));
+  if (!normalizedHandle) {
+    return Promise.reject(new Error("Product handle is required"));
+  }
+
   const warmed = warmedProductRequests.get(normalizedHandle);
-  if (warmed && Date.now() - warmed.startedAt < WARMED_PRODUCT_REQUEST_TTL_MS) return warmed.promise;
+  if (warmed && Date.now() - warmed.startedAt < WARMED_PRODUCT_REQUEST_TTL_MS) {
+    return warmed.promise;
+  }
+
   const promise = loadProductByHandleFresh(normalizedHandle);
   warmedProductRequests.set(normalizedHandle, { startedAt: Date.now(), promise });
-  promise.catch(() => { if (warmedProductRequests.get(normalizedHandle)?.promise === promise) warmedProductRequests.delete(normalizedHandle); });
+  promise.catch(() => {
+    if (warmedProductRequests.get(normalizedHandle)?.promise === promise) {
+      warmedProductRequests.delete(normalizedHandle);
+    }
+  });
   return promise;
 }
 
 export function warmProductByHandle(handle: string): void {
-  void loadProductByHandle(handle).catch(() => {});
+  void loadProductByHandle(handle).catch(() => {
+    // Navigation keeps the normal error UI and retry path. Speculative warmups
+    // never surface an unhandled rejection.
+  });
 }
 
 export async function loadProductSearchIndex(): Promise<ProductsPayload> {
@@ -1713,6 +1730,9 @@ export function useProductByHandle(handle: string | undefined, enabled = true, l
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
+    // Liquid has already serialized the current Shopify product into the head.
+    // Supplying it synchronously removes even the Promise microtask that used
+    // to flash the product loading state before React Query resolved.
     initialData: inlineProduct,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,

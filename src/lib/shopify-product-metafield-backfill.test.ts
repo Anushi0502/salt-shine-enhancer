@@ -239,12 +239,16 @@ describe("shopify product metafield backfill planner", () => {
     const productTwoShopFloorValue = productTwo?.writes.find(
       (entry) => entry.fieldId === BACKFILL_FIELD_IDS.shopChannelMinimumQuantity,
     )?.value;
+    const productFourShopFloorValue = productFour?.writes.find(
+      (entry) => entry.fieldId === BACKFILL_FIELD_IDS.shopChannelMinimumQuantity,
+    )?.value;
 
     expect(relatedProducts).toContain("gid://shopify/Product/2");
     expect(complementaryProducts).toContain("gid://shopify/Product/6");
     expect(boosts.length).toBeGreaterThanOrEqual(3);
     expect(shopFloorValue).toBe("1");
     expect(productTwoShopFloorValue).toBe("2");
+    expect(productFourShopFloorValue).toBe("3");
     expect(
       productOne?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.relatedProductsDisplay)?.value,
     ).toBe("ahead");

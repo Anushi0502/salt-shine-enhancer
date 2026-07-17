@@ -37,7 +37,7 @@ export type SaltRuntimeContext = {
   storefrontLoginUrl?: string;
 };
 
-const LOCAL_ASSET_PREFIXES = ["/assets/", "/favicon", "/vite.svg"];
+const LOCAL_ASSET_PREFIXES = ["/assets/", "/src/assets/", "/favicon", "/vite.svg"];
 const DEFAULT_BRANDED_SHOP_BASE = "https://www.saltonlinestore.com";
 const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
 

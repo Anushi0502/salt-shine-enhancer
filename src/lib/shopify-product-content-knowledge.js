@@ -1,4 +1,4 @@
-export const PRODUCT_CONTENT_KNOWLEDGE_VERSION = "2026-07-13.1";
+export const PRODUCT_CONTENT_KNOWLEDGE_VERSION = "2026-07-16.2";
 
 export const MARKETPLACE_CONTENT_POLICY = Object.freeze({
   market: "US",
@@ -83,6 +83,167 @@ const family = ({
 
 export const PRODUCT_CONTENT_FAMILIES = Object.freeze([
   family({
+    id: "order-adjustment",
+    terms: ["link for price difference", "price difference"],
+    nouns: ["order adjustment"],
+    facts: ["Product focus", "Available options"],
+    purpose: "provides an order-specific price adjustment when directed by customer support",
+    use: "Purchase only the exact option and quantity supplied by customer support for an existing order.",
+    benefit: "It keeps an approved order adjustment separate from ordinary merchandise.",
+    audience: ["Customers completing a support-approved order adjustment"],
+  }),
+  family({
+    id: "vehicle-battery-charger",
+    terms: ["car battery charger", "motorcycle battery charger", "lead acid battery charger", "lifepo4 battery charger", "trickle battery charger"],
+    nouns: ["vehicle battery charger", "smart battery charger", "trickle charger"],
+    facts: ["Size or capacity", "Supported features", "Placement or setting", "Available options"],
+    purpose: "charges the compatible vehicle battery types and voltage formats explicitly identified by the product",
+    use: "Confirm battery chemistry, voltage, plug, polarity, and charging instructions before connecting the charger to a car or motorcycle battery.",
+    benefit: "Its stated voltage, battery chemistry, and plug options help shoppers choose a charger that matches their vehicle battery.",
+    audience: ["Car owners comparing compatible battery chargers", "Motorcycle owners checking voltage and battery chemistry", "Drivers selecting a maintenance or trickle charger"],
+  }),
+  family({
+    id: "rechargeable-battery-charger",
+    terms: ["battery charger", "rechargeable battery charger", "18650 battery charger", "aa lithium battery charger", "derailleur charger"],
+    nouns: ["rechargeable battery charger", "battery charging accessory"],
+    facts: ["Size or capacity", "Supported features", "Device compatibility", "Available options"],
+    purpose: "charges the rechargeable battery size or device battery explicitly identified by the product",
+    use: "Confirm battery size, chemistry, voltage, polarity, and device compatibility before connecting the charger and follow the supplied charging directions.",
+    benefit: "Its stated battery format and compatibility details help shoppers select the correct replacement or charging accessory.",
+    audience: ["Shoppers matching a charger to a rechargeable battery size", "Device owners replacing a compatible battery charger", "Buyers comparing battery and plug options"],
+  }),
+  family({
+    id: "musical-keyboard",
+    terms: ["digital piano", "electronic piano", "musical keyboard", "piano keyboard", "piano kit", "musical instrument"],
+    nouns: ["digital keyboard", "electronic piano", "musical instrument"],
+    facts: ["Product focus", "Size or capacity", "Supported features", "Intended user", "Available options"],
+    purpose: "provides the key layout and electronic music format identified by the product",
+    use: "Choose the stated plug or power option, position the keyboard securely, and follow the supplied setup and playing instructions.",
+    benefit: "Its key count, controls, and available power options help shoppers compare it for practice, learning, or music activities.",
+    audience: ["Beginners comparing electronic keyboards", "Parents choosing a musical keyboard for a child", "Shoppers checking key count and plug options"],
+  }),
+  family({
+    id: "earbuds-audio",
+    terms: ["wireless earbuds", "bluetooth earbuds", "tws earbuds", "wireless earphones", "bluetooth earphones", "wireless headphones", "bluetooth headset", "wired earphones", "earbuds", "earbud", "earphones", "earphone", "headphones", "headphone", "headset", "airpods", "realme buds", "redmi buds", "galaxy buds", "oneplus buds", "xiaomi buds", "earbud cleaning", "earbuds cleaning", "ear tips", "eartips", "ear hooks", "earbud case", "earphone case", "buds case"],
+    nouns: ["wireless earbuds", "earphones", "headphones", "earbud accessory"],
+    facts: ["Product focus", "Device compatibility", "Supported features", "Pack format", "Available options"],
+    purpose: "supports personal audio listening or the earbud accessory task explicitly identified by the product",
+    use: "Confirm the stated device or earbud-model compatibility, then pair, fit, clean, or install it according to the supplied instructions.",
+    benefit: "Its audio format, compatibility, and included option details help shoppers choose the correct earbuds or accessory.",
+    audience: ["Shoppers comparing personal audio formats", "Device owners checking earbud compatibility", "Buyers replacing or maintaining an earbud accessory"],
+  }),
+  family({
+    id: "keyboard-accessory",
+    terms: ["keyboard stand", "keyboards stand", "keyboard platform", "keyboard stabilizer", "keyboard stabilizers", "plate mounted stabilizer", "keycaps storage", "keycap organizer", "keycaps for mechanical keyboard", "keyboard protective cover", "keyboards protective cover", "keyboard stickers", "keyboard holder", "keyboard storage stand", "keyboards display stand", "keyboard circuit board", "keyboard pcb board", "pcb board for mechanical keyboard", "keyboard wrist rest", "sound dampening positioning board", "key power board", "side key board", "pcb key board"],
+    nouns: ["keyboard accessory", "keyboard stand", "keyboard protective cover"],
+    facts: ["Product focus", "Supported features", "Material", "Device compatibility", "Available options"],
+    purpose: "supports keyboard storage, positioning, protection, labeling, or component replacement as identified by the product",
+    use: "Confirm keyboard dimensions or model compatibility, then install or position the accessory according to the supplied directions.",
+    benefit: "Its specific keyboard task and compatibility details help shoppers avoid selecting the wrong accessory.",
+    audience: ["Keyboard owners checking accessory compatibility", "Gaming and office users organizing a keyboard setup", "DIY keyboard builders selecting a component"],
+  }),
+  family({
+    id: "stationery-storage",
+    terms: ["pencil case", "pencil cases", "pencilcase", "pencil box", "pencil boxes", "pen box", "pen holder", "pen package box", "stationery box", "pencil storage", "pen storage", "office supplies pencils", "whiteboard magnetic storage"],
+    nouns: ["pencil case", "pencil box", "stationery organizer"],
+    facts: ["Product focus", "Material", "Supported features", "Use or occasion", "Available options"],
+    purpose: "stores pencils, pens, crayons, or other small stationery for the setting identified by the product",
+    use: "Choose the listed size or format, load suitable stationery without overfilling it, and keep the box clean and dry between uses.",
+    benefit: "Its storage format and available options help shoppers compare it for school, office, art, or desktop organization.",
+    audience: ["Students organizing school supplies", "Office users storing pens and small stationery", "Art and craft shoppers comparing pencil storage"],
+  }),
+  family({
+    id: "air-care-appliance",
+    terms: ["humidifier", "air humidifier", "aroma humidifier", "aroma diffuser", "essential oil diffuser", "fragrance diffuser", "scent air machine", "air dehumidifier", "air purifier", "air freshener"],
+    nouns: ["air humidifier", "aroma diffuser", "air-care appliance"],
+    facts: ["Product focus", "Size or capacity", "Supported features", "Placement or setting", "Available options"],
+    purpose: "provides the humidifying, diffusing, scenting, or moisture-control format identified by the product",
+    use: "Use only the liquids, power source, placement, and operating method approved in the supplied instructions, then clean the reservoir or outlet as directed.",
+    benefit: "Its capacity, power format, and intended room or vehicle setting help shoppers compare the correct air-care appliance.",
+    audience: ["Home and office shoppers comparing air-care formats", "Travel or car users checking compact options", "Buyers comparing capacity and power requirements"],
+  }),
+  family({
+    id: "essential-oil-refill",
+    terms: ["essential oil set", "fragrance oil set", "diffuser oil refill"],
+    nouns: ["fragrance oil set", "diffuser oil refill"],
+    facts: ["Size or capacity", "Pack format", "Available options"],
+    purpose: "provides the fragrance-oil refill format identified for a compatible diffuser or air-freshening routine",
+    use: "Confirm compatibility with the intended diffuser and follow the supplied dilution, handling, and usage directions.",
+    benefit: "Its bottle size, pack count, and fragrance options help shoppers compare refills for a compatible diffuser.",
+    audience: ["Diffuser owners comparing fragrance refills", "Home fragrance shoppers checking bottle and pack sizes"],
+    care: "beauty",
+  }),
+  family({
+    id: "plant-care-accessory",
+    terms: ["carbon dioxide air diffuser", "co2 air diffuser", "plant growth diffuser"],
+    nouns: ["CO2 diffuser", "plant-care accessory"],
+    facts: ["Product focus", "Size or capacity", "Available options"],
+    purpose: "provides the gas-diffusion accessory identified for a compatible planted growing or aquarium system",
+    use: "Confirm system, tubing, gas, and pressure compatibility before installation and follow the supplied setup instructions.",
+    benefit: "Its stated diffuser format helps shoppers compare a compatible component for an existing system.",
+    audience: ["Planted-system owners checking diffuser compatibility", "Aquarium or growing-system users replacing a diffusion component"],
+  }),
+  family({
+    id: "portable-fan-cooling",
+    terms: ["air cooler fan", "usb air cooler", "portable fan", "desk fan", "office fan"],
+    nouns: ["portable fan", "USB air cooler", "desk fan"],
+    facts: ["Product focus", "Supported features", "Size or capacity", "Placement or setting", "Available options"],
+    purpose: "provides the portable airflow or compact cooling format identified by the product",
+    use: "Place it on a stable surface, connect the stated power source, keep openings clear, and follow the supplied filling and cleaning directions where applicable.",
+    benefit: "Its power, size, and control details help shoppers compare it for a desk, dorm, travel, or office setup.",
+    audience: ["Desk and office users comparing compact fans", "Travelers checking portable cooling formats", "Dorm and home users comparing power options"],
+  }),
+  family({
+    id: "portable-air-pump",
+    terms: ["wireless air pump", "portable air compressor", "car air pump", "bicycle inflator"],
+    nouns: ["portable air pump", "air compressor", "tire inflator"],
+    facts: ["Product focus", "Supported features", "Use or occasion", "Available options"],
+    purpose: "provides the portable inflation format identified for vehicle, motorcycle, or bicycle tires",
+    use: "Confirm the supported valve, pressure range, and power instructions before connecting and inflating a tire.",
+    benefit: "Its power and intended vehicle details help shoppers compare it for roadside or routine tire inflation.",
+    audience: ["Drivers comparing portable tire inflators", "Motorcycle and bicycle owners checking valve compatibility"],
+  }),
+  family({
+    id: "display-board-sign",
+    terms: ["desktop magnetic whiteboard", "standing blackboard", "coffee shop blackboard", "handwritten billboard"],
+    nouns: ["desktop whiteboard", "standing blackboard", "display sign"],
+    facts: ["Product focus", "Material", "Placement or setting", "Available options"],
+    purpose: "provides a freestanding writing or display surface for messages, menus, notices, or desk notes",
+    use: "Place it on a stable surface and write, erase, or display information using materials suitable for the stated board finish.",
+    benefit: "Its board format and placement details help shoppers compare it for a desk, counter, cafe, or event display.",
+    audience: ["Cafe and retail users displaying messages", "Office and home users organizing visible notes"],
+  }),
+  family({
+    id: "vehicle-key-component",
+    terms: ["smart car key pcb board", "car key pcb board", "remote generation"],
+    nouns: ["car key circuit board", "remote key component"],
+    facts: ["Product focus", "Device compatibility", "Available options"],
+    purpose: "provides the replacement circuit-board component identified for a compatible vehicle remote key",
+    use: "Confirm the exact vehicle, board, frequency, and shell compatibility before installation by a qualified key technician.",
+    benefit: "Its board and vehicle details help shoppers avoid ordering an incompatible remote-key component.",
+    audience: ["Automotive key technicians checking replacement components", "Vehicle owners confirming remote-key compatibility"],
+  }),
+  family({
+    id: "craft-material",
+    terms: ["dried flower buds", "soap making", "candle making", "incense crafts"],
+    nouns: ["dried craft flowers", "craft material"],
+    facts: ["Product focus", "Material", "Pack format", "Available options"],
+    purpose: "supplies the dried decorative material identified for soap, candle, incense, or craft projects",
+    use: "Select the preferred variety and use it only for the stated decorative craft application, following the project instructions.",
+    benefit: "Its material format and available varieties help crafters compare it for a specific project.",
+    audience: ["Soap and candle makers choosing decorative materials", "Craft shoppers comparing dried flower varieties"],
+  }),
+  family({
+    id: "fidget-key-toy",
+    terms: ["keyboard keychain fidget toy", "keyboard key toy", "keyboard games", "stress relief fingertip gadget"],
+    nouns: ["keyboard fidget toy", "clicker keychain"],
+    facts: ["Product focus", "Supported features", "Use or occasion", "Available options"],
+    purpose: "provides the clickable key or keychain fidget format identified by the product",
+    use: "Use it as a handheld or keychain clicker and follow the supplied age and small-parts guidance.",
+    benefit: "Its key layout and portable format help shoppers compare it as a desk accessory, gift, or fidget item.",
+    audience: ["Shoppers comparing compact fidget toys", "Gift buyers choosing a keyboard-themed desk accessory"],
+  }),
+  family({
     id: "adult-bib-apron",
     terms: ["adult bib", "adult apron", "clothing protector", "mealtime bib"],
     nouns: ["adult bib", "protective apron", "clothing protector"],
@@ -104,8 +265,8 @@ export const PRODUCT_CONTENT_FAMILIES = Object.freeze([
   }),
   family({
     id: "computer-peripheral",
-    terms: ["mouse", "computer mouse", "wireless mouse", "bluetooth mouse", "mouse jiggler", "keyboard", "laptop stand", "laptop cooler", "cooling pad", "webcam"],
-    nouns: ["computer mouse", "keyboard", "computer accessory"],
+    terms: ["mouse", "computer mouse", "wireless mouse", "bluetooth mouse", "mouse jiggler", "keyboard", "keyboards", "keybaord", "keypad", "macro keypad", "membrane switch keypad", "laptop stand", "laptop cooler", "cooling pad", "webcam"],
+    nouns: ["computer mouse", "keyboard", "keypad", "computer accessory"],
     facts: ["Supported features", "Device compatibility", "Use or occasion", "Available options"],
     purpose: "supports the computer task, control method, or workstation setup identified by the product",
     use: "Connect or position it as directed, confirm device compatibility, and use the available controls for the stated computer task.",
@@ -343,6 +504,30 @@ export function resolveProductKnowledge(handle) {
   const normalized = normalize(handle);
   const override = HANDLE_FAMILY_OVERRIDES.get(normalized);
   if (override) return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === override);
+  if (/(?:piano|keyboard) (?:\w+ )*(?:stickers?|note labels?)/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "keyboard-accessory");
+  }
+  if (/\b\d+ keys?\b/.test(normalized) && /(?:digital|electronic|electric) (?:\w+ )*(?:piano|keyboard)/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "musical-keyboard");
+  }
+  if (/\b(?:pencil|pencilcase|pen box|stationery box|pen holder)\b/.test(normalized) && !/jewelry box/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "stationery-storage");
+  }
+  if (/\b\d+\s*pcs?\s+\d+ml\b/.test(normalized) && /essential oil/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "essential-oil-refill");
+  }
+  if (/(?:carbon dioxide|co2) air diffuser/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "plant-care-accessory");
+  }
+  if (/keydiy .* pcb key board|pcb key board .* (?:vw|audi|porsche)/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "vehicle-key-component");
+  }
+  if (/key power board .* partybox/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "keyboard-accessory");
+  }
+  if (/(?:car|motorcycle|lead acid|lifepo4|trickle) (?:\w+ )*battery charger|battery charger (?:\w+ )*(?:car|motorcycle|lead acid|lifepo4|trickle)/.test(normalized)) {
+    return PRODUCT_CONTENT_FAMILIES.find((entry) => entry.id === "vehicle-battery-charger");
+  }
 
   let best = PRODUCT_CONTENT_FAMILIES.at(-1);
   let bestScore = 0;
@@ -386,7 +571,11 @@ export function enforceMarketplaceTitle(value, maxLength = 68) {
   const text = kept.join(" ");
   if (text.length <= maxLength) return text;
   const cut = text.slice(0, maxLength + 1);
-  return cut.slice(0, Math.max(1, cut.lastIndexOf(" "))).replace(/[,:;-]+$/g, "").trim();
+  return cut
+    .slice(0, Math.max(1, cut.lastIndexOf(" ")))
+    .replace(/[,:;-]+$/g, "")
+    .replace(/\b(?:and|for|with|of|to)$/i, "")
+    .trim();
 }
 
 export function containsUnsafeMarketplaceClaim(value) {
@@ -408,6 +597,17 @@ export function sanitizeMarketplaceClaims(value) {
 export function isTitleAlignedWithKnowledge(value, knowledge) {
   const text = normalize(value);
   if (!text || !knowledge || knowledge.id === "general") return true;
-  return [...(knowledge.matchTerms || []), ...(knowledge.productNouns || [])]
-    .some((term) => hasWholeTerm(text, term));
+  const evidence = [...(knowledge.matchTerms || []), ...(knowledge.productNouns || [])];
+  if (evidence.some((term) => hasWholeTerm(text, term))) return true;
+
+  const singularize = (token) => token.length > 4 && token.endsWith("s") ? token.slice(0, -1) : token;
+  const ignored = new Set(["accessory", "item", "product", "replacement"]);
+  const titleTokens = new Set(text.split(" ").map(singularize).filter((token) => token.length >= 4 && !ignored.has(token)));
+  const evidenceTokens = new Set(
+    evidence
+      .flatMap((term) => normalize(term).split(" "))
+      .map(singularize)
+      .filter((token) => token.length >= 4 && !ignored.has(token)),
+  );
+  return [...titleTokens].some((token) => evidenceTokens.has(token));
 }

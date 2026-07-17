@@ -34,6 +34,11 @@ const themeDataAssets = [
     asset: "data-home-featured-products.json",
     themePath: "/data/home-featured-products.json",
   },
+  {
+    source: "home-collection-products.json",
+    asset: "data-home-collection-products.json",
+    themePath: "/data/home-collection-products.json",
+  },
   { source: "product-search.json", asset: "data-product-search.json", themePath: "/data/product-search.json" },
   { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
   {
@@ -67,25 +72,6 @@ function parseEntryAssets(indexHtml) {
     jsPath: jsMatch[1],
     cssPath: cssMatch[1],
   };
-}
-
-async function collectStaticChunkImports(entryAsset, excludedAssets = new Set()) {
-  const discovered = new Set();
-
-  async function visit(asset) {
-    if (!asset || discovered.has(asset) || excludedAssets.has(asset)) return;
-    discovered.add(asset);
-    const source = await readFile(resolve(distDir, "assets", asset), "utf8");
-    const imports = Array.from(
-      source.matchAll(/(?:from|import)\s*["']\.\/([^"']+\.js)["']/g),
-      (match) => match[1],
-    );
-    await Promise.all(imports.map(visit));
-  }
-
-  await visit(entryAsset);
-  discovered.delete(entryAsset);
-  return Array.from(discovered).sort();
 }
 
 async function ensureDistExists() {
@@ -142,7 +128,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
-      ${Array.isArray(routeAssets.productImports) ? routeAssets.productImports.map((asset) => `<link rel="modulepreload" href="{{ ${JSON.stringify(asset)} | asset_url | split: '?' | first }}">`).join("\n      ") : ""}
     {% elsif request.page_type == 'index' and ${JSON.stringify(routeAssets.home || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
     {% endif %}
@@ -395,55 +380,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
 
           var handle = decodeURIComponent(match[1]);
           var url = '/products/' + encodeURIComponent(handle) + '.js';
-          var liquidProduct = {{ product | json }};
-          var normalizeMoney = function (value) {
-            return (Number(value || 0) / 100).toFixed(2);
-          };
-          var normalizeImage = function (source, index) {
-            if (!source) return null;
-            var src = typeof source === 'string' ? source : source.src;
-            if (!src) return null;
-            return {
-              id: Number(source.id || index + 1),
-              src: src,
-              alt: source.alt || null,
-              width: source.width || undefined,
-              height: source.height || undefined
-            };
-          };
-          var images = liquidProduct && Array.isArray(liquidProduct.images)
-            ? liquidProduct.images.map(normalizeImage).filter(Boolean)
-            : [];
-          var featuredImage = liquidProduct ? normalizeImage(liquidProduct.featured_image, 0) : null;
-          if (featuredImage && !images.length) images.push(featuredImage);
-          var inlineProduct = liquidProduct && liquidProduct.id ? {
-            id: liquidProduct.id,
-            title: liquidProduct.title || '',
-            handle: liquidProduct.handle || handle,
-            body_html: liquidProduct.description || liquidProduct.content || null,
-            vendor: liquidProduct.vendor || '',
-            product_type: liquidProduct.type || '',
-            tags: liquidProduct.tags || [],
-            created_at: liquidProduct.created_at || '',
-            published_at: liquidProduct.published_at || '',
-            updated_at: liquidProduct.updated_at || liquidProduct.published_at || '',
-            variants: (liquidProduct.variants || []).map(function (variant) {
-              return {
-                id: variant.id,
-                title: variant.public_title || variant.title || 'Default Title',
-                price: normalizeMoney(variant.price),
-                compare_at_price: Number(variant.compare_at_price || 0) > Number(variant.price || 0)
-                  ? normalizeMoney(variant.compare_at_price)
-                  : null,
-                available: Boolean(variant.available),
-                sku: variant.sku || '',
-                requires_shipping: Boolean(variant.requires_shipping),
-                featured_image: normalizeImage(variant.featured_image, 0)
-              };
-            }),
-            images: images,
-            image: featuredImage || images[0] || null
-          } : null;
+          var inlineProduct = {{ product | json }};
           window.__SALT_PRODUCT_PREFETCH__ = {
             handle: handle.toLowerCase(),
             raw: inlineProduct && inlineProduct.id ? inlineProduct : null,
@@ -460,37 +397,63 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% if request.page_type == 'index' %}
       <script>
         (function () {
+          // These rails are evaluated by Shopify on every homepage request.
+          // React therefore receives current collection order, product handles,
+          // prices, images, and availability synchronously from the document.
           function compactProduct(id, title, handle, image, price, compareAtPrice) {
             return { id: id, title: title, handle: handle, image: image, price: price, compareAtPrice: compareAtPrice };
           }
+
           window.__SALT_HOME_PREFETCH__ = {
-            generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }}, source: 'shopify-liquid:home',
-            sources: { bestSellerProducts: 'appplaza-best-sellers', quirkyGiftPicks: 'gifts', everydayEssentialProducts: 'garden-tools' },
+            generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+            source: 'shopify-liquid:home',
+            sources: {
+              bestSellerProducts: 'appplaza-best-sellers',
+              quirkyGiftPicks: 'gifts',
+              everydayEssentialProducts: 'garden-tools'
+            },
             bestSellerProducts: [
               {% for item in collections['appplaza-best-sellers'].products limit: 12 %}
-                compactProduct({{ item.id | json }}, {{ item.title | json }}, {{ item.handle | json }}, {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %}, {{ item.price_min | divided_by: 100.0 | json }}, {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}){% unless forloop.last %},{% endunless %}
+                compactProduct(
+                  {{ item.id | json }},
+                  {{ item.title | json }},
+                  {{ item.handle | json }},
+                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
+                  {{ item.price_min | divided_by: 100.0 | json }},
+                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
+                ){% unless forloop.last %},{% endunless %}
               {% endfor %}
             ],
             quirkyGiftPicks: [
               {% for item in collections['gifts'].products limit: 12 %}
-                compactProduct({{ item.id | json }}, {{ item.title | json }}, {{ item.handle | json }}, {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %}, {{ item.price_min | divided_by: 100.0 | json }}, {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}){% unless forloop.last %},{% endunless %}
+                compactProduct(
+                  {{ item.id | json }},
+                  {{ item.title | json }},
+                  {{ item.handle | json }},
+                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
+                  {{ item.price_min | divided_by: 100.0 | json }},
+                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
+                ){% unless forloop.last %},{% endunless %}
               {% endfor %}
             ],
             everydayEssentialProducts: [
               {% for item in collections['garden-tools'].products limit: 12 %}
-                compactProduct({{ item.id | json }}, {{ item.title | json }}, {{ item.handle | json }}, {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %}, {{ item.price_min | divided_by: 100.0 | json }}, {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}){% unless forloop.last %},{% endunless %}
+                compactProduct(
+                  {{ item.id | json }},
+                  {{ item.title | json }},
+                  {{ item.handle | json }},
+                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
+                  {{ item.price_min | divided_by: 100.0 | json }},
+                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
+                ){% unless forloop.last %},{% endunless %}
               {% endfor %}
             ]
           };
         })();
       </script>
     {% endif %}
-    {% assign salt_active_collection = collection %}
-    {% if request.path == '/shop' %}
-      {% assign salt_active_collection = collections['all-products'] %}
-    {% endif %}
-    {% if salt_active_collection %}
-      {% paginate salt_active_collection.products by 250 %}
+    {% if request.page_type == 'collection' and collection %}
+      {% paginate collection.products by 250 %}
         <script>
           (function () {
             // Shopify renders this payload inside the uploaded theme. It is a
@@ -498,7 +461,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             // prices, availability, and newly added first-page products before
             // its modules execute and without a storefront API round-trip.
             var liveProducts = [
-              {% for item in salt_active_collection.products limit: 24 %}
+              {% for item in collection.products limit: 24 %}
                 {
                   id: {{ item.id | json }},
                   title: {{ item.title | json }},
@@ -515,8 +478,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
                       {
                         id: {{ variant.id | json }},
                         title: {{ variant.title | json }},
-                        price: {{ variant.price | divided_by: 100.0 | json }},
-                        compare_at_price: {% if variant.compare_at_price %}{{ variant.compare_at_price | divided_by: 100.0 | json }}{% else %}null{% endif %},
+                        price: {{ variant.price | json }},
+                        compare_at_price: {% if variant.compare_at_price %}{{ variant.compare_at_price | json }}{% else %}null{% endif %},
                         available: {{ variant.available | json }},
                         sku: {{ variant.sku | json }},
                         requires_shipping: {{ variant.requires_shipping | json }}
@@ -546,13 +509,13 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             ];
 
             window.__SALT_COLLECTION_PREFETCH__ = {
-              handle: {{ salt_active_collection.handle | downcase | json }},
+              handle: {{ collection.handle | downcase | json }},
               generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
               complete: {% if paginate.pages == 1 %}true{% else %}false{% endif %},
               currentPage: {{ paginate.current_page | json }},
-              total: {{ salt_active_collection.products_count | json }},
+              total: {{ collection.products_count | json }},
               productIds: [
-                {% for item in salt_active_collection.products %}
+                {% for item in collection.products %}
                   {{ item.id | json }}{% unless forloop.last %},{% endunless %}
                 {% endfor %}
               ],
@@ -739,15 +702,9 @@ async function main() {
   const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
   const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
   const distAssets = await readdir(resolve(distDir, "assets"));
-  const entryAsset = basename(jsPath);
-  const productAsset = distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "";
-  const productImports = productAsset
-    ? await collectStaticChunkImports(productAsset, new Set([entryAsset]))
-    : [];
   const routeAssets = {
     home: distAssets.find((asset) => /^HomePage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
-    product: productAsset,
-    productImports,
+    product: distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
   };
 
   await mkdir(themeDir, { recursive: true });

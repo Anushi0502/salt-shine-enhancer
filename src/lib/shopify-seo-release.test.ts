@@ -35,8 +35,8 @@ function makeSnapshot() {
             title: "Default Title",
             option1: "Default Title",
             sku: "LAMP-1",
-            price: "13.99",
-            compare_at_price: "19.99",
+            price: "5.99",
+            compare_at_price: "9.99",
           },
         ],
       },
@@ -163,7 +163,7 @@ describe("Shopify SEO release reconciliation", () => {
       collectionProducts: {},
     });
 
-    expect(plan.products[0].desiredProductInput.title).toContain("Cookware Set");
+    expect(plan.products[0].desiredProductInput.title).toBe("10 Piece Pots And Pans Set");
     expect(plan.products[0].desiredProductInput.title).not.toContain("Suit Set");
     expect(plan.products[0].intelligence.searchPhrases.join(" ")).not.toContain("suit");
     expect(isHandleContentMismatch(plan.products[0])).toBe(true);
@@ -184,8 +184,8 @@ describe("Shopify SEO release reconciliation", () => {
   it("uses the reviewed pricing plan and derives quantity tags from the final price", async () => {
     const { productPlan } = await makePlanAndLive();
 
-    expect(Number(productPlan.currentVariantUpdates[0].price)).toBe(13.99);
-    expect(Number(productPlan.desiredVariantUpdates[0].price)).toBeGreaterThan(13.99);
+    expect(Number(productPlan.currentVariantUpdates[0].price)).toBe(5.99);
+    expect(Number(productPlan.desiredVariantUpdates[0].price)).toBeGreaterThanOrEqual(17.99);
     expect(productPlan.currentQuantityTag).toBe("minimum-qty-3");
     expect(productPlan.desiredQuantityTag).toBe("minimum-qty-2");
   });
@@ -213,28 +213,37 @@ describe("Shopify SEO release reconciliation", () => {
     expect(diff.productInput.tags).not.toContain("minimum-qty-3");
   });
 
-  it("writes only missing SEO fields", async () => {
+  it("writes all missing explicit SEO fields", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan({ ...liveProduct, seo: { title: "", description: "" } }, productPlan);
 
     expect(diff.productInput).toEqual({
       id: "gid://shopify/Product/101",
-      seo: { description: productPlan.desiredProductInput.seo.description },
+      seo: {
+        title: productPlan.desiredProductInput.seo.title,
+        description: productPlan.desiredProductInput.seo.description,
+      },
     });
-    expect(diff.changedFields).toEqual(["seo-description"]);
+    expect(diff.changedFields).toEqual(["seo-title", "seo-description"]);
     expect(diff.variantInputs).toHaveLength(0);
     expect(diff.mediaInputs).toHaveLength(0);
   });
 
-  it("treats a null SEO title as aligned when Shopify uses the product title default", async () => {
+  it("writes a null SEO title when the explicit optimized title differs from the product title", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan(
       { ...liveProduct, seo: { title: null, description: liveProduct.seo.description } },
       productPlan,
     );
 
-    expect(diff.changedFields).not.toContain("seo-title");
-    expect(diff.productInput).toEqual({ id: "gid://shopify/Product/101" });
+    expect(diff.changedFields).toContain("seo-title");
+    expect(diff.productInput).toEqual({
+      id: "gid://shopify/Product/101",
+      seo: {
+        title: productPlan.desiredProductInput.seo.title,
+        description: productPlan.desiredProductInput.seo.description,
+      },
+    });
   });
 
   it("writes an explicit SEO title when a title rewrite would otherwise change the null default", async () => {

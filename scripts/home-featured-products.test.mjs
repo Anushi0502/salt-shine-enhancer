@@ -43,11 +43,13 @@ describe("home featured products", () => {
       generatedAt: "2026-07-13T00:00:00.000Z",
       source: "https://example.myshopify.com",
       total: 1,
+      bestSellerProducts: [],
       quirkyGiftPicks: [{ id: 1, handle: "novelty-gift", price: 19.99 }],
+      everydayEssentialProducts: [],
     });
   });
 
-  it("keeps each homepage rail inside its declared Shopify collection order", () => {
+  it("keeps every homepage rail inside its declared Shopify collection and collection order", () => {
     const products = [
       product(1, "Best Gift", "best-gift", ["gift"]),
       product(2, "Garden Tool", "garden-tool", ["garden tool"]),
@@ -56,11 +58,13 @@ describe("home featured products", () => {
     ];
     const payload = buildHomeFeaturedProductsPayload(
       { generatedAt: "2026-07-17T00:00:00.000Z", source: "shopify", products },
-      { collections: {
-        "appplaza-best-sellers": { productIds: [1] },
-        gifts: { productIds: [3, 1] },
-        "garden-tools": { productIds: [2] },
-      } },
+      {
+        collections: {
+          "appplaza-best-sellers": { productIds: [1] },
+          gifts: { productIds: [3, 1] },
+          "garden-tools": { productIds: [2] },
+        },
+      },
     );
 
     expect(payload.bestSellerProducts.map((entry) => entry.id)).toEqual([1]);

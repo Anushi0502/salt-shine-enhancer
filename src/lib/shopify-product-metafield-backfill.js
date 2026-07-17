@@ -381,6 +381,10 @@ function getShopChannelMinimumQuantity(price) {
     return 1;
   }
 
+  if (price < 15) {
+    return 3;
+  }
+
   if (price < 25) {
     return 2;
   }
@@ -591,7 +595,7 @@ function buildProductSubtitle(product, collectionTitles = [], productType = "") 
     return "";
   }
 
-  return normalizePlainText(parts.join(" • ")).slice(0, 80);
+  return normalizePlainText(parts.join(" • ")).slice(0, 70).trim();
 }
 
 function buildProductBadgeText(product, reviewSummary = null, existing = null) {
@@ -623,7 +627,7 @@ function buildProductHighlights(product, collectionTitles = [], reviewSummary = 
   const title = getProductTitle(product);
   const evidence = normalizePlainText(`${product?.handle || ""} ${title}`).replace(/[-_]+/g, " ");
   const category = inferShopifyTaxonomyCategory(product);
-  const identityNoise = new Set(["cheap", "fashionable", "high", "latest", "quality", "stylish"]);
+  const identityNoise = new Set(["cheap", "fashionable", "high", "latest", "quality", "shockproof", "stylish"]);
   const handleIdentity = uniqueValues(
     splitTextIntoTokens(product?.handle || "")
       .filter((token) => !/^20\d{2}$/.test(token))

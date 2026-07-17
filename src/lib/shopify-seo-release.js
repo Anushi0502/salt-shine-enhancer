@@ -190,7 +190,7 @@ function numericResourceId(value) {
   return String(value || "").match(/(\d+)$/)?.[1] || "";
 }
 
-function convertLiveProductToCatalogProduct(product) {
+export function convertLiveProductToCatalogProduct(product) {
   const mediaNodes = Array.isArray(product?.media?.nodes) ? product.media.nodes : [];
   const images = mediaNodes
     .filter((entry) => entry?.__typename === "MediaImage" && entry?.image?.url)
@@ -231,6 +231,8 @@ function convertLiveProductToCatalogProduct(product) {
     tags: Array.isArray(product.tags) ? product.tags : [],
     vendor: product.vendor || "",
     status: product.status || "",
+    created_at: product.createdAt || null,
+    updated_at: product.updatedAt || null,
     published_at: product.publishedAt || null,
     images,
     variants,
@@ -369,7 +371,9 @@ export async function buildShopifySeoReleasePlan(snapshot) {
       desiredVariantUpdates,
       currentVariantUpdates,
       desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
-      desiredQuantityTag: getMinimumQuantityTagForPrices(desiredVariantUpdates.map((variant) => variant.price)),
+      desiredQuantityTag: productPlan?.intelligence?.knowledge?.family === "order-adjustment"
+        ? ""
+        : getMinimumQuantityTagForPrices(desiredVariantUpdates.map((variant) => variant.price)),
       currentQuantityTag: getMinimumQuantityTagForPrices(currentVariantUpdates.map((variant) => variant.price)),
       categoryAuthoritative: Boolean(productPlan.categoryId && productPlan.categoryQuery),
     };

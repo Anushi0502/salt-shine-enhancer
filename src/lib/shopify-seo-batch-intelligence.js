@@ -245,6 +245,19 @@ const FAMILY_PRIORITY_WORDS = new Set([
   "hoodie",
   "toy",
   "toys",
+  "keyboard",
+  "keyboards",
+  "piano",
+  "earbud",
+  "earbuds",
+  "earphone",
+  "earphones",
+  "headphone",
+  "headphones",
+  "pencil",
+  "humidifier",
+  "diffuser",
+  "fan",
 ]);
 
 function asText(value) {
@@ -287,6 +300,12 @@ function tokenizeText(value) {
 function titleCase(value) {
   return tokenizeText(value)
     .map((token) => {
+      if (/^\d+(?:\.\d+)?(?:v|a|w|mah|ml|gb|tb)$/i.test(token)) {
+        return token.toUpperCase();
+      }
+      if (/^(?:pcb|rgb|usb|tws|diy|led|ios|aa|aaa|sram|dji|psp)$/i.test(token)) {
+        return token.toUpperCase();
+      }
       if (/^[a-z0-9]+$/i.test(token) && token === token.toUpperCase()) {
         return token;
       }
@@ -596,7 +615,322 @@ function selectHandleFamilyPhrase(signals) {
   return bestScore > Number.NEGATIVE_INFINITY ? titleCase(bestCandidate) : "";
 }
 
-function buildHandleAlignedTitle(signals) {
+export function buildHandleAlignedTitle(signals) {
+  const handle = normalizeHandleValue(signals.handle);
+  if (/^link-for-price-difference(?:-|$)/i.test(handle)) {
+    return "Order Price Difference Adjustment";
+  }
+  if (/desktop-magnetic.*(?:whiteboard|blackboard)|standing-blackboard/i.test(handle)) {
+    return "Desktop Magnetic Whiteboard and Standing Display Sign";
+  }
+  if (/smart-car-key-pcb-board|car-key-pcb-board/i.test(handle)) {
+    return "Smart Car Key PCB Replacement Board without Key Shell";
+  }
+  if (/keydiy.*pcb-key-board|pcb-key-board.*(?:vw|audi|porsche)/i.test(handle)) {
+    return "KEYDIY Remote Key PCB Board for VW, Audi and Porsche";
+  }
+  if (/portable-air-compressor|wireless-air-pump|car-air-pump/i.test(handle)) {
+    return "Portable Wireless Tire Inflator for Cars and Bicycles";
+  }
+  if (/dried-flower-buds.*(?:soap|candle|craft)/i.test(handle)) {
+    return "Dried Flower Buds for Soap, Candle and Craft Projects";
+  }
+  if (/baby-toys?.*(?:drum|piano)|(?:drum|piano).*(?:toddler|baby-toys?)/i.test(handle)) {
+    return "Musical Drum and Piano Toy with Lights and Sound for Toddlers";
+  }
+  if (/keyboard.*(?:fidget-toy|key-toy)|(?:fidget|stress-relief).*keyboard/i.test(handle)) {
+    return `${/led-light/i.test(handle) ? "LED " : ""}Keyboard Keychain Fidget Toy for Desk Use`;
+  }
+  if (/keyboard-toys?.*(?:stress-relief|clicker)|(?:stress-relief|clicker).*keyboard-toys?/i.test(handle)) {
+    return "Keyboard Keychain Fidget Clicker Toy for Desk Use";
+  }
+  if (/(?:piano|keyboard).*(?:stickers?|note-labels?)|(?:stickers?|note-labels?).*(?:piano|keyboard)/i.test(handle)) {
+    const keyCount = handle.match(/(?:^|-)(\d+)(?:-)?keys?(?:-|$)/i)?.[1];
+    return `${keyCount ? `${keyCount}-Key ` : ""}Removable Piano Keyboard Stickers for Beginners`;
+  }
+  if (/keyboard-stabilizers?-pad|plate-mounted-stabilizer/i.test(handle)) {
+    return /poron/i.test(handle)
+      ? "Poron Stabilizer Pads for Plate-Mounted Mechanical Keyboards"
+      : "Plate-Mounted Stabilizer for Mechanical Keyboards";
+  }
+  if (/keycaps?-storage-box|keycap-organizer/i.test(handle)) {
+    return "Clear Keycap Storage Box and Organizer";
+  }
+  if (/keyboard.*display-stand|keyboards-display-stand/i.test(handle)) {
+    return "Layered Display Stand for Mechanical Keyboards";
+  }
+  if (/keyboard-storage-stand/i.test(handle)) {
+    return `${/walnut/i.test(handle) ? "Walnut " : ""}Keyboard Storage Stand for Desktop Use`;
+  }
+  if (/keyboard-stand|keyboards-platform/i.test(handle)) {
+    const material = /acrylic/i.test(handle) ? "Acrylic " : "";
+    const shape = /z-shaped/i.test(handle) ? "Z-Shaped " : "";
+    return `${/transparent/i.test(handle) ? "Transparent " : ""}${material}${shape}Keyboard Stand for Desktop Use`;
+  }
+  if (/keyboard-wrist-rest/i.test(handle)) {
+    return `${/wood|walnut/i.test(handle) ? "Wooden " : ""}Keyboard Wrist Rest for 60, 87 and 104-Key Layouts`;
+  }
+  if (/keycaps?.*mechanical-keyboard/i.test(handle)) {
+    const count = handle.match(/(?:^|-)(\d+)(?:-)?keys?(?:-|$)/i)?.[1];
+    return `${count ? `${count}-Key ` : ""}${/pbt/i.test(handle) ? "PBT " : ""}Keycap Set for Mechanical Keyboards`;
+  }
+  if (/pcb-board-for-mechanical-keyboard/i.test(handle)) {
+    const count = handle.match(/(?:^|-)(\d+)(?:-)?keys?(?:-|$)/i)?.[1];
+    return `${/wooting-60he/i.test(handle) ? "Wooting 60HE " : ""}${count ? `${count}-Key ` : ""}Hot-Swap Mechanical Keyboard PCB Board`;
+  }
+  if (/sound-dampening-positioning-board/i.test(handle)) {
+    return "Sound-Dampening Plate for 60HE Mechanical Keyboards";
+  }
+  if (/key-power-board-keyboard-for-partybox/i.test(handle)) {
+    return "Replacement Key Power Board for JBL PartyBox 100";
+  }
+  if (/universal-side-key-board/i.test(handle)) {
+    return "Hot-Swappable Side Key Board for OP18K, OP1W4K and OP1WE";
+  }
+  if (/8200-0600-12key-keyboard-set/i.test(handle)) {
+    return "12-Key Keyboard and Keysheet Replacement Set";
+  }
+  if (/multifunctional-keyboard.*programmable.*keypad/i.test(handle)) {
+    return "Programmable Mini Mechanical Gaming Keypad";
+  }
+  if (/blackberry-q20-wired-mini-keyboard/i.test(handle)) {
+    return "BlackBerry Q20 Wired Mini Keyboard Board with USB Support";
+  }
+  if (/korean-2-4g-wireless-keyboard-and-mouse/i.test(handle)) {
+    return "Korean 2.4GHz Wireless Keyboard and Mouse Combo";
+  }
+  if (/akko-tac75-he/i.test(handle)) {
+    return "Akko TAC75 HE RGB Magnetic Switch Gaming Keyboard";
+  }
+  if (/y1ub-ergonomic-cord-keyboards/i.test(handle)) {
+    return "Y1UB 97-Key Wired RGB Keyboard with Volume Knob";
+  }
+  if (/k82-mechanical-wired-keyboard/i.test(handle)) {
+    return "K82 Wired Hot-Swap Mechanical Keyboard with Media Knob";
+  }
+  if (/one-key-shortcut-keyboard/i.test(handle)) {
+    return "Single-Key USB Programmable Mechanical Macro Keypad";
+  }
+  if (/(?:car|motorcycle|lead-acid|lifepo4|trickle).*(?:battery-charger)|battery-charger.*(?:car|motorcycle|lead-acid|lifepo4|trickle)/i.test(handle)) {
+    const voltage = [...handle.matchAll(/(?:^|-)(\d+)v(?:-|$)/gi)].map((match) => `${match[1]}V`).slice(0, 2).join("/");
+    const amperage = handle.match(/(?:^|-)(\d+(?:\.\d+)?)a(?:-|$)/i)?.[1];
+    return `${voltage ? `${voltage} ` : ""}${amperage ? `${amperage}A ` : ""}Smart Battery Charger for Cars and Motorcycles`;
+  }
+  if (/(?:aa|aaa).*(?:battery-charger)|battery-charger.*(?:aa|aaa)/i.test(handle)) {
+    return "AA and AAA Rechargeable Lithium Battery Charger";
+  }
+  if (/(?:^|-)18650(?:-|$).*(?:battery-charger)|battery-charger.*(?:^|-)18650(?:-|$)/i.test(handle)) {
+    return `18650 Rechargeable Battery Charger${/auto-stop/i.test(handle) ? " with Auto Stop" : ""}`;
+  }
+  if (/derailleur-charger|bicycle-shift-charger/i.test(handle)) {
+    return "SRAM eTap AXS Bicycle Derailleur Battery Charger";
+  }
+  if (/dji-action3|dji-action-?3/i.test(handle)) {
+    return "DJI Action 3 and Action 4 Battery Charger";
+  }
+  if (/charger-replacement-for-psp|psp.*battery-charger/i.test(handle)) {
+    return "Replacement Battery Charger for PSP 1000, 2000 and 3000";
+  }
+  const musicalKeys = handle.match(/(?:^|-)(\d+)(?:-)?keys?(?:-|$)/i);
+  if (musicalKeys && /(?:digital|electronic|electric|musical).*(?:piano|keyboard)|(?:piano|keyboard).*(?:musical|instrument)/i.test(handle)) {
+    const audience = /(?:^|-)(?:kid|kids|child|children)(?:-|$)/i.test(handle) ? " for Kids" : "";
+    const microphone = /(?:^|-)microphone(?:-|$)/i.test(handle) ? " with Microphone" : "";
+    return `${musicalKeys[1]}-Key Digital Keyboard and Electronic Piano${audience}${microphone}`;
+  }
+  if (/smokebuddy.*personal-air-filter/i.test(handle)) {
+    return "SmokeBuddy Jr Portable Personal Air Filter";
+  }
+  if (/portable.*usb-air-cooler-fan|usb-air-cooler-fan/i.test(handle)) {
+    return "Portable Bladeless USB Air Cooler Fan";
+  }
+  if (/air-dehumidifier/i.test(handle)) {
+    return "Portable Air Dehumidifier for Home and Office";
+  }
+  if (/bluetooth-smart-aroma-diffuser/i.test(handle)) {
+    return "Bluetooth Smart Aroma Diffuser for Home and Hotels";
+  }
+  if (/car-air-freshener.*(?:vent-clip|rotating-fan)/i.test(handle)) {
+    return "Rotating Car Vent Air Freshener Diffuser";
+  }
+  if (/\d+pcs-\d+ml.*essential-oil/i.test(handle)) {
+    const count = handle.match(/(?:^|-)(\d+)pcs(?:-|$)/i)?.[1];
+    const size = handle.match(/(?:^|-)(\d+)ml(?:-|$)/i)?.[1];
+    return `${count ? `${count}-Piece ` : ""}${size ? `${size}ML ` : ""}Fragrance Essential Oil Set for Diffusers`;
+  }
+  if (/carbon-dioxide-air-diffuser.*plant-growth/i.test(handle)) {
+    return "Compact CO2 Air Diffuser for Planted Systems";
+  }
+  if (/charger-battery-eliminator-for-baofeng/i.test(handle)) {
+    return "Battery Eliminator Charger Adapter for Baofeng UV-82 and UV-89";
+  }
+  if (/car-charger.*retractable-cable/i.test(handle)) {
+    return `${/5-in-1/i.test(handle) ? "5-in-1 " : ""}Retractable Fast Car Charger with USB-C Cables`;
+  }
+  if (/car-charger-150w/i.test(handle)) {
+    return "150W Fast Car Charger";
+  }
+  if (/car-charger-for-phones-120w/i.test(handle)) {
+    return "120W Car Charger and Socket Splitter for Phones";
+  }
+  if (/car-charger-adapter.*changan/i.test(handle)) {
+    return "USB-C Car Charger Adapter for Changan Models";
+  }
+  if (/chery-icar-v23.*car-charger/i.test(handle)) {
+    return "USB-C Charging Dock for Chery iCar V23";
+  }
+  if (/12v-24v-to-220v.*inverter/i.test(handle)) {
+    return "12V and 24V to 220V Car Power Inverter with Charging Ports";
+  }
+  if (/charger-shavers.*electric-hair-clippers/i.test(handle)) {
+    return "USB Charging Cable for Electric Shavers and Hair Clippers";
+  }
+  if (/charger-port-3-pin.*(?:scooter|e-bike)/i.test(handle)) {
+    return "3-Pin Charger Port for Electric Scooters and E-Bikes";
+  }
+  if (/charger-42-v-2a-85w-5-pin.*36v-batteries/i.test(handle)) {
+    return "42V 2A 5-Pin Charger for 36V E-Bike Batteries";
+  }
+  if (/charger-for-fossil-gen/i.test(handle)) {
+    return "Charging Cable for Fossil Gen 4, 5, 5E and 6 Smartwatches";
+  }
+  if (/charger-compatible-with-huawei-watch/i.test(handle)) {
+    return "Charging Dock for Huawei Watch GT, GT2 and Honor Models";
+  }
+  if (/haneride-4a-charger-for-bosch/i.test(handle)) {
+    return "4A Charger for Bosch 36V E-Bike Batteries";
+  }
+  if (/vehicle-charger-for-milwaukee/i.test(handle)) {
+    return "Vehicle Charger for Milwaukee 12V and 18V Batteries";
+  }
+  if (/lir2032.*(?:coin-charger|button-battery|batteries)/i.test(handle)) {
+    return "USB-C Charger for LIR Rechargeable Coin Batteries";
+  }
+  if (/(?:case|cover).*(?:iphone)|iphone.*(?:case|cover)/i.test(handle)) {
+    const model = handle.match(/iphone-(\d+)(?:-(pro|max|plus|mini))?/i);
+    return `${/flower-bud/i.test(handle) ? "Flower Design " : ""}Protective iPhone Case${model ? ` for iPhone ${model[1]}${model[2] ? ` ${titleCase(model[2])}` : ""}` : " for Multiple Models"}`;
+  }
+  if (/\d+-large-transparent-pp-storage-boxes/i.test(handle)) {
+    const count = handle.match(/(?:^|-)(\d+)-large/i)?.[1];
+    return `${count ? `${count}-Piece ` : ""}Transparent Storage Box Set with Lids`;
+  }
+  if (/pencil-organise-cases|pencil-shaped-storage-box/i.test(handle)) {
+    return /pencil-shaped/i.test(handle)
+      ? "Pencil-Shaped Desktop Pen and Brush Holder with Cover"
+      : "Transparent Pencil and Pen Organizer for School and Office";
+  }
+  const keyboardKeyCount = handle.match(/(?:^|-)(\d+)(?:-)?keys?(?:-|$)/i)?.[1];
+  if (keyboardKeyCount && /(?:keyboard|keybaord|keypad|macro-pad|membrane-switch)/i.test(handle)) {
+    const matrix = handle.match(/(?:^|-)(\d+x\d+)(?:-|$)/i)?.[1];
+    if (/membrane-switch|matrix-array/i.test(handle)) {
+      return `${keyboardKeyCount}-Key ${matrix ? `${matrix} ` : ""}Membrane Switch Keypad`;
+    }
+    if (/macro-pad|programmable|shortcut-keyboard|mini-keyboard-direction/i.test(handle)) {
+      const knob = /(?:^|-)knob(?:-|$)/i.test(handle) ? " with Control Knob" : "";
+      return `${keyboardKeyCount}-Key Programmable ${/mechanical/i.test(handle) ? "Mechanical " : ""}Macro Keypad${knob}`;
+    }
+    const model = /akko-tac75-he/i.test(handle)
+      ? "Akko TAC75 HE "
+      : /k500-b61-machenike/i.test(handle)
+        ? "Machenike K500-B61 "
+        : /kiiboom-phantom-98/i.test(handle)
+          ? "KiiBOOM Phantom 98 "
+          : /(?:^|-)k82(?:-|$)/i.test(handle)
+            ? "K82 "
+            : "";
+    const connection = /three-mode|wired-bluetooth-2-4g|wired-bt5/i.test(handle)
+      ? "Three-Mode "
+      : /wireless/i.test(handle)
+        ? "Wireless "
+        : /wired/i.test(handle)
+          ? "Wired "
+          : "";
+    const lighting = /rgb|backlit|backlight/i.test(handle) ? "RGB " : "";
+    const format = /mechanical/i.test(handle) ? "Mechanical " : "";
+    const use = /gaming|gamer|esports/i.test(handle) ? "Gaming " : "";
+    return `${model}${keyboardKeyCount}-Key ${connection}${lighting}${format}${use}Keyboard`;
+  }
+  if (/earbuds?-cleaning|cleaning-(?:pen|tool).*(?:earbuds?|airpods)|cleaner-kit.*(?:earbuds?|airpods)/i.test(handle)) {
+    return /3-in-1/i.test(handle) ? "3-in-1 Earbud Cleaning Pen and Brush" : "Earbud Cleaning Pen and Brush Kit";
+  }
+
+  if (/(?:case|cover|sleeve).*(?:buds|earbuds?|earphones?)|(?:buds|earbuds?|earphones?).*(?:protective-case|case-cover|protective-cover)/i.test(handle)) {
+    const deviceMatch = handle.match(/(?:realme-buds-air-?\d+(?:-pro)?|galaxy-buds-?\d*(?:-pro)?|oneplus-buds(?:-pro)?-?\d*|xiaomi-buds-?\d*(?:-pro)?|redmi-buds-?\d*(?:-pro)?|airpods-pro-?\d*)/i);
+    const device = deviceMatch ? titleCase(deviceMatch[0].replace(/-/g, " ")) : "Wireless Earbuds";
+    const material = /silicone/i.test(handle) ? "Silicone " : "";
+    return `${material}Protective Case for ${device}`;
+  }
+
+  if (/(?:ear-tips|eartips|replacement-ear-tips|silicone-tips|ear-caps-tips).*(?:buds|airpods)|(?:buds|airpods).*(?:ear-tips|eartips|silicone-tips|ear-caps-tips)/i.test(handle)) {
+    const pack = handle.match(/(?:^|-)(\d+)(?:-|)?(?:pairs?|pcs)(?:-|$)/i);
+    return `${pack ? `${pack[1]}-Pair ` : ""}Replacement Ear Tips for Wireless Earbuds`;
+  }
+
+  if (/(?:ear-hooks?|anti-lost-ear-hook).*(?:buds|airpods)|(?:buds|airpods).*(?:ear-hooks?|anti-lost-hook)/i.test(handle)) {
+    return "Anti-Lost Ear Hooks for Wireless Earbuds";
+  }
+
+  if (/sleep-headband-eye-mask|bluetooth.*headband.*eye-mask/i.test(handle)) {
+    return "Bluetooth Sleep Headband and Eye Mask with Earphones";
+  }
+
+  if (/(?:pencil-case|pencil-box|pen-box|stationery-box)/i.test(handle)) {
+    const material = /(?:^|-)wooden(?:-|$)/i.test(handle)
+      ? "Wooden "
+      : /(?:^|-)metal(?:-|$)/i.test(handle)
+        ? "Metal "
+        : /(?:^|-)plastic(?:-|$)/i.test(handle)
+          ? "Plastic "
+          : "";
+    const format = /pencil-case/i.test(handle) ? "Pencil Case" : "Pencil Box";
+    const use = /school/i.test(handle) && /office/i.test(handle)
+      ? " for School and Office"
+      : /school/i.test(handle)
+        ? " for School Supplies"
+        : " for Desk Organization";
+    return `${material}${/transparent|clear/i.test(handle) ? "Transparent " : ""}${/large-capacity/i.test(handle) ? "Large Capacity " : ""}${format}${use}`;
+  }
+
+  if (/(?:wireless|bluetooth|tws).*(?:earbuds?|earphones?|headphones?|headset)|(?:earbuds?|earphones?|headphones?).*(?:wireless|bluetooth|tws)/i.test(handle)) {
+    const audioWords = handle.split("-");
+    const audioStop = audioWords.findIndex((word) => /^(?:wireless|bluetooth|tws|earbuds?|earphones?|headphones?|headsets?)$/i.test(word));
+    const airPodsModel = /airpods-?4(?:generation)?|airpods-4-generation/i.test(handle) ? "AirPods 4 " : "";
+    const modelWords = audioWords
+      .slice(0, audioStop > 0 ? Math.min(audioStop, 4) : 0)
+      .filter((word) => !/^(?:20\d{2}|new|original|global|version|high|quality|for|the|open|ear)$/i.test(word));
+    const modelPrefix = airPodsModel || (modelWords.length && (modelWords.some((word) => /\d/.test(word)) || /^(?:nothing|realme|oneplus|xiaomi|redmi|baseus|tribit|blackview|qcy|ugreen|soundpeats|haylou|ulefone|moondrop|bosecxt|uyuxio|air|airs|buds|e6s|b52)$/i.test(modelWords[0]))
+      ? `${titleCase(modelWords.join(" "))} `
+      : "");
+    const format = /open-ear|ear-clip|clip-on/i.test(handle)
+      ? "Open-Ear Wireless Earbuds"
+      : /sleep|sleeping|invisible/i.test(handle)
+        ? "Mini Wireless Sleep Earbuds"
+        : "Wireless Bluetooth Earbuds";
+    const feature = /built-in-mic|with-mic|microphone|clear-call|hd-call/i.test(handle)
+      ? " with Microphone"
+      : /noise-cancell|noise-reduction|anc/i.test(handle)
+        ? " with ANC"
+        : "";
+    return `${modelPrefix}${format}${feature}`;
+  }
+
+  if (/(?:humidifier|aroma-diffuser|essential-oil-diffuser|fragrance-diffuser)/i.test(handle)) {
+    const capacity = handle.match(/(?:^|-)(\d+(?:\.\d+)?)(ml|l)(?:-|$)/i);
+    const identity = /humidifier/i.test(handle) && /diffuser/i.test(handle)
+      ? "Air Humidifier and Aroma Diffuser"
+      : /humidifier/i.test(handle)
+        ? "Air Humidifier"
+        : "Aroma Diffuser";
+    const power = /(?:^|-)usb(?:-|$)/i.test(handle)
+      ? "USB "
+      : /(?:^|-)battery(?:-|$)/i.test(handle)
+        ? "Battery-Powered "
+        : "";
+    const control = /(?:smart-app|app-control|bluetooth-control)/i.test(handle) ? "Smart App-Controlled " : "";
+    const format = /waterless/i.test(handle) ? "Waterless Essential Oil Diffuser" : identity;
+    const lighting = /(?:led|night-light|colorful-lights)/i.test(handle) ? " with LED Light" : "";
+    return `${capacity ? `${capacity[1]}${capacity[2].toUpperCase()} ` : ""}${power}${control}${format}${lighting}`.trim();
+  }
+
   const cookwareCount = normalizeHandleValue(signals.handle).match(/^(\d+)-(?:piece|pc|pcs)-pots?-and-pans?-set(?:-|$)/i);
   if (cookwareCount) {
     return `${cookwareCount[1]}-Piece Pots and Pans Set`;
@@ -676,7 +1010,12 @@ function buildCanonicalSeoTitle(canonicalTitle) {
   if (!title) {
     return "";
   }
-  return shortenAtWordBoundary(title, MARKETPLACE_CONTENT_POLICY.seo.titleLength[1]);
+  const shortened = shortenAtWordBoundary(title, MARKETPLACE_CONTENT_POLICY.seo.titleLength[1])
+    .replace(/\b(?:and|for|with|of|to)$/i, "")
+    .trim();
+  return shortened.length < MARKETPLACE_CONTENT_POLICY.seo.titleLength[0]
+    ? `${shortened} | Shop Online at SALT`
+    : shortened;
 }
 
 function selectBestTitleCandidate(candidates, signals, sourceTitle) {
@@ -827,17 +1166,35 @@ function buildSeoDescription(title, signals, searchPhrases) {
     if (fact.label === "Material") return `made with the stated ${fact.value} material`;
     if (fact.label === "Supported features") return `with ${fact.value}`;
     if (fact.label === "Available options") return `with options including ${fact.value}`;
-    return `${fact.label.toLowerCase()} includes ${fact.value}`;
+    if (fact.label === "Intended user") return `intended for ${fact.value}`;
+    if (fact.label === "Use or occasion") return `suited to ${fact.value}`;
+    if (fact.label === "Placement or setting") return `designed for ${fact.value}`;
+    if (fact.label === "Pack format") return `pack format ${fact.value}`;
+    return `${fact.label.toLowerCase()}: ${fact.value}`;
   });
-  let sentence = `Shop ${titleText}.`;
+  const sentences = [`Shop ${titleText}.`];
   if (signals.reviewSummary) {
-    sentence += ` ${signals.reviewSummary.rating.toFixed(1)} stars from ${signals.reviewSummary.ratingCount} trusted reviews.`;
+    sentences.push(`${signals.reviewSummary.rating.toFixed(1)} stars from ${signals.reviewSummary.ratingCount} trusted reviews.`);
   }
-  if (factClauses.length) sentence += ` Details include ${factClauses.slice(0, 2).join(" and ")}.`;
-  sentence += ` ${knowledge.copy.benefit}`;
-  sentence += " Compare available options and choose the right fit.";
-  if (sentence.length < 135) {
-    sentence += ". Order online from SALT";
+  if (factClauses.length) {
+    sentences.push(`Product details include ${factClauses.slice(0, 2).join(" and ")}.`);
+  } else {
+    sentences.push(`${knowledge.copy.benefit}`);
+  }
+  const distinctivePhrase = (searchPhrases || []).find((phrase) => {
+    const normalizedPhrase = normalizePlainText(phrase);
+    return normalizedPhrase.length >= 5 && normalizedPhrase.length <= 36 && !titleText.toLowerCase().includes(normalizedPhrase.toLowerCase());
+  });
+  sentences.push(
+    distinctivePhrase
+      ? `Compare ${distinctivePhrase} details and available options at SALT.`
+      : "Compare available options and order online from SALT.",
+  );
+  let sentence = sentences.join(" ");
+  while (sentence.length > 160 && factClauses.length > 1) {
+    factClauses.pop();
+    sentences[signals.reviewSummary ? 2 : 1] = `Product details include ${factClauses.join(" and ")}.`;
+    sentence = sentences.join(" ");
   }
   const shortened = shortenAtWordBoundary(sentence || titleText, 159)
     .replace(/\b(and|or|the|a|an|for|with|to|of|before|that|your|intended)$/i, "")
@@ -860,14 +1217,17 @@ function extractSupportedProductFacts(signals) {
     .filter((word) => word.length >= 2 && !GENERIC_TITLE_WORDS.has(word))
   const productFocus = uniqueValues(productFocusTokens).slice(0, 10).join(" ");
   add("Product focus", [productFocus]);
-  add("Size or capacity", [...source.matchAll(/\b\d+(?:\.\d+)?\s?(?:ml|l|oz|g|kg|cm|mm|inch|inches|pcs|piece|pieces|pairs?|pack)\b/gi)].map((match) => match[0]));
+  add("Size or capacity", [...source.matchAll(/\b\d+(?:\.\d+)?\s?(?:ml|l|oz|g|kg|cm|mm|inch|inches|pcs|piece|pieces|pairs?|pack|keys?)\b/gi)].map((match) => match[0]));
   add("Material", ["cotton", "linen", "silicone", "stainless steel", "glass", "plastic", "wood", "wooden", "leather", "faux leather", "pu leather", "canvas", "nylon", "polyester", "rubber", "ceramic", "metal", "satin", "wool"].filter(hasTerm));
   add("Supported features", ["waterproof", "water resistant", "leakproof", "foldable", "portable", "adjustable", "reusable", "insulated", "rechargeable", "wireless", "shockproof", "non slip", "quick dry", "wide brim", "large capacity", "double strap", "drawstring", "zipper", "magnetic closure", "with straw", "time marker", "reflective", "collapsible"].filter(hasTerm));
   add("Intended user", ["women", "men", "unisex", "girls", "boys", "kids", "children", "baby", "toddler", "pet", "dog", "cat"].filter((term) => new RegExp(`\\b${term}\\b`).test(source)));
   add("Use or occasion", ["everyday", "casual", "work", "office", "travel", "gym", "fitness", "running", "cycling", "hiking", "camping", "outdoor", "beach", "school", "wedding", "party", "evening", "makeup", "skin care", "hair care", "kitchen", "gardening", "construction", "flooring"].filter(hasTerm));
   add("Style or design", ["vintage", "retro", "minimalist", "bohemian", "floral", "solid color", "woven", "braided", "wide leg", "slim fit", "hooded", "long sleeve", "short sleeve", "crossbody", "shoulder", "tote", "backpack"].filter(hasTerm));
   add("Placement or setting", ["living room", "bedroom", "bathroom", "kitchen", "office", "desk", "tabletop", "floor", "wall", "ceiling", "car", "garden", "patio"].filter(hasTerm));
-  add("Device compatibility", uniqueValues([...source.matchAll(/\b(?:iphone|ipad|samsung|galaxy|android)\s*(?:\d{1,2}|pro|max|plus|mini|air)?\b/gi)].map((match) => match[0])));
+  add("Device compatibility", uniqueValues([
+    ...source.matchAll(/\b(?:iphone|ipad|ios|samsung|galaxy|android)\s*(?:\d{1,2}|pro|max|plus|mini|air)?\b/gi),
+    ...source.matchAll(/\b(?:airpods|realme buds(?: air)?|galaxy buds|oneplus buds|xiaomi buds|redmi buds)\s*(?:\d{1,2}|pro|max|plus|lite|air)?\b/gi),
+  ].map((match) => match[0])));
   add("Pack format", [...source.matchAll(/\b(?:\d+\s*(?:pcs|pieces|pairs|pack)|pack of \d+|set of \d+)\b/gi)].map((match) => match[0]));
   const optionValues = (signals.sourceRows || []).flatMap((row) => [
     getRowValue(row, ["Option1 Value"]),
@@ -1031,8 +1391,6 @@ function buildDescriptionHtml(title, signals) {
   const factualDetails = uniqueValues([
     ...visibleFacts.map((fact) => `${fact.label}: ${fact.value}`),
     typeText ? `Product type: ${typeText}` : "",
-    detailSentences.length ? detailSentences[0] : "",
-    evidence.length ? evidence[0] : "",
   ])
     .filter((item) => normalizePlainText(item).length >= 6)
     .slice(0, 5);
@@ -1056,7 +1414,7 @@ function buildDescriptionHtml(title, signals) {
   })();
   const orderingDetails = visibleFacts.length
     ? visibleFacts.slice(0, 3).map(factToSentence).join(" ")
-    : detailPhrase || (evidence.length ? `Confirmed details include ${evidence.slice(0, 2).join(", ")}.` : fallbackDetails);
+    : fallbackDetails;
   const faq = [
     [`What is ${titleText}?`, `${titleText} is ${typePhrase}. It ${categoryCopy.purpose}.`],
     ["What should I check before ordering?", orderingDetails],
@@ -1155,11 +1513,10 @@ function suggestRetailPriceFromSignals({
     derivedFromCost = Math.max(numericCost + campaignCost, numericCost * multiplier);
   }
 
-  const derivedFromAnchor = numericAnchor
-    ? numericAnchor * 1.35
-    : numericCurrent
-      ? numericCurrent * 1.35
-      : null;
+  const reference = [numericAnchor, numericCurrent]
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .reduce((maximum, value) => Math.max(maximum, value), 0) || null;
+  const derivedFromAnchor = reference ? reference * 1.35 : null;
 
   let target = derivedFromCost ?? derivedFromAnchor ?? null;
   if (derivedFromCost && derivedFromAnchor) {
@@ -1170,12 +1527,11 @@ function suggestRetailPriceFromSignals({
     return "";
   }
 
-  const reference = numericAnchor || numericCurrent;
+  if (reference) {
+    target = Math.max(target, reference + PER_ORDER_OVERHEAD);
+  }
   if (reference && target < reference * 1.15) {
     target = reference * 1.15;
-  }
-  if (!derivedFromCost && reference && target > reference * 1.85) {
-    target = reference * 1.85;
   }
 
   if (derivedFromCost) {
@@ -1194,7 +1550,8 @@ function isEarringProductRow(row) {
     getRowValue(row, ["Tags"]),
   ];
 
-  return values.some((value) => /earring/i.test(normalizePlainText(value)));
+  const combined = values.map((value) => normalizePlainText(value)).join(" ");
+  return /earrings?/i.test(combined) && !/(?:earbuds?|earphones?|headphones?|headsets?)/i.test(combined);
 }
 
 function enforceCompareAtValue(compareAtValue, price, row) {
@@ -1214,8 +1571,14 @@ function enforceCompareAtValue(compareAtValue, price, row) {
     return "";
   }
 
-  if (Number.isFinite(sellPrice) && existing <= sellPrice) {
-    return (sellPrice + 0.01).toFixed(2);
+  if (Number.isFinite(sellPrice) && sellPrice > 0) {
+    const rounded = parseMoneyValue(roundPsychologicalPrice(sellPrice * 1.25));
+    const minimum = Math.ceil(sellPrice * 1.2) - 0.01;
+    const maximum = Math.floor(sellPrice * 1.4) - 0.01;
+    const recommended = Math.min(Math.max(rounded, minimum), maximum);
+    if (!Number.isFinite(existing) || existing < sellPrice * 1.2 || existing > sellPrice * 1.4) {
+      return Number(recommended).toFixed(2);
+    }
   }
 
   return existing.toFixed(2);
@@ -1836,7 +2199,8 @@ function buildVariantPlanFromRow(row, profile, { includeAligned = false, preserv
     firstNonEmpty(getRowValue(row, ["Variant Compare At Price"]), getRowValue(row, ["Compare At Price / International"])),
   );
   const sourceCost = parseMoneyValue(getRowValue(row, ["Cost per item"]));
-  const price = preserveCurrentPrice
+  const operationalAdjustment = profile?.knowledge?.family === "order-adjustment";
+  const price = preserveCurrentPrice || operationalAdjustment
     ? formatMoneyValue(explicitPrice)
     : suggestRetailPriceFromSignals({
         cost: sourceCost,
@@ -1849,7 +2213,7 @@ function buildVariantPlanFromRow(row, profile, { includeAligned = false, preserv
     return null;
   }
 
-  const compareAtPrice = preserveCurrentPrice
+  const compareAtPrice = preserveCurrentPrice || operationalAdjustment
     ? formatMoneyValue(explicitCompareAt)
     : explicitCompareAt != null
       ? enforceCompareAtValue(explicitCompareAt, price, row)

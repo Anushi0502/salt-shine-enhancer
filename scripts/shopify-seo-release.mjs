@@ -47,6 +47,10 @@ const PRODUCT_SELECTION = /* GraphQL */ `
   productType
   status
   tags
+  vendor
+  createdAt
+  updatedAt
+  publishedAt
   category {
     id
   }
@@ -509,7 +513,7 @@ async function loadFrozenCatalogSnapshot(filePath, baseSnapshot) {
   return { ...baseSnapshot, products };
 }
 
-async function fetchAllProducts(retryInfo) {
+export async function fetchAllProducts(retryInfo = []) {
   const products = [];
   let after = null;
   let page = 0;
@@ -642,7 +646,22 @@ async function hydrateNestedProductConnections(product, retryInfo) {
   return hydrated;
 }
 
-async function fetchLiveProductsForPlan(plan, retryInfo, sample) {
+async function fetchLiveProductsForPlan(plan, retryInfo, sample, scopeToPlan = false) {
+  if (scopeToPlan) {
+    const ids = plan.products.map((entry) => entry.productId).filter(Boolean);
+    const products = [];
+    for (let index = 0; index < ids.length; index += 100) {
+      const batch = ids.slice(index, index + 100);
+      const byId = await fetchProductsById(
+        batch,
+        retryInfo,
+        `scoped product batch ${Math.floor(index / 100) + 1}/${Math.ceil(ids.length / 100)}`,
+      );
+      products.push(...byId.values());
+    }
+    return products;
+  }
+
   if (!sample) {
     return fetchAllProducts(retryInfo);
   }
@@ -1426,7 +1445,7 @@ export async function runShopifySeoRelease({
   );
   let liveProducts;
   try {
-    liveProducts = await fetchLiveProductsForPlan(localPlanSelection, retryInfo, sample);
+    liveProducts = await fetchLiveProductsForPlan(localPlanSelection, retryInfo, sample, Boolean(frozenCatalog));
   } catch (error) {
     markFailure(manifest, null, "failed-live-read", error);
     refreshSummary(manifest);
