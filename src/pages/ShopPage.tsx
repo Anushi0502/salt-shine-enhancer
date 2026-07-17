@@ -847,10 +847,11 @@ const ShopPage = () => {
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
 
-      <Reveal>
-        <div
-          className="salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6"
-        >
+      {!hasSearchQuery ? (
+        <Reveal>
+          <div
+            className="salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6"
+          >
           <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
           <div
             className={`grid gap-4 lg:gap-5${selectedCollectionImage ? " lg:grid-cols-[minmax(0,1.1fr)_minmax(17rem,0.9fr)] lg:items-center" : ""}`}
@@ -885,8 +886,9 @@ const ShopPage = () => {
               </div>
             ) : null}
           </div>
-        </div>
-      </Reveal>
+          </div>
+        </Reveal>
+      ) : null}
       <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[252px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>
 
 
