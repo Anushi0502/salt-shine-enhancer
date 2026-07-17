@@ -243,7 +243,7 @@ const ShopPage = () => {
     refetch: refetchCollectionProductIds,
   } = useCollectionProductIds(
     collectionHandle,
-    Boolean(collectionHandle) && collectionHandle !== DEFAULT_COLLECTION_HANDLE && !isBestSellerCollection,
+    Boolean(collectionHandle) && !isBestSellerCollection,
   );
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(
     Boolean(collectionHandle) && collectionHandle !== DEFAULT_COLLECTION_HANDLE && !isBestSellerCollection,

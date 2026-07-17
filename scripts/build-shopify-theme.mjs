@@ -485,8 +485,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         })();
       </script>
     {% endif %}
-    {% if request.page_type == 'collection' and collection %}
-      {% paginate collection.products by 250 %}
+    {% assign salt_active_collection = collection %}
+    {% if request.path == '/shop' %}
+      {% assign salt_active_collection = collections['all-products'] %}
+    {% endif %}
+    {% if salt_active_collection %}
+      {% paginate salt_active_collection.products by 250 %}
         <script>
           (function () {
             // Shopify renders this payload inside the uploaded theme. It is a
@@ -494,7 +498,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             // prices, availability, and newly added first-page products before
             // its modules execute and without a storefront API round-trip.
             var liveProducts = [
-              {% for item in collection.products limit: 24 %}
+              {% for item in salt_active_collection.products limit: 24 %}
                 {
                   id: {{ item.id | json }},
                   title: {{ item.title | json }},
@@ -542,13 +546,13 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             ];
 
             window.__SALT_COLLECTION_PREFETCH__ = {
-              handle: {{ collection.handle | downcase | json }},
+              handle: {{ salt_active_collection.handle | downcase | json }},
               generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
               complete: {% if paginate.pages == 1 %}true{% else %}false{% endif %},
               currentPage: {{ paginate.current_page | json }},
-              total: {{ collection.products_count | json }},
+              total: {{ salt_active_collection.products_count | json }},
               productIds: [
-                {% for item in collection.products %}
+                {% for item in salt_active_collection.products %}
                   {{ item.id | json }}{% unless forloop.last %},{% endunless %}
                 {% endfor %}
               ],

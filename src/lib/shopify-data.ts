@@ -279,7 +279,11 @@ function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | nu
   const prefetch = (window as SaltPreloadWindow).__SALT_COLLECTION_PREFETCH__;
   const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
   const routeMatch = window.location.pathname.match(/^\/collections\/([^/?#]+)\/?$/i);
-  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
+  const routeHandle = routeMatch
+    ? decodeURIComponent(routeMatch[1]).trim().toLowerCase()
+    : /^\/shop\/?$/i.test(window.location.pathname)
+      ? "all-products"
+      : "";
 
   // A collection bootstrap belongs to the Shopify document that rendered it.
   // Reject it after client-side navigation so a previous route can never leak

@@ -84,6 +84,21 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("accepts the all-products Liquid bootstrap on the /shop route", async () => {
+    installInlineCollection({ handle: "all-products", productIds: [301, 302], total: 2 });
+    window.history.replaceState({}, "", "/shop");
+    const fetchMock = vi.fn(async () => {
+      throw new Error("network should not run");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const payload = await loadCollectionProductIds("all-products");
+
+    expect(payload.source).toBe("shopify-liquid:all-products");
+    expect(payload.productIds).toEqual([301, 302]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("falls back to Shopify for an incomplete Liquid page", async () => {
     installInlineCollection({ complete: false });
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
