@@ -107,8 +107,31 @@ async function queryWithShopifyCli() {
   }
 }
 
-const data = adminToken ? await queryWithAdminToken() : await queryWithShopifyCli();
-const payload = buildRecentlyOrderedProductsPayload(data?.orders, { limit: 4 });
+async function loadCommittedFallback() {
+  const payload = JSON.parse(await readFile(outputPath, "utf8"));
+  if (!Array.isArray(payload?.products) || payload.products.length < 4) {
+    throw new Error("Committed recently ordered product fallback is missing or incomplete");
+  }
+  return payload;
+}
+
+let payload;
+
+if (adminToken) {
+  const data = await queryWithAdminToken();
+  payload = buildRecentlyOrderedProductsPayload(data?.orders, { limit: 4 });
+} else {
+  try {
+    const data = await queryWithShopifyCli();
+    payload = buildRecentlyOrderedProductsPayload(data?.orders, { limit: 4 });
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    payload = await loadCommittedFallback();
+    process.stdout.write(
+      "Shopify CLI is unavailable; preserving the committed recently ordered product feed.\n",
+    );
+  }
+}
 
 if (payload.products.length < 4) {
   throw new Error(`Shopify returned only ${payload.products.length} unique recently ordered products`);
