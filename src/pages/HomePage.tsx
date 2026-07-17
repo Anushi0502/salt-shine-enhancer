@@ -8,7 +8,7 @@ import GiftBanner from "@/components/salt/GiftBanner";
 import { formatMoney, minPrice, polishPlainText, productImage } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
-import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
+import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import collectionApparel from "@/assets/collection-apparel.jpg";
 import collectionDecor from "@/assets/collection-decor.jpg";
@@ -233,7 +233,7 @@ const HERO_EXTRA_BANNERS: ImageTile[] = [
   {
     title: "Summer Collection",
     image: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Salt_Banners_3.png",
-    to: "/collections/summer-collection",
+    to: "/shop?q=summer",
     alt: "Summer collection banner featuring seasonal lifestyle, outdoor, and home essentials.",
   },
 ];
@@ -521,7 +521,7 @@ const HomePage = () => {
     () => findBestSellerCollection(collections),
     [collections],
   );
-  const bestSellerProducts = useMemo(() => selectBestSellerProducts(products, 12), [products]);
+  const bestSellerProducts: ShopifyProduct[] = [];
   const featuredCourtneyBooks = useMemo(() => {
     if (!products.length) {
       return [];
@@ -643,20 +643,16 @@ const HomePage = () => {
     };
   }, [featuredCourtneyBookCards, featuredCourtneyBookFallbackImage]);
   const bestSellerTiles = useMemo<ProductTile[]>(() => {
-    if (!bestSellerProducts.length) {
-      return fallbackBestSellerTiles;
-    }
-
-    return bestSellerProducts.map((product) => ({
+    return (homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, 12).map((product) => ({
       productId: product.id,
       title: product.title,
-      price: formatMoney(minPrice(product)),
-      image: productImage(product) || heroMain,
+      price: formatMoney(product.price),
+      image: product.image,
       to: `/products/${product.handle}`,
     }));
-  }, [bestSellerProducts]);
+  }, [homeFeaturedProductsPayload?.bestSellerProducts]);
   const bestSellerDisplayTiles = useMemo(
-    () => padProductTiles(bestSellerTiles, fallbackBestSellerTiles, 12),
+    () => bestSellerTiles.slice(0, 12),
     [bestSellerTiles],
   );
   const bestSellerHeroImage =
@@ -771,18 +767,14 @@ const HomePage = () => {
     return rankedProducts.slice(0, 12).map((entry) => entry.product);
   }, [bestSellerProducts, featuredCourtneyBooks, products]);
   const everydayEssentialsTiles = useMemo<ProductTile[]>(() => {
-    if (!everydayEssentialProducts.length) {
-      return fallbackEverydayEssentialTiles;
-    }
-
-    return everydayEssentialProducts.map((product) => ({
+    return (homeFeaturedProductsPayload?.everydayEssentialProducts || []).slice(0, 12).map((product) => ({
       productId: product.id,
       title: product.title,
-      price: formatMoney(minPrice(product)),
-      image: productImage(product) || bestSellerHeroImage,
+      price: formatMoney(product.price),
+      image: product.image,
       to: `/products/${product.handle}`,
     }));
-  }, [bestSellerHeroImage, everydayEssentialProducts]);
+  }, [homeFeaturedProductsPayload?.everydayEssentialProducts]);
   const quirkyGiftTiles = useMemo<ProductTile[]>(() => {
     return (homeFeaturedProductsPayload?.quirkyGiftPicks || []).slice(0, 12).map((product) => ({
       productId: product.id,
@@ -797,7 +789,7 @@ const HomePage = () => {
     [quirkyGiftTiles],
   );
   const everydayEssentialsDisplayTiles = useMemo(
-    () => padProductTiles(everydayEssentialsTiles, fallbackEverydayEssentialTiles, 12),
+    () => everydayEssentialsTiles.slice(0, 12),
     [everydayEssentialsTiles],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
@@ -917,7 +909,7 @@ const HomePage = () => {
       {
         title: "Best Sellers",
         image: bestSellerHeroImage,
-        to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/shop?sort=featured",
+        to: bestSellerCollection ? `/collections/${bestSellerCollection.handle}` : "/collections",
       },
       {
         title: "Books & Planners",
@@ -1113,7 +1105,7 @@ const HomePage = () => {
           </section>
         </Reveal>
 
-        <Reveal delayMs={80}>
+        {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>
           <section className="border-t border-[#dce9ff] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
             <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
@@ -1134,7 +1126,7 @@ const HomePage = () => {
               ))}
             </div>
           </section>
-        </Reveal>
+        </Reveal> : null}
 
         <Reveal delayMs={110}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
@@ -1272,7 +1264,7 @@ const HomePage = () => {
         </Reveal>
         )}
 
-        <Reveal delayMs={180}>
+        {everydayEssentialsDisplayTiles.length > 0 ? <Reveal delayMs={180}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <SectionTitle title="Everyday Essentials" />
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
@@ -1293,7 +1285,7 @@ const HomePage = () => {
               ))}
             </div>
           </section>
-        </Reveal>
+        </Reveal> : null}
 
         <Reveal delayMs={280}>
           <section className="border-t border-[#dce9ff] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">

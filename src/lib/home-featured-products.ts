@@ -14,8 +14,13 @@ export type HomeFeaturedProductsPayload = {
   generatedAt: string;
   source: string;
   total: number;
+  sources?: { bestSellerProducts?: string; quirkyGiftPicks?: string; everydayEssentialProducts?: string };
+  bestSellerProducts: HomeFeaturedProduct[];
   quirkyGiftPicks: HomeFeaturedProduct[];
+  everydayEssentialProducts: HomeFeaturedProduct[];
 };
+
+type SaltHomePreloadWindow = Window & { __SALT_HOME_PREFETCH__?: Partial<HomeFeaturedProductsPayload> };
 
 const HOME_FEATURED_PRODUCTS_PATH = "/data/home-featured-products.json";
 const HOME_FEATURED_PRODUCTS_QUERY_KEY = ["home-featured-products", "catalog"] as const;
@@ -43,6 +48,21 @@ function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined
   };
 }
 
+function normalizeProducts(input: unknown): HomeFeaturedProduct[] {
+  return Array.isArray(input) ? input.map(normalizeProduct).filter((product): product is HomeFeaturedProduct => Boolean(product)) : [];
+}
+
+function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
+  if (typeof window === "undefined" || window.location.pathname !== "/") return undefined;
+  const payload = (window as SaltHomePreloadWindow).__SALT_HOME_PREFETCH__;
+  if (!payload) return undefined;
+  const bestSellerProducts = normalizeProducts(payload.bestSellerProducts);
+  const quirkyGiftPicks = normalizeProducts(payload.quirkyGiftPicks);
+  const everydayEssentialProducts = normalizeProducts(payload.everydayEssentialProducts);
+  if (!bestSellerProducts.length && !quirkyGiftPicks.length && !everydayEssentialProducts.length) return undefined;
+  return { generatedAt: payload.generatedAt || new Date().toISOString(), source: payload.source || "shopify-liquid:home", total: quirkyGiftPicks.length, sources: payload.sources, bestSellerProducts, quirkyGiftPicks, everydayEssentialProducts };
+}
+
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
   try {
     const url = resolveThemeAsset(HOME_FEATURED_PRODUCTS_PATH);
@@ -53,31 +73,38 @@ export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPa
     }
 
     const payload = (await response.json()) as Partial<HomeFeaturedProductsPayload>;
-    const quirkyGiftPicks = Array.isArray(payload.quirkyGiftPicks)
-      ? payload.quirkyGiftPicks.map(normalizeProduct).filter((product): product is HomeFeaturedProduct => Boolean(product))
-      : [];
+    const bestSellerProducts = normalizeProducts(payload.bestSellerProducts);
+    const quirkyGiftPicks = normalizeProducts(payload.quirkyGiftPicks);
+    const everydayEssentialProducts = normalizeProducts(payload.everydayEssentialProducts);
 
     return {
       generatedAt: payload.generatedAt || new Date().toISOString(),
       source: `cache:${payload.source || HOME_FEATURED_PRODUCTS_PATH}`,
       total: quirkyGiftPicks.length,
+      sources: payload.sources,
+      bestSellerProducts,
       quirkyGiftPicks,
+      everydayEssentialProducts,
     };
   } catch {
     return {
       generatedAt: new Date().toISOString(),
       source: `cache:${HOME_FEATURED_PRODUCTS_PATH}`,
       total: 0,
+      bestSellerProducts: [],
       quirkyGiftPicks: [],
+      everydayEssentialProducts: [],
     };
   }
 }
 
 export function useHomeFeaturedProducts(enabled = true) {
+  const inlineProducts = getInlineHomeProducts();
   return useQuery({
     queryKey: HOME_FEATURED_PRODUCTS_QUERY_KEY,
     queryFn: loadHomeFeaturedProducts,
     enabled,
+    initialData: inlineProducts,
     staleTime: HOME_FEATURED_PRODUCTS_STALE_TIME_MS,
     refetchOnMount: false,
     refetchOnWindowFocus: false,

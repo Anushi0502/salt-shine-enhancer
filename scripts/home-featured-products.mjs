@@ -1,5 +1,11 @@
 const QUIRKY_GIFT_LIMIT = 12;
 
+const HOME_COLLECTION_SOURCES = {
+  bestSellerProducts: "appplaza-best-sellers",
+  quirkyGiftPicks: "gifts",
+  everydayEssentialProducts: "garden-tools",
+};
+
 const QUIRKY_GIFT_TERMS = [
   ["quirky", 12],
   ["unique", 10],
@@ -187,15 +193,48 @@ function selectQuirkyGiftPicks(products, limit = QUIRKY_GIFT_LIMIT) {
   return selected.map(({ score, savings, category, titleKey, excluded, ...product }) => product);
 }
 
-export function buildHomeFeaturedProductsPayload(productsPayload) {
-  const quirkyGiftPicks = selectQuirkyGiftPicks(productsPayload?.products);
+function compactProduct(product) {
+  const id = Number(product?.id || 0);
+  const title = String(product?.title || "").replace(/\s+/g, " ").trim();
+  const handle = String(product?.handle || "").trim();
+  const image = String(product?.image?.src || product?.images?.[0]?.src || "").trim();
+  const cheapest = cheapestVariant(product?.variants);
+  const price = finitePrice(cheapest?.price);
+  if (!id || !title || !handle || !image || price === null) return null;
+  const compareAtPrice = finitePrice(cheapest?.compare_at_price);
+  return {
+    id,
+    title,
+    handle,
+    image,
+    price,
+    compareAtPrice: compareAtPrice && compareAtPrice > price ? compareAtPrice : null,
+  };
+}
+
+function productsFromCollection(products, collectionProductsPayload, handle, limit = QUIRKY_GIFT_LIMIT) {
+  const productIds = collectionProductsPayload?.collections?.[handle]?.productIds;
+  if (!Array.isArray(productIds) || !productIds.length) return [];
+  const productsById = new Map((Array.isArray(products) ? products : []).map((product) => [Number(product?.id || 0), product]));
+  return productIds.map((id) => compactProduct(productsById.get(Number(id)))).filter(Boolean).slice(0, limit);
+}
+
+export function buildHomeFeaturedProductsPayload(productsPayload, collectionProductsPayload = null) {
+  const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
+  const bestSellerProducts = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.bestSellerProducts);
+  const collectionGiftPicks = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.quirkyGiftPicks);
+  const everydayEssentialProducts = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.everydayEssentialProducts);
+  const quirkyGiftPicks = collectionGiftPicks.length ? collectionGiftPicks : selectQuirkyGiftPicks(products);
 
   return {
     generatedAt: productsPayload?.generatedAt || new Date().toISOString(),
     source: productsPayload?.source || "/data/products.json",
     total: quirkyGiftPicks.length,
+    sources: HOME_COLLECTION_SOURCES,
+    bestSellerProducts,
     quirkyGiftPicks,
+    everydayEssentialProducts,
   };
 }
 
-export { QUIRKY_GIFT_HANDLE_PREFERENCES, QUIRKY_GIFT_LIMIT, selectQuirkyGiftPicks };
+export { HOME_COLLECTION_SOURCES, QUIRKY_GIFT_HANDLE_PREFERENCES, QUIRKY_GIFT_LIMIT, productsFromCollection, selectQuirkyGiftPicks };

@@ -46,4 +46,26 @@ describe("home featured products", () => {
       quirkyGiftPicks: [{ id: 1, handle: "novelty-gift", price: 19.99 }],
     });
   });
+
+  it("keeps each homepage rail inside its declared Shopify collection order", () => {
+    const products = [
+      product(1, "Best Gift", "best-gift", ["gift"]),
+      product(2, "Garden Tool", "garden-tool", ["garden tool"]),
+      product(3, "Quirky Gift", "quirky-gift", ["unique gift"]),
+      product(4, "Not Selected", "not-selected", ["gift"]),
+    ];
+    const payload = buildHomeFeaturedProductsPayload(
+      { generatedAt: "2026-07-17T00:00:00.000Z", source: "shopify", products },
+      { collections: {
+        "appplaza-best-sellers": { productIds: [1] },
+        gifts: { productIds: [3, 1] },
+        "garden-tools": { productIds: [2] },
+      } },
+    );
+
+    expect(payload.bestSellerProducts.map((entry) => entry.id)).toEqual([1]);
+    expect(payload.quirkyGiftPicks.map((entry) => entry.id)).toEqual([3, 1]);
+    expect(payload.everydayEssentialProducts.map((entry) => entry.id)).toEqual([2]);
+    expect(JSON.stringify(payload)).not.toContain("not-selected");
+  });
 });

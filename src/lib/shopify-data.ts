@@ -122,9 +122,11 @@ type HeadPreloadedCollection = {
 type SaltPreloadWindow = Window & {
   __SALT_PRODUCT_PREFETCH__?: {
     handle?: string;
+    raw?: Record<string, unknown> | null;
     payload?: Promise<Record<string, unknown>>;
   };
   __SALT_COLLECTION_PREFETCH__?: HeadPreloadedCollection;
+  __SALT_PRODUCT_ROUTE_WARM__?: Record<string, Promise<Record<string, unknown>>>;
 };
 
 let normalizedHeadCollectionSource: HeadPreloadedCollection | null = null;
@@ -308,6 +310,11 @@ function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<s
     return prefetch.payload;
   }
 
+  const warmedRoute = (window as SaltPreloadWindow).__SALT_PRODUCT_ROUTE_WARM__?.[handle];
+  if (warmedRoute) {
+    return warmedRoute;
+  }
+
   // Collection pages already carry the current Shopify records for the first
   // viewport. Product cards reuse those records instead of issuing one
   // `/products/:handle.js` request per visible card.
@@ -316,6 +323,16 @@ function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<s
   );
 
   return collectionProduct ? Promise.resolve(collectionProduct) : null;
+}
+
+function getHeadPreloadedProductRecord(handle: string): ShopifyProduct | undefined {
+  if (typeof window === "undefined") return undefined;
+  const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
+  const routeMatch = window.location.pathname.match(/^\/products?\/([^/?#]+)\/?$/i);
+  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
+  const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
+  if (!prefetch?.raw || !prefetchedHandle || prefetchedHandle !== handle || routeHandle !== handle) return undefined;
+  try { return normalizeProductRecord(prefetch.raw as unknown as ShopifyProduct); } catch { return undefined; }
 }
 
 function getLivePolicyBases(): string[] {
@@ -1377,7 +1394,7 @@ export async function loadProducts(): Promise<ProductsPayload> {
   }
 }
 
-export async function loadProductByHandle(handle: string): Promise<ShopifyProduct> {
+async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct> {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
   if (!normalizedHandle) {
     throw new Error("Product handle is required");
@@ -1403,6 +1420,24 @@ export async function loadProductByHandle(handle: string): Promise<ShopifyProduc
   }
 
   throw new Error(`Product "${normalizedHandle}" is unavailable. ${endpointErrors.slice(0, 3).join(" | ")}`);
+}
+
+const warmedProductRequests = new Map<string, { startedAt: number; promise: Promise<ShopifyProduct> }>();
+const WARMED_PRODUCT_REQUEST_TTL_MS = 15_000;
+
+export function loadProductByHandle(handle: string): Promise<ShopifyProduct> {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle) return Promise.reject(new Error("Product handle is required"));
+  const warmed = warmedProductRequests.get(normalizedHandle);
+  if (warmed && Date.now() - warmed.startedAt < WARMED_PRODUCT_REQUEST_TTL_MS) return warmed.promise;
+  const promise = loadProductByHandleFresh(normalizedHandle);
+  warmedProductRequests.set(normalizedHandle, { startedAt: Date.now(), promise });
+  promise.catch(() => { if (warmedProductRequests.get(normalizedHandle)?.promise === promise) warmedProductRequests.delete(normalizedHandle); });
+  return promise;
+}
+
+export function warmProductByHandle(handle: string): void {
+  void loadProductByHandle(handle).catch(() => {});
 }
 
 export async function loadProductSearchIndex(): Promise<ProductsPayload> {
@@ -1668,11 +1703,13 @@ export function useProducts(enabled = true) {
 
 export function useProductByHandle(handle: string | undefined, enabled = true, liveRefresh = false) {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const inlineProduct = getHeadPreloadedProductRecord(normalizedHandle);
 
   return useQuery({
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
+    initialData: inlineProduct,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,
     refetchOnWindowFocus: liveRefresh,

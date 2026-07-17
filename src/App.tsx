@@ -5,6 +5,7 @@ import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import SiteShell from "@/components/layout/SiteShell";
 import MetaPixelTracker from "@/components/integrations/MetaPixelTracker";
 import NotificationBootstrap from "@/components/integrations/NotificationBootstrap";
+import ProductRoutePreloader from "@/components/storefront/ProductRoutePreloader";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
@@ -73,6 +74,7 @@ const AppShell = () => (
             <ScrollToTop />
             <MetaPixelTracker />
             <NotificationBootstrap />
+            <ProductRoutePreloader />
             <Routes>
               <Route element={<SiteShell />}>
                 <Route path="/" element={<HomePage />} />
