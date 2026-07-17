@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowDownUp,
@@ -20,7 +20,6 @@ import TrustStrip from "@/components/storefront/TrustStrip";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
@@ -417,16 +416,6 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
-  const visibleProductIds = useMemo(() => visibleProducts.map((product) => product.id), [visibleProducts]);
-  const deferredVisibleProductIds = useDeferredValue(visibleProductIds);
-  const visibleProductRatingIds = useMemo(() => deferredVisibleProductIds.slice(0, 12), [deferredVisibleProductIds]);
-  const [shouldLoadRatings, setShouldLoadRatings] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setShouldLoadRatings(true), 2_500);
-    return () => window.clearTimeout(timer);
-  }, []);
-  const visibleRatingsQuery = useJudgeMeRatings(visibleProductRatingIds, shouldLoadRatings);
-  const visibleRatingsByProductId = visibleRatingsQuery.data ?? {};
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const seoStructuredData = useMemo(() => {
@@ -1045,7 +1034,7 @@ const ShopPage = () => {
                       <ProductCard
                         product={product}
                         variant="shop"
-                        reviewSummary={visibleRatingsByProductId[product.id] ?? null}
+                        reviewSummary={null}
                       />
                     </Reveal>
                   ))}
