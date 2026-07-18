@@ -1162,14 +1162,16 @@ const HomePage = () => {
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.1),rgba(8,30,73,0.2)_44%,rgba(8,30,73,0.88))]" />
                     {tile.ribbonLabel ? (
                       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
-                        <img
-                          src={normalizeShopifyAssetUrl(recentlyOrderedRibbon) || recentlyOrderedRibbon}
-                          alt=""
-                          className="absolute -left-[18%] -top-[24%] h-auto w-[68%] drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
-                        />
-                        <span className="absolute left-[-2.55rem] top-[2.15rem] w-[11rem] -rotate-45 text-center font-sans text-[0.56rem] font-black uppercase leading-none tracking-[0.04em] text-white [text-shadow:0_1px_2px_rgba(75,0,0,0.95),0_0_4px_rgba(0,0,0,0.45)] sm:left-[-2.3rem] sm:top-[2.35rem] sm:text-[0.62rem]">
-                          {tile.ribbonLabel}
-                        </span>
+                        <div className="absolute -left-[18%] -top-[24%] w-[68%]">
+                          <img
+                            src={normalizeShopifyAssetUrl(recentlyOrderedRibbon) || recentlyOrderedRibbon}
+                            alt=""
+                            className="h-auto w-full drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
+                          />
+                          <span className="absolute left-1/2 top-1/2 w-[76%] -translate-x-1/2 -translate-y-1/2 -rotate-45 text-center font-sans text-[clamp(0.42rem,1.1vw,0.62rem)] font-black uppercase leading-none tracking-[0.035em] text-white [text-shadow:0_1px_2px_rgba(75,0,0,0.9)]">
+                            {tile.ribbonLabel}
+                          </span>
+                        </div>
                       </div>
                     ) : null}
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
