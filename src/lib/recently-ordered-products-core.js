@@ -40,6 +40,7 @@ function normalizeLineItem(lineItem) {
 
 export function buildRecentlyOrderedProductsPayload(ordersInput, options = {}) {
   const limit = Math.max(1, Number(options.limit || 4));
+  const minPriceExclusive = Number(options.minPriceExclusive || 0);
   const orders = asArray(ordersInput?.nodes || ordersInput);
   const products = [];
   const seen = new Set();
@@ -50,6 +51,12 @@ export function buildRecentlyOrderedProductsPayload(ordersInput, options = {}) {
     for (const lineItem of asArray(order?.lineItems?.nodes)) {
       const product = normalizeLineItem(lineItem);
       if (!product || seen.has(product.id)) continue;
+      if (
+        minPriceExclusive > 0 &&
+        (!Number.isFinite(product.price) || product.price <= minPriceExclusive)
+      ) {
+        continue;
+      }
 
       seen.add(product.id);
       products.push(product);

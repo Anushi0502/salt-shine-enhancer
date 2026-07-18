@@ -21,11 +21,11 @@ const adminToken =
 
 export const RECENT_ORDER_PRODUCTS_QUERY = /* GraphQL */ `
   query RecentlyOrderedProducts {
-    orders(first: 20, sortKey: CREATED_AT, reverse: true) {
+    orders(first: 100, sortKey: CREATED_AT, reverse: true) {
       nodes {
         createdAt
         cancelledAt
-        lineItems(first: 50) {
+        lineItems(first: 100) {
           nodes {
             title
             product {
@@ -119,11 +119,17 @@ let payload;
 
 if (adminToken) {
   const data = await queryWithAdminToken();
-  payload = buildRecentlyOrderedProductsPayload(data?.orders, { limit: 4 });
+  payload = buildRecentlyOrderedProductsPayload(data?.orders, {
+    limit: 4,
+    minPriceExclusive: 34,
+  });
 } else {
   try {
     const data = await queryWithShopifyCli();
-    payload = buildRecentlyOrderedProductsPayload(data?.orders, { limit: 4 });
+    payload = buildRecentlyOrderedProductsPayload(data?.orders, {
+      limit: 4,
+      minPriceExclusive: 34,
+    });
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
     payload = await loadCommittedFallback();
@@ -134,7 +140,9 @@ if (adminToken) {
 }
 
 if (payload.products.length < 4) {
-  throw new Error(`Shopify returned only ${payload.products.length} unique recently ordered products`);
+  throw new Error(
+    `Shopify returned only ${payload.products.length} unique recently ordered products priced above $34`,
+  );
 }
 
 await mkdir(dirname(outputPath), { recursive: true });

@@ -1163,7 +1163,7 @@ const HomePage = () => {
                     {tile.ribbonLabel ? (
                       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
                         <img
-                          src={recentlyOrderedRibbon}
+                          src={normalizeShopifyAssetUrl(recentlyOrderedRibbon) || recentlyOrderedRibbon}
                           alt=""
                           className="absolute -left-[18%] -top-[24%] h-auto w-[68%] drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
                         />

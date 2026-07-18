@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildRecentlyOrderedProductsPayload } from "./recently-ordered-products-core.js";
 
-function lineItem(id: string, title: string) {
+function lineItem(id: string, title: string, price = "19.99") {
   return {
     title,
     product: {
@@ -10,7 +10,7 @@ function lineItem(id: string, title: string) {
       handle: title.toLowerCase().replace(/\s+/g, "-"),
       featuredMedia: { preview: { image: { url: `https://cdn.test/${id}.jpg`, altText: title } } },
     },
-    variant: { price: "19.99", image: null },
+    variant: { price, image: null },
   };
 }
 
@@ -32,5 +32,25 @@ describe("buildRecentlyOrderedProductsPayload", () => {
     ]);
 
     expect(payload.products).toEqual([]);
+  });
+
+  it("keeps only recently ordered products priced above the exclusive minimum", () => {
+    const payload = buildRecentlyOrderedProductsPayload(
+      [
+        {
+          cancelledAt: null,
+          lineItems: {
+            nodes: [
+              lineItem("1", "At minimum", "34.00"),
+              lineItem("2", "Above minimum", "34.01"),
+              lineItem("3", "Premium", "79.99"),
+            ],
+          },
+        },
+      ],
+      { limit: 4, minPriceExclusive: 34 },
+    );
+
+    expect(payload.products.map((product) => product.title)).toEqual(["Above minimum", "Premium"]);
   });
 });

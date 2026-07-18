@@ -3,10 +3,10 @@ import { buildRecentlyOrderedProductsPayload } from "../../src/lib/recently-orde
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const query = /* GraphQL */ `
   query RecentlyOrderedProducts {
-    orders(first: 20, sortKey: CREATED_AT, reverse: true) {
+    orders(first: 100, sortKey: CREATED_AT, reverse: true) {
       nodes {
         cancelledAt
-        lineItems(first: 50) {
+        lineItems(first: 100) {
           nodes {
             title
             product {
@@ -68,7 +68,10 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const payload = buildRecentlyOrderedProductsPayload(body.data?.orders, { limit: 4 });
+  const payload = buildRecentlyOrderedProductsPayload(body.data?.orders, {
+    limit: 4,
+    minPriceExclusive: 34,
+  });
   cachedFeed = { expiresAt: now + CACHE_TTL_MS, payload };
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
   res.status(200).json(payload);
