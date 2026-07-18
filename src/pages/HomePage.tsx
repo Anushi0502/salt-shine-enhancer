@@ -1168,7 +1168,7 @@ const HomePage = () => {
                             alt=""
                             className="h-auto w-full drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
                           />
-                          <span className="absolute left-1/2 top-1/2 w-[82%] -translate-x-1/2 -translate-y-1/2 -rotate-45 text-center font-sans text-[clamp(0.52rem,1vw,1rem)] font-black uppercase leading-none tracking-[0.02em] text-white [text-shadow:0_1px_2px_rgba(75,0,0,0.9)]">
+                          <span className="absolute left-1/2 top-1/2 w-[82%] -translate-x-1/2 -translate-y-1/2 -rotate-45 text-center font-sans text-[clamp(0.45rem,1.4vw,1rem)] font-black uppercase leading-none tracking-[0.02em] text-white [text-shadow:0_1px_2px_rgba(75,0,0,0.9)]">
                             {tile.ribbonLabel}
                           </span>
                         </div>
