@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.vite/
 dist
 dist-ssr
 *.local
@@ -26,6 +27,9 @@ output/shopify-seo-knowledge-full-pass-manifest.json
 output/shopify-seo-quantity-tags-*.json
 output/shopify-seo-release-final-manifest.json
 output/shopify-seo-release-manifest.json.tmp-*
+output/*.json
+output/*.jsonl
+output/vscode-sync-backup/
 .playwright-cli/
 
 # Editor directories and files
