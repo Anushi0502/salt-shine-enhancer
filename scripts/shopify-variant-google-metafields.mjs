@@ -111,6 +111,8 @@ function parseArgs(argv) {
     catalogCheckpointPath: defaultCatalogCheckpointPath,
     sample: 0,
     forceBulk: false,
+    bulkResultPath: "",
+    planManifestPath: "",
   };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
@@ -118,6 +120,13 @@ function parseArgs(argv) {
     if (token === "--apply") args.mode = "apply";
     else if (token === "--dry-run") args.mode = "dry-run";
     else if (token === "--force-bulk") args.forceBulk = true;
+    else if (token === "--bulk-result") {
+      args.bulkResultPath = resolve(rootDir, next || "");
+      index += 1;
+    } else if (token === "--plan-manifest") {
+      args.planManifestPath = resolve(rootDir, next || "");
+      index += 1;
+    }
     else if (token === "--scope") {
       args.scope = next;
       index += 1;
@@ -456,6 +465,8 @@ async function runBulkInputPart(part, partIndex, partTotal) {
 async function verifyBulkResult(resultPath, part, tasks) {
   const lines = (await readFile(resultPath, "utf8")).split(/\r?\n/).filter(Boolean);
   const verified = [];
+  const skippedVariantIds = [];
+  const retryPlans = [];
   for (const line of lines) {
     const payload = JSON.parse(line);
     const lineNumber = Number(payload.__lineNumber);
@@ -464,13 +475,28 @@ async function verifyBulkResult(resultPath, part, tasks) {
     if (payload.errors?.length) throw new Error(`Bulk line ${lineNumber} failed: ${payload.errors.map((error) => error.message).join(" | ")}`);
     const response = payload.data?.productVariantsBulkUpdate;
     const errors = response?.userErrors || [];
-    if (errors.length) throw new Error(`Bulk line ${lineNumber} user error: ${errors.map((error) => `${error.field?.join(".") || "variants"}: ${error.message}`).join(" | ")}`);
+    if (errors.length) {
+      const codes = new Set(errors.map((error) => error.code));
+      if ([...codes].every((code) => code === "PRODUCT_DOES_NOT_EXIST")) {
+        skippedVariantIds.push(...task.plans.map((plan) => plan.variantId));
+        continue;
+      }
+      if ([...codes].every((code) => code === "PRODUCT_VARIANT_DOES_NOT_EXIST")) {
+        const missingIndexes = new Set(errors.map((error) => Number(error.field?.[1])).filter(Number.isFinite));
+        task.plans.forEach((plan, index) => {
+          if (missingIndexes.has(index)) skippedVariantIds.push(plan.variantId);
+          else retryPlans.push(plan);
+        });
+        continue;
+      }
+      throw new Error(`Bulk line ${lineNumber} user error: ${errors.map((error) => `${error.field?.join(".") || "variants"}: ${error.message}`).join(" | ")}`);
+    }
     const writes = task.plans.flatMap((plan) => plan.writes);
     verifyReturnedWrites(writes, response?.productVariants || []);
     verified.push(...writes);
   }
   if (lines.length !== part.taskCount) throw new Error(`Bulk result ${resultPath} contains ${lines.length} lines; expected ${part.taskCount}`);
-  return verified.length;
+  return { verifiedWrites: verified.length, skippedVariantIds, retryPlans };
 }
 
 async function applyPlansWithBulkOperation(plans, manifest, manifestPath) {
@@ -478,11 +504,15 @@ async function applyPlansWithBulkOperation(plans, manifest, manifestPath) {
   manifest.summary.batches = parts.length;
   manifest.policy.applyTransport = "Shopify bulkOperationRunMutation with productVariantsBulkUpdate";
   manifest.bulkOperations = [];
+  const skippedVariantIds = [];
+  const retryPlans = [];
   await writeJsonAtomic(manifestPath, manifest);
   for (const [index, part] of parts.entries()) {
     const result = await runBulkInputPart(part, index, parts.length);
-    const verifiedWrites = await verifyBulkResult(result.resultPath, part, tasks);
-    manifest.verifiedWrites += verifiedWrites;
+    const verification = await verifyBulkResult(result.resultPath, part, tasks);
+    manifest.verifiedWrites += verification.verifiedWrites;
+    skippedVariantIds.push(...verification.skippedVariantIds);
+    retryPlans.push(...verification.retryPlans);
     manifest.appliedBatches = index + 1;
     manifest.bulkOperations.push({
       id: result.operation.id,
@@ -492,11 +522,51 @@ async function applyPlansWithBulkOperation(plans, manifest, manifestPath) {
       completedAt: result.operation.completedAt,
       inputPath: part.path,
       resultPath: result.resultPath,
-      verifiedWrites,
+      verifiedWrites: verification.verifiedWrites,
+      skippedDeletedVariants: verification.skippedVariantIds.length,
+      retryVariants: verification.retryPlans.length,
     });
     await writeJsonAtomic(manifestPath, manifest);
-    process.stdout.write(`Verified bulk operation ${index + 1}/${parts.length}: ${verifiedWrites} metafields\n`);
+    process.stdout.write(`Verified bulk operation ${index + 1}/${parts.length}: ${verification.verifiedWrites} metafields\n`);
   }
+  if (retryPlans.length) {
+    const originalBatchCount = manifest.summary.batches;
+    const originalAppliedBatches = manifest.appliedBatches;
+    process.stdout.write(`Retrying ${retryPlans.length} surviving variant(s) from stale atomic bulk lines\n`);
+    await applyPlans(retryPlans, manifest, manifestPath);
+    manifest.summary.batches = originalBatchCount;
+    manifest.appliedBatches = originalAppliedBatches;
+  }
+  manifest.skippedDeletedVariantIds = [...new Set(skippedVariantIds)].sort();
+  manifest.summary.skippedDeletedVariants = manifest.skippedDeletedVariantIds.length;
+  await writeJsonAtomic(manifestPath, manifest);
+  return manifest.skippedDeletedVariantIds;
+}
+
+async function applyExistingBulkResult(plans, manifest, manifestPath, resultPath) {
+  const tasks = buildProductTasks(plans);
+  const verification = await verifyBulkResult(resultPath, { firstTaskIndex: 0, taskCount: tasks.length }, tasks);
+  manifest.policy.applyTransport = "verified existing Shopify bulk operation result";
+  manifest.summary.batches = 1;
+  manifest.appliedBatches = 1;
+  manifest.verifiedWrites = verification.verifiedWrites;
+  if (verification.retryPlans.length) {
+    process.stdout.write(`Retrying ${verification.retryPlans.length} surviving variant(s) from stale atomic bulk lines\n`);
+    await applyPlans(verification.retryPlans, manifest, manifestPath);
+    manifest.summary.batches = 1;
+    manifest.appliedBatches = 1;
+  }
+  manifest.skippedDeletedVariantIds = [...new Set(verification.skippedVariantIds)].sort();
+  manifest.summary.skippedDeletedVariants = manifest.skippedDeletedVariantIds.length;
+  manifest.bulkOperations = [{
+    status: "COMPLETED",
+    resultPath,
+    verifiedWrites: verification.verifiedWrites,
+    skippedDeletedVariants: manifest.skippedDeletedVariantIds.length,
+    retryVariants: verification.retryPlans.length,
+  }];
+  await writeJsonAtomic(manifestPath, manifest);
+  return manifest.skippedDeletedVariantIds;
 }
 
 async function applyPlans(plans, manifest, manifestPath) {
@@ -532,6 +602,26 @@ async function applyPlans(plans, manifest, manifestPath) {
 
 export async function runVariantGoogleMetafieldBackfill(options = {}) {
   const args = { ...parseArgs(["node", "script"]), ...options };
+  if (args.planManifestPath && args.bulkResultPath) {
+    const manifest = JSON.parse(await readFile(args.planManifestPath, "utf8"));
+    const plans = Array.isArray(manifest.variants) ? manifest.variants : [];
+    if (!plans.length) throw new Error(`Plan manifest contains no variants: ${args.planManifestPath}`);
+    manifest.mode = "apply";
+    manifest.resumedAt = new Date().toISOString();
+    const skippedDeletedVariantIds = await applyExistingBulkResult(plans, manifest, args.manifestPath, args.bulkResultPath);
+    const skippedDeleted = new Set(skippedDeletedVariantIds);
+    await writeJsonAtomic(args.statePath, {
+      version: 1,
+      storeDomain,
+      establishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      processedVariantIds: plans.map((plan) => plan.variantId).filter((variantId) => !skippedDeleted.has(variantId)).sort(),
+    });
+    manifest.completedAt = new Date().toISOString();
+    manifest.status = "applied-and-verified";
+    await writeJsonAtomic(args.manifestPath, manifest);
+    return manifest;
+  }
   const startedAt = new Date().toISOString();
   const definitions = await validateDefinitions();
   const allVariants = await fetchAllVariants(args.catalogCheckpointPath, args.sample);
@@ -588,15 +678,19 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
   process.stdout.write(`${args.mode} ${args.scope}: ${manifest.summary.selectedVariants} variants, ${manifest.summary.totalWrites} metafield writes\n`);
   if (args.mode === "dry-run") return manifest;
 
-  if (args.forceBulk || (manifest.summary.totalWrites >= bulkOperationThreshold && args.sample === 0)) {
-    await applyPlansWithBulkOperation(plans, manifest, args.manifestPath);
+  let skippedDeletedVariantIds = [];
+  if (args.bulkResultPath) {
+    skippedDeletedVariantIds = await applyExistingBulkResult(plans, manifest, args.manifestPath, args.bulkResultPath);
+  } else if (args.forceBulk || (manifest.summary.totalWrites >= bulkOperationThreshold && args.sample === 0)) {
+    skippedDeletedVariantIds = await applyPlansWithBulkOperation(plans, manifest, args.manifestPath);
   } else {
     manifest.policy.applyTransport = "synchronous productVariantsBulkUpdate";
     await applyPlans(plans, manifest, args.manifestPath);
   }
+  const skippedDeleted = new Set(skippedDeletedVariantIds);
   const nextProcessed = args.scope === "all-products"
-    ? allVariants.map((variant) => variant.id)
-    : [...new Set([...(state.processedVariantIds || []), ...selected.map((variant) => variant.id)])];
+    ? allVariants.map((variant) => variant.id).filter((variantId) => !skippedDeleted.has(variantId))
+    : [...new Set([...(state.processedVariantIds || []), ...selected.map((variant) => variant.id).filter((variantId) => !skippedDeleted.has(variantId))])];
   const nextState = {
     version: 1,
     storeDomain,

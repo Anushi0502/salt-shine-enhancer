@@ -1162,14 +1162,16 @@ const HomePage = () => {
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.1),rgba(8,30,73,0.2)_44%,rgba(8,30,73,0.88))]" />
                     {tile.ribbonLabel ? (
                       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
-                        <img
-                          src={normalizeShopifyAssetUrl(recentlyOrderedRibbon) || recentlyOrderedRibbon}
-                          alt=""
-                          className="absolute -left-[18%] -top-[24%] h-auto w-[68%] drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
-                        />
-                        <span className="absolute left-[-2.55rem] top-[2.15rem] w-[11rem] -rotate-45 text-center text-[0.42rem] font-bold uppercase tracking-[0.08em] text-white drop-shadow-sm sm:left-[-2.3rem] sm:top-[2.35rem] sm:text-[0.48rem]">
-                          {tile.ribbonLabel}
-                        </span>
+                        <div className="absolute -left-[15%] -top-[20%] w-[68%]">
+                          <img
+                            src={normalizeShopifyAssetUrl(recentlyOrderedRibbon) || recentlyOrderedRibbon}
+                            alt=""
+                            className="block h-auto w-full drop-shadow-[0_8px_12px_rgba(91,10,10,0.28)]"
+                          />
+                          <span className="absolute left-[54.5%] top-[54.5%] w-[84%] -translate-x-1/2 -translate-y-1/2 -rotate-45 text-center text-[clamp(0.5rem,0.78vw,0.78rem)] font-black uppercase tracking-[0.02em] text-white [text-shadow:0_1px_3px_rgba(80,0,0,0.82)]">
+                            {tile.ribbonLabel}
+                          </span>
+                        </div>
                       </div>
                     ) : null}
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">

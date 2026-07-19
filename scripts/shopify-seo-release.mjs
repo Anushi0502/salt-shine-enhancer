@@ -18,6 +18,7 @@ import {
   normalizeComparableHtml,
 } from "../src/lib/shopify-seo-release.js";
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
+import { managedMinimumQuantityTagFromTags } from "../src/lib/shopify-seo-managed-tags.js";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -318,6 +319,7 @@ function parseArgs(argv) {
     output: outputPath,
     sample: 0,
     preservePrices: false,
+    preserveTags: false,
     tagsOnly: false,
     fullCatalog: false,
     frozenCatalog: "",
@@ -346,6 +348,10 @@ function parseArgs(argv) {
     }
     if (token === "--preserve-prices") {
       args.preservePrices = true;
+      continue;
+    }
+    if (token === "--preserve-tags") {
+      args.preserveTags = true;
       continue;
     }
     if (token === "--tags-only") {
@@ -452,7 +458,7 @@ async function runShopifyCliGraphQL(query, variables, { allowMutations = false, 
       } catch (error) {
         lastRequestFinishedAt = Date.now();
         const message = String(error?.stderr || error?.stdout || error?.message || error);
-        const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted/i.test(message);
+        const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(message);
         if (!transient || attempt >= maxAttempts - 1) {
           throw new Error(`${operation || "Shopify CLI request"} failed: ${message.trim()}`);
         }
@@ -1237,8 +1243,9 @@ async function preflight({ plan, manifest, liveProducts, output }) {
   assertNoUnverifiedFailures(manifest);
 }
 
-async function applyPlan({ plan, manifest, output }) {
+async function applyPlan({ plan, manifest, output, liveProducts = [] }) {
   const planByHandle = new Map(plan.products.map((entry) => [entry.handle, entry]));
+  const initialLiveById = new Map(liveProducts.map((product) => [product.id, product]));
 
   const pendingEntries = manifest.products.filter(
     (entry) => entry.status !== "skipped-exact-match" && !entry.status.startsWith("failed"),
@@ -1264,7 +1271,9 @@ async function applyPlan({ plan, manifest, output }) {
         throw new Error(`Live product identity missing for batch starting at ${start + 1}`);
       }
 
-      const liveById = await fetchProductsById(ids, retryInfo, `live apply read batch ${start + 1}`);
+      const liveById = ids.every((id) => initialLiveById.has(id))
+        ? new Map(ids.map((id) => [id, initialLiveById.get(id)]))
+        : await fetchProductsById(ids, retryInfo, `live apply read batch ${start + 1}`);
       const tasks = [];
       const failuresBeforeBatch = manifest.failures.length;
 
@@ -1419,6 +1428,7 @@ export async function runShopifySeoRelease({
   output = outputPath,
   sample = 0,
   preservePrices = false,
+  preserveTags = false,
   tagsOnly = false,
   fullCatalog = false,
   frozenCatalog = "",
@@ -1470,10 +1480,11 @@ export async function runShopifySeoRelease({
       ? { ...mergedPlan, products: mergedPlan.products.filter((entry) => selectedHandles.has(entry.handle)) }
       : mergedPlan;
   const liveHandleSet = new Set(liveProducts.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
-  const sourceOnlyExcluded = tagsOnly
+  const restrictToLiveCatalog = tagsOnly || fullCatalog || newProductsOnly;
+  const sourceOnlyExcluded = restrictToLiveCatalog
     ? selectedPlan.products.filter((entry) => !liveHandleSet.has(entry.handle)).length
     : 0;
-  const plan = tagsOnly
+  const plan = restrictToLiveCatalog
     ? { ...selectedPlan, products: selectedPlan.products.filter((entry) => liveHandleSet.has(entry.handle)) }
     : selectedPlan;
   manifest = createManifest({ mode, output, plan, priorManifest });
@@ -1494,6 +1505,7 @@ export async function runShopifySeoRelease({
     forceFullCatalog: fullCatalog,
     newProductsOnly,
   });
+  const liveProductsByHandle = new Map(liveProducts.map((product) => [normalizeHandleValue(product?.handle), product]));
   const pricingScopedPlan = preservePrices
     ? {
         ...eligibilityPlan,
@@ -1504,18 +1516,28 @@ export async function runShopifySeoRelease({
         })),
       }
     : eligibilityPlan;
-  const scopedPlan = tagsOnly
+  const tagScopedPlan = preserveTags
     ? {
         ...pricingScopedPlan,
         products: pricingScopedPlan.products.map((product) => ({
+          ...product,
+          desiredQuantityTag: managedMinimumQuantityTagFromTags(liveProductsByHandle.get(product.handle)?.tags || []),
+        })),
+      }
+    : pricingScopedPlan;
+  const scopedPlan = tagsOnly
+    ? {
+        ...tagScopedPlan,
+        products: tagScopedPlan.products.map((product) => ({
           ...product,
           desiredProductInput: {},
           desiredVariantUpdates: [],
           desiredMediaTargets: [],
         })),
       }
-    : pricingScopedPlan;
+    : tagScopedPlan;
   manifest.policy.pricing = preservePrices ? "preserved; no variant price or compare-at mutations" : "planner-controlled";
+  manifest.policy.tags = preserveTags ? "all live Shopify tags preserved exactly" : manifest.policy.tags;
   manifest.policy.mutationScope = tagsOnly ? "managed minimum-quantity tags only" : "eligible SEO plus managed tags";
   await preflight({ plan: scopedPlan, manifest, liveProducts, output: { mode, path: output } });
 
@@ -1529,7 +1551,7 @@ export async function runShopifySeoRelease({
     return manifest;
   }
 
-  await applyPlan({ plan: scopedPlan, manifest, output: { mode, path: output } });
+  await applyPlan({ plan: scopedPlan, manifest, output: { mode, path: output }, liveProducts });
   if (sample === 0) {
     manifest.policy.initialFullCatalogPassComplete = true;
     manifest.policy.metaDescriptionBackfillComplete = true;
