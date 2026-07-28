@@ -1,5 +1,7 @@
 import { buildFinanceSummary, handleFinanceOptions, normalizePeriod, requireFinanceSession, setFinanceCors } from "./_shared";
 
+export const config = { runtime: "nodejs20.x" };
+
 export default async function handler(req: any, res: any) {
   if (handleFinanceOptions(req, res, "GET, OPTIONS")) return;
   setFinanceCors(req, res);

@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { buildFinanceSummary, handleFinanceOptions, normalizePeriod, requireFinanceSession, setFinanceCors } from "./_shared";
 
+export const config = { runtime: "nodejs20.x" };
+
 function money(cents: number, currency: string): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(cents / 100);
 }
