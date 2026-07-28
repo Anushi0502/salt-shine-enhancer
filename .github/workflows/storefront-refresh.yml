@@ -58,6 +58,7 @@ jobs:
           printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
 
       - name: Ensure finance route redirect
+        continue-on-error: true
         env:
           SHOPIFY_ADMIN_API_VERSION: "2026-07"
           SALT_SHOP_URL: https://0309d3-72.myshopify.com
