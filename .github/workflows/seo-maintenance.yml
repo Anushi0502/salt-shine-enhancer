@@ -1,0 +1,44 @@
+name: SALT SEO Maintenance
+
+on:
+  schedule:
+    # SEO mutations are intentionally slower than catalog delivery. Running a
+    # full SEO rewrite every five minutes would waste API budget and churn
+    # search metadata without improving discovery.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: salt-seo-maintenance
+  cancel-in-progress: false
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout storefront source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reconcile SEO for new products
+        env:
+          SHOPIFY_ADMIN_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ADMIN_ACCESS_TOKEN }}
+          SHOPIFY_ADMIN_API_VERSION: "2026-07"
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+          SALT_SHOPIFY_SEO_BATCH_SIZE: "5"
+          SALT_SHOPIFY_REQUEST_DELAY_MS: "300"
+          SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS: "6"
+        run: npm run shopify:seo:new-products:apply

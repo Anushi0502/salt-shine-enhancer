@@ -32,6 +32,9 @@ const defaultShopBase = "https://0309d3-72.myshopify.com";
 const shopBase = process.env.SALT_SHOP_URL || defaultShopBase;
 const storeDomain = new URL(shopBase).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
+const adminAccessToken =
+  process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
+const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
 const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
 const cliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
 const cliAgentIds =
@@ -410,6 +413,53 @@ async function runShopifyCliGraphQL(query, variables, { allowMutations = false, 
   const waitFor = requestDelayMs - (now - lastRequestFinishedAt);
   if (waitFor > 0) {
     await sleep(waitFor);
+  }
+
+  if (adminAccessToken) {
+    let attempt = 0;
+    while (true) {
+      try {
+        const response = await fetch(adminGraphqlUrl, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": adminAccessToken,
+          },
+          body: JSON.stringify({ query, variables: variables || {} }),
+        });
+        const rawOutput = await response.text();
+        if (!response.ok) {
+          throw new Error(`Admin GraphQL HTTP ${response.status}: ${rawOutput.slice(0, 500)}`);
+        }
+
+        lastRequestFinishedAt = Date.now();
+        return parseGraphQlPayload(rawOutput);
+      } catch (error) {
+        lastRequestFinishedAt = Date.now();
+        const message = String(error?.message || error);
+        const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
+          message,
+        );
+        if (!transient || attempt >= maxAttempts - 1) {
+          throw new Error(`${operation || "Shopify Admin GraphQL request"} failed: ${message.trim()}`);
+        }
+
+        const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
+        retryInfo?.push({
+          operation: operation || "Shopify Admin GraphQL request",
+          attempt: attempt + 1,
+          delayMs,
+          message: message.trim().slice(0, 500),
+          at: new Date().toISOString(),
+        });
+        process.stdout.write(
+          `Shopify Admin GraphQL request failed for ${operation || "operation"}; retrying in ${Math.ceil(delayMs / 1000)}s\n`,
+        );
+        await sleep(delayMs);
+        attempt += 1;
+      }
+    }
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-seo-release-"));

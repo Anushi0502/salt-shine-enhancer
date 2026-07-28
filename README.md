@@ -155,6 +155,18 @@ Push with Shopify CLI:
 npx @shopify/cli theme push --path shopify-theme --store 0309d3-72.myshopify.com
 ```
 
+## Scheduled Storefront Refresh
+
+`.github/workflows/storefront-refresh.yml` runs every five minutes without requiring a visitor. It refreshes Admin prices, products, availability, collections, collection membership, search data, homepage merchandising, and the live Shopify theme. The workflow skips the upload when the catalog content is unchanged.
+
+`.github/workflows/seo-maintenance.yml` runs the safe new-product SEO reconciliation every six hours. A full SEO rewrite is intentionally not run every five minutes because it would consume Shopify API budget and repeatedly churn unchanged metadata.
+
+Configure these GitHub repository secrets before enabling the schedules:
+
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: Shopify Admin API token with product, collection, SEO, and read order access.
+- `SHOPIFY_THEME_ACCESS_PASSWORD`: Shopify Theme Access password or Admin API token with theme write access.
+- `SALT_THEME_REPO_TOKEN`: token that can push `Anushi0502/salt-online-store-v2`.
+
 ## Release
 
 Run the full release workflow from the repository root:

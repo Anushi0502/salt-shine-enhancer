@@ -42,6 +42,7 @@ const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
+const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
 const productSearchPath = resolve(outDir, "product-search.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
@@ -498,6 +499,67 @@ const PRODUCT_VARIANT_COST_QUERY = /* GraphQL */ `
   }
 `;
 
+const PRODUCT_VARIANT_PRICING_QUERY = /* GraphQL */ `
+  query ProductVariantPricing($after: String) {
+    productVariants(first: 250, after: $after) {
+      nodes {
+        legacyResourceId
+        price
+        compareAtPrice
+        availableForSale
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+const BULK_VARIANT_PRICING_MUTATION = /* GraphQL */ `
+  mutation StartVariantPricingExport {
+    bulkOperationRunQuery(
+      query: """
+        {
+          productVariants {
+            edges {
+              node {
+                legacyResourceId
+                price
+                compareAtPrice
+                availableForSale
+              }
+            }
+          }
+        }
+      """
+    ) {
+      bulkOperation {
+        id
+        status
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const BULK_OPERATION_STATUS_QUERY = /* GraphQL */ `
+  query CurrentBulkVariantPricingExport {
+    currentBulkOperation {
+      id
+      status
+      errorCode
+      objectCount
+      fileSize
+      url
+      partialDataUrl
+    }
+  }
+`;
+
 const COLLECTION_CUSTOM_DATA_QUERY = /* GraphQL */ `
   query CollectionCustomData($ids: [ID!]!) {
     nodes(ids: $ids) {
@@ -809,6 +871,147 @@ async function fetchProductVariantCostMap(products) {
   }
 
   return records;
+}
+
+async function fetchProductVariantPricingMapFromBulkOperation() {
+  const current = await runShopifyStoreGraphQL(BULK_OPERATION_STATUS_QUERY);
+  const currentOperation = current?.currentBulkOperation;
+  const activeStatuses = new Set(["CREATED", "RUNNING"]);
+  let operation = activeStatuses.has(currentOperation?.status)
+    ? currentOperation
+    : null;
+
+  if (!operation) {
+    const started = await runShopifyStoreGraphQL(BULK_VARIANT_PRICING_MUTATION, {}, { allowMutations: true });
+    const result = started?.bulkOperationRunQuery;
+    const userErrors = Array.isArray(result?.userErrors) ? result.userErrors : [];
+    if (userErrors.length) {
+      throw new Error(userErrors.map((error) => error.message || "Bulk export failed").join(" | "));
+    }
+
+    operation = result?.bulkOperation;
+  }
+
+  if (!operation?.id) {
+    throw new Error("Shopify bulk variant pricing export did not return an operation");
+  }
+
+  process.stdout.write(`Waiting for Shopify bulk variant pricing export ${operation.id}\n`);
+  let status = operation.status;
+  let completed = operation;
+  while (activeStatuses.has(status)) {
+    await sleep(1500);
+    const payload = await runShopifyStoreGraphQL(BULK_OPERATION_STATUS_QUERY);
+    completed = payload?.currentBulkOperation;
+    status = completed?.status;
+    process.stdout.write(
+      `Bulk variant pricing export ${status || "UNKNOWN"}: ${completed?.objectCount || 0} records\n`,
+    );
+  }
+
+  if (status !== "COMPLETED" || !completed?.url) {
+    throw new Error(
+      `Shopify bulk variant pricing export ${status || "UNKNOWN"}: ${completed?.errorCode || "no download URL"}`,
+    );
+  }
+
+  const response = await fetch(completed.url);
+  if (!response.ok) {
+    throw new Error(`Shopify bulk variant pricing download failed (${response.status})`);
+  }
+
+  const records = new Map();
+  const lines = (await response.text()).split("\n");
+  for (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
+
+    const variant = JSON.parse(line);
+    if (!variant?.legacyResourceId) {
+      continue;
+    }
+
+    records.set(String(variant.legacyResourceId), {
+      price: String(variant.price || ""),
+      compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
+      available: Boolean(variant.availableForSale),
+    });
+  }
+
+  process.stdout.write(`Downloaded Shopify bulk variant pricing: ${records.size} variants\n`);
+  return records;
+}
+
+async function fetchProductVariantPricingMap() {
+  if (useCliAdminPricing) {
+    return fetchProductVariantPricingMapFromBulkOperation();
+  }
+
+  const records = new Map();
+  let after = null;
+  let page = 0;
+
+  while (true) {
+    const payload = await runShopifyStoreGraphQL(PRODUCT_VARIANT_PRICING_QUERY, { after });
+    const connection = payload?.productVariants;
+    if (!connection) {
+      throw new Error("Shopify Admin pricing query returned no productVariants connection");
+    }
+
+    for (const variant of connection.nodes || []) {
+      if (!variant?.legacyResourceId) {
+        continue;
+      }
+
+      records.set(String(variant.legacyResourceId), {
+        price: String(variant.price || ""),
+        compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
+        available: Boolean(variant.availableForSale),
+      });
+    }
+
+    page += 1;
+    if (page % 10 === 0 || !connection.pageInfo?.hasNextPage) {
+      process.stdout.write(`Fetched Admin variant pricing page ${page}: ${records.size} variants\n`);
+    }
+
+    if (!connection.pageInfo?.hasNextPage) {
+      break;
+    }
+
+    after = connection.pageInfo.endCursor;
+  }
+
+  return records;
+}
+
+function applyAdminVariantPricing(products, pricingMap) {
+  let matched = 0;
+  const nextProducts = products.map((product) => {
+    const variants = Array.isArray(product.variants)
+      ? product.variants.map((variant) => {
+          const variantId = String(variant?.legacyResourceId || variant?.id || "");
+          const pricing = pricingMap.get(variantId);
+          if (!pricing) {
+            return variant;
+          }
+
+          matched += 1;
+          return {
+            ...variant,
+            price: pricing.price,
+            compare_at_price: pricing.compare_at_price,
+            available: pricing.available,
+          };
+        })
+      : product.variants;
+
+    return variants === product.variants ? product : { ...product, variants };
+  });
+
+  process.stdout.write(`Applied Admin pricing to ${matched} catalog variants\n`);
+  return nextProducts;
 }
 
 async function fetchCollectionCustomDataMap(collections) {
@@ -1254,11 +1457,16 @@ async function fetchBlogPostsFromCachedFile() {
 
 async function fetchProductsForSync() {
   try {
-    const products = adminAccessToken
+    let products = adminAccessToken
       ? await fetchAdminPaged("products", "/products.json")
       : await fetchPaged("products", "/products.json");
 
     if (products.length) {
+      if (useCliAdminPricing && !adminAccessToken) {
+        const pricingMap = await fetchProductVariantPricingMap();
+        products = applyAdminVariantPricing(products, pricingMap);
+      }
+
       if (skipProductEnrichment) {
         let cachedProducts = [];
         try {
