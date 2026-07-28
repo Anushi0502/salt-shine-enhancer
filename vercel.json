@@ -29,10 +29,6 @@
       "dest": "/api/judgeme/$1"
     },
     {
-      "src": "/api/finance/(.*)",
-      "dest": "/api/finance/$1"
-    },
-    {
       "handle": "filesystem"
     },
     {
