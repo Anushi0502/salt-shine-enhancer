@@ -9,6 +9,7 @@ describe("Shopify SEO pipeline", () => {
       "Refresh Shopify catalog data",
       "Plan/apply Google variant metafields (all-products)",
       "Reconcile handle-first SEO (all-products)",
+      "Map variant images (all-products)",
       "Backfill product merchandising metafields (all-products)",
     ]);
     expect(stages.flatMap((stage) => stage.args)).not.toContain("--apply");
