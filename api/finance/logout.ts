@@ -1,7 +1,5 @@
 import { clearFinanceSession, financeResponse, handleFinanceOptions, setFinanceCors } from "./_shared";
 
-export const config = { runtime: "nodejs20.x" };
-
 export default function handler(req: any, res: any) {
   if (handleFinanceOptions(req, res, "POST, OPTIONS")) return;
   setFinanceCors(req, res);

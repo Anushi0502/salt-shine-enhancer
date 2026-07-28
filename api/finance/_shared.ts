@@ -14,7 +14,7 @@ const SUMMARY_CACHE_TTL_MS = 60 * 1000;
 const DEFAULT_CURRENCY = "USD";
 const DEFAULT_TIMEZONE = process.env.FINANCE_TIMEZONE || "America/New_York";
 const DEFAULT_ALLOWED_ORIGINS = [
-  "https://salt-online-storev2.vercel.app",
+  "https://salt-online-storev2-gcs1124s-projects.vercel.app",
   "https://www.saltonlinestore.com",
   "https://saltonlinestore.com",
   "https://0309d3-72.myshopify.com",
