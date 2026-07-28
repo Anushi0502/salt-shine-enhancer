@@ -12,6 +12,7 @@ const defaultThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
 const financeApiOrigin = (process.env.VITE_FINANCE_API_ORIGIN || "https://salt-online-storev2-gcs1124s-projects.vercel.app")
   .trim()
   .replace(/\/+$/, "");
+const shopifyAppKey = (process.env.VITE_SHOPIFY_APP_KEY || "f0caed5a1d71d2593375e14ec07b8008").trim();
 
 function resolveThemeDir() {
   const outIndex = process.argv.indexOf("--out");
@@ -512,6 +513,7 @@ const sectionLiquid = `<div
 <script>
   window.SALT_THEME_BUILD = ${JSON.stringify(themeBuildStamp)};
   window.SALT_FINANCE_API_ORIGIN = ${JSON.stringify(financeApiOrigin)};
+  window.SALT_SHOPIFY_APP_KEY = ${JSON.stringify(shopifyAppKey)};
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
