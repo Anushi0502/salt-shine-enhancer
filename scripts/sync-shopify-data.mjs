@@ -1355,6 +1355,15 @@ async function fetchBlogPosts() {
     return adminResult;
   }
 
+  if (adminAccessToken) {
+    try {
+      return await fetchBlogPostsFromCachedFile();
+    } catch (cacheError) {
+      const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+      process.stdout.write(`Cached blog payload unavailable; trying public feeds (${cacheMessage})\n`);
+    }
+  }
+
   for (const handle of blogHandles) {
     try {
       const response = await fetch(`${baseUrl}/blogs/${handle}.atom`);

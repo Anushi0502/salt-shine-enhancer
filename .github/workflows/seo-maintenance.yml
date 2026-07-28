@@ -33,9 +33,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Refresh Shopify Admin token
+        env:
+          GH_TOKEN: ${{ secrets.SALT_THEME_REPO_TOKEN }}
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+          SHOPIFY_ADMIN_REFRESH_TOKEN: ${{ secrets.SHOPIFY_ADMIN_REFRESH_TOKEN }}
+        run: |
+          node scripts/refresh-shopify-token.mjs > "$RUNNER_TEMP/shopify-token.json"
+          access_token="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).accessToken)' "$RUNNER_TEMP/shopify-token.json")"
+          refresh_token="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).refreshToken)' "$RUNNER_TEMP/shopify-token.json")"
+          echo "::add-mask::$access_token"
+          echo "::add-mask::$refresh_token"
+          echo "SHOPIFY_ADMIN_ACCESS_TOKEN=$access_token" >> "$GITHUB_ENV"
+          printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
+
       - name: Reconcile SEO for new products
         env:
-          SHOPIFY_ADMIN_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ADMIN_ACCESS_TOKEN }}
           SHOPIFY_ADMIN_API_VERSION: "2026-07"
           SALT_SHOP_URL: https://0309d3-72.myshopify.com
           SALT_SHOPIFY_SEO_BATCH_SIZE: "5"
