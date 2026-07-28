@@ -218,6 +218,7 @@ const ShopPage = () => {
   const collectionHandle = resolveCollectionShopifyHandle(
     explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : ""),
   );
+  const isAllProductsCollection = collectionHandle === DEFAULT_COLLECTION_HANDLE;
   const isBestSellerCollection = isBestSellerCollectionHandle(collectionHandle);
   const curatedCollection = getCollectionByHandle(routeCollectionAlias || activeCollectionParam || routeFeedHandle);
   const curatedSubcollection = routeCollectionAlias
@@ -287,10 +288,10 @@ const ShopPage = () => {
     refetch: refetchCollectionProductIds,
   } = useCollectionProductIds(
     collectionHandle,
-    Boolean(collectionHandle) && !isBestSellerCollection,
+    Boolean(collectionHandle) && !isBestSellerCollection && !isAllProductsCollection,
   );
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(
-    Boolean(collectionHandle) && collectionHandle !== DEFAULT_COLLECTION_HANDLE && !isBestSellerCollection,
+    Boolean(collectionHandle) && !isBestSellerCollection,
   );
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
@@ -304,13 +305,17 @@ const ShopPage = () => {
     () => getCachedCollectionProductIds(collectionProductsMapPayload?.collections, collectionHandle),
     [collectionHandle, collectionProductsMapPayload?.collections],
   );
+  const catalogProductIds = useMemo(
+    () => (isAllProductsCollection ? products.map((product) => product.id) : null),
+    [isAllProductsCollection, products],
+  );
   const selectedCollectionProductIds = useMemo(() => {
     if (isBestSellerCollection) {
       return bestSellerProductIds;
     }
 
-    return collectionProductIdsPayload?.productIds ?? cachedCollectionProductIds;
-  }, [bestSellerProductIds, cachedCollectionProductIds, collectionProductIdsPayload, isBestSellerCollection]);
+    return collectionProductIdsPayload?.productIds ?? cachedCollectionProductIds ?? catalogProductIds;
+  }, [bestSellerProductIds, cachedCollectionProductIds, catalogProductIds, collectionProductIdsPayload, isBestSellerCollection]);
   const selectedCollectionOrder = useMemo(() => {
     if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
       return null;
@@ -488,8 +493,10 @@ const ShopPage = () => {
   // Use the bundled collection membership for the first render. The live
   // request remains active and replaces it as soon as Shopify returns the
   // current manual ordering.
-  const waitingForCollectionIds = Boolean(collectionHandle) && collectionProductIdsLoading && !cachedCollectionProductIds;
-  const hasBlockingCollectionError = Boolean(collectionHandle) && Boolean(collectionProductIdsError) && !cachedCollectionProductIds;
+  const waitingForCollectionIds =
+    Boolean(collectionHandle) && !isAllProductsCollection && collectionProductIdsLoading && !cachedCollectionProductIds;
+  const hasBlockingCollectionError =
+    Boolean(collectionHandle) && !isAllProductsCollection && Boolean(collectionProductIdsError) && !cachedCollectionProductIds;
 
   useEffect(() => {
     if (productsLoading || waitingForCollectionIds) {
