@@ -25,6 +25,10 @@ function financeApi(path: string): string {
   return `${origin}${path}`;
 }
 
+function financeAuthHeaders(token: string): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function dateInputValue(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -147,6 +151,7 @@ function ProfitabilityRow({ order, currency }: { order: FinanceOrderRow; currenc
 const FinancePage = () => {
   const defaultPeriod = useMemo(getDefaultPeriod, []);
   const [authState, setAuthState] = useState<AuthState>("checking");
+  const [sessionToken, setSessionToken] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -160,9 +165,10 @@ const FinancePage = () => {
     setError("");
     try {
       const params = new URLSearchParams(period);
-      const response = await fetch(financeApi(`/api/finance/summary?${params.toString()}`), { credentials: "include", cache: "no-store" });
+      const response = await fetch(financeApi(`/api/finance/summary?${params.toString()}`), { headers: financeAuthHeaders(sessionToken), credentials: "include", cache: "no-store" });
       const payload = await response.json().catch(() => ({}));
       if (response.status === 401) {
+        setSessionToken("");
         setAuthState("locked");
         setSummary(null);
         return;
@@ -175,7 +181,7 @@ const FinancePage = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [period]);
+  }, [period, sessionToken]);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -229,6 +235,8 @@ const FinancePage = () => {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Unable to authenticate");
+      if (typeof payload.token !== "string" || !payload.token) throw new Error("Finance session could not be established");
+      setSessionToken(payload.token);
       setPassword("");
       setAuthState("authenticated");
     } catch (loginError) {
@@ -237,7 +245,8 @@ const FinancePage = () => {
   }
 
   async function handleLogout() {
-    await fetch(financeApi("/api/finance/logout"), { method: "POST", credentials: "include" });
+    await fetch(financeApi("/api/finance/logout"), { method: "POST", headers: financeAuthHeaders(sessionToken), credentials: "include" });
+    setSessionToken("");
     setSummary(null);
     setAuthState("locked");
   }
@@ -247,7 +256,7 @@ const FinancePage = () => {
     setError("");
     try {
       const params = new URLSearchParams(period);
-      const response = await fetch(financeApi(`/api/finance/export?${params.toString()}`), { credentials: "include", cache: "no-store" });
+      const response = await fetch(financeApi(`/api/finance/export?${params.toString()}`), { headers: financeAuthHeaders(sessionToken), credentials: "include", cache: "no-store" });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload.error || "Unable to export PDF");

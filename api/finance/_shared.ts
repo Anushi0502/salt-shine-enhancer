@@ -164,7 +164,7 @@ export function setFinanceCors(req: FinanceRequest, res: FinanceResponse): void 
 
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Vary", "Origin");
 }
@@ -246,7 +246,9 @@ export function clearFinanceSession(res: FinanceResponse, req?: FinanceRequest):
 }
 
 export function getFinanceSession(req: FinanceRequest): boolean {
-  return hasValidSessionToken(readCookies(req)[SESSION_COOKIE] || "");
+  const authorization = headerValue(req, "authorization");
+  const bearerToken = authorization.match(/^Bearer\s+(.+)$/i)?.[1] || "";
+  return hasValidSessionToken(bearerToken || readCookies(req)[SESSION_COOKIE] || "");
 }
 
 export function requireFinanceSession(req: FinanceRequest, res: FinanceResponse): boolean {
@@ -318,8 +320,9 @@ export function authenticateFinancePassword(req: FinanceRequest, res: FinanceRes
   }
 
   authAttempts.delete(key);
-  setSessionCookie(res, createSessionToken(), req);
-  res.status(200).json({ authenticated: true });
+  const token = createSessionToken();
+  setSessionCookie(res, token, req);
+  res.status(200).json({ authenticated: true, token });
   return true;
 }
 
