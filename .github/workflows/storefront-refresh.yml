@@ -72,13 +72,13 @@ jobs:
         run: node scripts/compare-generated-data.mjs "$RUNNER_TEMP/salt-data-before" public/data >> "$GITHUB_OUTPUT"
 
       - name: Build web and Shopify assets
-        if: steps.catalog.outputs.changed == 'true'
+        if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         env:
           SHOPIFY_THEME_DIR: ${{ github.workspace }}/salt-online-store-shopify
         run: npm run build:web && npm run theme:bundle
 
       - name: Commit refreshed source data
-        if: steps.catalog.outputs.changed == 'true'
+        if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -91,7 +91,7 @@ jobs:
           fi
 
       - name: Commit refreshed Shopify theme bundle
-        if: steps.catalog.outputs.changed == 'true'
+        if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git -C salt-online-store-shopify config user.name "github-actions[bot]"
           git -C salt-online-store-shopify config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Publish active Shopify theme
-        if: steps.catalog.outputs.changed == 'true'
+        if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           export SHOPIFY_CLI_THEME_TOKEN="$SHOPIFY_ADMIN_ACCESS_TOKEN"
           npx --yes @shopify/cli@4.5.2 theme push \
