@@ -2,6 +2,7 @@ declare global {
   interface Window {
     SALT_THEME_ASSET_BASE?: string;
     SALT_THEME_ASSETS?: Record<string, string>;
+    SALT_FINANCE_API_ORIGIN?: string;
     SALT_RUNTIME_CONTEXT?: Partial<SaltRuntimeContext>;
   }
 }

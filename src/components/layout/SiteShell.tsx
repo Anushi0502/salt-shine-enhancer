@@ -40,9 +40,10 @@ const RouteLoadingState = ({ isHomePage }: { isHomePage: boolean }) => (
 const SiteShell = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const isFinancePage = location.pathname === "/apps:finance";
   const nativeApp = isNativeApp();
   const hideFooter = nativeApp;
-  const { data: shopPayload } = useShop();
+  const { data: shopPayload } = useShop(!isFinancePage);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   useEffect(() => {
@@ -75,7 +76,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
         nativeApp ? "native-ajio-shell bg-background" : "bg-transparent"
       } ${isHomePage ? "is-homepage" : "is-inner-page"}`}
     >
-      <SeoMetadata scope="global" structuredData={globalStructuredData} />
+      {isFinancePage ? null : <SeoMetadata scope="global" structuredData={globalStructuredData} />}
       {nativeApp ? (
         <>
           <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.7),transparent_48%),radial-gradient(circle_at_12%_18%,rgba(214,31,38,0.08),transparent_24%),radial-gradient(circle_at_88%_20%,rgba(17,17,17,0.12),transparent_26%)]" />
@@ -83,9 +84,9 @@ const SiteShell = ({ children }: PropsWithChildren) => {
         </>
       ) : null}
 
-      <MainHeader />
-      <ChatBootstrap />
-      <DeferredCartDrawer />
+      {isFinancePage ? null : <MainHeader />}
+      {isFinancePage ? null : <ChatBootstrap />}
+      {isFinancePage ? null : <DeferredCartDrawer />}
       <main
         id="main-content"
         className={`relative ${hideFooter ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : ""}`}
@@ -94,8 +95,8 @@ const SiteShell = ({ children }: PropsWithChildren) => {
           {children ?? <Outlet />}
         </Suspense>
       </main>
-      <NativeAppBottomBar />
-      {hideFooter ? null : <MainFooter />}
+      {isFinancePage ? null : <NativeAppBottomBar />}
+      {isFinancePage || hideFooter ? null : <MainFooter />}
     </div>
   );
 };

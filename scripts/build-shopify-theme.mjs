@@ -9,6 +9,9 @@ const rootDir = process.cwd();
 const distDir = resolve(rootDir, "dist");
 const publicDir = resolve(rootDir, "public");
 const defaultThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
+const financeApiOrigin = (process.env.VITE_FINANCE_API_ORIGIN || "https://salt-online-storev2.vercel.app")
+  .trim()
+  .replace(/\/+$/, "");
 
 function resolveThemeDir() {
   const outIndex = process.argv.indexOf("--out");
@@ -508,6 +511,7 @@ const sectionLiquid = `<div
 ></div>
 <script>
   window.SALT_THEME_BUILD = ${JSON.stringify(themeBuildStamp)};
+  window.SALT_FINANCE_API_ORIGIN = ${JSON.stringify(financeApiOrigin)};
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},

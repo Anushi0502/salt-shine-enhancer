@@ -34,6 +34,7 @@ const CollectionSubcollectionRoutePage = lazy(() => import("@/pages/CollectionSu
 const ContactInformationPolicyPage = lazy(() => import("@/pages/ContactInformationPolicyPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const FaqPage = lazy(() => import("@/pages/FaqPage"));
+const FinancePage = lazy(() => import("@/pages/FinancePage"));
 const MissionVisionPage = lazy(() => import("@/pages/MissionVisionPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const OrderHistoryPage = lazy(() => import("@/pages/OrderHistoryPage"));
@@ -123,6 +124,7 @@ const AppShell = () => (
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/pages/resources" element={<ResourcesPage />} />
+                <Route path="/apps:finance" element={<FinancePage />} />
                 <Route
                   path="/resources/:handle"
                   element={

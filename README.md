@@ -167,6 +167,20 @@ Configure these GitHub repository secrets before enabling the schedules:
 - `SHOPIFY_THEME_ACCESS_PASSWORD`: Shopify Theme Access password or Admin API token with theme write access.
 - `SALT_THEME_REPO_TOKEN`: token that can push `Anushi0502/salt-online-store-v2`.
 
+## Private Finance Workspace
+
+The `/apps:finance` route is a private, server-backed workspace. It never puts Shopify Admin or DSers credentials in the browser bundle.
+
+Configure these deployment-only variables before publishing it:
+
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, and Shopify Payments payout access.
+- `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
+- `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
+- `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
+- `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of Shopify, DSers, app, domain, and other recurring costs.
+
+Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
+
 ## Release
 
 Run the full release workflow from the repository root:
