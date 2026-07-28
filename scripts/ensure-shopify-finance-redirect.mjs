@@ -3,8 +3,8 @@ const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 const accessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const graphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
-const sourcePath = "/apps:finance";
 const targetPath = "/?finance=1";
+const sourcePaths = ["/apps:finance", "/apps/finance"];
 
 if (!accessToken) {
   throw new Error("SHOPIFY_ADMIN_ACCESS_TOKEN is required to configure the finance route.");
@@ -28,38 +28,40 @@ async function graphql(query, variables = {}) {
   return payload.data;
 }
 
-try {
-  const created = await graphql(
-    `#graphql
-      mutation CreateFinanceRedirect($urlRedirect: UrlRedirectInput!) {
-        urlRedirectCreate(urlRedirect: $urlRedirect) {
-          urlRedirect {
-            id
-            path
-            target
-          }
-          userErrors {
-            field
-            message
+for (const sourcePath of sourcePaths) {
+  try {
+    const created = await graphql(
+      `#graphql
+        mutation CreateFinanceRedirect($urlRedirect: UrlRedirectInput!) {
+          urlRedirectCreate(urlRedirect: $urlRedirect) {
+            urlRedirect {
+              id
+              path
+              target
+            }
+            userErrors {
+              field
+              message
+            }
           }
         }
+      `,
+      { urlRedirect: { path: sourcePath, target: targetPath } },
+    );
+
+    const result = created.urlRedirectCreate;
+    if (result.userErrors.length) {
+      const message = result.userErrors.map((error) => error.message).join("; ");
+      if (/already|taken|duplicate/i.test(message)) {
+        console.log(`Finance redirect already exists: ${sourcePath}`);
+        continue;
       }
-    `,
-    { urlRedirect: { path: sourcePath, target: targetPath } },
-  );
-
-  const result = created.urlRedirectCreate;
-  if (result.userErrors.length) {
-    const message = result.userErrors.map((error) => error.message).join("; ");
-    if (/already|taken|duplicate/i.test(message)) {
-      console.log(`Finance redirect already exists: ${sourcePath}`);
-      process.exit(0);
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  console.log(`Created finance redirect: ${result.urlRedirect.path} -> ${result.urlRedirect.target}`);
-} catch (error) {
-  console.warn(`Finance redirect was not created: ${error.message}`);
-  console.warn(`Use ${targetPath} until Shopify redirect permission is granted.`);
+    console.log(`Created finance redirect: ${result.urlRedirect.path} -> ${result.urlRedirect.target}`);
+  } catch (error) {
+    console.warn(`Finance redirect was not created for ${sourcePath}: ${error.message}`);
+    console.warn(`Use ${targetPath} until Shopify redirect permission is granted.`);
+  }
 }
