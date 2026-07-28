@@ -1493,8 +1493,22 @@ async function main() {
     shop,
   };
 
+  // Shopify's all-products collection endpoint is paginated and the cached
+  // mapping can lag behind the live product feed. Build this membership from
+  // the same feed used for the catalog so the shop grid cannot silently omit
+  // newly synced products.
+  const allProductIds = products
+    .map((product) => Number(product.id))
+    .filter((productId) => Number.isFinite(productId) && productId > 0);
+
   for (const collection of collections) {
-    const ids = await fetchCollectionProductIds(collection.handle);
+    const isAllProducts = collection.handle === "all-products";
+    const ids = isAllProducts ? allProductIds : await fetchCollectionProductIds(collection.handle);
+
+    if (isAllProducts && collection.customData?.heroSummary) {
+      collection.customData.heroSummary = `Discover ${allProductIds.length.toLocaleString()} products across the full SALT catalog.`;
+    }
+
     collectionProductMap.collections[collection.handle] = {
       title: collection.title,
       productIds: ids,
