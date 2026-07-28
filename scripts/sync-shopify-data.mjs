@@ -1343,7 +1343,14 @@ async function fetchBlogPostsFromAdmin() {
 }
 
 async function fetchBlogPosts() {
-  const adminResult = await fetchBlogPostsFromAdmin();
+  let adminResult = null;
+  try {
+    adminResult = await fetchBlogPostsFromAdmin();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    process.stdout.write(`Admin blog feed unavailable; falling back to public/cache feeds (${message})\n`);
+  }
+
   if (adminResult) {
     return adminResult;
   }
