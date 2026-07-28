@@ -58,7 +58,14 @@ for (const [collectionHandle, collection] of Object.entries(collectionProductsPa
 
 const ALLOWED_COLLECTIONS: Record<string, Set<string>> = {
   "Senior Living Guides": new Set(["books", "gifts", "medical-accessories", "gloves", "home-decor"]),
-  "Home & Living": new Set(["home-decor", "cookware", "tools", "shopping-bags-jute-bags"]),
+  "Home & Living": new Set([
+    "home-decor",
+    "cookware",
+    "tools",
+    "shopping-bags-jute-bags",
+    "portable-gadgets",
+    "unique-products",
+  ]),
   "Lifestyle & Wellness": new Set(["books", "personal-care", "medical-accessories", "gloves", "home-decor"]),
   "Gift Guides": new Set(["books", "gifts", "home-decor", "cookware", "unique-products", "personal-care", "medical-accessories", "tools"]),
   "Home Safety & Organization": new Set([
@@ -103,9 +110,11 @@ describe("resource hub content", () => {
 
     const topic = getResourceTopicByHandle("senior-living-guides", "home-safety-tips");
     expect(topic?.title).toBe("Home Safety Tips");
-    expect(buildResourceRoute("senior-living-guides")).toBe("/resources/senior-living-guides");
+    expect(buildResourceRoute("senior-living-guides")).toBe(
+      "/shop?resource=guide&handle=senior-living-guides",
+    );
     expect(buildResourceTopicRoute("senior-living-guides", "home-safety-tips")).toBe(
-      "/resources/senior-living-guides/home-safety-tips",
+      "/shop?resource=guide&handle=senior-living-guides%2Fhome-safety-tips",
     );
   });
 

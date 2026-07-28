@@ -34,7 +34,8 @@ const heroStats = [
 ];
 
 const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
-  const heroImage = normalizeShopifyAssetUrl(leadCollection?.image?.src) || heroMain;
+  const fallbackHeroImage = normalizeShopifyAssetUrl(heroMain) || heroMain;
+  const heroImage = normalizeShopifyAssetUrl(leadCollection?.image?.src) || fallbackHeroImage;
   const spotlightProducts = (featured ?? []).slice(0, 4);
   const primaryCtaHref = leadCollection ? buildCollectionRoute(leadCollection.handle) : "/shop?sort=discount";
   const primaryCtaLabel =
@@ -77,7 +78,7 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
               >
                 <div className="relative h-full w-full overflow-hidden">
                   <img
-                    src={normalizeShopifyAssetUrl(activeSlide.image) || heroMain}
+                    src={normalizeShopifyAssetUrl(activeSlide.image) || fallbackHeroImage}
                     alt={activeSlide.alt}
                     loading="eager"
                     className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.01]"
@@ -100,7 +101,7 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {slideProducts.map((product, index) => {
-                  const image = normalizeShopifyAssetUrl(product.image) || product.image || heroMain;
+                  const image = normalizeShopifyAssetUrl(product.image) || product.image || fallbackHeroImage;
                   const currentPrice = Number(product.price || 0);
                   const compareAtPrice = Number(product.compareAtPrice || 0);
                   const savings =
@@ -245,7 +246,7 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
             <div className="grid gap-3 sm:grid-cols-2">
               {spotlightProducts.map((product, index) => {
-                const image = normalizeShopifyAssetUrl(product.image) || product.image || heroMain;
+                const image = normalizeShopifyAssetUrl(product.image) || product.image || fallbackHeroImage;
                 const currentPrice = Number(product.price || 0);
                 const compareAtPrice = Number(product.compareAtPrice || 0);
                 const savings =

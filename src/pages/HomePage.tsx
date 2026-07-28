@@ -226,6 +226,7 @@ const HomePage = () => {
   const { data: collectionsPayload } = useCollections();
   const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
   const { data: homeCollectionProductsPayload } = useHomeCollectionProducts();
+  const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const bestSellerCollection = useMemo(
     () => findBestSellerCollection(collections),
@@ -244,7 +245,7 @@ const HomePage = () => {
     [bestSellerTiles],
   );
   const bestSellerHeroImage =
-    normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || heroMain;
+    normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || normalizedHeroMain;
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
     const sections = homeCollectionProductsPayload?.sections;
     if (!sections) {
@@ -395,7 +396,7 @@ const HomePage = () => {
         title="SALT Online Store | Curated essentials and giftable finds"
         description={homeDescription}
         canonicalPath="/"
-        image={heroMain}
+        image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
         <HomeHero

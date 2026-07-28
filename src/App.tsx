@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import SiteShell from "@/components/layout/SiteShell";
 import MetaPixelTracker from "@/components/integrations/MetaPixelTracker";
@@ -63,6 +63,30 @@ const TrackOrderPage = lazy(() => import("@/pages/TrackOrderPage"));
 const WholesaleInquiriesPage = lazy(() => import("@/pages/WholesaleInquiriesPage"));
 const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
 
+const StorefrontShopRoute = () => {
+  const [searchParams] = useSearchParams();
+  const resourceMode = searchParams.get("resource");
+  const resourceHandle = searchParams.get("handle") || "";
+
+  if (resourceMode === "hub") {
+    return <ResourcesPage />;
+  }
+
+  if (resourceMode === "guide" && resourceHandle) {
+    return (
+      <RouteEditorialPage
+        resolveHandle={() => resourceHandle}
+        loadingTitle="Loading resource"
+        loadingSubtitle="Building the curated resource page."
+        errorTitle="Resource unavailable"
+        errorSubtitle="Please retry to refresh the resource page."
+      />
+    );
+  }
+
+  return <ShopPage />;
+};
+
 const queryClient = new QueryClient();
 
 const AppShell = () => (
@@ -78,7 +102,7 @@ const AppShell = () => (
             <Routes>
               <Route element={<SiteShell />}>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/shop" element={<ShopPage />} />
+                <Route path="/shop" element={<StorefrontShopRoute />} />
                 <Route path="/search" element={<ShopPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />
                 <Route path="/pages/collections" element={<CollectionsPage />} />

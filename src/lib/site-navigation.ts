@@ -856,7 +856,7 @@ export const SITE_FOOTER_COMPANY_LINKS: SiteFooterLink[] = [
 ];
 
 export const SITE_FOOTER_RESOURCE_LINKS: SiteFooterLink[] = [
-  { label: "Resource Hub", to: "/resources" },
+  { label: "Resource Hub", to: "/shop?resource=hub" },
   { label: "Blog", to: "/blog" },
   { label: "Wholesale Inquiries", to: "/wholesale-inquiries" },
   { label: "Affiliate Program", to: "/affiliate-program" },
@@ -1047,11 +1047,13 @@ export function buildSubcollectionRoute(collectionHandle: string, subcollectionH
 export function buildResourceRoute(handle: string): string {
   const normalized = String(handle || "").trim().toLowerCase().replace(/^\/+|\/+$/g, "");
   if (!normalized) {
-    return "/resources";
+    return "/shop?resource=hub";
   }
 
   const withoutPrefix = normalized.startsWith("resources/") ? normalized.slice("resources/".length) : normalized;
-  return withoutPrefix ? `/resources/${withoutPrefix}` : "/resources";
+  return withoutPrefix
+    ? `/shop?resource=guide&handle=${encodeURIComponent(withoutPrefix)}`
+    : "/shop?resource=hub";
 }
 
 export function buildResourceTopicRoute(resourceHandle: string, topicHandle: string): string {

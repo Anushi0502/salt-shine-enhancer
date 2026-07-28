@@ -316,7 +316,7 @@ const FaqPage = () => {
             {[
               { label: "Contact us", to: "/contact", primary: true },
               { label: "Track order", to: "/track-order" },
-              { label: "Resource Hub", to: "/resources" },
+              { label: "Resource Hub", to: "/shop?resource=hub" },
             ].map(renderAction)}
           </div>
         </div>

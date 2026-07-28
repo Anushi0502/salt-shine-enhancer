@@ -686,7 +686,7 @@ const ShopPage = () => {
   const hasActiveFilters = filterChips.length > 0;
   const heroActions: ShopHeroAction[] = [
     { label: "Browse collections", to: "/collections", primary: true },
-    { label: "Resource Hub", to: "/resources" },
+    { label: "Resource Hub", to: "/shop?resource=hub" },
     hasActiveFilters ? { label: "Clear filters", onClick: clearFilters } : { label: "Ask support", to: "/contact" },
   ];
   const desktopToolbarChips = filterChips.slice(0, 3);

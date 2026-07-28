@@ -120,7 +120,7 @@ function buildCollectionPageContent(collectionHandle: string): EditorialPageCont
         to: buildSearchQueryUrl(collection.searchQuery),
         primary: true,
       },
-      { label: "Resource Hub", to: "/resources" },
+      { label: "Resource Hub", to: "/shop?resource=hub" },
       { label: "All collections", to: "/collections" },
     ],
   };
@@ -222,7 +222,7 @@ function buildCollectionsIndexPageContent(): EditorialPageContent {
       collection.subcollections.slice(0, 2).map((subcollection) => `${collection.title}: ${subcollection.title}`),
     ),
     actions: [
-      { label: "Resource Hub", to: "/resources", primary: true },
+      { label: "Resource Hub", to: "/shop?resource=hub", primary: true },
       { label: "Search the catalog", to: "/shop" },
       { label: "Contact support", to: "/contact" },
     ],
@@ -359,7 +359,7 @@ function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?
 function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): EditorialAction[] {
   if (kind === "hub") {
     return [
-      { label: "Browse the guides", to: "/resources", primary: true },
+      { label: "Browse the guides", to: "/shop?resource=hub", primary: true },
       { label: "Shop the catalog", to: "/shop" },
       { label: "Contact us", to: "/contact" },
     ];
@@ -368,7 +368,7 @@ function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): 
   const collectionTitle = getCollectionTitleFromRoute(collectionRoute);
   return [
     { label: `Shop ${collectionTitle || "collection"}`, to: collectionRoute, primary: true },
-    { label: "Resource Hub", to: "/resources" },
+    { label: "Resource Hub", to: "/shop?resource=hub" },
     { label: "Contact us", to: "/contact" },
   ];
 }
@@ -499,7 +499,7 @@ function buildResourceCategoryPageContent(guide: SiteResourceGuide): EditorialPa
     ],
     breadcrumbs: [
       { label: "Home", to: "/" },
-      { label: "Resource Hub", to: "/resources" },
+      { label: "Resource Hub", to: "/shop?resource=hub" },
       { label: guide.title },
     ],
     accent: buildResourceAccent("category", guide.title, guide.summary, collectionTitle),
@@ -542,7 +542,7 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
     ],
     breadcrumbs: [
       { label: "Home", to: "/" },
-      { label: "Resource Hub", to: "/resources" },
+      { label: "Resource Hub", to: "/shop?resource=hub" },
       { label: guide.title, to: buildResourceRoute(guide.handle) },
       { label: topic.title },
     ],
@@ -711,7 +711,7 @@ function buildWholesalePageContent(): EditorialPageContent {
     actions: [
       { label: "Contact Us", to: "/contact", primary: true },
       { label: "Browse collections", to: "/collections" },
-      { label: "Resource Hub", to: "/resources" },
+      { label: "Resource Hub", to: "/shop?resource=hub" },
     ],
   };
 }

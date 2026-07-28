@@ -14,6 +14,7 @@ import { useCart } from "@/lib/cart";
 import {
   SITE_COLLECTIONS,
   buildCollectionRoute,
+  buildResourceRoute,
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
   type SiteHeaderCollectionLink,
@@ -110,9 +111,13 @@ const headerShortcutLinks: SiteHeaderCollectionLink[] = [
 const utilityNavItems: HeaderNavItem[] = [
   {
     label: "Resources",
-    to: "/resources",
+    to: buildResourceRoute(""),
     kind: "resources",
-    isActive: (pathname) =>
+    isActive: (pathname, search) => {
+      const resourceMode = new URLSearchParams(search).get("resource");
+
+      return (
+      (pathname === "/shop" && (resourceMode === "hub" || resourceMode === "guide")) ||
       pathname === "/resources" ||
       pathname.startsWith("/resources/") ||
       pathname === "/faq" ||
@@ -122,7 +127,9 @@ const utilityNavItems: HeaderNavItem[] = [
       pathname.startsWith("/pages/track-order") ||
       pathname.startsWith("/pages/faq") ||
       pathname.startsWith("/pages/wholesale-inquiries") ||
-      pathname.startsWith("/pages/terms-conditions"),
+      pathname.startsWith("/pages/terms-conditions")
+      );
+    },
   },
   {
     label: "Support",
@@ -839,7 +846,7 @@ const MainHeader = () => {
             })}
 
             <Link
-              to="/resources"
+              to={resourcesNavItem.to}
               className={utilityNavItemClass(isActiveNavItem(resourcesNavItem, location.pathname, location.search))}
               aria-current={isActiveNavItem(resourcesNavItem, location.pathname, location.search) ? "page" : undefined}
             >
