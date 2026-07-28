@@ -76,6 +76,8 @@ const ALLOWED_COLLECTIONS: Record<string, Set<string>> = {
     "tools",
     "cookware",
     "travel-outdoor",
+    "portable-gadgets",
+    "unique-products",
   ]),
   "Family & Legacy": new Set(["books", "gifts", "medical-accessories"]),
   "Pet & Home Life": new Set(["pet-assocerries", "pet-travel", "gifts", "home-decor", "travel-outdoor", "tools"]),
