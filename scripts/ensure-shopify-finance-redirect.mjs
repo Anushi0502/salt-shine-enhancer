@@ -28,54 +28,38 @@ async function graphql(query, variables = {}) {
   return payload.data;
 }
 
-const existing = await graphql(
-  `#graphql
-    query FindFinanceRedirect($query: String!) {
-      urlRedirects(first: 10, query: $query) {
-        nodes {
-          id
-          path
-          target
+try {
+  const created = await graphql(
+    `#graphql
+      mutation CreateFinanceRedirect($urlRedirect: UrlRedirectInput!) {
+        urlRedirectCreate(urlRedirect: $urlRedirect) {
+          urlRedirect {
+            id
+            path
+            target
+          }
+          userErrors {
+            field
+            message
+          }
         }
       }
+    `,
+    { urlRedirect: { path: sourcePath, target: targetPath } },
+  );
+
+  const result = created.urlRedirectCreate;
+  if (result.userErrors.length) {
+    const message = result.userErrors.map((error) => error.message).join("; ");
+    if (/already|taken|duplicate/i.test(message)) {
+      console.log(`Finance redirect already exists: ${sourcePath}`);
+      process.exit(0);
     }
-  `,
-  { query: `path:${sourcePath}` },
-);
+    throw new Error(message);
+  }
 
-const redirect = existing.urlRedirects.nodes.find((node) => node.path === sourcePath);
-if (redirect?.target === targetPath) {
-  console.log(`Finance redirect already configured: ${sourcePath} -> ${targetPath}`);
-  process.exit(0);
+  console.log(`Created finance redirect: ${result.urlRedirect.path} -> ${result.urlRedirect.target}`);
+} catch (error) {
+  console.warn(`Finance redirect was not created: ${error.message}`);
+  console.warn(`Use ${targetPath} until Shopify redirect permission is granted.`);
 }
-
-if (redirect) {
-  console.log(`Finance redirect exists with target ${redirect.target}; leaving it unchanged.`);
-  process.exit(0);
-}
-
-const created = await graphql(
-  `#graphql
-    mutation CreateFinanceRedirect($urlRedirect: UrlRedirectInput!) {
-      urlRedirectCreate(urlRedirect: $urlRedirect) {
-        urlRedirect {
-          id
-          path
-          target
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `,
-  { urlRedirect: { path: sourcePath, target: targetPath } },
-);
-
-const result = created.urlRedirectCreate;
-if (result.userErrors.length) {
-  throw new Error(JSON.stringify(result.userErrors));
-}
-
-console.log(`Created finance redirect: ${result.urlRedirect.path} -> ${result.urlRedirect.target}`);
