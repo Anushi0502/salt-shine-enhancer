@@ -1,4 +1,4 @@
-import { handleFinanceOptions, issueFinanceSession, setFinanceCors } from "./_shared";
+import { handleFinanceOptions, issueFinanceSession, setFinanceCors } from "./_shared.js";
 
 export default function handler(req: any, res: any) {
   if (handleFinanceOptions(req, res, "POST, OPTIONS")) return;
