@@ -41,6 +41,7 @@ const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS 
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
+const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
 const productSearchPath = resolve(outDir, "product-search.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
@@ -1258,6 +1259,40 @@ async function fetchProductsForSync() {
       : await fetchPaged("products", "/products.json");
 
     if (products.length) {
+      if (skipProductEnrichment) {
+        let cachedProducts = [];
+        try {
+          cachedProducts = (await readProductCatalogPayload(outDir)).products;
+        } catch {
+          // A first-time sync can run without an older catalog to overlay.
+        }
+
+        const cachedById = new Map(cachedProducts.map((product) => [String(product?.id), product]));
+        const cachedByHandle = new Map(
+          cachedProducts.map((product) => [String(product?.handle || "").trim().toLowerCase(), product]),
+        );
+        const fastProducts = products.map((product) => {
+          const cachedMatch =
+            cachedById.get(String(product?.id)) ||
+            cachedByHandle.get(String(product?.handle || "").trim().toLowerCase()) ||
+            null;
+
+          return cachedMatch?.customData
+            ? {
+                ...product,
+                customData: cachedMatch.customData,
+                average_rating: product.average_rating ?? cachedMatch.average_rating,
+                total_reviews: product.total_reviews ?? cachedMatch.total_reviews,
+              }
+            : product;
+        });
+
+        process.stdout.write(
+          `Using ${adminAccessToken ? "Admin API" : "Shopify CLI"} product feed with ${products.length} products; skipped optional product enrichment for fast catalog refresh\n`,
+        );
+        return fastProducts;
+      }
+
       try {
         const [customDataMap, variantCostMap] = await Promise.all([
           fetchProductCustomDataMap(products),
