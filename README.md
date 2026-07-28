@@ -173,11 +173,15 @@ The `/apps:finance` route is a private, server-backed workspace. It never puts S
 
 Configure these deployment-only variables before publishing it:
 
-- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, and Shopify Payments payout access.
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
-- `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of Shopify, DSers, app, domain, and other recurring costs.
+- `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`.
+- `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
+- `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
+
+The backend tries Shopify Payments GraphQL first and REST second. It never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 

@@ -39,6 +39,8 @@ type ShopifyMoneySet = {
   presentmentMoney?: { amount?: string | number; currencyCode?: string };
 };
 
+type ShopifyMoney = { amount?: string | number; currencyCode?: string };
+
 type ShopifyOrder = {
   id?: string;
   name?: string;
@@ -60,6 +62,7 @@ type ShopifyOrder = {
       variant?: {
         id?: string;
         sku?: string | null;
+        title?: string | null;
         inventoryItem?: {
           unitCost?: { amount?: string | number; currencyCode?: string } | null;
         } | null;
@@ -69,6 +72,18 @@ type ShopifyOrder = {
 };
 
 type RawPayout = Record<string, unknown>;
+
+type SupplierCostSource = {
+  costs: Map<string, number>;
+  configured: boolean;
+  message?: string;
+};
+
+type SubscriptionSource = {
+  subscriptions: FinanceSubscription[];
+  connected: boolean;
+  message?: string;
+};
 
 type NormalizedOrder = {
   id: string;
@@ -83,6 +98,7 @@ type NormalizedOrder = {
   shippingIncomeCents: number;
   cogsCents: number;
   itemCount: number;
+  coveredItemCount: number;
   hasCost: boolean;
   hasMissingCost: boolean;
 };
@@ -117,7 +133,66 @@ const ORDER_QUERY = /* GraphQL */ `
             variant {
               id
               sku
+              title
               inventoryItem { unitCost { amount currencyCode } }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const PAYOUT_QUERY = /* GraphQL */ `
+  query FinancePayouts($query: String!) {
+    shopifyPaymentsAccount {
+      payouts(first: 250, query: $query, sortKey: ISSUED_AT, reverse: false) {
+        nodes {
+          id
+          externalTraceId
+          issuedAt
+          status
+          transactionType
+          net { amount currencyCode }
+          summary {
+            chargesFee { amount currencyCode }
+            refundsFee { amount currencyCode }
+            adjustmentsFee { amount currencyCode }
+            advanceFees { amount currencyCode }
+            reservedFundsFee { amount currencyCode }
+            retriedPayoutsFee { amount currencyCode }
+            chargesGross { amount currencyCode }
+            refundsFeeGross { amount currencyCode }
+            adjustmentsGross { amount currencyCode }
+            advanceGross { amount currencyCode }
+            reservedFundsGross { amount currencyCode }
+            retriedPayoutsGross { amount currencyCode }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const APP_SUBSCRIPTION_QUERY = /* GraphQL */ `
+  query FinanceAppSubscriptions {
+    currentAppInstallation {
+      activeSubscriptions {
+        id
+        name
+        status
+        createdAt
+        currentPeriodEnd
+        test
+        trialDays
+        lineItems {
+          plan {
+            pricingDetails {
+              __typename
+              ... on AppRecurringPricing {
+                interval
+                price { amount currencyCode }
+              }
             }
           }
         }
@@ -413,17 +488,118 @@ async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
   return orders;
 }
 
-async function loadPayouts(start: string, end: string): Promise<{ payouts: FinancePayout[]; state: FinanceSourceState; message?: string }> {
-  if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
-    return { payouts: [], state: "unavailable", message: "Shopify Admin credentials are not configured" };
-  }
+function simpleMoneyCents(input?: ShopifyMoney | null): number {
+  return cents(input?.amount ?? 0);
+}
 
-  const url = new URL(adminApiUrl("/shopify_payments/payouts.json"));
-  url.searchParams.set("date_min", `${start}T00:00:00Z`);
-  url.searchParams.set("date_max", `${end}T23:59:59Z`);
-  url.searchParams.set("limit", "250");
+function simpleMoneyCurrency(input?: ShopifyMoney | null): string {
+  return String(input?.currencyCode || DEFAULT_CURRENCY);
+}
+
+function payoutDateQuery(start: string, end: string): string {
+  return `issued_at:>=${start}T00:00:00Z issued_at:<=${end}T23:59:59Z`;
+}
+
+function sumMoneyCents(values: Array<ShopifyMoney | null | undefined>): number {
+  return values.reduce((sum, value) => sum + simpleMoneyCents(value), 0);
+}
+
+function normalizeGraphqlPayouts(nodes: Array<Record<string, any>>): FinancePayout[] {
+  return nodes.map((payout) => {
+    const summary = payout.summary || {};
+    const feeCents = sumMoneyCents([
+      summary.chargesFee,
+      summary.refundsFee,
+      summary.adjustmentsFee,
+      summary.advanceFees,
+      summary.reservedFundsFee,
+      summary.retriedPayoutsFee,
+    ]);
+    const grossCents = sumMoneyCents([
+      summary.chargesGross,
+      summary.refundsFeeGross,
+      summary.adjustmentsGross,
+      summary.advanceGross,
+      summary.reservedFundsGross,
+      summary.retriedPayoutsGross,
+    ]);
+    const netCents = simpleMoneyCents(payout.net);
+    return {
+      id: String(payout.externalTraceId || payout.legacyResourceId || payout.id || "unknown"),
+      issuedAt: String(payout.issuedAt || ""),
+      status: String(payout.status || "unknown").toLowerCase(),
+      type: String(payout.transactionType || "deposit").toLowerCase(),
+      amountCents: grossCents || netCents + feeCents,
+      feeCents,
+      netCents,
+      currency: simpleMoneyCurrency(payout.net),
+    } satisfies FinancePayout;
+  });
+}
+
+function parseManualPayouts(start: string, end: string): { payouts: FinancePayout[]; state: FinanceSourceState; message?: string } {
+  const raw = String(process.env.FINANCE_PAYOUTS_JSON || "").trim();
+  if (!raw) return { payouts: [], state: "missing" };
 
   try {
+    const parsed = JSON.parse(raw) as unknown;
+    const entries = Array.isArray(parsed) ? parsed : (parsed as { payouts?: unknown })?.payouts;
+    if (!Array.isArray(entries)) throw new Error("expected an array of payout records");
+
+    const startTime = new Date(`${start}T00:00:00Z`).getTime();
+    const endTime = new Date(`${end}T23:59:59Z`).getTime();
+    const payouts = entries.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const value = entry as Record<string, unknown>;
+      const issuedAt = String(value.issuedAt || value.issued_at || value.date || "");
+      const issuedTime = issuedAt ? new Date(issuedAt).getTime() : NaN;
+      if (Number.isFinite(issuedTime) && (issuedTime < startTime || issuedTime > endTime)) return [];
+      const amountCents = value.amountCents == null ? cents(value.amount) : Number(value.amountCents);
+      const feeCents = value.feeCents == null ? cents(value.fee) : Number(value.feeCents);
+      const netCents = value.netCents == null ? (value.net == null ? amountCents - feeCents : cents(value.net)) : Number(value.netCents);
+      if (![amountCents, feeCents, netCents].every(Number.isFinite)) return [];
+      return [{
+        id: String(value.id || value.externalTraceId || value.external_trace_id || "manual-payout"),
+        issuedAt,
+        status: String(value.status || "paid").toLowerCase(),
+        type: String(value.type || "deposit").toLowerCase(),
+        amountCents: Math.round(amountCents),
+        feeCents: Math.round(feeCents),
+        netCents: Math.round(netCents),
+        currency: String(value.currency || DEFAULT_CURRENCY),
+      } satisfies FinancePayout];
+    });
+
+    return { payouts, state: "manual" };
+  } catch (error) {
+    return { payouts: [], state: "unavailable", message: `FINANCE_PAYOUTS_JSON is invalid: ${error instanceof Error ? error.message : "expected payout records"}` };
+  }
+}
+
+async function loadPayouts(start: string, end: string): Promise<{ payouts: FinancePayout[]; state: FinanceSourceState; message?: string }> {
+  const manual = parseManualPayouts(start, end);
+  if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
+    return manual.state === "manual" && manual.payouts.length
+      ? manual
+      : { payouts: [], state: "unavailable", message: "Shopify Admin credentials are not configured" };
+  }
+
+  let graphqlError = "";
+  try {
+    const data = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) });
+    const account = data?.shopifyPaymentsAccount;
+    if (!account) throw new Error("Shopify Payments account is not available for this store");
+    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
+  } catch (error) {
+    graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
+  }
+
+  let restError = "";
+  try {
+    const url = new URL(adminApiUrl("/shopify_payments/payouts.json"));
+    url.searchParams.set("date_min", `${start}T00:00:00Z`);
+    url.searchParams.set("date_max", `${end}T23:59:59Z`);
+    url.searchParams.set("limit", "250");
     const response = await fetch(url, { headers: shopifyHeaders() });
     const body = await response.json();
     if (!response.ok) throw new Error(body?.errors || `Shopify payouts unavailable (${response.status})`);
@@ -446,13 +622,63 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
 
     return { payouts, state: "connected" };
   } catch (error) {
-    return { payouts: [], state: "unavailable", message: error instanceof Error ? error.message : "Shopify payouts unavailable" };
+    restError = error instanceof Error ? error.message : "Shopify payouts unavailable";
+  }
+
+  if (manual.state === "manual" && manual.payouts.length) return manual;
+  if (manual.message) return { payouts: [], state: "unavailable", message: manual.message };
+
+  const details = [graphqlError, restError].filter(Boolean).join(" | ");
+  return {
+    payouts: [],
+    state: "unavailable",
+    message: details || "Shopify payouts unavailable. Merchant approval for read_shopify_payments_payouts is required.",
+  };
+}
+
+function parseSupplierCosts(): SupplierCostSource {
+  const raw = String(process.env.FINANCE_DSER_COSTS_JSON || "").trim();
+  if (!raw) return { costs: new Map(), configured: false };
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    const costs = new Map<string, number>();
+    const add = (key: unknown, value: unknown) => {
+      const normalizedKey = String(key || "").trim();
+      if (!normalizedKey) return;
+      const amountCents = typeof value === "object" && value !== null
+        ? ((value as Record<string, unknown>).amountCents == null
+          ? cents((value as Record<string, unknown>).amount ?? (value as Record<string, unknown>).cost)
+          : Number((value as Record<string, unknown>).amountCents))
+        : cents(value);
+      if (Number.isFinite(amountCents) && amountCents >= 0) costs.set(normalizedKey, Math.round(amountCents));
+    };
+
+    if (Array.isArray(parsed)) {
+      for (const entry of parsed) {
+        if (!entry || typeof entry !== "object") continue;
+        const value = entry as Record<string, unknown>;
+        const amount = value.amountCents == null
+          ? (value.amount ?? value.cost ?? value.costPerItem)
+          : { amountCents: value.amountCents };
+        for (const key of [value.variantId, value.variant_id, value.id, value.sku]) add(key, amount);
+      }
+    } else if (parsed && typeof parsed === "object") {
+      for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) add(key, value);
+    } else {
+      throw new Error("expected an object or array");
+    }
+
+    return { costs, configured: true };
+  } catch (error) {
+    return { costs: new Map(), configured: true, message: `FINANCE_DSER_COSTS_JSON is invalid: ${error instanceof Error ? error.message : "expected cost records"}` };
   }
 }
 
-function normalizeOrders(orders: ShopifyOrder[]): { rows: NormalizedOrder[]; currency: string; missingCostCount: number; multiCurrency: boolean } {
+function normalizeOrders(orders: ShopifyOrder[], supplierCosts: SupplierCostSource): { rows: NormalizedOrder[]; currency: string; missingCostCount: number; coveredBySupplierCount: number; multiCurrency: boolean } {
   const currencies = new Set<string>();
   let missingCostCount = 0;
+  let coveredBySupplierCount = 0;
   const rows = orders
     .filter((order) => !order.cancelledAt)
     .map((order) => {
@@ -468,6 +694,7 @@ function normalizeOrders(orders: ShopifyOrder[]): { rows: NormalizedOrder[]; cur
       const lineItems = order.lineItems?.nodes || [];
       let cogsCents = 0;
       let itemCount = 0;
+      let coveredItemCount = 0;
       let hasCost = false;
       let hasMissingCost = false;
 
@@ -475,9 +702,16 @@ function normalizeOrders(orders: ShopifyOrder[]): { rows: NormalizedOrder[]; cur
         const quantity = Math.max(Number(line.quantity || 0), 0);
         itemCount += quantity;
         const unitCost = line.variant?.inventoryItem?.unitCost;
-        if (unitCost?.amount != null) {
-          cogsCents += cents(unitCost.amount) * quantity;
+        const variantId = String(line.variant?.id || "").trim();
+        const numericVariantId = variantId.split("/").pop() || variantId;
+        const sku = String(line.variant?.sku || "").trim();
+        const supplierCostCents = supplierCosts.costs.get(variantId) ?? supplierCosts.costs.get(numericVariantId) ?? supplierCosts.costs.get(sku);
+        const unitCostCents = unitCost?.amount != null ? cents(unitCost.amount) : supplierCostCents;
+        if (unitCostCents != null) {
+          cogsCents += unitCostCents * quantity;
           hasCost = true;
+          coveredItemCount += quantity;
+          if (unitCost?.amount == null) coveredBySupplierCount += quantity;
         } else {
           hasMissingCost = true;
           missingCostCount += quantity;
@@ -497,6 +731,7 @@ function normalizeOrders(orders: ShopifyOrder[]): { rows: NormalizedOrder[]; cur
         shippingIncomeCents: moneyCents(order.totalShippingPriceSet),
         cogsCents,
         itemCount,
+        coveredItemCount,
         hasCost,
         hasMissingCost,
       } satisfies NormalizedOrder;
@@ -506,24 +741,66 @@ function normalizeOrders(orders: ShopifyOrder[]): { rows: NormalizedOrder[]; cur
     rows,
     currency: currencies.values().next().value || DEFAULT_CURRENCY,
     missingCostCount,
+    coveredBySupplierCount,
     multiCurrency: currencies.size > 1,
   };
 }
 
+function periodDays(start: string, end: string): number {
+  const startTime = new Date(`${start}T00:00:00Z`).getTime();
+  const endTime = new Date(`${end}T23:59:59Z`).getTime();
+  return Math.max((endTime - startTime) / 86_400_000, 1);
+}
+
+function recurringMultiplier(interval: string, days: number): number {
+  return interval.toLowerCase() === "annual" ? days / 365 : days / 30;
+}
+
+async function loadShopifySubscriptions(start: string, end: string): Promise<SubscriptionSource> {
+  if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
+    return { subscriptions: [], connected: false, message: "Shopify Admin credentials are not configured" };
+  }
+
+  try {
+    const data = await queryShopify(APP_SUBSCRIPTION_QUERY, {});
+    const days = periodDays(start, end);
+    const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, any>) => {
+      if (subscription.test) return [];
+      return (subscription.lineItems || []).flatMap((lineItem: Record<string, any>, index: number) => {
+        const pricing = lineItem?.plan?.pricingDetails;
+        if (pricing?.__typename !== "AppRecurringPricing" || pricing.price?.amount == null) return [];
+        const interval = String(pricing.interval || "EVERY_30_DAYS").toLowerCase().replaceAll("every_30_days", "monthly");
+        const amountCents = simpleMoneyCents(pricing.price);
+        return [{
+          name: `${String(subscription.name || "Shopify app subscription")}${index ? ` ${index + 1}` : ""}`,
+          category: "Shopify app",
+          interval,
+          allocatedCents: Math.round(amountCents * recurringMultiplier(interval, days)),
+          currency: simpleMoneyCurrency(pricing.price),
+          source: "Shopify Admin billing",
+          active: String(subscription.status || "ACTIVE").toLowerCase() === "active",
+        } satisfies FinanceSubscription];
+      });
+    });
+    return { subscriptions, connected: true };
+  } catch (error) {
+    return { subscriptions: [], connected: false, message: error instanceof Error ? error.message : "Shopify app subscriptions unavailable" };
+  }
+}
+
 function parseManualCosts(start: string, end: string): { subscriptions: FinanceSubscription[]; state: FinanceSourceState; message?: string } {
   const raw = String(process.env.FINANCE_SUBSCRIPTIONS_JSON || "").trim();
-  if (!raw) return { subscriptions: [], state: "missing", message: "Add FINANCE_SUBSCRIPTIONS_JSON for Shopify, DSers, and app subscription costs." };
+  if (!raw) return { subscriptions: [], state: "missing" };
 
   try {
     const entries = JSON.parse(raw) as Array<Record<string, unknown>>;
-    const startDate = new Date(`${start}T00:00:00Z`).getTime();
-    const endDate = new Date(`${end}T23:59:59Z`).getTime();
-    const periodDays = Math.max((endDate - startDate) / 86_400_000, 1);
+    const days = periodDays(start, end);
     const subscriptions = entries.flatMap((entry) => {
+      if (entry.active === false) return [];
       const amountCents = entry.amountCents == null ? cents(entry.amount) : Number(entry.amountCents);
       if (!Number.isFinite(amountCents) || amountCents <= 0) return [];
       const interval = String(entry.interval || "monthly").toLowerCase();
-      const multiplier = interval === "annual" ? periodDays / 365 : interval === "one-time" ? 1 : periodDays / 30;
+      const multiplier = interval === "one-time" ? 1 : recurringMultiplier(interval, days);
       return [{
         name: String(entry.name || "Subscription"),
         category: String(entry.category || "Software"),
@@ -549,18 +826,34 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const cached = summaryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.summary;
 
-  const [ordersResult, payoutsResult] = await Promise.allSettled([loadOrders(start, end), loadPayouts(start, end)]);
+  const [ordersResult, payoutsResult, shopifySubscriptionsResult] = await Promise.allSettled([
+    loadOrders(start, end),
+    loadPayouts(start, end),
+    loadShopifySubscriptions(start, end),
+  ]);
+  const supplierCosts = parseSupplierCosts();
   const manualCosts = parseManualCosts(start, end);
   const exceptions: FinanceException[] = [];
   const orders = ordersResult.status === "fulfilled" ? ordersResult.value : [];
   const payoutData = payoutsResult.status === "fulfilled" ? payoutsResult.value : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
+  const shopifySubscriptionData = shopifySubscriptionsResult.status === "fulfilled"
+    ? shopifySubscriptionsResult.value
+    : { subscriptions: [], connected: false, message: "Shopify app subscriptions unavailable" };
+  const subscriptions = [...shopifySubscriptionData.subscriptions, ...manualCosts.subscriptions];
 
   if (ordersResult.status === "rejected") exceptions.push(exception("shopify-orders", ordersResult.reason?.message || "Shopify orders unavailable", 1, "high"));
   if (payoutData.message) exceptions.push(exception("shopify-payouts", payoutData.message, 1, "high"));
+  if (supplierCosts.message) exceptions.push(exception("dsers-costs", supplierCosts.message, 1, "high"));
+  if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));
 
-  const normalized = normalizeOrders(orders);
-  if (normalized.missingCostCount) exceptions.push(exception("missing-cost", "Some line items do not have a Shopify/DSers cost-per-item value.", normalized.missingCostCount, "high"));
+  const normalized = normalizeOrders(orders, supplierCosts);
+  if (normalized.missingCostCount) {
+    const message = supplierCosts.configured
+      ? "Some line items still do not have a Shopify or DSers supplier cost after applying the configured DSers cost map."
+      : "Some line items do not have a Shopify/DSers cost-per-item value. Add FINANCE_DSER_COSTS_JSON or populate Shopify cost per item.";
+    exceptions.push(exception("missing-cost", message, normalized.missingCostCount, "high"));
+  }
   if (normalized.multiCurrency) exceptions.push(exception("currency", "The selected period contains multiple currencies. Totals are not converted.", 1, "high"));
 
   const currency = normalized.currency || DEFAULT_CURRENCY;
@@ -572,12 +865,12 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const taxCollectedCents = normalized.rows.reduce((sum, row) => sum + row.taxCollectedCents, 0);
   const cogsCents = normalized.rows.reduce((sum, row) => sum + row.cogsCents, 0);
   const paymentFeesCents = payoutData.payouts.reduce((sum, payout) => sum + payout.feeCents, 0);
-  const subscriptionCostsCents = manualCosts.subscriptions.reduce((sum, subscription) => sum + subscription.allocatedCents, 0);
+  const subscriptionCostsCents = subscriptions.reduce((sum, subscription) => sum + subscription.allocatedCents, 0);
   const payoutsReceivedCents = payoutData.payouts.reduce((sum, payout) => sum + payout.netCents, 0);
   const grossProfitCents = netSalesCents + shippingIncomeCents - cogsCents;
   const operatingProfitCents = grossProfitCents - paymentFeesCents - subscriptionCostsCents;
   const totalItems = normalized.rows.reduce((sum, row) => sum + row.itemCount, 0);
-  const coveredItems = normalized.rows.reduce((sum, row) => sum + (row.hasCost ? row.itemCount : 0), 0);
+  const coveredItems = normalized.rows.reduce((sum, row) => sum + row.coveredItemCount, 0);
   const feeRatio = netSalesCents + shippingIncomeCents ? paymentFeesCents / (netSalesCents + shippingIncomeCents) : 0;
 
   const orderRows: FinanceOrderRow[] = normalized.rows.slice(-200).reverse().map((row) => {
@@ -601,7 +894,16 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     };
   });
 
-  const sourceState = (value: FinanceSourceState): FinanceSourceState => value;
+  const subscriptionState: FinanceSourceState = shopifySubscriptionData.connected
+    ? "connected"
+    : manualCosts.state === "manual"
+      ? "manual"
+      : "unavailable";
+  const dsersState: FinanceSourceState = totalItems === 0
+    ? "missing"
+    : normalized.missingCostCount
+      ? "partial"
+      : "connected";
   const summary: FinanceSummary = {
     authenticated: true,
     generatedAt: new Date().toISOString(),
@@ -609,12 +911,19 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     period: { start, end, timezone: DEFAULT_TIMEZONE },
     sources: {
       shopify: ordersResult.status === "fulfilled" ? "connected" : "unavailable",
-      payouts: sourceState(payoutData.state),
-      dsers: totalItems === 0 ? "missing" : normalized.missingCostCount ? "partial" : "connected",
-      subscriptions: manualCosts.state,
+      payouts: payoutData.state,
+      dsers: dsersState,
+      subscriptions: subscriptionState,
       messages: [
-        "DSers costs use Shopify variant cost-per-item values. Actual supplier order costs require a DSers API or secure export.",
-        "Payouts are cash movement and are shown separately from operating profit.",
+        normalized.coveredBySupplierCount
+          ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
+          : "DSers costs use Shopify variant cost-per-item values. External supplier costs can be supplied through FINANCE_DSER_COSTS_JSON.",
+        payoutData.state === "connected"
+          ? "Shopify payouts are live and payment fees are allocated to order rows by net revenue."
+          : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
+        shopifySubscriptionData.connected
+          ? "Active SALT app subscriptions are pulled from Shopify billing automatically; DSers and other vendor subscriptions can be added through FINANCE_SUBSCRIPTIONS_JSON."
+          : "External vendor subscriptions require FINANCE_SUBSCRIPTIONS_JSON until their billing data is available to this app.",
       ],
     },
     kpis: {
@@ -640,13 +949,13 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Difference between original and current order totals" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
-      { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify cost-per-item values from DSers-compatible product cost sync" },
+      { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
       { label: "Payment fees", cents: -paymentFeesCents, tone: "negative", detail: "Fees reported through Shopify payouts" },
-      { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Configured recurring operating costs" },
+      { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Shopify app billing plus configured external recurring costs" },
       { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, and subscriptions" },
     ],
     payouts: payoutData.payouts,
-    subscriptions: manualCosts.subscriptions,
+    subscriptions,
     orders: orderRows,
     exceptions,
   };

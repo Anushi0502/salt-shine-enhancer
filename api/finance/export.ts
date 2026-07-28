@@ -121,7 +121,9 @@ export default async function handler(req: any, res: any) {
 
     section("Subscriptions and Operating Costs");
     if (!summary.subscriptions.length) {
-      writeLine(page, "No recurring costs are configured. Add FINANCE_SUBSCRIPTIONS_JSON to include them.", 48, y, 9, activeFont.current, muted);
+      writeLine(page, "No active Shopify app subscriptions or external recurring costs were returned.", 48, y, 9, activeFont.current, muted);
+      y -= 12;
+      writeLine(page, "Add FINANCE_SUBSCRIPTIONS_JSON for DSers, domain, and other vendor costs.", 48, y, 9, activeFont.current, muted);
       y -= 18;
     } else {
       for (const subscription of summary.subscriptions) {
@@ -150,8 +152,9 @@ export default async function handler(req: any, res: any) {
     section("Methodology");
     for (const message of [
       "Payouts represent cash movement and are intentionally shown separately from profit.",
-      "Product cost uses Shopify variant cost-per-item values, which can be populated by DSers.",
+      "Product cost uses Shopify inventory cost plus matched DSers supplier cost mappings.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
+      "SALT app subscriptions are read from Shopify Admin billing; external vendor subscriptions use configured operating costs.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {
       ensureSpace();
