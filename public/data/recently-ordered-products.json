@@ -1,39 +1,39 @@
 {
-  "generatedAt": "2026-07-18T05:08:22.047Z",
+  "generatedAt": "2026-07-27T11:37:12.082Z",
   "source": "shopify-admin-orders",
   "total": 4,
   "products": [
     {
-      "id": "gid://shopify/Product/8052506493027",
-      "title": "Lint Roller Fabric Shaver Dust Removal",
-      "handle": "lint-roller-fabric-shaver-dust-removal-pellet-eliminator-electric-home-pet-hair-remover-removes-lint-from-clothes-take-out",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S05d7a7953f8840a2bcfaeb383bcbd9c8L.webp?v=1783070584",
-      "imageAlt": "Lint Roller Fabric Shaver Dust Removal",
-      "price": 34.99
+      "id": "gid://shopify/Product/8058440581219",
+      "title": "Sports Shoes High Top Sneakers Casual",
+      "handle": "sports-shoes-for-men-high-top-sneakers-casual-shoes-running-shoes-men-2026-sneakers-for-men-luxury-sneakers-мужские-кр",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S2a02958e15a145248da24c8fcf6cd045x.webp?v=1783500757",
+      "imageAlt": "Sports Shoes High Top Sneakers Casual",
+      "price": 94.99
     },
     {
-      "id": "gid://shopify/Product/8052545945699",
-      "title": "500ML Lansyade Aha Brightening Body Lotion",
-      "handle": "500ml-lansyade-aha-brightening-body-lotion-arbutin-moisturizing-firming-body-cream-vitamin-c-soften-skin-essence-lotion",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9dbfb9ed6e404934ada54258cfd85972x.webp?v=1783081663",
-      "imageAlt": "500ML Lansyade Aha Brightening Body Lotion",
+      "id": "gid://shopify/Product/8065635713123",
+      "title": "Kids Down Jackets For 3 14 Years Autumn Winter Boys Girls Warm Solid",
+      "handle": "kids-down-jackets-for-3-14-years-autumn-winter-boys-girls-warm-solid-down-coats-teens-hooded-zipper-outerwear-children-clothing",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4bad1a9dc8a04b1a9789243e18f21992q.webp?v=1784020012",
+      "imageAlt": "Kids Down Jackets For 3 14 Years Autumn Winter Boys Girls Warm Solid",
       "price": 54.99
     },
     {
-      "id": "gid://shopify/Product/8051976011875",
-      "title": "Blush Stick Cheek Lip Tinted",
-      "handle": "new-blush-stick-3-in-1-cheek-lip-tinted-moistured-blush-stick-silky-brighten-blush-cream-blusher-cosmetics-tubes-matte-contour",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9884887962644487a2db72fb151408c9h.webp?v=1782992743",
-      "imageAlt": "Blush Stick Cheek Lip Tinted",
-      "price": 34.99
+      "id": "gid://shopify/Product/8052541784163",
+      "title": "Colors Eyeshadow Palette Dark Black Grey",
+      "handle": "9-colors-eyeshadow-palette-dark-black-grey-silvery-color-shimmer-matte-glitter-finish-smokey-style",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sbc62ea82b74b47368000f950260393e6i.webp?v=1783081140",
+      "imageAlt": "Colors Eyeshadow Palette Dark Black Grey",
+      "price": 49.99
     },
     {
-      "id": "gid://shopify/Product/7767959535715",
-      "title": "Slim Fit Casual Trousers",
-      "handle": "stretch-jean-mens-slim-fit-casual-trousers",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1e4d5c3f954148ada549a3ecb2057339o.webp?v=1744354281",
-      "imageAlt": "Slim Fit Casual Trousers",
-      "price": 64.99
+      "id": "gid://shopify/Product/8052508360803",
+      "title": "Rhod Pocket Blush Lip Stick Cheek",
+      "handle": "rhod-pocket-blush-lip-stick-lip-and-cheek-hydrating-stick-natural-rouge-powder-blush-cream-lipstick-cheek-easy-to-apply-color-1",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0b6808fecce14339bffe2ebb27a5ccca0_8280bf27-1048-417f-80cc-e1f8c64808bb.webp?v=1783070906",
+      "imageAlt": "Rhod Pocket Blush Lip Stick Cheek",
+      "price": 34.99
     }
   ]
 }

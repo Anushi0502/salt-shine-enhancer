@@ -18,6 +18,7 @@ import {
   buildBackfillPlan,
   buildMetafieldSetBatches,
 } from "../src/lib/shopify-product-metafield-backfill.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const DEFAULT_OUTPUT_FILE = resolve(process.cwd(), "output", "product-metafield-backfill-manifest.json");
@@ -1448,7 +1449,7 @@ async function main() {
   const collectionProductsPath = resolve(args.inputDir, "collection-products.json");
   const shopPath = resolve(args.inputDir, "shop.json");
 
-  const productsPayload = await loadJson(productsPath, "products payload");
+  const productsPayload = await readProductCatalogPayload(args.inputDir);
   const releaseCatalogPayload = await loadOptionalJson(releaseCatalogPath);
   const collectionsPayload = await loadJson(collectionsPath, "collections payload");
   const collectionProductsPayload = await loadJson(collectionProductsPath, "collection-products payload");

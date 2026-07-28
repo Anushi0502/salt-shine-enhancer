@@ -54,19 +54,19 @@ export default class AppErrorBoundary extends Component<
     const details = formatErrorDetails(this.state.error);
 
     return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#eef5ff_54%,#f7f3ea_100%)] px-4 py-8 text-[#17336b] sm:px-6 sm:py-10">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.14),transparent_30%),radial-gradient(circle_at_80%_20%,hsl(var(--salt-gold)/0.1),transparent_28%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--background)/0.92)_56%,hsl(var(--muted)/0.78)_100%)] px-4 py-8 text-foreground sm:px-6 sm:py-10">
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-3xl flex-col justify-center">
-          <div className="rounded-[2rem] border border-[#c9dcff] bg-white/92 p-6 shadow-[0_28px_80px_-56px_rgba(22,77,160,0.35)] backdrop-blur sm:p-8">
+          <div className="salt-panel-shell rounded-[2rem] p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.22)] backdrop-blur sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
               <BrandLogo className="h-14 w-14 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#2f5bc7]">
+                <p className="text-[0.72rem] font-bold uppercase tracking-[0.3em] text-primary">
                   Storefront error
                 </p>
-                <h1 className="mt-3 font-display text-3xl leading-tight text-[#15316a] sm:text-4xl">
+                <h1 className="mt-3 font-display text-3xl leading-tight text-foreground sm:text-4xl">
                   The storefront hit an unexpected error.
                 </h1>
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-[0.95rem]">
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
                   Reloading should recover the page. If this keeps happening, the stack below will help
                   pinpoint the failed module.
                 </p>
@@ -75,17 +75,17 @@ export default class AppErrorBoundary extends Component<
                   <button
                     type="button"
                     onClick={this.handleRetry}
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-[#305fd2] px-5 text-sm font-semibold text-white shadow-[0_16px_28px_-20px_rgba(48,95,210,0.7)] transition hover:bg-[#274fb3]"
+                    className="salt-primary-cta inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-white"
                   >
                     Reload storefront
                   </button>
                 </div>
 
-                <div className="mt-6 rounded-[1.25rem] border border-[#d7e6ff] bg-[#f8fbff] p-4">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.24em] text-[#4c6fb8]">
+                <div className="salt-section-shell mt-6 rounded-[1.25rem] p-4">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.24em] text-primary">
                     Error details
                   </p>
-                  <pre className="mt-3 max-h-[20rem] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-slate-700">
+                  <pre className="mt-3 max-h-[20rem] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground">
                     {details}
                   </pre>
                 </div>

@@ -25,6 +25,7 @@ import {
 } from "./shopify-seo-managed-tags.js";
 
 export const PER_ORDER_OVERHEAD = 12;
+const MAX_REASONABLE_RETAIL_PRICE = 14999.99;
 
 const GENERIC_TITLE_WORDS = new Set([
   "a",
@@ -1538,7 +1539,10 @@ function suggestRetailPriceFromSignals({
     target = Math.max(target, numericCost + PER_ORDER_OVERHEAD);
   }
 
-  return roundPsychologicalPrice(target);
+  const rounded = Number(roundPsychologicalPrice(target));
+  return Number.isFinite(rounded)
+    ? Math.min(rounded, MAX_REASONABLE_RETAIL_PRICE).toFixed(2)
+    : "";
 }
 
 function isEarringProductRow(row) {
@@ -1572,9 +1576,12 @@ function enforceCompareAtValue(compareAtValue, price, row) {
   }
 
   if (Number.isFinite(sellPrice) && sellPrice > 0) {
-    const rounded = parseMoneyValue(roundPsychologicalPrice(sellPrice * 1.25));
+    const rounded = Math.min(
+      parseMoneyValue(roundPsychologicalPrice(sellPrice * 1.25)),
+      MAX_REASONABLE_RETAIL_PRICE * 1.4,
+    );
     const minimum = Math.ceil(sellPrice * 1.2) - 0.01;
-    const maximum = Math.floor(sellPrice * 1.4) - 0.01;
+    const maximum = Math.min(Math.floor(sellPrice * 1.4) - 0.01, MAX_REASONABLE_RETAIL_PRICE * 1.4);
     const recommended = Math.min(Math.max(rounded, minimum), maximum);
     if (!Number.isFinite(existing) || existing < sellPrice * 1.2 || existing > sellPrice * 1.4) {
       return Number(recommended).toFixed(2);

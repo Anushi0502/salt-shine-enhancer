@@ -47,6 +47,13 @@ export function buildSeoPipelineStages({ mode, scope }) {
     "--handles-output", handlesPath,
     "--output", `output/shopify-variant-google-metafields-${scope}-manifest.json`,
   ];
+  const variantImageArgs = [
+    "scripts/shopify-variant-image-mapping.mjs",
+    modeFlag,
+    "--scope", scope,
+    "--handles-output", handlesPath,
+    "--output", `output/shopify-variant-image-mapping-${scope}-manifest.json`,
+  ];
   const seoArgs = ["scripts/shopify-seo-release.mjs", modeFlag, scope === "all-products" ? "--full-catalog" : "--new-products-only"];
   const productMetafieldArgs = ["scripts/shopify-product-metafield-backfill.mjs", modeFlag];
   if (scope === "new-products") productMetafieldArgs.push("--product-handles-file", handlesPath);
@@ -59,6 +66,7 @@ export function buildSeoPipelineStages({ mode, scope }) {
     { label: "Refresh Shopify catalog data", command: npmBin, args: ["run", "sync:data"] },
     { label: `Plan/apply Google variant metafields (${scope})`, command: nodeBin, args: variantArgs },
     { label: `Reconcile handle-first SEO (${scope})`, command: nodeBin, args: seoArgs },
+    { label: `Map variant images (${scope})`, command: nodeBin, args: variantImageArgs },
     { label: `Backfill product merchandising metafields (${scope})`, command: nodeBin, args: productMetafieldArgs },
   );
   if (mode === "apply") {

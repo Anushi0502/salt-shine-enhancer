@@ -19,6 +19,7 @@ import {
 } from "../src/lib/shopify-seo-release.js";
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { managedMinimumQuantityTagFromTags } from "../src/lib/shopify-seo-managed-tags.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +39,7 @@ const cliAgentIds =
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
-const seoApplyBatchSize = Math.max(1, Math.min(25, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 25)));
+const seoApplyBatchSize = Math.max(1, Math.min(5, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 5)));
 
 const PRODUCT_SELECTION = /* GraphQL */ `
   id
@@ -497,7 +498,7 @@ async function readJson(relativePath, { required = false } = {}) {
 
 async function loadCatalogSnapshot() {
   const [products, collections, collectionProducts] = await Promise.all([
-    readJson("products.json", { required: true }),
+    readProductCatalogPayload(inputDir),
     readJson("collections.json"),
     readJson("collection-products.json"),
   ]);
@@ -824,6 +825,11 @@ function buildBatchMutation(tasks) {
     variables,
     aliases,
   };
+}
+
+function isQueryCostExceeded(error) {
+  const text = [error?.message, error?.stderr, error?.stdout, error?.code].filter(Boolean).join("\n").toLowerCase();
+  return text.includes("max_cost_exceeded") || text.includes("exceeds the single query max cost limit") || text.includes("query cost is");
 }
 
 function getMutationUserErrors(response, alias) {
@@ -1334,6 +1340,14 @@ async function applyPlan({ plan, manifest, output, liveProducts = [] }) {
           retryInfo,
         });
       } catch (error) {
+        if (tasks.length > 1 && isQueryCostExceeded(error)) {
+          const midpoint = Math.max(1, Math.floor(tasks.length / 2));
+          pendingEntries.splice(start, tasks.length, ...[]);
+          pendingEntries.splice(start, 0, ...tasks.slice(0, midpoint).map((task) => task.entry), ...tasks.slice(midpoint).map((task) => task.entry));
+          start -= 1;
+          await persistBatch();
+          continue;
+        }
         for (const task of tasks) {
           markFailure(manifest, task.entry, "failed", error);
         }

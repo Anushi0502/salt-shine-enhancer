@@ -80,7 +80,7 @@ const ShopifyPolicyPageTemplate = ({ policyKey, actions }: ShopifyPolicyPageTemp
   const isArchiveSource = String(data.source || "").startsWith("archive:");
 
   return (
-    <section className={`mx-auto ${nativeApp ? "mt-4 w-[min(1040px,calc(100%-18px))]" : "mt-6 w-[min(1100px,calc(100%-20px))]"} pb-8`}>
+    <section className={`mx-auto ${nativeApp ? "mt-4 w-[min(1040px,calc(100%_-_18px))]" : "mt-6 w-[min(1100px,calc(100%_-_20px))]"} pb-8`}>
       {nativeApp ? null : (
         <Reveal>
           <InnerBreadcrumbs

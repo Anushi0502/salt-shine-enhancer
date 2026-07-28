@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 
 import { normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { normalizeProductCustomData, normalizeCollectionCustomData, normalizeShopCustomData } from "../src/lib/product-custom-data.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
@@ -372,7 +373,7 @@ async function verifyShop(shop) {
 
 async function main() {
   const [productsPayload, collectionsPayload, shopPayload] = await Promise.all([
-    loadJson("products.json"),
+    readProductCatalogPayload(DEFAULT_INPUT_DIR),
     loadJson("collections.json"),
     loadJson("shop.json"),
   ]);

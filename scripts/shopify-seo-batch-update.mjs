@@ -25,6 +25,7 @@ import {
   normalizeShopifyTags,
   reconcileManagedMinimumQuantityTags,
 } from "../src/lib/shopify-seo-managed-tags.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -292,12 +293,11 @@ async function readJsonFileIfExists(filePath, fallbackValue) {
 }
 
 async function loadLocalCatalogSnapshot() {
-  const productsPath = resolve(process.cwd(), "public/data/products.json");
   const collectionsPath = resolve(process.cwd(), "public/data/collections.json");
   const collectionProductsPath = resolve(process.cwd(), "public/data/collection-products.json");
 
   const [products, collections, collectionProducts] = await Promise.all([
-    readJsonFileIfExists(productsPath, {}),
+    readProductCatalogPayload(resolve(process.cwd(), "public/data")),
     readJsonFileIfExists(collectionsPath, {}),
     readJsonFileIfExists(collectionProductsPath, {}),
   ]);

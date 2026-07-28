@@ -9,6 +9,7 @@ import {
   normalizeShopifyTags,
   reconcileManagedMinimumQuantityTags,
 } from "../src/lib/shopify-seo-managed-tags.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -19,7 +20,7 @@ async function loadJson(name) {
 }
 
 const [productsPayload, collectionsPayload, collectionProducts] = await Promise.all([
-  loadJson("products.json"),
+  readProductCatalogPayload(dataDir),
   loadJson("collections.json"),
   loadJson("collection-products.json"),
 ]);

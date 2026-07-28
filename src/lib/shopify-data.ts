@@ -35,6 +35,10 @@ import {
   normalizeProductCustomData,
   normalizeShopCustomData,
 } from "@/lib/product-custom-data.js";
+import {
+  isProductCatalogManifest,
+  mergeProductShardPayloads,
+} from "@/lib/product-catalog-shards.js";
 import { isNativeApp } from "@/lib/mobile";
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
@@ -279,11 +283,12 @@ function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | nu
   const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
   const routeMatch = window.location.pathname.match(/^\/collections\/([^/?#]+)\/?$/i);
   const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
+  const isShopBootstrap = window.location.pathname === "/shop" && prefetchedHandle === "all-products";
 
   // A collection bootstrap belongs to the Shopify document that rendered it.
   // Reject it after client-side navigation so a previous route can never leak
   // its ordering or operational product data into the next collection.
-  if (!prefetch || !prefetchedHandle || routeHandle !== prefetchedHandle) {
+  if (!prefetch || !prefetchedHandle || (!isShopBootstrap && routeHandle !== prefetchedHandle)) {
     return null;
   }
 
@@ -334,7 +339,7 @@ function getHeadPreloadedProductRecord(handle: string): ShopifyProduct | undefin
   }
 
   try {
-    return normalizeProductRecord(prefetch.raw as unknown as ShopifyProduct);
+    return normalizeProductRecord(normalizeStorefrontProductPayload(prefetch.raw));
   } catch {
     return undefined;
   }
@@ -500,8 +505,16 @@ function normalizeStorefrontProductPayload(product: Record<string, unknown>): Sh
     : [];
   const primaryImage = imageRecord(product.image ?? product.featured_image ?? images[0], 0);
   const formatStorefrontMoney = (value: unknown): string => {
-    const cents = Number(value);
-    return Number.isFinite(cents) ? (cents / 100).toFixed(2) : "0.00";
+    const raw = String(value ?? "").trim();
+    const numeric = Number(value);
+    if (!raw || !Number.isFinite(numeric)) {
+      return "0.00";
+    }
+
+    // Shopify product JSON uses integer cents, while some Liquid snapshots
+    // and catalog exports contain already-formatted decimal strings.
+    const amount = typeof value === "string" && raw.includes(".") ? numeric : numeric / 100;
+    return amount.toFixed(2);
   };
   const variants = Array.isArray(product.variants)
     ? product.variants.map((variant) => {
@@ -539,10 +552,9 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
   // snapshot used by search and merchandising.
   const product = await (getHeadPreloadedProduct(normalizedHandle, base) ?? fetchJson<Record<string, unknown>>(
     `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
-    // Honour Shopify's normal HTTP cache directives for repeat PDP visits.
-    // This keeps price data fresh when Shopify says it changed while avoiding
-    // a needless second network round-trip on browser back/forward navigation.
-    "default",
+    // Revalidate the product response so an Admin price change is not hidden
+    // behind a long-lived document or browser cache entry.
+    "no-cache",
   ));
 
   return normalizeStorefrontProductPayload(product);
@@ -638,8 +650,10 @@ function excerptFromHtml(input: string, maxChars = 200): string {
   return `${text.slice(0, maxChars - 1).trimEnd()}…`;
 }
 
-function normalizeRichHtml(input: string): string {
-  return input
+function normalizeRichHtml(input: string | null | undefined): string {
+  const raw = typeof input === "string" ? input : "";
+
+  return raw
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<meta[^>]*>/gi, "")
@@ -686,7 +700,7 @@ function normalizeProductRecord(product: ShopifyProduct): ShopifyProduct {
     handle: String(product.handle || "").trim(),
     vendor: polishPlainText(product.vendor),
     product_type: polishPlainText(product.product_type),
-    body_html: product.body_html ? normalizeRichHtml(product.body_html) : product.body_html,
+    body_html: product.body_html ? normalizeRichHtml(product.body_html) : "",
     tags: Array.isArray(product.tags)
       ? product.tags.map((tag) => polishPlainText(tag)).filter(Boolean)
       : polishPlainText(product.tags),
@@ -1167,17 +1181,27 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
 }
 
 async function fetchProductsFromCache(): Promise<ProductsPayload> {
-  const payload = await fetchThemeJson<ProductsPayload>(PRODUCTS_DATA_PATH);
-  const products = Array.isArray(payload.products) ? payload.products : [];
+  const payload = await fetchThemeJson<ProductsPayload & { shards?: Array<{ path?: string; file?: string }> }>(PRODUCTS_DATA_PATH);
+  const hydratedPayload = isProductCatalogManifest(payload)
+    ? mergeProductShardPayloads(
+        payload,
+        await Promise.all(
+          payload.shards.map((shard) =>
+            fetchThemeJson<ProductsPayload>(shard.path || `/data/${shard.file || ""}`),
+          ),
+        ),
+      )
+    : payload;
+  const products = Array.isArray(hydratedPayload.products) ? hydratedPayload.products : [];
 
   if (!products.length) {
     throw new Error("Cached product payload is empty");
   }
 
   return normalizeProductsPayload({
-    generatedAt: payload.generatedAt || new Date().toISOString(),
-    source: `cache:${payload.source || PRODUCTS_DATA_PATH}`,
-    total: payload.total || products.length,
+    generatedAt: hydratedPayload.generatedAt || new Date().toISOString(),
+    source: `cache:${hydratedPayload.source || PRODUCTS_DATA_PATH}`,
+    total: hydratedPayload.total || products.length,
     products,
   });
 }
@@ -1734,10 +1758,11 @@ export function useProductByHandle(handle: string | undefined, enabled = true, l
     // Supplying it synchronously removes even the Promise microtask that used
     // to flash the product loading state before React Query resolved.
     initialData: inlineProduct,
+    initialDataUpdatedAt: inlineProduct ? 0 : undefined,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,
-    refetchOnWindowFocus: liveRefresh,
-    refetchOnReconnect: liveRefresh,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     refetchInterval: false,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
@@ -1786,11 +1811,11 @@ export function useShop(enabled = true) {
     queryKey: ["shop", DATA_MODE],
     queryFn: loadShop,
     enabled,
-    staleTime: CATALOG_STALE_TIME_MS,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchInterval: false,
+    staleTime: 2 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 3 * 60 * 1000,
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });

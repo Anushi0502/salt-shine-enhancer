@@ -112,17 +112,34 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
   if (isShop) {
     return (
-      <article ref={cardRef} className="h-full">
+      <article
+        ref={cardRef}
+        className="group relative flex h-full flex-col overflow-hidden rounded-[1.45rem] border border-border/70 bg-background/92 shadow-[0_18px_38px_-30px_rgba(15,23,42,0.22)] transition duration-500 hover:-translate-y-1 hover:border-primary/20 hover:shadow-[0_24px_46px_-32px_rgba(15,23,42,0.16)]"
+      >
+        <button
+          type="button"
+          onClick={() => {
+            const nextSaved = !wishlisted;
+            toggleItem(wishlistItemFromProduct(product));
+            toast.success(nextSaved ? "Saved to wishlist" : "Removed from wishlist", {
+              description: title,
+            });
+          }}
+          aria-pressed={wishlisted ? "true" : "false"}
+          aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
+          title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
+          className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
+        >
+          <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
+        </button>
+
         <Link
           to={`/products/${product.handle}`}
-          className={`group relative block h-full overflow-hidden shadow-[0_14px_30px_-24px_rgba(14,48,109,0.35)] ${
-            nativeApp
-              ? "border border-[#ded6ca] bg-[#ffffff]"
-              : "border border-[#d2e4ff] bg-[#eef5ff]"
-          }`}
+          className="flex h-full flex-col"
         >
-          {image ? (
-            <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1.2/1.4]">
+          <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
+            {image ? (
+              <div className="aspect-[0.98/1.03] overflow-hidden">
                 <img
                   src={image}
                   alt={product.title}
@@ -130,44 +147,82 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   decoding="async"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 />
-            </div>
-          ) : (
-            <div className="grid aspect-[1.04/0.93] w-full place-items-center bg-[linear-gradient(180deg,#dce8fb_0%,#c6dafd_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#31538c] sm:aspect-[1/0.9]">
-              Image unavailable
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className={`grid aspect-[0.98/1.03] w-full place-items-center px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
+                nativeApp
+                  ? "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] text-muted-foreground"
+                  : "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-primary"
+              }`}>
+                Image unavailable
+              </div>
+            )}
 
-          <div
-            className={`absolute inset-x-0 bottom-0 px-2 py-1.5 text-center sm:px-3 sm:py-[0.6rem] ${
+            <div className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.16em] shadow-[0_10px_20px_-18px_rgba(15,23,42,0.24)] backdrop-blur ${
               nativeApp
-                ? "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(15,15,15,0.92)_44%,rgba(15,15,15,0.98))] text-white"
-                : "bg-[linear-gradient(180deg,rgba(8,30,73,0.12),rgba(8,30,73,0.9)_40%,rgba(8,30,73,0.98))] text-white"
-            }`}
-          >
-            <h3 className="line-clamp-2 font-display text-[0.7rem] font-semibold leading-[1.06] drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)] sm:text-[0.98rem] sm:leading-[1.12]">
+                ? "border-border/70 bg-background/92 text-foreground"
+                : "salt-editorial-meta border-border/70 bg-background/88 text-primary"
+            }`}>
+              {badgeLabel}
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {subtitle}
+            </p>
+            <h3 className={`mt-2 line-clamp-2 font-display text-[1rem] leading-[1.08] tracking-[-0.03em] ${
+              nativeApp ? "text-foreground" : "text-foreground"
+            }`}>
               {title}
             </h3>
-            {subtitle ? (
-              <p className="mt-0.5 line-clamp-1 text-[0.54rem] font-medium tracking-[0.08em] text-white/74 sm:text-[0.72rem]">
-                {subtitle}
-              </p>
-            ) : null}
-            <div className="mt-1.25 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 text-[0.58rem] font-semibold text-white/92 sm:gap-x-1.5 sm:gap-y-1 sm:text-[0.78rem]">
-              <span className="text-[0.96rem] font-black leading-none tracking-[0.01em] text-[#ffe36b] [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] sm:text-[1.2rem]">
-                {formatMoney(min)}
-              </span>
-              {hasReviews ? (
-                <>
-                  <span className="text-white/40">•</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-[#f2c100] text-[#f2c100]" />
-                    {formattedRating}
+            <p className="mt-1 line-clamp-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {product.product_type || "Curated pick"}
+            </p>
+            {highlights.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {highlights.map((highlight) => (
+                  <span
+                    key={highlight}
+                    className="salt-editorial-meta rounded-full px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.08em]"
+                  >
+                    {highlight}
                   </span>
-                </>
-              ) : null}
+                ))}
+              </div>
+            ) : null}
+
+            {displaySummary && displaySummary.reviewCount > 0 ? (
+              <div className="salt-editorial-meta mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.08em]">
+                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                {formattedRating}
+                <span className="text-muted-foreground">•</span>
+                {displaySummary.reviewCount.toLocaleString()} reviews
+              </div>
+            ) : null}
+
+            <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+              <div className="min-w-0">
+                <p className="font-display text-[1.3rem] leading-none text-foreground">
+                  {formatMoney(min)}
+                </p>
+                {compare > min ? (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    <s>{formatMoney(compare)}</s>
+                  </p>
+                ) : null}
+              </div>
+              <span className={`salt-editorial-meta inline-flex h-8 shrink-0 items-center justify-center px-3 text-[0.62rem] font-bold uppercase tracking-[0.1em] transition group-hover:-translate-y-[1px] ${
+                nativeApp
+                  ? "border-border/70 bg-background text-foreground group-hover:border-primary/20 group-hover:text-primary"
+                  : "group-hover:border-primary/30 group-hover:bg-background"
+              }`}>
+                Shop
+              </span>
             </div>
+
             {minimumQuantity > 1 ? (
-              <p className="mt-0.5 inline-flex items-center justify-center rounded-full border border-white/20 bg-white/12 px-2 py-0.5 text-[0.5rem] font-bold uppercase tracking-[0.12em] text-white/80">
+              <p className="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
                 Buy {minimumQuantity}
               </p>
             ) : null}
@@ -182,8 +237,8 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
       ref={cardRef}
       className={`group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 sm:p-2 ${
         nativeApp
-          ? "border border-[#ded6ca] bg-[#ffffff] hover:border-[#c8beb2] hover:shadow-[0_22px_48px_-32px_rgba(17,17,17,0.16)]"
-          : "border border-[#c7dcff] bg-[#eef5ff] hover:border-[#9bc1ff] hover:shadow-[0_22px_48px_-32px_rgba(22,77,160,0.32)]"
+          ? "border border-border/70 bg-background/96 hover:border-primary/20 hover:shadow-[0_22px_48px_-32px_rgba(15,23,42,0.16)]"
+          : "border border-border/70 bg-background/92 hover:border-primary/20 hover:shadow-[0_22px_48px_-32px_rgba(15,23,42,0.18)]"
       }`}
     >
       <button
@@ -200,17 +255,17 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
         className={`absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
           nativeApp
-            ? "border-[#ded6ca] bg-white/96 text-[#151515] hover:border-[#c8beb2] hover:text-[#d61f26]"
-            : "border-white/40 bg-white/90 text-[#214d95] hover:border-[#90b8ff] hover:text-[#1f63d8]"
+            ? "border-border/70 bg-background/96 text-foreground hover:border-primary/20 hover:text-primary"
+            : "border-white/40 bg-white/90 text-primary hover:border-primary/30 hover:text-primary/80"
         }`}
       >
-        <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-[#d61f26]/16 text-[#d61f26]" : "fill-[#1f63d8]/20 text-[#1f63d8]") : ""}`} />
+        <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
       </button>
 
       <Link
         to={`/products/${product.handle}`}
         className={`relative isolate block overflow-hidden rounded-[0.9rem] bg-muted ${
-          nativeApp ? "border border-[#ded6ca]" : "border border-[#bfd6ff]/70"
+          nativeApp ? "border border-border/70" : "border border-border/70"
         }`}
       >
         {image ? (
@@ -234,17 +289,17 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         <div
           className={`absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.11em] ${
             nativeApp
-              ? "border-[#121212]/10 bg-[rgba(17,17,17,0.9)] text-white"
-              : "border-white/25 bg-[rgba(18,48,104,0.74)] text-white"
+              ? "border-border/70 bg-foreground text-background"
+              : "salt-editorial-meta border-border/70 bg-background/86 text-foreground"
           }`}
         >
-          <Sparkles className={`h-3 w-3 ${nativeApp ? "text-white" : "text-[#ffe27a]"}`} />
+          <Sparkles className={`h-3 w-3 ${nativeApp ? "text-background" : "text-amber-400"}`} />
           {badgeLabel}
         </div>
       </Link>
 
       <div className="mt-2 flex flex-1 flex-col">
-        <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-[#131313]" : "text-[#1f4f9b]"}`}>
+        <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-foreground" : "text-foreground"}`}>
           {title}
         </p>
         {subtitle ? (
@@ -269,7 +324,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         ) : null}
 
         {displaySummary && displaySummary.reviewCount > 0 ? (
-          <div className="mt-1 flex items-center gap-1 text-[#f2c100]">
+          <div className="mt-1 flex items-center gap-1 text-amber-500">
             {Array.from({ length: 5 }, (_, index) => (
               <Star
                 key={index}
@@ -281,7 +336,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <p className={`font-display text-[1.2rem] leading-none ${nativeApp ? "text-[#111111]" : "text-[#1f63d8]"}`}>{formatMoney(min)}</p>
+            <p className={`font-display text-[1.2rem] leading-none ${nativeApp ? "text-foreground" : "text-primary"}`}>{formatMoney(min)}</p>
             {compare > min ? (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 <s>{formatMoney(compare)}</s>
@@ -310,9 +365,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 setIsAddingToCart(false);
                 toast.success("Added to cart", { description: title });
               }}
-              className={`salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50 ${
-                nativeApp ? "bg-[#151515] hover:bg-[#d61f26]" : ""
-              }`}
+              className="salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50"
               disabled={isAddingToCart}
               aria-label={`Add ${title} to cart`}
             >
@@ -320,11 +373,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
             </button>
             <Link
               to={`/products/${product.handle}`}
-              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white transition ${
-                nativeApp
-                  ? "border-[#ded6ca] text-[#151515] hover:border-[#c8beb2] hover:text-[#d61f26]"
-                  : "border-[#aac8fb] text-[#1f4f9b] hover:border-[#7fb0ff] hover:text-[#1f63d8]"
-              }`}
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/96 text-primary transition hover:border-primary/20 hover:text-primary/80"
               aria-label="View item details"
             >
               <ArrowUpRight className="h-3 w-3" />

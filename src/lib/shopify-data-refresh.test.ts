@@ -125,4 +125,51 @@ describe("loadProducts", () => {
     expect(requests[0]?.url).not.toContain("?ts=");
     expect(requests[0]?.cache).toBe("force-cache");
   });
+
+  it("hydrates the sharded catalog with parallel cache requests", async () => {
+    const requests: Array<{ url: string; cache?: RequestCache }> = [];
+    vi.stubGlobal("__SALT_TEST_REQUESTS__", requests);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        requests.push({ url, cache: init?.cache });
+
+        if (url.endsWith("/data/products.json")) {
+          return jsonResponse({
+            format: "salt-product-catalog-shards",
+            version: 1,
+            generatedAt: "2026-07-28T00:00:00.000Z",
+            source: "sharded-test",
+            total: 2,
+            shardCount: 2,
+            shards: [
+              { path: "/data/products-0001.json", file: "products-0001.json" },
+              { path: "/data/products-0002.json", file: "products-0002.json" },
+            ],
+          });
+        }
+
+        if (url.endsWith("/data/products-0001.json")) {
+          return jsonResponse({ shardIndex: 0, products: [{ id: 1, title: "First", handle: "first" }] });
+        }
+
+        if (url.endsWith("/data/products-0002.json")) {
+          return jsonResponse({ shardIndex: 1, products: [{ id: 2, title: "Second", handle: "second" }] });
+        }
+
+        throw new Error(`Unexpected fetch URL: ${url}`);
+      }),
+    );
+
+    const payload = await loadProducts();
+
+    expect(payload.products.map((product) => product.id)).toEqual([1, 2]);
+    expect(requests.map((request) => request.url)).toEqual([
+      expect.stringContaining("/data/products.json"),
+      expect.stringContaining("/data/products-0001.json"),
+      expect.stringContaining("/data/products-0002.json"),
+    ]);
+    expect(requests.every((request) => request.cache === "force-cache")).toBe(true);
+  });
 });

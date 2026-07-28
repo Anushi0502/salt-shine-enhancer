@@ -3,7 +3,6 @@
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import XLSX from "xlsx";
-import { FileBlob, SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 import {
   buildSeoBatchExportRows,
   buildSeoBatchManifest,
@@ -11,11 +10,13 @@ import {
   createSeoCatalogContext,
 } from "../src/lib/shopify-seo-batch-intelligence.js";
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const root = resolve(process.cwd());
 const inputs = process.argv.slice(2).filter((entry) => !entry.startsWith("--"));
 const outputDir = resolve(root, "output/shopify-seo-local-review");
 const workbookPath = resolve(outputDir, "shopify-seo-local-review.xlsx");
+const workbookRowLimit = Math.max(100, Number(process.env.SALT_SEO_LOCAL_REVIEW_WORKBOOK_LIMIT || 1000));
 const sourceInputs = inputs.length
   ? inputs.map((entry) => resolve(process.cwd(), entry))
   : [
@@ -26,7 +27,7 @@ const sourceInputs = inputs.length
     ];
 
 const catalogSnapshot = {
-  products: JSON.parse(await readFile(resolve(root, "public/data/products.json"), "utf8")),
+  products: await readProductCatalogPayload(resolve(root, "public/data")),
   collections: JSON.parse(await readFile(resolve(root, "public/data/collections.json"), "utf8")),
   collectionProducts: JSON.parse(await readFile(resolve(root, "public/data/collection-products.json"), "utf8")),
 };
@@ -216,49 +217,35 @@ for (const inputPath of sourceInputs) {
   await import("node:fs/promises").then(({ writeFile }) => writeFile(resolve(outputDir, `${basename(inputPath)}.manifest.json`), `${JSON.stringify(buildSeoBatchManifest(plan, { inputPath, mode: "local-review" }), null, 2)}\n`));
 }
 
-const workbook = Workbook.create();
-function addSheet(name, rows) {
-  const sheet = workbook.worksheets.add(name);
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const values = [headers, ...rows.map((row) => headers.map((header) => row[header] ?? ""))];
-  sheet.getRangeByIndexes(0, 0, values.length, headers.length).values = values;
-  sheet.freezePanes.freezeRows(1);
-  sheet.getRangeByIndexes(0, 0, 1, headers.length).format = { fill: "#17324D", font: { bold: true, color: "#FFFFFF" } };
-  sheet.getUsedRange().format.wrapText = true;
-}
-addSheet("Summary", summaries);
-addSheet("QA Checks", allQa);
-addSheet("Optimized Products", allOptimized);
-addSheet("Metafield Review", allMetafields.length ? allMetafields : [{ Status: "No metafield columns were present in the source files; live Shopify metafields are not mutated by this local review." }]);
-addSheet("All Product Audit", allProductAudit);
-try {
-  const xlsx = await SpreadsheetFile.exportXlsx(workbook);
-  await xlsx.save(workbookPath);
-} catch (error) {
-  // The bundled artifact runtime can fail on large local CSV review jobs; keep the
-  // review artifact available with the already-installed CSV workbook writer.
-  const fallback = XLSX.utils.book_new();
-  for (const [name, rows] of [["Summary", summaries], ["QA Checks", allQa], ["Optimized Products", allOptimized], ["Metafield Review", allMetafields], ["All Product Audit", allProductAudit]]) {
-    if (rows.length) {
-      const sheet = XLSX.utils.json_to_sheet(rows);
-      const widths = name === "Summary"
-        ? [36, 14, 12, 14, 14, 10, 10, 10]
-        : name === "QA Checks"
-          ? [36, 12, 12, 12, 14, 18, 18, 18, 14, 12]
-          : name === "All Product Audit"
-            ? [34, 62, 48, 48, 20, 18, 12, 36]
-            : name === "Optimized Products"
-              ? [34, 62, 48, 90, ...Array(194).fill(18)]
-              : [34, 62, ...Array(140).fill(24)];
-      sheet["!cols"] = widths.map((wch) => ({ wch }));
-      sheet["!autofilter"] = { ref: sheet["!ref"] };
-      XLSX.utils.book_append_sheet(fallback, sheet, name);
-    }
+console.log(JSON.stringify({
+  mode: "local-review",
+  workbookRowLimit,
+  summaries: summaries.length,
+  qaRows: allQa.length,
+  optimizedRows: allOptimized.length,
+  metafieldRows: allMetafields.length,
+  auditRows: allProductAudit.length,
+}, null, 2));
+const fallback = XLSX.utils.book_new();
+for (const [name, rows] of [["Summary", summaries], ["QA Checks", allQa], ["Optimized Products", allOptimized], ["Metafield Review", allMetafields], ["All Product Audit", allProductAudit]]) {
+  if (rows.length) {
+    const limitedRows = rows.slice(0, workbookRowLimit);
+    const sheet = XLSX.utils.json_to_sheet(limitedRows);
+    const widths = name === "Summary"
+      ? [36, 14, 12, 14, 14, 10, 10, 10]
+      : name === "QA Checks"
+        ? [36, 12, 12, 12, 14, 18, 18, 18, 14, 12]
+        : name === "All Product Audit"
+          ? [34, 62, 48, 48, 20, 18, 12, 36]
+          : name === "Optimized Products"
+            ? [34, 62, 48, 90, ...Array(194).fill(18)]
+            : [34, 62, ...Array(140).fill(24)];
+    sheet["!cols"] = widths.map((wch) => ({ wch }));
+    sheet["!autofilter"] = { ref: sheet["!ref"] };
+    XLSX.utils.book_append_sheet(fallback, sheet, name);
   }
-  XLSX.writeFile(fallback, workbookPath);
-  console.warn(`Artifact workbook export unavailable; wrote equivalent local review workbook with fallback writer: ${error?.message || error}`);
 }
+XLSX.writeFile(fallback, workbookPath);
 const failedAudit = allProductAudit.filter((entry) => entry.Status === "FAIL");
 console.log(JSON.stringify({ mode: "local-review", inputFiles: sourceInputs.length, summaries, audit: { products: allProductAudit.length, passed: allProductAudit.length - failedAudit.length, failed: failedAudit.length, sampleFailures: failedAudit.slice(0, 20) }, workbookPath, csvOutputDir: outputDir, shopifyWrites: 0 }, null, 2));
 if (failedAudit.length) process.exitCode = 2;

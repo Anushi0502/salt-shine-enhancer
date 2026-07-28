@@ -63,10 +63,10 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
 
   return (
     <div className={cn("relative flex min-h-0 flex-col", className)}>
-      <div className="flex min-h-0 flex-1 flex-col rounded-[0.85rem] border border-[#e2edf8] bg-white shadow-[0_16px_32px_-28px_rgba(12,32,72,0.18)]">
-        <div className="flex items-center justify-between border-b border-[#e2edf8] px-2.5 py-2">
-          <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
-          <p className="text-[0.48rem] font-semibold uppercase tracking-[0.14em] text-[#8a99aa]">
+      <div className="flex min-h-0 flex-1 flex-col rounded-[0.85rem] border border-border/70 bg-background/95 shadow-[0_16px_32px_-28px_rgba(15,23,42,0.16)]">
+        <div className="flex items-center justify-between border-b border-border/70 px-2.5 py-2">
+          <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">Collections</p>
+          <p className="text-[0.48rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {collections.length} live groups
           </p>
         </div>
@@ -93,18 +93,18 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                     }}
                     onMouseLeave={scheduleClose}
                     className={cn(
-                      "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8df7] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                      "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isActive
-                        ? "border-[#a8c8ff] bg-[#dce9ff] text-[#0f3b7f] shadow-[0_8px_20px_rgba(74,120,204,0.12)]"
-                        : "border-transparent text-slate-700 hover:border-[#d9e6fa] hover:bg-[#f2f7ff]",
+                        ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_8px_20px_rgba(15,23,42,0.1)]"
+                        : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-muted/40",
                     )}
                     aria-expanded={isActive}
                     aria-haspopup="dialog"
                   >
                     <span className="min-w-0 flex-1 leading-snug">{collection.title}</span>
-                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition group-hover:border-primary/20 group-hover:text-primary">
                       <ChevronRight
-                        className={cn("h-3.5 w-3.5 transition", isActive ? "rotate-90 text-[#1654b2]" : "")}
+                        className={cn("h-3.5 w-3.5 transition", isActive ? "rotate-90 text-primary" : "")}
                       />
                     </span>
                   </button>
@@ -120,14 +120,14 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                   data-testid="collection-hover-submenu"
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
-                  className="z-50 w-[min(15.5rem,calc(100vw-1rem))] max-w-[min(15.5rem,calc(100vw-1rem))] rounded-[0.85rem] border border-[#d8e6f5] bg-[#eef5ff] p-2.5 shadow-[0_16px_38px_-30px_rgba(12,32,72,0.25)]"
+                  className="z-50 w-[min(18rem,calc(100vw-1rem))] max-w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-[1.05rem] border border-border/75 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.98))] p-3 shadow-[0_24px_52px_-38px_rgba(15,23,42,0.24),inset_0_1px_0_hsl(0_0%_100%/0.72)] backdrop-blur-0"
                 >
-                  <div className="flex items-start justify-between gap-2 border-b border-[#dbe8f6] pb-2.5">
+                  <div className="flex items-start justify-between gap-2 border-b border-border/70 pb-3">
                     <div className="min-w-0">
-                      <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+                      <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                         Subcategories
                       </p>
-                      <h3 className="mt-0.5 truncate text-[0.9rem] font-semibold leading-5 text-[#102A43]">
+                      <h3 className="mt-0.5 truncate text-[0.96rem] font-semibold leading-5 text-foreground">
                         {collection.title}
                       </h3>
                     </div>
@@ -138,14 +138,14 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                         onLinkClick?.();
                         setActiveCollectionHandle(null);
                       }}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#9cbcf2] bg-white px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-[#1c4d94] transition hover:border-[#7ea9ef] hover:bg-[#f8fbff]"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
                     >
                       <span>View all</span>
                       <ChevronRight className="h-3 w-3" />
                     </Link>
                   </div>
 
-                  <div className="mt-2 grid gap-1">
+                  <div className="mt-2.5 grid max-h-[min(24rem,calc(100vh-12rem))] gap-1 overflow-y-auto pr-0.5">
                     {collection.subcollections.length ? (
                       collection.subcollections.map((subcollection) => (
                         <Link
@@ -155,14 +155,14 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                             onLinkClick?.();
                             setActiveCollectionHandle(null);
                           }}
-                          className="group flex items-center justify-between rounded-[0.65rem] px-2.5 py-2 text-[0.75rem] font-medium text-[#102A43] transition hover:bg-white hover:text-[#1c4d94]"
+                          className="group flex items-center justify-between rounded-[0.85rem] border border-transparent px-3 py-2.5 text-[0.78rem] font-semibold leading-5 text-foreground transition hover:border-primary/12 hover:bg-muted/40 hover:text-primary"
                         >
                           <span className="line-clamp-1">{subcollection.title}</span>
-                          <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                       ))
                     ) : (
-                      <div className="rounded-[0.65rem] border border-dashed border-[#cfdff2] bg-white px-2.5 py-3 text-[0.75rem] text-[#5C748F]">
+                      <div className="rounded-[0.85rem] border border-dashed border-border/70 bg-background px-3 py-3 text-[0.78rem] text-muted-foreground">
                         No subcategories yet.
                       </div>
                     )}

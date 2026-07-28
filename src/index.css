@@ -158,30 +158,6 @@
     text-size-adjust: 100%;
   }
 
-  @media (max-width: 1365px) {
-    html {
-      font-size: 93.75%; /* ~15px */
-    }
-  }
-
-  @media (max-width: 1023px) {
-    html {
-      font-size: 87.5%; /* ~14px */
-    }
-  }
-
-  @media (max-width: 767px) {
-    html {
-      font-size: 81.25%; /* ~13px */
-    }
-  }
-
-  @media (max-width: 479px) {
-    html {
-      font-size: 75%; /* ~12px */
-    }
-  }
-
   a {
     @apply transition-colors;
   }
@@ -209,8 +185,9 @@
     line-height: 1.58;
     letter-spacing: 0.004em;
     background:
-      radial-gradient(circle at 0% 0%, hsl(var(--salt-gold) / 0.08) 0%, transparent 24%),
-      radial-gradient(circle at 100% 0%, hsl(var(--salt-blue) / 0.05) 0%, transparent 22%),
+      radial-gradient(circle at 0% 0%, hsl(var(--salt-blue) / 0.08) 0%, transparent 24%),
+      radial-gradient(circle at 100% 0%, hsl(var(--salt-gold) / 0.04) 0%, transparent 20%),
+      radial-gradient(circle at 50% 100%, hsl(var(--salt-cyan) / 0.04) 0%, transparent 28%),
       hsl(var(--background));
     overflow-x: clip;
     min-height: 100vh;
@@ -227,8 +204,8 @@
     inset: 0;
     z-index: -1;
     background:
-      linear-gradient(122deg, hsl(var(--salt-gold) / 0.03), transparent 45%),
-      linear-gradient(302deg, hsl(var(--salt-blue) / 0.02), transparent 48%);
+      linear-gradient(122deg, hsl(var(--salt-blue) / 0.035), transparent 42%),
+      linear-gradient(302deg, hsl(var(--salt-gold) / 0.025), transparent 48%);
     mix-blend-mode: normal;
   }
 
@@ -240,9 +217,9 @@
     z-index: -1;
     background-image:
       linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.015), transparent),
-      linear-gradient(180deg, transparent, hsl(var(--foreground) / 0.02), transparent);
+      linear-gradient(180deg, transparent, hsl(var(--foreground) / 0.016), transparent);
     background-size: 100% 100%, 100% 100%;
-    opacity: 0.14;
+    opacity: 0.1;
   }
 
   ::selection {
@@ -319,17 +296,21 @@
 
 @layer components {
   .salt-container {
-    @apply w-[min(1240px,calc(100%-20px))] mx-auto;
+    @apply w-[min(1240px,calc(100%_-_20px))] mx-auto;
   }
 
   .salt-header-secondary-nav {
+    position: relative;
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: flex-start;
-    gap: clamp(0.4rem, 0.52vw, 0.9rem);
+    gap: clamp(0.35rem, 0.48vw, 0.8rem);
     overflow-x: auto;
     padding-inline: clamp(0.65rem, 1.15vw, 2.4rem);
+    padding-block: 0.45rem 0.52rem;
+    min-height: 3.45rem;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
   }
 
@@ -338,42 +319,126 @@
   }
 
   .salt-header-collection-item {
+    position: relative;
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
     gap: clamp(0.18rem, 0.18vw, 0.48rem);
     white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    padding: clamp(0.58rem, 0.76vw, 1.05rem) clamp(0.25rem, 0.34vw, 0.65rem)
-      clamp(0.7rem, 0.86vw, 1.2rem);
-    font-size: clamp(0.82rem, 0.32vw + 0.7rem, 1.02rem);
+    border: 1px solid hsl(var(--border) / 0.68);
+    border-radius: 9999px;
+    padding: clamp(0.52rem, 0.58vw, 0.7rem) clamp(0.78rem, 0.88vw, 1.08rem);
+    font-size: clamp(0.8rem, 0.32vw + 0.7rem, 0.98rem);
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.01em;
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.9), hsl(var(--background) / 0.78));
+    color: hsl(var(--muted-foreground));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.72),
+      0 10px 18px -18px rgba(15, 23, 42, 0.16);
     transition:
+      transform 180ms ease,
       border-color 180ms ease,
       color 180ms ease,
-      background-color 180ms ease;
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .salt-header-collection-item:hover {
+    border-color: hsl(var(--primary) / 0.24);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.9));
+    color: hsl(var(--foreground));
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.8),
+      0 14px 22px -20px rgba(15, 23, 42, 0.18);
+  }
+
+  .salt-header-collection-item.is-active {
+    border-color: hsl(var(--primary) / 0.28);
+    background:
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--card) / 0.94)),
+      linear-gradient(135deg, hsl(var(--primary) / 0.08), transparent 42%);
+    color: hsl(var(--foreground));
+    box-shadow:
+      0 16px 28px -22px rgba(15, 23, 42, 0.2),
+      inset 0 1px 0 hsl(0 0% 100% / 0.82);
+  }
+
+  .salt-header-collection-item.is-active::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0.95rem;
+    bottom: 0.28rem;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--salt-gold)));
+    opacity: 0.65;
   }
 
   .salt-header-utility-item {
+    position: relative;
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    padding: clamp(0.58rem, 0.76vw, 1.05rem) clamp(0.25rem, 0.34vw, 0.65rem)
-      clamp(0.7rem, 0.86vw, 1.2rem);
-    font-size: clamp(0.82rem, 0.32vw + 0.7rem, 1.02rem);
+    border: 1px solid hsl(var(--border) / 0.68);
+    border-radius: 9999px;
+    padding: clamp(0.52rem, 0.58vw, 0.7rem) clamp(0.78rem, 0.88vw, 1.08rem);
+    font-size: clamp(0.8rem, 0.32vw + 0.7rem, 0.98rem);
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.01em;
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.9), hsl(var(--background) / 0.78));
+    color: hsl(var(--muted-foreground));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.72),
+      0 10px 18px -18px rgba(15, 23, 42, 0.16);
     transition:
+      transform 180ms ease,
       border-color 180ms ease,
       color 180ms ease,
-      background-color 180ms ease;
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .salt-header-utility-item:hover {
+    border-color: hsl(var(--primary) / 0.24);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.9));
+    color: hsl(var(--foreground));
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.8),
+      0 14px 22px -20px rgba(15, 23, 42, 0.18);
+  }
+
+  .salt-header-utility-item.is-active {
+    border-color: hsl(var(--primary) / 0.28);
+    background:
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--card) / 0.94)),
+      linear-gradient(135deg, hsl(var(--primary) / 0.08), transparent 42%);
+    color: hsl(var(--foreground));
+    box-shadow:
+      0 16px 28px -22px rgba(15, 23, 42, 0.2),
+      inset 0 1px 0 hsl(0 0% 100% / 0.82);
+  }
+
+  .salt-header-utility-item.is-active::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0.95rem;
+    bottom: 0.28rem;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--salt-gold)));
+    opacity: 0.65;
   }
 
   .salt-heading {
@@ -645,24 +710,24 @@
 
   .salt-surface {
     background:
-      linear-gradient(160deg, hsl(var(--card) / 0.98), hsl(var(--background) / 0.94)),
-      linear-gradient(120deg, hsl(var(--salt-gold) / 0.05), transparent 42%),
-      linear-gradient(300deg, hsl(var(--salt-blue) / 0.04), transparent 44%);
-    border: 1px solid hsl(var(--border) / 0.75);
+      linear-gradient(160deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.96)),
+      linear-gradient(120deg, hsl(var(--salt-blue) / 0.035), transparent 44%),
+      linear-gradient(300deg, hsl(var(--salt-gold) / 0.03), transparent 46%);
+    border: 1px solid hsl(var(--border) / 0.64);
     box-shadow:
-      0 20px 48px -34px rgba(15, 23, 42, 0.18),
-      inset 0 1px 0 hsl(0 0% 100% / 0.56);
+      0 20px 44px -34px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 hsl(0 0% 100% / 0.68);
   }
 
   .salt-surface-strong {
     background:
-      linear-gradient(154deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.95)),
-      linear-gradient(130deg, hsl(var(--salt-gold) / 0.08), transparent 40%),
-      linear-gradient(330deg, hsl(var(--salt-blue) / 0.08), transparent 44%);
-    border: 1px solid hsl(var(--border) / 0.72);
+      linear-gradient(154deg, hsl(var(--card) / 0.995), hsl(var(--background) / 0.955)),
+      linear-gradient(130deg, hsl(var(--salt-blue) / 0.045), transparent 42%),
+      linear-gradient(330deg, hsl(var(--salt-gold) / 0.035), transparent 46%);
+    border: 1px solid hsl(var(--border) / 0.64);
     box-shadow:
-      0 24px 56px -36px rgba(15, 23, 42, 0.2),
-      0 1px 0 hsl(0 0% 100% / 0.56) inset;
+      0 24px 54px -38px rgba(15, 23, 42, 0.16),
+      0 1px 0 hsl(0 0% 100% / 0.66) inset;
   }
 
   .salt-panel-shell {
@@ -670,14 +735,14 @@
     isolation: isolate;
     overflow: hidden;
     background:
-      linear-gradient(166deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.92)),
-      radial-gradient(circle at 14% 10%, hsl(var(--salt-gold) / 0.06), transparent 30%),
-      radial-gradient(circle at 86% 84%, hsl(var(--salt-blue) / 0.06), transparent 34%);
-    border: 1px solid hsl(var(--border) / 0.72);
+      linear-gradient(166deg, hsl(var(--card) / 0.995), hsl(var(--background) / 0.95)),
+      radial-gradient(circle at 14% 10%, hsl(var(--salt-blue) / 0.04), transparent 30%),
+      radial-gradient(circle at 86% 84%, hsl(var(--salt-gold) / 0.03), transparent 34%);
+    border: 1px solid hsl(var(--border) / 0.66);
     box-shadow:
-      0 18px 38px -30px rgba(15, 23, 42, 0.16),
-      inset 0 1px 0 hsl(0 0% 100% / 0.62);
-    backdrop-filter: blur(8px);
+      0 18px 38px -30px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 hsl(0 0% 100% / 0.72);
+    backdrop-filter: blur(10px);
     color: hsl(var(--foreground));
     transition: border-color 220ms ease, box-shadow 260ms ease;
   }
@@ -688,10 +753,10 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(180deg, hsl(0 0% 100% / 0.26), transparent 22%),
-      linear-gradient(120deg, hsl(var(--salt-gold) / 0.05), transparent 42%),
-      linear-gradient(314deg, hsl(var(--salt-blue) / 0.05), transparent 44%);
-    opacity: 0.6;
+      linear-gradient(180deg, hsl(0 0% 100% / 0.3), transparent 22%),
+      linear-gradient(120deg, hsl(var(--salt-blue) / 0.035), transparent 42%),
+      linear-gradient(314deg, hsl(var(--salt-gold) / 0.03), transparent 44%);
+    opacity: 0.54;
     z-index: -1;
   }
 
@@ -701,8 +766,8 @@
     position: absolute;
     inset: 0.62rem;
     border-radius: calc(0.95rem + 0.12vw);
-    border: 1px solid hsl(0 0% 100% / 0.34);
-    opacity: 0.45;
+    border: 1px solid hsl(0 0% 100% / 0.42);
+    opacity: 0.4;
     z-index: -1;
   }
 
@@ -811,15 +876,15 @@
     isolation: isolate;
     overflow: hidden;
     background:
-      linear-gradient(176deg, hsl(var(--card) / 0.97), hsl(var(--background) / 0.92)),
-      radial-gradient(circle at 8% 14%, hsl(var(--salt-gold) / 0.04), transparent 30%),
-      radial-gradient(circle at 90% 82%, hsl(var(--salt-blue) / 0.04), transparent 34%);
-    border: 1px solid hsl(var(--border) / 0.68);
+      linear-gradient(176deg, hsl(var(--card) / 0.985), hsl(var(--background) / 0.94)),
+      radial-gradient(circle at 8% 14%, hsl(var(--salt-blue) / 0.03), transparent 30%),
+      radial-gradient(circle at 90% 82%, hsl(var(--salt-gold) / 0.025), transparent 34%);
+    border: 1px solid hsl(var(--border) / 0.6);
     box-shadow:
-      0 14px 30px -24px rgba(15, 23, 42, 0.12),
-      inset 0 1px 0 hsl(0 0% 100% / 0.56);
+      0 14px 30px -24px rgba(15, 23, 42, 0.1),
+      inset 0 1px 0 hsl(0 0% 100% / 0.7);
     color: hsl(var(--foreground));
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(10px);
   }
 
   .salt-section-shell::before {
@@ -828,10 +893,10 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(180deg, hsl(0 0% 100% / 0.2), transparent 26%),
-      linear-gradient(120deg, hsl(var(--salt-gold) / 0.03), transparent 40%),
-      linear-gradient(310deg, hsl(var(--salt-blue) / 0.03), transparent 42%);
-    opacity: 0.52;
+      linear-gradient(180deg, hsl(0 0% 100% / 0.24), transparent 26%),
+      linear-gradient(120deg, hsl(var(--salt-blue) / 0.02), transparent 40%),
+      linear-gradient(310deg, hsl(var(--salt-gold) / 0.02), transparent 42%);
+    opacity: 0.44;
     z-index: -1;
   }
 
@@ -877,17 +942,17 @@
 
   .salt-kpi-card {
     background:
-      linear-gradient(168deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.86));
-    border: 1px solid hsl(var(--border) / 0.72);
-    box-shadow: 0 18px 36px -32px rgba(15, 23, 42, 0.14);
+      linear-gradient(168deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.9));
+    border: 1px solid hsl(var(--border) / 0.62);
+    box-shadow: 0 18px 36px -32px rgba(15, 23, 42, 0.12);
     color: hsl(var(--foreground));
   }
 
   .salt-ambient-card {
     background:
-      linear-gradient(170deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.88)),
-      linear-gradient(120deg, hsl(var(--salt-gold) / 0.04), transparent 42%);
-    border: 1px solid hsl(var(--border) / 0.7);
+      linear-gradient(170deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.9)),
+      linear-gradient(120deg, hsl(var(--salt-blue) / 0.03), transparent 42%);
+    border: 1px solid hsl(var(--border) / 0.62);
     color: hsl(var(--foreground));
   }
 
@@ -895,11 +960,11 @@
     position: relative;
     overflow: hidden;
     background:
-      linear-gradient(168deg, hsl(var(--card) / 0.99), hsl(var(--background) / 0.94)),
-      linear-gradient(132deg, hsl(var(--salt-gold) / 0.02), transparent 38%),
-      linear-gradient(318deg, hsl(var(--salt-blue) / 0.02), transparent 40%);
-    border: 1px solid hsl(var(--border) / 0.72);
-    box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.12);
+      linear-gradient(168deg, hsl(var(--card) / 0.995), hsl(var(--background) / 0.94)),
+      linear-gradient(132deg, hsl(var(--salt-blue) / 0.02), transparent 38%),
+      linear-gradient(318deg, hsl(var(--salt-gold) / 0.015), transparent 40%);
+    border: 1px solid hsl(var(--border) / 0.64);
+    box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.1);
     transition:
       transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
       border-color 220ms ease,
@@ -908,8 +973,8 @@
 
   .salt-story-card:hover {
     transform: translateY(-4px);
-    border-color: hsl(var(--primary) / 0.42);
-    box-shadow: 0 20px 42px -32px rgba(15, 23, 42, 0.18);
+    border-color: hsl(var(--primary) / 0.34);
+    box-shadow: 0 20px 42px -32px rgba(15, 23, 42, 0.14);
   }
 
   .salt-hero-stat {
@@ -1135,13 +1200,15 @@
   }
 
   .salt-outline-chip {
-    @apply inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[0.72rem] font-semibold tracking-[0.03em] text-muted-foreground transition;
-    backdrop-filter: blur(2px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    @apply inline-flex items-center rounded-full border border-border bg-white/80 px-3 py-1 text-[0.72rem] font-semibold tracking-[0.03em] text-muted-foreground transition;
+    backdrop-filter: blur(6px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      0 10px 18px -18px rgba(15, 23, 42, 0.16);
   }
 
   .salt-outline-chip:hover {
-    border-color: hsl(var(--primary) / 0.5);
+    border-color: hsl(var(--primary) / 0.42);
     color: hsl(var(--primary));
     transform: translateY(-1px);
   }
@@ -1250,7 +1317,7 @@
   .salt-primary-cta {
     @apply inline-flex items-center justify-center rounded-full text-white transition;
     background:
-      linear-gradient(135deg, hsl(var(--salt-blue)), hsl(var(--salt-accent-deep)));
+      linear-gradient(135deg, hsl(var(--salt-blue)), hsl(222 58% 32%));
     box-shadow:
       0 10px 22px -18px rgba(37, 99, 235, 0.22),
       0 1px 0 hsl(0 0% 100% / 0.16) inset;
@@ -1270,6 +1337,31 @@
     box-shadow:
       0 0 0 2px hsl(var(--primary) / 0.18),
       0 10px 22px -16px hsl(var(--primary) / 0.88);
+  }
+
+  .salt-yellow-cta {
+    @apply inline-flex items-center justify-center rounded-full text-foreground transition;
+    background:
+      linear-gradient(135deg, hsl(49 100% 72%), hsl(42 100% 58%));
+    box-shadow:
+      0 12px 24px -18px rgba(183, 120, 0, 0.42),
+      0 1px 0 hsl(0 0% 100% / 0.26) inset;
+  }
+
+  .salt-yellow-cta:hover {
+    filter: brightness(1.03);
+    transform: translateY(-1px);
+  }
+
+  .salt-yellow-cta:active {
+    filter: brightness(0.99);
+    transform: translateY(0);
+  }
+
+  .salt-yellow-cta:focus-visible {
+    box-shadow:
+      0 0 0 2px hsl(42 100% 50% / 0.18),
+      0 12px 24px -18px rgba(183, 120, 0, 0.48);
   }
 
   .salt-nav-pill {
@@ -1317,8 +1409,8 @@
 
   .salt-media-pill {
     @apply inline-flex items-center rounded-full border text-white backdrop-blur-md;
-    border-color: hsl(0 0% 100% / 0.24);
-    background: linear-gradient(180deg, rgba(26, 35, 57, 0.56), rgba(16, 24, 42, 0.46));
+    border-color: hsl(0 0% 100% / 0.22);
+    background: linear-gradient(180deg, rgba(21, 33, 57, 0.56), rgba(15, 22, 40, 0.46));
     color: hsl(0 0% 100% / 0.98);
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.42);
     box-shadow:

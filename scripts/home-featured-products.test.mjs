@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildHomeFeaturedProductsPayload, selectQuirkyGiftPicks } from "./home-featured-products.mjs";
+import {
+  buildHomeFeaturedProductsPayload,
+  productsFromCollection,
+  selectQuirkyGiftPicks,
+} from "./home-featured-products.mjs";
 
 function product(id, title, handle, tags, price = "19.99") {
   return {
@@ -71,5 +75,27 @@ describe("home featured products", () => {
     expect(payload.quirkyGiftPicks.map((entry) => entry.id)).toEqual([3, 1]);
     expect(payload.everydayEssentialProducts.map((entry) => entry.id)).toEqual([2]);
     expect(JSON.stringify(payload)).not.toContain("not-selected");
+  });
+
+  it("prefers configured bestseller picks before falling back to the collection order", () => {
+    const products = [
+      product(1, "Fallback Best Seller", "fallback-best-seller", ["best seller"], "59.99"),
+      product(2, "Preferred Perfume", "preferred-perfume", ["best seller"], "79.99"),
+      product(3, "Fallback Best Seller 2", "fallback-best-seller-2", ["best seller"], "89.99"),
+    ];
+
+    const picked = productsFromCollection(
+      products,
+      {
+        collections: {
+          "appplaza-best-sellers": { productIds: [1, 3] },
+        },
+      },
+      "appplaza-best-sellers",
+      3,
+      [{ titleIncludes: ["preferred perfume"], price: 79.99 }],
+    );
+
+    expect(picked.map((entry) => entry.id)).toEqual([2, 1, 3]);
   });
 });

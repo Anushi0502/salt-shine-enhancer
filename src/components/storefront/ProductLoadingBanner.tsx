@@ -81,34 +81,34 @@ const ProductLoadingBanner = ({ imageSrc }: ProductLoadingBannerProps) => {
   }, []);
 
   return (
-    <section className="mx-auto mt-6 w-[min(1280px,calc(100%-20px))]">
-      <div className="rounded-[2.4rem] border border-[#2b3344] bg-[#171b24] p-3 shadow-[0_50px_140px_-72px_rgba(15,23,42,0.72)] sm:p-4">
+    <section className="mx-auto mt-6 w-[min(1280px,calc(100%_-_20px))]">
+      <div className="rounded-[2.4rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-3 shadow-[0_50px_140px_-72px_rgba(15,23,42,0.22)] sm:p-4">
         <div className="grid gap-3 lg:grid-cols-[1.18fr_0.82fr]">
-          <div className="relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-white/6 bg-[#101520] lg:min-h-[34rem]">
+          <div className="relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-border/70 bg-muted/18 lg:min-h-[34rem]">
             <img
               src={resolvedImage}
               alt="The Living Legacy Planner 2nd Edition"
               className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,20,34,0.18),rgba(14,20,34,0.06)_38%,rgba(14,20,34,0.3)),radial-gradient(circle_at_14%_18%,rgba(255,203,46,0.2),transparent_28%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--foreground)/0.16),hsl(var(--foreground)/0.06)_38%,hsl(var(--foreground)/0.28)),radial-gradient(circle_at_14%_18%,hsl(var(--salt-gold)/0.18),transparent_28%)]" />
           </div>
 
-          <div className="flex min-h-[22rem] flex-col justify-center rounded-[1.8rem] border border-[#3a4357] bg-[linear-gradient(180deg,#222632,#1a1e28)] px-6 py-7 text-white lg:min-h-[34rem] lg:px-8 lg:py-8">
-            <h1 className="mt-4 max-w-[13ch] font-display text-[clamp(2.2rem,4vw,3.75rem)] leading-[0.96] tracking-[-0.045em] text-white">
+          <div className="flex min-h-[22rem] flex-col justify-center rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] px-6 py-7 text-foreground lg:min-h-[34rem] lg:px-8 lg:py-8">
+            <h1 className="mt-4 max-w-[13ch] font-display text-[clamp(2.2rem,4vw,3.75rem)] leading-[0.96] tracking-[-0.045em] text-foreground">
               The Living Legacy Planner 2nd Edition
             </h1>
-            <p className="mt-4 max-w-[26rem] text-base leading-7 text-white/74 lg:text-lg">
+            <p className="mt-4 max-w-[26rem] text-base leading-7 text-muted-foreground lg:text-lg">
               Courtney R. Jones' signature planner for memory keeping, legacy planning, and thoughtful family preparation.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
                 to={LEGACY_PLANNER_PRODUCT_PATH}
-                className="inline-flex h-12 items-center rounded-full bg-[#f3c62f] px-6 text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-[#101522] shadow-[0_20px_45px_-28px_rgba(243,198,47,0.9)] transition hover:-translate-y-[1px] hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3c62f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1e28]"
+                className="salt-primary-cta inline-flex h-12 items-center rounded-full px-6 text-[0.8rem] font-semibold uppercase tracking-[0.12em]"
               >
                 Explore the planner
               </Link>
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-white/66">
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Opening SALT
               </span>

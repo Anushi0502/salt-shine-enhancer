@@ -380,7 +380,7 @@ function buildResourceAccent(kind: ResourcePageKind, title: string, summary: str
       title: "Built for people who need a clear next step",
       body:
         "The Resource Hub gives shoppers and AI search engines one calm place to start. Each page answers one question, stays focused, and points to a real next click.",
-      bullets: ["One job per page", "Fast next step", "Real product routes"],
+      bullets: [],
     };
   }
 
@@ -617,6 +617,47 @@ function buildFaqPageContent(): EditorialPageContent {
       { label: "Contact Us", to: "/contact", primary: true },
       { label: "Track order", href: TRACK_ORDER_URL },
       { label: "Shipping policy", to: "/shipping-policy" },
+    ],
+  };
+}
+
+function buildContactPageContent(): EditorialPageContent {
+  return {
+    handle: "contact",
+    kicker: "Support",
+    title: "Need help with your order?",
+    summary: "Reach the SALT support team for delivery questions, product advice, returns, or order help.",
+    stats: [
+      { label: "Response", value: "Within 24 business hours" },
+      { label: "Use case", value: "Message support" },
+      { label: "Format", value: "Human routed" },
+    ],
+    accent: {
+      label: "Direct help",
+      title: "Fast, clear, and helpful responses",
+      body:
+        "We route messages with context, not templates. A few details about the order or product help the team reply faster.",
+      bullets: ["Delivery updates", "Return checks", "Order help"],
+    },
+    introParagraphs: [
+      "Use this page when the answer needs a person. Keep the message focused on the order, product, or delivery issue and the team can route it cleanly.",
+      "If the request only needs a quick lookup, the FAQ and order tracking pages stay close by in the support flow.",
+    ],
+    cardsTitle: "Fast routes",
+    cardsDescription: "Use these shortcuts when the answer lives on a policy or order page.",
+    cards: [
+      { title: "FAQ", detail: "Short answers for ordering and shipping.", to: "/faq" },
+      { title: "Track order", detail: "Open the secure order portal.", to: "/track-order" },
+      { title: "Shipping policy", detail: "Review delivery timing and fulfillment notes.", to: "/shipping-policy" },
+      { title: "Refund policy", detail: "See returns and refund terms.", to: "/refund-policy" },
+    ],
+    chipsTitle: "Common topics",
+    chipsDescription: "The most common reasons people reach out.",
+    chips: ["Order tracking", "Returns and exchanges", "Product recommendation", "Bulk order request"],
+    actions: [
+      { label: "Message us", href: "#support-message", primary: true },
+      { label: "Track order", href: TRACK_ORDER_URL },
+      { label: "FAQ", to: "/faq" },
     ],
   };
 }
@@ -984,6 +1025,7 @@ const editorialPages: Record<string, EditorialPageContent> = {
   },
   collections: buildCollectionsIndexPageContent(),
   resources: buildResourceHubPageContent(),
+  contact: buildContactPageContent(),
   faq: buildFaqPageContent(),
   "wholesale-inquiries": buildWholesalePageContent(),
   "terms-conditions": buildTermsConditionsPageContent(),

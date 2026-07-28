@@ -21,6 +21,7 @@ function run(label, command, args) {
 
 run("1. Full local catalog SEO audit", npmBin, ["run", "shopify:seo:local-review"]);
 run("2. Live Shopify SEO and $12 pricing dry-run", nodeBin, ["scripts/shopify-seo-release.mjs", "--dry-run"]);
-run("3. Guarded Shopify SEO and pricing apply", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply"]);
+run("3. Guarded Shopify SEO and pricing apply", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply", "--full-catalog", "--preserve-tags"]);
+run("4. Auto-run variant image mapping", nodeBin, ["scripts/shopify-variant-image-mapping.mjs", "--apply", "--scope", "all-products"]);
 
 process.stdout.write("\nGuarded Shopify SEO apply completed.\n");

@@ -2,12 +2,12 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, MessageSquareQuote } from "lucide-react";
 import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { useProducts } from "@/lib/shopify-data";
+import { useProductSearchIndex } from "@/lib/shopify-data";
 import { productImage } from "@/lib/formatters";
 
 const ProductReviewsPage = () => {
   const { handle } = useParams();
-  const { data, isLoading, error, refetch } = useProducts();
+  const { data, isLoading, error, refetch } = useProductSearchIndex();
 
   const products = data?.products || [];
   const product = products.find((entry) => entry.handle === handle);

@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadCollectionProductIds, loadProductSearchIndex } from "@/lib/shopify-data";
+import { loadCollectionProductIds, loadProductByHandle, loadProductSearchIndex } from "@/lib/shopify-data";
 
 type InlineWindow = Window & {
+  __SALT_PRODUCT_PREFETCH__?: {
+    handle: string;
+    raw: Record<string, unknown> | null;
+    payload: Promise<Record<string, unknown>>;
+  };
   __SALT_COLLECTION_PREFETCH__?: {
     handle: string;
     generatedAt: string;
@@ -63,6 +68,7 @@ function installInlineCollection(overrides: Partial<InlineWindow["__SALT_COLLECT
 }
 
 afterEach(() => {
+  delete (window as InlineWindow).__SALT_PRODUCT_PREFETCH__;
   delete (window as InlineWindow).__SALT_COLLECTION_PREFETCH__;
   window.history.replaceState({}, "", "/");
   vi.unstubAllGlobals();
@@ -172,5 +178,41 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(refreshed?.customData?.subtitle).toBe("Curated subtitle");
     expect(payload.products.some((product) => product.handle === "newly-added")).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes Liquid product snapshots before the first product render", async () => {
+    const inlineProduct = liveProduct({
+      body_html: undefined,
+      product_type: undefined,
+      description: "<p>Live product details.</p>",
+      type: "Gifts",
+      variants: [
+        {
+          id: 201,
+          title: "Default Title",
+          price: 4499,
+          compare_at_price: 5999,
+          available: true,
+        },
+      ],
+    });
+    window.history.replaceState({}, "", "/products/live-shopify-product");
+    (window as InlineWindow).__SALT_PRODUCT_PREFETCH__ = {
+      handle: "live-shopify-product",
+      raw: inlineProduct,
+      payload: Promise.resolve(inlineProduct),
+    };
+    const fetchMock = vi.fn(async () => {
+      throw new Error("network should not run");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const product = await loadProductByHandle("live-shopify-product");
+
+    expect(product.body_html).toContain("Live product details");
+    expect(product.product_type).toBe("Gifts");
+    expect(product.variants[0]?.price).toBe("44.99");
+    expect(product.variants[0]?.compare_at_price).toBe("59.99");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

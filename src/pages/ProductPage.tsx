@@ -76,7 +76,7 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
-const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-14.3";
+const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-28.1";
 const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
 
 function displayVariantTitle(title?: string): string {
@@ -107,7 +107,8 @@ function productVariantImage(product: ShopifyProduct, variant?: ShopifyProduct["
     return productImage(product);
   }
 
-  const linkedImage = product.images.find((image) => image.variant_ids?.includes(variant.id));
+  const productImages = Array.isArray(product.images) ? product.images : [];
+  const linkedImage = productImages.find((image) => image.variant_ids?.includes(variant.id));
   return normalizeShopifyAssetUrl(variant.featured_image?.src || linkedImage?.src) || productImage(product);
 }
 
@@ -228,8 +229,10 @@ function buildReviewSummaryFallback(product: ShopifyProduct | null | undefined):
   };
 }
 
-function normalizeProductBodyText(input: string): string {
-  return input
+function normalizeProductBodyText(input: string | null | undefined): string {
+  const raw = typeof input === "string" ? input : "";
+
+  return raw
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
@@ -242,8 +245,8 @@ function uniqueStrings(values: string[]): string[] {
   return values.filter((value, index) => values.findIndex((entry) => entry === value) === index);
 }
 
-function stripContentLabel(input: string): string {
-  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:-]?\s*/i, "").trim();
+function stripContentLabel(input: string | null | undefined): string {
+  return (input || "").replace(/^(description|specifications?|details?|features?|notes?)\s*[:-]?\s*/i, "").trim();
 }
 
 function extractProductBullets(bodyHtml: string, fallback: string): string[] {
@@ -344,7 +347,7 @@ const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
-  const { data: productData, isLoading, error, refetch } = useProductByHandle(handle);
+  const { data: productData, isLoading, error, refetch } = useProductByHandle(handle, true, true);
   const secondaryContentAnchorRef = useRef<HTMLDivElement | null>(null);
   const [secondaryContentProductId, setSecondaryContentProductId] = useState<number | null>(null);
   const loadSecondaryContent = Boolean(productData?.id && secondaryContentProductId === productData.id);
@@ -703,8 +706,9 @@ const ProductPage = () => {
 
   const primaryImage = primaryProductImage;
   const displayedImage = activeImage || primaryImage;
-  const imageSources = (product.images.length
-    ? product.images.map((image) => image.src)
+  const productImages = Array.isArray(product.images) ? product.images : [];
+  const imageSources = (productImages.length
+    ? productImages.map((image) => image.src)
     : [primaryImage]).filter(Boolean);
   const subtitle = product.customData?.subtitle?.trim() || product.product_type || "Featured";
   const badgeText = product.customData?.badgeText?.trim() || "";
@@ -713,6 +717,11 @@ const ProductPage = () => {
   const detailBullets = extractProductBullets(product.body_html, productSummary);
   const productSpecs = extractProductSpecs(product.body_html, product.product_type || "", variants.length);
   const wishlisted = isWishlisted(product.handle);
+  const brandLabel = product.vendor?.trim() || "SALT";
+  const heroThumbnailSources = imageSources.slice(0, 8);
+  const reviewBadgeLabel = reviewSummary
+    ? `${reviewSummary.rating.toFixed(1)} · ${reviewSummary.reviewCount.toLocaleString()} reviews`
+    : "Fresh pick";
 
   const toggleWishlistState = () => {
     const nextSaved = !wishlisted;
@@ -788,7 +797,7 @@ const ProductPage = () => {
   return (
     <section
       data-salt-product-runtime={PRODUCT_PAGE_RUNTIME_VERSION}
-      className="mx-auto mt-4 w-[min(1200px,calc(100%-20px))] pb-28 sm:mt-6 sm:w-[min(1200px,calc(100%-20px))] md:pb-8"
+      className="mx-auto mt-4 w-[min(1280px,calc(100%_-_20px))] pb-20 sm:mt-5 sm:w-[min(1280px,calc(100%_-_20px))] md:pb-8"
     >
       <SeoMetadata
         title={`${product.title} | SALT Online Store`}
@@ -815,72 +824,195 @@ const ProductPage = () => {
         </Link>
       </Reveal>
 
-      <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-        <Reveal className="salt-reveal-instant">
-          <div className="salt-panel-shell rounded-[1.3rem] p-2.5 sm:rounded-[1.8rem] sm:p-4">
-            <div className="overflow-hidden rounded-[1.15rem] border border-border bg-muted sm:rounded-[1.4rem]">
-              {activeImage || primaryImage ? (
-                <img
-                  ref={heroImageRef}
-                  src={productImageAtWidth(displayedImage, 960)}
-                  srcSet={productImageSrcSet(displayedImage)}
-                  sizes="(min-width: 1024px) 52vw, 100vw"
-                  alt={product.title}
-                  className="aspect-square w-full object-cover"
-                  fetchPriority="high"
-                  decoding="async"
-                  onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
-                  onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
-                />
-              ) : (
-                <div className="grid aspect-square w-full place-items-center bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-blue)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                    Image unavailable
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="mt-2.5 grid grid-cols-4 gap-2 sm:mt-3">
-              {imageSources.slice(0, 8).map((source, index) => (
-                <button
-                  key={`${source}-${index}`}
-                  type="button"
-                  onClick={() => setActiveImage(source)}
-                  className={`overflow-hidden rounded-lg border ${
-                    (activeImage || primaryImage) === source
-                      ? "border-primary"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                  aria-label={`View product image ${index + 1}`}
-                >
-                  <img
-                    src={productImageAtWidth(source, 180)}
-                    alt={`${product.title} view ${index + 1}`}
-                    className="aspect-square w-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        </Reveal>
+      <div className="mt-3 overflow-hidden rounded-[2.1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.93))] p-2.5 shadow-[0_30px_70px_-56px_rgba(15,23,42,0.18)] sm:mt-4 sm:p-3.5 lg:p-4">
+        <div className="grid gap-3 sm:gap-3.5 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:items-start lg:gap-4">
+          <Reveal className="salt-reveal-instant lg:self-start">
+            <div className="salt-panel-shell rounded-[1.65rem] p-3 sm:p-3.5 lg:p-4">
+              <div className="grid gap-3 lg:grid-cols-[92px_minmax(0,1fr)] lg:items-start">
+                <div className="hidden max-h-[50rem] flex-col gap-2.5 lg:flex">
+                  {heroThumbnailSources.map((source, index) => {
+                    const isSelected = (activeImage || primaryImage) === source;
 
-        <Reveal className="salt-reveal-instant">
+                    return (
+                      <button
+                        key={`${source}-${index}`}
+                        type="button"
+                        onClick={() => setActiveImage(source)}
+                        className={`overflow-hidden rounded-[1rem] border bg-background/90 transition ${
+                          isSelected
+                            ? "border-primary shadow-[0_12px_24px_-20px_hsl(var(--primary)/0.8)]"
+                            : "border-border/75 hover:border-primary/45"
+                        }`}
+                        aria-label={`View product image ${index + 1}`}
+                      >
+                        <img
+                          src={productImageAtWidth(source, 180)}
+                          alt={`${product.title} view ${index + 1}`}
+                          className="aspect-square w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="relative overflow-hidden rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.92))] p-2 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.22)] sm:p-2.5">
+                  <div className="overflow-hidden rounded-[1.2rem] bg-muted">
+                    {activeImage || primaryImage ? (
+                      <img
+                        ref={heroImageRef}
+                        src={productImageAtWidth(displayedImage, 1080)}
+                        srcSet={productImageSrcSet(displayedImage)}
+                        sizes="(min-width: 1024px) 56vw, 100vw"
+                        alt={product.title}
+                        className="aspect-square w-full object-cover"
+                        decoding="async"
+                        onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
+                        onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
+                      />
+                    ) : (
+                      <div className="grid aspect-square w-full place-items-center bg-[radial-gradient(circle_at_28%_22%,hsl(var(--primary)/0.2),transparent_44%),radial-gradient(circle_at_75%_82%,hsl(var(--salt-blue)/0.2),transparent_42%),hsl(var(--muted))] px-3 text-center">
+                        <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                          Image unavailable
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(15,23,42,0.08))]" />
+                  <div className="absolute left-4 top-4 inline-flex items-center rounded-full border border-border/70 bg-background/88 px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-foreground shadow-[0_12px_24px_-20px_rgba(15,23,42,0.28)] backdrop-blur">
+                    {imageSources.length} photos
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:hidden">
+                {heroThumbnailSources.map((source, index) => (
+                  <button
+                    key={`${source}-${index}`}
+                    type="button"
+                    onClick={() => setActiveImage(source)}
+                    className={`overflow-hidden rounded-[0.9rem] border bg-background/90 transition ${
+                      (activeImage || primaryImage) === source
+                        ? "border-primary shadow-[0_12px_24px_-20px_hsl(var(--primary)/0.8)]"
+                        : "border-border/75 hover:border-primary/45"
+                    }`}
+                    aria-label={`View product image ${index + 1}`}
+                  >
+                    <img
+                      src={productImageAtWidth(source, 180)}
+                      alt={`${product.title} view ${index + 1}`}
+                      className="aspect-square w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 hidden gap-3 lg:grid">
+                <div className="salt-section-shell rounded-[1.45rem] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Fast facts</p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">Why shoppers trust it</h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                      Desktop
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {[
+                      { label: "Rating", value: reviewBadgeLabel },
+                      { label: "Availability", value: isAvailable ? "Ready to ship" : "Unavailable" },
+                      {
+                        label: "Demand",
+                        value: purchasedLastMonth > 0 ? `${purchasedLastMonth.toLocaleString()} bought last month` : "Fresh stock",
+                      },
+                      {
+                        label: "Value",
+                        value: savingsAmount > 0 ? `${formatMoney(savingsAmount)} saved` : "Everyday value",
+                      },
+                    ].map((stat) => (
+                      <div key={stat.label} className="rounded-xl border border-border/75 bg-background/85 px-3 py-2.5">
+                        <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                          {stat.label}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-5 text-foreground">{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="salt-section-shell rounded-[1.45rem] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Quick notes</p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">Useful at a glance</h2>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                      Curated
+                    </span>
+                  </div>
+                  {detailBullets.length > 0 ? (
+                    <ul className="mt-3 space-y-2">
+                      {detailBullets.slice(0, 3).map((bullet, index) => (
+                        <li key={`${bullet}-${index}`} className="flex gap-2 text-sm leading-6 text-foreground/90">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <span className="line-clamp-3">{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      Compact, premium presentation with the essentials kept close.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+
+        <Reveal className="salt-reveal-instant lg:self-start">
           <aside
-            className="salt-panel-shell rounded-[1.3rem] p-3.5 sm:rounded-[1.8rem] sm:p-6 lg:sticky lg:top-24"
+            className="salt-panel-shell rounded-[1.65rem] p-4 sm:p-5 lg:sticky lg:top-24"
             data-salt-minimum-quantity={quantityFloor}
           >
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.product_type || "Featured"}</p>
-            <h1 className="mt-1 font-display text-[clamp(1.8rem,3vw,2.9rem)] leading-[0.95]">{product.title}</h1>
-            <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">{subtitle}</p>
-            {badgeText ? (
-              <div className="mt-2 inline-flex items-center rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary">
-                {badgeText}
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-background/90 text-[0.62rem] font-bold uppercase tracking-[0.2em] text-primary shadow-[0_12px_24px_-20px_rgba(15,23,42,0.2)]">
+                    SALT
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">
+                      {product.product_type || "Featured"}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{brandLabel}</p>
+                  </div>
+                </div>
+                <h1 className="mt-3 font-display text-[clamp(1.95rem,3vw,3.15rem)] leading-[0.94] text-foreground">
+                  {product.title}
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground">{subtitle}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-xs font-semibold text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.22)]">
+                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                    {reviewBadgeLabel}
+                  </span>
+                  {purchasedLastMonth > 0 ? (
+                    <span className="inline-flex items-center rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.2)]">
+                      {purchasedLastMonth.toLocaleString()} bought last month
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            ) : null}
+              {badgeText ? (
+                <div className="shrink-0 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary">
+                  {badgeText}
+                </div>
+              ) : null}
+            </div>
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
-              <strong className="font-display text-3xl text-primary">{formatMoney(price)}</strong>
+              <strong className="font-display text-[clamp(2rem,4vw,3.25rem)] text-primary">{formatMoney(price)}</strong>
               {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
               {savingsAmount > 0 ? (
                 <span className="rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[0.64rem] font-bold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300">
@@ -889,36 +1021,28 @@ const ProductPage = () => {
               ) : null}
             </div>
             {reviewSummary ? (
-              <div className="mt-2 space-y-2 text-sm text-muted-foreground">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-background px-3 py-1.5 text-sm font-semibold text-foreground">
+              <div className="mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Shopper confidence</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">Verified ratings and history</p>
+                  </div>
+                  <p className="text-[0.68rem] font-bold text-foreground">{reviewConfidenceScore}%</p>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-3 py-1.5 font-semibold text-foreground">
                     <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                     {reviewSummary.rating.toFixed(1)}
                   </span>
-                  <span className="text-base font-medium text-foreground/90">{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
-                  {purchasedLastMonth > 0 ? (
-                    <span className="rounded-full border border-border/80 bg-background px-2.5 py-1 text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                      {purchasedLastMonth.toLocaleString()} bought last month
-                    </span>
-                  ) : null}
+                  <span className="font-medium text-foreground/90">{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
                 </div>
-                <div className="rounded-xl border border-border/80 bg-background/85 px-3 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                      Shopper confidence
-                    </p>
-                    <p className="text-[0.68rem] font-bold text-foreground">
-                      {reviewConfidenceScore}%
-                    </p>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <span
-                      className="block h-full rounded-full bg-primary transition-[width] duration-500"
-                      style={{ width: `${reviewConfidenceScore}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-[0.65rem] text-muted-foreground">{reviewConfidenceLabel}</p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <span
+                    className="block h-full rounded-full bg-primary transition-[width] duration-500"
+                    style={{ width: `${reviewConfidenceScore}%` }}
+                  />
                 </div>
+                <p className="mt-1 text-[0.65rem] text-muted-foreground">{reviewConfidenceLabel}</p>
               </div>
             ) : null}
 
@@ -1007,7 +1131,7 @@ const ProductPage = () => {
                   ) : null}
                 </section>
 
-                <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4">
+                <section className="rounded-[1.45rem] border border-border/80 bg-background/92 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Specs</p>
@@ -1040,7 +1164,7 @@ const ProductPage = () => {
             ) : null}
 
             {variants.length > 0 ? (
-              <div className="salt-section-shell mt-4 rounded-[1.2rem] border border-border/75 p-3 sm:mt-5 sm:rounded-2xl sm:p-3.5">
+              <div className="salt-section-shell mt-3 rounded-[1.45rem] border border-border/75 p-3.5 sm:mt-4 sm:rounded-[1.7rem] sm:p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Choose option</p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -1098,7 +1222,7 @@ const ProductPage = () => {
                         onClick={() => setSelectedVariantId(variant.id)}
                         disabled={!variantAvailable}
                         aria-pressed={isVariantSelected ? "true" : "false"}
-                        className={`group relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition ${
+                        className={`group relative overflow-hidden rounded-[1.2rem] border px-3 py-2.5 text-left transition ${
                           isVariantSelected
                             ? "border-primary bg-primary/12 shadow-[0_14px_28px_-22px_hsl(var(--primary)/0.95)]"
                             : "border-border bg-background hover:border-primary/45"
@@ -1151,7 +1275,7 @@ const ProductPage = () => {
                     );
                   })}
                   {displayedVariants.length === 0 ? (
-                    <p className="col-span-full rounded-xl border border-border/75 bg-background px-3 py-2 text-xs text-muted-foreground">
+                    <p className="col-span-full rounded-[1.2rem] border border-border/75 bg-background px-3 py-2 text-xs text-muted-foreground">
                       No available options right now. Turn off "Available only" to view all variants.
                     </p>
                   ) : null}
@@ -1159,7 +1283,7 @@ const ProductPage = () => {
               </div>
             ) : null}
 
-            <div className="mt-4">
+            <div className="mt-3.5">
               <p className="text-sm font-semibold">Quantity</p>
               <div className="mt-2 inline-flex h-11 w-full items-center justify-between rounded-full border border-border bg-background sm:w-auto">
                 <button
@@ -1192,9 +1316,9 @@ const ProductPage = () => {
               href={checkoutTargetUrl}
               onClick={handleBuyNowClick}
               aria-disabled={isAvailable ? "false" : "true"}
-              className={`mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#f3d45d] bg-[linear-gradient(135deg,#ffe071_0%,#f6cf3e_38%,#dda611_100%)] px-5 text-base font-semibold text-[#1c2233] shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_18px_34px_-24px_rgba(221,166,17,0.68)] transition ${
+              className={`salt-primary-cta mt-5 inline-flex h-12 w-full items-center justify-center rounded-full px-5 text-base font-semibold transition ${
                 isAvailable
-                  ? "hover:-translate-y-[1px] hover:brightness-[1.03] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_22px_40px_-24px_rgba(221,166,17,0.78)]"
+                  ? "hover:-translate-y-[1px] hover:brightness-[1.03]"
                   : "pointer-events-none opacity-60"
               }`}
             >
@@ -1204,7 +1328,7 @@ const ProductPage = () => {
               type="button"
               onClick={addToCart}
               disabled={!isAvailable}
-              className="mt-2 salt-button-shine salt-primary-cta h-12 w-full gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-2 salt-button-shine salt-yellow-cta h-12 w-full gap-2 rounded-full px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
               {isAvailable ? `Add to cart - ${formatMoney(price * quantity)}` : "Unavailable"}
@@ -1214,7 +1338,7 @@ const ProductPage = () => {
               type="button"
               onClick={toggleWishlistState}
               aria-pressed={wishlisted ? "true" : "false"}
-              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/40 hover:text-primary"
+              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <Heart className={`h-4 w-4 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
               {wishlisted ? "Saved to wishlist" : "Save to wishlist"}
@@ -1224,19 +1348,19 @@ const ProductPage = () => {
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <Link
                 to={product.product_type ? `/shop?type=${encodeURIComponent(product.product_type)}` : "/shop"}
-                className="salt-outline-chip h-10 justify-center rounded-xl px-3 py-0 text-[0.68rem]"
+                className="salt-outline-chip h-10 justify-center rounded-full px-3 py-0 text-[0.68rem]"
               >
                 Similar products
               </Link>
               <Link
                 to="/contact"
-                className="salt-outline-chip h-10 justify-center rounded-xl px-3 py-0 text-[0.68rem]"
+                className="salt-outline-chip h-10 justify-center rounded-full px-3 py-0 text-[0.68rem]"
               >
                 Ask support
               </Link>
             </div>
 
-            <Accordion type="multiple" className="mt-4 rounded-[1.2rem] border border-border/80 bg-card/86 px-4">
+            <Accordion type="multiple" className="mt-4 rounded-[1.45rem] border border-border/80 bg-card/86 px-4">
               <AccordionItem value="details" className="border-border/70">
                 <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
                   Product details
@@ -1266,7 +1390,7 @@ const ProductPage = () => {
               </AccordionItem>
             </Accordion>
 
-            <div className="mt-4 rounded-xl border border-border/80 bg-background p-3">
+            <div className="mt-4 rounded-[1.45rem] border border-border/80 bg-background p-3">
               <TrustStrip
                 items={[
                   { icon: Truck, label: "Free US shipping" },
@@ -1284,6 +1408,7 @@ const ProductPage = () => {
           </aside>
         </Reveal>
       </div>
+      </div>
 
       <div ref={secondaryContentAnchorRef} aria-hidden="true" className="h-px" />
       {loadSecondaryContent ? (
@@ -1293,7 +1418,7 @@ const ProductPage = () => {
       ) : null}
 
       {relatedProducts.length > 0 ? (
-        <section className="mt-10">
+        <section className="mt-8">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
@@ -1319,7 +1444,7 @@ const ProductPage = () => {
       ) : null}
 
       {complementaryProducts.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-6">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
@@ -1345,7 +1470,7 @@ const ProductPage = () => {
       ) : null}
 
       {recentlyViewedProducts.length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-6">
           <Reveal>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
@@ -1393,7 +1518,7 @@ const ProductPage = () => {
             type="button"
             onClick={addToCart}
             disabled={!isAvailable}
-            className="salt-primary-cta h-12 flex-1 gap-2 rounded-xl px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+            className="salt-yellow-cta h-12 flex-1 gap-2 rounded-full px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingBag className="h-4 w-4" />
             {isAvailable ? "Add to cart" : "Unavailable"}

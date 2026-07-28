@@ -9,6 +9,7 @@ import {
   getResourceByHandle,
   getResourceTopicByHandle,
 } from "@/lib/site-navigation";
+import { isProductCatalogManifest, mergeProductShardPayloads } from "@/lib/product-catalog-shards.js";
 
 type ShopifyProductsPayload = {
   products: Array<{
@@ -32,7 +33,13 @@ const readJson = <T,>(relativePath: string): T => {
   return JSON.parse(fs.readFileSync(absolutePath, "utf8")) as T;
 };
 
-const productsPayload = readJson<ShopifyProductsPayload>("public/data/products.json");
+const productsManifest = readJson<ShopifyProductsPayload & { shards?: Array<{ file: string }> }>("public/data/products.json");
+const productsPayload = (isProductCatalogManifest(productsManifest)
+  ? mergeProductShardPayloads(
+      productsManifest,
+      (productsManifest.shards || []).map((shard) => readJson(`public/data/${shard.file}`)),
+    )
+  : productsManifest) as ShopifyProductsPayload;
 const collectionProductsPayload = readJson<ShopifyCollectionProductsPayload>("public/data/collection-products.json");
 
 const productByHandle = new Map(productsPayload.products.map((product) => [product.handle, product]));

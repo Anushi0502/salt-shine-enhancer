@@ -78,6 +78,20 @@ def load_json(path: Path) -> Any:
         return json.load(handle)
 
 
+def load_product_catalog(path: Path) -> dict[str, Any]:
+    payload = load_json(path)
+    if isinstance(payload.get("products"), list):
+        return payload
+
+    products: list[dict[str, Any]] = []
+    for shard in payload.get("shards", []):
+        shard_path = path.parent / str(shard.get("file", ""))
+        shard_payload = load_json(shard_path)
+        products.extend(shard_payload.get("products", []))
+
+    return {**payload, "products": products, "total": payload.get("total", len(products))}
+
+
 def section_content_width_dxa(section) -> int:
     return (
         int(round(section.page_width.twips))
@@ -1175,7 +1189,7 @@ def build_document(
 
 
 def main() -> int:
-    products_payload = load_json(PRODUCTS_PATH)
+    products_payload = load_product_catalog(PRODUCTS_PATH)
     collections_payload = load_json(COLLECTION_PRODUCTS_PATH)
 
     products = products_payload["products"]

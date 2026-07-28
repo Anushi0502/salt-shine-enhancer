@@ -6,6 +6,24 @@ const HOME_COLLECTION_SOURCES = {
   everydayEssentialProducts: "garden-tools",
 };
 
+// Prefer the perfume-led bestseller mix that is currently merchandised on the
+// collection page. If any of those catalog items disappear, the collection
+// fallback keeps the rail filled with other best-seller entries.
+const BEST_SELLER_PRODUCT_PREFERENCES = [
+  { titleIncludes: ["unisex fresh elegant perfume for daily wear and everyday fragrance"], price: 69.99 },
+  { titleIncludes: ["unisex fresh floral perfume for daily wear and everyday fragrance"], price: 149.99 },
+  { titleIncludes: ["unisex fresh floral perfume for daily wear and everyday fragrance"], price: 89.99 },
+  { titleIncludes: ["unisex fresh floral perfume for daily wear and everyday fragrance"], price: 69.99 },
+  { titleIncludes: ["unisex fresh floral perfume for day and evening wear"], price: 94.99 },
+  { titleIncludes: ["unisex fresh perfume for daily wear and everyday fragrance use"], price: 129.99 },
+  { titleIncludes: ["unisex fresh perfume for day and evening wear and everyday fragrance"], price: 69.99 },
+  { titleIncludes: ["unisex fresh signature scent perfume for daily wear"], price: 64.99 },
+  { titleIncludes: ["unisex fresh signature scent perfume for day and evening wear"], price: 89.99 },
+  { titleIncludes: ["unisex fresh signature scent perfume for day and evening wear"], price: 69.99 },
+  { titleIncludes: ["unisex perfume for daily wear and everyday fragrance use"], price: 64.99 },
+  { titleIncludes: ["unisex perfume for daily wear and everyday fragrance use"], price: 64.99 },
+];
+
 const QUIRKY_GIFT_TERMS = [
   ["quirky", 12],
   ["unique", 10],
@@ -83,6 +101,11 @@ function finitePrice(input) {
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function productPrice(product) {
+  const cheapest = cheapestVariant(product?.variants);
+  return finitePrice(cheapest?.price);
+}
+
 function cheapestVariant(variants) {
   return (Array.isArray(variants) ? variants : [])
     .map((variant) => ({
@@ -142,6 +165,53 @@ function buildCandidate(product) {
     titleKey: normalizedText(title),
     excluded: EXCLUDED_GIFT_TERMS.some((term) => searchText.includes(term)),
   };
+}
+
+function matchesProductPreference(product, preference) {
+  const title = normalizedText(product?.title || "");
+  const handle = normalizedText(product?.handle || "");
+  const tags = Array.isArray(product?.tags) ? product.tags.join(" ") : String(product?.tags || "");
+  const searchText = normalizedText(`${title} ${handle} ${product?.product_type || ""} ${tags}`);
+  const titleIncludes = Array.isArray(preference?.titleIncludes)
+    ? preference.titleIncludes
+    : [preference?.titleIncludes];
+  const expectedPrice = finitePrice(preference?.price);
+  const actualPrice = productPrice(product);
+
+  if (expectedPrice !== null && actualPrice !== expectedPrice) {
+    return false;
+  }
+
+  return titleIncludes.filter(Boolean).every((token) => searchText.includes(normalizedText(token)));
+}
+
+function selectPreferredProducts(products, preferences) {
+  const selected = [];
+  const selectedIds = new Set();
+  const selectedHandles = new Set();
+
+  for (const preference of Array.isArray(preferences) ? preferences : []) {
+    const matchedProduct = (Array.isArray(products) ? products : []).find((product) => {
+      const id = Number(product?.id || 0);
+      const handle = String(product?.handle || "").trim();
+      if (!id || !handle || selectedIds.has(id) || selectedHandles.has(handle)) {
+        return false;
+      }
+
+      return matchesProductPreference(product, preference);
+    });
+
+    const compact = matchedProduct ? compactProduct(matchedProduct) : null;
+    if (!compact) {
+      continue;
+    }
+
+    selected.push(compact);
+    selectedIds.add(compact.id);
+    selectedHandles.add(compact.handle);
+  }
+
+  return selected;
 }
 
 function byGiftPriority(left, right) {
@@ -212,16 +282,46 @@ function compactProduct(product) {
   };
 }
 
-function productsFromCollection(products, collectionProductsPayload, handle, limit = QUIRKY_GIFT_LIMIT) {
+function productsFromCollection(
+  products,
+  collectionProductsPayload,
+  handle,
+  limit = QUIRKY_GIFT_LIMIT,
+  preferredProducts = [],
+) {
   const productIds = collectionProductsPayload?.collections?.[handle]?.productIds;
   if (!Array.isArray(productIds) || !productIds.length) return [];
   const productsById = new Map((Array.isArray(products) ? products : []).map((product) => [Number(product?.id || 0), product]));
-  return productIds.map((id) => compactProduct(productsById.get(Number(id)))).filter(Boolean).slice(0, limit);
+  const collectionProducts = productIds.map((id) => compactProduct(productsById.get(Number(id)))).filter(Boolean);
+  const selected = [];
+  const seenIds = new Set();
+  const seenHandles = new Set();
+
+  const pushProduct = (product) => {
+    if (!product || seenIds.has(product.id) || seenHandles.has(product.handle)) {
+      return;
+    }
+
+    selected.push(product);
+    seenIds.add(product.id);
+    seenHandles.add(product.handle);
+  };
+
+  selectPreferredProducts(products, preferredProducts).forEach(pushProduct);
+  collectionProducts.forEach(pushProduct);
+
+  return selected.slice(0, limit);
 }
 
 export function buildHomeFeaturedProductsPayload(productsPayload, collectionProductsPayload = null) {
   const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
-  const bestSellerProducts = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.bestSellerProducts);
+  const bestSellerProducts = productsFromCollection(
+    products,
+    collectionProductsPayload,
+    HOME_COLLECTION_SOURCES.bestSellerProducts,
+    QUIRKY_GIFT_LIMIT,
+    BEST_SELLER_PRODUCT_PREFERENCES,
+  );
   const collectionGiftPicks = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.quirkyGiftPicks);
   const everydayEssentialProducts = productsFromCollection(products, collectionProductsPayload, HOME_COLLECTION_SOURCES.everydayEssentialProducts);
   const quirkyGiftPicks = collectionGiftPicks.length ? collectionGiftPicks : selectQuirkyGiftPicks(products);
@@ -237,4 +337,11 @@ export function buildHomeFeaturedProductsPayload(productsPayload, collectionProd
   };
 }
 
-export { HOME_COLLECTION_SOURCES, QUIRKY_GIFT_HANDLE_PREFERENCES, QUIRKY_GIFT_LIMIT, productsFromCollection, selectQuirkyGiftPicks };
+export {
+  BEST_SELLER_PRODUCT_PREFERENCES,
+  HOME_COLLECTION_SOURCES,
+  QUIRKY_GIFT_HANDLE_PREFERENCES,
+  QUIRKY_GIFT_LIMIT,
+  productsFromCollection,
+  selectQuirkyGiftPicks,
+};

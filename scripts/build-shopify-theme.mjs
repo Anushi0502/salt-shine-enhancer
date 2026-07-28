@@ -55,6 +55,11 @@ const themeDataAssets = [
   { source: "blog-posts.json", asset: "data-blog-posts.json", themePath: "/data/blog-posts.json" },
   { source: "shop.json", asset: "data-shop.json", themePath: "/data/shop.json" },
 ];
+const PRODUCT_SHARD_SOURCE_PATTERN = /^products-\d{4}\.json$/;
+
+function serializeInlineJson(value) {
+  return JSON.stringify(value ?? null).replace(/</g, "\\u003c");
+}
 
 function buildThemeAssetMapEntries() {
   return themeDataAssets
@@ -101,7 +106,7 @@ function templateJson(sectionType = "salt-app") {
   );
 }
 
-async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
+async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFeaturedProductsPayload = null) {
   await mkdir(resolve(themeDir, "layout"), { recursive: true });
   await mkdir(resolve(themeDir, "sections"), { recursive: true });
   await mkdir(resolve(themeDir, "templates"), { recursive: true });
@@ -389,12 +394,13 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           window.__SALT_PRODUCT_PREFETCH__ = {
             handle: handle.toLowerCase(),
             raw: inlineProduct && inlineProduct.id ? inlineProduct : null,
-            payload: inlineProduct && inlineProduct.id
-              ? Promise.resolve(inlineProduct)
-              : fetch(url, { cache: 'default', credentials: 'same-origin' }).then(function (response) {
-                  if (!response.ok) throw new Error('Product preload failed (' + response.status + ')');
-                  return response.json();
-                }),
+            // Use the inline payload for the first paint, but always revalidate
+            // the direct product endpoint so storefront prices cannot remain
+            // stuck on an older document snapshot.
+            payload: fetch(url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (response) {
+              if (!response.ok) throw new Error('Product preload failed (' + response.status + ')');
+              return response.json();
+            }),
           };
         })();
       </script>
@@ -402,58 +408,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% if request.page_type == 'index' %}
       <script>
         (function () {
-          // These rails are evaluated by Shopify on every homepage request.
-          // React therefore receives current collection order, product handles,
-          // prices, images, and availability synchronously from the document.
-          function compactProduct(id, title, handle, image, price, compareAtPrice) {
-            return { id: id, title: title, handle: handle, image: image, price: price, compareAtPrice: compareAtPrice };
-          }
-
-          window.__SALT_HOME_PREFETCH__ = {
-            generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
-            source: 'shopify-liquid:home',
-            sources: {
-              bestSellerProducts: 'appplaza-best-sellers',
-              quirkyGiftPicks: 'gifts',
-              everydayEssentialProducts: 'garden-tools'
-            },
-            bestSellerProducts: [
-              {% for item in collections['appplaza-best-sellers'].products limit: 12 %}
-                compactProduct(
-                  {{ item.id | json }},
-                  {{ item.title | json }},
-                  {{ item.handle | json }},
-                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
-                  {{ item.price_min | divided_by: 100.0 | json }},
-                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
-                ){% unless forloop.last %},{% endunless %}
-              {% endfor %}
-            ],
-            quirkyGiftPicks: [
-              {% for item in collections['gifts'].products limit: 12 %}
-                compactProduct(
-                  {{ item.id | json }},
-                  {{ item.title | json }},
-                  {{ item.handle | json }},
-                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
-                  {{ item.price_min | divided_by: 100.0 | json }},
-                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
-                ){% unless forloop.last %},{% endunless %}
-              {% endfor %}
-            ],
-            everydayEssentialProducts: [
-              {% for item in collections['garden-tools'].products limit: 12 %}
-                compactProduct(
-                  {{ item.id | json }},
-                  {{ item.title | json }},
-                  {{ item.handle | json }},
-                  {% if item.featured_image %}{{ item.featured_image | image_url: width: 720 | json }}{% else %}''{% endif %},
-                  {{ item.price_min | divided_by: 100.0 | json }},
-                  {% if item.compare_at_price_max > item.price_min %}{{ item.compare_at_price_max | divided_by: 100.0 | json }}{% else %}null{% endif %}
-                ){% unless forloop.last %},{% endunless %}
-              {% endfor %}
-            ]
-          };
+          window.__SALT_HOME_PREFETCH__ = ${serializeInlineJson(homeFeaturedProductsPayload)};
         })();
       </script>
     {% endif %}
@@ -693,6 +648,13 @@ async function copyAssets(entryJsPath, entryCssPath) {
     resolve(themeAssetsDir, "shopify-meta-pixel-customer-events.js"),
   );
 
+  const existingProductShardAssets = (await readdir(themeAssetsDir)).filter((asset) =>
+    /^data-products-\d{4}\.json$/.test(asset),
+  );
+  await Promise.all(
+    existingProductShardAssets.map((asset) => rm(resolve(themeAssetsDir, asset), { force: true })),
+  );
+
   for (const asset of themeDataAssets) {
     await cp(resolve(publicDir, "data", asset.source), resolve(themeAssetsDir, asset.asset));
   }
@@ -706,11 +668,26 @@ async function main() {
   const { jsPath, cssPath } = parseEntryAssets(indexHtml);
   const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
   const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
+  const homeFeaturedProductsPath = resolve(publicDir, "data", "home-featured-products.json");
+  const homeFeaturedProductsPayload = existsSync(homeFeaturedProductsPath)
+    ? JSON.parse(await readFile(homeFeaturedProductsPath, "utf8"))
+    : null;
   const distAssets = await readdir(resolve(distDir, "assets"));
   const routeAssets = {
     home: distAssets.find((asset) => /^HomePage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
     product: distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
   };
+
+  const productShardSources = (await readdir(resolve(publicDir, "data")))
+    .filter((source) => PRODUCT_SHARD_SOURCE_PATTERN.test(source))
+    .sort();
+  for (const source of productShardSources) {
+    themeDataAssets.push({
+      source,
+      asset: `data-${source}`,
+      themePath: `/data/${source}`,
+    });
+  }
 
   await mkdir(themeDir, { recursive: true });
   await Promise.all(
@@ -721,7 +698,7 @@ async function main() {
   // Keep Shopify-admin app embeds and theme-editor state intact. The generated
   // app bundle owns the app assets, not config/settings_data.json.
   const themeEntryJs = await copyAssets(jsPath, cssPath);
-  await writeThemeScaffold(settingsData, { ...routeAssets, entry: themeEntryJs });
+  await writeThemeScaffold(settingsData, { ...routeAssets, entry: themeEntryJs }, homeFeaturedProductsPayload);
 
   process.stdout.write(`Shopify theme bundle generated at ${themeDir}\n`);
 }

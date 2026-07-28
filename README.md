@@ -42,6 +42,18 @@ Dev server defaults:
 - `npm run test:watch`: run Vitest in watch mode.
 - `npm run shopify:product-metafields:ensure`: ensure the product metafield definitions used by the storefront exist in Shopify through Shopify CLI store auth.
 - `npm run sync:data`: pull Shopify snapshot JSON into `public/data`.
+- `npm run seo`: run the Shopify SEO pipeline for the current scope, including Google variant metafields, SEO/pricing reconciliation, variant image mapping, and merchandising metafields.
+- `npm run seo:all-products:dry-run`: dry-run the full catalog SEO pipeline.
+- `npm run seo:all-products:apply`: apply the full catalog SEO pipeline.
+- `npm run seo:new-products:dry-run`: dry-run the new-products-only SEO pipeline.
+- `npm run seo:new-products:apply`: apply the new-products-only SEO pipeline.
+- `npm run shopify:seo:release`: guarded SEO apply flow with local audit, dry-run, and live apply.
+- `npm run shopify:seo:full-catalog:apply`: direct full-catalog SEO apply.
+- `npm run shopify:seo:new-products:apply`: direct new-products-only SEO apply.
+- `npm run shopify:variant-google-metafields:apply`: bulk update Google variant metafields.
+- `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
+- `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
+- `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
 - `npm run release`: run the full SALT release pipeline with version output and staged failure reporting.
@@ -78,13 +90,16 @@ npm run sync:data
 
 Outputs:
 
-- `public/data/products.json`
+- `public/data/products.json` (small manifest)
+- `public/data/products-0001.json` and additional bounded product shards
 - `public/data/collections.json`
 - `public/data/collection-products.json`
 - `public/data/about.json`
 - `public/data/blog-posts.json`
 
 The sync path also ensures the product metafield definitions required by the storefront are present in Shopify before it refreshes the local snapshot files.
+
+The full product catalog is split into 45 MiB shards by default so every generated file remains below GitHub's 100 MB single-file limit. Set `SALT_PRODUCTS_SHARD_MAX_BYTES` to lower the limit when needed; generation hard-caps the value at 90 MiB. The storefront resolves the manifest and fetches shards in parallel; ordinary discovery pages use the smaller `product-search.json` index instead of downloading the full catalog.
 
 ## Shopify orders bundle update
 
@@ -152,10 +167,25 @@ That single command:
 
 1. Ensures the Shopify product metafield definitions.
 2. Refreshes Shopify snapshot data.
-3. Builds the Vite web app.
-4. Generates the Shopify theme bundle.
-5. Syncs the iOS Capacitor shell.
-6. Syncs the Android Capacitor shell.
+3. Reconciles and verifies Shopify SEO/product fields.
+4. Maps variant images.
+5. Backfills merchandising metafields.
+6. Refreshes Shopify snapshot data again.
+7. Verifies merchandising backfill.
+8. Builds the Vite web app.
+9. Generates the Shopify theme bundle.
+10. Syncs the iOS Capacitor shell.
+11. Syncs the Android Capacitor shell.
+
+### Overnight release
+
+If you need to let the catalog jobs finish overnight, use:
+
+```bash
+npm run release:overnight
+```
+
+This waits for the current SEO/apply manifest to report completion, then runs `npm run release` automatically.
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
 

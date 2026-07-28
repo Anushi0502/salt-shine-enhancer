@@ -68,22 +68,22 @@ const NativeAppBottomBar = () => {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-3"
       data-native-app-bottom-bar
     >
-      <nav className="pointer-events-auto mx-auto flex w-full max-w-[32rem] items-stretch gap-1 rounded-[1.55rem] border border-[#ddd4c7] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,246,240,0.97)_100%)] px-1.5 py-1.5 shadow-[0_-18px_40px_-30px_rgba(17,17,17,0.22)] backdrop-blur-xl">
+      <nav className="pointer-events-auto mx-auto flex w-full max-w-[32rem] items-stretch gap-1 rounded-[1.55rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98)_0%,hsl(var(--card)/0.98)_100%)] px-1.5 py-1.5 shadow-[0_-18px_40px_-30px_rgba(17,17,17,0.18)] backdrop-blur-xl">
         {navItems.map((item) => {
           const active = isActiveNavItem(item, location.pathname);
           const Icon = item.icon;
 
           return (
             <Link
-              key={item.label}
-              to={item.to}
-              className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 rounded-[1.1rem] px-1 text-center transition ${
-                active
-                  ? "bg-[#171717] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                  : "text-[#5f574d] hover:bg-[#f6f0e8] hover:text-[#d61f26]"
+            key={item.label}
+            to={item.to}
+            className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 rounded-[1.1rem] px-1 text-center transition ${
+              active
+                  ? "bg-foreground text-background shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-primary"
               }`}
-              aria-current={active ? "page" : undefined}
-            >
+            aria-current={active ? "page" : undefined}
+          >
               <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : "stroke-[2.1]"}`} />
               <span className="text-[0.58rem] font-semibold tracking-[0.04em] min-[390px]:text-[0.62rem]">
                 {item.label}

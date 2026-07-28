@@ -140,18 +140,25 @@ function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string):
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
-const menuLinkActiveClass = "border-[#D0E4FC] bg-[#D0E4FC] text-[#0C2048]";
-const menuLinkInactiveClass = "border-[#d8e6f5] bg-white text-[#102A43] hover:border-[#bcd4ef] hover:bg-[#f5faff]";
 const collectionNavTabBaseClass = "salt-header-collection-item";
-const collectionNavTabActiveClass = "border-[#f2b600] text-[#f2b600]";
-const collectionNavTabInactiveClass = "border-transparent text-white/88 hover:border-[#f2b600]/60 hover:text-[#f2b600]";
-const utilityNavTabClass = "salt-header-utility-item border-transparent text-white/82 hover:border-[#f2b600]/45 hover:text-[#f2b600]";
+const utilityNavTabClass = "salt-header-utility-item";
 function collectionNavItemClass(active: boolean) {
-  return `${collectionNavTabBaseClass} ${active ? collectionNavTabActiveClass : collectionNavTabInactiveClass}`;
+  return `${collectionNavTabBaseClass} ${active ? "is-active" : ""}`;
 }
 
 function utilityNavItemClass(active: boolean) {
-  return `${utilityNavTabClass} ${active ? "border-[#f2b600] text-[#f2b600]" : ""}`;
+  return `${utilityNavTabClass} ${active ? "is-active" : ""}`;
+}
+
+function isDrawerSubcollectionActive(
+  pathname: string,
+  search: string,
+  collectionHandle: string,
+  subcollectionHandle: string,
+): boolean {
+  const route = buildSubcollectionRoute(collectionHandle, subcollectionHandle);
+  const [routePath, routeSearch = ""] = route.split("?", 2);
+  return pathname === routePath && search === (routeSearch ? `?${routeSearch}` : "");
 }
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
@@ -167,6 +174,7 @@ function HeaderMenuDrawer({
   onOpenChange,
 }: HeaderMenuDrawerProps) {
   const [expandedCollectionHandle, setExpandedCollectionHandle] = useState<string | null>(null);
+  const location = useLocation();
   const accountRoutes = useMemo(() => getShopifyAccountRoutes(), []);
   const customerAccountSummary = useMemo(
     () =>
@@ -178,6 +186,20 @@ function HeaderMenuDrawer({
   const accountDisplayName = customerAccountSummary?.customer.displayName?.trim() || "";
   const accountHref = accountRoutes.isLoggedIn ? accountRoutes.account : accountRoutes.login;
   const accountLabel = accountRoutes.isLoggedIn ? `Hello, ${accountDisplayName || "there"}` : "Hello, sign in";
+  const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
+  const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
+  const quickLinks = [
+    {
+      item: resourcesNavItem,
+      label: "Resources",
+      to: resourcesNavItem.to,
+    },
+    {
+      item: supportNavItem,
+      label: "Support",
+      to: supportNavItem.to,
+    },
+  ] as const;
 
   useEffect(() => {
     if (!open) {
@@ -191,31 +213,36 @@ function HeaderMenuDrawer({
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="h-[100dvh] max-h-[100dvh] w-[min(16rem,calc(100vw-0.5rem))] max-w-[min(16rem,calc(100vw-0.5rem))] overscroll-contain overflow-y-auto border-r border-[#BFD7F2] bg-[#F7FBFF] p-0 text-[#102A43] shadow-[0_24px_48px_-36px_rgba(12,32,72,0.32)] lg:w-[min(17rem,calc(100vw-1rem))] lg:max-w-[min(17rem,calc(100vw-1rem))]"
+        className="h-[100dvh] max-h-[100dvh] w-[min(16.5rem,calc(100vw-0.75rem))] max-w-[min(16.5rem,calc(100vw-0.75rem))] overscroll-contain overflow-y-auto border-r border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.99),hsl(var(--card)/0.95))] p-0 text-foreground shadow-[0_28px_52px_-36px_rgba(15,23,42,0.2)] lg:w-[min(17.5rem,calc(100vw-1rem))] lg:max-w-[min(17.5rem,calc(100vw-1rem))] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary/30 [&::-webkit-scrollbar-track]:bg-transparent"
       >
         <div className="flex h-full min-h-0 flex-col">
-          <div className="border-b border-[#BFD7F2] bg-[#2a354a] px-2.5 py-1.5 text-white sm:px-3 sm:py-2">
+          {/* Account Section - Enhanced gradient with gold/blue accents */}
+          <div className="relative overflow-hidden border-b border-border/70 bg-[linear-gradient(135deg,hsl(var(--salt-navy)/0.97),hsl(225deg_42%_18%/0.95))] px-2.5 py-2 sm:px-3 sm:py-2.5">
+            {/* Subtle accent glow */}
+            <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[radial-gradient(circle,hsl(var(--salt-gold)/0.12),transparent_70%)]" />
+            <div className="pointer-events-none absolute -bottom-6 -left-6 h-16 w-16 rounded-full bg-[radial-gradient(circle,hsl(var(--salt-blue)/0.1),transparent_70%)]" />
             <SheetClose asChild>
               <a
                 href={accountHref}
-                className="flex min-w-0 items-center gap-2 rounded-md pr-6 text-left transition hover:opacity-95"
+                className="relative flex min-w-0 items-center gap-2.5 rounded-lg pr-6 text-left transition hover:opacity-90"
                 aria-label={accountRoutes.isLoggedIn && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
               >
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/18 bg-white text-[#1f2d47] shadow-[0_1px_2px_rgba(0,0,0,0.12)]">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/18 bg-[linear-gradient(135deg,hsl(var(--salt-paper)/0.95),hsl(var(--salt-paper)/0.85))] text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_hsl(0_0%_100%/0.5)]">
                   <CircleUserRound className="h-4 w-4" />
                 </span>
-                <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white">
+                <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.24)]">
                   {accountLabel}
                 </span>
               </a>
             </SheetClose>
           </div>
 
-          <div className="px-2.5 pt-2 sm:px-3">
+          {/* Sale Banner - Subtle inner shadow for depth */}
+          <div className="px-2.5 pt-2.5 sm:px-3">
             <SheetClose asChild>
               <Link
                 to={WEEKEND_SALE_ROUTE}
-                className="group block overflow-hidden rounded-[1rem] border border-[#d7e3f6] bg-[#0c2048] shadow-[0_18px_36px_-30px_rgba(12,32,72,0.28)]"
+                className="group block overflow-hidden rounded-[1rem] border border-border/70 bg-background/92 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22),inset_0_1px_0_hsl(0_0%_100%/0.4)]"
               >
                 <div className="relative aspect-[1.85/0.92] overflow-hidden">
                   <img
@@ -237,26 +264,45 @@ function HeaderMenuDrawer({
             </SheetClose>
           </div>
 
+          {/* Collections Section */}
           <div className="grid min-h-0 flex-1 gap-2 px-2.5 py-2.5 sm:px-3">
-            <section className="flex min-h-0 flex-1 flex-col border-b border-[#e2edf8] pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Collections</p>
+            <section className="flex min-h-0 flex-1 flex-col border-b border-border/70 pb-2">
+              {/* Section header with decorative elements */}
+              <div className="relative flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-0.5 rounded-full bg-[linear-gradient(180deg,hsl(var(--salt-gold)),hsl(var(--primary)))]" />
+                  <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    Collections
+                  </p>
+                </div>
                 <SheetClose asChild>
                   <Link
                     to="/collections"
-                    className="text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#1f55aa] transition hover:text-[#17418f]"
+                    className="relative text-[0.56rem] font-bold uppercase tracking-[0.14em] text-primary transition hover:text-foreground after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-full after:scale-x-0 after:bg-foreground after:transition after:duration-200 hover:after:scale-x-100"
                   >
                     View all
                   </Link>
                 </SheetClose>
               </div>
 
-              <div className="mt-2 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto pb-4 pr-1 lg:hidden">
+              {/* Collection items - visible on mobile/tablet */}
+              <div className="mt-2.5 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto pb-4 pr-1 lg:hidden">
                 {SITE_COLLECTIONS.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
+                  const activeSubcollection = collection.subcollections.find((subcollection) =>
+                    isDrawerSubcollectionActive(
+                      location.pathname,
+                      location.search,
+                      collection.handle,
+                      subcollection.handle,
+                    ),
+                  );
 
                   return (
-                    <div key={collection.handle} className="overflow-hidden rounded-[0.8rem] border border-[#e2edf8] bg-white">
+                    <div
+                      key={collection.handle}
+                      className="overflow-hidden rounded-[1rem] border border-border/72 bg-[linear-gradient(160deg,hsl(var(--background)/0.99),hsl(var(--card)/0.93))] shadow-[0_10px_24px_-20px_rgba(15,23,42,0.14)] transition-shadow duration-200 hover:shadow-[0_14px_28px_-22px_rgba(15,23,42,0.18)]"
+                    >
                       <button
                         type="button"
                         onClick={() => {
@@ -264,43 +310,92 @@ function HeaderMenuDrawer({
                             current === collection.handle ? null : collection.handle,
                           );
                         }}
-                        className="group flex w-full items-center justify-between gap-2.5 px-2.5 py-2 text-left transition hover:bg-[#f5faff]"
+                        className="group flex w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
                         aria-expanded={isExpanded}
                         aria-controls={`salt-menu-subcollections-${collection.handle}`}
                       >
-                        <span className="min-w-0 flex-1 text-[0.82rem] font-semibold leading-5 text-[#102A43]">
+                        <span className="min-w-0 flex-1 text-[0.84rem] font-semibold leading-5 text-foreground">
                           {collection.title}
                         </span>
-                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#dbe8f6] bg-white text-[#7d90aa] transition group-hover:border-[#bfd7f2] group-hover:text-[#1f55aa]">
-                          <ChevronRight className={`h-3.5 w-3.5 transition ${isExpanded ? "rotate-90" : ""}`} />
+                        <span
+                          className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-[0_2px_6px_-4px_rgba(15,23,42,0.1)] transition-all duration-300 group-hover:border-primary/20 group-hover:text-primary ${
+                            isExpanded || activeSubcollection
+                              ? "border-primary/20 bg-primary/8 text-primary shadow-[0_2px_8px_-4px_hsl(var(--primary)/0.2)]"
+                              : ""
+                          }`}
+                        >
+                          <ChevronRight
+                            className={`h-3.5 w-3.5 transition-all duration-300 ${isExpanded ? "rotate-90" : ""}`}
+                          />
                         </span>
                       </button>
 
-                      {isExpanded ? (
-                        <div
-                          id={`salt-menu-subcollections-${collection.handle}`}
-                          className="border-t border-[#edf3fb] bg-[#fbfdff] px-1.5 py-1.5"
-                        >
-                          <div className="grid gap-0.5">
-                            {collection.subcollections.map((subcollection) => (
-                              <SheetClose asChild key={subcollection.handle}>
+                      {/* Subcollections - smooth expand/collapse */}
+                      <div
+                        id={`salt-menu-subcollections-${collection.handle}`}
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <div className="px-2.5 pb-2.5">
+                          <div className="rounded-[1rem] border border-border/65 bg-[linear-gradient(180deg,hsl(var(--background)/0.97),hsl(var(--card)/0.92))] px-2.5 py-2.5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.12)]">
+                            <div className="flex items-start justify-between gap-2 border-b border-border/65 pb-2.5">
+                              <div className="min-w-0">
+                                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                  Subcategories
+                                </p>
+                              </div>
+
+                              <SheetClose asChild>
                                 <Link
-                                  to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
-                                  className="group flex items-center justify-between rounded-[0.55rem] px-2 py-1 text-[0.75rem] text-[#102A43] transition hover:bg-[#f5faff]"
+                                  to={buildCollectionRoute(collection.handle)}
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
                                 >
-                                  <span className="line-clamp-1">{subcollection.title}</span>
-                                  <ChevronRight className="h-3 w-3 shrink-0 text-[#c0cada] transition group-hover:translate-x-0.5 group-hover:text-[#1f55aa]" />
+                                  <span>View all</span>
+                                  <ChevronRight className="h-3 w-3" />
                                 </Link>
                               </SheetClose>
-                            ))}
+                            </div>
+
+                            <div className="mt-2 grid gap-1">
+                              {collection.subcollections.map((subcollection) => {
+                                const isActive = isDrawerSubcollectionActive(
+                                  location.pathname,
+                                  location.search,
+                                  collection.handle,
+                                  subcollection.handle,
+                                );
+
+                                return (
+                                  <SheetClose asChild key={subcollection.handle}>
+                                    <Link
+                                      to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
+                                      className={`group flex min-h-[2.75rem] items-center justify-between gap-2 rounded-[0.9rem] border px-2.5 py-2 text-left text-[0.76rem] font-semibold leading-5 transition ${
+                                        isActive
+                                          ? "border-primary/20 bg-primary/8 text-foreground shadow-[0_12px_20px_-18px_rgba(15,23,42,0.18)]"
+                                          : "border-transparent text-foreground/88 hover:border-primary/12 hover:bg-muted/40 hover:text-primary"
+                                      }`}
+                                    >
+                                      <span className="line-clamp-1">{subcollection.title}</span>
+                                      <ChevronRight
+                                        className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary ${
+                                          isActive ? "text-primary" : ""
+                                        }`}
+                                      />
+                                    </Link>
+                                  </SheetClose>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      ) : null}
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
+              {/* Collection hover menu - visible on desktop */}
               <div className="mt-2 hidden min-h-0 flex-1 lg:flex">
                 <CollectionHoverMenu
                   className="min-h-0 flex-1"
@@ -310,6 +405,46 @@ function HeaderMenuDrawer({
               </div>
             </section>
 
+            <div className="mt-auto rounded-[1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.92))] p-2.5 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.18)]">
+              <div className="flex items-center justify-between gap-2 px-0.5 pb-2">
+                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Quick links
+                </p>
+                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-primary/80">
+                  Explore
+                </p>
+              </div>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {quickLinks.map(({ item, label, to }) => {
+                  const active = isActiveNavItem(item, location.pathname, location.search);
+
+                  return (
+                    <SheetClose asChild key={label}>
+                      <Link
+                        to={to}
+                        className={`flex items-center justify-between rounded-[0.95rem] border px-3 py-2.5 text-left transition ${
+                          active
+                            ? "border-primary/25 bg-primary/8 text-foreground shadow-[0_12px_20px_-18px_rgba(15,23,42,0.18)]"
+                            : "border-border/70 bg-background/92 text-foreground/92 hover:border-primary/20 hover:bg-background"
+                        }`}
+                        aria-current={active ? "page" : undefined}
+                      >
+                        <span className="text-[0.78rem] font-semibold leading-5">{label}</span>
+                        <span
+                          className={`inline-flex h-6 w-6 items-center justify-center rounded-full border transition ${
+                            active
+                              ? "border-primary/20 bg-background text-primary"
+                              : "border-border/70 bg-background text-muted-foreground"
+                          }`}
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </span>
+                      </Link>
+                    </SheetClose>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </SheetContent>
@@ -472,14 +607,14 @@ const MainHeader = () => {
     <>
       <header
         ref={headerRef}
-        className="relative z-50 w-full overflow-visible border-b border-[#BFD7F2] bg-[#ECF4FC]/96 text-[#102A43] shadow-[0_18px_36px_-28px_rgba(12,32,72,0.22)] backdrop-blur-md"
+        className="relative z-50 w-full overflow-visible border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] text-foreground shadow-[0_16px_36px_-28px_rgba(15,23,42,0.18)] backdrop-blur-xl"
       >
-      <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-8">
+      <div className="flex w-full flex-wrap items-center gap-3 px-3 py-3.5 sm:px-4 lg:px-8">
         <div className="order-1 flex min-w-0 flex-1 items-center gap-2 md:flex-none">
           <Link
             to="/"
             aria-label="SALT Online Store"
-            className="flex min-w-0 items-center rounded-full px-1.5 py-1 transition hover:bg-white/65"
+            className="flex min-w-0 items-center rounded-full px-1.5 py-1 transition hover:bg-background/78"
           >
             <BrandLogo withWordmark size="md" />
           </Link>
@@ -488,7 +623,7 @@ const MainHeader = () => {
             <button
               type="button"
               onClick={openMenu}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/92 text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background"
               aria-label="Open menu"
               aria-expanded={menuOpen}
             >
@@ -497,12 +632,12 @@ const MainHeader = () => {
 
             <Link
               to="/wishlist"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/92 text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background"
               aria-label={`Wishlist with ${wishlistItemCount} item${wishlistItemCount === 1 ? "" : "s"}`}
             >
-              <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-[#0C2048]/12" : ""}`} />
+              <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-primary/12" : ""}`} />
               {wishlistItemCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.66rem] font-bold text-primary-foreground">
                   {wishlistItemCount}
                 </span>
               ) : null}
@@ -511,12 +646,12 @@ const MainHeader = () => {
             <button
               type="button"
               onClick={openCartDrawer}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#0C2048] shadow-sm transition hover:bg-[#D0E4FC]"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/92 text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background"
               aria-label={cartLabel}
             >
               <ShoppingCart className="h-4.5 w-4.5" />
               {cartItemCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.66rem] font-bold text-primary-foreground">
                   {cartItemCount}
                 </span>
               ) : null}
@@ -528,7 +663,7 @@ const MainHeader = () => {
           <div
             ref={searchRef}
             onBlurCapture={handleSearchBlur}
-            className="relative flex h-11 overflow-visible rounded-[4px] border border-[#131A22] bg-white shadow-[0_1px_0_rgba(255,255,255,0.7)_inset] transition focus-within:border-[#F0A115] focus-within:shadow-[0_0_0_3px_rgba(255,153,0,0.12)]"
+            className="relative flex h-11 overflow-visible rounded-full border border-border/70 bg-background/92 shadow-[0_12px_22px_-18px_rgba(15,23,42,0.16)] transition focus-within:border-primary/25 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]"
           >
             <div className="relative">
               <button
@@ -540,11 +675,11 @@ const MainHeader = () => {
                 aria-label={`Search category ${selectedScopeLabel}`}
                 aria-haspopup="listbox"
                 aria-expanded={scopeOpen}
-                className="flex h-full min-w-[4.5rem] items-center justify-between gap-1.5 rounded-l-[3px] border-r border-[#cdcdcd] bg-[#f3f3f3] px-3 text-left text-[0.8rem] font-normal text-[#555555] transition hover:bg-[#ececec] sm:min-w-[6rem] sm:max-w-[11.5rem]"
+                className="flex h-full min-w-[4.5rem] items-center justify-between gap-1.5 rounded-l-full border-r border-border/70 bg-muted/35 px-3 text-left text-[0.8rem] font-semibold text-muted-foreground transition hover:bg-muted/55 sm:min-w-[6rem] sm:max-w-[11.5rem]"
               >
                 <span className="truncate">{selectedScopeLabel}</span>
                 <ChevronDown
-                  className={`h-3.5 w-3.5 shrink-0 text-[#6b6b6b] transition ${scopeOpen ? "rotate-180" : ""}`}
+                  className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition ${scopeOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -552,7 +687,7 @@ const MainHeader = () => {
                 <div
                   id="header-scope-menu"
                   role="listbox"
-                  className="absolute left-0 top-[calc(100%+0.55rem)] z-[70] w-[min(18rem,calc(100vw-1.25rem))] rounded-2xl border border-[#d5d5d5] bg-white p-2 shadow-[0_18px_36px_-28px_rgba(12,32,72,0.25)]"
+                  className="absolute left-0 top-[calc(100%+0.55rem)] z-[70] w-[min(18rem,calc(100vw-1.25rem))] rounded-[1.2rem] border border-border/70 bg-background/96 p-2 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.18)] backdrop-blur-xl"
                 >
                   {searchScopeOptions.map((option) => {
                     const active = option.collection === selectedScope;
@@ -569,13 +704,13 @@ const MainHeader = () => {
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
                           active
-                            ? "bg-[#fbeec2] font-semibold text-[#111111]"
-                            : "text-[#111111] hover:bg-[#f7f7f7]"
+                            ? "bg-primary/10 font-semibold text-foreground"
+                            : "text-foreground hover:bg-muted/40"
                         }`}
                       >
                         <span>{option.label}</span>
                         {active ? (
-                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a6110]">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
                             Selected
                           </span>
                         ) : null}
@@ -586,22 +721,22 @@ const MainHeader = () => {
               ) : null}
             </div>
 
-            <label className="relative flex min-w-0 flex-1 items-stretch bg-white">
+            <label className="relative flex min-w-0 flex-1 items-stretch bg-background">
               <span className="sr-only">Search SALT</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#767676]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 onFocus={() => setSearchDropdownOpen(true)}
                 placeholder="Search SALT"
-                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-[0.92rem] text-[#111111] outline-none placeholder:text-[#767676]"
+                className="h-full w-full min-w-0 border-0 bg-transparent pl-10 pr-3 text-[0.92rem] text-foreground outline-none placeholder:text-muted-foreground"
               />
             </label>
 
             <button
               type="submit"
-              className="inline-flex h-full w-11 items-center justify-center rounded-r-[3px] border-l border-[#1749b0] bg-[#1f5bd3] text-white transition hover:bg-[#1849b0]"
+              className="salt-primary-cta inline-flex h-full w-11 items-center justify-center rounded-r-full border-l border-transparent transition hover:brightness-105"
             >
               <Search className="h-[1.08rem] w-[1.08rem]" />
               <span className="sr-only">Search</span>
@@ -610,7 +745,7 @@ const MainHeader = () => {
             {searchDropdownOpen ? (
               <Suspense
                 fallback={
-                  <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[80] rounded-[1.15rem] border border-[#cfdff2] bg-[#f7fbff] p-4 text-sm text-[#5C748F] shadow-[0_18px_36px_-24px_rgba(12,32,72,0.3)]">
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[80] rounded-[1.15rem] border border-border/70 bg-background/96 p-4 text-sm text-muted-foreground shadow-[0_18px_36px_-24px_rgba(15,23,42,0.18)] backdrop-blur-xl">
                     Preparing search…
                   </div>
                 }
@@ -634,12 +769,12 @@ const MainHeader = () => {
           <a
             href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
             aria-label="Hello, sign in / Account and orders"
-            className="hidden min-w-0 flex-col rounded-full px-3 py-2 text-left transition hover:bg-white/60 lg:flex"
+            className="hidden min-w-0 flex-col rounded-[1rem] border border-border/70 bg-background/90 px-3.5 py-2 text-left shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:border-primary/18 hover:bg-background/96 lg:flex"
           >
-            <span className="block text-[0.62rem] font-medium leading-none text-[#5C748F]">
+            <span className="block text-[0.62rem] font-medium leading-none text-muted-foreground">
               Hello, sign in
             </span>
-            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-[#102A43]">
+            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-foreground">
               Account & Orders
             </span>
           </a>
@@ -647,11 +782,11 @@ const MainHeader = () => {
           <Link
             to="/wishlist"
             aria-label={`Wishlist with ${wishlistItemCount} item${wishlistItemCount === 1 ? "" : "s"}`}
-            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-[#BFD7F2] bg-white/90 text-[#102A43] shadow-sm transition hover:bg-[#D0E4FC] lg:inline-flex"
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/92 text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background lg:inline-flex"
           >
-            <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-[#102A43]/12" : ""}`} />
+            <Heart className={`h-4.5 w-4.5 ${wishlistItemCount > 0 ? "fill-primary/12" : ""}`} />
             {wishlistItemCount > 0 ? (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.66rem] font-bold text-primary-foreground">
                 {wishlistItemCount}
               </span>
             ) : null}
@@ -660,13 +795,13 @@ const MainHeader = () => {
           <button
             type="button"
             onClick={openCartDrawer}
-            className="relative inline-flex h-11 items-center gap-2 rounded-full border border-[#BFD7F2] bg-white/90 px-4 text-sm font-semibold text-[#102A43] shadow-sm transition hover:bg-[#D0E4FC]"
+            className="relative inline-flex h-11 items-center gap-2 rounded-full border border-border/70 bg-background/92 px-4 text-sm font-semibold text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background"
             aria-label={cartLabel}
           >
             <ShoppingCart className="h-4.5 w-4.5" />
             <span className="hidden sm:inline">Cart</span>
             {cartItemCount > 0 ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0C2048] px-1 text-[0.66rem] font-bold text-white">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[0.66rem] font-bold text-primary-foreground">
                 {cartItemCount}
               </span>
             ) : null}
@@ -674,14 +809,15 @@ const MainHeader = () => {
         </div>
       </div>
 
-        <div className="hidden border-t border-[#BFD7F2] bg-[#0C2048] md:block">
-          <nav aria-label="Secondary navigation" className="salt-header-secondary-nav text-white">
+        <div className="hidden border-t border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.82),hsl(var(--card)/0.9))] shadow-[inset_0_1px_0_hsl(0_0%_100%/0.3),0_1px_3px_-2px_rgba(15,23,42,0.06)] md:block">
+          <nav aria-label="Secondary navigation" className="salt-header-secondary-nav text-foreground">
             <button
               type="button"
               onClick={openMenu}
               className={collectionNavItemClass(menuOpen)}
               aria-expanded={menuOpen}
               aria-controls="salt-header-menu"
+              aria-label={menuOpen ? "Close all collections menu" : "Open all collections menu"}
             >
               <Menu className="h-4 w-4 shrink-0" />
               <span>All</span>

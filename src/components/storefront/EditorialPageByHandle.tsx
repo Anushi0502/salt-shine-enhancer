@@ -16,7 +16,7 @@ import {
   getResourceTopicByHandle,
 } from "@/lib/site-navigation";
 import type { SiteResourceGuide, SiteResourceTopic } from "@/lib/site-navigation";
-import { useEditorialPage, useProducts } from "@/lib/shopify-data";
+import { useEditorialPage, useProductSearchIndex } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 type EditorialPageByHandleProps = {
@@ -189,67 +189,43 @@ const ResourceRouteCard = ({
   prominent = false,
   ctaLabel = "Open guide",
 }: ResourceRouteCardProps) => {
+  const previewTitle = conciseTitle(title, prominent ? 20 : 18);
+  const previewFallbackLabel = chips[0] || "Start here";
+
   return (
     <Link
       to={to}
-      className={`group relative block overflow-hidden rounded-[1.45rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_18px_40px_-34px_rgba(12,32,72,0.24)] transition duration-300 hover:-translate-y-1 hover:border-[#bcd4ef] ${
-        prominent ? "xl:col-span-2 xl:row-span-2" : ""
+      className={`salt-panel-shell group relative block h-full overflow-hidden rounded-[1.7rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] shadow-[0_24px_48px_-36px_rgba(15,23,42,0.16)] transition duration-300 hover:-translate-y-1 hover:border-primary/20 ${
+        prominent ? "xl:col-span-2" : ""
       }`}
     >
-      <div className={`relative overflow-hidden ${prominent ? "aspect-[1.08/0.92]" : "aspect-[1.08/0.86]"}`}>
-        {image ? (
-          <ResilientImage
-            src={image}
-            alt={title}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-            fallback={
-              <div className="flex h-full w-full items-end bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] p-5 text-[#31538c]">
-                <div>
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5c748f]">{badge}</p>
-                  <p className="mt-2 font-display text-[1.4rem] leading-[1] text-[#183d79]">{title}</p>
-                </div>
-              </div>
-            }
-          />
-        ) : (
-          <div className="flex h-full w-full items-end bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] p-5 text-[#31538c]">
-            <div>
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5c748f]">{badge}</p>
-              <p className="mt-2 font-display text-[1.4rem] leading-[1] text-[#183d79]">{title}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.08),rgba(8,30,73,0.2)_42%,rgba(8,30,73,0.9))]" />
-        <div className={`absolute inset-0 flex flex-col justify-end ${prominent ? "p-5 sm:p-6" : "p-4 sm:p-5"}`}>
+      <div className={`grid gap-4 p-4 sm:p-5 ${prominent ? "lg:grid-cols-[minmax(0,1.08fr)_minmax(11rem,0.92fr)] lg:p-6" : "lg:grid-cols-[minmax(0,1fr)_9.5rem]"}`}>
+        <div className="min-w-0">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/70">{badge}</p>
-              <h3
-                className={`mt-1 line-clamp-2 font-display leading-[0.98] text-white ${
-                  prominent ? "text-[clamp(1.35rem,2.4vw,2.1rem)]" : "text-[1.05rem]"
-                }`}
-              >
-                {title}
-              </h3>
-            </div>
+            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-primary">{badge}</p>
             {chips.length ? (
-              <span className="shrink-0 rounded-full border border-white/18 bg-white/12 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/82 backdrop-blur">
+              <span className="shrink-0 rounded-full border border-border/60 bg-background/88 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-primary/80">
                 {chips.length} cues
               </span>
             ) : null}
           </div>
 
-          <p className={`mt-2 text-sm leading-6 text-white/76 ${prominent ? "max-w-2xl" : ""}`}>{detail}</p>
+          <h3
+            className={`mt-2 line-clamp-2 font-display leading-[0.97] text-foreground ${
+              prominent ? "text-[clamp(1.38rem,2.4vw,2.05rem)]" : "text-[1.08rem]"
+            }`}
+          >
+            {title}
+          </h3>
+
+          <p className={`mt-2 text-sm leading-6 text-muted-foreground ${prominent ? "max-w-2xl" : ""}`}>{detail}</p>
 
           {chips.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
               {chips.slice(0, prominent ? 4 : 3).map((chip) => (
                 <span
                   key={chip}
-                  className="inline-flex items-center rounded-full border border-white/16 bg-white/10 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-white/82 backdrop-blur"
+                  className="inline-flex items-center rounded-full border border-border/60 bg-background/88 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-foreground/86"
                 >
                   {chip}
                 </span>
@@ -257,10 +233,56 @@ const ResourceRouteCard = ({
             </div>
           ) : null}
 
-          <div className="mt-4 inline-flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white/92">
+          <div className="mt-4 inline-flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-primary">
             {ctaLabel}
             <ChevronRight className="h-3.5 w-3.5" />
           </div>
+        </div>
+
+        <div
+          className={`relative overflow-hidden rounded-[1.2rem] border border-border/65 bg-[linear-gradient(145deg,hsl(var(--background)/0.97),hsl(var(--card)/0.92))] shadow-[inset_0_1px_0_hsl(0_0%_100%/0.55)] ${
+            prominent ? "min-h-[11rem] lg:min-h-[14.5rem]" : "min-h-[9.5rem]"
+          }`}
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.14),transparent_58%),radial-gradient(circle_at_bottom_left,hsl(var(--salt-gold)/0.1),transparent_64%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.03),rgba(8,30,73,0.14)_58%,rgba(8,30,73,0.34))]" />
+
+          {image ? (
+            <ResilientImage
+              src={image}
+              alt={title}
+              loading="lazy"
+              decoding="async"
+              className="relative h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+              fallback={
+                <div className="flex h-full w-full flex-col justify-between p-3 text-primary">
+                  <div className="inline-flex w-fit rounded-full border border-border/60 bg-background/88 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary/80">
+                    {badge}
+                  </div>
+                  <div>
+                    <p className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Guide route
+                    </p>
+                    <p className="mt-1 font-display text-[1rem] leading-[1.02] text-foreground">{previewTitle}</p>
+                    <p className="mt-1 text-[0.68rem] leading-5 text-muted-foreground">{previewFallbackLabel}</p>
+                  </div>
+                </div>
+              }
+            />
+          ) : (
+            <div className="relative flex h-full flex-col justify-between p-3 text-primary">
+              <div className="inline-flex w-fit rounded-full border border-border/60 bg-background/88 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary/80">
+                {badge}
+              </div>
+              <div>
+                <p className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Guide route
+                </p>
+                <p className="mt-1 font-display text-[1rem] leading-[1.02] text-foreground">{previewTitle}</p>
+                <p className="mt-1 text-[0.68rem] leading-5 text-muted-foreground">{previewFallbackLabel}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Link>
@@ -272,19 +294,19 @@ const ResourceHubBrowseSection = ({ eyebrow, title, description, countLabel, cta
     <section className="mt-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-primary">{eyebrow}</p>
+          <p className="salt-kicker">{eyebrow}</p>
           <h2 className="mt-2 font-display text-[clamp(1.55rem,3vw,2.3rem)] leading-[0.96] text-foreground">
             {title}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
 
-        <div className="inline-flex h-9 items-center rounded-full border border-[#bfd4fb] bg-white px-3 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#5C748F]">
+        <div className="salt-editorial-meta inline-flex h-9 items-center rounded-full px-3 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
           {countLabel}
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-5 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tiles.map((tile, index) => (
           <ResourceRouteCard
             key={tile.to}
@@ -314,7 +336,7 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-start">
         <Link
           to={`/products/${heroProduct.handle}`}
-          className="group relative overflow-hidden rounded-[1.55rem] border border-[#d2e4ff] bg-[#eef5ff] shadow-[0_20px_44px_-34px_rgba(12,32,72,0.28)] transition hover:-translate-y-0.5 hover:border-[#bcd4ef]"
+          className="salt-panel-shell group relative overflow-hidden rounded-[1.75rem] shadow-[0_24px_48px_-36px_rgba(15,23,42,0.2)] transition hover:-translate-y-0.5 hover:border-primary/20"
         >
           <div className="relative aspect-[1.12/0.9] overflow-hidden">
             {heroProduct.image ? (
@@ -325,33 +347,33 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
                 decoding="async"
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 fallback={
-                  <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#31538c]">
+                  <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-primary">
                     Image unavailable
                   </div>
                 }
               />
             ) : (
-              <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#31538c]">
+              <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-primary">
                 Image unavailable
               </div>
             )}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.08),rgba(8,30,73,0.22)_42%,rgba(8,30,73,0.86))]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,30,73,0.02),rgba(8,30,73,0.12)_58%,rgba(8,30,73,0.36))]" />
             <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/70">
+                  <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/78">
                     {heroProduct.collectionLabel || "Featured pick"}
                   </p>
                   <h3 className="mt-1 line-clamp-2 font-display text-[clamp(1.35rem,2.8vw,2.2rem)] leading-[0.96] text-white">
                     {heroProduct.title}
                   </h3>
                 </div>
-                <span className="shrink-0 rounded-full border border-white/18 bg-white/12 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/82 backdrop-blur">
+                <span className="shrink-0 rounded-full border border-white/18 bg-white/14 px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/82 backdrop-blur">
                   {heroProduct.price}
                 </span>
               </div>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/76">{heroProduct.reason}</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/78">{heroProduct.reason}</p>
 
               <div className="mt-4 inline-flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white/92">
                 View product
@@ -366,7 +388,7 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
             <Link
               key={product.handle}
               to={`/products/${product.handle}`}
-              className="group flex items-stretch overflow-hidden rounded-[1.3rem] border border-[#d2e4ff] bg-white shadow-[0_16px_36px_-30px_rgba(12,32,72,0.2)] transition hover:-translate-y-0.5 hover:border-[#bcd4ef]"
+              className="salt-panel-shell group flex items-stretch overflow-hidden rounded-[1.45rem] shadow-[0_18px_38px_-30px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:border-primary/20"
             >
               <div className="relative w-32 shrink-0 overflow-hidden sm:w-36">
                 {product.image ? (
@@ -377,13 +399,13 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
                     decoding="async"
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                     fallback={
-                      <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#31538c]">
+                      <div className="grid h-full w-full place-items-center bg-muted/20 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Image unavailable
                       </div>
                     }
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#dce8fb_0%,#c6dafd_100%)] text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-[#31538c]">
+                  <div className="grid h-full w-full place-items-center bg-muted/20 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     Image unavailable
                   </div>
                 )}
@@ -391,22 +413,22 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
               <div className="min-w-0 flex-1 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                       {product.collectionLabel || "Supporting pick"}
                     </p>
-                    <h4 className="mt-1 font-display text-[1.02rem] leading-[1.02] text-[#102A43] transition group-hover:text-primary">
+                    <h4 className="mt-1 font-display text-[1.02rem] leading-[1.02] text-foreground transition group-hover:text-primary">
                       {product.title}
                     </h4>
-                    <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#8a99aa]">
+                    <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       {product.product.product_type || "SALT pick"}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-[#bfd4fb] bg-[#f7fbff] px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[#31538c]">
+                  <span className="salt-editorial-meta shrink-0 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em]">
                     {product.price}
                   </span>
                 </div>
 
-                <p className="mt-2 text-sm leading-6 text-[#5C748F]">{product.reason}</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{product.reason}</p>
               </div>
             </Link>
           ))}
@@ -426,7 +448,7 @@ const EditorialPageByHandle = ({
   const normalizedHandle = String(handle || "").trim().toLowerCase();
   const { data, isLoading, error, refetch } = useEditorialPage(normalizedHandle);
   const shouldLoadProducts = Boolean(data?.page?.featuredProducts?.length);
-  const { data: productsData } = useProducts(shouldLoadProducts);
+  const { data: productsData } = useProductSearchIndex(shouldLoadProducts);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -533,9 +555,7 @@ const EditorialPageByHandle = ({
       .slice(0, 6)
       .map((topic) => buildResourceTopicVisual(resourceContext.guide, topic, productsByHandle));
   }, [isResourceHubHandle, productsByHandle, resourceContext.guide, resourceContext.topic]);
-  const pageSectionClassName = isResourcePageHandle
-    ? "rounded-[2rem] border border-[#d9e7fa] bg-[linear-gradient(180deg,rgba(251,253,255,0.98)_0%,rgba(245,248,255,0.98)_100%)] px-4 py-4 shadow-[0_24px_70px_-52px_rgba(12,32,72,0.3)] sm:px-6 sm:py-6"
-    : "";
+  const pageSectionClassName = "";
 
   if (isLoading) {
     return <LoadingState title={loadingTitle} subtitle={loadingSubtitle} />;
@@ -547,13 +567,13 @@ const EditorialPageByHandle = ({
         title={errorTitle}
         subtitle={errorSubtitle}
         action={
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="salt-primary-cta h-11 rounded-xl px-5 text-sm font-bold"
+        >
+          Retry
+        </button>
         }
       />
     );
@@ -581,10 +601,10 @@ const EditorialPageByHandle = ({
       {page.stats.map((stat) => (
         <div
           key={`${stat.label}-${stat.value}`}
-          className="inline-flex items-baseline gap-2 rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs text-[#102A43]"
+          className="salt-editorial-meta inline-flex items-baseline gap-2 px-3 py-1 text-xs"
         >
-          <span className="font-semibold text-[#5C748F]">{stat.label}</span>
-          <span className="font-semibold text-[#102A43]">{stat.value}</span>
+          <span className="font-semibold text-muted-foreground">{stat.label}</span>
+          <span className="font-semibold text-foreground">{stat.value}</span>
         </div>
       ))}
     </div>
@@ -600,12 +620,12 @@ const EditorialPageByHandle = ({
 
       {!isResourcePage ? (
         <div>
-          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">Snapshot</p>
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">Snapshot</p>
           <div className="mt-3 space-y-3">
             {page.stats.map((stat) => (
-              <div key={stat.label} className="border-t border-[#d8e6f5] pt-3">
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">{stat.label}</p>
-                <p className="mt-0.5 font-display text-[1.2rem] leading-none text-[#102A43]">{stat.value}</p>
+              <div key={stat.label} className="border-t border-border/70 pt-3">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{stat.label}</p>
+                <p className="mt-0.5 font-display text-[1.2rem] leading-none text-foreground">{stat.value}</p>
               </div>
             ))}
           </div>
@@ -614,9 +634,9 @@ const EditorialPageByHandle = ({
 
       <ul className="space-y-2">
         {page.accent.bullets.map((bullet) => (
-          <li key={bullet} className="flex items-start gap-2 text-sm leading-6 text-[#102A43]">
-            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#f2b600]" />
-            <span className="text-[#5C748F]">{bullet}</span>
+          <li key={bullet} className="flex items-start gap-2 text-sm leading-6 text-foreground">
+            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="text-muted-foreground">{bullet}</span>
           </li>
         ))}
       </ul>
@@ -624,7 +644,7 @@ const EditorialPageByHandle = ({
   );
 
   return (
-    <OpenContentPageShell
+      <OpenContentPageShell
       breadcrumbs={breadcrumbs}
       kicker={page.kicker}
       title={page.title}
@@ -633,6 +653,7 @@ const EditorialPageByHandle = ({
       aside={heroAside}
       actions={heroActions}
       className={pageSectionClassName}
+      tone={isResourceHub ? "shop" : "default"}
     >
       {isResourcePage && resourceRouteTiles.length ? (
         <ResourceHubBrowseSection
@@ -663,7 +684,7 @@ const EditorialPageByHandle = ({
         />
       ) : null}
       {page.introParagraphs?.length ? (
-        <div className="max-w-3xl space-y-4 text-base leading-7 text-[#314861]">
+        <div className="max-w-3xl space-y-4 text-base leading-7 text-muted-foreground">
           {page.introParagraphs.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
@@ -692,20 +713,20 @@ const EditorialPageByHandle = ({
                 <Link
                   key={card.title}
                   to={card.to}
-                  className="group flex h-full items-center justify-between gap-4 rounded-[1.2rem] border border-[#d8e6f5] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#bcd4ef]"
+                  className="salt-surface group flex h-full items-center justify-between gap-4 rounded-[1.2rem] p-4 transition hover:-translate-y-0.5 hover:border-primary/20"
                 >
                   <div className="min-w-0">
-                    <p className="text-base font-semibold text-[#102A43] transition group-hover:text-primary">
+                    <p className="text-base font-semibold text-foreground transition group-hover:text-primary">
                       {card.title}
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[#5C748F]">{card.detail}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.detail}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[#8a99aa] transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                 </Link>
               ) : (
-                <div key={card.title} className="rounded-[1.2rem] border border-[#d8e6f5] bg-white p-4">
-                  <p className="text-base font-semibold text-[#102A43]">{card.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-[#5C748F]">{card.detail}</p>
+                <div key={card.title} className="salt-surface rounded-[1.2rem] p-4">
+                  <p className="text-base font-semibold text-foreground">{card.title}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.detail}</p>
                 </div>
               ),
             )}
@@ -723,11 +744,11 @@ const EditorialPageByHandle = ({
           ) : null}
           <div className="mt-4 grid gap-3">
             {page.steps.map((step) => (
-              <div key={step.step} className="grid gap-2 border-t border-[#d8e6f5] py-4 sm:grid-cols-[5rem_minmax(0,1fr)] sm:gap-4">
+              <div key={step.step} className="grid gap-2 border-t border-border/70 py-4 sm:grid-cols-[5rem_minmax(0,1fr)] sm:gap-4">
                 <p className="font-display text-[1.15rem] leading-none text-primary">{step.step}</p>
                 <div>
-                  <p className="text-base font-semibold text-[#102A43]">{step.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-[#5C748F]">{step.detail}</p>
+                  <p className="text-base font-semibold text-foreground">{step.title}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.detail}</p>
                 </div>
               </div>
             ))}
@@ -747,7 +768,7 @@ const EditorialPageByHandle = ({
             {page.chips.map((chip) => (
               <span
                 key={chip}
-                className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-[#31538c]"
+                className="salt-editorial-meta inline-flex items-center px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.08em]"
               >
                 {chip}
               </span>
@@ -764,17 +785,17 @@ const EditorialPageByHandle = ({
           {page.faqsDescription ? (
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{page.faqsDescription}</p>
           ) : null}
-          <Accordion type="single" collapsible className="mt-4 rounded-[1.2rem] border border-[#d8e6f5] bg-white px-4">
+          <Accordion type="single" collapsible className="salt-surface mt-4 rounded-[1.2rem] px-4">
             {page.faqs.map((faq, index) => (
               <AccordionItem
                 key={faq.question}
                 value={`faq-${index}`}
-                className={index === page.faqs.length - 1 ? "border-none" : "border-b border-[#d8e6f5]"}
+                className={index === page.faqs.length - 1 ? "border-none" : "border-b border-border/70"}
               >
-                <AccordionTrigger className="py-4 text-left text-base font-semibold text-[#102A43] hover:no-underline">
+                <AccordionTrigger className="py-4 text-left text-base font-semibold text-foreground hover:no-underline">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 text-sm leading-6 text-[#5C748F]">{faq.answer}</AccordionContent>
+                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">{faq.answer}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>

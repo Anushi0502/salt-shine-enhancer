@@ -11,14 +11,14 @@ type EditorialPageTemplateProps = {
 };
 
 const cardShellClass =
-  "block h-full rounded-[1.5rem] border border-[#d3e4ff] bg-[linear-gradient(165deg,rgba(255,255,255,0.96),rgba(238,245,255,0.86))] p-5 text-left shadow-[0_18px_36px_-30px_rgba(22,77,160,0.24)]";
+  "block h-full rounded-[1.5rem] border border-border/70 bg-background/92 p-5 text-left shadow-[0_18px_36px_-30px_rgba(15,23,42,0.16)]";
 
 const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
   const nativeApp = isNativeApp();
 
   return (
     <section
-      className={`mx-auto ${nativeApp ? "mt-4 w-[min(1040px,calc(100%-18px))]" : "mt-5 w-[min(1160px,calc(100%-20px))]"} pb-8`}
+      className={`mx-auto ${nativeApp ? "mt-4 w-[min(1040px,calc(100%_-_18px))]" : "mt-5 w-[min(1160px,calc(100%_-_20px))]"} pb-8`}
     >
       <Reveal>
         <InnerBreadcrumbs
@@ -30,9 +30,9 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
       </Reveal>
 
       <Reveal>
-        <div className="overflow-hidden rounded-[1.65rem] border border-[#c5dbff] bg-[#f8fbff] shadow-[0_28px_80px_-56px_rgba(22,77,160,0.24)]">
-          <div className="border-b border-[#dce9ff] p-[10px] sm:p-[24px] lg:p-[28px]">
-            <div className="relative overflow-hidden rounded-[1.4rem] border border-[#c8dcff] bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(232,242,255,0.92)),radial-gradient(circle_at_12%_14%,rgba(252,211,77,0.18),transparent_28%),radial-gradient(circle_at_88%_12%,rgba(59,130,246,0.17),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.44),rgba(255,255,255,0.02))] p-4 shadow-[0_22px_44px_-38px_rgba(22,77,160,0.42)] sm:p-6 lg:p-8">
+        <div className="overflow-hidden rounded-[1.65rem] border border-border/70 bg-background/92 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.18)]">
+          <div className="border-b border-border/70 p-[10px] sm:p-[24px] lg:p-[28px]">
+            <div className="relative overflow-hidden rounded-[1.4rem] border border-border/70 bg-[linear-gradient(145deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92)),radial-gradient(circle_at_12%_14%,hsl(var(--salt-gold)/0.12),transparent_28%),radial-gradient(circle_at_88%_12%,hsl(var(--primary)/0.12),transparent_34%),linear-gradient(180deg,hsl(var(--background)/0.44),hsl(var(--background)/0.02))] p-4 shadow-[0_22px_44px_-38px_rgba(15,23,42,0.24)] sm:p-6 lg:p-8">
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute -left-10 top-10 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.16),transparent_66%)] blur-3xl"
@@ -44,15 +44,15 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
               <div className="relative z-[1] grid gap-6 lg:grid-cols-[1.04fr_0.96fr] lg:gap-7">
                 <div className="min-w-0">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[#f1ca63] bg-[linear-gradient(140deg,rgba(255,248,226,0.98),rgba(255,255,255,0.92))] px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#1f55aa] shadow-[0_12px_24px_-22px_rgba(146,98,14,0.48)]">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/88 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary shadow-[0_12px_24px_-22px_rgba(15,23,42,0.16)]">
                     <BadgeCheck className="h-3.5 w-3.5" />
                     {page.kicker}
                   </span>
 
-                  <h1 className="mt-5 max-w-[12ch] font-display text-[clamp(2.25rem,5.2vw,4.35rem)] leading-[0.92] tracking-[-0.055em] text-[#0f2d63]">
+                  <h1 className="mt-5 max-w-[12ch] font-display text-[clamp(2.25rem,5.2vw,4.35rem)] leading-[0.92] tracking-[-0.055em] text-foreground">
                     {page.title}
                   </h1>
-                  <p className="mt-4 max-w-[58ch] text-[15px] leading-7 text-[#506a98] sm:text-[1.06rem]">
+                  <p className="mt-4 max-w-[58ch] text-[15px] leading-7 text-muted-foreground sm:text-[1.06rem]">
                     {page.summary}
                   </p>
 
@@ -60,22 +60,22 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                     {page.stats.map((item) => (
                       <span
                         key={item.label}
-                        className="inline-flex items-center rounded-full border border-[#d2e4ff] bg-white/80 px-4 py-2 text-[0.74rem] font-semibold tracking-[0.04em] text-[#1d4f9c] shadow-[0_12px_26px_-22px_rgba(22,77,160,0.32)]"
+                        className="inline-flex items-center rounded-full border border-border/70 bg-background/82 px-4 py-2 text-[0.74rem] font-semibold tracking-[0.04em] text-foreground shadow-[0_12px_26px_-22px_rgba(15,23,42,0.16)]"
                       >
-                        <span className="mr-2 text-[#6890d9]">{item.label}</span>
+                        <span className="mr-2 text-primary">{item.label}</span>
                         {item.value}
                       </span>
                     ))}
                   </div>
 
                   {page.introParagraphs?.length ? (
-                    <div className="mt-6 rounded-[1.45rem] border border-[#d4e5ff] bg-[linear-gradient(165deg,rgba(255,255,255,0.96),rgba(241,247,255,0.88))] p-4 shadow-[0_18px_36px_-30px_rgba(22,77,160,0.22)] sm:p-5">
-                      <p className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-[#2563eb]">
+                    <div className="mt-6 rounded-[1.45rem] border border-border/70 bg-background/92 p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.16)] sm:p-5">
+                      <p className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-primary">
                         Story
                       </p>
                       <div className="mt-3 space-y-4">
                         {page.introParagraphs.map((paragraph) => (
-                          <p key={paragraph} className="text-[0.98rem] leading-8 text-[#4f678f]">
+                          <p key={paragraph} className="text-[0.98rem] leading-8 text-muted-foreground">
                             {paragraph}
                           </p>
                         ))}
@@ -85,15 +85,15 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                 </div>
 
                 <div className="flex items-stretch">
-                  <div className="flex w-full flex-col justify-between rounded-[1.65rem] border border-[#cae0ff] bg-[#dbe8fb] p-4 shadow-[0_24px_48px_-36px_rgba(22,77,160,0.38)]">
+                  <div className="flex w-full flex-col justify-between rounded-[1.65rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.9))] p-4 shadow-[0_24px_48px_-36px_rgba(15,23,42,0.18)]">
                     <div>
-                      <span className="inline-flex items-center rounded-full border border-white/22 bg-[linear-gradient(180deg,rgba(20,34,65,0.55),rgba(10,18,35,0.45))] px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white">
+                      <span className="inline-flex items-center rounded-full border border-border/70 bg-background/82 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-foreground">
                         {page.accent.label}
                       </span>
-                      <h2 className="mt-4 font-display text-[1.7rem] leading-[1.02] tracking-[-0.04em] text-[#123467] sm:text-[2.1rem]">
+                      <h2 className="mt-4 font-display text-[1.7rem] leading-[1.02] tracking-[-0.04em] text-foreground sm:text-[2.1rem]">
                         {page.accent.title}
                       </h2>
-                      <p className="mt-3 text-sm leading-7 text-[#59719a]">
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">
                         {page.accent.body}
                       </p>
                     </div>
@@ -102,9 +102,9 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                       {page.accent.bullets.map((bullet) => (
                         <div
                           key={bullet}
-                          className="flex items-center gap-2 rounded-[1rem] border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.92),rgba(241,247,255,0.8))] px-3 py-2 text-sm text-[#234d8f]"
+                          className="flex items-center gap-2 rounded-[1rem] border border-border/70 bg-background/92 px-3 py-2 text-sm text-foreground"
                         >
-                          <BadgeCheck className="h-4 w-4 shrink-0 text-[#2f6fe0]" />
+                          <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />
                           <span>{bullet}</span>
                         </div>
                       ))}
@@ -117,7 +117,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
           {page.cards?.length ? (
             <Reveal delayMs={80}>
-              <section className="border-b border-[#dce9ff] px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <section className="border-b border-border/70 px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
                 <SectionHeading
                   kicker="Highlights"
                   title={page.cardsTitle || "Details"}
@@ -127,7 +127,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {page.cards.map((card) => {
                     const cardFooter = card.to ? (
-                      <div className="mt-4 inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#1f55aa]">
+                      <div className="mt-4 inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-primary">
                         Explore
                         <ChevronRight className="h-3.5 w-3.5" />
                       </div>
@@ -135,10 +135,10 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
                     const content = (
                       <>
-                        <h3 className="font-display text-[1.25rem] leading-[1.08] tracking-[-0.03em] text-[#123569]">
+                        <h3 className="font-display text-[1.25rem] leading-[1.08] tracking-[-0.03em] text-foreground">
                           {card.title}
                         </h3>
-                        <p className="mt-2 text-sm leading-7 text-[#59719b]">{card.detail}</p>
+                        <p className="mt-2 text-sm leading-7 text-muted-foreground">{card.detail}</p>
                         {cardFooter}
                       </>
                     );
@@ -147,7 +147,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                       <Link
                         key={card.title}
                         to={card.to}
-                        className={`${cardShellClass} transition hover:-translate-y-[1px] hover:border-[#b9d2ff] hover:shadow-[0_24px_50px_-34px_rgba(22,77,160,0.28)]`}
+                        className={`${cardShellClass} transition hover:-translate-y-[1px] hover:border-primary/20 hover:shadow-[0_24px_50px_-34px_rgba(15,23,42,0.18)]`}
                       >
                         {content}
                       </Link>
@@ -164,7 +164,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
           {page.steps?.length ? (
             <Reveal delayMs={120}>
-              <section className="border-b border-[#dce9ff] px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <section className="border-b border-border/70 px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
                 <SectionHeading
                   kicker="Process"
                   title={page.stepsTitle || "Next"}
@@ -174,13 +174,13 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {page.steps.map((step) => (
                     <div key={step.step} className={cardShellClass}>
-                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#2563eb]/88">
+                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-primary/88">
                         Step {step.step}
                       </p>
-                      <h3 className="mt-3 font-display text-[1.25rem] leading-[1.08] tracking-[-0.03em] text-[#123569]">
+                      <h3 className="mt-3 font-display text-[1.25rem] leading-[1.08] tracking-[-0.03em] text-foreground">
                         {step.title}
                       </h3>
-                      <p className="mt-2 text-sm leading-7 text-[#59719b]">{step.detail}</p>
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{step.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -190,7 +190,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
           {page.chips?.length ? (
             <Reveal delayMs={160}>
-              <section className="border-b border-[#dce9ff] px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <section className="border-b border-border/70 px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
                 <SectionHeading
                   kicker="Key points"
                   title={page.chipsTitle || "Highlights"}
@@ -201,7 +201,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                   {page.chips.map((chip) => (
                     <span
                       key={chip}
-                      className="inline-flex items-center rounded-full border border-[#d2e4ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-4 py-2 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-[#1d4f9c] shadow-[0_12px_26px_-22px_rgba(22,77,160,0.28)]"
+                      className="salt-outline-chip inline-flex items-center rounded-full px-4 py-2 text-[0.74rem] font-semibold uppercase tracking-[0.08em]"
                     >
                       {chip}
                     </span>
@@ -213,7 +213,7 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
           {page.faqs?.length ? (
             <Reveal delayMs={200}>
-              <section className="border-b border-[#dce9ff] px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+              <section className="border-b border-border/70 px-4 py-6 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
                 <SectionHeading
                   kicker="Answers"
                   title={page.faqsTitle || "FAQ"}
@@ -223,10 +223,10 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                 <div className="mt-5 grid gap-3 lg:grid-cols-2">
                   {page.faqs.map((faq) => (
                     <div key={faq.question} className={cardShellClass}>
-                      <h3 className="font-display text-[1.14rem] leading-[1.08] tracking-[-0.03em] text-[#123569]">
+                      <h3 className="font-display text-[1.14rem] leading-[1.08] tracking-[-0.03em] text-foreground">
                         {faq.question}
                       </h3>
-                      <p className="mt-2 text-sm leading-7 text-[#59719b]">{faq.answer}</p>
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{faq.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -236,16 +236,16 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
 
           <Reveal delayMs={240}>
             <section className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
-              <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(235,244,255,0.88)),radial-gradient(circle_at_left,rgba(252,211,77,0.16),transparent_30%),radial-gradient(circle_at_right,rgba(59,130,246,0.14),transparent_34%)] p-4 shadow-[0_20px_40px_-34px_rgba(22,77,160,0.22)] sm:p-5">
+              <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(160deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92)),radial-gradient(circle_at_left,hsl(var(--salt-gold)/0.12),transparent_30%),radial-gradient(circle_at_right,hsl(var(--primary)/0.1),transparent_34%)] p-4 shadow-[0_20px_40px_-34px_rgba(15,23,42,0.16)] sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-2xl">
-                    <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#2563eb]">
+                    <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-primary">
                       Next step
                     </p>
-                    <h3 className="mt-3 font-display text-[1.9rem] leading-[0.98] tracking-[-0.04em] text-[#123569] sm:text-[2.35rem]">
+                    <h3 className="mt-3 font-display text-[1.9rem] leading-[0.98] tracking-[-0.04em] text-foreground sm:text-[2.35rem]">
                       Keep browsing, read more, or contact the team directly.
                     </h3>
-                    <p className="mt-3 text-sm leading-6 text-[#59719b]">
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                       The storefront, editorial pages, and support flows are designed to feel like one connected experience.
                     </p>
                   </div>
@@ -260,8 +260,8 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                           rel="noreferrer"
                           className={
                             action.primary
-                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_20px_38px_-24px_rgba(37,99,235,0.52)] sm:w-auto"
-                              : "inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
+                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] sm:w-auto"
+                              : "salt-outline-chip inline-flex h-11 w-full items-center justify-center rounded-full px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] sm:w-auto"
                           }
                         >
                           {action.label}
@@ -272,8 +272,8 @@ const EditorialPageTemplate = ({ page }: EditorialPageTemplateProps) => {
                           to={action.to || "/"}
                           className={
                             action.primary
-                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] shadow-[0_20px_38px_-24px_rgba(37,99,235,0.52)] sm:w-auto"
-                              : "inline-flex h-11 w-full items-center justify-center rounded-full border border-[#cfe0ff] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(241,247,255,0.82))] px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] text-[#1d4f9c] shadow-[0_16px_34px_-30px_rgba(22,77,160,0.26)] transition hover:-translate-y-[1px] hover:border-[#9ec1ff] hover:text-[#2563eb] sm:w-auto"
+                              ? "salt-primary-cta h-11 w-full rounded-full px-5 text-xs font-bold uppercase tracking-[0.14em] sm:w-auto"
+                              : "salt-outline-chip inline-flex h-11 w-full items-center justify-center rounded-full px-5 py-0 text-xs font-bold uppercase tracking-[0.12em] sm:w-auto"
                           }
                         >
                           {action.label}

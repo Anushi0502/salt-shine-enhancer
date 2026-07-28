@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { filterProducts } from "@/lib/catalog";
+import { isProductCatalogManifest, mergeProductShardPayloads } from "@/lib/product-catalog-shards.js";
 import type { ShopifyProduct } from "@/types/shopify";
 
 function makeProduct(input: {
@@ -100,11 +101,17 @@ const products: ShopifyProduct[] = [
   }),
 ];
 
-const catalogFixture = JSON.parse(
+const catalogManifest = JSON.parse(
   fs.readFileSync(path.resolve(process.cwd(), "public/data/products.json"), "utf8"),
-) as {
-  products: ShopifyProduct[];
-};
+);
+const catalogFixture = isProductCatalogManifest(catalogManifest)
+  ? mergeProductShardPayloads(
+      catalogManifest,
+      catalogManifest.shards.map((shard: { file: string }) =>
+        JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "public/data", shard.file), "utf8")),
+      ),
+    )
+  : catalogManifest as { products: ShopifyProduct[] };
 
 describe("filterProducts search relevance", () => {
   it("keeps shovel search scoped to relevant products", () => {

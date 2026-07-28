@@ -52,13 +52,13 @@ const AboutPage = () => {
 
   const heroMeta = (
     <div className="flex flex-wrap gap-2">
-      <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
+      <span className="salt-editorial-meta">
         Browse
       </span>
-      <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
+      <span className="salt-editorial-meta">
         Save
       </span>
-      <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
+      <span className="salt-editorial-meta">
         Checkout
       </span>
     </div>
@@ -68,30 +68,30 @@ const AboutPage = () => {
     <>
       <div>
         <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">Story note</p>
-        <p className="mt-2 text-sm leading-6 text-[#5C748F]">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           The Shopify page title stays as supporting copy while the headline follows the cart-to-heart shopping flow.
         </p>
-        <p className="mt-3 font-display text-[1.15rem] leading-[1.05] text-[#102A43]">{data.page.title}</p>
+        <p className="mt-3 font-display text-[1.15rem] leading-[1.05] text-foreground">{data.page.title}</p>
       </div>
 
       <div>
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">Quick links</p>
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">Quick links</p>
         <div className="mt-3 grid gap-2">
           <Link
             to="/collections"
-            className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
+            className="inline-flex items-center justify-between border-t border-border/70 py-3 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
           >
             Browse collections
           </Link>
           <Link
             to="/wishlist"
-            className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
+            className="inline-flex items-center justify-between border-t border-border/70 py-3 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
           >
             Open wishlist
           </Link>
           <Link
             to="/cart"
-            className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
+            className="inline-flex items-center justify-between border-t border-border/70 py-3 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
           >
             View cart
           </Link>
@@ -99,8 +99,8 @@ const AboutPage = () => {
       </div>
 
       <div>
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">Last refreshed</p>
-        <p className="mt-2 text-sm leading-6 text-[#102A43]">{updatedLabel}</p>
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">Last refreshed</p>
+        <p className="mt-2 text-sm leading-6 text-foreground">{updatedLabel}</p>
       </div>
     </>
   );
@@ -123,7 +123,7 @@ const AboutPage = () => {
       ]}
     >
       <article
-        className="prose prose-sm max-w-none leading-[1.74] text-[#102A43] dark:prose-invert prose-headings:font-display prose-headings:text-[#102A43] prose-a:text-primary prose-strong:text-[#102A43] prose-li:text-[#102A43] prose-p:text-[#314861] prose-img:rounded-2xl prose-img:border prose-img:border-[#d8e6f5]"
+        className="prose prose-sm max-w-none leading-[1.74] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-muted-foreground prose-img:rounded-2xl prose-img:border prose-img:border-border/70"
         dangerouslySetInnerHTML={{ __html: cleanedBodyHtml }}
       />
     </OpenContentPageShell>

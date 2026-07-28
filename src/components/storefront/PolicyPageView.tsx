@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import OpenContentPageShell, { type OpenPageAction } from "@/components/storefront/OpenContentPageShell";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { sanitizeRichHtml } from "@/lib/formatters";
 import { usePolicyPage } from "@/lib/shopify-data";
 
@@ -41,31 +42,48 @@ function formatSourceLabel(source: string): string {
 const PolicyPageView = ({ policyKey, actions }: PolicyPageViewProps) => {
   const policyMeta = POLICY_META[policyKey];
   const { data, isLoading, error, refetch } = usePolicyPage(policyMeta.path, policyMeta.fallbackTitle);
+  const seoTitle = `${policyMeta.fallbackTitle.replace(/\b\w/g, (char) => char.toUpperCase())} | SALT Online Store`;
+  const seoDescription =
+    "Clear, readable policy details for shipping, returns, privacy, and customer support.";
+  const seoMetadata = (
+    <SeoMetadata
+      title={seoTitle}
+      description={seoDescription}
+      canonicalPath={policyMeta.path}
+      ogType="article"
+    />
+  );
 
   if (isLoading) {
     return (
-      <LoadingState
-        title={`Loading ${policyMeta.fallbackTitle}`}
-        subtitle="Fetching the latest policy details from Shopify."
-      />
+      <>
+        {seoMetadata}
+        <LoadingState
+          title={`Loading ${policyMeta.fallbackTitle}`}
+          subtitle="Fetching the latest policy details from Shopify."
+        />
+      </>
     );
   }
 
   if (error || !data?.bodyHtml) {
     return (
-      <ErrorState
-        title={`${policyMeta.fallbackTitle} unavailable`}
-        subtitle="Live policy content could not be loaded right now. Please retry."
-        action={
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
-        }
-      />
+      <>
+        {seoMetadata}
+        <ErrorState
+          title={`${policyMeta.fallbackTitle} unavailable`}
+          subtitle="Live policy content could not be loaded right now. Please retry."
+          action={
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="salt-primary-cta h-11 rounded-xl px-5 text-sm font-bold"
+            >
+              Retry
+            </button>
+          }
+        />
+      </>
     );
   }
 
@@ -79,10 +97,10 @@ const PolicyPageView = ({ policyKey, actions }: PolicyPageViewProps) => {
 
   const heroMeta = (
     <div className="flex flex-wrap gap-2">
-      <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
+      <span className="salt-editorial-meta">
         {sourceLabel}
       </span>
-      <span className="inline-flex items-center rounded-full border border-[#bfd4fb] bg-white px-3 py-1 text-xs font-semibold text-[#102A43]">
+      <span className="salt-editorial-meta">
         Updated {updatedAtLabel}
       </span>
     </div>
@@ -92,20 +110,20 @@ const PolicyPageView = ({ policyKey, actions }: PolicyPageViewProps) => {
     <>
       <div>
         <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">Policy guide</p>
-        <p className="mt-2 text-sm leading-6 text-[#5C748F]">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           The page keeps policy language readable and easy to scan, with the Shopify source wrapped in a simpler shell.
         </p>
       </div>
 
       <div>
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#5C748F]">Helpful routes</p>
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">Helpful routes</p>
         <div className="mt-3 grid gap-2">
           {actions.slice(0, 3).map((action) =>
             action.to ? (
               <Link
                 key={action.label}
                 to={action.to}
-                className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
+                className="inline-flex items-center justify-between border-t border-border/70 py-3 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
               >
                 {action.label}
               </Link>
@@ -113,7 +131,7 @@ const PolicyPageView = ({ policyKey, actions }: PolicyPageViewProps) => {
               <a
                 key={action.label}
                 href={action.href || "/"}
-                className="inline-flex items-center justify-between border-t border-[#d8e6f5] py-3 text-sm font-semibold text-[#102A43] transition hover:border-[#bcd4ef] hover:text-primary"
+                className="inline-flex items-center justify-between border-t border-border/70 py-3 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
               >
                 {action.label}
               </a>
@@ -125,24 +143,27 @@ const PolicyPageView = ({ policyKey, actions }: PolicyPageViewProps) => {
   );
 
   return (
-    <OpenContentPageShell
-      breadcrumbs={[
-        { label: "Home", to: "/" },
-        { label: "Policies" },
-        { label: policyMeta.fallbackTitle },
-      ]}
-      kicker="Legal"
-      title={data.title}
-      summary="Clear, readable policy details for shipping, returns, privacy, and customer support."
-      meta={heroMeta}
-      aside={heroAside}
-      actions={actions}
-    >
-      <article
-        className="prose prose-sm max-w-none leading-[1.74] text-[#102A43] dark:prose-invert prose-headings:font-display prose-headings:text-[#102A43] prose-a:text-primary prose-strong:text-[#102A43] prose-li:text-[#102A43] prose-p:text-[#314861] prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:border prose-table:border-[#d8e6f5] prose-th:border prose-th:border-[#d8e6f5] prose-th:bg-[#f5faff] prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-[#d8e6f5] prose-td:px-3 prose-td:py-2 prose-img:rounded-2xl prose-img:border prose-img:border-[#d8e6f5]"
-        dangerouslySetInnerHTML={{ __html: bodyHtml }}
-      />
-    </OpenContentPageShell>
+    <>
+      {seoMetadata}
+      <OpenContentPageShell
+        breadcrumbs={[
+          { label: "Home", to: "/" },
+          { label: "Policies" },
+          { label: policyMeta.fallbackTitle },
+        ]}
+        kicker="Legal"
+        title={data.title}
+        summary="Clear, readable policy details for shipping, returns, privacy, and customer support."
+        meta={heroMeta}
+        aside={heroAside}
+        actions={actions}
+      >
+        <article
+          className="prose prose-sm max-w-none leading-[1.74] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-muted-foreground prose-table:block prose-table:w-full prose-table:overflow-x-auto prose-table:border prose-table:border-border/70 prose-th:border prose-th:border-border/70 prose-th:bg-background/90 prose-th:px-3 prose-th:py-2 prose-td:border prose-td:border-border/70 prose-td:px-3 prose-td:py-2 prose-img:rounded-2xl prose-img:border prose-img:border-border/70"
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
+        />
+      </OpenContentPageShell>
+    </>
   );
 };
 

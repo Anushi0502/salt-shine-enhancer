@@ -89,6 +89,12 @@ export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
       cwd: releaseRootDir,
     },
     {
+      label: "Map Shopify variant images",
+      command: npmBin,
+      args: ["run", "shopify:variant-image-mapping:apply"],
+      cwd: releaseRootDir,
+    },
+    {
       label: "Apply Shopify merchandising metafield backfill",
       command: npmBin,
       args: ["run", "shopify:product-metafields:backfill:apply"],

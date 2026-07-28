@@ -1,9 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const productsPath = path.join(projectRoot, "public/data/products.json");
 const collectionProductsPath = path.join(projectRoot, "public/data/collection-products.json");
 const outputPath = path.join(projectRoot, "public/data/home-collection-products.json");
 const PRODUCT_LIMIT = 12;
@@ -167,7 +167,7 @@ function selectProducts(products, collectionMap, config) {
 }
 
 const [productsPayload, collectionProductsPayload] = await Promise.all([
-  readFile(productsPath, "utf8").then(JSON.parse),
+  readProductCatalogPayload(path.join(projectRoot, "public/data")),
   readFile(collectionProductsPath, "utf8").then(JSON.parse),
 ]);
 const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];

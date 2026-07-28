@@ -12,7 +12,7 @@ import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { openExternalUrl } from "@/lib/mobile";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
-import { useCollectionProductsMap, useProducts } from "@/lib/shopify-data";
+import { useCollectionProductsMap, useProductSearchIndex } from "@/lib/shopify-data";
 import {
   buildCartRecommendations,
   buildProductCollectionIndex,
@@ -33,7 +33,7 @@ const CartDrawer = () => {
   } = useCart();
   const previousRouteRef = useRef(`${location.pathname}${location.search}`);
   const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
-  const { data: productsPayload } = useProducts(shouldLoadRecommendations);
+  const { data: productsPayload } = useProductSearchIndex(shouldLoadRecommendations);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
   const collectionIndex = useMemo(
     () => buildProductCollectionIndex(collectionProductsMapPayload),

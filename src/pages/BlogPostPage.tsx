@@ -87,7 +87,7 @@ const BlogPostPage = () => {
     .slice(0, 3);
 
   return (
-    <section className="mx-auto mt-6 w-[min(1000px,calc(100%-20px))] pb-10">
+    <section className="mx-auto mt-6 w-[min(1000px,calc(100%_-_20px))] pb-10">
       <Reveal>
         <Link
           to="/blog"

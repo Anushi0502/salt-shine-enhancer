@@ -72,7 +72,7 @@ const SiteShell = ({ children }: PropsWithChildren) => {
     <div
       data-page-context={isHomePage ? "home" : "inner"}
       className={`site-shell relative min-h-screen overflow-x-clip text-foreground ${
-        nativeApp ? "native-ajio-shell bg-[#f6f2eb]" : "bg-transparent"
+        nativeApp ? "native-ajio-shell bg-background" : "bg-transparent"
       } ${isHomePage ? "is-homepage" : "is-inner-page"}`}
     >
       <SeoMetadata scope="global" structuredData={globalStructuredData} />

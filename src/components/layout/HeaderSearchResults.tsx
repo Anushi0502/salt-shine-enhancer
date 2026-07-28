@@ -225,16 +225,16 @@ const HeaderSearchResults = ({
       className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[80]"
       onMouseDown={(event) => event.preventDefault()}
     >
-      <div className="grid gap-2 rounded-[1.15rem] border border-[#cfdff2] bg-[#f7fbff] p-2 shadow-[0_18px_36px_-24px_rgba(12,32,72,0.3)] lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
-        <section className="rounded-[0.95rem] border border-[#d8e6f5] bg-white p-2">
-          <div className="flex items-center justify-between border-b border-[#e2edf8] pb-2">
-            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">
+      <div className="grid gap-2 rounded-[1.15rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-2 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.2)] lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] backdrop-blur-xl">
+        <section className="rounded-[0.95rem] border border-border/70 bg-background/95 p-2">
+          <div className="flex items-center justify-between border-b border-border/70 pb-2">
+            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Product matches
             </p>
             <button
               type="button"
               onClick={onSearchAll}
-              className="text-[0.64rem] font-bold uppercase tracking-[0.16em] text-[#8a6110] transition hover:text-[#6f4d08]"
+              className="text-[0.64rem] font-bold uppercase tracking-[0.16em] text-primary transition hover:text-foreground"
             >
               Search all
             </button>
@@ -250,7 +250,7 @@ const HeaderSearchResults = ({
                   key={product.id}
                   to={`/products/${product.handle}`}
                   onClick={onClose}
-                  className="grid grid-cols-[2.8rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.85rem] border border-[#e2edf8] bg-[#fbfdff] px-2.5 py-2 transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                  className="grid grid-cols-[2.8rem_minmax(0,1fr)_auto] items-start gap-2 rounded-[0.85rem] border border-border/70 bg-background/92 px-2.5 py-2 transition hover:border-primary/20 hover:bg-background"
                 >
                   {image ? (
                     <img
@@ -260,23 +260,23 @@ const HeaderSearchResults = ({
                       loading="lazy"
                     />
                   ) : (
-                    <div className="grid h-11 w-11 place-items-center rounded-[0.8rem] bg-[#ECF4FC] text-[0.44rem] font-bold uppercase tracking-[0.08em] text-[#5C748F]">
+                    <div className="grid h-11 w-11 place-items-center rounded-[0.8rem] bg-muted/45 text-[0.44rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                       SALT
                     </div>
                   )}
 
                   <div className="min-w-0">
-                    <p className="line-clamp-2 text-sm font-semibold leading-tight text-[#102A43]">
+                    <p className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
                       {conciseTitle(product.title, 44)}
                     </p>
-                    <p className="mt-0.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#5C748F]">
+                    <p className="mt-0.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                       {product.product_type || "Curated pick"}
                     </p>
                   </div>
 
                   <div className="flex min-h-full flex-col items-end gap-1.5 text-right">
-                    <p className="text-sm font-semibold leading-none text-[#0C2048]">{price}</p>
-                    <span className="inline-flex items-center gap-0.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#5C748F]">
+                    <p className="text-sm font-semibold leading-none text-foreground">{price}</p>
+                    <span className="inline-flex items-center gap-0.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                       View
                       <ChevronRight className="h-3 w-3" />
                     </span>
@@ -286,7 +286,7 @@ const HeaderSearchResults = ({
             })}
 
             {hasSearchQuery && !dropdownProducts.length ? (
-              <div className="rounded-[0.95rem] border border-dashed border-[#cfdff2] bg-[#fbfdff] px-3 py-4 text-sm text-[#5C748F]">
+              <div className="rounded-[0.95rem] border border-dashed border-border/70 bg-background/92 px-3 py-4 text-sm text-muted-foreground">
                 <p>No direct match yet. Try a category shortcut:</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
@@ -294,7 +294,7 @@ const HeaderSearchResults = ({
                       key={`${entry.label}-${entry.to}`}
                       to={entry.to}
                       onClick={onClose}
-                      className="rounded-full border border-[#BFD7F2] bg-[#ECF4FC] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#102A43] transition hover:border-[#9fc3e9] hover:bg-[#dcecff]"
+                      className="rounded-full border border-border/70 bg-muted/45 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/20 hover:bg-background"
                     >
                       {entry.label}
                     </Link>
@@ -305,42 +305,42 @@ const HeaderSearchResults = ({
           </div>
         </section>
 
-        <section className="rounded-[0.95rem] border border-[#d8e6f5] bg-white p-2">
-          <div className="rounded-[0.85rem] border border-[#e2edf8] bg-[#fbfdff] p-2.5">
-            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Popular routes</p>
+        <section className="rounded-[0.95rem] border border-border/70 bg-background/95 p-2">
+          <div className="rounded-[0.85rem] border border-border/70 bg-background/92 p-2.5">
+            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">Popular routes</p>
             <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
               {popularRoutes.map((route) => (
                 <Link
                   key={route.label}
                   to={route.to}
                   onClick={onClose}
-                  className="inline-flex items-center justify-between rounded-[0.75rem] border border-transparent bg-white px-2.5 py-2 text-sm font-medium text-[#102A43] transition hover:border-[#bfd7f2] hover:bg-[#f5faff]"
+                  className="inline-flex items-center justify-between rounded-[0.75rem] border border-transparent bg-background px-2.5 py-2 text-sm font-medium text-foreground transition hover:border-primary/20 hover:bg-muted/40"
                 >
                   <span>{route.label}</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-[#5C748F]" />
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="mt-2 rounded-[0.85rem] border border-[#e2edf8] bg-[#fbfdff] p-2.5">
+          <div className="mt-2 rounded-[0.85rem] border border-border/70 bg-background/92 p-2.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-[#5C748F]">Quick picks</p>
-              <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-[#8a99aa]">
+              <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">Quick picks</p>
+              <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {recentSearches.length ? "Recent first" : "Trending first"}
               </p>
             </div>
 
             {quickCategoryLinks.length ? (
               <div className="mt-2.5">
-                <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">Categories</p>
+                <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Categories</p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {quickCategoryLinks.map((entry) => (
                     <Link
                       key={`${entry.label}-${entry.to}`}
                       to={entry.to}
                       onClick={onClose}
-                      className="rounded-full border border-[#BFD7F2] bg-[#ECF4FC] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#102A43] transition hover:border-[#9fc3e9] hover:bg-[#dcecff]"
+                      className="rounded-full border border-border/70 bg-muted/45 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/20 hover:bg-background"
                     >
                       {entry.label}
                     </Link>
@@ -350,7 +350,7 @@ const HeaderSearchResults = ({
             ) : null}
 
             <div className={quickCategoryLinks.length ? "mt-2.5" : "mt-3"}>
-              <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-[#8a99aa]">
+              <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 {recentSearches.length ? "Recent searches" : "Trending searches"}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1">
@@ -359,7 +359,7 @@ const HeaderSearchResults = ({
                     key={term}
                     type="button"
                     onClick={() => onQuickSearch(term)}
-                    className="rounded-full border border-[#BFD7F2] bg-[#ECF4FC] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-[#102A43] transition hover:border-[#9fc3e9] hover:bg-[#dcecff]"
+                    className="rounded-full border border-border/70 bg-muted/45 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/20 hover:bg-background"
                   >
                     {term}
                   </button>

@@ -12,8 +12,9 @@ import {
   Upload,
 } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
-import { useProducts } from "@/lib/shopify-data";
+import { useProductSearchIndex } from "@/lib/shopify-data";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { toast } from "sonner";
 
@@ -615,7 +616,7 @@ const BulkReviewPage = () => {
     datedUnknown: 0,
   });
 
-  const { data: productsPayload } = useProducts();
+  const { data: productsPayload } = useProductSearchIndex();
   const products = productsPayload?.products || [];
   const judgeMeConfig = useMemo(() => getJudgeMeConfig(), []);
 
@@ -1020,8 +1021,19 @@ const BulkReviewPage = () => {
     });
   };
 
+  const seoMetadata = (
+    <SeoMetadata
+      title="Bulk Review Upload | SALT Online Store"
+      description="Upload CSV or XLSX review files and post them to Judge.me."
+      canonicalPath="/bulk-review"
+      noIndex
+    />
+  );
+
   return (
-    <section className="mx-auto mt-8 w-[min(1200px,calc(100%-20px))] pb-12">
+    <>
+      {seoMetadata}
+      <section className="mx-auto mt-8 w-[min(1200px,calc(100%_-_20px))] pb-12">
       <Reveal>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -1258,7 +1270,8 @@ const BulkReviewPage = () => {
           </div>
         </Reveal>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 };
 

@@ -12,6 +12,7 @@ import {
   normalizeShopCustomData,
 } from "../src/lib/product-custom-data.js";
 import { buildProductSearchPayload } from "./product-search-index.mjs";
+import { readProductCatalogPayload, writeProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -40,7 +41,6 @@ const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS 
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
-const productsPath = resolve(outDir, "products.json");
 const productSearchPath = resolve(outDir, "product-search.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
@@ -474,6 +474,29 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
   }
 `;
 
+const PRODUCT_VARIANT_COST_QUERY = /* GraphQL */ `
+  query ProductVariantCostData($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Product {
+        id
+        legacyResourceId
+        variants(first: 250) {
+          nodes {
+            id
+            legacyResourceId
+            inventoryItem {
+              unitCost {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 const COLLECTION_CUSTOM_DATA_QUERY = /* GraphQL */ `
   query CollectionCustomData($ids: [ID!]!) {
     nodes(ids: $ids) {
@@ -672,6 +695,42 @@ function normalizeCustomDataNode(node) {
   });
 }
 
+function normalizeMoneyValue(value) {
+  const amount = value?.amount ?? value?.presentment_money?.amount ?? value?.current_amount;
+  if (amount == null) {
+    return "";
+  }
+
+  const numeric = Number(amount);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric.toFixed(2) : "";
+}
+
+function normalizeVariantCostNode(node) {
+  if (!node?.legacyResourceId) {
+    return null;
+  }
+
+  const variants = Array.isArray(node.variants?.nodes) ? node.variants.nodes : [];
+  const variantCosts = new Map();
+
+  for (const variant of variants) {
+    const variantLegacyId = String(variant?.legacyResourceId || "").trim();
+    const cost = normalizeMoneyValue(variant?.inventoryItem?.unitCost);
+    if (!variantLegacyId || !cost) {
+      continue;
+    }
+
+    variantCosts.set(variantLegacyId, cost);
+  }
+
+  return variantCosts.size
+    ? {
+        productLegacyId: String(node.legacyResourceId),
+        variantCosts,
+      }
+    : null;
+}
+
 function normalizeCollectionCustomDataNode(node) {
   if (!node) {
     return null;
@@ -714,6 +773,37 @@ async function fetchProductCustomDataMap(products) {
       }
 
       records.set(String(node.legacyResourceId), customData);
+    }
+  }
+
+  return records;
+}
+
+async function fetchProductVariantCostMap(products) {
+  if (!Array.isArray(products) || !products.length) {
+    return new Map();
+  }
+
+  const productIds = products
+    .map((product) => product.admin_graphql_api_id || toShopifyGid("Product", product.id))
+    .filter(Boolean);
+
+  const batches = chunkArray(productIds, 50);
+  const records = new Map();
+
+  for (const batch of batches) {
+    const payload = adminAccessToken
+      ? await fetchAdminGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch })
+      : await runShopifyStoreGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch });
+    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
+
+    for (const node of nodes) {
+      const normalized = normalizeVariantCostNode(node);
+      if (!normalized) {
+        continue;
+      }
+
+      records.set(normalized.productLegacyId, normalized.variantCosts);
     }
   }
 
@@ -1100,8 +1190,7 @@ async function fetchBlogPosts() {
 }
 
 async function fetchProductsFromCachedFile() {
-  const raw = await readFile(productsPath, "utf8");
-  const payload = JSON.parse(raw);
+  const payload = await readProductCatalogPayload(outDir);
   const products = Array.isArray(payload.products) ? payload.products : [];
 
   if (!products.length) {
@@ -1170,23 +1259,44 @@ async function fetchProductsForSync() {
 
     if (products.length) {
       try {
-        const customDataMap = await fetchProductCustomDataMap(products);
+        const [customDataMap, variantCostMap] = await Promise.all([
+          fetchProductCustomDataMap(products),
+          fetchProductVariantCostMap(products),
+        ]);
         const enrichedProducts = products.map((product) => {
           const customData = customDataMap.get(String(product.id)) || null;
+          const variantCosts = variantCostMap.get(String(product.id)) || null;
+          const variants = Array.isArray(product.variants)
+            ? product.variants.map((variant) => {
+                const legacyVariantId = String(variant?.legacyResourceId || variant?.id || "").trim();
+                const cost = legacyVariantId ? variantCosts?.get(legacyVariantId) || "" : "";
+                if (!cost) {
+                  return variant;
+                }
+
+                return {
+                  ...variant,
+                  cost,
+                  cost_per_item: cost,
+                };
+              })
+            : product.variants;
+
           if (!customData) {
-            return product;
+            return variants === product.variants ? product : { ...product, variants };
           }
 
           return {
             ...product,
             customData,
+            variants,
             average_rating: product.average_rating ?? customData.rating ?? undefined,
             total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
           };
         });
 
         process.stdout.write(
-          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products and ${customDataMap.size} metafield payloads\n`,
+          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products, ${customDataMap.size} metafield payloads, and ${variantCostMap.size} variant cost payloads\n`,
         );
         return enrichedProducts;
       } catch (error) {
@@ -1361,7 +1471,7 @@ async function main() {
   }
 
   await mkdir(outDir, { recursive: true });
-  await writeFile(productsPath, JSON.stringify(productPayload));
+  const productManifest = await writeProductCatalogPayload(outDir, productPayload);
   await writeFile(productSearchPath, JSON.stringify(productSearchPayload));
   await writeFile(collectionsPath, JSON.stringify(collectionPayload));
   await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
@@ -1369,7 +1479,9 @@ async function main() {
   await writeFile(blogPostsPath, JSON.stringify(blogPayload));
   await writeFile(shopPath, JSON.stringify(shopPayload));
 
-  process.stdout.write(`Saved ${productPayload.total} products to public/data/products.json\n`);
+  process.stdout.write(
+    `Saved ${productPayload.total} products to public/data/products.json across ${productManifest.shardCount} shards (max ${productManifest.shardMaxBytes} bytes each)\n`,
+  );
   process.stdout.write(`Saved ${productSearchPayload.total} compact search products to public/data/product-search.json\n`);
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
   process.stdout.write(

@@ -152,6 +152,50 @@ function formatTypeLabel(value: string): string {
     .join(" ");
 }
 
+type ShopHeroAction = {
+  label: string;
+  to?: string;
+  href?: string;
+  primary?: boolean;
+  onClick?: () => void;
+};
+
+function renderHeroAction(action: ShopHeroAction) {
+  const actionClass = action.primary
+    ? "inline-flex h-11 items-center justify-center rounded-full border border-transparent bg-primary px-5 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-white transition hover:-translate-y-[1px] hover:shadow-[0_18px_30px_-24px_rgba(37,99,235,0.5)]"
+    : "inline-flex h-11 items-center justify-center rounded-full border border-border px-5 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:-translate-y-[1px] hover:text-primary";
+
+  if (action.onClick) {
+    return (
+      <button key={action.label} type="button" onClick={action.onClick} className={actionClass}>
+        {action.label}
+      </button>
+    );
+  }
+
+  if (action.href) {
+    const external = /^https?:\/\//i.test(action.href);
+
+    return (
+      <a
+        key={action.label}
+        href={action.href}
+        className={actionClass}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noreferrer" : undefined}
+      >
+        {action.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link key={action.label} to={action.to || "/"} className={actionClass}>
+      {action.label}
+    </Link>
+  );
+}
+
 const ShopPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -481,8 +525,8 @@ const ShopPage = () => {
   if (productsLoading || waitingForCollectionIds) {
     return (
       <LoadingState
-        title="Loading products"
-        subtitle="Building your filtered catalog view with latest pricing and availability."
+        title="Loading catalog"
+        subtitle="Preparing filters, live pricing, and collection context."
       />
     );
   }
@@ -633,6 +677,11 @@ const ShopPage = () => {
     } => Boolean(entry),
   );
   const hasActiveFilters = filterChips.length > 0;
+  const heroActions: ShopHeroAction[] = [
+    { label: "Browse collections", to: "/collections", primary: true },
+    { label: "Resource Hub", to: "/resources" },
+    hasActiveFilters ? { label: "Clear filters", onClick: clearFilters } : { label: "Ask support", to: "/contact" },
+  ];
   const desktopToolbarChips = filterChips.slice(0, 3);
   const hiddenDesktopChipCount = Math.max(0, filterChips.length - desktopToolbarChips.length);
 
@@ -870,19 +919,38 @@ const ShopPage = () => {
                   label,
                 }))}
               />
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Shop floor: sub-$25 products default to buy 2 and remain editable per product in Shopify.
-              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {[
+                  { label: "Results", value: `${totalResults.toLocaleString()} products` },
+                  {
+                    label: "Route",
+                    value: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "All products",
+                  },
+                  { label: "Sort", value: sortLabel },
+                ].map((item) => (
+                  <div
+                    key={`${item.label}-${item.value}`}
+                    className="salt-editorial-meta inline-flex items-baseline gap-2 px-3 py-1 text-xs"
+                  >
+                    <span className="font-semibold text-muted-foreground">{item.label}</span>
+                    <span className="max-w-[12rem] truncate font-semibold text-foreground">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {heroActions.map(renderHeroAction)}
+              </div>
+              
             </div>
 
             {selectedCollectionImage ? (
-              <div className="relative order-first aspect-[5/4] overflow-hidden rounded-[1.15rem] border border-white/35 bg-white/40 shadow-[0_16px_34px_-28px_rgba(12,32,72,0.22)] lg:order-none">
+              <div className="relative order-first aspect-[5/4] overflow-hidden rounded-[1.15rem] border border-border/70 bg-background/92 shadow-[0_16px_34px_-28px_rgba(12,32,72,0.18)] lg:order-none">
                 <img
                   src={selectedCollectionImage}
                   alt={selectedCollectionImageAlt}
                   className="h-full w-full object-cover object-center transition duration-500"
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(8,22,48,0.08)_54%,rgba(8,22,48,0.28))]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.04)_54%,hsl(var(--foreground)/0.16))]" />
               </div>
             ) : null}
           </div>
@@ -939,7 +1007,7 @@ const ShopPage = () => {
                   <button
                     type="button"
                     onClick={() => setDesktopFiltersVisible((current) => !current)}
-                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#15479a] bg-[linear-gradient(135deg,#2b67db_0%,#1f58c8_48%,#1749a7_100%)] px-2.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-white shadow-[0_12px_22px_-18px_rgba(21,71,154,0.62)] transition hover:-translate-y-[1px] hover:brightness-105 hover:shadow-[0_16px_26px_-20px_rgba(21,71,154,0.7)]"
+                    className="salt-primary-cta h-8 gap-1 px-2.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] shadow-[0_12px_22px_-18px_rgba(21,71,154,0.18)] transition hover:-translate-y-[1px] hover:shadow-[0_16px_26px_-20px_rgba(21,71,154,0.26)]"
                     aria-controls="desktop-shop-filters"
                     aria-expanded={desktopFiltersVisible}
                   >

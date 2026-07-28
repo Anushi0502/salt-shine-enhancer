@@ -17,6 +17,7 @@ import {
   LogOut,
   ReceiptText,
 } from "lucide-react";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import Reveal from "@/components/storefront/Reveal";
 import {
   clearShopifyCustomerAccountSession,
@@ -126,13 +127,13 @@ function getOrderTone(order: ShopifyCustomerAccountOrder): StatusTone {
 function getOrderToneClasses(tone: StatusTone): string {
   switch (tone) {
     case "emerald":
-      return "border-emerald-500/30 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300";
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
     case "amber":
-      return "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300";
+      return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
     case "sky":
-      return "border-sky-500/30 bg-sky-500/12 text-sky-700 dark:text-sky-300";
+      return "border-primary/20 bg-primary/10 text-primary dark:text-primary";
     case "rose":
-      return "border-rose-500/30 bg-rose-500/12 text-rose-700 dark:text-rose-300";
+      return "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300";
     default:
       return "border-border/70 bg-background/90 text-muted-foreground";
   }
@@ -260,6 +261,14 @@ const OrderHistoryPage = () => {
   const customer = account?.customer ?? null;
   const normalizedSearch = normalizeText(search);
   const recentOrderItemCount = recentOrder ? getOrderItemCount(recentOrder) : 0;
+  const seoMetadata = (
+    <SeoMetadata
+      title="Account Orders | SALT Online Store"
+      description="Sign in to view Shopify order history, fulfillment updates, and account access."
+      canonicalPath="/account/orders"
+      noIndex
+    />
+  );
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -537,34 +546,37 @@ const OrderHistoryPage = () => {
 
   if (mode === "loading" && !account) {
     return (
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(29,96,216,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(244,184,0,0.12),transparent_28%),linear-gradient(180deg,rgba(248,250,255,1),rgba(244,248,255,0.94))]" />
-        <div className="relative mx-auto w-[min(1280px,calc(100%-20px))] pb-12 pt-5 sm:pb-14 sm:pt-8">
-          <Reveal>{loadStateBanner}</Reveal>
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.95fr]">
-            <Reveal delayMs={60}>
-              <div className="salt-surface rounded-[1.8rem] border p-5 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)]">
-                <div className="h-5 w-44 animate-pulse rounded-full bg-muted/70" />
-                <div className="mt-4 h-10 w-4/5 animate-pulse rounded-2xl bg-muted/60" />
-                <div className="mt-3 h-4 w-full animate-pulse rounded-full bg-muted/60" />
-                <div className="mt-2 h-4 w-5/6 animate-pulse rounded-full bg-muted/50" />
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <div className="h-24 animate-pulse rounded-2xl bg-muted/40" />
-                  <div className="h-24 animate-pulse rounded-2xl bg-muted/30" />
+      <>
+        {seoMetadata}
+        <section className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(29,96,216,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(244,184,0,0.12),transparent_28%),linear-gradient(180deg,rgba(248,250,255,1),rgba(244,248,255,0.94))]" />
+          <div className="relative mx-auto w-[min(1280px,calc(100%_-_20px))] pb-12 pt-5 sm:pb-14 sm:pt-8">
+            <Reveal>{loadStateBanner}</Reveal>
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.95fr]">
+              <Reveal delayMs={60}>
+                <div className="salt-surface rounded-[1.8rem] border p-5 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)]">
+                  <div className="h-5 w-44 animate-pulse rounded-full bg-muted/70" />
+                  <div className="mt-4 h-10 w-4/5 animate-pulse rounded-2xl bg-muted/60" />
+                  <div className="mt-3 h-4 w-full animate-pulse rounded-full bg-muted/60" />
+                  <div className="mt-2 h-4 w-5/6 animate-pulse rounded-full bg-muted/50" />
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    <div className="h-24 animate-pulse rounded-2xl bg-muted/40" />
+                    <div className="h-24 animate-pulse rounded-2xl bg-muted/30" />
+                  </div>
                 </div>
-              </div>
-            </Reveal>
-            <Reveal delayMs={100}>
-              <div className="salt-surface rounded-[1.8rem] border p-5 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)]">
-                <div className="h-5 w-32 animate-pulse rounded-full bg-muted/70" />
-                <div className="mt-4 h-11 w-full animate-pulse rounded-2xl bg-muted/50" />
-                <div className="mt-3 h-11 w-full animate-pulse rounded-2xl bg-muted/40" />
-                <div className="mt-3 h-11 w-full animate-pulse rounded-2xl bg-muted/40" />
-              </div>
-            </Reveal>
+              </Reveal>
+              <Reveal delayMs={100}>
+                <div className="salt-surface rounded-[1.8rem] border p-5 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)]">
+                  <div className="h-5 w-32 animate-pulse rounded-full bg-muted/70" />
+                  <div className="mt-4 h-11 w-full animate-pulse rounded-2xl bg-muted/50" />
+                  <div className="mt-3 h-11 w-full animate-pulse rounded-2xl bg-muted/40" />
+                  <div className="mt-3 h-11 w-full animate-pulse rounded-2xl bg-muted/40" />
+                </div>
+              </Reveal>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </>
     );
   }
 
@@ -585,27 +597,29 @@ const OrderHistoryPage = () => {
     ) : null;
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(29,96,216,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(244,184,0,0.12),transparent_28%),linear-gradient(180deg,rgba(248,250,255,1),rgba(244,248,255,0.94))]" />
+    <>
+      {seoMetadata}
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(29,96,216,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(244,184,0,0.12),transparent_28%),linear-gradient(180deg,rgba(248,250,255,1),rgba(244,248,255,0.94))]" />
 
-      <div className="relative mx-auto w-[min(1280px,calc(100%-20px))] pb-12 pt-5 sm:pb-14 sm:pt-8">
-        <Reveal>{loadStateBanner}</Reveal>
+        <div className="relative mx-auto w-[min(1280px,calc(100%_-_20px))] pb-12 pt-5 sm:pb-14 sm:pt-8">
+          <Reveal>{loadStateBanner}</Reveal>
 
-        <div className="mt-5 grid gap-5">
-          <Reveal delayMs={70}>
-            <div className="salt-surface rounded-[1.8rem] border p-4 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)] sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-3xl">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Your account</p>
-                  <h2 className="mt-2 font-display text-[clamp(1.8rem,3.6vw,3rem)] leading-[0.94]">
-                    {customer ? customer.displayName : "Connect your Shopify account"}
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {customer
-                      ? "This dashboard pulls the latest Shopify orders, payment state, fulfillment state, and line items."
-                      : "Once you sign in, this dashboard will pull the latest Shopify orders, payment state, fulfillment state, and line items."}
-                  </p>
-                </div>
+          <div className="mt-5 grid gap-5">
+            <Reveal delayMs={70}>
+              <div className="salt-surface rounded-[1.8rem] border p-4 shadow-[0_28px_70px_-50px_rgba(15,23,42,0.45)] sm:p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-3xl">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Your account</p>
+                    <h2 className="mt-2 font-display text-[clamp(1.8rem,3.6vw,3rem)] leading-[0.94]">
+                      {customer ? customer.displayName : "Connect your Shopify account"}
+                    </h2>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      {customer
+                        ? "This dashboard pulls the latest Shopify orders, payment state, fulfillment state, and line items."
+                        : "Once you sign in, this dashboard will pull the latest Shopify orders, payment state, fulfillment state, and line items."}
+                    </p>
+                  </div>
 
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -851,9 +865,10 @@ const OrderHistoryPage = () => {
               </div>
             </>
           ) : null}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 };
 
