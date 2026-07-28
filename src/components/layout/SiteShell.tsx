@@ -13,6 +13,7 @@ import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "@/l
 
 const CartDrawer = lazy(() => import("@/components/storefront/CartDrawer"));
 const PUMPER_BRIDGE_ROUTE = /^\/(?:products?|cart)(?:\/|$)/;
+const FINANCE_PATHS = new Set(["/apps:finance"]);
 
 const DeferredCartDrawer = () => {
   const { isDrawerOpen } = useCart();
@@ -40,7 +41,9 @@ const RouteLoadingState = ({ isHomePage }: { isHomePage: boolean }) => (
 const SiteShell = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-  const isFinancePage = location.pathname === "/apps:finance";
+  const isFinancePage =
+    FINANCE_PATHS.has(location.pathname) ||
+    (location.pathname === "/" && new URLSearchParams(location.search).get("finance") === "1");
   const nativeApp = isNativeApp();
   const hideFooter = nativeApp;
   const { data: shopPayload } = useShop(!isFinancePage);

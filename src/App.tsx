@@ -88,6 +88,14 @@ const StorefrontShopRoute = () => {
   return <ShopPage />;
 };
 
+const StorefrontHomeRoute = () => {
+  const [searchParams] = useSearchParams();
+
+  // Shopify cannot serve the literal /apps:finance path from a theme. The
+  // redirect created by the refresh workflow lands here instead.
+  return searchParams.get("finance") === "1" ? <FinancePage /> : <HomePage />;
+};
+
 const queryClient = new QueryClient();
 
 const AppShell = () => (
@@ -102,7 +110,7 @@ const AppShell = () => (
             <ProductRoutePreloader />
             <Routes>
               <Route element={<SiteShell />}>
-                <Route path="/" element={<HomePage />} />
+                <Route path="/" element={<StorefrontHomeRoute />} />
                 <Route path="/shop" element={<StorefrontShopRoute />} />
                 <Route path="/search" element={<ShopPage />} />
                 <Route path="/collections" element={<CollectionsPage />} />

@@ -57,6 +57,12 @@ jobs:
           } >> "$GITHUB_ENV"
           printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
 
+      - name: Ensure finance route redirect
+        env:
+          SHOPIFY_ADMIN_API_VERSION: "2026-07"
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+        run: node scripts/ensure-shopify-finance-redirect.mjs
+
       - name: Snapshot current generated data
         run: cp -R public/data "$RUNNER_TEMP/salt-data-before"
 
