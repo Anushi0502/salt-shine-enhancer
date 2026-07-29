@@ -169,28 +169,19 @@ Configure these GitHub repository secrets before enabling the schedules:
 
 ## Private Finance Workspace
 
-The finance workspace is served at `/pages/finance`, with `/apps:finance` and `/apps/finance` redirected to that page. It never puts Shopify Admin or DSers credentials in the browser bundle.
-
-Create the Shopify redirect with:
-
-```bash
-npm run shopify:finance:redirect
-```
+The `/pages/finance` route is the private, server-backed workspace. Legacy `/apps:finance` and `/apps/finance` links still resolve to it, but the canonical storefront path is `/pages/finance`. It never puts Shopify Admin or DSers credentials in the browser bundle.
 
 Configure these deployment-only variables before publishing it:
 
-- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, `read_marketing_events`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
 - `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`.
 - `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
 - `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
-- `FINANCE_RECONCILIATION_JSON`: optional row-level reconciliation fallback keyed by Shopify order ID or order number. It supports AliExpress order IDs, invoice labels, fee threshold labels, status text, pending payout, payout paid, order cost, bill cost, and campaign cost values.
 
-Native reconciliation rows are read from `finance.*` order metafields first. The current finance map expects keys such as `ali_express_order_id`, `invoice`, `fee_threshold`, `status`, `pending_payout`, `payout_paid`, `order_cost`, `bill_cost`, and `campaign_cost` in the `finance` namespace.
-
-The backend tries Shopify Payments GraphQL first and REST second. It allocates Shopify marketing campaign spend from order attribution, pulls SALT app subscriptions from Shopify Admin billing, and never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
+The backend tries Shopify Payments GraphQL first and REST second. It never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 
