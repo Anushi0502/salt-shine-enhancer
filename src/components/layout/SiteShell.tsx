@@ -13,7 +13,7 @@ import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "@/l
 
 const CartDrawer = lazy(() => import("@/components/storefront/CartDrawer"));
 const PUMPER_BRIDGE_ROUTE = /^\/(?:products?|cart)(?:\/|$)/;
-const FINANCE_PATHS = new Set(["/pages/finance", "/apps:finance", "/apps/finance"]);
+const FINANCE_PATHS = new Set(["/apps:finance", "/apps/finance", "/pages/finance"]);
 
 const DeferredCartDrawer = () => {
   const { isDrawerOpen } = useCart();

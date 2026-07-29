@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type {
   FinanceException,
+  FinanceCampaignSpend,
   FinanceOrderRow,
   FinancePayout,
   FinanceSourceState,
@@ -41,6 +42,47 @@ type ShopifyMoneySet = {
 
 type ShopifyMoney = { amount?: string | number; currencyCode?: string };
 
+type ShopifyUtmParameters = {
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  content?: string | null;
+  term?: string | null;
+};
+
+type ShopifyMarketingEvent = {
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  sourceType?: string | null;
+};
+
+type ShopifyCustomerVisit = {
+  utmParameters?: ShopifyUtmParameters | null;
+  marketingEvent?: ShopifyMarketingEvent | null;
+};
+
+type ShopifyCustomerJourneySummary = {
+  ready?: boolean | null;
+  firstVisit?: ShopifyCustomerVisit | null;
+  lastVisit?: ShopifyCustomerVisit | null;
+};
+
+type ShopifyDispute = {
+  id?: string;
+  status?: string;
+  initiatedAs?: string;
+};
+
+type ShopifyMarketingActivity = {
+  id?: string;
+  title?: string;
+  status?: string;
+  sourceAndMedium?: string | null;
+  utmParameters?: ShopifyUtmParameters | null;
+  adSpend?: ShopifyMoney | null;
+};
+
 type ShopifyOrder = {
   id?: string;
   name?: string;
@@ -53,6 +95,10 @@ type ShopifyOrder = {
   totalDiscountsSet?: ShopifyMoneySet | null;
   totalTaxSet?: ShopifyMoneySet | null;
   totalShippingPriceSet?: ShopifyMoneySet | null;
+  customerJourneySummary?: ShopifyCustomerJourneySummary | null;
+  disputes?: {
+    nodes?: ShopifyDispute[];
+  } | null;
   lineItems?: {
     nodes?: Array<{
       quantity?: number;
@@ -85,10 +131,18 @@ type SubscriptionSource = {
   message?: string;
 };
 
+type CampaignSpendSource = {
+  campaigns: FinanceCampaignSpend[];
+  allocationsByOrderId: Map<string, number>;
+  state: FinanceSourceState;
+  message?: string;
+};
+
 type NormalizedOrder = {
   id: string;
   name: string;
   createdAt: string;
+  status: "open" | "cancelled" | "disputed" | "cancelled-disputed";
   currency: string;
   grossSalesCents: number;
   discountsCents: number;
@@ -97,6 +151,8 @@ type NormalizedOrder = {
   taxCollectedCents: number;
   shippingIncomeCents: number;
   cogsCents: number;
+  campaignKey: string | null;
+  disputeCount: number;
   itemCount: number;
   coveredItemCount: number;
   hasCost: boolean;
@@ -124,6 +180,24 @@ const ORDER_QUERY = /* GraphQL */ `
         totalDiscountsSet { shopMoney { amount currencyCode } }
         totalTaxSet { shopMoney { amount currencyCode } }
         totalShippingPriceSet { shopMoney { amount currencyCode } }
+        customerJourneySummary {
+          ready
+          firstVisit {
+            utmParameters { source medium campaign content term }
+            marketingEvent { utmSource utmMedium utmCampaign sourceType }
+          }
+          lastVisit {
+            utmParameters { source medium campaign content term }
+            marketingEvent { utmSource utmMedium utmCampaign sourceType }
+          }
+        }
+        disputes(first: 20) {
+          nodes {
+            id
+            status
+            initiatedAs
+          }
+        }
         lineItems(first: 100) {
           nodes {
             quantity
@@ -138,6 +212,21 @@ const ORDER_QUERY = /* GraphQL */ `
             }
           }
         }
+      }
+    }
+  }
+`;
+
+const MARKETING_ACTIVITY_QUERY = /* GraphQL */ `
+  query FinanceMarketingActivities($utm: UTMInput!) {
+    marketingActivities(first: 50, utm: $utm) {
+      nodes {
+        id
+        title
+        status
+        sourceAndMedium
+        utmParameters { source medium campaign content term }
+        adSpend { amount currencyCode }
       }
     }
   }
@@ -496,6 +585,163 @@ function simpleMoneyCurrency(input?: ShopifyMoney | null): string {
   return String(input?.currencyCode || DEFAULT_CURRENCY);
 }
 
+function normalizeCampaignPart(value: unknown): string {
+  return String(value || "").trim();
+}
+
+function campaignKey(source: string, medium: string, campaign: string): string {
+  return [source, medium, campaign].map((part) => normalizeCampaignPart(part).toLowerCase()).join("|");
+}
+
+function extractAttributionVisit(order: ShopifyOrder): ShopifyCustomerVisit | null {
+  const journey = order.customerJourneySummary;
+  if (!journey || journey.ready === false) return null;
+  return journey.lastVisit || journey.firstVisit || null;
+}
+
+function extractCampaignAttribution(order: ShopifyOrder): { key: string; source: string; medium: string; campaign: string; title: string } | null {
+  const visit = extractAttributionVisit(order);
+  if (!visit) return null;
+
+  const source = normalizeCampaignPart(visit.utmParameters?.source ?? visit.marketingEvent?.utmSource);
+  const medium = normalizeCampaignPart(visit.utmParameters?.medium ?? visit.marketingEvent?.utmMedium);
+  const campaign = normalizeCampaignPart(visit.utmParameters?.campaign ?? visit.marketingEvent?.utmCampaign);
+
+  if (!source && !medium && !campaign) return null;
+
+  const title = campaign || source || medium || "Attributed campaign";
+  return { key: campaignKey(source, medium, campaign), source, medium, campaign, title };
+}
+
+function extractCampaignAttributionFromValues(source: string, medium: string, campaign: string): { key: string; source: string; medium: string; campaign: string; title: string } | null {
+  const normalizedSource = normalizeCampaignPart(source);
+  const normalizedMedium = normalizeCampaignPart(medium);
+  const normalizedCampaign = normalizeCampaignPart(campaign);
+  if (!normalizedSource && !normalizedMedium && !normalizedCampaign) return null;
+  return {
+    key: campaignKey(normalizedSource, normalizedMedium, normalizedCampaign),
+    source: normalizedSource,
+    medium: normalizedMedium,
+    campaign: normalizedCampaign,
+    title: normalizedCampaign || normalizedSource || normalizedMedium || "Attributed campaign",
+  };
+}
+
+async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendSource> {
+  if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
+    return {
+      campaigns: [],
+      allocationsByOrderId: new Map(),
+      state: "unavailable",
+      message: "Shopify Admin credentials are not configured",
+    };
+  }
+
+  const groups = new Map<string, { source: string; medium: string; campaign: string; title: string; orderIds: string[]; orderRows: Array<{ id: string; createdAt: string }> }>();
+  for (const order of orders) {
+    const attribution = extractCampaignAttribution(order);
+    if (!attribution) continue;
+    const existing = groups.get(attribution.key);
+    if (existing) {
+      existing.orderIds.push(String(order.id || order.name || "unknown"));
+      existing.orderRows.push({ id: String(order.id || order.name || "unknown"), createdAt: String(order.createdAt || "") });
+    } else {
+      groups.set(attribution.key, {
+        source: attribution.source,
+        medium: attribution.medium,
+        campaign: attribution.campaign,
+        title: attribution.title,
+        orderIds: [String(order.id || order.name || "unknown")],
+        orderRows: [{ id: String(order.id || order.name || "unknown"), createdAt: String(order.createdAt || "") }],
+      });
+    }
+  }
+
+  if (!groups.size) {
+    return {
+      campaigns: [],
+      allocationsByOrderId: new Map(),
+      state: "missing",
+      message: "No Shopify marketing attribution data was available on the selected orders.",
+    };
+  }
+
+  const allocationsByOrderId = new Map<string, number>();
+  const campaigns: FinanceCampaignSpend[] = [];
+  const errors: string[] = [];
+  let resolvedGroups = 0;
+
+  const uniqueGroups = [...groups.values()];
+  const results = await Promise.allSettled(uniqueGroups.map(async (group) => {
+    const utm: Record<string, string> = {};
+    if (group.source) utm.source = group.source;
+    if (group.medium) utm.medium = group.medium;
+    if (group.campaign) utm.campaign = group.campaign;
+
+    const data = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm });
+    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, any>>;
+    const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(activity.adSpend), 0);
+    const orderRows = [...group.orderRows].sort((left, right) => {
+      const leftTime = new Date(left.createdAt || 0).getTime();
+      const rightTime = new Date(right.createdAt || 0).getTime();
+      if (leftTime !== rightTime) return leftTime - rightTime;
+      return left.id.localeCompare(right.id);
+    });
+    const count = orderRows.length;
+    const allocations = count
+      ? orderRows.map((row, index) => Math.floor(adSpendCents / count) + (index < adSpendCents % count ? 1 : 0))
+      : [];
+
+    orderRows.forEach((row, index) => {
+      const current = allocationsByOrderId.get(row.id) || 0;
+      allocationsByOrderId.set(row.id, current + (allocations[index] || 0));
+    });
+
+    campaigns.push({
+      key: campaignKey(group.source, group.medium, group.campaign),
+      title: group.title,
+      source: group.source || "unknown",
+      medium: group.medium || "unknown",
+      campaign: group.campaign || "unknown",
+      adSpendCents,
+      allocatedCents: allocations.reduce((sum, value) => sum + value, 0),
+      currency: String(activities[0]?.adSpend?.currencyCode || DEFAULT_CURRENCY),
+      orderCount: count,
+    });
+
+    resolvedGroups += 1;
+  }));
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      errors.push(result.reason instanceof Error ? result.reason.message : "Shopify marketing activities unavailable");
+    }
+  }
+
+  if (!resolvedGroups) {
+    return {
+      campaigns: [],
+      allocationsByOrderId: new Map(),
+      state: "unavailable",
+      message: errors[0] || "Shopify marketing activity access is unavailable. Merchant approval for read_marketing_events is required.",
+    };
+  }
+
+  const hasPartialAllocation = [...orders].some((order) => extractCampaignAttribution(order) && !allocationsByOrderId.has(String(order.id || order.name || "unknown")));
+  const hasErrors = errors.length > 0;
+  const partialMessage = hasPartialAllocation
+    ? "Some Shopify marketing activities were not fully matched to attributed orders and were left out of the campaign allocation."
+    : undefined;
+  return {
+    campaigns: campaigns.sort((left, right) => right.allocatedCents - left.allocatedCents || left.title.localeCompare(right.title)),
+    allocationsByOrderId,
+    state: hasErrors || hasPartialAllocation ? "partial" : "connected",
+    message: hasErrors
+      ? [errors.join(" | "), partialMessage].filter(Boolean).join(" | ")
+      : partialMessage,
+  };
+}
+
 function payoutDateQuery(start: string, end: string): string {
   return `issued_at:>=${start}T00:00:00Z issued_at:<=${end}T23:59:59Z`;
 }
@@ -705,63 +951,73 @@ function normalizeOrders(orders: ShopifyOrder[], supplierCosts: SupplierCostSour
   const currencies = new Set<string>();
   let missingCostCount = 0;
   let coveredBySupplierCount = 0;
-  const rows = orders
-    .filter((order) => !order.cancelledAt)
-    .map((order) => {
-      const currency = String(order.currencyCode || moneyCurrency(order.totalPriceSet) || DEFAULT_CURRENCY);
-      currencies.add(currency);
-      const subtotalCents = moneyCents(order.subtotalPriceSet);
-      const discountsCents = moneyCents(order.totalDiscountsSet);
-      const totalCents = moneyCents(order.totalPriceSet);
-      const currentTotalCents = moneyCents(order.currentTotalPriceSet || order.totalPriceSet);
-      const refundsCents = Math.max(totalCents - currentTotalCents, 0);
-      const grossSalesCents = subtotalCents + discountsCents;
-      const netRevenueCents = Math.max(subtotalCents - refundsCents, 0) + moneyCents(order.totalShippingPriceSet);
-      const lineItems = order.lineItems?.nodes || [];
-      let cogsCents = 0;
-      let itemCount = 0;
-      let coveredItemCount = 0;
-      let hasCost = false;
-      let hasMissingCost = false;
+  const rows = orders.map((order) => {
+    const currency = String(order.currencyCode || moneyCurrency(order.totalPriceSet) || DEFAULT_CURRENCY);
+    currencies.add(currency);
+    const subtotalCents = moneyCents(order.subtotalPriceSet);
+    const discountsCents = moneyCents(order.totalDiscountsSet);
+    const totalCents = moneyCents(order.totalPriceSet);
+    const currentTotalCents = moneyCents(order.currentTotalPriceSet || order.totalPriceSet);
+    const refundsCents = Math.max(totalCents - currentTotalCents, 0);
+    const grossSalesCents = subtotalCents + discountsCents;
+    const netRevenueCents = Math.max(subtotalCents - refundsCents, 0) + moneyCents(order.totalShippingPriceSet);
+    const lineItems = order.lineItems?.nodes || [];
+    const disputes = order.disputes?.nodes || [];
+    const disputeCount = disputes.length;
+    const cancelled = Boolean(order.cancelledAt);
+    const status: NormalizedOrder["status"] = cancelled
+      ? (disputeCount ? "cancelled-disputed" : "cancelled")
+      : disputeCount
+        ? "disputed"
+        : "open";
+    const campaign = extractCampaignAttribution(order);
+    let cogsCents = 0;
+    let itemCount = 0;
+    let coveredItemCount = 0;
+    let hasCost = false;
+    let hasMissingCost = false;
 
-      for (const line of lineItems) {
-        const quantity = Math.max(Number(line.quantity || 0), 0);
-        itemCount += quantity;
-        const unitCost = line.variant?.inventoryItem?.unitCost;
-        const variantId = String(line.variant?.id || "").trim();
-        const numericVariantId = variantId.split("/").pop() || variantId;
-        const sku = String(line.variant?.sku || "").trim();
-        const supplierCostCents = supplierCosts.costs.get(variantId) ?? supplierCosts.costs.get(numericVariantId) ?? supplierCosts.costs.get(sku);
-        const unitCostCents = unitCost?.amount != null ? cents(unitCost.amount) : supplierCostCents;
-        if (unitCostCents != null) {
-          cogsCents += unitCostCents * quantity;
-          hasCost = true;
-          coveredItemCount += quantity;
-          if (unitCost?.amount == null) coveredBySupplierCount += quantity;
-        } else {
-          hasMissingCost = true;
-          missingCostCount += quantity;
-        }
+    for (const line of lineItems) {
+      const quantity = Math.max(Number(line.quantity || 0), 0);
+      itemCount += quantity;
+      const unitCost = line.variant?.inventoryItem?.unitCost;
+      const variantId = String(line.variant?.id || "").trim();
+      const numericVariantId = variantId.split("/").pop() || variantId;
+      const sku = String(line.variant?.sku || "").trim();
+      const supplierCostCents = supplierCosts.costs.get(variantId) ?? supplierCosts.costs.get(numericVariantId) ?? supplierCosts.costs.get(sku);
+      const unitCostCents = unitCost?.amount != null ? cents(unitCost.amount) : supplierCostCents;
+      if (unitCostCents != null) {
+        cogsCents += unitCostCents * quantity;
+        hasCost = true;
+        coveredItemCount += quantity;
+        if (unitCost?.amount == null) coveredBySupplierCount += quantity;
+      } else {
+        hasMissingCost = true;
+        missingCostCount += quantity;
       }
+    }
 
-      return {
-        id: String(order.id || order.name || "unknown"),
-        name: String(order.name || order.id || "Order"),
-        createdAt: String(order.createdAt || ""),
-        currency,
-        grossSalesCents,
-        discountsCents,
-        refundsCents,
-        netRevenueCents,
-        taxCollectedCents: moneyCents(order.totalTaxSet),
-        shippingIncomeCents: moneyCents(order.totalShippingPriceSet),
-        cogsCents,
-        itemCount,
-        coveredItemCount,
-        hasCost,
-        hasMissingCost,
-      } satisfies NormalizedOrder;
-    });
+    return {
+      id: String(order.id || order.name || "unknown"),
+      name: String(order.name || order.id || "Order"),
+      createdAt: String(order.createdAt || ""),
+      status,
+      currency,
+      grossSalesCents,
+      discountsCents,
+      refundsCents,
+      netRevenueCents,
+      taxCollectedCents: moneyCents(order.totalTaxSet),
+      shippingIncomeCents: moneyCents(order.totalShippingPriceSet),
+      cogsCents,
+      campaignKey: campaign?.key || null,
+      disputeCount,
+      itemCount,
+      coveredItemCount,
+      hasCost,
+      hasMissingCost,
+    } satisfies NormalizedOrder;
+  });
 
   return {
     rows,
@@ -865,6 +1121,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const shopifySubscriptionData = shopifySubscriptionsResult.status === "fulfilled"
     ? shopifySubscriptionsResult.value
     : { subscriptions: [], connected: false, message: "Shopify app subscriptions unavailable" };
+  const campaignData = ordersResult.status === "fulfilled"
+    ? await loadCampaignCosts(orders)
+    : { campaigns: [], allocationsByOrderId: new Map<string, number>(), state: "unavailable" as FinanceSourceState, message: "Shopify marketing activity unavailable" };
   const subscriptions = [...shopifySubscriptionData.subscriptions, ...manualCosts.subscriptions];
 
   if (ordersResult.status === "rejected") exceptions.push(exception("shopify-orders", ordersResult.reason?.message || "Shopify orders unavailable", 1, "high"));
@@ -872,6 +1131,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   if (supplierCosts.message) exceptions.push(exception("dsers-costs", supplierCosts.message, 1, "high"));
   if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));
+  if (campaignData.message) exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
 
   const normalized = normalizeOrders(orders, supplierCosts);
   if (normalized.missingCostCount) {
@@ -891,32 +1151,38 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const taxCollectedCents = normalized.rows.reduce((sum, row) => sum + row.taxCollectedCents, 0);
   const cogsCents = normalized.rows.reduce((sum, row) => sum + row.cogsCents, 0);
   const paymentFeesCents = payoutData.payouts.reduce((sum, payout) => sum + payout.feeCents, 0);
+  const campaignCostsCents = campaignData.campaigns.reduce((sum, campaign) => sum + campaign.allocatedCents, 0);
   const subscriptionCostsCents = subscriptions.reduce((sum, subscription) => sum + subscription.allocatedCents, 0);
   const payoutsReceivedCents = payoutData.payouts.reduce((sum, payout) => sum + payout.netCents, 0);
   const grossProfitCents = netSalesCents + shippingIncomeCents - cogsCents;
-  const operatingProfitCents = grossProfitCents - paymentFeesCents - subscriptionCostsCents;
+  const operatingProfitCents = grossProfitCents - paymentFeesCents - campaignCostsCents - subscriptionCostsCents;
   const totalItems = normalized.rows.reduce((sum, row) => sum + row.itemCount, 0);
   const coveredItems = normalized.rows.reduce((sum, row) => sum + row.coveredItemCount, 0);
   const feeRatio = netSalesCents + shippingIncomeCents ? paymentFeesCents / (netSalesCents + shippingIncomeCents) : 0;
 
   const orderRows: FinanceOrderRow[] = normalized.rows.slice(-200).reverse().map((row) => {
     const allocatedFeesCents = Math.round(row.netRevenueCents * feeRatio);
-    const profitCents = row.netRevenueCents - row.cogsCents - allocatedFeesCents;
+    const campaignCostCents = campaignData.allocationsByOrderId.get(row.id) || 0;
+    const profitCents = row.netRevenueCents - row.cogsCents - allocatedFeesCents - campaignCostCents;
     return {
       id: row.id,
       name: row.name,
       createdAt: row.createdAt,
+      status: row.status,
       grossSalesCents: row.grossSalesCents,
       discountsCents: row.discountsCents,
       refundsCents: row.refundsCents,
       netRevenueCents: row.netRevenueCents,
       cogsCents: row.cogsCents,
       allocatedFeesCents,
+      campaignCostCents,
       profitCents,
       marginPercent: percent(profitCents, row.netRevenueCents),
       currency: row.currency,
       itemCount: row.itemCount,
       costCoverage: row.hasMissingCost ? (row.hasCost ? "partial" : "missing") : "complete",
+      disputeCount: row.disputeCount,
+      campaignKey: row.campaignKey,
     };
   });
 
@@ -925,6 +1191,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     : manualCosts.state === "manual"
       ? "manual"
       : "unavailable";
+  const campaignState: FinanceSourceState = campaignData.state;
   const dsersState: FinanceSourceState = totalItems === 0
     ? "missing"
     : normalized.missingCostCount
@@ -940,6 +1207,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       payouts: payoutData.state,
       dsers: dsersState,
       subscriptions: subscriptionState,
+      campaigns: campaignState,
       messages: [
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
@@ -950,6 +1218,11 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
         shopifySubscriptionData.connected
           ? "Active SALT app subscriptions are pulled from Shopify billing automatically; DSers and other vendor subscriptions can be added through FINANCE_SUBSCRIPTIONS_JSON."
           : "External vendor subscriptions require FINANCE_SUBSCRIPTIONS_JSON until their billing data is available to this app.",
+        campaignData.state === "connected"
+          ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to the attributed orders, including cancelled and disputed orders when they carry attribution.`
+          : campaignData.state === "partial"
+            ? "Shopify marketing campaign spend was partially matched to attributed orders; any missing activity is tracked as a reconciliation exception."
+            : "Shopify marketing campaign spend requires read_marketing_events access or a campaign-cost override to allocate each order.",
       ],
     },
     kpis: {
@@ -961,12 +1234,15 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       taxCollectedCents,
       cogsCents,
       paymentFeesCents,
+      campaignCostsCents,
       subscriptionCostsCents,
       payoutsReceivedCents,
       grossProfitCents,
       operatingProfitCents,
       marginPercent: percent(operatingProfitCents, netSalesCents + shippingIncomeCents),
       orderCount: normalized.rows.length,
+      cancelledOrdersCount: normalized.rows.filter((row) => row.status === "cancelled" || row.status === "cancelled-disputed").length,
+      disputedOrdersCount: normalized.rows.filter((row) => row.status === "disputed" || row.status === "cancelled-disputed").length,
       costCoveragePercent: totalItems ? Math.round((coveredItems / totalItems) * 1000) / 10 : null,
     },
     pnlRows: [
@@ -977,11 +1253,13 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
       { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
       { label: "Payment fees", cents: -paymentFeesCents, tone: "negative", detail: "Fees reported through Shopify payouts" },
+      { label: "Campaign spend", cents: -campaignCostsCents, tone: "negative", detail: "Shopify marketing activity ad spend allocated to attributed orders" },
       { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Shopify app billing plus configured external recurring costs" },
-      { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, and subscriptions" },
+      { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, campaign spend, and subscriptions" },
     ],
     payouts: payoutData.payouts,
     subscriptions,
+    campaignCosts: campaignData.campaigns,
     orders: orderRows,
     exceptions,
   };

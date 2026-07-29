@@ -82,6 +82,7 @@ export default async function handler(req: any, res: any) {
       ["Gross profit", summary.kpis.grossProfitCents],
       ["Operating profit", summary.kpis.operatingProfitCents],
       ["Payouts received", summary.kpis.payoutsReceivedCents],
+      ["Campaign spend", summary.kpis.campaignCostsCents],
       ["Cost coverage", summary.kpis.costCoveragePercent == null ? null : `${summary.kpis.costCoveragePercent}%`],
     ] as const;
     activeFont.current = regularFont;
@@ -116,6 +117,19 @@ export default async function handler(req: any, res: any) {
         writeLine(page, `${payout.id} | ${payout.issuedAt.slice(0, 10)} | ${payout.status}`, 48, y, 9, activeFont.current, navy);
         writeLine(page, money(payout.netCents, payout.currency), 430, y, 9, activeFont.current, navy);
         y -= 16;
+      }
+    }
+
+    section("Campaign Allocations");
+    if (!summary.campaignCosts.length) {
+      writeLine(page, summary.sources.campaigns === "unavailable" ? "Shopify marketing activity access is unavailable for this workspace." : "No Shopify marketing activity spend was matched to this period.", 48, y, 10, activeFont.current, muted);
+      y -= 18;
+    } else {
+      for (const campaign of summary.campaignCosts) {
+        ensureSpace(24);
+        writeLine(page, `${campaign.title} | ${campaign.source || "unknown"} / ${campaign.medium || "unknown"}`, 48, y, 9, activeFont.current, navy);
+        writeLine(page, `${campaign.orderCount} order${campaign.orderCount === 1 ? "" : "s"} | spend ${money(campaign.adSpendCents, campaign.currency)} | allocated ${money(campaign.allocatedCents, campaign.currency)}`, 48, y - 12, 8, activeFont.current, muted);
+        y -= 28;
       }
     }
 
@@ -154,6 +168,7 @@ export default async function handler(req: any, res: any) {
       "Payouts represent cash movement and are intentionally shown separately from profit.",
       "Product cost uses Shopify inventory cost plus matched DSers supplier cost mappings.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
+      "Campaign spend is pulled from Shopify marketing activity attribution and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
       "SALT app subscriptions are read from Shopify Admin billing; external vendor subscriptions use configured operating costs.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {

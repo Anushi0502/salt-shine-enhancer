@@ -5,6 +5,7 @@ export type FinanceSourceStatus = {
   payouts: FinanceSourceState;
   dsers: FinanceSourceState;
   subscriptions: FinanceSourceState;
+  campaigns: FinanceSourceState;
   messages: string[];
 };
 
@@ -17,12 +18,15 @@ export type FinanceKpis = {
   taxCollectedCents: number;
   cogsCents: number;
   paymentFeesCents: number;
+  campaignCostsCents: number;
   subscriptionCostsCents: number;
   payoutsReceivedCents: number;
   grossProfitCents: number;
   operatingProfitCents: number;
   marginPercent: number | null;
   orderCount: number;
+  cancelledOrdersCount: number;
+  disputedOrdersCount: number;
   costCoveragePercent: number | null;
 };
 
@@ -54,21 +58,37 @@ export type FinanceSubscription = {
   active: boolean;
 };
 
+export type FinanceCampaignSpend = {
+  key: string;
+  title: string;
+  source: string;
+  medium: string;
+  campaign: string;
+  adSpendCents: number;
+  allocatedCents: number;
+  currency: string;
+  orderCount: number;
+};
+
 export type FinanceOrderRow = {
   id: string;
   name: string;
   createdAt: string;
+  status: "open" | "cancelled" | "disputed" | "cancelled-disputed";
   grossSalesCents: number;
   discountsCents: number;
   refundsCents: number;
   netRevenueCents: number;
   cogsCents: number;
   allocatedFeesCents: number;
+  campaignCostCents: number;
   profitCents: number;
   marginPercent: number | null;
   currency: string;
   itemCount: number;
   costCoverage: "complete" | "partial" | "missing";
+  disputeCount: number;
+  campaignKey: string | null;
 };
 
 export type FinanceException = {
@@ -94,6 +114,7 @@ export type FinanceSummary = {
   pnlRows: FinancePnlRow[];
   payouts: FinancePayout[];
   subscriptions: FinanceSubscription[];
+  campaignCosts: FinanceCampaignSpend[];
   orders: FinanceOrderRow[];
   exceptions: FinanceException[];
 };

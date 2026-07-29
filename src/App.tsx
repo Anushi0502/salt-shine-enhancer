@@ -135,6 +135,7 @@ const AppShell = () => (
                 <Route path="/pages/finance" element={<FinancePage />} />
                 <Route path="/apps:finance" element={<FinancePage />} />
                 <Route path="/apps/finance" element={<FinancePage />} />
+                <Route path="/pages/finance" element={<FinancePage />} />
                 <Route
                   path="/resources/:handle"
                   element={
