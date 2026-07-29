@@ -58,7 +58,6 @@ type ShopifyMarketingEvent = {
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;
-  sourceType?: string | null;
 };
 
 type ShopifyCustomerVisit = {
@@ -188,11 +187,11 @@ const ORDER_QUERY = /* GraphQL */ `
           ready
           firstVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign sourceType }
+            marketingEvent { utmSource utmMedium utmCampaign }
           }
           lastVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign sourceType }
+            marketingEvent { utmSource utmMedium utmCampaign }
           }
         }
         disputes(first: 20) {
