@@ -500,6 +500,21 @@ function payoutDateQuery(start: string, end: string): string {
   return `issued_at:>=${start}T00:00:00Z issued_at:<=${end}T23:59:59Z`;
 }
 
+function isShopifyPaymentsAccessError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("shopifypaymentsaccount") ||
+    normalized.includes("read_shopify_payments_payouts") ||
+    normalized.includes("merchant approval") ||
+    normalized.includes("payments api") ||
+    normalized.includes("shopify payouts require")
+  );
+}
+
+function shopifyPayoutsAccessMessage(): string {
+  return "Shopify payouts need merchant-approved Payments API access; add FINANCE_PAYOUTS_JSON until access is granted.";
+}
+
 function sumMoneyCents(values: Array<ShopifyMoney | null | undefined>): number {
   return values.reduce((sum, value) => sum + simpleMoneyCents(value), 0);
 }
@@ -592,6 +607,10 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
   } catch (error) {
     graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
+    if (isShopifyPaymentsAccessError(graphqlError)) {
+      if (manual.state === "manual" && manual.payouts.length) return manual;
+      return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
+    }
   }
 
   let restError = "";
@@ -623,12 +642,19 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     return { payouts, state: "connected" };
   } catch (error) {
     restError = error instanceof Error ? error.message : "Shopify payouts unavailable";
+    if (isShopifyPaymentsAccessError(restError)) {
+      if (manual.state === "manual" && manual.payouts.length) return manual;
+      return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
+    }
   }
 
   if (manual.state === "manual" && manual.payouts.length) return manual;
   if (manual.message) return { payouts: [], state: "unavailable", message: manual.message };
 
   const details = [graphqlError, restError].filter(Boolean).join(" | ");
+  if (details && isShopifyPaymentsAccessError(details)) {
+    return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
+  }
   return {
     payouts: [],
     state: "unavailable",
@@ -842,7 +868,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const subscriptions = [...shopifySubscriptionData.subscriptions, ...manualCosts.subscriptions];
 
   if (ordersResult.status === "rejected") exceptions.push(exception("shopify-orders", ordersResult.reason?.message || "Shopify orders unavailable", 1, "high"));
-  if (payoutData.message) exceptions.push(exception("shopify-payouts", payoutData.message, 1, "high"));
+  if (payoutData.message && payoutData.state === "unavailable") exceptions.push(exception("shopify-payouts", payoutData.message, 1, "high"));
   if (supplierCosts.message) exceptions.push(exception("dsers-costs", supplierCosts.message, 1, "high"));
   if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));

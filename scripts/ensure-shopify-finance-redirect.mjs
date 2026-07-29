@@ -3,7 +3,7 @@ const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 const accessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const graphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
-const targetPath = "/?finance=1";
+const targetPath = "/pages/finance";
 const sourcePaths = ["/apps:finance", "/apps/finance"];
 
 if (!accessToken) {

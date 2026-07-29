@@ -91,8 +91,8 @@ const StorefrontShopRoute = () => {
 const StorefrontHomeRoute = () => {
   const [searchParams] = useSearchParams();
 
-  // Shopify cannot serve the literal /apps:finance path from a theme. The
-  // redirect created by the refresh workflow lands here instead.
+  // Shopify can redirect into the private finance workspace from the theme.
+  // Keep the query-string fallback so older links still reach the workspace.
   return searchParams.get("finance") === "1" ? <FinancePage /> : <HomePage />;
 };
 
@@ -132,6 +132,7 @@ const AppShell = () => (
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/pages/resources" element={<ResourcesPage />} />
+                <Route path="/pages/finance" element={<FinancePage />} />
                 <Route path="/apps:finance" element={<FinancePage />} />
                 <Route path="/apps/finance" element={<FinancePage />} />
                 <Route

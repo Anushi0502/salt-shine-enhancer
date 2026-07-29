@@ -169,7 +169,7 @@ Configure these GitHub repository secrets before enabling the schedules:
 
 ## Private Finance Workspace
 
-The `/apps:finance` route is a private, server-backed workspace. It never puts Shopify Admin or DSers credentials in the browser bundle.
+The `/pages/finance` route is the private, server-backed workspace. Legacy `/apps:finance` and `/apps/finance` links still resolve to it, but the canonical storefront path is `/pages/finance`. It never puts Shopify Admin or DSers credentials in the browser bundle.
 
 Configure these deployment-only variables before publishing it:
 
