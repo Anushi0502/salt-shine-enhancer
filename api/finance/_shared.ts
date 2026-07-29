@@ -42,10 +42,6 @@ type ShopifyMoneySet = {
 
 type ShopifyMoney = { amount?: string | number; currencyCode?: string };
 
-type ShopifyGraphQLError = {
-  message?: string;
-};
-
 type ShopifyUtmParameters = {
   source?: string | null;
   medium?: string | null;
@@ -58,6 +54,7 @@ type ShopifyMarketingEvent = {
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;
+  sourceType?: string | null;
 };
 
 type ShopifyCustomerVisit = {
@@ -130,7 +127,7 @@ type SupplierCostSource = {
 
 type SubscriptionSource = {
   subscriptions: FinanceSubscription[];
-  state: FinanceSourceState;
+  connected: boolean;
   message?: string;
 };
 
@@ -139,20 +136,6 @@ type CampaignSpendSource = {
   allocationsByOrderId: Map<string, number>;
   state: FinanceSourceState;
   message?: string;
-};
-
-type ManualCampaignCostEntry = Record<string, unknown>;
-
-type ManualCampaignGroup = {
-  key: string;
-  title: string;
-  source: string;
-  medium: string;
-  campaign: string;
-  orderIds: string[];
-  orderRows: Array<{ id: string; createdAt: string }>;
-  adSpendCents: number;
-  currency: string;
 };
 
 type NormalizedOrder = {
@@ -201,11 +184,11 @@ const ORDER_QUERY = /* GraphQL */ `
           ready
           firstVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign }
+            marketingEvent { utmSource utmMedium utmCampaign sourceType }
           }
           lastVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign }
+            marketingEvent { utmSource utmMedium utmCampaign sourceType }
           }
         }
         disputes(first: 20) {
@@ -235,9 +218,8 @@ const ORDER_QUERY = /* GraphQL */ `
 `;
 
 const MARKETING_ACTIVITY_QUERY = /* GraphQL */ `
-  query FinanceMarketingActivities($utm: UTMInput!, $after: String) {
-    marketingActivities(first: 100, after: $after, sortKey: CREATED_AT, utm: $utm) {
-      pageInfo { hasNextPage endCursor }
+  query FinanceMarketingActivities($utm: UTMInput!) {
+    marketingActivities(first: 50, utm: $utm) {
       nodes {
         id
         title
@@ -562,15 +544,7 @@ function adminApiUrl(path: string): string {
   return `${shopBase()}/admin/api/${apiVersion}${path}`;
 }
 
-function shopifyErrorMessage(errors: ShopifyGraphQLError[]): string {
-  return errors.map((error) => String(error.message || "")).filter(Boolean).join(" | ");
-}
-
-async function queryShopify(
-  query: string,
-  variables: Record<string, unknown>,
-  options: { allowPartial?: boolean } = {},
-): Promise<{ data?: any; errors: ShopifyGraphQLError[] }> {
+async function queryShopify(query: string, variables: Record<string, unknown>): Promise<any> {
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) throw new Error("Shopify Admin credentials are not configured");
 
   const response = await fetch(adminApiUrl("/graphql.json"), {
@@ -578,30 +552,21 @@ async function queryShopify(
     headers: shopifyHeaders(),
     body: JSON.stringify({ query, variables }),
   });
-  const body = await response.json() as { data?: any; errors?: ShopifyGraphQLError[] };
-  const errors = Array.isArray(body.errors) ? body.errors : [];
-  const message = shopifyErrorMessage(errors);
-  if (!response.ok && !(options.allowPartial && body.data)) {
+  const body = await response.json();
+  if (!response.ok || body.errors?.length) {
+    const message = body.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(" | ");
     throw new Error(message || `Shopify Admin request failed with ${response.status}`);
   }
-  if (errors.length && !options.allowPartial) {
-    throw new Error(message || `Shopify Admin request failed with ${response.status}`);
-  }
-  return { data: body.data, errors };
+  return body.data;
 }
 
-async function loadOrders(start: string, end: string): Promise<{ orders: ShopifyOrder[]; state: FinanceSourceState; message?: string }> {
+async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
   const orders: ShopifyOrder[] = [];
-  const errors = new Set<string>();
   let after: string | null = null;
   let pageCount = 0;
 
   while (pageCount < 20) {
-    const { data, errors: pageErrors } = await queryShopify(ORDER_QUERY, { query: dateQuery(start, end), after }, { allowPartial: true });
-    pageErrors.forEach((error) => {
-      const message = String(error.message || "").trim();
-      if (message) errors.add(message);
-    });
+    const data = await queryShopify(ORDER_QUERY, { query: dateQuery(start, end), after });
     const connection = data?.orders;
     orders.push(...(connection?.nodes || []));
     pageCount += 1;
@@ -609,19 +574,7 @@ async function loadOrders(start: string, end: string): Promise<{ orders: Shopify
     after = connection.pageInfo.endCursor;
   }
 
-  if (!orders.length) {
-    return {
-      orders: [],
-      state: errors.size ? "unavailable" : "missing",
-      message: errors.size ? [...errors][0] : "No Shopify orders were returned for the selected period.",
-    };
-  }
-
-  return {
-    orders,
-    state: errors.size ? "partial" : "connected",
-    message: errors.size ? [...errors].join(" | ") : undefined,
-  };
+  return orders;
 }
 
 function simpleMoneyCents(input?: ShopifyMoney | null): number {
@@ -636,164 +589,8 @@ function normalizeCampaignPart(value: unknown): string {
   return String(value || "").trim();
 }
 
-function normalizeCampaignKey(value: string): string {
-  return value.trim().toLowerCase();
-}
-
 function campaignKey(source: string, medium: string, campaign: string): string {
   return [source, medium, campaign].map((part) => normalizeCampaignPart(part).toLowerCase()).join("|");
-}
-
-function collectStringValues(value: unknown): string[] {
-  if (Array.isArray(value)) return value.flatMap((entry) => collectStringValues(entry));
-  const text = String(value || "").trim();
-  return text ? text.split(",").map((part) => part.trim()).filter(Boolean) : [];
-}
-
-function normalizeManualCampaignAmount(value: unknown): number {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    const record = value as Record<string, unknown>;
-    return record.amountCents == null
-      ? cents(record.amount ?? record.cost ?? record.spend)
-      : Number(record.amountCents);
-  }
-  return cents(value);
-}
-
-function parseManualCampaignCosts(orders: ShopifyOrder[]): CampaignSpendSource {
-  const raw = String(process.env.FINANCE_CAMPAIGN_COSTS_JSON || "").trim();
-  if (!raw) {
-    return { campaigns: [], allocationsByOrderId: new Map(), state: "missing" };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    const entries = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray((parsed as { campaigns?: unknown })?.campaigns)
-        ? (parsed as { campaigns: ManualCampaignCostEntry[] }).campaigns
-        : Array.isArray((parsed as { entries?: unknown })?.entries)
-          ? (parsed as { entries: ManualCampaignCostEntry[] }).entries
-          : parsed && typeof parsed === "object"
-            ? Object.entries(parsed as Record<string, unknown>).map(([key, value]) => ({
-              key,
-              ...(value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : { amount: value }),
-            }))
-            : [];
-
-    if (!entries.length) {
-      return { campaigns: [], allocationsByOrderId: new Map(), state: "missing", message: "FINANCE_CAMPAIGN_COSTS_JSON does not contain any campaign records." };
-    }
-
-    const ordersById = new Map(orders.map((order) => [String(order.id || order.name || "unknown"), order]));
-    const groups = new Map<string, ManualCampaignGroup>();
-    let unmatchedRecords = 0;
-
-    for (const entry of entries) {
-      if (!entry || typeof entry !== "object") continue;
-      const value = entry as ManualCampaignCostEntry;
-      const source = normalizeCampaignPart(value.source);
-      const medium = normalizeCampaignPart(value.medium);
-      const campaign = normalizeCampaignPart(value.campaign);
-      const title = normalizeCampaignPart(value.title) || campaign || source || medium || "Manual campaign cost";
-      const explicitKey = normalizeCampaignPart(value.key || value.campaignKey);
-      const orderIds = [
-        ...collectStringValues(value.orderId),
-        ...collectStringValues(value.order_id),
-        ...collectStringValues(value.orderIds),
-        ...collectStringValues(value.order_ids),
-        ...collectStringValues(value.orders),
-      ];
-      const derivedKey = explicitKey || (source || medium || campaign ? campaignKey(source, medium, campaign) : "");
-      const key = normalizeCampaignKey(derivedKey || (orderIds.length ? `orders:${orderIds.map((id) => normalizeCampaignKey(id)).sort().join("|")}` : ""));
-      const adSpendCents = normalizeManualCampaignAmount(value);
-      if (!key || !Number.isFinite(adSpendCents) || adSpendCents <= 0) continue;
-
-      const existing = groups.get(key) || {
-        key,
-        title,
-        source: source || "unknown",
-        medium: medium || "unknown",
-        campaign: campaign || "unknown",
-        orderIds: [],
-        orderRows: [],
-        adSpendCents: 0,
-        currency: String(value.currency || DEFAULT_CURRENCY),
-      };
-      existing.title = title || existing.title;
-      existing.source = source || existing.source;
-      existing.medium = medium || existing.medium;
-      existing.campaign = campaign || existing.campaign;
-      existing.currency = String(value.currency || existing.currency || DEFAULT_CURRENCY);
-      existing.adSpendCents += Math.round(adSpendCents);
-      existing.orderIds.push(...orderIds);
-      groups.set(key, existing);
-    }
-
-    if (!groups.size) {
-      return { campaigns: [], allocationsByOrderId: new Map(), state: "missing", message: "FINANCE_CAMPAIGN_COSTS_JSON did not include any valid campaign spend entries." };
-    }
-
-    const allocationsByOrderId = new Map<string, number>();
-    const campaigns: FinanceCampaignSpend[] = [];
-    for (const group of groups.values()) {
-      const orderRows = group.orderIds.length
-        ? group.orderIds.flatMap((id) => {
-          const order = ordersById.get(id);
-          return [{ id, createdAt: String(order?.createdAt || "") }];
-        })
-        : orders
-          .filter((order) => {
-            const attribution = extractCampaignAttribution(order);
-            return attribution?.key === group.key;
-          })
-          .map((order) => ({ id: String(order.id || order.name || "unknown"), createdAt: String(order.createdAt || "") }));
-
-      const uniqueRows = [...new Map(orderRows.map((row) => [row.id, row])).values()].sort((left, right) => {
-        const leftTime = new Date(left.createdAt || 0).getTime();
-        const rightTime = new Date(right.createdAt || 0).getTime();
-        if (leftTime !== rightTime) return leftTime - rightTime;
-        return left.id.localeCompare(right.id);
-      });
-      const count = uniqueRows.length;
-      if (count) {
-        const base = Math.floor(group.adSpendCents / count);
-        const remainder = group.adSpendCents % count;
-        uniqueRows.forEach((row, index) => {
-          const current = allocationsByOrderId.get(row.id) || 0;
-          allocationsByOrderId.set(row.id, current + base + (index < remainder ? 1 : 0));
-        });
-      } else {
-        unmatchedRecords += 1;
-      }
-
-      campaigns.push({
-        key: group.key,
-        title: group.title,
-        source: group.source || "unknown",
-        medium: group.medium || "unknown",
-        campaign: group.campaign || "unknown",
-        adSpendCents: group.adSpendCents,
-        allocatedCents: group.adSpendCents,
-        currency: group.currency,
-        orderCount: count,
-      });
-    }
-
-    const state: FinanceSourceState = unmatchedRecords ? "partial" : "manual";
-    const message = unmatchedRecords
-      ? "FINANCE_CAMPAIGN_COSTS_JSON was loaded, but some campaign cost rows could not be matched to the selected orders."
-      : `FINANCE_CAMPAIGN_COSTS_JSON supplied ${campaigns.length} campaign cost record${campaigns.length === 1 ? "" : "s"}.`;
-
-    return { campaigns, allocationsByOrderId, state, message };
-  } catch (error) {
-    return {
-      campaigns: [],
-      allocationsByOrderId: new Map(),
-      state: "unavailable",
-      message: `FINANCE_CAMPAIGN_COSTS_JSON is invalid: ${error instanceof Error ? error.message : "expected campaign cost records"}`,
-    };
-  }
 }
 
 function extractAttributionVisit(order: ShopifyOrder): ShopifyCustomerVisit | null {
@@ -831,9 +628,6 @@ function extractCampaignAttributionFromValues(source: string, medium: string, ca
 }
 
 async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendSource> {
-  const manual = parseManualCampaignCosts(orders);
-  if (manual.state !== "missing") return manual;
-
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
     return {
       campaigns: [],
@@ -884,22 +678,8 @@ async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendS
     if (group.medium) utm.medium = group.medium;
     if (group.campaign) utm.campaign = group.campaign;
 
-    const activities: Array<Record<string, any>> = [];
-    const pageErrors = new Set<string>();
-    let after: string | null = null;
-    let pageCount = 0;
-    while (pageCount < 10) {
-      const { data, errors } = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm, after }, { allowPartial: true });
-      errors.forEach((error) => {
-        const message = String(error.message || "").trim();
-        if (message) pageErrors.add(message);
-      });
-      const connection = data?.marketingActivities;
-      activities.push(...(connection?.nodes || []) as Array<Record<string, any>>);
-      pageCount += 1;
-      if (!connection?.pageInfo?.hasNextPage || !connection?.pageInfo?.endCursor) break;
-      after = connection.pageInfo.endCursor;
-    }
+    const data = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm });
+    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, any>>;
     const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(activity.adSpend), 0);
     const orderRows = [...group.orderRows].sort((left, right) => {
       const leftTime = new Date(left.createdAt || 0).getTime();
@@ -930,7 +710,6 @@ async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendS
     });
 
     resolvedGroups += 1;
-    if (pageErrors.size) errors.push([...pageErrors].join(" | "));
   }));
 
   for (const result of results) {
@@ -965,21 +744,6 @@ async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendS
 
 function payoutDateQuery(start: string, end: string): string {
   return `issued_at:>=${start}T00:00:00Z issued_at:<=${end}T23:59:59Z`;
-}
-
-function isShopifyPaymentsAccessError(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("shopifypaymentsaccount") ||
-    normalized.includes("read_shopify_payments_payouts") ||
-    normalized.includes("merchant approval") ||
-    normalized.includes("payments api") ||
-    normalized.includes("shopify payouts require")
-  );
-}
-
-function shopifyPayoutsAccessMessage(): string {
-  return "Shopify payouts need merchant-approved Payments API access; add FINANCE_PAYOUTS_JSON until access is granted.";
 }
 
 function sumMoneyCents(values: Array<ShopifyMoney | null | undefined>): number {
@@ -1068,17 +832,12 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
 
   let graphqlError = "";
   try {
-    const { data, errors } = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) }, { allowPartial: true });
-    graphqlError = shopifyErrorMessage(errors);
+    const data = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) });
     const account = data?.shopifyPaymentsAccount;
     if (!account) throw new Error("Shopify Payments account is not available for this store");
-    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: errors.length ? "partial" : "connected", message: errors.length ? graphqlError : undefined };
+    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
   } catch (error) {
     graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
-    if (isShopifyPaymentsAccessError(graphqlError)) {
-      if (manual.state === "manual" && manual.payouts.length) return manual;
-      return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
-    }
   }
 
   let restError = "";
@@ -1110,19 +869,12 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     return { payouts, state: "connected" };
   } catch (error) {
     restError = error instanceof Error ? error.message : "Shopify payouts unavailable";
-    if (isShopifyPaymentsAccessError(restError)) {
-      if (manual.state === "manual" && manual.payouts.length) return manual;
-      return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
-    }
   }
 
   if (manual.state === "manual" && manual.payouts.length) return manual;
   if (manual.message) return { payouts: [], state: "unavailable", message: manual.message };
 
   const details = [graphqlError, restError].filter(Boolean).join(" | ");
-  if (details && isShopifyPaymentsAccessError(details)) {
-    return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
-  }
   return {
     payouts: [],
     state: "unavailable",
@@ -1262,11 +1014,11 @@ function recurringMultiplier(interval: string, days: number): number {
 
 async function loadShopifySubscriptions(start: string, end: string): Promise<SubscriptionSource> {
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
-    return { subscriptions: [], state: "unavailable", message: "Shopify Admin credentials are not configured" };
+    return { subscriptions: [], connected: false, message: "Shopify Admin credentials are not configured" };
   }
 
   try {
-    const { data, errors } = await queryShopify(APP_SUBSCRIPTION_QUERY, {}, { allowPartial: true });
+    const data = await queryShopify(APP_SUBSCRIPTION_QUERY, {});
     const days = periodDays(start, end);
     const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, any>) => {
       if (subscription.test) return [];
@@ -1286,13 +1038,9 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
         } satisfies FinanceSubscription];
       });
     });
-    return {
-      subscriptions,
-      state: errors.length ? "partial" : "connected",
-      message: errors.length ? shopifyErrorMessage(errors) : undefined,
-    };
+    return { subscriptions, connected: true };
   } catch (error) {
-    return { subscriptions: [], state: "unavailable", message: error instanceof Error ? error.message : "Shopify app subscriptions unavailable" };
+    return { subscriptions: [], connected: false, message: error instanceof Error ? error.message : "Shopify app subscriptions unavailable" };
   }
 }
 
@@ -1342,28 +1090,24 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const supplierCosts = parseSupplierCosts();
   const manualCosts = parseManualCosts(start, end);
   const exceptions: FinanceException[] = [];
-  const ordersData = ordersResult.status === "fulfilled"
-    ? ordersResult.value
-    : { orders: [], state: "unavailable" as FinanceSourceState, message: "Shopify orders unavailable" };
-  const payoutData = payoutsResult.status === "fulfilled"
-    ? payoutsResult.value
-    : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
+  const orders = ordersResult.status === "fulfilled" ? ordersResult.value : [];
+  const payoutData = payoutsResult.status === "fulfilled" ? payoutsResult.value : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
   const shopifySubscriptionData = shopifySubscriptionsResult.status === "fulfilled"
     ? shopifySubscriptionsResult.value
-    : { subscriptions: [], state: "unavailable" as FinanceSourceState, message: "Shopify app subscriptions unavailable" };
-  const campaignData = ordersResult.status === "fulfilled" && ordersData.orders.length
-    ? await loadCampaignCosts(ordersData.orders)
-    : { campaigns: [], allocationsByOrderId: new Map<string, number>(), state: ordersData.orders.length ? "unavailable" as FinanceSourceState : ordersData.state, message: ordersData.orders.length ? "Shopify marketing activity unavailable" : undefined };
+    : { subscriptions: [], connected: false, message: "Shopify app subscriptions unavailable" };
+  const campaignData = ordersResult.status === "fulfilled"
+    ? await loadCampaignCosts(orders)
+    : { campaigns: [], allocationsByOrderId: new Map<string, number>(), state: "unavailable" as FinanceSourceState, message: "Shopify marketing activity unavailable" };
   const subscriptions = [...shopifySubscriptionData.subscriptions, ...manualCosts.subscriptions];
 
-  if (ordersData.message) exceptions.push(exception("shopify-orders", ordersData.message, 1, ordersData.state === "unavailable" ? "high" : "medium"));
-  if (payoutData.message) exceptions.push(exception("shopify-payouts", payoutData.message, 1, payoutData.state === "unavailable" ? "high" : "medium"));
+  if (ordersResult.status === "rejected") exceptions.push(exception("shopify-orders", ordersResult.reason?.message || "Shopify orders unavailable", 1, "high"));
+  if (payoutData.message) exceptions.push(exception("shopify-payouts", payoutData.message, 1, "high"));
   if (supplierCosts.message) exceptions.push(exception("dsers-costs", supplierCosts.message, 1, "high"));
   if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));
   if (campaignData.message) exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
 
-  const normalized = normalizeOrders(ordersData.orders, supplierCosts);
+  const normalized = normalizeOrders(orders, supplierCosts);
   if (normalized.missingCostCount) {
     const message = supplierCosts.configured
       ? "Some line items still do not have a Shopify or DSers supplier cost after applying the configured DSers cost map."
@@ -1416,8 +1160,8 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     };
   });
 
-  const subscriptionState: FinanceSourceState = shopifySubscriptionData.state === "connected" || shopifySubscriptionData.state === "partial"
-    ? shopifySubscriptionData.state
+  const subscriptionState: FinanceSourceState = shopifySubscriptionData.connected
+    ? "connected"
     : manualCosts.state === "manual"
       ? "manual"
       : "unavailable";
@@ -1433,35 +1177,26 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     currency,
     period: { start, end, timezone: DEFAULT_TIMEZONE },
     sources: {
-      shopify: ordersData.state,
+      shopify: ordersResult.status === "fulfilled" ? "connected" : "unavailable",
       payouts: payoutData.state,
       dsers: dsersState,
       subscriptions: subscriptionState,
       campaigns: campaignState,
       messages: [
-        ordersData.state === "connected"
-          ? "Shopify orders loaded cleanly with financial, attribution, and dispute data."
-          : ordersData.state === "partial"
-            ? "Shopify orders were loaded, but some optional fields were denied or omitted. The finance report keeps the available data."
-            : "Shopify orders are unavailable. The finance report needs order access before it can calculate campaign spend and cost coverage.",
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
           : "DSers costs use Shopify variant cost-per-item values. External supplier costs can be supplied through FINANCE_DSER_COSTS_JSON.",
         payoutData.state === "connected"
           ? "Shopify payouts are live and payment fees are allocated to order rows by net revenue."
-          : payoutData.state === "partial"
-            ? "Shopify payouts were partially returned; merchant-approved payments access still determines whether the full payout ledger is available."
-            : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
-        shopifySubscriptionData.state === "connected" || shopifySubscriptionData.state === "partial"
+          : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
+        shopifySubscriptionData.connected
           ? "Active SALT app subscriptions are pulled from Shopify billing automatically; DSers and other vendor subscriptions can be added through FINANCE_SUBSCRIPTIONS_JSON."
           : "External vendor subscriptions require FINANCE_SUBSCRIPTIONS_JSON until their billing data is available to this app.",
         campaignData.state === "connected"
           ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to the attributed orders, including cancelled and disputed orders when they carry attribution.`
-          : campaignData.state === "manual"
-            ? "FINANCE_CAMPAIGN_COSTS_JSON overrides are allocating campaign spend directly to the matching orders."
           : campaignData.state === "partial"
-            ? "Shopify marketing campaign spend or overrides were partially matched to the selected orders; any missing activity is tracked as a reconciliation exception."
-            : "Shopify marketing campaign spend requires read_marketing_events access or a FINANCE_CAMPAIGN_COSTS_JSON override to allocate each order.",
+            ? "Shopify marketing campaign spend was partially matched to attributed orders; any missing activity is tracked as a reconciliation exception."
+            : "Shopify marketing campaign spend requires read_marketing_events access or a campaign-cost override to allocate each order.",
       ],
     },
     kpis: {

@@ -316,13 +316,6 @@ const FinancePage = () => {
 
   const kpis = summary?.kpis;
   const currency = summary?.currency || "USD";
-  const payoutsNeedApproval = summary?.sources.payouts === "partial" || summary?.sources.payouts === "unavailable";
-  const payoutsNotice =
-    summary?.sources.payouts === "partial"
-      ? "Shopify payouts are in fallback mode until merchant-approved Payments API access is granted."
-      : summary?.sources.payouts === "unavailable"
-        ? "Shopify payouts are not connected yet. Merchant approval or a reconciled payout export is required."
-        : "";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,hsl(var(--primary)/0.12),transparent_28%),radial-gradient(circle_at_92%_8%,hsl(var(--salt-gold)/0.13),transparent_24%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--salt-warm-bg)/0.84))] px-3 py-4 text-foreground sm:px-6 sm:py-6 lg:px-10 lg:py-8">
@@ -355,26 +348,6 @@ const FinancePage = () => {
 
         {summary ? (
           <>
-            {payoutsNeedApproval ? (
-              <div className="mt-5 rounded-[1.5rem] border border-amber-200/80 bg-amber-50/75 p-4 shadow-[0_18px_45px_-36px_rgba(180,83,9,0.35)]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex gap-3">
-                    <div className="mt-0.5 rounded-2xl border border-amber-200 bg-amber-100/80 p-2 text-amber-700">
-                      <AlertTriangle className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-amber-700">Payout access needs approval</p>
-                      <h2 className="mt-1 text-lg font-semibold text-amber-950">Payments API access is not fully granted yet.</h2>
-                      <p className="mt-1 max-w-3xl text-sm leading-6 text-amber-900/90">{payoutsNotice}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-full border border-amber-200 bg-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-amber-800">
-                    Merchant approval required
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
             <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
               <StatCard label="Operating profit" value={formatMoney(kpis?.operatingProfitCents || 0, currency)} detail={`${kpis?.marginPercent == null ? "n/a" : `${kpis.marginPercent}%`} operating margin`} accent={kpis?.operatingProfitCents && kpis.operatingProfitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
               <StatCard label="Net sales" value={formatMoney(kpis?.netSalesCents || 0, currency)} detail={`${kpis?.orderCount || 0} orders in period`} icon={<ArrowUpRight className="h-5 w-5" />} />

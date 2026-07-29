@@ -168,7 +168,7 @@ export default async function handler(req: any, res: any) {
       "Payouts represent cash movement and are intentionally shown separately from profit.",
       "Product cost uses Shopify inventory cost plus matched DSers supplier cost mappings.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
-      "Campaign spend is pulled from Shopify marketing activity attribution or FINANCE_CAMPAIGN_COSTS_JSON overrides and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
+      "Campaign spend is pulled from Shopify marketing activity attribution and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
       "SALT app subscriptions are read from Shopify Admin billing; external vendor subscriptions use configured operating costs.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {

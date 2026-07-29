@@ -169,7 +169,7 @@ Configure these GitHub repository secrets before enabling the schedules:
 
 ## Private Finance Workspace
 
-The `/pages/finance` route is the private, server-backed workspace. Legacy `/apps:finance` and `/apps/finance` links still resolve to it, but the canonical storefront path is `/pages/finance`. It never puts Shopify Admin or DSers credentials in the browser bundle.
+The `/apps:finance` route is a private, server-backed workspace. It never puts Shopify Admin or DSers credentials in the browser bundle.
 
 Configure these deployment-only variables before publishing it:
 
@@ -180,9 +180,8 @@ Configure these deployment-only variables before publishing it:
 - `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`.
 - `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
 - `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
-- `FINANCE_CAMPAIGN_COSTS_JSON`: optional campaign-cost override when Shopify marketing access is unavailable. Entries can be keyed by campaign metadata or order IDs and accept `amount`/`amountCents` plus `source`/`medium`/`campaign` fields.
 
-The backend tries Shopify Payments GraphQL first and REST second. It allocates Shopify marketing campaign spend from order attribution or the campaign override, pulls SALT app subscriptions from Shopify Admin billing, and never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
+The backend tries Shopify Payments GraphQL first and REST second. It allocates Shopify marketing campaign spend from order attribution, pulls SALT app subscriptions from Shopify Admin billing, and never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 
