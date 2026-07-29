@@ -141,6 +141,20 @@ type CampaignSpendSource = {
   message?: string;
 };
 
+type ManualCampaignCostEntry = Record<string, unknown>;
+
+type ManualCampaignGroup = {
+  key: string;
+  title: string;
+  source: string;
+  medium: string;
+  campaign: string;
+  orderIds: string[];
+  orderRows: Array<{ id: string; createdAt: string }>;
+  adSpendCents: number;
+  currency: string;
+};
+
 type NormalizedOrder = {
   id: string;
   name: string;
@@ -622,8 +636,164 @@ function normalizeCampaignPart(value: unknown): string {
   return String(value || "").trim();
 }
 
+function normalizeCampaignKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 function campaignKey(source: string, medium: string, campaign: string): string {
   return [source, medium, campaign].map((part) => normalizeCampaignPart(part).toLowerCase()).join("|");
+}
+
+function collectStringValues(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap((entry) => collectStringValues(entry));
+  const text = String(value || "").trim();
+  return text ? text.split(",").map((part) => part.trim()).filter(Boolean) : [];
+}
+
+function normalizeManualCampaignAmount(value: unknown): number {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    return record.amountCents == null
+      ? cents(record.amount ?? record.cost ?? record.spend)
+      : Number(record.amountCents);
+  }
+  return cents(value);
+}
+
+function parseManualCampaignCosts(orders: ShopifyOrder[]): CampaignSpendSource {
+  const raw = String(process.env.FINANCE_CAMPAIGN_COSTS_JSON || "").trim();
+  if (!raw) {
+    return { campaigns: [], allocationsByOrderId: new Map(), state: "missing" };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    const entries = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray((parsed as { campaigns?: unknown })?.campaigns)
+        ? (parsed as { campaigns: ManualCampaignCostEntry[] }).campaigns
+        : Array.isArray((parsed as { entries?: unknown })?.entries)
+          ? (parsed as { entries: ManualCampaignCostEntry[] }).entries
+          : parsed && typeof parsed === "object"
+            ? Object.entries(parsed as Record<string, unknown>).map(([key, value]) => ({
+              key,
+              ...(value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : { amount: value }),
+            }))
+            : [];
+
+    if (!entries.length) {
+      return { campaigns: [], allocationsByOrderId: new Map(), state: "missing", message: "FINANCE_CAMPAIGN_COSTS_JSON does not contain any campaign records." };
+    }
+
+    const ordersById = new Map(orders.map((order) => [String(order.id || order.name || "unknown"), order]));
+    const groups = new Map<string, ManualCampaignGroup>();
+    let unmatchedRecords = 0;
+
+    for (const entry of entries) {
+      if (!entry || typeof entry !== "object") continue;
+      const value = entry as ManualCampaignCostEntry;
+      const source = normalizeCampaignPart(value.source);
+      const medium = normalizeCampaignPart(value.medium);
+      const campaign = normalizeCampaignPart(value.campaign);
+      const title = normalizeCampaignPart(value.title) || campaign || source || medium || "Manual campaign cost";
+      const explicitKey = normalizeCampaignPart(value.key || value.campaignKey);
+      const orderIds = [
+        ...collectStringValues(value.orderId),
+        ...collectStringValues(value.order_id),
+        ...collectStringValues(value.orderIds),
+        ...collectStringValues(value.order_ids),
+        ...collectStringValues(value.orders),
+      ];
+      const derivedKey = explicitKey || (source || medium || campaign ? campaignKey(source, medium, campaign) : "");
+      const key = normalizeCampaignKey(derivedKey || (orderIds.length ? `orders:${orderIds.map((id) => normalizeCampaignKey(id)).sort().join("|")}` : ""));
+      const adSpendCents = normalizeManualCampaignAmount(value);
+      if (!key || !Number.isFinite(adSpendCents) || adSpendCents <= 0) continue;
+
+      const existing = groups.get(key) || {
+        key,
+        title,
+        source: source || "unknown",
+        medium: medium || "unknown",
+        campaign: campaign || "unknown",
+        orderIds: [],
+        orderRows: [],
+        adSpendCents: 0,
+        currency: String(value.currency || DEFAULT_CURRENCY),
+      };
+      existing.title = title || existing.title;
+      existing.source = source || existing.source;
+      existing.medium = medium || existing.medium;
+      existing.campaign = campaign || existing.campaign;
+      existing.currency = String(value.currency || existing.currency || DEFAULT_CURRENCY);
+      existing.adSpendCents += Math.round(adSpendCents);
+      existing.orderIds.push(...orderIds);
+      groups.set(key, existing);
+    }
+
+    if (!groups.size) {
+      return { campaigns: [], allocationsByOrderId: new Map(), state: "missing", message: "FINANCE_CAMPAIGN_COSTS_JSON did not include any valid campaign spend entries." };
+    }
+
+    const allocationsByOrderId = new Map<string, number>();
+    const campaigns: FinanceCampaignSpend[] = [];
+    for (const group of groups.values()) {
+      const orderRows = group.orderIds.length
+        ? group.orderIds.flatMap((id) => {
+          const order = ordersById.get(id);
+          return [{ id, createdAt: String(order?.createdAt || "") }];
+        })
+        : orders
+          .filter((order) => {
+            const attribution = extractCampaignAttribution(order);
+            return attribution?.key === group.key;
+          })
+          .map((order) => ({ id: String(order.id || order.name || "unknown"), createdAt: String(order.createdAt || "") }));
+
+      const uniqueRows = [...new Map(orderRows.map((row) => [row.id, row])).values()].sort((left, right) => {
+        const leftTime = new Date(left.createdAt || 0).getTime();
+        const rightTime = new Date(right.createdAt || 0).getTime();
+        if (leftTime !== rightTime) return leftTime - rightTime;
+        return left.id.localeCompare(right.id);
+      });
+      const count = uniqueRows.length;
+      if (count) {
+        const base = Math.floor(group.adSpendCents / count);
+        const remainder = group.adSpendCents % count;
+        uniqueRows.forEach((row, index) => {
+          const current = allocationsByOrderId.get(row.id) || 0;
+          allocationsByOrderId.set(row.id, current + base + (index < remainder ? 1 : 0));
+        });
+      } else {
+        unmatchedRecords += 1;
+      }
+
+      campaigns.push({
+        key: group.key,
+        title: group.title,
+        source: group.source || "unknown",
+        medium: group.medium || "unknown",
+        campaign: group.campaign || "unknown",
+        adSpendCents: group.adSpendCents,
+        allocatedCents: group.adSpendCents,
+        currency: group.currency,
+        orderCount: count,
+      });
+    }
+
+    const state: FinanceSourceState = unmatchedRecords ? "partial" : "manual";
+    const message = unmatchedRecords
+      ? "FINANCE_CAMPAIGN_COSTS_JSON was loaded, but some campaign cost rows could not be matched to the selected orders."
+      : `FINANCE_CAMPAIGN_COSTS_JSON supplied ${campaigns.length} campaign cost record${campaigns.length === 1 ? "" : "s"}.`;
+
+    return { campaigns, allocationsByOrderId, state, message };
+  } catch (error) {
+    return {
+      campaigns: [],
+      allocationsByOrderId: new Map(),
+      state: "unavailable",
+      message: `FINANCE_CAMPAIGN_COSTS_JSON is invalid: ${error instanceof Error ? error.message : "expected campaign cost records"}`,
+    };
+  }
 }
 
 function extractAttributionVisit(order: ShopifyOrder): ShopifyCustomerVisit | null {
@@ -661,6 +831,9 @@ function extractCampaignAttributionFromValues(source: string, medium: string, ca
 }
 
 async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendSource> {
+  const manual = parseManualCampaignCosts(orders);
+  if (manual.state !== "missing") return manual;
+
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
     return {
       campaigns: [],
@@ -1284,9 +1457,11 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
           : "External vendor subscriptions require FINANCE_SUBSCRIPTIONS_JSON until their billing data is available to this app.",
         campaignData.state === "connected"
           ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to the attributed orders, including cancelled and disputed orders when they carry attribution.`
+          : campaignData.state === "manual"
+            ? "FINANCE_CAMPAIGN_COSTS_JSON overrides are allocating campaign spend directly to the matching orders."
           : campaignData.state === "partial"
-            ? "Shopify marketing campaign spend was partially matched to attributed orders; any missing activity is tracked as a reconciliation exception."
-            : "Shopify marketing campaign spend requires read_marketing_events access or a campaign-cost override to allocate each order.",
+            ? "Shopify marketing campaign spend or overrides were partially matched to the selected orders; any missing activity is tracked as a reconciliation exception."
+            : "Shopify marketing campaign spend requires read_marketing_events access or a FINANCE_CAMPAIGN_COSTS_JSON override to allocate each order.",
       ],
     },
     kpis: {
