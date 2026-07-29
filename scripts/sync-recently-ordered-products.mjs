@@ -115,6 +115,13 @@ async function loadCommittedFallback() {
   return payload;
 }
 
+function isMissingShopifyAuth(error) {
+  const message = [error?.message, error?.stderr, error?.stdout]
+    .filter(Boolean)
+    .join(" ");
+  return /No stored app authentication found|shopify store auth/i.test(message);
+}
+
 let payload;
 
 if (adminToken) {
@@ -131,10 +138,10 @@ if (adminToken) {
       minPriceExclusive: 34,
     });
   } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
+    if (error?.code !== "ENOENT" && !isMissingShopifyAuth(error)) throw error;
     payload = await loadCommittedFallback();
     process.stdout.write(
-      "Shopify CLI is unavailable; preserving the committed recently ordered product feed.\n",
+      "Shopify CLI authentication is unavailable; preserving the committed recently ordered product feed.\n",
     );
   }
 }

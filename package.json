@@ -12,6 +12,7 @@
     "build:shopify-theme": "npm run build && npm run theme:bundle",
     "theme:bundle": "node scripts/build-product-search-index.mjs && node scripts/build-home-featured-products.mjs && node scripts/build-home-collection-products.mjs && node scripts/build-shopify-theme.mjs",
     "shopify:product-metafields:ensure": "node scripts/ensure-shopify-product-metafields.mjs",
+    "shopify:finance:redirect": "node scripts/ensure-shopify-finance-redirect.mjs",
     "shopify:product-metafields:backfill": "node scripts/shopify-product-metafield-backfill.mjs --dry-run",
     "shopify:product-metafields:backfill:dry-run": "node scripts/shopify-product-metafield-backfill.mjs --dry-run",
     "shopify:product-metafields:backfill:apply": "node scripts/shopify-product-metafield-backfill.mjs --apply",

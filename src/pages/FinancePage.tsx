@@ -16,7 +16,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import type { FinanceException, FinanceOrderRow, FinancePnlRow, FinanceSourceState, FinanceSummary } from "@/lib/finance-types";
+import type { FinanceException, FinanceOrderRow, FinancePnlRow, FinanceReconciliationRow, FinanceSourceState, FinanceSummary } from "@/lib/finance-types";
 
 type AuthState = "checking" | "locked" | "authenticated" | "unavailable";
 
@@ -87,6 +87,12 @@ function orderStatusTone(status: FinanceOrderRow["status"]): string {
   }[status];
 }
 
+function reconciliationStateTone(state: FinanceSourceState): string {
+  if (state === "connected") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (state === "partial" || state === "manual") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-rose-200 bg-rose-50 text-rose-800";
+}
+
 function StatCard({ label, value, detail, accent = "blue", icon }: { label: string; value: string; detail: string; accent?: "blue" | "green" | "gold" | "navy"; icon: ReactNode }) {
   const accentClasses = {
     blue: "from-blue-500/12 to-transparent text-blue-700",
@@ -133,6 +139,34 @@ function SourceBadge({ label, state }: { label: string; state: FinanceSourceStat
         <span className="truncate text-sm font-semibold text-foreground">{label}</span>
       </div>
       <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] ${sourceTone(state)}`}>{sourceLabel(state)}</span>
+    </div>
+  );
+}
+
+function ReconciliationRow({ row, currency }: { row: FinanceReconciliationRow; currency: string }) {
+  return (
+    <div className="border-b border-border/55 px-3 py-3 last:border-0">
+      <div className="grid min-w-[1080px] grid-cols-[0.45fr_0.7fr_0.95fr_1.15fr_0.75fr_0.85fr_0.95fr_0.7fr] gap-3 text-sm">
+        <p className="font-semibold text-foreground">{row.serialNo}</p>
+        <p className="text-muted-foreground">{row.month}</p>
+        <p className="text-muted-foreground">{row.shopifyOrderNumber}</p>
+        <p className="text-muted-foreground">{row.aliExpressOrderId}</p>
+        <p className="text-right font-semibold text-foreground">{formatMoney(row.amountCents, currency)}</p>
+        <p className="truncate text-muted-foreground" title={row.invoice}>{row.invoice}</p>
+        <p className="truncate text-muted-foreground" title={row.feeThreshold}>{row.feeThreshold}</p>
+        <div className="text-right">
+          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] ${reconciliationStateTone(row.status.toLowerCase().includes("paid") ? "connected" : row.status.toLowerCase().includes("pending") ? "partial" : "missing")}`}>{row.status}</span>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-[0.68rem] text-muted-foreground">
+        <span>Order cost {formatMoney(row.orderCostCents, currency)}</span>
+        <span>Bill cost {formatMoney(row.billCostCents, currency)}</span>
+        <span>Pending payout {formatMoney(row.pendingPayoutCents, currency)}</span>
+        <span>Payout paid {formatMoney(row.payoutPaidCents, currency)}</span>
+        <span>Campaign {formatMoney(row.campaignCostCents, currency)}</span>
+        <span>Fees {formatMoney(row.feeCents, currency)}</span>
+        <span className={row.profitCents >= 0 ? "text-emerald-700" : "text-rose-700"}>Profit {formatMoney(row.profitCents, currency)}</span>
+      </div>
     </div>
   );
 }
@@ -316,6 +350,7 @@ const FinancePage = () => {
 
   const kpis = summary?.kpis;
   const currency = summary?.currency || "USD";
+  const reconciliation = summary?.reconciliation;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,hsl(var(--primary)/0.12),transparent_28%),radial-gradient(circle_at_92%_8%,hsl(var(--salt-gold)/0.13),transparent_24%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--salt-warm-bg)/0.84))] px-3 py-4 text-foreground sm:px-6 sm:py-6 lg:px-10 lg:py-8">
@@ -362,10 +397,52 @@ const FinancePage = () => {
                 <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">P&L statement</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Where the money went.</h2></div><span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">{summary.period.start} to {summary.period.end}</span></div>
                 <div className="mt-5">{summary.pnlRows.map((row) => <PnlRow key={row.label} row={row} currency={currency} />)}</div>
               </article>
-              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers cost coverage" state={summary.sources.dsers} /><SourceBadge label="Subscriptions" state={summary.sources.subscriptions} /><SourceBadge label="Campaign costs" state={summary.sources.campaigns} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
+              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers cost coverage" state={summary.sources.dsers} /><SourceBadge label="Subscriptions" state={summary.sources.subscriptions} /><SourceBadge label="Campaign costs" state={summary.sources.campaigns} /><SourceBadge label="Native mapping" state={summary.sources.reconciliation} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
             </section>
 
             <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Reconciliation desk</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Exceptions before surprises.</h2></div><span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${summary.exceptions.length ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{summary.exceptions.length ? `${summary.exceptions.length} needs review` : "All clear"}</span></div><div className="mt-5 grid gap-3 md:grid-cols-2">{summary.exceptions.length ? summary.exceptions.map((item) => <ExceptionRow key={`${item.kind}-${item.message}`} item={item} />) : <div className="rounded-2xl border border-emerald-200/75 bg-emerald-50/55 p-4 text-sm text-emerald-900">No reconciliation exceptions were reported for this period.</div>}</div></section>
+
+            <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="salt-kicker">Native mapping</p>
+                  <h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Shopify-first reconciliation rows.</h2>
+                </div>
+                <span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${reconciliationStateTone(reconciliation?.state || "missing")}`}>{sourceLabel(reconciliation?.state || "missing")}</span>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <StatCard label="Pending payout" value={formatMoney(reconciliation?.totals.pendingPayoutCents || 0, currency)} detail="Rows waiting on cash" accent="blue" icon={<WalletCards className="h-5 w-5" />} />
+                <StatCard label="Payout paid" value={formatMoney(reconciliation?.totals.payoutPaidCents || 0, currency)} detail="Rows already settled" accent="green" icon={<CircleDollarSign className="h-5 w-5" />} />
+                <StatCard label="Order cost" value={formatMoney(reconciliation?.totals.orderCostCents || 0, currency)} detail="Shopify cost plus supplier mappings" accent="gold" icon={<ArrowDownRight className="h-5 w-5" />} />
+                <StatCard label="Bill cost" value={formatMoney(reconciliation?.totals.billCostCents || 0, currency)} detail="Invoice and external bill mapping" accent="navy" icon={<FileText className="h-5 w-5" />} />
+                <StatCard label="Native profit" value={formatMoney(reconciliation?.totals.profitCents || 0, currency)} detail={`${reconciliation?.totals.rowCount || 0} mapped orders`} accent={reconciliation?.totals.profitCents && reconciliation.totals.profitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                {reconciliation?.rows.length ? (
+                  <div className="min-w-[1080px]">
+                    <div className="grid min-w-[1080px] grid-cols-[0.45fr_0.7fr_0.95fr_1.15fr_0.75fr_0.85fr_0.95fr_0.7fr] gap-3 border-b border-border/75 px-3 pb-2 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      <span>Serial No.</span>
+                      <span>Month</span>
+                      <span>Shopify Order #</span>
+                      <span>Ali Exp. Order ID</span>
+                      <span className="text-right">Amount</span>
+                      <span>Invoice</span>
+                      <span>Fee threshold</span>
+                      <span className="text-right">Status</span>
+                    </div>
+                    {reconciliation.rows.map((row) => (
+                      <ReconciliationRow key={row.id} row={row} currency={currency} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-2xl border border-border/65 bg-background/50 p-4 text-sm text-muted-foreground">
+                    {reconciliation?.message || "Native reconciliation rows will appear once Shopify finance metafields or FINANCE_RECONCILIATION_JSON are available."}
+                  </p>
+                )}
+              </div>
+            </section>
 
             <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
               <article className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6">

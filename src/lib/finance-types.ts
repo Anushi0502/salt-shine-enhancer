@@ -6,6 +6,7 @@ export type FinanceSourceStatus = {
   dsers: FinanceSourceState;
   subscriptions: FinanceSourceState;
   campaigns: FinanceSourceState;
+  reconciliation: FinanceSourceState;
   messages: string[];
 };
 
@@ -70,6 +71,47 @@ export type FinanceCampaignSpend = {
   orderCount: number;
 };
 
+export type FinanceReconciliationRow = {
+  id: string;
+  serialNo: number;
+  month: string;
+  shopifyOrderNumber: string;
+  aliExpressOrderId: string;
+  amountCents: number;
+  invoice: string;
+  feeThreshold: string;
+  status: string;
+  pendingPayoutCents: number;
+  payoutPaidCents: number;
+  orderCostCents: number;
+  billCostCents: number;
+  campaignCostCents: number;
+  feeCents: number;
+  profitCents: number;
+  currency: string;
+  source: string;
+};
+
+export type FinanceReconciliationTotals = {
+  pendingPayoutCents: number;
+  payoutPaidCents: number;
+  orderCostCents: number;
+  billCostCents: number;
+  campaignCostCents: number;
+  feeCents: number;
+  profitCents: number;
+  rowCount: number;
+  paidCount: number;
+  pendingCount: number;
+};
+
+export type FinanceReconciliationSummary = {
+  state: FinanceSourceState;
+  message?: string;
+  totals: FinanceReconciliationTotals;
+  rows: FinanceReconciliationRow[];
+};
+
 export type FinanceOrderRow = {
   id: string;
   name: string;
@@ -112,6 +154,7 @@ export type FinanceSummary = {
   sources: FinanceSourceStatus;
   kpis: FinanceKpis;
   pnlRows: FinancePnlRow[];
+  reconciliation: FinanceReconciliationSummary;
   payouts: FinancePayout[];
   subscriptions: FinanceSubscription[];
   campaignCosts: FinanceCampaignSpend[];

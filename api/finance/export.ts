@@ -120,6 +120,37 @@ export default async function handler(req: any, res: any) {
       }
     }
 
+    section("Native Reconciliation");
+    const reconciliationTotals = summary.reconciliation.totals;
+    for (const [label, value] of [
+      ["Pending payout", reconciliationTotals.pendingPayoutCents],
+      ["Payout paid", reconciliationTotals.payoutPaidCents],
+      ["Order cost", reconciliationTotals.orderCostCents],
+      ["Bill cost", reconciliationTotals.billCostCents],
+      ["Native profit", reconciliationTotals.profitCents],
+    ] as const) {
+      ensureSpace();
+      writeLine(page, label, 48, y, 10, activeFont.current, muted);
+      writeLine(page, money(value, summary.currency), 280, y, 10, activeFont.current, navy);
+      y -= 18;
+    }
+    if (!summary.reconciliation.rows.length) {
+      writeLine(page, summary.reconciliation.message || "Native reconciliation rows are not available yet.", 48, y, 10, activeFont.current, muted);
+      y -= 18;
+    } else {
+      for (const row of summary.reconciliation.rows.slice(0, 40)) {
+        ensureSpace(26);
+        writeLine(page, `${row.serialNo}. ${row.shopifyOrderNumber} | ${row.month}`, 48, y, 9, activeFont.current, navy);
+        writeLine(page, `${row.aliExpressOrderId} | ${row.status} | ${row.invoice}`, 48, y - 12, 8, activeFont.current, muted);
+        writeLine(page, money(row.amountCents, row.currency), 430, y, 9, activeFont.current, navy);
+        y -= 28;
+      }
+      if (summary.reconciliation.rows.length > 40) {
+        writeLine(page, `Showing the first 40 of ${summary.reconciliation.rows.length} reconciliation rows.`, 48, y, 8, activeFont.current, muted);
+        y -= 12;
+      }
+    }
+
     section("Campaign Allocations");
     if (!summary.campaignCosts.length) {
       writeLine(page, summary.sources.campaigns === "unavailable" ? "Shopify marketing activity access is unavailable for this workspace." : "No Shopify marketing activity spend was matched to this period.", 48, y, 10, activeFont.current, muted);
@@ -170,6 +201,7 @@ export default async function handler(req: any, res: any) {
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
       "Campaign spend is pulled from Shopify marketing activity attribution and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
       "SALT app subscriptions are read from Shopify Admin billing; external vendor subscriptions use configured operating costs.",
+      "Native reconciliation rows are pulled from Shopify order finance metafields first, with FINANCE_RECONCILIATION_JSON as a fallback import path.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {
       ensureSpace();

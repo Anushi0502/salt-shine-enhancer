@@ -91,8 +91,8 @@ const StorefrontShopRoute = () => {
 const StorefrontHomeRoute = () => {
   const [searchParams] = useSearchParams();
 
-  // Shopify can redirect into the private finance workspace from the theme.
-  // Keep the query-string fallback so older links still reach the workspace.
+  // Shopify serves the finance workspace on /pages/finance. The legacy
+  // ?finance=1 fallback remains for older redirects and local previews.
   return searchParams.get("finance") === "1" ? <FinancePage /> : <HomePage />;
 };
 
@@ -132,7 +132,6 @@ const AppShell = () => (
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/pages/resources" element={<ResourcesPage />} />
-                <Route path="/pages/finance" element={<FinancePage />} />
                 <Route path="/apps:finance" element={<FinancePage />} />
                 <Route path="/apps/finance" element={<FinancePage />} />
                 <Route path="/pages/finance" element={<FinancePage />} />
