@@ -42,6 +42,10 @@ type ShopifyMoneySet = {
 
 type ShopifyMoney = { amount?: string | number; currencyCode?: string };
 
+type ShopifyGraphQLError = {
+  message?: string;
+};
+
 type ShopifyUtmParameters = {
   source?: string | null;
   medium?: string | null;
@@ -127,7 +131,7 @@ type SupplierCostSource = {
 
 type SubscriptionSource = {
   subscriptions: FinanceSubscription[];
-  connected: boolean;
+  state: FinanceSourceState;
   message?: string;
 };
 
@@ -218,8 +222,9 @@ const ORDER_QUERY = /* GraphQL */ `
 `;
 
 const MARKETING_ACTIVITY_QUERY = /* GraphQL */ `
-  query FinanceMarketingActivities($utm: UTMInput!) {
-    marketingActivities(first: 50, utm: $utm) {
+  query FinanceMarketingActivities($utm: UTMInput!, $after: String) {
+    marketingActivities(first: 100, after: $after, sortKey: CREATED_AT, utm: $utm) {
+      pageInfo { hasNextPage endCursor }
       nodes {
         id
         title
@@ -544,7 +549,15 @@ function adminApiUrl(path: string): string {
   return `${shopBase()}/admin/api/${apiVersion}${path}`;
 }
 
-async function queryShopify(query: string, variables: Record<string, unknown>): Promise<any> {
+function shopifyErrorMessage(errors: ShopifyGraphQLError[]): string {
+  return errors.map((error) => String(error.message || "")).filter(Boolean).join(" | ");
+}
+
+async function queryShopify(
+  query: string,
+  variables: Record<string, unknown>,
+  options: { allowPartial?: boolean } = {},
+): Promise<{ data?: any; errors: ShopifyGraphQLError[] }> {
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) throw new Error("Shopify Admin credentials are not configured");
 
   const response = await fetch(adminApiUrl("/graphql.json"), {
@@ -552,21 +565,30 @@ async function queryShopify(query: string, variables: Record<string, unknown>): 
     headers: shopifyHeaders(),
     body: JSON.stringify({ query, variables }),
   });
-  const body = await response.json();
-  if (!response.ok || body.errors?.length) {
-    const message = body.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(" | ");
+  const body = await response.json() as { data?: any; errors?: ShopifyGraphQLError[] };
+  const errors = Array.isArray(body.errors) ? body.errors : [];
+  const message = shopifyErrorMessage(errors);
+  if (!response.ok && !(options.allowPartial && body.data)) {
     throw new Error(message || `Shopify Admin request failed with ${response.status}`);
   }
-  return body.data;
+  if (errors.length && !options.allowPartial) {
+    throw new Error(message || `Shopify Admin request failed with ${response.status}`);
+  }
+  return { data: body.data, errors };
 }
 
-async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
+async function loadOrders(start: string, end: string): Promise<{ orders: ShopifyOrder[]; state: FinanceSourceState; message?: string }> {
   const orders: ShopifyOrder[] = [];
+  const errors = new Set<string>();
   let after: string | null = null;
   let pageCount = 0;
 
   while (pageCount < 20) {
-    const data = await queryShopify(ORDER_QUERY, { query: dateQuery(start, end), after });
+    const { data, errors: pageErrors } = await queryShopify(ORDER_QUERY, { query: dateQuery(start, end), after }, { allowPartial: true });
+    pageErrors.forEach((error) => {
+      const message = String(error.message || "").trim();
+      if (message) errors.add(message);
+    });
     const connection = data?.orders;
     orders.push(...(connection?.nodes || []));
     pageCount += 1;
@@ -574,7 +596,19 @@ async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
     after = connection.pageInfo.endCursor;
   }
 
-  return orders;
+  if (!orders.length) {
+    return {
+      orders: [],
+      state: errors.size ? "unavailable" : "missing",
+      message: errors.size ? [...errors][0] : "No Shopify orders were returned for the selected period.",
+    };
+  }
+
+  return {
+    orders,
+    state: errors.size ? "partial" : "connected",
+    message: errors.size ? [...errors].join(" | ") : undefined,
+  };
 }
 
 function simpleMoneyCents(input?: ShopifyMoney | null): number {
@@ -678,8 +712,22 @@ async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendS
     if (group.medium) utm.medium = group.medium;
     if (group.campaign) utm.campaign = group.campaign;
 
-    const data = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm });
-    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, any>>;
+    const activities: Array<Record<string, any>> = [];
+    const pageErrors = new Set<string>();
+    let after: string | null = null;
+    let pageCount = 0;
+    while (pageCount < 10) {
+      const { data, errors } = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm, after }, { allowPartial: true });
+      errors.forEach((error) => {
+        const message = String(error.message || "").trim();
+        if (message) pageErrors.add(message);
+      });
+      const connection = data?.marketingActivities;
+      activities.push(...(connection?.nodes || []) as Array<Record<string, any>>);
+      pageCount += 1;
+      if (!connection?.pageInfo?.hasNextPage || !connection?.pageInfo?.endCursor) break;
+      after = connection.pageInfo.endCursor;
+    }
     const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(activity.adSpend), 0);
     const orderRows = [...group.orderRows].sort((left, right) => {
       const leftTime = new Date(left.createdAt || 0).getTime();
@@ -710,6 +758,7 @@ async function loadCampaignCosts(orders: ShopifyOrder[]): Promise<CampaignSpendS
     });
 
     resolvedGroups += 1;
+    if (pageErrors.size) errors.push([...pageErrors].join(" | "));
   }));
 
   for (const result of results) {
@@ -847,10 +896,11 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
 
   let graphqlError = "";
   try {
-    const data = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) });
+    const { data, errors } = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) }, { allowPartial: true });
+    graphqlError = shopifyErrorMessage(errors);
     const account = data?.shopifyPaymentsAccount;
     if (!account) throw new Error("Shopify Payments account is not available for this store");
-    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
+    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: errors.length ? "partial" : "connected", message: errors.length ? graphqlError : undefined };
   } catch (error) {
     graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
     if (isShopifyPaymentsAccessError(graphqlError)) {
@@ -1040,11 +1090,11 @@ function recurringMultiplier(interval: string, days: number): number {
 
 async function loadShopifySubscriptions(start: string, end: string): Promise<SubscriptionSource> {
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
-    return { subscriptions: [], connected: false, message: "Shopify Admin credentials are not configured" };
+    return { subscriptions: [], state: "unavailable", message: "Shopify Admin credentials are not configured" };
   }
 
   try {
-    const data = await queryShopify(APP_SUBSCRIPTION_QUERY, {});
+    const { data, errors } = await queryShopify(APP_SUBSCRIPTION_QUERY, {}, { allowPartial: true });
     const days = periodDays(start, end);
     const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, any>) => {
       if (subscription.test) return [];
@@ -1064,9 +1114,13 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
         } satisfies FinanceSubscription];
       });
     });
-    return { subscriptions, connected: true };
+    return {
+      subscriptions,
+      state: errors.length ? "partial" : "connected",
+      message: errors.length ? shopifyErrorMessage(errors) : undefined,
+    };
   } catch (error) {
-    return { subscriptions: [], connected: false, message: error instanceof Error ? error.message : "Shopify app subscriptions unavailable" };
+    return { subscriptions: [], state: "unavailable", message: error instanceof Error ? error.message : "Shopify app subscriptions unavailable" };
   }
 }
 
@@ -1116,24 +1170,28 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const supplierCosts = parseSupplierCosts();
   const manualCosts = parseManualCosts(start, end);
   const exceptions: FinanceException[] = [];
-  const orders = ordersResult.status === "fulfilled" ? ordersResult.value : [];
-  const payoutData = payoutsResult.status === "fulfilled" ? payoutsResult.value : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
+  const ordersData = ordersResult.status === "fulfilled"
+    ? ordersResult.value
+    : { orders: [], state: "unavailable" as FinanceSourceState, message: "Shopify orders unavailable" };
+  const payoutData = payoutsResult.status === "fulfilled"
+    ? payoutsResult.value
+    : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
   const shopifySubscriptionData = shopifySubscriptionsResult.status === "fulfilled"
     ? shopifySubscriptionsResult.value
-    : { subscriptions: [], connected: false, message: "Shopify app subscriptions unavailable" };
-  const campaignData = ordersResult.status === "fulfilled"
-    ? await loadCampaignCosts(orders)
-    : { campaigns: [], allocationsByOrderId: new Map<string, number>(), state: "unavailable" as FinanceSourceState, message: "Shopify marketing activity unavailable" };
+    : { subscriptions: [], state: "unavailable" as FinanceSourceState, message: "Shopify app subscriptions unavailable" };
+  const campaignData = ordersResult.status === "fulfilled" && ordersData.orders.length
+    ? await loadCampaignCosts(ordersData.orders)
+    : { campaigns: [], allocationsByOrderId: new Map<string, number>(), state: ordersData.orders.length ? "unavailable" as FinanceSourceState : ordersData.state, message: ordersData.orders.length ? "Shopify marketing activity unavailable" : undefined };
   const subscriptions = [...shopifySubscriptionData.subscriptions, ...manualCosts.subscriptions];
 
-  if (ordersResult.status === "rejected") exceptions.push(exception("shopify-orders", ordersResult.reason?.message || "Shopify orders unavailable", 1, "high"));
-  if (payoutData.message && payoutData.state === "unavailable") exceptions.push(exception("shopify-payouts", payoutData.message, 1, "high"));
+  if (ordersData.message) exceptions.push(exception("shopify-orders", ordersData.message, 1, ordersData.state === "unavailable" ? "high" : "medium"));
+  if (payoutData.message) exceptions.push(exception("shopify-payouts", payoutData.message, 1, payoutData.state === "unavailable" ? "high" : "medium"));
   if (supplierCosts.message) exceptions.push(exception("dsers-costs", supplierCosts.message, 1, "high"));
   if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));
   if (campaignData.message) exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
 
-  const normalized = normalizeOrders(orders, supplierCosts);
+  const normalized = normalizeOrders(ordersData.orders, supplierCosts);
   if (normalized.missingCostCount) {
     const message = supplierCosts.configured
       ? "Some line items still do not have a Shopify or DSers supplier cost after applying the configured DSers cost map."
@@ -1186,8 +1244,8 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     };
   });
 
-  const subscriptionState: FinanceSourceState = shopifySubscriptionData.connected
-    ? "connected"
+  const subscriptionState: FinanceSourceState = shopifySubscriptionData.state === "connected" || shopifySubscriptionData.state === "partial"
+    ? shopifySubscriptionData.state
     : manualCosts.state === "manual"
       ? "manual"
       : "unavailable";
@@ -1203,19 +1261,26 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     currency,
     period: { start, end, timezone: DEFAULT_TIMEZONE },
     sources: {
-      shopify: ordersResult.status === "fulfilled" ? "connected" : "unavailable",
+      shopify: ordersData.state,
       payouts: payoutData.state,
       dsers: dsersState,
       subscriptions: subscriptionState,
       campaigns: campaignState,
       messages: [
+        ordersData.state === "connected"
+          ? "Shopify orders loaded cleanly with financial, attribution, and dispute data."
+          : ordersData.state === "partial"
+            ? "Shopify orders were loaded, but some optional fields were denied or omitted. The finance report keeps the available data."
+            : "Shopify orders are unavailable. The finance report needs order access before it can calculate campaign spend and cost coverage.",
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
           : "DSers costs use Shopify variant cost-per-item values. External supplier costs can be supplied through FINANCE_DSER_COSTS_JSON.",
         payoutData.state === "connected"
           ? "Shopify payouts are live and payment fees are allocated to order rows by net revenue."
-          : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
-        shopifySubscriptionData.connected
+          : payoutData.state === "partial"
+            ? "Shopify payouts were partially returned; merchant-approved payments access still determines whether the full payout ledger is available."
+            : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
+        shopifySubscriptionData.state === "connected" || shopifySubscriptionData.state === "partial"
           ? "Active SALT app subscriptions are pulled from Shopify billing automatically; DSers and other vendor subscriptions can be added through FINANCE_SUBSCRIPTIONS_JSON."
           : "External vendor subscriptions require FINANCE_SUBSCRIPTIONS_JSON until their billing data is available to this app.",
         campaignData.state === "connected"
