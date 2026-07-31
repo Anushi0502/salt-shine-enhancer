@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 
-import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildProductSearchPayload } from "./product-search-index.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { writeProductSearchPayload } from "./product-search-files.mjs";
 
 const dataDir = resolve(process.cwd(), "public", "data");
-const searchIndexPath = resolve(dataDir, "product-search.json");
 
 async function main() {
   const productsPayload = await readProductCatalogPayload(dataDir);
   const searchPayload = buildProductSearchPayload(productsPayload);
 
-  await writeFile(searchIndexPath, JSON.stringify(searchPayload));
-  process.stdout.write(`Saved ${searchPayload.total} compact search products to public/data/product-search.json\n`);
+  const manifest = await writeProductSearchPayload(dataDir, searchPayload);
+  process.stdout.write(
+    `Saved ${searchPayload.total} compact search products to public/data/product-search.json across ${manifest.shardCount} shards (max ${manifest.shardMaxBytes} bytes each)\n`,
+  );
 }
 
 main().catch((error) => {

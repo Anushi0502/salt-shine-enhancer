@@ -1,9 +1,9 @@
 import { useDeferredValue, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { filterProducts } from "@/lib/catalog";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
+import { buildSearchIntelligence } from "@/lib/search-intelligence";
 import { useProductSearchIndex } from "@/lib/shopify-data";
 
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
@@ -20,39 +20,6 @@ function normalizeSearchPhrase(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function approximateSearchScore(haystack: string, queryTokens: string[]): number {
-  if (!haystack || !queryTokens.length) {
-    return 0;
-  }
-
-  const words = haystack.split(" ").filter(Boolean);
-  let score = 0;
-
-  queryTokens.forEach((token) => {
-    if (!token) {
-      return;
-    }
-
-    if (haystack.includes(token)) {
-      score += 5;
-      return;
-    }
-
-    const prefix = token.length > 3 ? token.slice(0, token.length - 1) : token;
-    if (words.some((word) => word.startsWith(prefix))) {
-      score += 3;
-      return;
-    }
-
-    const compact = token.replace(/[aeiou]/g, "");
-    if (compact && words.some((word) => word.includes(compact))) {
-      score += 1;
-    }
-  });
-
-  return score;
-}
-
 const HeaderSearchResults = ({
   query,
   recentSearches,
@@ -66,6 +33,10 @@ const HeaderSearchResults = ({
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
   const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const hasSearchQuery = Boolean(query.trim());
+  const searchIntelligence = useMemo(
+    () => (hasSearchQuery ? buildSearchIntelligence(allProducts, allCollections, deferredQuery) : null),
+    [allProducts, allCollections, deferredQuery, hasSearchQuery],
+  );
 
   const dropdownProducts = useMemo(() => {
     if (!allProducts.length) {
@@ -76,29 +47,23 @@ const HeaderSearchResults = ({
       return allProducts.slice(0, 4);
     }
 
-    const strictMatches = filterProducts(allProducts, { query: deferredQuery }).slice(0, 4);
-    if (strictMatches.length > 0) {
-      return strictMatches;
-    }
+    return searchIntelligence?.predictedProducts ?? [];
+  }, [allProducts, hasSearchQuery, searchIntelligence]);
 
-    const normalizedQuery = normalizeSearchPhrase(deferredQuery);
-    const queryTokens = normalizedQuery.split(" ").filter(Boolean);
-    if (!queryTokens.length) {
-      return [];
-    }
-
-    return allProducts
-      .map((product) => {
-        const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
-        const searchable = normalizeSearchPhrase(`${product.title} ${product.product_type || ""} ${tags}`);
-        const score = approximateSearchScore(searchable, queryTokens);
-        return score > 0 ? { product, score } : null;
-      })
-      .filter((entry): entry is { product: (typeof allProducts)[number]; score: number } => Boolean(entry))
-      .sort((left, right) => right.score - left.score || minPrice(left.product) - minPrice(right.product))
-      .slice(0, 4)
-      .map((entry) => entry.product);
-  }, [allProducts, deferredQuery, hasSearchQuery]);
+  const productSectionLabel = hasSearchQuery
+    ? searchIntelligence?.resultMode === "catalog-intent"
+      ? "Catalog-understood matches"
+      : searchIntelligence?.exactProducts.length
+        ? "Product matches"
+        : "Closest predicted products"
+    : "Product matches";
+  const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
+  const searchIntent = searchIntelligence?.intent ?? null;
+  const searchRefinements = searchIntelligence?.refinements ?? [];
+  const matchExplanations = useMemo(
+    () => new Map((searchIntelligence?.matchExplanations ?? []).map((entry) => [entry.productId, entry.reasons])),
+    [searchIntelligence?.matchExplanations],
+  );
 
   const trendingSearches = useMemo(() => {
     if (!allProducts.length) {
@@ -182,6 +147,27 @@ const HeaderSearchResults = ({
     return suggestions.slice(0, 8);
   }, [allCollections, allProducts, deferredQuery]);
 
+  const predictiveCategorySuggestions = useMemo(() => {
+    if (!hasSearchQuery) {
+      return categorySuggestions;
+    }
+
+    const merged = [...categorySuggestions, ...(searchIntelligence?.categorySuggestions ?? [])];
+    const seen = new Set<string>();
+
+    return merged
+      .filter((entry) => {
+        const key = `${entry.label.toLowerCase()}::${entry.to}`;
+        if (seen.has(key)) {
+          return false;
+        }
+
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6);
+  }, [categorySuggestions, hasSearchQuery, searchIntelligence]);
+
   const bestSellerCollection = useMemo(
     () =>
       allCollections.find((collection) =>
@@ -228,9 +214,16 @@ const HeaderSearchResults = ({
       <div className="grid gap-2 rounded-[1.15rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-2 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.2)] lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] backdrop-blur-xl">
         <section className="rounded-[0.95rem] border border-border/70 bg-background/95 p-2">
           <div className="flex items-center justify-between border-b border-border/70 pb-2">
-            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Product matches
-            </p>
+            <div>
+              <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {productSectionLabel}
+              </p>
+              {hasSearchQuery ? (
+                <p className="mt-1 text-[0.54rem] leading-5 text-muted-foreground">
+                  Matching titles, product types, tags, boosts, and collection clues.
+                </p>
+              ) : null}
+            </div>
             <button
               type="button"
               onClick={onSearchAll}
@@ -272,6 +265,11 @@ const HeaderSearchResults = ({
                     <p className="mt-0.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                       {product.product_type || "Curated pick"}
                     </p>
+                    {matchExplanations.get(product.id)?.[0] ? (
+                      <p className="mt-1 line-clamp-1 text-[0.58rem] font-medium leading-4 text-primary/80">
+                        {matchExplanations.get(product.id)?.[0]}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex min-h-full flex-col items-end gap-1.5 text-right">
@@ -287,7 +285,7 @@ const HeaderSearchResults = ({
 
             {hasSearchQuery && !dropdownProducts.length ? (
               <div className="rounded-[0.95rem] border border-dashed border-border/70 bg-background/92 px-3 py-4 text-sm text-muted-foreground">
-                <p>No direct match yet. Try a category shortcut:</p>
+                <p>No exact match yet. Try a category shortcut:</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {(categorySuggestions.length ? categorySuggestions : popularRoutes).slice(0, 3).map((entry) => (
                     <Link
@@ -306,6 +304,99 @@ const HeaderSearchResults = ({
         </section>
 
         <section className="rounded-[0.95rem] border border-border/70 bg-background/95 p-2">
+          {hasSearchQuery ? (
+            <div className="rounded-[0.85rem] border border-border/70 bg-background/92 p-2.5">
+              {searchIntent ? (
+                <div className="rounded-[0.75rem] border border-primary/15 bg-primary/[0.04] p-2">
+                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-primary">Understood as</p>
+                  <p className="mt-1 text-sm font-semibold leading-tight text-foreground">{searchIntent.label}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {[searchIntent.familyLabel, searchIntent.priceLabel, searchIntent.availabilityLabel]
+                      .filter(Boolean)
+                      .map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-primary/15 bg-background/80 px-2 py-1 text-[0.54rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {searchRefinements.length ? (
+                <div className={searchIntent ? "mt-2.5" : ""}>
+                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Refine in one tap
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {searchRefinements.slice(0, 4).map((refinement) => (
+                      <button
+                        key={refinement.query}
+                        type="button"
+                        onClick={() => onQuickSearch(refinement.query)}
+                        title={refinement.reason}
+                        className="rounded-full border border-primary/20 bg-primary/[0.06] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-primary transition hover:border-primary/35 hover:bg-primary/[0.1]"
+                      >
+                        {refinement.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-2">
+                <p className="mt-2.5 text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Predictive paths
+                </p>
+                <p className="text-[0.52rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  Query aware
+                </p>
+              </div>
+
+              {predictiveQuerySuggestions.length ? (
+                <div className="mt-2.5">
+                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Search next
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {predictiveQuerySuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.query}
+                        type="button"
+                        onClick={() => onQuickSearch(suggestion.query)}
+                        className="rounded-full border border-border/70 bg-muted/45 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/20 hover:bg-background"
+                      >
+                        {suggestion.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {predictiveCategorySuggestions.length ? (
+                <div className="mt-2.5">
+                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Jump to category
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {predictiveCategorySuggestions.map((entry) => (
+                      <Link
+                        key={`${entry.label}-${entry.to}`}
+                        to={entry.to}
+                        onClick={onClose}
+                        className="rounded-full border border-border/70 bg-muted/45 px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/20 hover:bg-background"
+                      >
+                        {entry.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="rounded-[0.85rem] border border-border/70 bg-background/92 p-2.5">
             <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">Popular routes</p>
             <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">

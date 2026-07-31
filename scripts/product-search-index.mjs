@@ -1,3 +1,5 @@
+import { classifyProductKnowledge, compactProductKnowledge } from "../src/lib/product-knowledge-base.js";
+
 function plainText(input, maxLength = 360) {
   return String(input || "")
     .replace(/<[^>]+>/g, " ")
@@ -45,6 +47,7 @@ function buildSearchVariant(variants) {
 
 function buildSearchProduct(product) {
   const firstImage = buildSearchImage(product?.image || product?.images?.[0]);
+  const knowledge = classifyProductKnowledge(product);
   const searchBoosts = Array.isArray(product?.customData?.searchProductBoosts)
     ? product.customData.searchProductBoosts.map((entry) => plainText(entry, 120)).filter(Boolean).slice(0, 20)
     : [];
@@ -65,6 +68,7 @@ function buildSearchProduct(product) {
     variants: buildSearchVariant(product?.variants),
     images: firstImage ? [firstImage] : [],
     image: firstImage,
+    knowledge: compactProductKnowledge(knowledge),
     customData: searchBoosts.length ? { searchProductBoosts: searchBoosts } : null,
   };
 }

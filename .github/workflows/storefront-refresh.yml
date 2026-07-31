@@ -72,7 +72,17 @@ jobs:
           SHOPIFY_ADMIN_API_VERSION: "2026-07"
           SALT_SHOP_URL: https://0309d3-72.myshopify.com
           SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT: "1"
-        run: npm run sync:data
+        run: node scripts/sync-shopify-data.mjs
+
+      - name: Refresh recently ordered merchandising
+        continue-on-error: true
+        run: node scripts/sync-recently-ordered-products.mjs
+
+      - name: Verify generated pricing against live Shopify
+        env:
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+          SALT_PAGE_LIMIT: "250"
+        run: npm run verify:catalog-pricing
 
       - name: Detect meaningful catalog changes
         id: catalog

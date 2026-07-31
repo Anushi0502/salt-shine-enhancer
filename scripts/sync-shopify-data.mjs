@@ -13,6 +13,7 @@ import {
 } from "../src/lib/product-custom-data.js";
 import { buildProductSearchPayload } from "./product-search-index.mjs";
 import { readProductCatalogPayload, writeProductCatalogPayload } from "./product-catalog-files.mjs";
+import { writeProductSearchPayload } from "./product-search-files.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -43,7 +44,6 @@ const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
 const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
-const productSearchPath = resolve(outDir, "product-search.json");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const aboutPath = resolve(outDir, "about.json");
@@ -1745,7 +1745,7 @@ async function main() {
 
   await mkdir(outDir, { recursive: true });
   const productManifest = await writeProductCatalogPayload(outDir, productPayload);
-  await writeFile(productSearchPath, JSON.stringify(productSearchPayload));
+  const productSearchManifest = await writeProductSearchPayload(outDir, productSearchPayload);
   await writeFile(collectionsPath, JSON.stringify(collectionPayload));
   await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
   await writeFile(aboutPath, JSON.stringify(aboutPayload));
@@ -1755,7 +1755,9 @@ async function main() {
   process.stdout.write(
     `Saved ${productPayload.total} products to public/data/products.json across ${productManifest.shardCount} shards (max ${productManifest.shardMaxBytes} bytes each)\n`,
   );
-  process.stdout.write(`Saved ${productSearchPayload.total} compact search products to public/data/product-search.json\n`);
+  process.stdout.write(
+    `Saved ${productSearchPayload.total} compact search products to public/data/product-search.json across ${productSearchManifest.shardCount} shards (max ${productSearchManifest.shardMaxBytes} bytes each)\n`,
+  );
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
   process.stdout.write(
     `Saved collection product mapping to public/data/collection-products.json\n`,

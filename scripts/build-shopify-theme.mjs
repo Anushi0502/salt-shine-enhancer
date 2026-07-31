@@ -60,6 +60,7 @@ const themeDataAssets = [
   { source: "shop.json", asset: "data-shop.json", themePath: "/data/shop.json" },
 ];
 const PRODUCT_SHARD_SOURCE_PATTERN = /^products-\d{4}\.json$/;
+const PRODUCT_SEARCH_SHARD_SOURCE_PATTERN = /^product-search-\d{4}\.json$/;
 
 function serializeInlineJson(value) {
   return JSON.stringify(value ?? null).replace(/</g, "\\u003c");
@@ -657,8 +658,13 @@ async function copyAssets(entryJsPath, entryCssPath) {
   const existingProductShardAssets = (await readdir(themeAssetsDir)).filter((asset) =>
     /^data-products-\d{4}\.json$/.test(asset),
   );
+  const existingProductSearchShardAssets = (await readdir(themeAssetsDir)).filter((asset) =>
+    /^data-product-search-\d{4}\.json$/.test(asset),
+  );
   await Promise.all(
-    existingProductShardAssets.map((asset) => rm(resolve(themeAssetsDir, asset), { force: true })),
+    [...existingProductShardAssets, ...existingProductSearchShardAssets].map((asset) =>
+      rm(resolve(themeAssetsDir, asset), { force: true }),
+    ),
   );
 
   for (const asset of themeDataAssets) {
@@ -688,6 +694,17 @@ async function main() {
     .filter((source) => PRODUCT_SHARD_SOURCE_PATTERN.test(source))
     .sort();
   for (const source of productShardSources) {
+    themeDataAssets.push({
+      source,
+      asset: `data-${source}`,
+      themePath: `/data/${source}`,
+    });
+  }
+
+  const productSearchShardSources = (await readdir(resolve(publicDir, "data")))
+    .filter((source) => PRODUCT_SEARCH_SHARD_SOURCE_PATTERN.test(source))
+    .sort();
+  for (const source of productSearchShardSources) {
     themeDataAssets.push({
       source,
       asset: `data-${source}`,

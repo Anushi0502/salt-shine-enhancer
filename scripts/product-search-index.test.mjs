@@ -43,5 +43,10 @@ describe("buildProductSearchPayload", () => {
     expect(payload.products[0].images).toHaveLength(1);
     expect(payload.products[0].variants).toHaveLength(1);
     expect(payload.products[0].images[0]).not.toHaveProperty("variant_ids");
+    expect(payload.products[0].knowledge).toMatchObject({
+      familyId: "travel-outdoor",
+      leafType: "garden",
+    });
+    expect(payload.products[0].knowledge.searchTerms).toContain("garden");
   });
 });

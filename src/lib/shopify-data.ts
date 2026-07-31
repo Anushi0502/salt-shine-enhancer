@@ -39,6 +39,7 @@ import {
   isProductCatalogManifest,
   mergeProductShardPayloads,
 } from "@/lib/product-catalog-shards.js";
+import { isProductSearchManifest } from "@/lib/product-search-shards.js";
 import { isNativeApp } from "@/lib/mobile";
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
@@ -1207,17 +1208,27 @@ async function fetchProductsFromCache(): Promise<ProductsPayload> {
 }
 
 async function fetchProductSearchIndexFromCache(): Promise<ProductsPayload> {
-  const payload = await fetchThemeJson<ProductsPayload>(PRODUCT_SEARCH_DATA_PATH);
-  const products = Array.isArray(payload.products) ? payload.products : [];
+  const payload = await fetchThemeJson<ProductsPayload & { shards?: Array<{ path?: string; file?: string }> }>(PRODUCT_SEARCH_DATA_PATH);
+  const hydratedPayload = isProductSearchManifest(payload)
+    ? mergeProductShardPayloads(
+        payload,
+        await Promise.all(
+          payload.shards.map((shard) =>
+            fetchThemeJson<ProductsPayload>(shard.path || `/data/${shard.file || ""}`),
+          ),
+        ),
+      )
+    : payload;
+  const products = Array.isArray(hydratedPayload.products) ? hydratedPayload.products : [];
 
   if (!products.length) {
     throw new Error("Cached product search payload is empty");
   }
 
   return normalizeProductsPayload({
-    generatedAt: payload.generatedAt || new Date().toISOString(),
-    source: `cache:${payload.source || PRODUCT_SEARCH_DATA_PATH}`,
-    total: payload.total || products.length,
+    generatedAt: hydratedPayload.generatedAt || new Date().toISOString(),
+    source: `cache:${hydratedPayload.source || PRODUCT_SEARCH_DATA_PATH}`,
+    total: hydratedPayload.total || products.length,
     products,
   });
 }

@@ -22,6 +22,7 @@ import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
+import { buildSearchIntelligence } from "@/lib/search-intelligence";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
@@ -296,6 +297,10 @@ const ShopPage = () => {
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
+  const searchIntelligence = useMemo(
+    () => (hasSearchQuery ? buildSearchIntelligence(products, collections, deferredQuery) : null),
+    [collections, deferredQuery, hasSearchQuery, products],
+  );
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
   const bestSellerProductIds = useMemo(
     () => selectBestSellerProducts(products, 12).map((product) => product.id),
@@ -370,6 +375,12 @@ const ShopPage = () => {
     }
 
     if (sort === "featured") {
+      // Search relevance is already scored by the catalog intelligence layer.
+      // A merchandising re-rank here would push weaker matches ahead of intent matches.
+      if (deferredQuery.trim()) {
+        return base;
+      }
+
       if (selectedCollectionOrder) {
         return base.sort((a, b) => {
           const leftRank = selectedCollectionOrder.get(a.id);
@@ -416,7 +427,7 @@ const ShopPage = () => {
     }
 
     return base;
-  }, [priceFilteredProducts, sort, selectedCollectionOrder]);
+  }, [collectionHandle, curatedCollection?.title, curatedSubcollection?.title, deferredQuery, priceFilteredProducts, selectedCollectionOrder, sort, typeFilter]);
 
   const selectedCollection = collections.find(
     (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
@@ -465,6 +476,11 @@ const ShopPage = () => {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
   const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+  const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
+  const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
+  const predictiveCategorySuggestions = searchIntelligence?.categorySuggestions ?? [];
+  const predictiveRefinements = searchIntelligence?.refinements ?? [];
+  const understoodIntent = searchIntelligence?.intent ?? null;
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const seoStructuredData = useMemo(() => {
@@ -903,6 +919,104 @@ const ShopPage = () => {
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
 
+      {hasSearchQuery ? (
+        <Reveal delayMs={35}>
+          <div className="salt-editorial-shell mt-3 rounded-[1.35rem] p-4 sm:rounded-[1.6rem] sm:p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">
+                  Predictive search
+                </p>
+                <h2 className="mt-2 font-display text-[clamp(1.4rem,2.6vw,2rem)] leading-none">
+                  {searchIntelligence?.resultMode === "catalog-intent"
+                    ? `${totalResults.toLocaleString()} tailored match${totalResults === 1 ? "" : "es"} for "${query.trim()}"`
+                    : searchIntelligence?.exactProducts.length
+                    ? `${totalResults.toLocaleString()} exact result${totalResults === 1 ? "" : "s"} for "${query.trim()}"`
+                    : `Closest predicted matches for "${query.trim()}"`}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  {understoodIntent
+                    ? `${understoodIntent.label}. Ranked across the full catalog knowledge base, product attributes, and live constraints.`
+                    : "Search titles, product types, tags, boost phrases, and collection cues all at once."}
+                </p>
+              </div>
+
+              {predictiveQuerySuggestions.length ? (
+                <div className="flex flex-wrap gap-2 lg:max-w-[24rem] lg:justify-end">
+                  {predictiveQuerySuggestions.slice(0, 3).map((suggestion) => (
+                    <button
+                      key={suggestion.query}
+                      type="button"
+                      onClick={() => updateParams({ q: suggestion.query }, true)}
+                      className="salt-applied-chip"
+                    >
+                      <span>{suggestion.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            {understoodIntent || predictiveRefinements.length ? (
+              <div className="mt-4 rounded-[1rem] border border-primary/15 bg-primary/[0.035] p-3">
+                {understoodIntent ? (
+                  <div className="flex flex-wrap items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Catalog intelligence</span>
+                    {understoodIntent.familyLabel ? (
+                      <span className="rounded-full border border-primary/15 bg-background/80 px-2 py-1 text-muted-foreground">
+                        {understoodIntent.familyLabel}
+                      </span>
+                    ) : null}
+                    {understoodIntent.priceLabel ? (
+                      <span className="rounded-full border border-primary/15 bg-background/80 px-2 py-1 text-muted-foreground">
+                        {understoodIntent.priceLabel}
+                      </span>
+                    ) : null}
+                    {understoodIntent.availabilityLabel ? (
+                      <span className="rounded-full border border-primary/15 bg-background/80 px-2 py-1 text-muted-foreground">
+                        {understoodIntent.availabilityLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {predictiveRefinements.length ? (
+                  <div className={understoodIntent ? "mt-2.5" : ""}>
+                    <p className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      Refine this shortlist
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      {predictiveRefinements.slice(0, 6).map((refinement) => (
+                        <button
+                          key={`refinement-${refinement.query}`}
+                          type="button"
+                          onClick={() => updateParams({ q: refinement.query }, true)}
+                          title={refinement.reason}
+                          className="salt-applied-chip"
+                        >
+                          <span>{refinement.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {predictiveCategorySuggestions.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {predictiveCategorySuggestions.slice(0, 4).map((suggestion) => (
+                  <Link key={`${suggestion.label}-${suggestion.to}`} to={suggestion.to} className="salt-applied-chip">
+                    <span>{suggestion.label}</span>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </Reveal>
+      ) : null}
+
       {!hasSearchQuery ? (
         <Reveal>
           <div
@@ -1087,17 +1201,81 @@ const ShopPage = () => {
           </Reveal>
 
           {totalResults === 0 ? (
-            <Reveal delayMs={90} className="mt-6">
-              <div className="salt-editorial-shell rounded-[2rem] p-6 text-center sm:p-8">
-                <p className="salt-kicker">No matching products</p>
-                <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">No products match this filter</h2>
-                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Try a broader term, remove one or two filters, or start from a collection entry point.</p>
-                <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                  <button type="button" onClick={clearFilters} className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto">Reset filters</button>
-                  <Link to="/collections" className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto">Browse collections</Link>
+            <>
+              <Reveal delayMs={90} className="mt-6">
+                <div className="salt-editorial-shell rounded-[2rem] p-6 text-center sm:p-8">
+                  <p className="salt-kicker">{hasSearchQuery ? "Closest predicted matches" : "No matching products"}</p>
+                  <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">
+                    {hasSearchQuery ? `We predicted these for "${query.trim()}"` : "No products match this filter"}
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                    {hasSearchQuery
+                      ? "Try a predicted product or pivot with a category shortcut."
+                      : "Try a broader term, remove one or two filters, or start from a collection entry point."}
+                  </p>
+                  <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
+                    >
+                      Reset filters
+                    </button>
+                    <Link to="/collections" className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto">
+                      Browse collections
+                    </Link>
+                  </div>
+                  {hasSearchQuery && (predictiveQuerySuggestions.length || predictiveCategorySuggestions.length) ? (
+                    <div className="mt-5 flex flex-wrap justify-center gap-2">
+                      {predictiveQuerySuggestions.slice(0, 3).map((suggestion) => (
+                        <button
+                          key={`empty-query-${suggestion.query}`}
+                          type="button"
+                          onClick={() => updateParams({ q: suggestion.query }, true)}
+                          className="salt-applied-chip"
+                        >
+                          <span>{suggestion.label}</span>
+                        </button>
+                      ))}
+                      {predictiveCategorySuggestions.slice(0, 3).map((suggestion) => (
+                        <Link
+                          key={`empty-category-${suggestion.label}-${suggestion.to}`}
+                          to={suggestion.to}
+                          className="salt-applied-chip"
+                        >
+                          <span>{suggestion.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            </Reveal>
+              </Reveal>
+
+              {hasSearchQuery && predictiveProducts.length ? (
+                <Reveal delayMs={120} className="mt-5">
+                  <div className="salt-section-shell rounded-[1.35rem] p-3 sm:p-4 lg:p-5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">
+                          Predicted products
+                        </p>
+                        <h3 className="mt-1 font-display text-[1.5rem] leading-none">
+                          Closest matches for "{query.trim()}"
+                        </h3>
+                      </div>
+                      <p className="text-[0.62rem] uppercase tracking-[0.1em] text-muted-foreground">
+                        {predictiveProducts.length} picks
+                      </p>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+                      {predictiveProducts.slice(0, 4).map((product) => (
+                        <ProductCard key={product.id} product={product} variant="shop" reviewSummary={null} />
+                      ))}
+                    </div>
+                  </div>
+                </Reveal>
+              ) : null}
+            </>
           ) : (
             <>
               <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5">

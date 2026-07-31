@@ -23,6 +23,7 @@ import {
   normalizeShopifyTags,
   reconcileManagedMinimumQuantityTags,
 } from "./shopify-seo-managed-tags.js";
+import { classifyProductKnowledge, PRODUCT_KNOWLEDGE_BASE_VERSION } from "./product-knowledge-base.js";
 
 export const PER_ORDER_OVERHEAD = 12;
 const MAX_REASONABLE_RETAIL_PRICE = 14999.99;
@@ -1138,6 +1139,7 @@ function buildSearchPhrases(signals) {
     [...signals.productTypeTokens],
     [...signals.tagTokens],
     [...signals.collectionTokens],
+    ...(titleConflict || !signals.productKnowledge?.searchTerms?.length ? [] : [signals.productKnowledge.searchTerms]),
     ...boostSources,
   ];
 
@@ -1822,6 +1824,18 @@ function buildSignalsFromGroup(rows, handle, catalogContext) {
       categoryQuery,
     ),
   );
+  const productKnowledge = classifyProductKnowledge({
+    id: effectiveProductId,
+    handle,
+    title: catalogTitle || sourceTitle,
+    product_type: sourceProductType || catalogProductType,
+    tags: sourceTags.length ? sourceTags : catalogTags,
+    body_html: sourceBodyHtml || catalogBodyHtml,
+    customData: {
+      collectionSignal,
+      searchProductBoosts: catalogSearchBoosts,
+    },
+  });
 
   const handleTokens = buildTokenSet(handle);
   const sourceTitleTokens = buildTokenSet(sourceTitle);
@@ -1871,6 +1885,7 @@ function buildSignalsFromGroup(rows, handle, catalogContext) {
     collectionTitles,
     collectionHandles,
     collectionSignal,
+    productKnowledge,
     handleTokens,
     sourceTitleTokens,
     catalogTitleTokens,
@@ -2157,6 +2172,10 @@ function buildProductProfile(signals) {
     knowledge: {
       version: PRODUCT_CONTENT_KNOWLEDGE_VERSION,
       family: knowledge.id,
+      classificationVersion: PRODUCT_KNOWLEDGE_BASE_VERSION,
+      classificationFamily: signals.productKnowledge?.familyId || "other",
+      classificationType: signals.productKnowledge?.typeKey || "unclassified-product",
+      classificationConfidence: signals.productKnowledge?.confidence || 0,
       priorityFacts: knowledge.priorityFacts,
       factCount: extractSupportedProductFacts(signals).length,
       policy: MARKETPLACE_CONTENT_POLICY.market,

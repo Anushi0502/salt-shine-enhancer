@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { filterProducts } from "@/lib/catalog";
+import { filterProducts, parseSearchQuery } from "@/lib/catalog";
 import { isProductCatalogManifest, mergeProductShardPayloads } from "@/lib/product-catalog-shards.js";
 import type { ShopifyProduct } from "@/types/shopify";
 
@@ -13,6 +13,8 @@ function makeProduct(input: {
   tags?: string[];
   body_html?: string;
   customData?: ShopifyProduct["customData"];
+  price?: string;
+  available?: boolean;
 }): ShopifyProduct {
   return {
     id: input.id,
@@ -25,7 +27,15 @@ function makeProduct(input: {
     created_at: "2026-01-01T00:00:00Z",
     published_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
-    variants: [],
+    variants: input.price
+      ? [{
+          id: input.id * 10,
+          title: "Default Title",
+          price: input.price,
+          compare_at_price: null,
+          available: input.available !== false,
+        }]
+      : [],
     images: [],
     image: null,
     customData: input.customData || null,
@@ -114,6 +124,38 @@ const catalogFixture = isProductCatalogManifest(catalogManifest)
   : catalogManifest as { products: ShopifyProduct[] };
 
 describe("filterProducts search relevance", () => {
+  it("understands a natural space need instead of requiring every intent word in the title", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 30,
+          title: "USB Desk Glow Lamp",
+          handle: "usb-desk-glow-lamp",
+          product_type: "lighting",
+          tags: ["lamp", "desk", "led"],
+        }),
+        makeProduct({
+          id: 31,
+          title: "Desk Storage Organizer",
+          handle: "desk-storage-organizer",
+          product_type: "home storage",
+          tags: ["desk", "organizer"],
+        }),
+        makeProduct({
+          id: 32,
+          title: "Skin Lightening Serum",
+          handle: "skin-lightening-serum",
+          product_type: "beauty",
+          tags: ["skincare"],
+        }),
+      ],
+      { query: "something to brighten my desk" },
+    );
+
+    expect(parseSearchQuery("something to brighten my desk").intent?.key).toBe("lighting");
+    expect(results.map((entry) => entry.handle)).toEqual(["usb-desk-glow-lamp"]);
+  });
+
   it("keeps shovel search scoped to relevant products", () => {
     const results = filterProducts(products, { query: "shovel" });
     const handles = results.map((entry) => entry.handle);
@@ -131,6 +173,56 @@ describe("filterProducts search relevance", () => {
     expect(handles).toContain("stainless-steel-garden-hand-shovel");
     expect(handles).not.toContain("womens-summer-sleeveless-maxi-dress");
     expect(handles).not.toContain("elegant-satin-party-dress");
+  });
+
+  it("does not confuse lighting with lightening", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 10,
+          title: "USB Jellyfish Lamp",
+          handle: "usb-jellyfish-lamp",
+          product_type: "lighting",
+          tags: ["lamp", "lighting"],
+        }),
+        makeProduct({
+          id: 11,
+          title: "Skin Lightening Serum",
+          handle: "skin-lightening-serum",
+          product_type: "beauty",
+          tags: ["skincare"],
+        }),
+        makeProduct({
+          id: 12,
+          title: "Imagic Highlighting Blush Brush",
+          handle: "imagic-highlighting-blush-brush",
+          product_type: "beauty",
+          tags: ["makeup", "highlighting"],
+        }),
+        makeProduct({
+          id: 13,
+          title: "Essager 20W Charger Fast Charging Type C Lightning Charger Set",
+          handle: "essager-20w-charger-fast-charging-type-c-lightning-charger-set",
+          product_type: "electronics",
+          tags: ["charger", "usb-c"],
+        }),
+        makeProduct({
+          id: 18,
+          title: "In-ear Light Wireless Headphones Low Latency Earbuds",
+          handle: "in-ear-light-wireless-headphones-low-latency-earbuds",
+          product_type: "electronics",
+          tags: ["wireless", "headphones", "earbuds"],
+        }),
+      ],
+      { query: "lighting" },
+    );
+    const handles = results.map((entry) => entry.handle);
+
+    expect(handles).toContain("usb-jellyfish-lamp");
+    expect(handles).not.toContain("skin-lightening-serum");
+    expect(handles).not.toContain("imagic-highlighting-blush-brush");
+    expect(handles).not.toContain("essager-20w-charger-fast-charging-type-c-lightning-charger-set");
+    expect(handles).not.toContain("in-ear-light-wireless-headphones-low-latency-earbuds");
   });
 
   it("supports multi-term search across the full query", () => {
@@ -173,6 +265,58 @@ describe("filterProducts search relevance", () => {
     expect(handles).not.toContain("womens-summer-sleeveless-maxi-dress");
   });
 
+  it("understands price and availability constraints without treating them as product words", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 14,
+          title: "Wireless Travel Headphones",
+          handle: "wireless-travel-headphones",
+          product_type: "audio",
+          tags: ["wireless", "headphones"],
+          price: "29.99",
+        }),
+        makeProduct({
+          id: 15,
+          title: "Wireless Studio Headphones",
+          handle: "wireless-studio-headphones",
+          product_type: "audio",
+          tags: ["wireless", "headphones"],
+          price: "89.99",
+        }),
+        makeProduct({
+          id: 16,
+          title: "Wireless Travel Headphones Case",
+          handle: "wireless-travel-headphones-case",
+          product_type: "audio accessories",
+          tags: ["wireless", "headphones", "case"],
+          price: "19.99",
+          available: false,
+        }),
+      ],
+      { query: "wireless headphones under $50 in stock" },
+    );
+
+    expect(results.map((entry) => entry.handle)).toEqual(["wireless-travel-headphones"]);
+  });
+
+  it("matches multi-word synonym phrases", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 17,
+          title: "Protective Mobile Phone Case",
+          handle: "protective-mobile-phone-case",
+          product_type: "phone accessories",
+          tags: ["phone", "case"],
+        }),
+      ],
+      { query: "smartphone cover" },
+    );
+
+    expect(results.map((entry) => entry.handle)).toEqual(["protective-mobile-phone-case"]);
+  });
+
   it("prevents cross-category bleed in real catalog search", () => {
     const results = filterProducts(catalogFixture.products, { query: "shovel" }).slice(0, 30);
 
@@ -187,6 +331,17 @@ describe("filterProducts search relevance", () => {
     expect(hasDressResult).toBe(false);
   });
 
+  it("keeps the first 100 lighting results free of beauty and charging false friends", () => {
+    const results = filterProducts(catalogFixture.products, { query: "lighting" }).slice(0, 100);
+    const falseFriendResult = results.some((entry) =>
+      /lightening|highlighting|brightening|whitening|lifting|misting|thermos|serum|moisturiz/i.test(
+        `${entry.title} ${entry.handle} ${entry.tags}`,
+      ),
+    );
+
+    expect(falseFriendResult).toBe(false);
+  });
+
   it("supports real-catalog exclusion with operators", () => {
     const results = filterProducts(catalogFixture.products, { query: "mat -pet" }).slice(0, 40);
     const hasPetResult = results.some((entry) => /\bpet\b/i.test(`${entry.title} ${entry.handle} ${entry.tags}`));
@@ -194,11 +349,11 @@ describe("filterProducts search relevance", () => {
     expect(hasPetResult).toBe(false);
   });
 
-  it("uses dashboard search boosts to surface products that do not match the title", () => {
+  it("does not surface boost-only products in exact search", () => {
     const results = filterProducts(products, { query: "outdoor" });
     const handles = results.map((entry) => entry.handle);
 
-    expect(handles[0]).toBe("compact-travel-bottle");
+    expect(handles).toEqual([]);
   });
 
   it("drops out-of-category products even when a live collection contains them", () => {

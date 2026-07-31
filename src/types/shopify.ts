@@ -57,6 +57,19 @@ export interface ShopifyProductCustomData {
   metafields?: Record<string, ShopifyProductMetafieldRecord>;
 }
 
+export interface ProductKnowledgeRecord {
+  typeKey: string;
+  leafType: string;
+  familyId: string;
+  familyLabel: string;
+  taxonomyPath: string[];
+  aliases: string[];
+  searchTerms: string[];
+  negativeTerms: string[];
+  attributes: Record<string, string[]>;
+  confidence: number;
+}
+
 export interface ShopifyCollectionCustomData {
   heroKicker?: string | null;
   heroSummary?: string | null;
@@ -79,6 +92,7 @@ export interface ShopifyProduct {
   variants: ShopifyVariant[];
   images: ShopifyImage[];
   image?: ShopifyImage | null;
+  knowledge?: ProductKnowledgeRecord | null;
   total_reviews?: number;
   average_rating?: number;
   customData?: ShopifyProductCustomData | null;
