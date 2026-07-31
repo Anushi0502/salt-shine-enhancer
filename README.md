@@ -164,7 +164,6 @@ npx @shopify/cli theme push --path shopify-theme --store 0309d3-72.myshopify.com
 Configure these GitHub repository secrets before enabling the schedules:
 
 - `SHOPIFY_ADMIN_ACCESS_TOKEN`: Shopify Admin API token with product, collection, SEO, and read order access.
-- `SHOPIFY_THEME_ACCESS_PASSWORD`: Shopify Theme Access password or Admin API token with theme write access.
 - `SALT_THEME_REPO_TOKEN`: token that can push `Anushi0502/salt-online-store-v2`.
 
 ## Private Finance Workspace

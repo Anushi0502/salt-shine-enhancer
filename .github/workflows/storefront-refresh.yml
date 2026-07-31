@@ -123,23 +123,11 @@ jobs:
             git -C salt-online-store-shopify push origin HEAD:main
           fi
 
-      - name: Publish active Shopify theme
+      - name: Record Shopify theme deployment
         if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        env:
-          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_THEME_ACCESS_PASSWORD }}
         run: |
-          if [ -z "$SHOPIFY_CLI_THEME_TOKEN" ]; then
-            echo "::error::SHOPIFY_THEME_ACCESS_PASSWORD is required for theme publishing."
-            exit 1
-          fi
-          npx --yes @shopify/cli@4.5.2 theme push \
-            --path "$GITHUB_WORKSPACE/salt-online-store-shopify" \
-            --store 0309d3-72.myshopify.com \
-            --theme 141589774435 \
-            --allow-live \
-            --nodelete \
-            --password "$SHOPIFY_CLI_THEME_TOKEN" \
-            --json
+          echo "Theme source is pushed to salt-online-store-v2/main."
+          echo "Shopify's GitHub-connected active theme deploys the pushed theme source."
 
       - name: Report no-op refresh
         if: steps.catalog.outputs.changed != 'true'
