@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -14,6 +17,7 @@ concurrency:
 
 jobs:
   refresh:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
@@ -53,7 +57,6 @@ jobs:
           echo "::add-mask::$refresh_token"
           {
             echo "SHOPIFY_ADMIN_ACCESS_TOKEN=$access_token"
-            echo "SHOPIFY_THEME_ACCESS_PASSWORD=$access_token"
           } >> "$GITHUB_ENV"
           printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
 
@@ -122,8 +125,13 @@ jobs:
 
       - name: Publish active Shopify theme
         if: steps.catalog.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_THEME_ACCESS_PASSWORD }}
         run: |
-          export SHOPIFY_CLI_THEME_TOKEN="$SHOPIFY_ADMIN_ACCESS_TOKEN"
+          if [ -z "$SHOPIFY_CLI_THEME_TOKEN" ]; then
+            echo "::error::SHOPIFY_THEME_ACCESS_PASSWORD is required for theme publishing."
+            exit 1
+          fi
           npx --yes @shopify/cli@4.5.2 theme push \
             --path "$GITHUB_WORKSPACE/salt-online-store-shopify" \
             --store 0309d3-72.myshopify.com \
