@@ -1429,6 +1429,19 @@ async function fetchProductsFromCachedFile() {
   return publishedProducts;
 }
 
+async function fetchPublishedStorefrontProducts() {
+  const products = await fetchPaged("products", "/products.json");
+  const publishedProducts = filterOnlineStoreProducts(products);
+  if (!publishedProducts.length) {
+    throw new Error("Shopify storefront product feed returned no products published to Online Store");
+  }
+
+  process.stdout.write(
+    `Using live storefront product feed with ${publishedProducts.length} published Online Store products\n`,
+  );
+  return publishedProducts;
+}
+
 async function fetchCollectionsFromCachedFile() {
   const raw = await readFile(collectionsPath, "utf8");
   const payload = JSON.parse(raw);
@@ -1601,19 +1614,20 @@ async function fetchProductsForSync() {
   }
 
   try {
+    return await fetchPublishedStorefrontProducts();
+  } catch (liveError) {
+    const message = liveError instanceof Error ? liveError.message : "unknown live storefront error";
+    process.stdout.write(`Live storefront product feed unavailable; trying cached data (${message})\n`);
+  }
+
+  try {
     return await fetchProductsFromCachedFile();
   } catch (cacheError) {
     const message = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     process.stdout.write(`Cached product payload unavailable; falling back to storefront JSON (${message})\n`);
   }
 
-  const products = await fetchPaged("products", "/products.json");
-  const publishedProducts = filterOnlineStoreProducts(products);
-  if (!publishedProducts.length) {
-    throw new Error("Shopify storefront product feed returned no products published to Online Store");
-  }
-
-  return publishedProducts;
+  return fetchPublishedStorefrontProducts();
 }
 
 async function fetchCollectionsForSync() {
