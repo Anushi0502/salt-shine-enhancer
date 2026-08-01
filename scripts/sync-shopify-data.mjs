@@ -14,6 +14,7 @@ import {
 import { buildProductSearchPayload } from "./product-search-index.mjs";
 import { readProductCatalogPayload, writeProductCatalogPayload } from "./product-catalog-files.mjs";
 import { writeProductSearchPayload } from "./product-search-files.mjs";
+import { filterOnlineStoreProducts } from "./shopify-publication.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -1417,8 +1418,15 @@ async function fetchProductsFromCachedFile() {
     throw new Error("Cached product payload is empty");
   }
 
-  process.stdout.write(`Using cached product payload with ${products.length} products\n`);
-  return products;
+  const publishedProducts = filterOnlineStoreProducts(products);
+  if (!publishedProducts.length) {
+    throw new Error("Cached product payload contains no products published to Online Store");
+  }
+
+  process.stdout.write(
+    `Using cached product payload with ${products.length} products; kept ${publishedProducts.length} published Online Store products\n`,
+  );
+  return publishedProducts;
 }
 
 async function fetchCollectionsFromCachedFile() {
@@ -1474,10 +1482,22 @@ async function fetchBlogPostsFromCachedFile() {
 async function fetchProductsForSync() {
   try {
     let products = adminAccessToken
-      ? await fetchAdminPaged("products", "/products.json")
+      ? await fetchAdminPaged("products", "/products.json?status=active&published_status=published")
       : await fetchPaged("products", "/products.json");
 
     if (products.length) {
+      const publishedProducts = filterOnlineStoreProducts(products);
+      if (!publishedProducts.length) {
+        throw new Error("Shopify product feed returned no active products published to Online Store");
+      }
+
+      if (publishedProducts.length !== products.length) {
+        process.stdout.write(
+          `Filtered ${products.length - publishedProducts.length} products excluded from Online Store\n`,
+        );
+        products = publishedProducts;
+      }
+
       if (useCliAdminPricing && !adminAccessToken) {
         const pricingMap = await fetchProductVariantPricingMap();
         products = applyAdminVariantPricing(products, pricingMap);
@@ -1587,7 +1607,13 @@ async function fetchProductsForSync() {
     process.stdout.write(`Cached product payload unavailable; falling back to storefront JSON (${message})\n`);
   }
 
-  return fetchPaged("products", "/products.json");
+  const products = await fetchPaged("products", "/products.json");
+  const publishedProducts = filterOnlineStoreProducts(products);
+  if (!publishedProducts.length) {
+    throw new Error("Shopify storefront product feed returned no products published to Online Store");
+  }
+
+  return publishedProducts;
 }
 
 async function fetchCollectionsForSync() {

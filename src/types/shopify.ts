@@ -87,8 +87,10 @@ export interface ShopifyProduct {
   product_type: string;
   tags: string | string[];
   created_at: string;
-  published_at: string;
+  published_at: string | null;
   updated_at: string;
+  status?: string | null;
+  published_scope?: string | null;
   variants: ShopifyVariant[];
   images: ShopifyImage[];
   image?: ShopifyImage | null;
