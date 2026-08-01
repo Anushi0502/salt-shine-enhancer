@@ -15,3 +15,17 @@ export function isOnlineStorePublishedProduct(product) {
 export function filterOnlineStoreProducts(products) {
   return (Array.isArray(products) ? products : []).filter(isOnlineStorePublishedProduct);
 }
+
+export function filterProductIdsToCatalog(productIds, products) {
+  const catalogIds = new Set(
+    (Array.isArray(products) ? products : [])
+      .map((product) => Number(product?.id))
+      .filter((id) => Number.isFinite(id) && id > 0),
+  );
+
+  return [...new Set(
+    (Array.isArray(productIds) ? productIds : [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && catalogIds.has(id)),
+  )];
+}

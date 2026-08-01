@@ -14,7 +14,7 @@ import {
 import { buildProductSearchPayload } from "./product-search-index.mjs";
 import { readProductCatalogPayload, writeProductCatalogPayload } from "./product-catalog-files.mjs";
 import { writeProductSearchPayload } from "./product-search-files.mjs";
-import { filterOnlineStoreProducts } from "./shopify-publication.mjs";
+import { filterOnlineStoreProducts, filterProductIdsToCatalog } from "./shopify-publication.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
@@ -1768,6 +1768,7 @@ async function main() {
   for (const collection of collections) {
     const isAllProducts = collection.handle === "all-products";
     const ids = isAllProducts ? allProductIds : await fetchCollectionProductIds(collection.handle);
+    const visibleIds = filterProductIdsToCatalog(ids, products);
 
     if (isAllProducts && collection.customData?.heroSummary) {
       collection.customData.heroSummary = `Discover ${allProductIds.length.toLocaleString()} products across the full SALT catalog.`;
@@ -1775,11 +1776,11 @@ async function main() {
 
     collectionProductMap.collections[collection.handle] = {
       title: collection.title,
-      productIds: ids,
+      productIds: visibleIds,
     };
 
     process.stdout.write(
-      `Fetched collection mapping ${collection.handle}: ${ids.length} products\n`,
+      `Fetched collection mapping ${collection.handle}: ${visibleIds.length} published products\n`,
     );
   }
 

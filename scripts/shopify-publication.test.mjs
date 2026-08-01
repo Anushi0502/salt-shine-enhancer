@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { filterOnlineStoreProducts, isOnlineStorePublishedProduct } from "./shopify-publication.mjs";
+import {
+  filterOnlineStoreProducts,
+  filterProductIdsToCatalog,
+  isOnlineStorePublishedProduct,
+} from "./shopify-publication.mjs";
 
 describe("Shopify Online Store publication", () => {
   it("keeps active products published to Online Store", () => {
@@ -26,5 +30,14 @@ describe("Shopify Online Store publication", () => {
 
     expect(filterOnlineStoreProducts(products).map((product) => product.id)).toEqual([1]);
     expect(products).toHaveLength(2);
+  });
+
+  it("removes stale collection IDs that are not in the published catalog", () => {
+    const products = [
+      { id: 101, status: "active", published_at: "2026-08-01T00:00:00Z" },
+      { id: 202, status: "active", published_at: "2026-08-01T00:00:00Z" },
+    ];
+
+    expect(filterProductIdsToCatalog([202, 999, 101, 202], products)).toEqual([202, 101]);
   });
 });
