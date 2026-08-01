@@ -47,11 +47,11 @@ jobs:
           echo "SHOPIFY_ADMIN_ACCESS_TOKEN=$access_token" >> "$GITHUB_ENV"
           printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
 
-      - name: Reconcile SEO for new products
+      - name: Plan SEO for new products (approval required)
         env:
           SHOPIFY_ADMIN_API_VERSION: "2026-07"
           SALT_SHOP_URL: https://0309d3-72.myshopify.com
           SALT_SHOPIFY_SEO_BATCH_SIZE: "5"
           SALT_SHOPIFY_REQUEST_DELAY_MS: "300"
           SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS: "6"
-        run: npm run shopify:seo:new-products:apply
+        run: npm run shopify:seo:new-products:dry-run
