@@ -296,56 +296,6 @@ function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | nu
   return prefetch;
 }
 
-function getHeadPreloadedProduct(handle: string, base: string): Promise<Record<string, unknown>> | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  // The Shopify theme starts this request in the document head on PDPs. Reuse
-  // the exact in-flight payload so the React route does not create a second
-  // request after its module has loaded.
-  const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
-  const isCurrentStore = new URL(base, window.location.origin).origin === window.location.origin;
-
-  if (!isCurrentStore) {
-    return null;
-  }
-
-  if (prefetch?.handle === handle && prefetch.payload) {
-    return prefetch.payload;
-  }
-
-  // Collection pages already carry the current Shopify records for the first
-  // viewport. Product cards reuse those records instead of issuing one
-  // `/products/:handle.js` request per visible card.
-  const collectionProduct = getHeadPreloadedCollection(base)?.products?.find(
-    (product) => String(product.handle || "").trim().toLowerCase() === handle,
-  );
-
-  return collectionProduct ? Promise.resolve(collectionProduct) : null;
-}
-
-function getHeadPreloadedProductRecord(handle: string): ShopifyProduct | undefined {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-
-  const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
-  const routeMatch = window.location.pathname.match(/^\/products?\/([^/?#]+)\/?$/i);
-  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim().toLowerCase() : "";
-  const prefetchedHandle = String(prefetch?.handle || "").trim().toLowerCase();
-
-  if (!prefetch?.raw || !prefetchedHandle || prefetchedHandle !== handle || routeHandle !== handle) {
-    return undefined;
-  }
-
-  try {
-    return normalizeProductRecord(normalizeStorefrontProductPayload(prefetch.raw));
-  } catch {
-    return undefined;
-  }
-}
-
 function getLivePolicyBases(): string[] {
   if (typeof window === "undefined") {
     return [requireShopBase()];
@@ -450,10 +400,8 @@ async function fetchJson<T>(url: string, cache: RequestCache = "no-store"): Prom
   }
 
   const contentType = response.headers.get("content-type") || "";
-  // Shopify's `/products/:handle.js` endpoint returns a JSON body with a
-  // `text/javascript` MIME type. Treat that documented response shape as JSON
-  // so PDPs use the direct product payload instead of falling back to the
-  // large catalog cache.
+  // Shopify product JSON can use a JavaScript MIME type. Treat that documented
+  // response shape as JSON so PDPs use the direct product payload.
   if (!/(json|(?:java|ecma)script)/i.test(contentType)) {
     throw new Error(`Expected JSON but received ${contentType || "unknown content type"} for ${resolvedUrl}`);
   }
@@ -548,17 +496,15 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
     throw new Error("Product handle is required");
   }
 
-  // Shopify's product JSON route contains the complete product, including all
-  // variants and media, without making a product page wait for the catalogue
-  // snapshot used by search and merchandising.
-  const product = await (getHeadPreloadedProduct(normalizedHandle, base) ?? fetchJson<Record<string, unknown>>(
-    `${base}/products/${encodeURIComponent(normalizedHandle)}.js`,
-    // Revalidate the product response so an Admin price change is not hidden
-    // behind a long-lived document or browser cache entry.
+  // The JSON endpoint is the reliable public Shopify fallback. Do not reuse
+  // Liquid head data here: it can belong to an older document snapshot.
+  const payload = await fetchJson<Record<string, unknown>>(
+    `${base}/products/${encodeURIComponent(normalizedHandle)}.json`,
     "no-cache",
-  ));
+  );
+  const product = payload && typeof payload.product === "object" ? payload.product : payload;
 
-  return normalizeStorefrontProductPayload(product);
+  return normalizeStorefrontProductPayload(product as Record<string, unknown>);
 }
 
 async function fetchAllCollectionsFromLive(base: string): Promise<ShopifyCollection[]> {
@@ -745,21 +691,6 @@ function getNormalizedHeadPreloadedCollectionProducts(): ShopifyProduct[] {
   return normalizedHeadCollectionProducts;
 }
 
-function getHeadPreloadedProductsPayload(): ProductsPayload | undefined {
-  const prefetch = getHeadPreloadedCollection();
-  const products = getNormalizedHeadPreloadedCollectionProducts();
-  if (!prefetch || !products.length) {
-    return undefined;
-  }
-
-  return {
-    generatedAt: prefetch.generatedAt || new Date().toISOString(),
-    source: `shopify-liquid:${prefetch.handle || "collection"}`,
-    total: products.length,
-    products,
-  };
-}
-
 function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): ProductsPayload {
   const prefetch = getHeadPreloadedCollection();
   const liveProducts = getNormalizedHeadPreloadedCollectionProducts();
@@ -782,7 +713,14 @@ function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): Product
 
     mergedIds.add(String(liveProduct.id));
     mergedHandles.add(String(liveProduct.handle || "").trim().toLowerCase());
-    return mergeProductRecords(liveProduct, cachedProduct);
+    const mergedProduct = mergeProductRecords(liveProduct, cachedProduct);
+    // The compact generated index is the pricing authority for search. Liquid
+    // collection data is still useful for fresh titles and newly added items,
+    // but must not overwrite a newer search-shard price with stale snapshot data.
+    return {
+      ...mergedProduct,
+      variants: cachedProduct.variants.length ? cachedProduct.variants : liveProduct.variants,
+    };
   });
 
   // A product added in Shopify after the static index was built should still
@@ -1479,6 +1417,9 @@ export function loadProductByHandle(handle: string): Promise<ShopifyProduct> {
     return warmed.promise;
   }
 
+  // Use current Shopify JSON for the detail view so a scheduled catalog refresh
+  // cannot leave a product page behind the search index. Liquid prefetch is not
+  // part of this path because it can belong to an older document snapshot.
   const promise = loadProductByHandleFresh(normalizedHandle);
   warmedProductRequests.set(normalizedHandle, { startedAt: Date.now(), promise });
   promise.catch(() => {
@@ -1759,17 +1700,11 @@ export function useProducts(enabled = true) {
 
 export function useProductByHandle(handle: string | undefined, enabled = true, liveRefresh = false) {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
-  const inlineProduct = getHeadPreloadedProductRecord(normalizedHandle);
 
   return useQuery({
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    // Liquid has already serialized the current Shopify product into the head.
-    // Supplying it synchronously removes even the Promise microtask that used
-    // to flash the product loading state before React Query resolved.
-    initialData: inlineProduct,
-    initialDataUpdatedAt: inlineProduct ? 0 : undefined,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,
     refetchOnWindowFocus: false,
@@ -1781,19 +1716,12 @@ export function useProductByHandle(handle: string | undefined, enabled = true, l
 }
 
 export function useProductSearchIndex(enabled = true) {
-  const inlineProducts = getHeadPreloadedProductsPayload();
-
   return useQuery({
     queryKey: ["product-search", DATA_MODE],
     queryFn: loadProductSearchIndex,
     enabled,
-    // Render the current Shopify collection immediately from Liquid, then
-    // merge the complete compact catalog in the background. This keeps the
-    // first viewport live without delaying search, filters, or later pages.
-    initialData: inlineProducts,
-    initialDataUpdatedAt: inlineProducts ? 0 : undefined,
-    staleTime: inlineProducts ? 0 : CATALOG_STALE_TIME_MS,
-    refetchOnMount: inlineProducts ? "always" : false,
+    staleTime: CATALOG_STALE_TIME_MS,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,

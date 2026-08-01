@@ -123,7 +123,7 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("merges request-time Shopify prices into the compact search index", async () => {
+  it("keeps compact search pricing authoritative over stale Liquid snapshots", async () => {
     installInlineCollection({
       productIds: [101, 102],
       products: [liveProduct(), liveProduct({ id: 102, handle: "newly-added", title: "Newly Added" })],
@@ -156,8 +156,8 @@ describe("Shopify Liquid collection bootstrap", () => {
               {
                 id: 201,
                 title: "Default Title",
-                price: "99.99",
-                compare_at_price: null,
+                price: "84.99",
+                compare_at_price: "109.99",
                 available: true,
               },
             ],
@@ -173,14 +173,14 @@ describe("Shopify Liquid collection bootstrap", () => {
     const refreshed = payload.products.find((product) => product.id === 101);
 
     expect(refreshed?.title).toBe("Live Shopify Product");
-    expect(refreshed?.variants[0]?.price).toBe("19.99");
-    expect(refreshed?.variants[0]?.compare_at_price).toBe("24.99");
+    expect(refreshed?.variants[0]?.price).toBe("84.99");
+    expect(refreshed?.variants[0]?.compare_at_price).toBe("109.99");
     expect(refreshed?.customData?.subtitle).toBe("Curated subtitle");
     expect(payload.products.some((product) => product.handle === "newly-added")).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("normalizes Liquid product snapshots before the first product render", async () => {
+  it("uses generated catalog pricing instead of a stale Liquid product snapshot", async () => {
     const inlineProduct = liveProduct({
       body_html: undefined,
       product_type: undefined,
@@ -202,17 +202,61 @@ describe("Shopify Liquid collection bootstrap", () => {
       raw: inlineProduct,
       payload: Promise.resolve(inlineProduct),
     };
-    const fetchMock = vi.fn(async () => {
-      throw new Error("network should not run");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("/products/live-shopify-product.json")) {
+        throw new Error(`Unexpected fetch URL: ${url}`);
+      }
+
+      return jsonResponse({
+        product: liveProduct({
+          body_html: "<p>Canonical product details.</p>",
+          variants: [
+            {
+              id: 201,
+              title: "Default Title",
+              price: 5999,
+              compare_at_price: 8699,
+              available: true,
+            },
+          ],
+        }),
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const product = await loadProductByHandle("live-shopify-product");
 
-    expect(product.body_html).toContain("Live product details");
+    expect(product.body_html).toContain("Canonical product details");
     expect(product.product_type).toBe("Gifts");
-    expect(product.variants[0]?.price).toBe("44.99");
-    expect(product.variants[0]?.compare_at_price).toBe("59.99");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(product.variants[0]?.price).toBe("59.99");
+    expect(product.variants[0]?.compare_at_price).toBe("86.99");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/products/live-shopify-product.json"),
+      expect.objectContaining({ cache: "no-cache" }),
+    );
+  });
+
+  it("uses Shopify JSON only as a missing-catalog fallback", async () => {
+    window.history.replaceState({}, "", "/products/fallback-product");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/products/fallback-product.json")) {
+        return jsonResponse({ product: liveProduct({ handle: "fallback-product", title: "Fallback Product" }) });
+      }
+
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const product = await loadProductByHandle("fallback-product");
+
+    expect(product.title).toBe("Fallback Product");
+    expect(product.variants[0]?.price).toBe("19.99");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/products/fallback-product.json"),
+      expect.objectContaining({ cache: "no-cache" }),
+    );
+    expect(fetchMock.mock.calls.some(([input]) => String(input).endsWith(".js"))).toBe(false);
   });
 });
