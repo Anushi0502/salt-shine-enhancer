@@ -147,14 +147,21 @@ function buildCollectionHeroKicker(collection) {
   return `Shop ${title}`;
 }
 
-function buildCollectionHeroSummary(collection, featuredProducts = []) {
+function buildCollectionHeroSummary(collection, featuredProducts = [], catalogProductCount = null) {
+  const handle = String(collection?.handle || "").trim().toLowerCase();
+  const count = handle === "all-products" && Number.isFinite(Number(catalogProductCount))
+    ? Number(catalogProductCount)
+    : Number(collection?.products_count || featuredProducts.length || 0);
+  if (handle === "all-products") {
+    return `Discover ${count.toLocaleString()} products across the full SALT catalog.`;
+  }
+
   const description = stripHtml(collection?.description || "");
   if (description) {
     return description;
   }
 
   const title = normalizePlainText(collection?.title || "");
-  const count = Number(collection?.products_count || featuredProducts.length || 0);
   const countLabel = count > 0 ? `${count.toLocaleString()} product${count === 1 ? "" : "s"}` : "curated picks";
 
   if (!title) {
@@ -162,6 +169,14 @@ function buildCollectionHeroSummary(collection, featuredProducts = []) {
   }
 
   return `Discover ${countLabel} in ${title.toLowerCase()} selected for easier browsing and stronger conversion.`;
+}
+
+function isGeneratedCollectionHeroSummary(value) {
+  const normalized = normalizePlainText(value || "");
+  return (
+    /^Discover [\d,]+ products in .+ selected for easier browsing and stronger conversion\.$/i.test(normalized) ||
+    /^Discover [\d,]+ products across the full SALT catalog\.$/i.test(normalized)
+  );
 }
 
 function buildCollectionTrustStrip(collection, featuredProducts = []) {
@@ -190,7 +205,7 @@ function buildCollectionPlan(collection, context) {
   const customData = collection?.customData || null;
   const featuredProducts = pickFeaturedProducts(collection, context, 3);
   const heroKicker = buildCollectionHeroKicker(collection);
-  const heroSummary = buildCollectionHeroSummary(collection, featuredProducts);
+  const heroSummary = buildCollectionHeroSummary(collection, featuredProducts, context.products.length);
   const trustStrip = buildCollectionTrustStrip(collection, featuredProducts);
 
   const writes = [];
@@ -211,7 +226,12 @@ function buildCollectionPlan(collection, context) {
     skipped.push({ fieldId: COLLECTION_FIELD_IDS.heroKicker, reason: "already set" });
   }
 
-  if (!hasMeaningfulValue(customData?.heroSummary) && heroSummary) {
+  const refreshGeneratedHeroSummary =
+    hasMeaningfulValue(customData?.heroSummary) &&
+    isGeneratedCollectionHeroSummary(customData.heroSummary) &&
+    customData.heroSummary !== heroSummary;
+
+  if ((!hasMeaningfulValue(customData?.heroSummary) || refreshGeneratedHeroSummary) && heroSummary) {
     writes.push({
       fieldId: COLLECTION_FIELD_IDS.heroSummary,
       label: "Collection hero summary",
@@ -220,7 +240,9 @@ function buildCollectionPlan(collection, context) {
       type: "multi_line_text_field",
       ownerId: toShopifyGid("Collection", collection.id),
       value: heroSummary,
-      reason: "Generated collection-level merchandising summary",
+      reason: refreshGeneratedHeroSummary
+        ? "Refreshed generated collection summary after catalog count changed"
+        : "Generated collection-level merchandising summary",
     });
   } else if (hasMeaningfulValue(customData?.heroSummary)) {
     skipped.push({ fieldId: COLLECTION_FIELD_IDS.heroSummary, reason: "already set" });

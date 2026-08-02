@@ -218,9 +218,11 @@ describe("shopify product metafield backfill planner", () => {
         BACKFILL_FIELD_IDS.googleCustomProduct,
         BACKFILL_FIELD_IDS.shopChannelMinimumQuantity,
         BACKFILL_FIELD_IDS.searchProductBoosts,
+        BACKFILL_FIELD_IDS.searchProductBoostFallback,
         BACKFILL_FIELD_IDS.relatedProducts,
         BACKFILL_FIELD_IDS.relatedProductsDisplay,
         BACKFILL_FIELD_IDS.complementaryProducts,
+        BACKFILL_FIELD_IDS.complementaryProductsFallback,
       ]),
     );
 
@@ -232,6 +234,12 @@ describe("shopify product metafield backfill planner", () => {
     ) as string[];
     const boosts = JSON.parse(
       productOne?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.searchProductBoosts)?.value || "[]",
+    ) as string[];
+    const fallbackBoosts = JSON.parse(
+      productOne?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.searchProductBoostFallback)?.value || "[]",
+    ) as string[];
+    const fallbackComplementaryProducts = JSON.parse(
+      productOne?.writes.find((entry) => entry.fieldId === BACKFILL_FIELD_IDS.complementaryProductsFallback)?.value || "[]",
     ) as string[];
     const shopFloorValue = productOne?.writes.find(
       (entry) => entry.fieldId === BACKFILL_FIELD_IDS.shopChannelMinimumQuantity,
@@ -246,6 +254,8 @@ describe("shopify product metafield backfill planner", () => {
     expect(relatedProducts).toContain("gid://shopify/Product/2");
     expect(complementaryProducts).toContain("gid://shopify/Product/6");
     expect(boosts.length).toBeGreaterThanOrEqual(3);
+    expect(fallbackBoosts).toEqual(boosts);
+    expect(fallbackComplementaryProducts).toEqual(complementaryProducts);
     expect(shopFloorValue).toBe("1");
     expect(productTwoShopFloorValue).toBe("2");
     expect(productFourShopFloorValue).toBe("3");

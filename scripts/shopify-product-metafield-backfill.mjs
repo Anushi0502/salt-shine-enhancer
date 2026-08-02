@@ -445,9 +445,33 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
             }
           }
         }
+        complementaryProductsFallback: metafield(
+          namespace: "salt-recommendations"
+          key: "complementary_products"
+        ) {
+          references(first: 50) {
+            nodes {
+              ... on Product {
+                id
+                legacyResourceId
+                handle
+                title
+                productType
+                vendor
+              }
+            }
+          }
+        }
         searchProductBoosts: metafield(
           namespace: "shopify--discovery--product_search_boost"
           key: "queries"
+        ) {
+          jsonValue
+          value
+        }
+        searchProductBoostFallback: metafield(
+          namespace: "salt-search"
+          key: "query_terms"
         ) {
           jsonValue
           value
@@ -660,7 +684,13 @@ function normalizeLiveProductCustomDataNode(node) {
     relatedProductsDisplay: node.relatedProductsDisplay?.jsonValue ?? node.relatedProductsDisplay?.value ?? null,
     relatedProducts: normalizeMetafieldReferenceList(node.relatedProducts?.references?.nodes || []),
     complementaryProducts: normalizeMetafieldReferenceList(node.complementaryProducts?.references?.nodes || []),
+    complementaryProductsFallback: normalizeMetafieldReferenceList(
+      node.complementaryProductsFallback?.references?.nodes || [],
+    ),
     searchProductBoosts: normalizeStringList(node.searchProductBoosts?.jsonValue ?? node.searchProductBoosts?.value ?? []),
+    searchProductBoostFallback: normalizeStringList(
+      node.searchProductBoostFallback?.jsonValue ?? node.searchProductBoostFallback?.value ?? [],
+    ),
     googleCustomProduct: parseBooleanValue(node.googleCustomProduct?.jsonValue ?? node.googleCustomProduct?.value ?? null),
     shopChannelMinimumQuantity:
       node.shopChannelMinimumQuantity?.jsonValue ?? node.shopChannelMinimumQuantity?.value ?? null,
@@ -681,7 +711,7 @@ async function fetchLiveProductCustomDataMap(products) {
         .filter(Boolean)
     : [];
 
-  const fingerprint = `v3:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
+  const fingerprint = `v4:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
   try {
     const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
     const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
@@ -810,6 +840,7 @@ function normalizeLiveCatalogProduct(node) {
 }
 
 async function fetchLiveProductCatalog() {
+  const useCatalogCheckpoint = process.env.SALT_BACKFILL_USE_CATALOG_CHECKPOINT === "1";
   let checkpoint = null;
   try {
     checkpoint = await loadJson(PRODUCT_CATALOG_CHECKPOINT, "metafield live catalog checkpoint");
@@ -817,9 +848,19 @@ async function fetchLiveProductCatalog() {
     checkpoint = null;
   }
 
+  if (!useCatalogCheckpoint) {
+    checkpoint = null;
+  }
+
   const checkpointAge = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
-  const checkpointIsFresh = Number.isFinite(checkpointAge) && checkpointAge >= 0 && checkpointAge < 6 * 60 * 60 * 1000;
-  if (checkpointIsFresh && checkpoint?.complete && Array.isArray(checkpoint.products) && checkpoint.products.length) {
+  const checkpointIsFresh = useCatalogCheckpoint && Number.isFinite(checkpointAge) && checkpointAge >= 0 && checkpointAge < 6 * 60 * 60 * 1000;
+  if (
+    useCatalogCheckpoint &&
+    checkpointIsFresh &&
+    checkpoint?.complete &&
+    Array.isArray(checkpoint.products) &&
+    checkpoint.products.length
+  ) {
     process.stdout.write(`Using fresh Admin product catalog checkpoint with ${checkpoint.products.length} products\n`);
     return checkpoint.products;
   }

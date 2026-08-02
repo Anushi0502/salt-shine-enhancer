@@ -54,7 +54,12 @@ export function buildSeoPipelineStages({ mode, scope }) {
     "--handles-output", handlesPath,
     "--output", `output/shopify-variant-image-mapping-${scope}-manifest.json`,
   ];
-  const seoArgs = ["scripts/shopify-seo-release.mjs", modeFlag, scope === "all-products" ? "--full-catalog" : "--new-products-only"];
+  const seoArgs = [
+    "scripts/shopify-seo-release.mjs",
+    modeFlag,
+    scope === "all-products" ? "--full-catalog" : "--new-products-only",
+    "--preserve-prices",
+  ];
   const productMetafieldArgs = ["scripts/shopify-product-metafield-backfill.mjs", modeFlag];
   if (scope === "new-products") productMetafieldArgs.push("--product-handles-file", handlesPath);
 

@@ -181,13 +181,13 @@ describe("Shopify SEO release reconciliation", () => {
     expect(JSON.stringify(diff.productInput)).not.toContain("tags");
   });
 
-  it("uses the reviewed pricing plan and derives quantity tags from the final price", async () => {
+  it("keeps Shopify variant prices unchanged while deriving quantity tags", async () => {
     const { productPlan } = await makePlanAndLive();
 
     expect(Number(productPlan.currentVariantUpdates[0].price)).toBe(5.99);
-    expect(Number(productPlan.desiredVariantUpdates[0].price)).toBeGreaterThanOrEqual(17.99);
+    expect(Number(productPlan.desiredVariantUpdates[0].price)).toBe(5.99);
     expect(productPlan.currentQuantityTag).toBe("minimum-qty-3");
-    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-2");
+    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-3");
   });
 
   it("adds the managed quantity tag without changing merchant tags", async () => {
@@ -197,20 +197,20 @@ describe("Shopify SEO release reconciliation", () => {
       productPlan,
     );
 
-    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-2");
-    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-2"]);
+    expect(productPlan.desiredQuantityTag).toBe("minimum-qty-3");
+    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-3"]);
     expect(diff.changedFields).toEqual(["managed-minimum-quantity-tag"]);
   });
 
   it("replaces a stale managed quantity tag and preserves merchant tags", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan(
-      { ...liveProduct, tags: ["merchant-tag", "minimum-qty-3", "do-not-change"] },
+      { ...liveProduct, tags: ["merchant-tag", "minimum-qty-2", "do-not-change"] },
       productPlan,
     );
 
-    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-2"]);
-    expect(diff.productInput.tags).not.toContain("minimum-qty-3");
+    expect(diff.productInput.tags).toEqual(["merchant-tag", "do-not-change", "minimum-qty-3"]);
+    expect(diff.productInput.tags).not.toContain("minimum-qty-2");
   });
 
   it("writes all missing explicit SEO fields", async () => {
@@ -308,7 +308,7 @@ describe("Shopify SEO release reconciliation", () => {
     });
   });
 
-  it("detects price-only drift independently from SEO", async () => {
+  it("does not mutate price-only drift during SEO", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan(
       { ...liveProduct, variants: { nodes: [{ ...liveProduct.variants.nodes[0], price: "12.99" }] } },
@@ -316,10 +316,11 @@ describe("Shopify SEO release reconciliation", () => {
     );
 
     expect(diff.productInput).toEqual({ id: "gid://shopify/Product/101" });
-    expect(diff.variantInputs).toEqual([
-      { id: "gid://shopify/ProductVariant/1001", price: productPlan.desiredVariantUpdates[0].price },
-    ]);
-    expect(diff.changedFields).toEqual(["variant:gid://shopify/ProductVariant/1001:price"]);
+    expect(diff.variantInputs).toEqual([]);
+    expect(diff.changedFields).toEqual([]);
+    expect(diff.skippedFields).toContainEqual(
+      expect.objectContaining({ field: "variant-pricing", reason: expect.stringContaining("Shopify-authoritative") }),
+    );
   });
 
   it("detects image alt drift independently", async () => {
@@ -336,7 +337,7 @@ describe("Shopify SEO release reconciliation", () => {
     ]);
   });
 
-  it("fails identity comparison when a planned variant cannot be resolved", async () => {
+  it("does not require variant identity resolution because SEO cannot mutate variants", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan(
       {
@@ -356,7 +357,59 @@ describe("Shopify SEO release reconciliation", () => {
       productPlan,
     );
 
-    expect(diff.unresolved).toEqual([expect.objectContaining({ kind: "variant", reason: "not-found" })]);
+    expect(diff.unresolved).toEqual([]);
+    expect(diff.variantInputs).toEqual([]);
+  });
+
+  it("keeps each quality-tier price and compare-at price distinct", async () => {
+    const plan = await buildShopifySeoReleasePlan({
+      products: [
+        {
+          id: 303,
+          handle: "quality-tier-hoodie",
+          title: "Everyday Hoodie",
+          body_html: "<p>Comfortable hoodie with quality choices.</p>",
+          product_type: "Hoodies",
+          tags: ["merchant-tag"],
+          variants: [
+            { id: 3301, title: "Standard Quality", option1: "Standard Quality", sku: "HD-STD", price: "29.99", compare_at_price: "39.99" },
+            { id: 3302, title: "Premium Quality", option1: "Premium Quality", sku: "HD-PRM", price: "44.99", compare_at_price: "59.99" },
+            { id: 3303, title: "Luxury Quality", option1: "Luxury Quality", sku: "HD-LUX", price: "69.99", compare_at_price: "89.99" },
+          ],
+        },
+      ],
+      collections: [],
+      collectionProducts: {},
+    });
+    const productPlan = plan.products[0];
+
+    expect(productPlan.desiredVariantUpdates.map((variant) => [variant.label, variant.price, variant.compareAtPrice])).toEqual([
+      ["Standard Quality", "29.99", "39.99"],
+      ["Premium Quality", "44.99", "59.99"],
+      ["Luxury Quality", "69.99", "89.99"],
+    ]);
+
+    const diff = compareLiveProductToPlan(
+      {
+        id: "gid://shopify/Product/303",
+        handle: "quality-tier-hoodie",
+        tags: ["merchant-tag", productPlan.desiredQuantityTag],
+        variants: {
+          nodes: productPlan.desiredVariantUpdates.map((variant, index) => ({
+            id: `gid://shopify/ProductVariant/${3301 + index}`,
+            title: variant.label,
+            sku: variant.sku,
+            price: "99.99",
+            compareAtPrice: "129.99",
+            selectedOptions: [{ name: "Quality", value: variant.label }],
+          })),
+        },
+      },
+      { ...productPlan, desiredProductInput: {}, desiredMediaTargets: [] },
+    );
+
+    expect(diff.variantInputs).toEqual([]);
+    expect(diff.changedFields.some((field) => field.includes("variant:"))).toBe(false);
   });
 
   it("keeps desired and live fingerprints stable", async () => {
@@ -422,8 +475,35 @@ describe("Shopify SEO release reconciliation", () => {
     const labels = buildReleaseSteps({ rootDir: "/tmp/salt-shine-enhancer" }).map((step) => step.label);
 
     expect(labels.indexOf("Refresh Shopify data")).toBeLessThan(labels.indexOf("Reconcile and verify Shopify SEO/product fields"));
+    expect(labels.indexOf("Refresh Shopify data")).toBeLessThan(
+      labels.indexOf("Read live Shopify tag inventory"),
+    );
+    expect(labels.indexOf("Read live Shopify tag inventory")).toBeLessThan(
+      labels.indexOf("Regenerate catalog taxonomy and preserved-tag audit"),
+    );
+    expect(labels.indexOf("Regenerate catalog taxonomy and preserved-tag audit")).toBeLessThan(
+      labels.indexOf("Validate refreshed catalog taxonomy"),
+    );
+    expect(labels.indexOf("Validate refreshed catalog taxonomy")).toBeLessThan(
+      labels.indexOf("Require image-backed taxonomy evidence"),
+    );
+    expect(labels.indexOf("Require image-backed taxonomy evidence")).toBeLessThan(
+      labels.indexOf("Ensure Shopify product metafield definitions"),
+    );
     expect(labels.indexOf("Reconcile and verify Shopify SEO/product fields")).toBeLessThan(
       labels.indexOf("Apply Shopify merchandising metafield backfill"),
+    );
+    expect(labels.indexOf("Verify Shopify merchandising backfill")).toBeLessThan(
+      labels.indexOf("Delete verified active zero-image products"),
+    );
+    expect(labels.indexOf("Delete verified active zero-image products")).toBeLessThan(
+      labels.indexOf("Publish every active product to all sales channels"),
+    );
+    expect(labels.indexOf("Publish every active product to all sales channels")).toBeLessThan(
+      labels.indexOf("Refresh Shopify data after final product publication"),
+    );
+    expect(labels.indexOf("Refresh Shopify data after final product publication")).toBeLessThan(
+      labels.indexOf("Build web app"),
     );
     expect(labels.indexOf("Apply Shopify merchandising metafield backfill")).toBeLessThan(labels.indexOf("Build web app"));
     expect(labels.at(-1)).toBe("Sync Android Capacitor shell");

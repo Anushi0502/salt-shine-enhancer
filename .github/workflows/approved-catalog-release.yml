@@ -1,0 +1,120 @@
+name: SALT Approved Catalog Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type PUBLISH_ALL_ACTIVE_PRODUCTS to run the approved live catalog release.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: salt-approved-catalog-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Confirm the manual release intent
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$CONFIRMATION" = "PUBLISH_ALL_ACTIVE_PRODUCTS" || {
+            echo "Confirmation must be exactly PUBLISH_ALL_ACTIVE_PRODUCTS."
+            exit 1
+          }
+
+      - name: Checkout storefront source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Shopify theme source
+        uses: actions/checkout@v4
+        with:
+          repository: Anushi0502/salt-online-store-v2
+          ref: main
+          token: ${{ secrets.SALT_THEME_REPO_TOKEN }}
+          path: salt-online-store-shopify
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh Shopify Admin token
+        env:
+          GH_TOKEN: ${{ secrets.SALT_THEME_REPO_TOKEN }}
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+          SHOPIFY_ADMIN_REFRESH_TOKEN: ${{ secrets.SHOPIFY_ADMIN_REFRESH_TOKEN }}
+        run: |
+          node scripts/refresh-shopify-token.mjs > "$RUNNER_TEMP/shopify-token.json"
+          access_token="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).accessToken)' "$RUNNER_TEMP/shopify-token.json")"
+          refresh_token="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).refreshToken)' "$RUNNER_TEMP/shopify-token.json")"
+          echo "::add-mask::$access_token"
+          echo "::add-mask::$refresh_token"
+          echo "SHOPIFY_ADMIN_ACCESS_TOKEN=$access_token" >> "$GITHUB_ENV"
+          printf '%s' "$refresh_token" | gh secret set SHOPIFY_ADMIN_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY"
+
+      - name: Load the approved taxonomy release identity
+        run: |
+          approval_id="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync("docs/catalog-taxonomy-approval.json", "utf8")).approvalId)')"
+          echo "SALT_CATALOG_TAXONOMY_APPROVED=1" >> "$GITHUB_ENV"
+          echo "SALT_CATALOG_TAXONOMY_APPROVAL_ID=$approval_id" >> "$GITHUB_ENV"
+          price_approval_id="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync("docs/catalog-price-rework-approval.json", "utf8")).approvalId)')"
+          echo "SALT_CATALOG_PRICE_REWORK_APPROVED=1" >> "$GITHUB_ENV"
+          echo "SALT_CATALOG_PRICE_REWORK_APPROVAL_ID=$price_approval_id" >> "$GITHUB_ENV"
+
+      - name: Run the approval-gated catalog release
+        env:
+          SHOPIFY_ADMIN_API_VERSION: "2026-07"
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+          SALT_RELEASE_SKIP_MOBILE: "1"
+          SALT_SHOPIFY_REQUEST_DELAY_MS: "300"
+          SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS: "6"
+        run: npm run release
+
+      - name: Commit refreshed storefront data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then
+            echo "No generated storefront data changes to commit."
+          else
+            git commit -m "Approved catalog release"
+            git push origin HEAD:main
+          fi
+
+      - name: Commit refreshed Shopify theme bundle
+        run: |
+          git -C salt-online-store-shopify config user.name "github-actions[bot]"
+          git -C salt-online-store-shopify config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C salt-online-store-shopify add -A
+          if git -C salt-online-store-shopify diff --cached --quiet; then
+            echo "No generated Shopify theme changes to commit."
+          else
+            git -C salt-online-store-shopify commit -m "Approved catalog release"
+            git -C salt-online-store-shopify push origin HEAD:main
+          fi
+
+      - name: Upload verified release manifests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-catalog-release-manifests
+          if-no-files-found: warn
+          path: |
+            output/shopify-seo-release-manifest.json
+            output/shopify-zero-image-product-delete-manifest.json
+            output/shopify-active-product-publication-manifest.json

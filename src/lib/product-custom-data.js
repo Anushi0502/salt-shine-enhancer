@@ -255,7 +255,7 @@ function normalizeProductCustomData(input) {
         "related_products_display",
       ),
   );
-  const searchProductBoosts = normalizeStringList(
+  const standardSearchProductBoosts = normalizeStringList(
     input.searchProductBoosts ??
       getMetafieldValue(
         rawMetafields,
@@ -263,6 +263,13 @@ function normalizeProductCustomData(input) {
         "queries",
       ),
   );
+  const searchProductBoostFallback = normalizeStringList(
+    input.searchProductBoostFallback ??
+      getMetafieldValue(rawMetafields, "salt-search", "query_terms"),
+  );
+  const searchProductBoosts = standardSearchProductBoosts.length
+    ? standardSearchProductBoosts
+    : searchProductBoostFallback;
   const relatedProducts = normalizeProductReferenceList(
     input.relatedProducts ??
       getMetafieldValue(
@@ -272,7 +279,7 @@ function normalizeProductCustomData(input) {
       ) ??
       rawMetafields["shopify--discovery--product_recommendation.related_products"]?.references,
   );
-  const complementaryProducts = normalizeProductReferenceList(
+  const standardComplementaryProducts = normalizeProductReferenceList(
     input.complementaryProducts ??
       getMetafieldValue(
         rawMetafields,
@@ -281,6 +288,20 @@ function normalizeProductCustomData(input) {
       ) ??
       rawMetafields["shopify--discovery--product_recommendation.complementary_products"]?.references,
   );
+  const complementaryProductsFallbackInput =
+    input.complementaryProductsFallback ??
+    getMetafieldValue(rawMetafields, "salt-recommendations", "complementary_products");
+  const normalizedComplementaryProductsFallback = normalizeProductReferenceList(
+    complementaryProductsFallbackInput,
+  );
+  const complementaryProductsFallback = normalizedComplementaryProductsFallback.length
+    ? normalizedComplementaryProductsFallback
+    : normalizeProductReferenceList(
+        rawMetafields["salt-recommendations.complementary_products"]?.references,
+      );
+  const complementaryProducts = standardComplementaryProducts.length
+    ? standardComplementaryProducts
+    : complementaryProductsFallback;
   const googleCustomProduct = asBoolean(
     input.googleCustomProduct ??
       getMetafieldValue(rawMetafields, "mm-google-shopping", "custom_product"),

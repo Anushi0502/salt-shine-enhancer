@@ -649,6 +649,69 @@ export function parseSearchQuery(input?: string): ParsedQuery {
   };
 }
 
+const HOME_LIGHTING_QUERY_TERMS = new Set(["light", "lights", "lighting", "lamp", "lamps"]);
+const HOME_LIGHTING_QUERY_MODIFIERS = new Set([
+  "ambient",
+  "bedroom",
+  "bedside",
+  "bulb",
+  "bulbs",
+  "ceiling",
+  "decor",
+  "desk",
+  "dimmable",
+  "floor",
+  "garden",
+  "indoor",
+  "led",
+  "night",
+  "outdoor",
+  "portable",
+  "reading",
+  "room",
+  "solar",
+  "string",
+  "strip",
+  "table",
+  "wall",
+]);
+const NON_HOME_LIGHTING_QUERY_TERMS = new Set([
+  "battery",
+  "beauty",
+  "car",
+  "charger",
+  "charging",
+  "cosmetic",
+  "device",
+  "flash",
+  "makeup",
+  "mobile",
+  "nail",
+  "phone",
+  "ring",
+  "serum",
+  "vehicle",
+]);
+
+function isHomeLightingQuery(parsedQuery: ParsedQuery): boolean {
+  if (parsedQuery.intent?.familyIds.includes("home-lighting")) {
+    return true;
+  }
+
+  const tokens = tokenize([parsedQuery.normalized, ...parsedQuery.quotedPhrases].join(" "));
+  if (!tokens.some((token) => HOME_LIGHTING_QUERY_TERMS.has(token))) {
+    return false;
+  }
+
+  if (tokens.some((token) => NON_HOME_LIGHTING_QUERY_TERMS.has(token))) {
+    return false;
+  }
+
+  return tokens.every(
+    (token) => HOME_LIGHTING_QUERY_TERMS.has(token) || HOME_LIGHTING_QUERY_MODIFIERS.has(token),
+  );
+}
+
 function tokenMatchScore(
   term: string,
   candidate: string,
@@ -779,24 +842,49 @@ function buildSearchIndex(product: ShopifyProduct): ProductSearchIndex {
   const searchBoostTerms = searchBoostValues;
   const searchBoosts = searchBoostTerms.join(" ");
   const searchBoostTokens = tokenize(searchBoosts);
-  // Built search payloads carry the knowledge record. Avoid classifying the entire
-  // full catalog during a query when an older live payload does not yet have it.
+  // Search payloads carry this record. Legacy full-catalog payloads intentionally
+  // avoid an eager reclassification pass during an interactive search.
   const knowledge = product.knowledge || null;
   const knowledgeAttributeValues = knowledge?.attributes
     ? Object.values(knowledge.attributes).flat()
     : [];
+  const relatedCategoryValues = knowledge?.relatedCategories
+    ? knowledge.relatedCategories.flatMap((category) => [
+        category.departmentLabel,
+        category.categoryLabel,
+        category.subcategoryLabel || "",
+        category.relationship || "",
+      ])
+    : [];
   const knowledgeText = normalize([
     knowledge?.searchTerms || [],
+    knowledge?.specificType || "",
     knowledge?.familyId || "",
     knowledge?.familyLabel || "",
     knowledgeAttributeValues,
+    relatedCategoryValues,
   ]);
   const knowledgeTokens = tokenize(knowledgeText);
   const knowledgeNegativeTokens = tokenize(knowledge?.negativeTerms || []);
   const coreTokens = uniqueTokens([...tokenize([title, handle, productType, tags].join(" ")), ...knowledgeTokens]);
-  const isLightingProduct = knowledge?.familyId === "home-lighting" ||
-    /\b(?:lighting|lamp|lamps|lights)\b/i.test(`${productType} ${tags}`) ||
+  const hasResolvedTaxonomy = Boolean(
+    knowledge &&
+      knowledge.familyId &&
+      knowledge.familyId !== "other" &&
+      knowledge.reviewRequired !== true &&
+      (knowledge.confidence ?? 0) >= 72,
+  );
+  const hasRawLightingSignal =
+    /\b(?:lighting|lamp|lamps|lights)\b/i.test(productType) ||
     /\b(?:led|ceiling|wall|table|night|desk|floor)\s+(?:light|lamp)|\b(?:light|lamp)\s+(?:fixture|bulb|shade)\b/i.test(title);
+  const hasRawLightingExclusion = /\b(?:charger|charging|power bank|battery charger|nail lamp|ring light)\b/i.test(
+    `${title} ${handle} ${productType}`,
+  );
+  // A verified taxonomy classification outranks imported supplier tags. This
+  // prevents a charger or serum tagged "lighting" from entering light results.
+  const isLightingProduct =
+    knowledge?.familyId === "home-lighting" ||
+    (!hasResolvedTaxonomy && hasRawLightingSignal && !hasRawLightingExclusion);
 
   const index: ProductSearchIndex = {
     coreText: normalize([title, handle, productType, tags].join(" ")),
@@ -879,8 +967,8 @@ function bestGroupScore(
     ];
     const secondaryScores = [
       scoreTermAgainstField(term, index.vendor, index.vendorTokens, 18, false),
-      scoreTermAgainstField(term, index.body, index.bodyTokens, 10, false),
-      scoreTermAgainstField(term, index.knowledgeText, index.knowledgeTokens, 26, false),
+      scoreTermAgainstField(term, index.body, filterLightDescriptor(index.bodyTokens), 10, false),
+      scoreTermAgainstField(term, index.knowledgeText, filterLightDescriptor(index.knowledgeTokens), 26, false),
     ];
 
     const groupCore = Math.max(...coreScores);
@@ -931,6 +1019,14 @@ function scoreProductForQuery(product: ShopifyProduct, parsedQuery: ParsedQuery)
   const index = buildSearchIndex(product);
 
   if (!matchesSearchConstraints(product, parsedQuery)) {
+    return 0;
+  }
+
+  // A root/category lighting query is a taxonomy query, not a keyword query.
+  // Supplier copy can mention a lamp while the product itself is a charger,
+  // controller, beauty item, or another family. Only verified home-lighting
+  // records are allowed through this boundary.
+  if (isHomeLightingQuery(parsedQuery) && !index.isLightingProduct) {
     return 0;
   }
 

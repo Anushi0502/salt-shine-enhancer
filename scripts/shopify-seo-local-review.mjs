@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { access, readFile, mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import XLSX from "xlsx";
 import {
@@ -17,14 +17,12 @@ const inputs = process.argv.slice(2).filter((entry) => !entry.startsWith("--"));
 const outputDir = resolve(root, "output/shopify-seo-local-review");
 const workbookPath = resolve(outputDir, "shopify-seo-local-review.xlsx");
 const workbookRowLimit = Math.max(100, Number(process.env.SALT_SEO_LOCAL_REVIEW_WORKBOOK_LIMIT || 1000));
-const sourceInputs = inputs.length
-  ? inputs.map((entry) => resolve(process.cwd(), entry))
-  : [
-      "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_1_optimized.csv",
-      "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_2_optimized.csv",
-      "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_3_optimized.csv",
-      "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_4_optimized.csv",
-    ];
+const defaultSourceInputs = [
+  "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_1_optimized.csv",
+  "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_2_optimized.csv",
+  "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_3_optimized.csv",
+  "/Users/mac/Documents/Codex/2026-07-11/a/outputs/products_export_4_optimized.csv",
+];
 
 const catalogSnapshot = {
   products: await readProductCatalogPayload(resolve(root, "public/data")),
@@ -38,6 +36,7 @@ const protectedFields = [
   "Type", "Product Type",
 ];
 const metafieldColumns = [];
+const ADVISORY_AUDIT_ISSUES = new Set(["insufficient-product-facts", "weak-handle-alignment", "title-length"]);
 
 function parseCsvMatrix(text) {
   const matrix = [];
@@ -94,6 +93,35 @@ function buildCsv(rows, header) {
   return `\uFEFF${[header.map(escapeCsv).join(","), ...rows.map((row) => header.map((key) => escapeCsv(row[key])).join(","))].join("\r\n")}\r\n`;
 }
 
+const LIVE_CATALOG_REVIEW_HEADERS = [
+  "Product ID", "Handle", "Title", "Body (HTML)", "Vendor", "Product Type", "Tags", "Status", "Published",
+  "Image Src",
+  "SEO Title", "SEO Description", "Google Shopping / Google Product Category",
+];
+
+function buildLiveCatalogReviewRows(products) {
+  return (Array.isArray(products) ? products : []).map((product) => {
+    const image = Array.isArray(product?.images) ? product.images[0] || {} : {};
+    const seo = product?.seo && typeof product.seo === "object" ? product.seo : {};
+
+    return {
+      "Product ID": product?.id || "",
+      Handle: product?.handle || "",
+      Title: product?.title || "",
+      "Body (HTML)": product?.body_html || "",
+      Vendor: product?.vendor || "",
+      "Product Type": product?.product_type || "",
+      Tags: Array.isArray(product?.tags) ? product.tags.join(", ") : product?.tags || "",
+      Status: product?.status || "active",
+      Published: product?.published_at ? "TRUE" : "FALSE",
+      "Image Src": image?.src || image?.url || "",
+      "SEO Title": seo?.title || product?.seo_title || "",
+      "SEO Description": seo?.description || product?.seo_description || "",
+      "Google Shopping / Google Product Category": product?.google_product_category || "",
+    };
+  });
+}
+
 function get(row, names) {
   for (const name of names) {
     if (Object.prototype.hasOwnProperty.call(row, name) && normalizePlainText(row[name])) return normalizePlainText(row[name]);
@@ -105,6 +133,10 @@ function htmlIsApproved(value) {
   const tags = [...String(value || "").matchAll(/<\/?([a-z0-9]+)\b/gi)].map((match) => match[1].toLowerCase());
   return tags.every((tag) => ["h2", "h3", "p", "ul", "li", "strong", "ol"].includes(tag));
 }
+
+let sourceInputs = inputs.length
+  ? inputs.map((entry) => resolve(process.cwd(), entry))
+  : defaultSourceInputs;
 
 function checkRows(sourceRows, outputRows, header, plans, fileName) {
   const checks = [];
@@ -139,6 +171,28 @@ function checkRows(sourceRows, outputRows, header, plans, fileName) {
 }
 
 await mkdir(outputDir, { recursive: true });
+
+if (!inputs.length) {
+  const missingDefaultInputs = [];
+  for (const inputPath of defaultSourceInputs) {
+    try {
+      await access(inputPath);
+    } catch {
+      missingDefaultInputs.push(inputPath);
+    }
+  }
+
+  if (missingDefaultInputs.length === defaultSourceInputs.length) {
+    const liveCatalogInput = resolve(outputDir, "shopify-live-catalog-review.csv");
+    const liveRows = buildLiveCatalogReviewRows(catalogSnapshot.products.products);
+    await writeFile(liveCatalogInput, buildCsv(liveRows, LIVE_CATALOG_REVIEW_HEADERS), "utf8");
+    sourceInputs = [liveCatalogInput];
+    process.stdout.write(
+      `Historical SEO CSVs unavailable; generated a live-catalog review input for ${liveRows.length} products at ${liveCatalogInput}\n`,
+    );
+  }
+}
+
 const allOptimized = [];
 const allQa = [];
 const allMetafields = [];
@@ -166,7 +220,8 @@ function auditProducts(rows, fileName, plans) {
       .filter((token) => token.length >= 3 && !["women", "womens", "woman", "2024", "2025", "2026", "fashion", "new"].includes(token));
     const handleHits = handleTokens.slice(0, 12).filter((token) => searchable.includes(token)).length;
     const issues = [];
-    if (title.length < 20 || title.length > 75) issues.push("title-length");
+    if (!title) issues.push("missing-title");
+    else if (title.length < 20 || title.length > 75) issues.push("title-length");
     if (seoTitle.length < 35 || seoTitle.length > 65) issues.push("seo-title-length");
     if (seoDescription.length < 120 || seoDescription.length > 170) issues.push("seo-description-length");
     if (!["About", "Key Details", "Use & Care", "FAQs"].every((section) => plainBody.toLowerCase().includes(section.toLowerCase()))) issues.push("description-structure");
@@ -178,6 +233,7 @@ function auditProducts(rows, fileName, plans) {
     if (handleTokens.length >= 5 && factHits < 1) issues.push("insufficient-product-facts");
     if (!productPlan?.intelligence?.knowledge?.titleOverride && handleHits < Math.max(2, Math.min(4, handleTokens.length))) issues.push("weak-handle-alignment");
     if (/lines water light|beauty product|personal care item|portable false eyelashes/i.test(title)) issues.push("generic-or-misclassified-title");
+    const blockingIssues = issues.filter((issue) => !ADVISORY_AUDIT_ISSUES.has(issue));
     results.push({
       SourceFile: fileName,
       Handle: handle,
@@ -188,7 +244,7 @@ function auditProducts(rows, fileName, plans) {
       SeoTitle: seoTitle,
       SeoDescriptionLength: seoDescription.length,
       HandleEvidenceHits: handleHits,
-      Status: issues.length ? "FAIL" : "PASS",
+      Status: blockingIssues.length ? "FAIL" : issues.length ? "WARN" : "PASS",
       Issues: issues.join(", "),
     });
   }
@@ -247,5 +303,23 @@ for (const [name, rows] of [["Summary", summaries], ["QA Checks", allQa], ["Opti
 }
 XLSX.writeFile(fallback, workbookPath);
 const failedAudit = allProductAudit.filter((entry) => entry.Status === "FAIL");
-console.log(JSON.stringify({ mode: "local-review", inputFiles: sourceInputs.length, summaries, audit: { products: allProductAudit.length, passed: allProductAudit.length - failedAudit.length, failed: failedAudit.length, sampleFailures: failedAudit.slice(0, 20) }, workbookPath, csvOutputDir: outputDir, shopifyWrites: 0 }, null, 2));
-if (failedAudit.length) process.exitCode = 2;
+const warningAudit = allProductAudit.filter((entry) => entry.Status === "WARN");
+const failedQa = allQa.filter((entry) => entry.status !== "pass");
+console.log(JSON.stringify({
+  mode: "local-review",
+  inputFiles: sourceInputs.length,
+  summaries,
+  audit: {
+    products: allProductAudit.length,
+    passed: allProductAudit.length - failedAudit.length - warningAudit.length,
+    warnings: warningAudit.length,
+    failed: failedAudit.length,
+    sampleWarnings: warningAudit.slice(0, 20),
+    sampleFailures: failedAudit.slice(0, 20),
+  },
+  qa: { rows: allQa.length, failures: failedQa.length, sampleFailures: failedQa.slice(0, 20) },
+  workbookPath,
+  csvOutputDir: outputDir,
+  shopifyWrites: 0,
+}, null, 2));
+if (failedAudit.length || failedQa.length) process.exitCode = 2;

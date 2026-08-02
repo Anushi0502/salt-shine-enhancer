@@ -13,20 +13,24 @@ const rootDir = resolve(import.meta.dirname, "..");
 const defaultInputPath = resolve(rootDir, "public", "data", "products.json");
 const defaultOutputPath = resolve(rootDir, "output", "shopify-variant-image-mapping-manifest.json");
 const defaultHandlesPath = resolve(rootDir, "output", "shopify-seo-scope-handles.json");
-const storeDomain = new URL(process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com").hostname;
+const shopBase = process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com";
+const storeDomain = new URL(shopBase).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
+const adminAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
+const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
 const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 0));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxBatchProducts = Math.max(1, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_BATCH_SIZE || 25)));
 const applyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_APPLY_CONCURRENCY || 2));
-const verifyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VERIFY_CONCURRENCY || 5));
+// Serial readback avoids false failures when Shopify throttles a large verification fan-out.
+const verifyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VERIFY_CONCURRENCY || 1));
 const interBatchDelayMs = Math.max(0, Number(process.env.SALT_VARIANT_IMAGE_INTER_BATCH_DELAY_MS || 500));
 const TARGET_QUERY_COST = 900;
 
 const liveProductPageSize = Math.max(
   1,
-  Math.min(10, Number(process.env.SALT_VARIANT_IMAGE_PAGE_SIZE || 10))
+  Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_PAGE_SIZE || 20))
 );
 
 const liveVariantPageSize = Math.max(
@@ -56,10 +60,11 @@ const LIVE_PRODUCTS_QUERY = /* GraphQL */ `
               name
               value
             }
-            image {
-              id
-              url
-              altText
+            media(first: 1) {
+              nodes {
+                __typename
+                id
+              }
             }
           }
           pageInfo {
@@ -226,7 +231,7 @@ function scoreImageMatch(variant, image) {
 
 function chooseVariantImage(variant, images, product) {
   if (!Array.isArray(images) || !images.length || !variant) return null;
-  const existing = variant.image?.id ? String(variant.image.id) : "";
+  const existing = getVariantMediaId(variant);
   const scored = images
     .map((image) => ({ image, score: scoreImageMatch(variant, image) }))
     .sort((left, right) => right.score - left.score);
@@ -253,6 +258,13 @@ function chooseVariantImage(variant, images, product) {
   return null;
 }
 
+function getVariantMediaId(variant) {
+  const mediaNode = Array.isArray(variant?.media?.nodes)
+    ? variant.media.nodes.find((node) => node?.id && node?.__typename === "MediaImage")
+    : null;
+  return mediaNode?.id ? String(mediaNode.id) : "";
+}
+
 async function executeGraphQl(query, variables = {}, { mutation = false, operation = "Shopify request" } = {}) {
   const cliArgs = [
     "store",
@@ -271,22 +283,46 @@ async function executeGraphQl(query, variables = {}, { mutation = false, operati
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const result = await execFileAsync(cliBinary, cliArgs, {
-        cwd: rootDir,
-        timeout: graphqlTimeoutMs,
-        env: {
-          ...process.env,
-          SHOPIFY_CLI_AGENT_INFO: process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai",
-          SHOPIFY_CLI_AGENT_IDS: process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:variant-image-mapping`,
-        },
-        maxBuffer: 40 * 1024 * 1024,
-      });
-      const text = String(result.stdout || "").trim();
-      const startIndex = text.indexOf("{");
-      if (startIndex === -1) {
-        throw new Error(`${operation} returned no JSON payload: ${text.slice(0, 500)}`);
+      let payload;
+      if (adminAccessToken) {
+        const response = await fetch(adminGraphqlUrl, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": adminAccessToken,
+          },
+          body: JSON.stringify({ query, variables }),
+          signal: AbortSignal.timeout(graphqlTimeoutMs),
+        });
+        const raw = await response.text();
+        try {
+          payload = JSON.parse(raw);
+        } catch {
+          throw new Error(`${operation} returned invalid JSON: ${raw.slice(0, 500)}`);
+        }
+        if (!response.ok) {
+          throw new Error(`Admin GraphQL HTTP ${response.status}: ${raw.slice(0, 500)}`);
+        }
+      } else {
+        const result = await execFileAsync(cliBinary, cliArgs, {
+          cwd: rootDir,
+          timeout: graphqlTimeoutMs,
+          env: {
+            ...process.env,
+            SHOPIFY_CLI_AGENT_INFO: process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai",
+            SHOPIFY_CLI_AGENT_IDS: process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:variant-image-mapping`,
+          },
+          maxBuffer: 40 * 1024 * 1024,
+        });
+        const text = String(result.stdout || "").trim();
+        const startIndex = text.indexOf("{");
+        if (startIndex === -1) {
+          throw new Error(`${operation} returned no JSON payload: ${text.slice(0, 500)}`);
+        }
+        payload = JSON.parse(text.slice(startIndex));
       }
-      const payload = JSON.parse(text.slice(startIndex));
+
       // Check for throttled/rate-limited errors first as they are transient
       if (payload.errors?.length) {
         const throttled = payload.errors.some(
@@ -423,7 +459,7 @@ function buildPlan(snapshotProducts, liveProducts, scopeHandles) {
 
     for (const variant of variants) {
       const choice = chooseVariantImage(variant, productImages, snapshotProduct);
-      const existingMediaId = variant?.image?.id ? String(variant.image.id) : "";
+      const existingMediaId = getVariantMediaId(variant);
       if (!choice?.mediaId) {
         skippedVariants += 1;
         skipped.push({ variantId: String(variant?.id || ""), reason: "no-confident-image-match" });
@@ -544,7 +580,12 @@ async function verifyProducts(plannedProducts) {
             variants(first: 250) {
               nodes {
                 id
-                image { id url altText }
+                media(first: 1) {
+                  nodes {
+                    __typename
+                    id
+                  }
+                }
               }
             }
           }
@@ -558,8 +599,9 @@ async function verifyProducts(plannedProducts) {
     const productFailures = [];
     for (const update of product.updates) {
       const actual = nodes.find((variant) => String(variant?.id || "") === update.id);
-      if (!actual || String(actual?.image?.id || "") !== update.mediaId) {
-        productFailures.push({ handle: product.handle, variantId: update.id, expected: update.mediaId, actual: String(actual?.image?.id || "") });
+      const actualMediaId = getVariantMediaId(actual);
+      if (!actual || actualMediaId !== update.mediaId) {
+        productFailures.push({ handle: product.handle, variantId: update.id, expected: update.mediaId, actual: actualMediaId });
       }
     }
     return productFailures;

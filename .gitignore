@@ -20,6 +20,8 @@ output/product-metafield-backfill-manifest.json
 output/shopify-seo-release-manifest.json
 output/.shopify-seo-live-catalog.json
 output/playwright/
+output/catalog-image-review/
+output/catalog-image-review-coverage.json
 output/shopify-seo-local-review/
 output/shopify-seo-shards/
 output/shopify-seo-knowledge-full-pass-manifest.json

@@ -47,7 +47,7 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
   try {
     const response = await fetch(resolveThemeAsset("/data/home-collection-products.json"), {
-      cache: "force-cache",
+      cache: "no-store",
     });
     if (!response.ok) throw new Error("Homepage collection products are unavailable");
     return (await response.json()) as HomeCollectionProductsPayload;
@@ -60,8 +60,8 @@ export function useHomeCollectionProducts() {
   return useQuery({
     queryKey: ["home-collection-products", "catalog"],
     queryFn: loadHomeCollectionProducts,
-    staleTime: 30 * 60 * 1000,
-    refetchOnMount: false,
+    staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     retry: false,
   });

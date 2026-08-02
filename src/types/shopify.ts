@@ -50,6 +50,8 @@ export interface ShopifyProductCustomData {
   relatedProducts?: ShopifyProductReference[];
   complementaryProducts?: ShopifyProductReference[];
   searchProductBoosts?: string[];
+  searchProductBoostFallback?: string[];
+  complementaryProductsFallback?: ShopifyProductReference[];
   googleCustomProduct?: boolean | null;
   shopChannelMinimumQuantity?: number | null;
   collectionSignal?: string | null;
@@ -58,16 +60,49 @@ export interface ShopifyProductCustomData {
 }
 
 export interface ProductKnowledgeRecord {
+  productKnowledgeId?: string;
   typeKey: string;
   leafType: string;
+  specificType?: string;
+  specificTypeKey?: string;
   familyId: string;
   familyLabel: string;
   taxonomyPath: string[];
+  departmentId?: string;
+  departmentLabel?: string;
+  categoryId?: string;
+  categoryLabel?: string;
+  subcategoryId?: string;
+  subcategoryLabel?: string;
+  relatedCategories?: Array<{
+    departmentId: string;
+    departmentLabel: string;
+    categoryId: string;
+    categoryLabel: string;
+    subcategoryId?: string;
+    subcategoryLabel?: string;
+    relationship?: string;
+  }>;
+  canonicalTypeId?: string;
+  canonicalType?: string;
+  classificationRule?: string;
+  audience?: {
+    id: string;
+    label: string;
+    confidence?: number;
+    signals?: string[];
+  };
   aliases: string[];
   searchTerms: string[];
   negativeTerms: string[];
   attributes: Record<string, string[]>;
   confidence: number;
+  reviewRequired?: boolean;
+  reviewReasons?: string[];
+  seoEligible?: boolean;
+  proposedTags?: string[];
+  collectionTargets?: string[];
+  shopifyCategory?: string | null;
 }
 
 export interface ShopifyCollectionCustomData {

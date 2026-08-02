@@ -1,0 +1,21 @@
+{
+  "approvalId": "salt-catalog-taxonomy-2026-08-01-approved",
+  "approved": true,
+  "approvedAt": "2026-08-01T14:36:29Z",
+  "approvalSource": "User approval in the SALT catalog taxonomy task",
+  "taxonomyVersion": "2026-08-01.38",
+  "scope": {
+    "existingShopifyTags": "preserve-exactly",
+    "managedTags": "add-only salt namespace",
+    "taxonomyClassification": "approved for every active Shopify product; image-verified ambiguity overrides are required before controlled category tags",
+    "seo": "approved for every active Shopify product through guarded flow with prices preserved",
+    "salesChannel": "publish every active product to every available sales channel only after all release tasks verify; never change draft or archived status",
+    "categoriesAndMetafields": "classification metafields and additive controlled category tags approved for every active Shopify product; no Shopify product category writes",
+    "existingCollections": "eligible for taxonomy mapping after live readback",
+    "newCollections": "not approved",
+    "collectionMergesOrArchives": "not approved",
+    "zeroImageProducts": "delete only after a fresh live Shopify image read confirms zero product images",
+    "prices": "preserve",
+    "variants": "mapping only; never mutate price or compare-at price"
+  }
+}

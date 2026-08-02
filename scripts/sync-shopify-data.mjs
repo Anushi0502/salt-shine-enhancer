@@ -43,6 +43,7 @@ const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS 
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
+const storefrontBoundaryMode = String(process.env.SALT_SHOPIFY_STOREFRONT_BOUNDARY || "live").trim().toLowerCase();
 const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
 const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
 const collectionsPath = resolve(outDir, "collections.json");
@@ -440,9 +441,33 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
             }
           }
         }
+        complementaryProductsFallback: metafield(
+          namespace: "salt-recommendations"
+          key: "complementary_products"
+        ) {
+          references(first: 50) {
+            nodes {
+              ... on Product {
+                id
+                legacyResourceId
+                handle
+                title
+                productType
+                vendor
+              }
+            }
+          }
+        }
         searchProductBoosts: metafield(
           namespace: "shopify--discovery--product_search_boost"
           key: "queries"
+        ) {
+          jsonValue
+          value
+        }
+        searchProductBoostFallback: metafield(
+          namespace: "salt-search"
+          key: "query_terms"
         ) {
           jsonValue
           value
@@ -744,8 +769,14 @@ function normalizeCustomDataNode(node) {
     complementaryProducts: normalizeMetafieldReferenceList(
       node.complementaryProducts?.references?.nodes || [],
     ),
+    complementaryProductsFallback: normalizeMetafieldReferenceList(
+      node.complementaryProductsFallback?.references?.nodes || [],
+    ),
     searchProductBoosts: normalizeStringList(
       node.searchProductBoosts?.jsonValue ?? node.searchProductBoosts?.value ?? [],
+    ),
+    searchProductBoostFallback: normalizeStringList(
+      node.searchProductBoostFallback?.jsonValue ?? node.searchProductBoostFallback?.value ?? [],
     ),
     googleCustomProduct: parseBooleanValue(
       node.googleCustomProduct?.jsonValue ?? node.googleCustomProduct?.value ?? null,
@@ -1429,6 +1460,79 @@ async function fetchProductsFromCachedFile() {
   return publishedProducts;
 }
 
+async function mergeAdminProductsWithStorefrontFeed(adminProducts) {
+  let storefrontProducts;
+  let boundarySource = "live";
+
+  if (["cache", "cached", "snapshot"].includes(storefrontBoundaryMode)) {
+    storefrontProducts = await fetchProductsFromCachedFile();
+    boundarySource = "cached";
+    process.stdout.write("Using cached Online Store boundary by explicit configuration\n");
+  } else {
+    try {
+      storefrontProducts = await fetchPublishedStorefrontProducts();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown storefront feed error";
+      storefrontProducts = await fetchProductsFromCachedFile();
+      boundarySource = "cached";
+      process.stdout.write(`Live Online Store boundary unavailable; using cached boundary with current Admin product data (${message})\n`);
+    }
+  }
+
+  const adminById = new Map(adminProducts.map((product) => [String(product?.id || ""), product]));
+  const adminByHandle = new Map(
+    adminProducts.map((product) => [String(product?.handle || "").trim().toLowerCase(), product]),
+  );
+
+  const boundaryProducts = boundarySource === "cached"
+    ? storefrontProducts.filter((storefrontProduct) => {
+        const hasAdminMatch =
+          adminById.has(String(storefrontProduct?.id || "")) ||
+          adminByHandle.has(String(storefrontProduct?.handle || "").trim().toLowerCase());
+        return hasAdminMatch;
+      })
+    : storefrontProducts;
+
+  if (boundarySource === "cached" && boundaryProducts.length !== storefrontProducts.length) {
+    process.stdout.write(
+      `Removed ${storefrontProducts.length - boundaryProducts.length} stale cached products absent from the fresh Admin feed\n`,
+    );
+  }
+
+  const mergedProducts = boundaryProducts.map((storefrontProduct) => {
+    const adminProduct =
+      adminById.get(String(storefrontProduct?.id || "")) ||
+      adminByHandle.get(String(storefrontProduct?.handle || "").trim().toLowerCase()) ||
+      null;
+
+    if (!adminProduct) {
+      return storefrontProduct;
+    }
+
+    if (boundarySource === "cached") {
+      return {
+        ...storefrontProduct,
+        ...adminProduct,
+        // Cached data only supplies channel membership and the complete public variant set.
+        variants: storefrontProduct.variants?.length ? storefrontProduct.variants : adminProduct.variants,
+      };
+    }
+
+    // The public Online Store feed is authoritative for channel membership and
+    // complete variants; Admin data supplies fields not exposed publicly.
+    return {
+      ...adminProduct,
+      ...storefrontProduct,
+      variants: storefrontProduct.variants,
+    };
+  });
+
+  process.stdout.write(
+    `Merged Online Store feed boundary: ${mergedProducts.length} products and ${mergedProducts.reduce((count, product) => count + (product.variants?.length || 0), 0)} complete variants\n`,
+  );
+  return mergedProducts;
+}
+
 async function fetchPublishedStorefrontProducts() {
   const products = await fetchPaged("products", "/products.json");
   const publishedProducts = filterOnlineStoreProducts(products);
@@ -1509,6 +1613,10 @@ async function fetchProductsForSync() {
           `Filtered ${products.length - publishedProducts.length} products excluded from Online Store\n`,
         );
         products = publishedProducts;
+      }
+
+      if (adminAccessToken) {
+        products = await mergeAdminProductsWithStorefrontFeed(products);
       }
 
       if (useCliAdminPricing && !adminAccessToken) {
@@ -1678,7 +1786,25 @@ async function fetchCollectionsForSync() {
   }
 
   try {
-    return await fetchCollectionsFromCachedFile();
+    const cachedCollections = await fetchCollectionsFromCachedFile();
+    if (adminAccessToken && cachedCollections.length) {
+      try {
+        const customDataMap = await fetchCollectionCustomDataMap(cachedCollections);
+        const enrichedCollections = cachedCollections.map((collection) => {
+          const customData = customDataMap.get(String(collection.id)) || null;
+          return customData ? { ...collection, customData } : collection;
+        });
+        process.stdout.write(
+          `Using cached collection membership with live Admin collection metafields (${customDataMap.size} payloads)\n`,
+        );
+        return enrichedCollections;
+      } catch (error) {
+        const customDataMessage = error instanceof Error ? error.message : "unknown collection metafield error";
+        process.stdout.write(`Live Admin collection metafields unavailable; retaining cached collection data (${customDataMessage})\n`);
+      }
+    }
+
+    return cachedCollections;
   } catch (cacheError) {
     const message = cacheError instanceof Error ? cacheError.message : "unknown cache error";
     process.stdout.write(`Cached collections payload unavailable; falling back to storefront JSON (${message})\n`);
@@ -1770,8 +1896,11 @@ async function main() {
     const ids = isAllProducts ? allProductIds : await fetchCollectionProductIds(collection.handle);
     const visibleIds = filterProductIdsToCatalog(ids, products);
 
-    if (isAllProducts && collection.customData?.heroSummary) {
-      collection.customData.heroSummary = `Discover ${allProductIds.length.toLocaleString()} products across the full SALT catalog.`;
+    if (isAllProducts) {
+      collection.products_count = visibleIds.length;
+      if (collection.customData?.heroSummary) {
+        collection.customData.heroSummary = `Discover ${visibleIds.length.toLocaleString()} products across the full SALT catalog.`;
+      }
     }
 
     collectionProductMap.collections[collection.handle] = {

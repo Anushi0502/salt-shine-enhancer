@@ -1,0 +1,15 @@
+{
+  "approvalId": "salt-price-rework-2026-08-02-campaign-cost-approved",
+  "approved": true,
+  "approvedAt": "2026-08-02",
+  "approvalSource": "User request in the SALT catalog release task",
+  "scope": {
+    "products": "all Shopify products and variants",
+    "threshold": 35,
+    "campaignCost": 16,
+    "formula": "add the campaign cost to each current variant price below the threshold",
+    "compareAtPrices": "add the campaign cost to existing compare-at prices; preserve absence",
+    "variantPrices": "preserve independent variant pricing; never flatten quality, size, color, or bundle prices",
+    "status": "do not change product status or sales-channel inclusion"
+  }
+}

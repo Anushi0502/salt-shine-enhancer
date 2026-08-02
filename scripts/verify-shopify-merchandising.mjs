@@ -29,7 +29,9 @@ const PRODUCT_FIELDS = [
   ["relatedProductsDisplay", "shopify--discovery--product_recommendation", "related_products_display"],
   ["relatedProducts", "shopify--discovery--product_recommendation", "related_products"],
   ["complementaryProducts", "shopify--discovery--product_recommendation", "complementary_products"],
+  ["complementaryProductsFallback", "salt-recommendations", "complementary_products"],
   ["searchProductBoosts", "shopify--discovery--product_search_boost", "queries"],
+  ["searchProductBoostFallback", "salt-search", "query_terms"],
   ["googleCustomProduct", "mm-google-shopping", "custom_product"],
   ["shopChannelMinimumQuantity", "salt-marketing", "shop_channel_minimum_quantity"],
 ];
@@ -117,7 +119,10 @@ function normalizeGraphQLEntityProduct(node) {
     relatedProductsDisplay: node?.relatedProductsDisplay?.jsonValue ?? node?.relatedProductsDisplay?.value ?? null,
     relatedProducts: node?.relatedProducts?.references?.nodes || [],
     complementaryProducts: node?.complementaryProducts?.references?.nodes || [],
+    complementaryProductsFallback: node?.complementaryProductsFallback?.references?.nodes || [],
     searchProductBoosts: node?.searchProductBoosts?.jsonValue ?? node?.searchProductBoosts?.value ?? null,
+    searchProductBoostFallback:
+      node?.searchProductBoostFallback?.jsonValue ?? node?.searchProductBoostFallback?.value ?? null,
     googleCustomProduct: node?.googleCustomProduct?.jsonValue ?? node?.googleCustomProduct?.value ?? null,
     shopChannelMinimumQuantity:
       node?.shopChannelMinimumQuantity?.jsonValue ?? node?.shopChannelMinimumQuantity?.value ?? null,
@@ -259,9 +264,33 @@ async function verifyProduct(product) {
               }
             }
           }
+          complementaryProductsFallback: metafield(
+            namespace: "salt-recommendations"
+            key: "complementary_products"
+          ) {
+            references(first: 50) {
+              nodes {
+                ... on Product {
+                  id
+                  legacyResourceId
+                  handle
+                  title
+                  productType
+                  vendor
+                }
+              }
+            }
+          }
           searchProductBoosts: metafield(
             namespace: "shopify--discovery--product_search_boost"
             key: "queries"
+          ) {
+            jsonValue
+            value
+          }
+          searchProductBoostFallback: metafield(
+            namespace: "salt-search"
+            key: "query_terms"
           ) {
             jsonValue
             value

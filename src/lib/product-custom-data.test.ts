@@ -145,6 +145,23 @@ describe("product custom data normalization", () => {
     expect(merged?.shopChannelMinimumQuantity).toBeNull();
   });
 
+  it("uses catalog-owned discovery fallbacks when Shopify standard fields are unavailable", () => {
+    const payload = normalizeProductCustomData({
+      searchProductBoostFallback: ["black jeans", "slim fit jeans"],
+      complementaryProductsFallback: [
+        {
+          id: "gid://shopify/Product/22",
+          legacyResourceId: 22,
+          handle: "jeans-belt",
+          title: "Jeans Belt",
+        },
+      ],
+    });
+
+    expect(payload?.searchProductBoosts).toEqual(["black jeans", "slim fit jeans"]);
+    expect(payload?.complementaryProducts?.[0]?.handle).toBe("jeans-belt");
+  });
+
   it("normalizes collection and shop marketing custom data", () => {
     const collectionPayload = normalizeCollectionCustomData({
       metafields: {

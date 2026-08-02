@@ -47,8 +47,19 @@ Dev server defaults:
 - `npm run seo:all-products:apply`: apply the full catalog SEO pipeline.
 - `npm run seo:new-products:dry-run`: dry-run the new-products-only SEO pipeline.
 - `npm run seo:new-products:apply`: apply the new-products-only SEO pipeline.
-- `npm run shopify:seo:release`: guarded SEO apply flow with local audit, dry-run, and live apply.
+- `npm run catalog:taxonomy:audit`: create the read-only tag, collection, and review proposal for the current catalog.
+- `npm run catalog:taxonomy:validate`: fail if a product is ambiguous but has managed taxonomy tags, or if product knowledge records collapse.
+- `npm run catalog:image-review:build`: generate the local image-review queue for unresolved taxonomy evidence.
+- `npm run catalog:image-review:validate`: block release until every review-required product has image-backed classification evidence.
+- `npm run catalog:taxonomy:scale-check`: prove 500,000 repeated-type products retain separate knowledge identities.
+- `npm run shopify:products:zero-images:dry-run`: freshly identify active zero-image products before any deletion.
+- `npm run shopify:publications:all:dry-run`: read all active products and sales channels, then plan the final all-channel publication pass.
+- `npm run shopify:seo:release`: approval-gated SEO apply flow with local validation, dry-run, and live apply. It preserves Shopify prices and existing tags.
 - `npm run shopify:seo:full-catalog:apply`: direct full-catalog SEO apply.
+
+SEO reads every Shopify variant for product understanding, but it never updates
+variant `price` or `compareAtPrice`. Quality, size, color, and bundle variants
+keep their independently configured Shopify prices.
 - `npm run shopify:seo:new-products:apply`: direct new-products-only SEO apply.
 - `npm run shopify:variant-google-metafields:apply`: bulk update Google variant metafields.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.

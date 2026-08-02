@@ -24,6 +24,8 @@ const BACKFILL_FIELD_IDS = {
   relatedProductsDisplay: "shopify--discovery--product_recommendation.related_products_display",
   searchProductBoosts: "shopify--discovery--product_search_boost.queries",
   complementaryProducts: "shopify--discovery--product_recommendation.complementary_products",
+  searchProductBoostFallback: "salt-search.query_terms",
+  complementaryProductsFallback: "salt-recommendations.complementary_products",
   diaperType: "shopify.diaper-type",
   googleCustomProduct: "mm-google-shopping.custom_product",
   shopChannelMinimumQuantity: "salt-marketing.shop_channel_minimum_quantity",
@@ -474,8 +476,98 @@ function scoreRelatedCandidate(base, candidate) {
   return score;
 }
 
-function rankProductCandidates(base, candidates) {
-  return candidates
+const MAX_RELATED_CANDIDATE_BUCKET_SIZE = 500;
+
+function addCandidateIndexValue(index, key, productId) {
+  const normalizedKey = normalizePlainText(key).toLowerCase();
+  if (!normalizedKey) {
+    return;
+  }
+
+  if (!index.has(normalizedKey)) {
+    index.set(normalizedKey, new Set());
+  }
+  index.get(normalizedKey).add(productId);
+}
+
+function compactCandidateIndex(index) {
+  return new Map(
+    Array.from(index.entries()).filter(([, productIds]) => productIds.size <= MAX_RELATED_CANDIDATE_BUCKET_SIZE),
+  );
+}
+
+function buildCandidateIndex(productIndexes) {
+  const byId = new Map();
+  const byCollection = new Map();
+  const byProductType = new Map();
+  const byToken = new Map();
+
+  for (const product of productIndexes) {
+    byId.set(product.id, product);
+    for (const collection of product.collections) {
+      if (!collection.isGeneric) {
+        addCandidateIndexValue(byCollection, collection.handle, product.id);
+      }
+    }
+
+    if (product.productType) {
+      addCandidateIndexValue(byProductType, product.productType, product.id);
+    }
+
+    const primaryTokens = new Set([
+      ...product.titleTokens,
+      ...product.handleTokens,
+      ...product.productTypeTokens,
+      ...product.tagTokens,
+    ]);
+    for (const token of primaryTokens) {
+      if (token.length >= 3) {
+        addCandidateIndexValue(byToken, token, product.id);
+      }
+    }
+  }
+
+  return {
+    byId,
+    byCollection: compactCandidateIndex(byCollection),
+    byProductType: compactCandidateIndex(byProductType),
+    byToken: compactCandidateIndex(byToken),
+  };
+}
+
+function rankProductCandidates(base, candidates, candidateIndex = null) {
+  const candidatePool = candidateIndex && candidateIndex.byId.size > MAX_RELATED_CANDIDATE_BUCKET_SIZE
+    ? (() => {
+        const candidateIds = new Set();
+        for (const collection of base.collections) {
+          if (collection.isGeneric) continue;
+          for (const productId of candidateIndex.byCollection.get(collection.handle) || []) {
+            candidateIds.add(productId);
+          }
+        }
+        if (base.productType) {
+          for (const productId of candidateIndex.byProductType.get(base.productType.toLowerCase()) || []) {
+            candidateIds.add(productId);
+          }
+        }
+        const primaryTokens = new Set([
+          ...base.titleTokens,
+          ...base.handleTokens,
+          ...base.productTypeTokens,
+          ...base.tagTokens,
+        ]);
+        for (const token of primaryTokens) {
+          for (const productId of candidateIndex.byToken.get(token) || []) {
+            candidateIds.add(productId);
+          }
+        }
+        return Array.from(candidateIds)
+          .map((productId) => candidateIndex.byId.get(productId))
+          .filter(Boolean);
+      })()
+    : candidates;
+
+  return candidatePool
     .filter((candidate) => candidate.id !== base.id)
     .map((candidate) => ({
       product: candidate,
@@ -954,7 +1046,7 @@ function buildProductPlan(product, context) {
     reference: product,
   };
 
-  const relatedCandidates = rankProductCandidates(productIndex, context.productIndexes).filter(
+  const relatedCandidates = rankProductCandidates(productIndex, context.productIndexes, context.candidateIndex).filter(
     (entry) => entry.product.id !== product.id,
   );
   const relatedTarget =
@@ -1161,6 +1253,7 @@ function buildProductPlan(product, context) {
   }
 
   if (searchBoostCandidates.length >= 3 && !hasMeaningfulValue(existing.searchProductBoosts)) {
+    const searchBoostValue = serializeListValue(searchBoostCandidates.slice(0, 5));
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.searchProductBoosts,
       label: BACKFILL_FIELDS.searchProductBoosts?.name || "Search product boosts",
@@ -1168,8 +1261,18 @@ function buildProductPlan(product, context) {
       key: BACKFILL_FIELDS.searchProductBoosts?.key || "queries",
       type: BACKFILL_FIELDS.searchProductBoosts?.type || "list.single_line_text_field",
       ownerId: toShopifyGid("Product", product.id),
-      value: serializeListValue(searchBoostCandidates.slice(0, 5)),
+      value: searchBoostValue,
       reason: `Generated ${Math.min(5, searchBoostCandidates.length)} search boost phrase(s) from handle, title, type, tags, body, and collections`,
+    });
+    writes.push({
+      fieldId: BACKFILL_FIELD_IDS.searchProductBoostFallback,
+      label: BACKFILL_FIELDS.searchProductBoostFallback?.name || "SALT Search Query Terms",
+      namespace: BACKFILL_FIELDS.searchProductBoostFallback?.namespace || "salt-search",
+      key: BACKFILL_FIELDS.searchProductBoostFallback?.key || "query_terms",
+      type: BACKFILL_FIELDS.searchProductBoostFallback?.type || "list.single_line_text_field",
+      ownerId: toShopifyGid("Product", product.id),
+      value: searchBoostValue,
+      reason: "Catalog-owned fallback for Shopify category-constrained search boost",
     });
     reasons.push("search-boosts");
   } else if (hasMeaningfulValue(existing.searchProductBoosts)) {
@@ -1215,6 +1318,9 @@ function buildProductPlan(product, context) {
   }
 
   if (complementaryWriteAllowed) {
+    const complementaryProductsValue = serializeProductReferenceList(
+      complementaryProducts.map((entry) => toShopifyGid("Product", entry.id)),
+    );
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.complementaryProducts,
       label: BACKFILL_FIELDS.complementaryProducts?.name || "Complementary products",
@@ -1222,8 +1328,18 @@ function buildProductPlan(product, context) {
       key: BACKFILL_FIELDS.complementaryProducts?.key || "complementary_products",
       type: BACKFILL_FIELDS.complementaryProducts?.type || "list.product_reference",
       ownerId: toShopifyGid("Product", product.id),
-      value: serializeProductReferenceList(complementaryProducts.map((entry) => toShopifyGid("Product", entry.id))),
+      value: complementaryProductsValue,
       reason: `Selected ${complementaryProducts.length} adjacent cross-sell product(s)`,
+    });
+    writes.push({
+      fieldId: BACKFILL_FIELD_IDS.complementaryProductsFallback,
+      label: BACKFILL_FIELDS.complementaryProductsFallback?.name || "SALT Complementary Products",
+      namespace: BACKFILL_FIELDS.complementaryProductsFallback?.namespace || "salt-recommendations",
+      key: BACKFILL_FIELDS.complementaryProductsFallback?.key || "complementary_products",
+      type: BACKFILL_FIELDS.complementaryProductsFallback?.type || "list.product_reference",
+      ownerId: toShopifyGid("Product", product.id),
+      value: complementaryProductsValue,
+      reason: "Catalog-owned fallback for Shopify category-constrained complementary products",
     });
     reasons.push("complementary-products");
   } else if (hasMeaningfulValue(existing.complementaryProducts)) {
@@ -1354,6 +1470,8 @@ function createCatalogContext({
     };
   });
 
+  const candidateIndex = buildCandidateIndex(productIndexes);
+
   const normalizedReviewSummaries = new Map();
   for (const [key, value] of reviewSummaries instanceof Map ? reviewSummaries.entries() : Object.entries(reviewSummaries || {})) {
     const productId = Number(key);
@@ -1377,6 +1495,7 @@ function createCatalogContext({
     productCollectionsById,
     productCollectionTitlesById,
     productIndexes,
+    candidateIndex,
     reviewSummaries: normalizedReviewSummaries,
     diaperTypeOptions: normalizeDiaperTypeOptions(diaperTypeOptions),
     disclosureOptions: Array.isArray(disclosureOptions) ? disclosureOptions : [],

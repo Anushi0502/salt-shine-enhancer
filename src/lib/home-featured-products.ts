@@ -30,7 +30,7 @@ type SaltHomePreloadWindow = Window & {
 
 const HOME_FEATURED_PRODUCTS_PATH = "/data/home-featured-products.json";
 const HOME_FEATURED_PRODUCTS_QUERY_KEY = ["home-featured-products", "catalog"] as const;
-const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 30 * 60 * 1000;
+const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 0;
 
 function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined): HomeFeaturedProduct | null {
   const id = Number(input?.id || 0);
@@ -132,7 +132,7 @@ export function useHomeFeaturedProducts(enabled = true) {
     enabled,
     initialData: inlineProducts,
     staleTime: HOME_FEATURED_PRODUCTS_STALE_TIME_MS,
-    refetchOnMount: false,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,

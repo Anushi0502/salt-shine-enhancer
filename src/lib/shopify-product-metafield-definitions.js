@@ -105,6 +105,36 @@ const PRODUCT_METAFIELD_DEFINITIONS = [
     pin: true,
   },
   {
+    id: "salt-search.query_terms",
+    kind: "custom",
+    name: "SALT Search Query Terms",
+    namespace: "salt-search",
+    key: "query_terms",
+    type: "list.single_line_text_field",
+    ownerType: "PRODUCT",
+    access: {
+      admin: "MERCHANT_READ_WRITE",
+      storefront: "PUBLIC_READ",
+    },
+    pin: true,
+    description: "Catalog-owned search phrases used when Shopify's standard search boost field is subtype-constrained.",
+  },
+  {
+    id: "salt-recommendations.complementary_products",
+    kind: "custom",
+    name: "SALT Complementary Products",
+    namespace: "salt-recommendations",
+    key: "complementary_products",
+    type: "list.product_reference",
+    ownerType: "PRODUCT",
+    access: {
+      admin: "MERCHANT_READ_WRITE",
+      storefront: "PUBLIC_READ",
+    },
+    pin: true,
+    description: "Catalog-owned complementary product references used when Shopify's standard recommendation field is subtype-constrained.",
+  },
+  {
     id: "shopify.diaper-type",
     kind: "custom",
     name: "Diaper type",
@@ -206,6 +236,21 @@ const PRODUCT_METAFIELD_DEFINITIONS = [
     },
     pin: true,
     description: "Editable quantity floor used to keep Shop channel merchandising and cart behavior aligned.",
+  },
+  {
+    id: "salt_taxonomy.classification",
+    kind: "custom",
+    name: "Catalog classification",
+    namespace: "salt_taxonomy",
+    key: "classification",
+    type: "json",
+    ownerType: "PRODUCT",
+    access: {
+      admin: "MERCHANT_READ_WRITE",
+      storefront: "PUBLIC_READ",
+    },
+    pin: true,
+    description: "Versioned high-confidence catalog taxonomy used for search, filters, and collection mapping.",
   },
 ];
 

@@ -22,6 +22,27 @@ describe("Shopify Online Store publication", () => {
     ).toBe(false);
   });
 
+  it("treats explicit channel publication data as authoritative", () => {
+    expect(
+      isOnlineStorePublishedProduct({
+        status: "active",
+        published_at: "2026-08-01T00:00:00Z",
+        resourcePublications: {
+          nodes: [{ isPublished: true, channel: { name: "Point of Sale" } }],
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isOnlineStorePublishedProduct({
+        status: "active",
+        published_at: null,
+        resourcePublications: {
+          nodes: [{ isPublished: true, channel: { name: "Online Store" } }],
+        },
+      }),
+    ).toBe(true);
+  });
+
   it("filters the full feed without mutating its input", () => {
     const products = [
       { id: 1, status: "active", published_at: "2026-08-01T00:00:00Z" },

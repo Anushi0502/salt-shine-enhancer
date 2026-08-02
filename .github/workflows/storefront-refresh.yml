@@ -77,6 +77,18 @@ jobs:
           SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT: "1"
         run: node scripts/sync-shopify-data.mjs
 
+      - name: Read current Shopify tag inventory
+        env:
+          SHOPIFY_ADMIN_API_VERSION: "2026-07"
+          SALT_SHOP_URL: https://0309d3-72.myshopify.com
+        run: npm run catalog:tags:fetch
+
+      - name: Regenerate read-only taxonomy audit
+        run: npm run catalog:taxonomy:audit
+
+      - name: Validate catalog taxonomy before generating search assets
+        run: npm run catalog:taxonomy:validate
+
       - name: Refresh recently ordered merchandising
         continue-on-error: true
         run: node scripts/sync-recently-ordered-products.mjs

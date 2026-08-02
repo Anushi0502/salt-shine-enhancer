@@ -143,6 +143,18 @@ function unique<T>(values: T[]): T[] {
   return Array.from(new Set(values));
 }
 
+function relatedCategorySearchText(knowledge: ShopifyProduct["knowledge"] | null | undefined): string {
+  return (knowledge?.relatedCategories || [])
+    .flatMap((category) => [
+      category.departmentLabel,
+      category.categoryLabel,
+      category.subcategoryLabel || "",
+      category.relationship || "",
+    ])
+    .filter(Boolean)
+    .join(" ");
+}
+
 function singularize(token: string): string {
   if (token.endsWith("ies") && token.length > 4) {
     return `${token.slice(0, -3)}y`;
@@ -429,12 +441,23 @@ function queryCoverage(product: ShopifyProduct, query: string, intent: SearchInt
     product.product_type,
     Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || ""),
     knowledge.leafType,
+    knowledge.specificType || "",
     knowledge.familyLabel,
+    relatedCategorySearchText(knowledge),
     ...(knowledge.aliases || []),
   ].join(" "));
-  const isLightingProduct = knowledge.familyId === "home-lighting" ||
+  const hasResolvedTaxonomy = Boolean(
+    knowledge.familyId &&
+      knowledge.familyId !== "other" &&
+      knowledge.reviewRequired !== true &&
+      (knowledge.confidence ?? 0) >= 72,
+  );
+  const hasRawLightingSignal =
     /\b(?:lighting|lamp|lamps|lights)\b/i.test(`${product.product_type} ${Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "")}`) ||
     /\b(?:led|ceiling|wall|table|night|desk|floor)\s+(?:light|lamp)|\b(?:light|lamp)\s+(?:fixture|bulb|shade)\b/i.test(product.title);
+  // Taxonomy is authoritative once it is confident. Supplier tags are only a
+  // legacy fallback for products that have not been classified yet.
+  const isLightingProduct = knowledge.familyId === "home-lighting" || (!hasResolvedTaxonomy && hasRawLightingSignal);
   const coreTokens = isLightingProduct
     ? rawCoreTokens
     : rawCoreTokens.filter((token) => !["light", "lights", "lighting", "lamp", "lamps"].includes(token));
@@ -490,7 +513,9 @@ function productSearchText(product: ShopifyProduct): string {
     boosts,
     product.customData?.collectionSignal || "",
     knowledge.leafType,
+    knowledge.specificType || "",
     knowledge.familyLabel,
+    relatedCategorySearchText(knowledge),
     knowledge.aliases.join(" "),
     searchableText(product),
   ]
@@ -538,7 +563,10 @@ function scoreProductForQuery(product: ShopifyProduct, query: string, parsedQuer
   ) * 2.2;
   const collectionScore = scorePhrase(normalizedQuery, product.customData?.collectionSignal || "") * 1.9;
   const knowledge = product.knowledge || classifyProductKnowledge(product);
-  const knowledgeScore = scorePhrase(normalizedQuery, [knowledge.leafType, knowledge.familyLabel, ...knowledge.aliases].join(" ")) * 1.6;
+  const knowledgeScore = scorePhrase(
+    normalizedQuery,
+    [knowledge.leafType, knowledge.specificType || "", knowledge.familyLabel, relatedCategorySearchText(knowledge), ...knowledge.aliases].join(" "),
+  ) * 1.6;
   const bodyScore = scorePhrase(normalizedQuery, String(product.body_html || "").replace(/<[^>]+>/g, " ")) * 0.4;
   const searchableScore = scorePhrase(normalizedQuery, searchText) * 0.3;
   const intentScore = parsedQuery.intent ? scoreIntentAgainstProduct(product, parsedQuery.intent) : 0;
@@ -615,6 +643,7 @@ function buildQuerySuggestions(
     addCandidate(normalizeProductType(product.product_type), 18 - index);
     const knowledge = product.knowledge || classifyProductKnowledge(product);
     addCandidate(knowledge.leafType, 20 - index);
+    addCandidate(knowledge.specificType || "", 14 - index);
 
     const boosts = Array.isArray(product.customData?.searchProductBoosts)
       ? product.customData.searchProductBoosts

@@ -7,6 +7,9 @@ const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const pageLimit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const maxAttempts = Number(process.env.SALT_PRICE_VERIFY_MAX_ATTEMPTS || 6);
 const retryDelayMs = Number(process.env.SALT_PRICE_VERIFY_RETRY_DELAY_MS || 1000);
+const adminAccessToken =
+  process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
+const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,6 +49,74 @@ async function fetchPage(page) {
   throw new Error(`Live product readback failed on page ${page} after ${maxAttempts} attempts (${lastStatus})`);
 }
 
+async function fetchAdminProductVariants() {
+  const variants = [];
+  const endpoint = `${new URL(baseUrl).origin}/admin/api/${adminApiVersion}/graphql.json`;
+  const query = `query VerifyVariantPricing($after: String) {
+    productVariants(first: 250, after: $after) {
+      nodes {
+        id
+        legacyResourceId
+        price
+        compareAtPrice
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }`;
+  let after = null;
+  let page = 0;
+
+  while (true) {
+    page += 1;
+    let lastStatus = 0;
+    let response;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": adminAccessToken,
+        },
+        body: JSON.stringify({ query, variables: { after } }),
+      });
+      lastStatus = response.status;
+      if (response.ok) {
+        break;
+      }
+
+      if (response.status !== 429 && (response.status < 500 || response.status >= 600)) {
+        throw new Error(`Admin variant readback failed (${response.status})`);
+      }
+
+      await sleep(Math.min(retryDelayMs * attempt, 10_000));
+    }
+
+    if (!response?.ok) {
+      throw new Error(`Admin variant readback failed after ${maxAttempts} attempts (${lastStatus})`);
+    }
+
+    const payload = await response.json();
+    if (payload.errors?.length) {
+      throw new Error(payload.errors.map((error) => error.message || "Unknown GraphQL error").join(" | "));
+    }
+
+    const connection = payload.data?.productVariants;
+    const pageVariants = Array.isArray(connection?.nodes) ? connection.nodes : [];
+    variants.push(...pageVariants);
+    if (page % 25 === 0 || !connection?.pageInfo?.hasNextPage) {
+      process.stdout.write(`Read Admin variant pricing page ${page}: ${variants.length} variants\n`);
+    }
+    if (!connection?.pageInfo?.hasNextPage) {
+      break;
+    }
+
+    after = connection.pageInfo.endCursor || null;
+  }
+
+  return variants;
+}
+
 const catalog = await readProductCatalogPayload("public/data");
 const localVariants = new Map();
 
@@ -64,20 +135,60 @@ const mismatches = [];
 const missingVariants = [];
 let liveProductCount = 0;
 let liveVariantCount = 0;
+const expectedProductIds = new Set([...localVariants.values()].map((entry) => String(entry.productId)));
+const seenLiveVariantIds = new Set();
 
-for (let page = 1; ; page += 1) {
-  const payload = await fetchPage(page);
-  const products = Array.isArray(payload?.products) ? payload.products : [];
-  liveProductCount += products.length;
+if (adminAccessToken) {
+  const liveVariants = await fetchAdminProductVariants();
+  for (const variant of liveVariants) {
+    const variantId = String(variant.legacyResourceId || variant.id || "");
+    const local = localVariants.get(variantId);
+    if (!local) {
+      continue;
+    }
 
-  for (const product of products) {
+    liveVariantCount += 1;
+    seenLiveVariantIds.add(variantId);
+    const livePrice = normalizeMoney(variant.price);
+    const liveCompareAtPrice = normalizeMoney(variant.compareAtPrice);
+    if (local.price !== livePrice || local.compareAtPrice !== liveCompareAtPrice) {
+      mismatches.push({
+        productId: local.productId,
+        handle: local.handle,
+        variantId,
+        localPrice: local.price,
+        livePrice,
+        localCompareAtPrice: local.compareAtPrice,
+        liveCompareAtPrice,
+      });
+    }
+  }
+  liveProductCount = expectedProductIds.size;
+} else {
+  const liveProducts = await (async () => {
+    const products = [];
+    for (let page = 1; ; page += 1) {
+      const payload = await fetchPage(page);
+      const pageProducts = Array.isArray(payload?.products) ? payload.products : [];
+      products.push(...pageProducts);
+      if (pageProducts.length < pageLimit) {
+        break;
+      }
+    }
+    return products;
+  })();
+
+  liveProductCount = liveProducts.length;
+  for (const product of liveProducts) {
     for (const variant of product.variants || []) {
       liveVariantCount += 1;
-      const local = localVariants.get(String(variant.id));
+      const variantId = String(variant.id);
+      const local = localVariants.get(variantId);
       if (!local) {
         missingVariants.push({ productId: product.id, handle: product.handle, variantId: variant.id });
         continue;
       }
+      seenLiveVariantIds.add(variantId);
 
       const livePrice = normalizeMoney(variant.price);
       const liveCompareAtPrice = normalizeMoney(variant.compare_at_price);
@@ -94,9 +205,11 @@ for (let page = 1; ; page += 1) {
       }
     }
   }
+}
 
-  if (products.length < pageLimit) {
-    break;
+for (const [variantId, local] of localVariants) {
+  if (!seenLiveVariantIds.has(variantId)) {
+    missingVariants.push({ productId: local.productId, handle: local.handle, variantId });
   }
 }
 

@@ -102,6 +102,10 @@ function variantOptionTokens(title?: string): string[] {
   return parts.slice(0, 3);
 }
 
+function isVariantAvailable(variant?: ShopifyProduct["variants"][number] | null): boolean {
+  return variant?.available !== false;
+}
+
 function productVariantImage(product: ShopifyProduct, variant?: ShopifyProduct["variants"][number] | null): string | null {
   if (!variant) {
     return productImage(product);
@@ -399,7 +403,7 @@ const ProductPage = () => {
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
   const initialVariant = useMemo(
-    () => variants.find((variant) => variant.available) || variants[0],
+    () => variants.find((variant) => isVariantAvailable(variant)) || variants[0],
     [variants],
   );
   const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
@@ -479,11 +483,11 @@ const ProductPage = () => {
     }
 
     const selectedVariant = variants.find((variant) => variant.id === selectedVariantId);
-    if (selectedVariant?.available) {
+    if (isVariantAvailable(selectedVariant)) {
       return;
     }
 
-    const firstAvailable = variants.find((variant) => variant.available);
+    const firstAvailable = variants.find((variant) => isVariantAvailable(variant));
     if (firstAvailable) {
       setSelectedVariantId(firstAvailable.id);
     }
@@ -664,13 +668,13 @@ const ProductPage = () => {
       />
     );
   }
-  const displayedVariants = showAvailableOnly ? variants.filter((variant) => variant.available) : variants;
+  const displayedVariants = showAvailableOnly ? variants.filter((variant) => isVariantAvailable(variant)) : variants;
   const price = Number(selectedVariant?.price || 0);
   const lowestVariantPrice = Number(variants[0]?.price || 0);
-  const availableVariantsCount = variants.filter((variant) => variant.available).length;
+  const availableVariantsCount = variants.filter((variant) => isVariantAvailable(variant)).length;
   const comparePriceCandidate = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
   const comparePrice = isPlausibleComparePrice(price, comparePriceCandidate) ? comparePriceCandidate : 0;
-  const isAvailable = selectedVariant?.available ?? true;
+  const isAvailable = isVariantAvailable(selectedVariant);
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
 
   const selectedQuantity = Math.max(quantityFloor, Math.floor(quantity || 1));
@@ -1164,7 +1168,7 @@ const ProductPage = () => {
             ) : null}
 
             {variants.length > 0 ? (
-              <div className="salt-section-shell mt-3 rounded-[1.45rem] border border-border/75 p-3.5 sm:mt-4 sm:rounded-[1.7rem] sm:p-4">
+              <div className="mt-3 sm:mt-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Choose option</p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -1184,12 +1188,12 @@ const ProductPage = () => {
                 </div>
 
                 {selectedVariant ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-primary/25 bg-primary/8 px-3 py-2 text-xs">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl border border-border/50 bg-background/60 px-3 py-2 text-xs shadow-[0_10px_20px_-18px_rgba(15,23,42,0.18)]">
                     <span className="inline-flex items-center gap-1 font-semibold text-foreground">
                       <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                       {displayVariantTitle(selectedVariant.title)}
                     </span>
-                    <span className="rounded-full border border-border/70 bg-background px-2 py-0.5 font-semibold text-primary">
+                    <span className="rounded-full border border-border/60 bg-background/90 px-2 py-0.5 font-semibold text-primary">
                       {formatMoney(price)}
                     </span>
                     <span
@@ -1208,7 +1212,7 @@ const ProductPage = () => {
                   {displayedVariants.map((variant) => {
                     const variantPrice = Number(variant.price || 0);
                     const variantComparePrice = Number(variant.compare_at_price || 0);
-                    const variantAvailable = variant.available;
+                    const variantAvailable = isVariantAvailable(variant);
                     const isVariantSelected = variant.id === selectedVariant?.id;
                     const variantTitle = displayVariantTitle(variant.title);
                     const optionTokens = variantOptionTokens(variant.title);
@@ -1222,10 +1226,10 @@ const ProductPage = () => {
                         onClick={() => setSelectedVariantId(variant.id)}
                         disabled={!variantAvailable}
                         aria-pressed={isVariantSelected ? "true" : "false"}
-                        className={`group relative overflow-hidden rounded-[1.2rem] border px-3 py-2.5 text-left transition ${
+                        className={`group relative overflow-hidden rounded-[1.15rem] border px-3 py-2.5 text-left transition ${
                           isVariantSelected
-                            ? "border-primary bg-primary/12 shadow-[0_14px_28px_-22px_hsl(var(--primary)/0.95)]"
-                            : "border-border bg-background hover:border-primary/45"
+                            ? "border-primary/55 bg-primary/10 shadow-[0_12px_24px_-20px_hsl(var(--primary)/0.9)]"
+                            : "border-border/55 bg-background/72 hover:border-primary/35 hover:bg-background/92"
                         } ${variantAvailable ? "" : "cursor-not-allowed opacity-50"}`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -1244,7 +1248,7 @@ const ProductPage = () => {
                             {optionTokens.map((token) => (
                               <span
                                 key={`${variant.id}-${token}`}
-                                className="rounded-full border border-border/70 bg-background px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+                                className="rounded-full border border-border/55 bg-background/90 px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
                               >
                                 {token}
                               </span>

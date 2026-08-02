@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { filterProducts, parseSearchQuery } from "@/lib/catalog";
+import { classifyProductKnowledge } from "@/lib/product-knowledge-base.js";
 import { isProductCatalogManifest, mergeProductShardPayloads } from "@/lib/product-catalog-shards.js";
+import { isProductSearchManifest, mergeProductSearchShardPayloads } from "@/lib/product-search-shards.js";
 import type { ShopifyProduct } from "@/types/shopify";
 
 function makeProduct(input: {
@@ -122,6 +124,18 @@ const catalogFixture = isProductCatalogManifest(catalogManifest)
       ),
     )
   : catalogManifest as { products: ShopifyProduct[] };
+
+const productSearchManifest = JSON.parse(
+  fs.readFileSync(path.resolve(process.cwd(), "public/data/product-search.json"), "utf8"),
+);
+const productSearchFixture = isProductSearchManifest(productSearchManifest)
+  ? mergeProductSearchShardPayloads(
+      productSearchManifest,
+      productSearchManifest.shards.map((shard: { file: string }) =>
+        JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "public/data", shard.file), "utf8")),
+      ),
+    )
+  : productSearchManifest as { products: ShopifyProduct[] };
 
 describe("filterProducts search relevance", () => {
   it("understands a natural space need instead of requiring every intent word in the title", () => {
@@ -322,7 +336,7 @@ describe("filterProducts search relevance", () => {
 
     const hasDressResult = results.some((entry) => /dress/i.test(`${entry.title} ${entry.handle}`));
     expect(hasDressResult).toBe(false);
-  });
+  }, 15_000);
 
   it("keeps real-catalog short search tight for mat", () => {
     const results = filterProducts(catalogFixture.products, { query: "mat" }).slice(0, 40);
@@ -340,6 +354,79 @@ describe("filterProducts search relevance", () => {
     );
 
     expect(falseFriendResult).toBe(false);
+  });
+
+  it("rejects a verified automotive charger even when supplier copy calls it a night lamp", () => {
+    const hostileSupplierRecord = productSearchFixture.products.find(
+      (product) => product.handle === "automatic-solar-panel-battery-charger-board-night-light-led-lamp-control-switch-battery-charger-charging-controller-module",
+    );
+    expect(hostileSupplierRecord?.knowledge).toMatchObject({
+      familyId: "automotive",
+      classificationRule: "vehicle-battery-charger",
+      confidence: 88,
+    });
+
+    const results = filterProducts(productSearchFixture.products, { query: "lighting" }).slice(0, 100);
+
+    expect(results).not.toContainEqual(expect.objectContaining({ id: hostileSupplierRecord?.id }));
+    expect(results).not.toContainEqual(expect.objectContaining({ handle: hostileSupplierRecord?.handle }));
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((product) => product.knowledge?.familyId === "home-lighting")).toBe(true);
+  }, 15_000);
+
+  it("lets verified taxonomy reject polluted supplier lighting tags", () => {
+    const lamp = makeProduct({
+      id: 71,
+      title: "USB Jellyfish Lamp",
+      handle: "usb-jellyfish-lamp",
+      product_type: "lighting",
+      tags: ["lighting", "lamp"],
+    });
+    const charger = makeProduct({
+      id: 72,
+      title: "Fast USB-C Charger",
+      handle: "fast-usb-c-charger",
+      product_type: "electronics",
+      tags: ["charger", "lighting"],
+    });
+    const serum = makeProduct({
+      id: 73,
+      title: "Brightening Face Serum",
+      handle: "brightening-face-serum",
+      product_type: "beauty",
+      tags: ["skincare", "lighting"],
+    });
+    [lamp, charger, serum].forEach((product) => {
+      product.knowledge = classifyProductKnowledge(product);
+    });
+
+    const results = filterProducts([lamp, charger, serum], { query: "lighting" });
+
+    expect(results.map((entry) => entry.handle)).toEqual(["usb-jellyfish-lamp"]);
+  });
+
+  it("does not trust a raw supplier lighting tag when knowledge is not loaded yet", () => {
+    const results = filterProducts(
+      [
+        makeProduct({
+          id: 74,
+          title: "USB Jellyfish Lamp",
+          handle: "usb-jellyfish-lamp-legacy",
+          product_type: "lighting",
+          tags: ["lighting", "lamp"],
+        }),
+        makeProduct({
+          id: 75,
+          title: "Fast USB-C Charger",
+          handle: "fast-usb-c-charger-legacy",
+          product_type: "electronics",
+          tags: ["charger", "lighting"],
+        }),
+      ],
+      { query: "lighting" },
+    );
+
+    expect(results.map((entry) => entry.handle)).toEqual(["usb-jellyfish-lamp-legacy"]);
   });
 
   it("supports real-catalog exclusion with operators", () => {

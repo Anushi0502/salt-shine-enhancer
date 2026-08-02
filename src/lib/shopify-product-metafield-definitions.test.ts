@@ -16,12 +16,15 @@ describe("shopify product metafield definitions", () => {
       "shopify--discovery--product_recommendation.related_products_display",
       "shopify--discovery--product_search_boost.queries",
       "shopify--discovery--product_recommendation.complementary_products",
+      "salt-search.query_terms",
+      "salt-recommendations.complementary_products",
       "shopify.diaper-type",
       "salt-marketing.badge_text",
       "salt-marketing.highlights",
       "salt-marketing.collection_signal",
       "mm-google-shopping.custom_product",
       "salt-marketing.shop_channel_minimum_quantity",
+      "salt_taxonomy.classification",
     ]);
   });
 
@@ -65,6 +68,23 @@ describe("shopify product metafield definitions", () => {
           value: "gid://shopify/MetaobjectDefinition/9632874595",
         },
       ],
+    });
+  });
+
+  it("includes the versioned JSON catalog classification definition", () => {
+    expect(
+      PRODUCT_METAFIELD_DEFINITIONS.find((definition) => definition.id === "salt_taxonomy.classification"),
+    ).toMatchObject({
+      kind: "custom",
+      namespace: "salt_taxonomy",
+      key: "classification",
+      type: "json",
+      ownerType: "PRODUCT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ",
+      },
+      pin: true,
     });
   });
 });

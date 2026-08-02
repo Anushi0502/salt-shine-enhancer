@@ -162,6 +162,28 @@ describe("buildSearchIntelligence", () => {
     expect(result.predictedProducts.map((product) => product.handle)).toEqual(["compact-travel-bottle"]);
   });
 
+  it("uses a verified related category membership to satisfy a cross-category search", () => {
+    const products = [
+      makeProduct({
+        id: 90,
+        title: "Insulated Bento Lunch Box With Cutlery",
+        handle: "insulated-bento-lunch-box-camping-meal-container",
+        productType: "Kitchen Storage",
+      }),
+      makeProduct({
+        id: 91,
+        title: "Portable Camping Lantern",
+        handle: "portable-camping-lantern",
+        productType: "Outdoor Lighting",
+      }),
+    ];
+
+    const result = buildSearchIntelligence(products, [], "camping lunch box");
+
+    expect(result.exactProducts.map((product) => product.handle)).toEqual(["insulated-bento-lunch-box-camping-meal-container"]);
+    expect(result.predictedProducts.map((product) => product.handle)).toContain("insulated-bento-lunch-box-camping-meal-container");
+  });
+
   it("keeps exact matches first and does not duplicate them in predictive results", () => {
     const products = [
       makeProduct({
@@ -213,7 +235,7 @@ describe("buildSearchIntelligence", () => {
         title: "Skin Lightening Serum",
         handle: "skin-lightening-serum",
         productType: "Beauty",
-        tags: ["skincare"],
+        tags: ["skincare", "lighting"],
         collectionSignal: "Beauty & Wellness",
       }),
       makeProduct({
@@ -221,7 +243,7 @@ describe("buildSearchIntelligence", () => {
         title: "Imagic Highlighting Blush Brush",
         handle: "imagic-highlighting-blush-brush",
         productType: "Beauty",
-        tags: ["makeup", "highlighting"],
+        tags: ["makeup", "highlighting", "lighting"],
         collectionSignal: "Beauty & Wellness",
       }),
       makeProduct({
@@ -229,7 +251,7 @@ describe("buildSearchIntelligence", () => {
         title: "Essager 20W Charger Fast Charging Type C Lightning Charger Set",
         handle: "essager-20w-charger-fast-charging-type-c-lightning-charger-set",
         productType: "Electronics",
-        tags: ["charger", "usb-c"],
+        tags: ["charger", "usb-c", "lighting"],
         collectionSignal: "Electronics & Accessories",
       }),
       makeProduct({
@@ -237,7 +259,7 @@ describe("buildSearchIntelligence", () => {
         title: "In-ear Light Wireless Headphones Low Latency Earbuds",
         handle: "in-ear-light-wireless-headphones-low-latency-earbuds",
         productType: "Electronics",
-        tags: ["wireless", "headphones", "earbuds"],
+        tags: ["wireless", "headphones", "earbuds", "lighting"],
         collectionSignal: "Electronics & Accessories",
       }),
     ];

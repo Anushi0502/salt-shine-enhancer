@@ -334,22 +334,6 @@ function variantPlanMatches(left, right) {
   );
 }
 
-function buildReleasePlannedVariants(productPlan, currentVariants) {
-  const plannedVariants = Array.isArray(productPlan?.variantUpdates) ? productPlan.variantUpdates : [];
-  return currentVariants.map((current) => {
-    const planned = plannedVariants.find((candidate) => variantPlanMatches(current, candidate));
-    if (!planned) {
-      return current;
-    }
-
-    return {
-      ...current,
-      price: planned.price || current.price,
-      compareAtPrice: planned.compareAtPrice || current.compareAtPrice,
-    };
-  });
-}
-
 export async function buildShopifySeoReleasePlan(snapshot) {
   const rows = buildCatalogRowsFromSnapshot(snapshot);
   const catalogContext = createSeoCatalogContext({
@@ -364,7 +348,10 @@ export async function buildShopifySeoReleasePlan(snapshot) {
 
   const products = basePlan.products.map((productPlan) => {
     const currentVariantUpdates = buildReleaseDesiredVariants(productPlan);
-    const desiredVariantUpdates = buildReleasePlannedVariants(productPlan, currentVariantUpdates);
+    // Shopify is the sole price authority. SEO can read every variant to
+    // understand quality, size, color, or bundle tiers, but it must never
+    // normalize their independent prices or compare-at prices.
+    const desiredVariantUpdates = currentVariantUpdates.map((variant) => ({ ...variant }));
     return {
       ...productPlan,
       desiredProductInput: buildReleaseDesiredProductInput(productPlan),
@@ -627,52 +614,20 @@ function buildProductDiff(liveProduct, productPlan) {
 }
 
 function buildVariantDiff(liveProduct, productPlan, changedFields, skippedFields) {
-  const inputs = [];
-  const unresolved = [];
-  const liveVariants = Array.isArray(liveProduct?.variants?.nodes)
-    ? liveProduct.variants.nodes
-    : Array.isArray(liveProduct?.variants)
-      ? liveProduct.variants
-      : [];
+  const protectedVariants = Array.isArray(productPlan?.desiredVariantUpdates)
+    ? productPlan.desiredVariantUpdates
+    : [];
 
-  for (const desired of productPlan?.desiredVariantUpdates || []) {
-    const resolution = resolveLiveVariant(liveVariants, desired);
-    if (!resolution.match?.id) {
-      unresolved.push({
-        kind: "variant",
-        reason: resolution.error || "not-found",
-        variantId: desired.variantId || "",
-        sku: desired.sku || "",
-        label: desired.label || "",
-      });
-      continue;
-    }
-
-    const input = { id: resolution.match.id };
-    const desiredPrice = normalizeComparableMoney(desired.price);
-    const livePrice = normalizeComparableMoney(resolution.match.price);
-    if (desiredPrice && desiredPrice !== livePrice) {
-      input.price = desiredPrice;
-      changedFields.push(`variant:${resolution.match.id}:price`);
-    } else {
-      skippedFields.push({ field: `variant:${resolution.match.id}:price`, reason: "already aligned" });
-    }
-
-    const desiredCompareAt = normalizeComparableMoney(desired.compareAtPrice);
-    const liveCompareAt = normalizeComparableMoney(resolution.match.compareAtPrice);
-    if (desiredCompareAt !== liveCompareAt) {
-      input.compareAtPrice = desiredCompareAt || null;
-      changedFields.push(`variant:${resolution.match.id}:compare-at`);
-    } else {
-      skippedFields.push({ field: `variant:${resolution.match.id}:compare-at`, reason: "already aligned" });
-    }
-
-    if (Object.keys(input).length > 1) {
-      inputs.push(input);
-    }
+  if (protectedVariants.length) {
+    skippedFields.push({
+      field: "variant-pricing",
+      reason: "Shopify-authoritative; SEO preserves each variant price and compare-at price",
+    });
   }
 
-  return { inputs, unresolved };
+  // There is intentionally no variant mutation path in an SEO release. This
+  // prevents source-plan drift from overwriting different quality-tier prices.
+  return { inputs: [], unresolved: [] };
 }
 
 function buildMediaDiff(liveProduct, productPlan, changedFields, skippedFields) {

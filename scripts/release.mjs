@@ -63,7 +63,10 @@ async function ensurePathExists(path, label) {
   }
 }
 
-export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
+export function buildReleaseSteps({
+  rootDir: releaseRootDir = rootDir,
+  includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
+} = {}) {
   const iosDir = resolve(releaseRootDir, "salt-store-ios");
   const androidDir = resolve(releaseRootDir, "salt-store-android");
   const capacitorCliBin = resolve(releaseRootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor");
@@ -71,15 +74,71 @@ export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
 
   return [
     {
-      label: "Ensure Shopify product metafield definitions",
-      command: npmBin,
-      args: ["run", "shopify:product-metafields:ensure"],
+      label: "Verify approved catalog taxonomy release",
+      command: nodeBin,
+      args: ["scripts/catalog-taxonomy-approval.mjs"],
       cwd: releaseRootDir,
     },
     {
       label: "Refresh Shopify data",
       command: npmBin,
       args: ["run", "sync:data"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Read live Shopify tag inventory",
+      command: npmBin,
+      args: ["run", "catalog:tags:fetch"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Regenerate catalog taxonomy and preserved-tag audit",
+      command: npmBin,
+      args: ["run", "catalog:taxonomy:audit"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Validate refreshed catalog taxonomy",
+      command: npmBin,
+      args: ["run", "catalog:taxonomy:validate"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Build visual taxonomy review queue",
+      command: npmBin,
+      args: ["run", "catalog:image-review:build"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Require image-backed taxonomy evidence",
+      command: npmBin,
+      args: ["run", "catalog:image-review:validate"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Rework low Shopify prices with the approved campaign cost",
+      command: npmBin,
+      args: ["run", "shopify:price-rework:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify every live Shopify price and compare-at target",
+      command: npmBin,
+      args: [
+        "run",
+        "shopify:price-rework:verify",
+        "--",
+        "--verify-manifest",
+        "output/shopify-price-rework-manifest.json",
+        "--output",
+        "output/shopify-price-rework-verification-manifest.json",
+      ],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Ensure Shopify product metafield definitions",
+      command: npmBin,
+      args: ["run", "shopify:product-metafields:ensure"],
       cwd: releaseRootDir,
     },
     {
@@ -95,13 +154,31 @@ export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
       cwd: releaseRootDir,
     },
     {
-      label: "Apply Shopify merchandising metafield backfill",
+      label: "Delete verified active zero-image products",
+      command: npmBin,
+      args: ["run", "shopify:products:zero-images:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Publish every active product to all sales channels",
+      command: npmBin,
+      args: ["run", "shopify:publications:all:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Refresh Shopify data after final product publication",
+      command: npmBin,
+      args: ["run", "sync:data"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply Shopify merchandising metafield backfill after catalog boundary changes",
       command: npmBin,
       args: ["run", "shopify:product-metafields:backfill:apply"],
       cwd: releaseRootDir,
     },
     {
-      label: "Refresh Shopify data after backfill",
+      label: "Refresh Shopify data after merchandising backfill",
       command: npmBin,
       args: ["run", "sync:data"],
       cwd: releaseRootDir,
@@ -110,6 +187,12 @@ export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
       label: "Verify Shopify merchandising backfill",
       command: npmBin,
       args: ["run", "shopify:merchandising:verify"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Validate final catalog taxonomy snapshot",
+      command: npmBin,
+      args: ["run", "catalog:taxonomy:validate"],
       cwd: releaseRootDir,
     },
     {
@@ -124,18 +207,20 @@ export function buildReleaseSteps({ rootDir: releaseRootDir = rootDir } = {}) {
       args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
       cwd: releaseRootDir,
     },
-    {
-      label: "Sync iOS Capacitor shell",
-      command: nodeBin,
-      args: [capacitorCliBin, "sync", "ios"],
-      cwd: iosDir,
-    },
-    {
-      label: "Sync Android Capacitor shell",
-      command: nodeBin,
-      args: [capacitorCliBin, "sync", "android"],
-      cwd: androidDir,
-    },
+    ...(includeMobile ? [
+      {
+        label: "Sync iOS Capacitor shell",
+        command: nodeBin,
+        args: [capacitorCliBin, "sync", "ios"],
+        cwd: iosDir,
+      },
+      {
+        label: "Sync Android Capacitor shell",
+        command: nodeBin,
+        args: [capacitorCliBin, "sync", "android"],
+        cwd: androidDir,
+      },
+    ] : []),
   ];
 }
 
@@ -154,6 +239,7 @@ async function main() {
   process.stdout.write(`  vite: ${viteVersion}\n`);
   process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
   process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
+  process.stdout.write(`  mobile-sync: ${process.env.SALT_RELEASE_SKIP_MOBILE === "1" ? "skipped" : "included"}\n`);
 
   const steps = buildReleaseSteps({ rootDir });
 
