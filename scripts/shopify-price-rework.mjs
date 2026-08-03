@@ -8,11 +8,16 @@ import {
   createShopifyAdminGraphQLClient,
   normalizeText,
 } from "./shopify-admin-graphql-client.mjs";
+import {
+  PRICE_REWORK_RULES,
+  PRICE_REWORK_STRATEGY_ID,
+  priceMultiplierFor,
+  scalePrice,
+} from "../src/lib/shopify-price-rework-policy.js";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const defaultOutputPath = resolve(rootDir, "output", "shopify-price-rework-manifest.json");
-const defaultThreshold = 35;
-const defaultCampaignCost = 16;
+const defaultThreshold = PRICE_REWORK_RULES.threshold;
 const pageSize = 250;
 const batchProductSize = Math.max(1, Math.min(25, Number(process.env.SALT_PRICE_REWORK_BATCH_SIZE || 10)));
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "price-rework" });
@@ -117,7 +122,6 @@ function parseArgs(argv) {
   const args = {
     mode: "dry-run",
     threshold: defaultThreshold,
-    campaignCost: defaultCampaignCost,
     output: defaultOutputPath,
     outputExplicit: false,
     verifyManifest: "",
@@ -134,9 +138,6 @@ function parseArgs(argv) {
       args.mode = "verify";
     } else if (token === "--threshold" && next) {
       args.threshold = Number(next);
-      index += 1;
-    } else if (token === "--campaign-cost" && next) {
-      args.campaignCost = Number(next);
       index += 1;
     } else if (token === "--output" && next) {
       args.output = resolve(rootDir, next);
@@ -158,9 +159,6 @@ function parseArgs(argv) {
   if (!Number.isFinite(args.threshold) || args.threshold <= 0) {
     throw new Error("Price rework threshold must be a positive number.");
   }
-  if (!Number.isFinite(args.campaignCost) || args.campaignCost <= 0) {
-    throw new Error("Price rework campaign cost must be a positive number.");
-  }
   return args;
 }
 
@@ -170,17 +168,10 @@ function normalizeMoney(value) {
   return Number.isFinite(amount) ? amount.toFixed(2) : null;
 }
 
-function addMoney(left, right) {
-  return (Math.round((Number(left) + Number(right)) * 100) / 100).toFixed(2);
-}
-
-function unique(array) {
-  return [...new Set(array.filter(Boolean))];
-}
-
 async function loadPriorLedger(outputPath) {
   try {
     const parsed = JSON.parse(await readFile(outputPath, "utf8"));
+    if (parsed?.strategyId !== PRICE_REWORK_STRATEGY_ID) return new Map();
     const ledger = new Map();
     for (const product of asArray(parsed?.products)) {
       for (const variant of asArray(product?.variants)) {
@@ -256,6 +247,8 @@ function buildPlan(products, args, priorLedger) {
     variantsAlreadyReworked: 0,
     invalidPriceVariants: 0,
     variantsAtOrAboveThreshold: 0,
+    variantsUnderTwenty: 0,
+    variantsTwentyToThirtyFive: 0,
   };
 
   for (const product of products) {
@@ -274,8 +267,11 @@ function buildPlan(products, args, priorLedger) {
         continue;
       }
       summary.eligibleVariants += 1;
-      const plannedPrice = addMoney(currentPrice, args.campaignCost);
-      const plannedCompareAtPrice = compareAtPrice ? addMoney(compareAtPrice, args.campaignCost) : null;
+      const multiplier = priceMultiplierFor(Number(currentPrice));
+      if (Number(currentPrice) < PRICE_REWORK_RULES.lowPriceCeiling) summary.variantsUnderTwenty += 1;
+      else summary.variantsTwentyToThirtyFive += 1;
+      const plannedPrice = scalePrice(currentPrice, multiplier);
+      const plannedCompareAtPrice = compareAtPrice ? scalePrice(compareAtPrice, multiplier) : null;
       const prior = priorLedger.get(String(variant?.id || ""));
       if (prior?.price === currentPrice && (prior?.compareAtPrice || null) === (compareAtPrice || null)) {
         summary.variantsAlreadyReworked += 1;
@@ -286,6 +282,7 @@ function buildPlan(products, args, priorLedger) {
         title: normalizeText(variant?.title),
         sku: normalizeText(variant?.sku),
         currentPrice,
+        multiplier: Number(multiplier.toFixed(6)),
         plannedPrice,
         currentCompareAtPrice: compareAtPrice,
         plannedCompareAtPrice,
@@ -494,6 +491,10 @@ async function loadVerificationTargets(manifestPath) {
     throw new Error(`Unable to read price rework verification manifest ${manifestPath}: ${normalizeText(error?.message || error)}`);
   }
 
+  if (parsed?.strategyId !== PRICE_REWORK_STRATEGY_ID) {
+    throw new Error(`Price rework manifest ${manifestPath} does not use strategy ${PRICE_REWORK_STRATEGY_ID}.`);
+  }
+
   const products = [];
   for (const product of asArray(parsed?.products)) {
     const variants = asArray(product?.variants)
@@ -603,6 +604,7 @@ async function verifyTargets(products, manifestPath, outputPath) {
     startedAt: new Date().toISOString(),
     completedAt: new Date().toISOString(),
     mode: "verify",
+    strategyId: PRICE_REWORK_STRATEGY_ID,
     output: outputPath,
     source: {
       store: client.storeDomain,
@@ -646,6 +648,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     completedAt: "",
     mode: args.mode,
+    strategyId: PRICE_REWORK_STRATEGY_ID,
     output: args.output,
     source: {
       store: client.storeDomain,
@@ -653,16 +656,18 @@ async function main() {
       freshLiveRead: true,
     },
     policy: {
-      scope: "all Shopify products and variants with current price below the threshold",
-      formula: `new price = current price + ${args.campaignCost.toFixed(2)} campaign cost when current price < ${args.threshold.toFixed(2)}`,
-      compareAtPrices: "existing compare-at prices receive the same campaign-cost adjustment; absent values remain absent",
+      scope: "all Shopify products and variants with current price below $35",
+      formula: "price < $20: linearly scale from 2.00x toward 1.80x; $20 <= price < $35: linearly scale from 1.70x toward 1.40x; price >= $35 unchanged",
+      compareAtPrices: "existing compare-at prices receive the same variant multiplier; absent values remain absent",
       variantPricing: "variant-specific prices are preserved; no product-level flattening",
       statusAndChannels: "product status and sales-channel inclusion are unchanged",
-      idempotency: "previously verified variant targets are not compounded when the ledger still matches the current price",
+      idempotency: "only manifests produced by this strategy can resume; previously verified targets are not compounded",
     },
     parameters: {
       threshold: args.threshold,
-      campaignCost: args.campaignCost,
+      lowPriceCeiling: PRICE_REWORK_RULES.lowPriceCeiling,
+      underTwentyMultiplierRange: PRICE_REWORK_RULES.underTwenty,
+      twentyToThirtyFiveMultiplierRange: PRICE_REWORK_RULES.twentyToThirtyFive,
     },
     summary: {
       ...summary,

@@ -985,7 +985,9 @@ async function fetchProductVariantPricingMap() {
   let page = 0;
 
   while (true) {
-    const payload = await runShopifyStoreGraphQL(PRODUCT_VARIANT_PRICING_QUERY, { after });
+    const payload = adminAccessToken
+      ? await fetchAdminGraphQL(PRODUCT_VARIANT_PRICING_QUERY, { after })
+      : await runShopifyStoreGraphQL(PRODUCT_VARIANT_PRICING_QUERY, { after });
     const connection = payload?.productVariants;
     if (!connection) {
       throw new Error("Shopify Admin pricing query returned no productVariants connection");
@@ -1510,11 +1512,32 @@ async function mergeAdminProductsWithStorefrontFeed(adminProducts) {
     }
 
     if (boundarySource === "cached") {
+      const adminVariantsById = new Map(
+        (Array.isArray(adminProduct.variants) ? adminProduct.variants : [])
+          .map((variant) => [String(variant?.id || variant?.legacyResourceId || ""), variant])
+          .filter(([variantId]) => variantId),
+      );
+      const variants = storefrontProduct.variants?.length
+        ? storefrontProduct.variants.map((storefrontVariant) => {
+            const adminVariant = adminVariantsById.get(String(storefrontVariant?.id || storefrontVariant?.legacyResourceId || ""));
+            if (!adminVariant) {
+              return storefrontVariant;
+            }
+
+            return {
+              ...storefrontVariant,
+              price: adminVariant.price ?? storefrontVariant.price,
+              compare_at_price: adminVariant.compare_at_price ?? storefrontVariant.compare_at_price ?? null,
+            };
+          })
+        : adminProduct.variants;
+
       return {
         ...storefrontProduct,
         ...adminProduct,
-        // Cached data only supplies channel membership and the complete public variant set.
-        variants: storefrontProduct.variants?.length ? storefrontProduct.variants : adminProduct.variants,
+        // Cached data supplies channel membership and the complete public variant set;
+        // fresh Admin data supplies current variant pricing.
+        variants,
       };
     }
 
@@ -1619,7 +1642,7 @@ async function fetchProductsForSync() {
         products = await mergeAdminProductsWithStorefrontFeed(products);
       }
 
-      if (useCliAdminPricing && !adminAccessToken) {
+      if (adminAccessToken || useCliAdminPricing) {
         const pricingMap = await fetchProductVariantPricingMap();
         products = applyAdminVariantPricing(products, pricingMap);
       }
