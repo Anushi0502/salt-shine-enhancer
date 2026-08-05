@@ -52,6 +52,8 @@
     "catalog:taxonomy:scale-check": "node scripts/catalog-taxonomy-scale-check.mjs",
     "shopify:collections:dry-run": "node scripts/shopify-catalog-collections-apply.mjs --dry-run",
     "shopify:collections:apply": "node scripts/shopify-catalog-collections-apply.mjs --apply",
+    "shopify:collections:tags:new-products:dry-run": "node scripts/shopify-catalog-collections-apply.mjs --dry-run --tags-only",
+    "shopify:collections:tags:new-products:apply": "node scripts/shopify-catalog-collections-apply.mjs --apply --tags-only",
     "shopify:collection-merges:dry-run": "node scripts/shopify-collection-merges-apply.mjs --dry-run",
     "shopify:collection-merges:apply": "node scripts/shopify-collection-merges-apply.mjs --apply",
     "shopify:collection-artwork:dry-run": "node scripts/shopify-collection-artwork-apply.mjs --dry-run",

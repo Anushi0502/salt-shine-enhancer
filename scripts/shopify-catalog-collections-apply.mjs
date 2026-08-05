@@ -26,6 +26,7 @@ const inputDir = resolve(rootDir, "public", "data");
 const defaultOutputPath = resolve(rootDir, "output", "catalog-collection-release-manifest.json");
 const approvalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
 const batchSize = Math.max(1, Math.min(25, Number(process.env.SALT_CATALOG_COLLECTION_BATCH_SIZE || 20)));
+const tagConcurrency = Math.max(1, Number(process.env.SALT_COLLECTION_TAG_CONCURRENCY || 1) || 1);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "catalog-collection-release" });
 
 const ACTIVE_PRODUCTS_QUERY = /* GraphQL */ `
@@ -226,7 +227,15 @@ function asArray(value) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: "dry-run", output: defaultOutputPath };
+  const args = {
+    mode: "dry-run",
+    output: defaultOutputPath,
+    inputDir,
+    catalogFile: "",
+    productHandlesFile: "",
+    reviewOverridesFile: "",
+    tagsOnly: false,
+  };
 
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
@@ -241,10 +250,81 @@ function parseArgs(argv) {
     if (token === "--output") {
       args.output = resolve(rootDir, argv[index + 1] || args.output);
       index += 1;
+      continue;
+    }
+    if (token === "--input-dir") {
+      args.inputDir = resolve(rootDir, argv[index + 1] || args.inputDir);
+      index += 1;
+      continue;
+    }
+    if (token === "--catalog-file") {
+      args.catalogFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
+      continue;
+    }
+    if (token === "--product-handles-file") {
+      args.productHandlesFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
+      continue;
+    }
+    if (token === "--review-overrides-file") {
+      args.reviewOverridesFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
+      continue;
+    }
+    if (token === "--tags-only") {
+      args.tagsOnly = true;
     }
   }
 
   return args;
+}
+
+async function readProductHandles(filePath) {
+  if (!filePath) return null;
+  const parsed = JSON.parse(await readFile(filePath, "utf8"));
+  const handles = Array.isArray(parsed) ? parsed : parsed?.handles;
+  if (!Array.isArray(handles) || !handles.length) {
+    throw new Error(`Product handles file contains no handles: ${filePath}`);
+  }
+  return new Set(handles.map((handle) => normalizeHandle(handle)).filter(Boolean));
+}
+
+async function readCatalogPayload(args) {
+  if (!args.catalogFile) return readProductCatalogPayload(args.inputDir);
+  const payload = JSON.parse(await readFile(args.catalogFile, "utf8"));
+  if (!Array.isArray(payload?.products) || !payload.products.length) {
+    throw new Error(`Catalog file contains no products: ${args.catalogFile}`);
+  }
+  return payload;
+}
+
+async function readReviewOverrides(filePath) {
+  if (!filePath) return new Map();
+  const payload = JSON.parse(await readFile(filePath, "utf8"));
+  const entries = Array.isArray(payload) ? payload : payload?.overrides;
+  if (!Array.isArray(entries) || !entries.length) {
+    throw new Error(`Review overrides file contains no overrides: ${filePath}`);
+  }
+
+  const overrides = new Map();
+  for (const entry of entries) {
+    const handle = normalizeHandle(entry?.handle);
+    const tags = asArray(entry?.tags).map(normalizeCollectionPlanText).filter(Boolean);
+    if (!handle || !tags.length) {
+      throw new Error(`Review override must include a handle and at least one tag: ${JSON.stringify(entry)}`);
+    }
+    if (overrides.has(handle)) {
+      throw new Error(`Duplicate review override handle: ${handle}`);
+    }
+    overrides.set(handle, {
+      handle,
+      tags,
+      rationale: normalizeCollectionPlanText(entry?.rationale),
+      reviewId: normalizeCollectionPlanText(entry?.reviewId),
+    });
+  }
+  return overrides;
 }
 
 function formatUserErrors(errors) {
@@ -397,7 +477,7 @@ function mergeProductForClassification(localProduct, liveProduct) {
   };
 }
 
-function buildCollectionTagPlan(catalog, liveProducts) {
+function buildCollectionTagPlan(catalog, liveProducts, reviewOverrides = new Map()) {
   const localByHandle = new Map(
     asArray(catalog?.products)
       .map((product) => [normalizeHandle(product?.handle), product])
@@ -406,6 +486,7 @@ function buildCollectionTagPlan(catalog, liveProducts) {
   const controlledTags = new Set(CATALOG_COLLECTION_RULE_TAGS.map(normalizeCollectionPlanTag));
   const tasks = [];
   const heldForReview = [];
+  const reviewedProducts = [];
   const excludedFromOnlineStore = [];
   const nonOnlineManagedTagProducts = [];
 
@@ -429,7 +510,19 @@ function buildCollectionTagPlan(catalog, liveProducts) {
       continue;
     }
 
-    const knowledge = classifyProductKnowledge(product);
+    const baseKnowledge = classifyProductKnowledge(product);
+    const reviewOverride = reviewOverrides.get(normalizeHandle(liveProduct.handle));
+    const knowledge = reviewOverride
+      ? {
+        ...baseKnowledge,
+        classificationRule: `manual-review:${reviewOverride.reviewId || "approved-override"}`,
+        confidence: "manual-reviewed",
+        proposedTags: reviewOverride.tags,
+        reviewRequired: false,
+        reviewReasons: [],
+        seoEligible: true,
+      }
+      : baseKnowledge;
     const proposedTags = asArray(knowledge.proposedTags)
       .map(normalizeCollectionPlanText)
       .filter((tag) => controlledTags.has(normalizeCollectionPlanTag(tag)));
@@ -442,6 +535,15 @@ function buildCollectionTagPlan(catalog, liveProducts) {
         reviewReasons: asArray(knowledge.reviewReasons),
       });
       continue;
+    }
+
+    if (reviewOverride) {
+      reviewedProducts.push({
+        id: liveProduct.id,
+        handle: liveProduct.handle,
+        rationale: reviewOverride.rationale,
+        tags: proposedTags,
+      });
     }
 
     const tagsToAdd = buildManagedTagAdditions(liveProduct.tags, proposedTags);
@@ -460,12 +562,16 @@ function buildCollectionTagPlan(catalog, liveProducts) {
         categoryId: knowledge.categoryId,
         subcategoryId: knowledge.subcategoryId,
       },
+      classificationReview: reviewOverride
+        ? { rationale: reviewOverride.rationale, reviewId: reviewOverride.reviewId }
+        : null,
     });
   }
 
   return {
     tasks,
     heldForReview,
+    reviewedProducts,
     excludedFromOnlineStore,
     nonOnlineManagedTagProducts,
     summary: {
@@ -477,6 +583,7 @@ function buildCollectionTagPlan(catalog, liveProducts) {
       productsNeedingTags: tasks.filter((task) => task.tagsToAdd.length).length,
       tagsToAdd: tasks.reduce((total, task) => total + task.tagsToAdd.length, 0),
       nonOnlineManagedTagProducts: nonOnlineManagedTagProducts.length,
+      reviewedProducts: reviewedProducts.length,
     },
   };
 }
@@ -520,11 +627,11 @@ function resolveCollectionTargets(collections) {
   });
 }
 
-function buildManifest({ mode, collections, tagPlan, publications, approvalId = null }) {
+function buildManifest({ mode, collections, tagPlan, publications, approvalId = null, tagsOnly = false, scope = "full active catalog", reviewOverridesFile = "" }) {
   const onlineStorePublication = asArray(publications).find(
     (publication) => normalizeHandle(publication.name) === "online store",
   );
-  const collectionTargets = resolveCollectionTargets(collections);
+  const collectionTargets = tagsOnly ? [] : resolveCollectionTargets(collections);
   const actionCounts = collectionTargets.reduce((counts, target) => {
     counts[target.action] = (counts[target.action] || 0) + 1;
     return counts;
@@ -544,17 +651,21 @@ function buildManifest({ mode, collections, tagPlan, publications, approvalId = 
       collectionPublication: "publish canonical collections to Online Store only",
       legacyMergesOrArchives: "not approved and not performed",
       pricesVariantsMetafieldsSeo: "no mutation",
+      scope,
+      tagsOnly,
+      reviewOverridesFile: reviewOverridesFile || null,
     },
     onlineStorePublication,
     summary: {
       liveCollections: asArray(collections).length,
-      canonicalCollections: CATALOG_COLLECTION_PLAN.length,
+      canonicalCollections: tagsOnly ? 0 : CATALOG_COLLECTION_PLAN.length,
       collectionActions: actionCounts,
       ...tagPlan.summary,
     },
     tagPlan: {
       tasks: tagPlan.tasks,
       heldForReview: tagPlan.heldForReview,
+      reviewedProducts: tagPlan.reviewedProducts,
       excludedFromOnlineStore: tagPlan.excludedFromOnlineStore,
       nonOnlineManagedTagProducts: tagPlan.nonOnlineManagedTagProducts,
     },
@@ -565,9 +676,11 @@ function buildManifest({ mode, collections, tagPlan, publications, approvalId = 
 }
 
 async function applyTagBatch(tasks) {
-  for (let index = 0; index < tasks.length; index += batchSize) {
-    const batch = tasks.slice(index, index + batchSize);
-    for (const task of batch) {
+  let nextIndex = 0;
+  const applyWorker = async () => {
+    while (nextIndex < tasks.length) {
+      const task = tasks[nextIndex];
+      nextIndex += 1;
       const data = await client.run(TAGS_ADD_MUTATION, {
         id: task.productId,
         tags: task.tagsToAdd,
@@ -579,7 +692,11 @@ async function applyTagBatch(tasks) {
       if (errors.length) throw new Error(`${task.handle}: ${formatUserErrors(errors)}`);
       task.status = "tags-added";
     }
-  }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(tagConcurrency, tasks.length) }, () => applyWorker()),
+  );
 }
 
 async function verifyTagReadback(tasks) {
@@ -735,18 +852,26 @@ async function verifyCollectionReadback(targets) {
   return collections;
 }
 
-async function runRelease({ mode, output }) {
+async function runRelease({ mode, output, inputDir: releaseInputDir, catalogFile, productHandlesFile, reviewOverridesFile, tagsOnly }) {
   const approvalId = mode === "apply" ? await verifyCollectionApproval() : null;
+  const productHandles = await readProductHandles(productHandlesFile);
+  const reviewOverrides = await readReviewOverrides(reviewOverridesFile);
   const [catalog, liveProducts, collections, publications] = await Promise.all([
-    readProductCatalogPayload(inputDir),
+    readCatalogPayload({ inputDir: releaseInputDir, catalogFile }),
     fetchActiveProducts(),
-    fetchCollections(),
-    fetchPublications(),
+    tagsOnly ? Promise.resolve([]) : fetchCollections(),
+    tagsOnly ? Promise.resolve([]) : fetchPublications(),
   ]);
-  const tagPlan = buildCollectionTagPlan(catalog, liveProducts);
-  const manifest = buildManifest({ mode, collections, tagPlan, publications, approvalId });
+  const scopedLiveProducts = productHandles
+    ? liveProducts.filter((product) => productHandles.has(normalizeHandle(product.handle)))
+    : liveProducts;
+  const scope = productHandlesFile
+    ? `active products in supplied cohort only; ${scopedLiveProducts.length} live products selected`
+    : "full active catalog";
+  const tagPlan = buildCollectionTagPlan(catalog, scopedLiveProducts, reviewOverrides);
+  const manifest = buildManifest({ mode, collections, tagPlan, publications, approvalId, tagsOnly, scope, reviewOverridesFile });
 
-  if (!manifest.onlineStorePublication?.id) {
+  if (!tagsOnly && !manifest.onlineStorePublication?.id) {
     throw new Error("Shopify publication named Online Store was not found.");
   }
   if (tagPlan.nonOnlineManagedTagProducts.length) {
@@ -760,6 +885,13 @@ async function runRelease({ mode, output }) {
       target.status = target.action === "exact-match" ? "exact-match" : `would-${target.action}`;
     }
     await writeManifest(output, manifest);
+    if (tagsOnly) {
+      process.stdout.write(
+        `Collection tag dry run complete: ${manifest.summary.productsNeedingTags} products need ` +
+        `${manifest.summary.tagsToAdd} controlled tag additions; no collection definitions will be changed.\n`,
+      );
+      return manifest;
+    }
     process.stdout.write(
       `Collection dry run complete: ${manifest.summary.canonicalCollections} canonical collections, ` +
       `${manifest.summary.productsNeedingTags} products need ${manifest.summary.tagsToAdd} controlled tag additions, ` +
@@ -773,6 +905,17 @@ async function runRelease({ mode, output }) {
     await applyTagBatch(actionableTagTasks);
     await verifyTagReadback(actionableTagTasks);
     await writeManifest(output, manifest);
+  }
+
+  if (tagsOnly) {
+    manifest.completedAt = new Date().toISOString();
+    manifest.summary.failed = 0;
+    await writeManifest(output, manifest);
+    process.stdout.write(
+      `Collection tag apply complete: ${manifest.summary.productsNeedingTags} products received ` +
+      `${manifest.summary.tagsToAdd} controlled tag additions and passed live readback.\n`,
+    );
+    return manifest;
   }
 
   for (const target of manifest.collectionTargets) {
