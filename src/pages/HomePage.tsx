@@ -12,7 +12,6 @@ import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
-import { useProducts } from "@/lib/shopify-data";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroEverydayEssentials from "@/assets/hero-everyday-essentials-square.png";
 import heroPortableGadgets from "@/assets/hero-portable-gadgets-square.png";
@@ -43,6 +42,7 @@ type ReviewTile = {
 };
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
+const REVIEW_DISPLAY_LIMIT = 500;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -242,7 +242,6 @@ const HomePage = () => {
   const { data: collectionsPayload } = useCollections();
   const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
   const { data: homeCollectionProductsPayload } = useHomeCollectionProducts();
-  const { data: productsPayload } = useProducts();
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const bestSellerCollection = useMemo(
@@ -321,85 +320,34 @@ const HomePage = () => {
               to: `/products/${product.handle}`,
             })),
           }))
-        : [],
+      : [],
     [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   const reviewScrollPositionRef = useRef(0);
-  const reviewCatalogProducts = useMemo(() => {
-    const catalogProducts = productsPayload?.products || [];
-
-    return catalogProducts
-      .filter((product) => Number(product.total_reviews || 0) > 0)
-      .sort((left, right) => {
-        const reviewDelta = Number(right.total_reviews || 0) - Number(left.total_reviews || 0);
-        if (reviewDelta !== 0) {
-          return reviewDelta;
-        }
-
-        const ratingDelta = Number(right.average_rating || 0) - Number(left.average_rating || 0);
-        if (ratingDelta !== 0) {
-          return ratingDelta;
-        }
-
-        return new Date(String(right.updated_at || "")).getTime() - new Date(String(left.updated_at || "")).getTime();
-      })
-      .slice(0, 500);
-  }, [productsPayload]);
-  const reviewSourceProducts = useMemo(() => {
-    if (!productsPayload?.products?.length) {
-      return [];
-    }
-
-    const products = [
-      ...(homeCollectionProductsPayload?.sections.everydayEssentials.products || []),
-      ...(homeCollectionProductsPayload?.sections.womensBeautyEssentials.products || []),
-      ...(homeCollectionProductsPayload?.sections.portableGadgets.products || []),
-      ...(homeCollectionProductsPayload?.sections.travelOutdoor.products || []),
-      ...(homeFeaturedProductsPayload?.bestSellerProducts || []),
-      ...(homeFeaturedProductsPayload?.quirkyGiftPicks || []),
-      ...(homeFeaturedProductsPayload?.everydayEssentialProducts || []),
-      ...reviewCatalogProducts,
-    ];
-
-    return products.filter(
-      (product, index, array) => array.findIndex((candidate) => candidate.id === product.id) === index,
-    );
-  }, [homeCollectionProductsPayload, homeFeaturedProductsPayload, productsPayload, reviewCatalogProducts]);
-  const reviewProductTitles = useMemo(
-    () => new Map(reviewSourceProducts.map((product) => [product.id, product.title] as const)),
-    [reviewSourceProducts],
-  );
-  const reviewProductIds = useMemo(
-    () => reviewSourceProducts.map((product) => product.id),
-    [reviewSourceProducts],
-  );
-  const reviewFetchLimit = 500;
-  const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } = useJudgeMeTestimonials(
-    reviewProductIds,
-    reviewFetchLimit,
-  );
+  const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } = useJudgeMeTestimonials();
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     if (judgeMeTestimonials.length > 0) {
       return judgeMeTestimonials
+        .slice(0, REVIEW_DISPLAY_LIMIT)
         .map((review) => ({
           key: review.id,
           quote: polishPlainText(review.body || review.title),
           author: polishPlainText(review.author || "Verified shopper") || "Verified shopper",
           rating: Math.max(0, Math.min(5, review.rating || 0)),
           verifiedBuyer: review.verifiedBuyer,
-          sourceLabel: reviewProductTitles.get(review.productId) || "Featured SALT pick",
+          sourceLabel: polishPlainText(review.sourceLabel || "Judge.me review") || "Judge.me review",
         }))
         .filter((tile) => Boolean(tile.quote));
     }
 
-    if (judgeMeTestimonialsFetching || !reviewSourceProducts.length) {
+    if (judgeMeTestimonialsFetching) {
       return [];
     }
 
     return fallbackReviewTiles;
-  }, [judgeMeTestimonials, judgeMeTestimonialsFetching, reviewProductTitles, reviewSourceProducts.length]);
-  const reviewSectionLoading = !reviewSourceProducts.length || (judgeMeTestimonialsFetching && judgeMeTestimonials.length === 0);
+  }, [judgeMeTestimonials, judgeMeTestimonialsFetching]);
+  const reviewSectionLoading = judgeMeTestimonialsFetching && judgeMeTestimonials.length === 0;
   const reviewLoopCopies = useMemo(() => {
     if (reviewTiles.length >= 120) {
       return 1;
@@ -416,14 +364,17 @@ const HomePage = () => {
     return 4;
   }, [reviewTiles.length]);
   const reviewAverage = useMemo(() => {
-    if (!reviewTiles.length) {
+    const ratingSource = judgeMeTestimonials.length > 0 ? judgeMeTestimonials : reviewTiles;
+    if (!ratingSource.length) {
       return 0;
     }
 
-    return reviewTiles.reduce((sum, tile) => sum + tile.rating, 0) / reviewTiles.length;
-  }, [reviewTiles]);
+    return ratingSource.reduce((sum, review) => sum + review.rating, 0) / ratingSource.length;
+  }, [judgeMeTestimonials, reviewTiles]);
   const reviewHeaderStarCount = Math.max(0, Math.min(5, Math.floor(reviewAverage)));
-  const reviewCountLabel = reviewCountFormatter.format(reviewTiles.length);
+  const reviewCountLabel = reviewCountFormatter.format(
+    judgeMeTestimonials.length > 0 ? judgeMeTestimonials.length : reviewTiles.length,
+  );
   const reviewRatingLabel = formatReviewAverage(reviewAverage);
   const reviewTrackTiles = useMemo<ReviewTile[]>(() => {
     if (!reviewTiles.length) {
