@@ -46,6 +46,12 @@ function legacyProductId(product) {
   return gidMatch ? Number(gidMatch[1]) : null;
 }
 
+function isShopifyAuthFailure(error) {
+  return /Admin GraphQL HTTP (401|403)|invalid api key|access token|unauthori[sz]ed|access denied|No stored app authentication found|shopify store auth/i.test(
+    String(error?.message || error),
+  );
+}
+
 async function fetchLiveCollectionProducts(handle) {
   const productIds = [];
   const seen = new Set();
@@ -106,16 +112,45 @@ async function main() {
     collections: { ...(collectionProductsPayload.collections || {}) },
   };
   const summaries = [];
+  let liveMembershipAvailable = true;
+  let authFallbackLogged = false;
 
   for (const entry of CATALOG_COLLECTION_PLAN) {
-    const live = await fetchLiveCollectionProducts(entry.handle);
-    const visibleProductIds = live.productIds.filter((id) => catalogProductIds.has(id));
     const collectionIndex = nextCollections.findIndex((collection) => collection.handle === entry.handle);
     if (collectionIndex < 0) {
       throw new Error(`Local collections payload is missing canonical handle "${entry.handle}"`);
     }
 
     const currentMapping = nextCollectionProducts.collections[entry.handle] || {};
+    let live = null;
+    let source = "live";
+
+    if (liveMembershipAvailable) {
+      try {
+        live = await fetchLiveCollectionProducts(entry.handle);
+      } catch (error) {
+        if (!isShopifyAuthFailure(error)) throw error;
+        liveMembershipAvailable = false;
+        source = "cached";
+        if (!authFallbackLogged) {
+          process.stdout.write(
+            "Shopify Admin authentication is unavailable; retaining committed canonical collection memberships.\n",
+          );
+          authFallbackLogged = true;
+        }
+      }
+    } else {
+      source = "cached";
+    }
+
+    if (!live) {
+      live = {
+        title: String(currentMapping.title || entry.title).trim(),
+        productIds: Array.isArray(currentMapping.productIds) ? currentMapping.productIds : [],
+      };
+    }
+
+    const visibleProductIds = live.productIds.filter((id) => catalogProductIds.has(id));
     nextCollectionProducts.collections[entry.handle] = {
       ...currentMapping,
       title: live.title || currentMapping.title || entry.title,
@@ -128,6 +163,7 @@ async function main() {
 
     summaries.push({
       handle: entry.handle,
+      source,
       liveProductCount: live.productIds.length,
       onlineStoreProductCount: visibleProductIds.length,
       filteredOutOfCatalog: live.productIds.length - visibleProductIds.length,
