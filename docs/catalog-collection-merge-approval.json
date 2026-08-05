@@ -1,0 +1,30 @@
+{
+  "approvalId": "salt-collection-merges-2026-08-04-user-approved",
+  "approved": true,
+  "approvedAt": "2026-08-04T00:00:00.000Z",
+  "approvalSource": "User instruction: merge the six already marked for merge",
+  "scope": {
+    "sourceCollections": [
+      "caregiver-essentials",
+      "mobility-support",
+      "posture-support",
+      "camping-gear",
+      "holiday-gifts",
+      "viral-tiktok-products"
+    ],
+    "targetCollections": {
+      "caregiver-essentials": "health-wellness",
+      "mobility-support": "health-wellness",
+      "posture-support": "health-wellness",
+      "camping-gear": "travel-outdoor",
+      "holiday-gifts": "gifts",
+      "viral-tiktok-products": "unique-products"
+    },
+    "taxonomySafety": "Only products with matching controlled taxonomy evidence receive a canonical Health or Camping & Travel tag. Unrelated products are not forced into the target collection.",
+    "merchandisingSafety": "Gifts and Trending Finds retain source-driven merchandising membership by unioning their existing collection conditions.",
+    "sourceHandling": "Remove the six source collections from Online Store publication after target readback; preserve their Admin records for audit and recovery.",
+    "productPublications": "Do not mutate product sales-channel publications.",
+    "existingTags": "Preserve existing tags; only add missing controlled target tags where evidence supports them.",
+    "redirects": "Not attempted because the connected Admin credential cannot read URL redirects. Source collections remain preserved in Admin for a follow-up redirect pass with redirect scope."
+  }
+}

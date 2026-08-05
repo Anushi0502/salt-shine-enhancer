@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -91,7 +91,7 @@ function sleep(ms) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: "dry-run", output: defaultOutputPath, sample: 0 };
+  const args = { mode: "dry-run", output: defaultOutputPath, sample: 0, productHandlesFile: "" };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--apply") {
@@ -110,9 +110,24 @@ function parseArgs(argv) {
     if (token === "--sample") {
       args.sample = Math.max(0, Number(argv[index + 1] || 0) || 0);
       index += 1;
+      continue;
+    }
+    if (token === "--product-handles-file") {
+      args.productHandlesFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
     }
   }
   return args;
+}
+
+async function readProductHandles(filePath) {
+  if (!filePath) return null;
+  const parsed = JSON.parse(await readFile(filePath, "utf8"));
+  const handles = Array.isArray(parsed) ? parsed : parsed?.handles;
+  if (!Array.isArray(handles) || !handles.length) {
+    throw new Error(`Product handles file contains no handles: ${filePath}`);
+  }
+  return new Set(handles.map((handle) => normalizeText(handle).toLowerCase()).filter(Boolean));
 }
 
 function formatUserErrors(errors) {
@@ -232,8 +247,12 @@ async function main() {
   if (args.mode === "apply") await verifyApprovalForApply();
 
   const retryInfo = [];
+  const productHandles = await readProductHandles(args.productHandlesFile);
   const activeProducts = await fetchActiveProducts(retryInfo);
-  const candidates = activeProducts.filter((product) => imageNodes(product).length === 0);
+  const scopedProducts = productHandles
+    ? activeProducts.filter((product) => productHandles.has(normalizeText(product.handle).toLowerCase()))
+    : activeProducts;
+  const candidates = scopedProducts.filter((product) => imageNodes(product).length === 0);
   const selectedCandidates = args.sample > 0 ? candidates.slice(0, args.sample) : candidates;
   const manifest = {
     schemaVersion: 1,
@@ -246,10 +265,13 @@ async function main() {
       store: client.storeDomain,
       apiVersion: client.apiVersion,
       productQuery: activeProductQuery,
+      productHandlesFile: args.productHandlesFile || null,
       freshLiveRead: true,
     },
     policy: {
-      scope: "active products only; draft and archived products are unchanged",
+      scope: args.productHandlesFile
+        ? "active products in the supplied cohort only; all other products are unchanged"
+        : "active products only; draft and archived products are unchanged",
       deletion: "permanent only after a fresh live image read confirms zero product images",
       readback: "each asynchronous delete operation and post-delete product read are required",
     },

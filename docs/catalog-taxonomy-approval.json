@@ -1,9 +1,9 @@
 {
-  "approvalId": "salt-catalog-taxonomy-2026-08-01-approved",
+  "approvalId": "salt-catalog-taxonomy-2026-08-04-approved",
   "approved": true,
-  "approvedAt": "2026-08-01T14:36:29Z",
-  "approvalSource": "User approval in the SALT catalog taxonomy task",
-  "taxonomyVersion": "2026-08-01.38",
+  "approvedAt": "2026-08-04T12:20:47Z",
+  "approvalSource": "User approval in current SALT product release run",
+  "taxonomyVersion": "2026-08-04.39",
   "scope": {
     "existingShopifyTags": "preserve-exactly",
     "managedTags": "add-only salt namespace",

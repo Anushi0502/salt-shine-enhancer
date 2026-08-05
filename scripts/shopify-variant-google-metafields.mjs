@@ -108,6 +108,7 @@ function parseArgs(argv) {
     manifestPath: defaultManifestPath,
     statePath: defaultStatePath,
     handlesPath: defaultHandlesPath,
+    productHandlesFile: "",
     catalogCheckpointPath: defaultCatalogCheckpointPath,
     sample: 0,
     forceBulk: false,
@@ -140,6 +141,9 @@ function parseArgs(argv) {
       index += 1;
     } else if (token === "--handles-output") {
       args.handlesPath = resolve(rootDir, next || "");
+      index += 1;
+    } else if (token === "--product-handles-file") {
+      args.productHandlesFile = resolve(rootDir, next || "");
       index += 1;
     } else if (token === "--catalog-checkpoint") {
       args.catalogCheckpointPath = resolve(rootDir, next || "");
@@ -224,6 +228,17 @@ async function readState(filePath) {
     if (error?.code === "ENOENT") return null;
     throw error;
   }
+}
+
+async function readProductHandles(filePath) {
+  if (!filePath) return null;
+  const raw = await readFile(filePath, "utf8");
+  const parsed = JSON.parse(raw);
+  const handles = Array.isArray(parsed) ? parsed : parsed?.handles;
+  if (!Array.isArray(handles) || !handles.length) {
+    throw new Error(`Product handles file contains no handles: ${filePath}`);
+  }
+  return new Set(handles.map((handle) => String(handle || "").trim().toLowerCase()).filter(Boolean));
 }
 
 async function validateDefinitions() {
@@ -626,11 +641,18 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
   const definitions = await validateDefinitions();
   const allVariants = await fetchAllVariants(args.catalogCheckpointPath, args.sample);
   const state = await readState(args.statePath);
+  const productHandles = await readProductHandles(args.productHandlesFile);
   if (args.scope === "new-products" && !state?.processedVariantIds) {
     throw new Error(`New-products scope requires an approved all-products baseline at ${args.statePath}`);
   }
   const processed = new Set(state?.processedVariantIds || []);
-  let selected = args.scope === "all-products" ? allVariants : allVariants.filter((variant) => !processed.has(variant.id));
+  let selected = args.scope === "all-products"
+    ? allVariants
+    : allVariants.filter(
+        (variant) =>
+          !processed.has(variant.id) &&
+          (!productHandles || productHandles.has(String(variant.product?.handle || "").trim().toLowerCase())),
+      );
   if (args.sample > 0) selected = selected.slice(0, args.sample);
 
   const plans = selected.map((variant) => {
@@ -664,6 +686,7 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
       condition: "new",
       sizeSystem: "US only for size-bearing apparel or footwear",
       newProductBaseline: args.statePath,
+      productHandlesFile: args.productHandlesFile || null,
     },
     definitions: definitions.map(({ id, name, namespace, key, ownerType, type }) => ({ id, name, namespace, key, ownerType, type: type?.name })),
     catalog: { products: new Set(allVariants.map((variant) => variant.product?.id)).size, variants: allVariants.length },

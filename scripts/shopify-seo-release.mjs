@@ -345,6 +345,7 @@ function parseArgs(argv) {
     tagsOnly: false,
     fullCatalog: false,
     frozenCatalog: "",
+    productHandlesFile: "",
     newProductsOnly: false,
   };
 
@@ -389,12 +390,33 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (token === "--product-handles-file") {
+      args.productHandlesFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
+      continue;
+    }
     if (token === "--new-products-only") {
       args.newProductsOnly = true;
     }
   }
 
   return args;
+}
+
+async function readProductHandles(filePath) {
+  if (!filePath) return null;
+  const raw = await readFile(filePath, "utf8");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = raw.split(/\r?\n/);
+  }
+  const handles = Array.isArray(parsed) ? parsed : parsed?.handles;
+  if (!Array.isArray(handles) || !handles.length) {
+    throw new Error(`Product handles file contains no handles: ${filePath}`);
+  }
+  return new Set(handles.map((handle) => normalizeHandleValue(handle)).filter(Boolean));
 }
 
 function getCliEnv() {
@@ -807,7 +829,7 @@ function buildScopedPlanForLiveCatalog(
   plan,
   liveProducts,
   priorManifest,
-  { forceFullCatalog = false, newProductsOnly = false } = {},
+  { forceFullCatalog = false, newProductsOnly = false, explicitNewProductHandles = null } = {},
 ) {
   const initialFullCatalogPass = forceFullCatalog || !priorManifest?.policy?.initialFullCatalogPassComplete;
   const knownHandles = getKnownPriorHandles(priorManifest);
@@ -821,7 +843,8 @@ function buildScopedPlanForLiveCatalog(
     ...plan,
     products: plan.products.map((productPlan) => {
       const liveProduct = liveByHandle.get(productPlan.handle);
-      const isNewProduct = !initialFullCatalogPass && !knownHandles.has(productPlan.handle);
+      const isExplicitNewProduct = explicitNewProductHandles?.has(productPlan.handle) === true;
+      const isNewProduct = isExplicitNewProduct || (!initialFullCatalogPass && !knownHandles.has(productPlan.handle));
       const scopedProduct = buildEligibilityScopedReleasePlan(productPlan, {
         status: liveProduct?.status || "",
         publishedSalesChannels: getPublishedSalesChannelCount(liveProduct),
@@ -1559,18 +1582,32 @@ export async function runShopifySeoRelease({
   tagsOnly = false,
   fullCatalog = false,
   frozenCatalog = "",
+  productHandlesFile = "",
   newProductsOnly = false,
 } = {}) {
   const priorManifest = await readPriorManifest(output);
   const localSnapshot = await loadCatalogSnapshot();
   const snapshot = await loadFrozenCatalogSnapshot(frozenCatalog, localSnapshot);
+  const explicitNewProductHandles = newProductsOnly ? await readProductHandles(productHandlesFile) : null;
   const localPlan = await buildShopifySeoReleasePlan(snapshot);
-  const localPlanSelection = sample > 0 ? { ...localPlan, products: localPlan.products.slice(0, sample) } : localPlan;
+  const selectedProducts = explicitNewProductHandles
+    ? localPlan.products.filter((product) => explicitNewProductHandles.has(product.handle))
+    : localPlan.products;
+  if (explicitNewProductHandles && selectedProducts.length !== explicitNewProductHandles.size) {
+    const available = new Set(localPlan.products.map((product) => product.handle));
+    const missing = [...explicitNewProductHandles].filter((handle) => !available.has(handle));
+    throw new Error(`Product handles file contains ${missing.length} handle(s) missing from the frozen catalog: ${missing.slice(0, 10).join(", ")}`);
+  }
+  const localPlanSelection = {
+    ...localPlan,
+    products: sample > 0 ? selectedProducts.slice(0, sample) : selectedProducts,
+  };
   let manifest = createManifest({ mode, output, plan: localPlanSelection, priorManifest });
   manifest.policy.sample = sample || null;
   manifest.policy.tagsOnly = tagsOnly;
   manifest.policy.forceFullCatalog = fullCatalog;
   manifest.policy.frozenCatalog = frozenCatalog || null;
+  manifest.policy.productHandlesFile = productHandlesFile || null;
   manifest.policy.newProductsOnly = newProductsOnly;
   manifest.summary.sourceProducts = localPlan.summary.sourceProducts;
   manifest.summary.localCatalogProducts = localPlan.summary.sourceProducts;
@@ -1621,6 +1658,7 @@ export async function runShopifySeoRelease({
   manifest.policy.tagsOnly = tagsOnly;
   manifest.policy.forceFullCatalog = fullCatalog;
   manifest.policy.frozenCatalog = frozenCatalog || null;
+  manifest.policy.productHandlesFile = productHandlesFile || null;
   manifest.policy.newProductsOnly = newProductsOnly;
   manifest.policy.catalogAugmentedFromLive = true;
   manifest.retryInfo = retryInfo;
@@ -1633,6 +1671,7 @@ export async function runShopifySeoRelease({
   const eligibilityPlan = buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest, {
     forceFullCatalog: fullCatalog,
     newProductsOnly,
+    explicitNewProductHandles,
   });
   const liveProductsByHandle = new Map(liveProducts.map((product) => [normalizeHandleValue(product?.handle), product]));
   const pricingScopedPlan = {

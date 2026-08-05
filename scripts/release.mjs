@@ -63,14 +63,22 @@ async function ensurePathExists(path, label) {
   }
 }
 
-export function buildReleaseSteps({
-  rootDir: releaseRootDir = rootDir,
+function getReleasePaths(releaseRootDir) {
+  return {
+    iosDir: resolve(releaseRootDir, "salt-store-ios"),
+    androidDir: resolve(releaseRootDir, "salt-store-android"),
+    capacitorCliBin: resolve(releaseRootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor"),
+    shopifyThemeDir: resolve(releaseRootDir, "..", "salt-online-store-shopify"),
+    productCohortCatalog: resolve(releaseRootDir, "output", "new-product-cohort-catalog.json"),
+    productCohortHandles: resolve(releaseRootDir, "output", "new-product-cohort-handles.json"),
+  };
+}
+
+function buildCatalogReleaseSteps({
+  releaseRootDir = rootDir,
   includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
 } = {}) {
-  const iosDir = resolve(releaseRootDir, "salt-store-ios");
-  const androidDir = resolve(releaseRootDir, "salt-store-android");
-  const capacitorCliBin = resolve(releaseRootDir, "node_modules", "@capacitor", "cli", "bin", "capacitor");
-  const shopifyThemeDir = resolve(releaseRootDir, "..", "salt-online-store-shopify");
+  const { iosDir, androidDir, capacitorCliBin, shopifyThemeDir } = getReleasePaths(releaseRootDir);
 
   return [
     {
@@ -83,6 +91,12 @@ export function buildReleaseSteps({
       label: "Refresh Shopify data",
       command: npmBin,
       args: ["run", "sync:data"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify canonical Shopify collection membership",
+      command: npmBin,
+      args: ["run", "sync:collection-membership:dry-run"],
       cwd: releaseRootDir,
     },
     {
@@ -224,7 +238,128 @@ export function buildReleaseSteps({
   ];
 }
 
+function buildProductReleaseSteps({
+  releaseRootDir = rootDir,
+  includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
+} = {}) {
+  const {
+    iosDir,
+    androidDir,
+    capacitorCliBin,
+    shopifyThemeDir,
+  } = getReleasePaths(releaseRootDir);
+  const cohortCatalogArg = "output/new-product-cohort-catalog.json";
+  const cohortHandlesArg = "output/new-product-cohort-handles.json";
+
+  return [
+    {
+      label: "Run frozen new-product SEO, metafield, and mapping pipeline",
+      command: npmBin,
+      args: [
+        "run",
+        "seo:new-products:apply",
+        "--",
+        "--frozen-catalog",
+        cohortCatalogArg,
+        "--product-handles-file",
+        cohortHandlesArg,
+      ],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Delete verified zero-image products in the new cohort",
+      command: npmBin,
+      args: ["run", "shopify:products:zero-images:apply", "--", "--product-handles-file", cohortHandlesArg],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Publish new-cohort products to all sales channels",
+      command: npmBin,
+      args: ["run", "shopify:publications:all:apply", "--", "--product-handles-file", cohortHandlesArg],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Build web app",
+      command: npmBin,
+      args: ["run", "build:web"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Generate Shopify theme bundle",
+      command: npmBin,
+      args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
+      cwd: releaseRootDir,
+    },
+    ...(includeMobile ? [
+      {
+        label: "Sync iOS Capacitor shell",
+        command: nodeBin,
+        args: [capacitorCliBin, "sync", "ios"],
+        cwd: iosDir,
+      },
+      {
+        label: "Sync Android Capacitor shell",
+        command: nodeBin,
+        args: [capacitorCliBin, "sync", "android"],
+        cwd: androidDir,
+      },
+    ] : []),
+  ];
+}
+
+export function buildReleaseSteps({
+  rootDir: releaseRootDir = rootDir,
+  includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
+  profile = "catalog",
+} = {}) {
+  if (profile === "products") {
+    return buildProductReleaseSteps({ releaseRootDir, includeMobile });
+  }
+
+  if (profile !== "catalog") {
+    throw new Error(`Invalid release profile ${profile}; expected catalog or products`);
+  }
+
+  return buildCatalogReleaseSteps({ releaseRootDir, includeMobile });
+}
+
+function parseArgs(argv) {
+  const args = {
+    profile: process.env.SALT_RELEASE_PROFILE || "catalog",
+  };
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const token = argv[index];
+    const next = argv[index + 1];
+
+    if (token === "--profile") {
+      if (!next) {
+        throw new Error("Missing value for --profile");
+      }
+      args.profile = next;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--product-release" || token === "--products-only") {
+      args.profile = "products";
+      continue;
+    }
+
+    if (token === "--catalog-release") {
+      args.profile = "catalog";
+    }
+  }
+
+  if (!["catalog", "products"].includes(args.profile)) {
+    throw new Error(`Invalid release profile ${args.profile}; expected catalog or products`);
+  }
+
+  return args;
+}
+
 async function main() {
+  const args = parseArgs(process.argv);
   const packageJson = JSON.parse(await readFile(resolve(rootDir, "package.json"), "utf8"));
   const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
   const viteVersion = require("vite/package.json").version;
@@ -240,8 +375,16 @@ async function main() {
   process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
   process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
   process.stdout.write(`  mobile-sync: ${process.env.SALT_RELEASE_SKIP_MOBILE === "1" ? "skipped" : "included"}\n`);
+  process.stdout.write(`  profile: ${args.profile}\n`);
 
-  const steps = buildReleaseSteps({ rootDir });
+  if (args.profile === "products") {
+    const { productCohortCatalog, productCohortHandles } = getReleasePaths(rootDir);
+    await ensurePathExists(productCohortCatalog, "new-product cohort catalog");
+    await ensurePathExists(productCohortHandles, "new-product cohort handles");
+    process.stdout.write(`  product-cohort: ${productCohortHandles}\n`);
+  }
+
+  const steps = buildReleaseSteps({ rootDir, profile: args.profile });
 
   for (const [index, step] of steps.entries()) {
     await runStage({

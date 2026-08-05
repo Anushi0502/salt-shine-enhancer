@@ -1,53 +1,55 @@
 # SALT Catalog Collection Blueprint
 
-Taxonomy version: `2026-08-01.7`
+Taxonomy version: `2026-08-04.39`
 
 ## Status
 
-Approval required. This is a read-only proposal built from the current 12,149-product snapshot and 77 existing Shopify collections. It does not change Shopify products, prices, discounts, variants, publications, tags, SEO, metafields, collections, redirects, or theme data.
+The approved canonical collection rules are applied and verified in live Shopify for taxonomy `2026-08-04.39`. The current snapshot contains 12,269 Online Store products and 92 Online Store collection records; 27 canonical collections are published to Online Store and have live product membership. Existing product tags were preserved. The six separately approved legacy merges were applied, their source records were preserved in Shopify Admin, and those sources were removed from Online Store publication; remaining legacy consolidation and redirects are still approval-gated.
+
+The canonical collection release is recorded in `docs/catalog-collection-approval.json` and `output/catalog-collection-release-manifest.json`. The local storefront membership map is refreshed from Admin GraphQL and filtered against the Online Store product catalog so channel-excluded products cannot enter these routes.
 
 ## Non-Negotiable Rules
 
-- Only products with a high-confidence taxonomy classification can enter a managed collection. The current proposal has 11,494 eligible products and 655 products held for review.
+- Only products with a high-confidence taxonomy classification can enter a managed collection. The current proposal has 12,268 eligible products and 1 product held outside the managed catalog because it is an order-price adjustment, not a sellable product.
 - Held products receive no `salt:` tags and no taxonomy-driven collection membership.
 - A collection rule uses controlled `salt:department:*` or `salt:category:*` tags, not supplier tags, titles, or stale collection membership.
-- Product publication is never changed by classification. The future apply step must read each product's Online Store publication state and exclude products that are not published to that channel.
+- Product publication is never changed by classification. The collection apply and membership refresh read each product's Online Store publication state and exclude products that are not published to that channel.
 - Prices, compare-at prices, discounts, inventory, variants, and existing merchant tags are outside this collection plan and must not be changed. Existing tags remain searchable and are documented in `output/catalog-existing-tag-inventory.md`, but never become collection rules on their own.
 - Before retiring or renaming a collection, Shopify redirects and live collection membership must be read back and verified.
 
-## Proposed Customer Hierarchy
+## Canonical Customer Hierarchy
 
-The physical collection layer stays deliberately compact. Every category and subcategory remains searchable through controlled tags, while a Shopify collection is created or rebuilt only for a shopper-facing parent or a high-volume discovery group.
+The applied physical collection layer stays deliberately compact. Every category and subcategory remains searchable through controlled tags, while a Shopify collection is maintained only for a shopper-facing parent or a high-volume discovery group. The eligible counts below are taxonomy counts; the final live membership is recorded in the release manifest and storefront map.
 
 | Collection | Rule | Eligible products | Action |
 | --- | --- | ---: | --- |
-| Women | `salt:department:women` | 1,027 | Create parent collection |
-| Women's Fashion | `salt:category:women-fashion` | 300 | Create collection |
-| Women's Beauty & Skincare | `salt:category:women-beauty-skincare` | 359 | Rebuild `womens-beauty-essentials` |
-| Women's Accessories | `salt:category:women-accessories` | 170 | Create collection |
-| Women's Bags & Wallets | `salt:category:women-bags-wallets` | 198 | Rebuild `women-bags-and-wallets` |
-| Men | `salt:department:men` | 2,302 | Rebuild `men-collection` |
-| Men's Fashion | `salt:category:men-fashion` | 1,415 | Create collection |
-| Men's Bags & Wallets | `salt:category:men-bags-wallets` | 335 | Create collection |
-| Men's Accessories | `salt:category:men-accessories` | 215 | Create collection |
-| Men's Beauty & Skincare | `salt:category:men-beauty-skincare` | 337 | Create collection |
-| Kids | `salt:department:kids` | 962 | Create parent collection |
-| Kids Wear | `salt:category:kids-wear` | 675 | Create collection |
-| Kids Toys & Games | `salt:category:kids-toys-games` | 218 | Create collection |
-| Home & Decor | `salt:department:home-decor` | 1,629 | Rebuild `home-decor` and merge lighting/decor leaf pages |
-| Kitchen & Cookware | `salt:category:kitchen-cookware` | 1,032 | Rebuild `cookware` |
-| Lighting & Decor | `salt:category:lighting-decor` | 360 | Rebuild `smart-lighting`; merge `wall-lights` into it |
-| Bedsheets, Handlooms & Towels | `salt:category:bedsheets-handlooms-towels` | 77 | Create collection |
-| Home & Car Accessories | `salt:category:home-car-accessories` | 127 | Rebuild `car-accessories` with a corrected scope |
-| Electronic Accessories | `salt:department:electronic-accessories` | 1,063 | Rebuild `portable-gadgets` |
-| Covers & Cases | `salt:category:covers-cases` | 384 | Create collection |
-| Mouse & Keyboard | `salt:category:mouse-keyboard` | 246 | Create collection |
-| Audio & Earbuds | `salt:category:audio` | 160 | Create collection |
-| Office & School Supplies | `salt:category:office-school-supplies` | 1,069 | Create collection |
-| Camping & Travel Essentials | `salt:department:camping-travel` | 371 | Rebuild `travel-outdoor` |
-| Watches | `salt:category:watches` | 349 | Rebuild `women-watches` as gender-neutral Watches |
-| Sports & Fitness | `salt:category:fitness-equipment` | 241 | Create collection |
-| Health & Wellness | `salt:category:health-wellness` | 81 | Create `health-wellness`, redirect legacy `face-mask` |
+| Women | `salt:department:women` | 1,068 | Create parent collection |
+| Women's Fashion | `salt:category:women-fashion` | 320 | Create collection |
+| Women's Beauty & Skincare | `salt:category:women-beauty-skincare` | 373 | Rebuild `womens-beauty-essentials` |
+| Women's Accessories | `salt:category:women-accessories` | 167 | Create collection |
+| Women's Bags & Wallets | `salt:category:women-bags-wallets` | 208 | Rebuild `women-bags-and-wallets` |
+| Men | `salt:department:men` | 2,367 | Rebuild `men-collection` |
+| Men's Fashion | `salt:category:men-fashion` | 1,466 | Create collection |
+| Men's Bags & Wallets | `salt:category:men-bags-wallets` | 352 | Create collection |
+| Men's Accessories | `salt:category:men-accessories` | 193 | Create collection |
+| Men's Beauty & Skincare | `salt:category:men-beauty-skincare` | 356 | Create collection |
+| Kids | `salt:department:kids` | 1,099 | Create parent collection |
+| Kids Wear | `salt:category:kids-wear` | 709 | Create collection |
+| Kids Toys & Games | `salt:category:kids-toys-games` | 302 | Create collection |
+| Home & Decor | `salt:department:home-decor` | 1,717 | Rebuild `home-decor` and merge lighting/decor leaf pages |
+| Kitchen & Cookware | `salt:category:kitchen-cookware` | 1,070 | Rebuild `cookware` |
+| Lighting & Decor | `salt:category:lighting-decor` | 363 | Rebuild `smart-lighting`; merge `wall-lights` into it |
+| Bedsheets, Handlooms & Towels | `salt:category:bedsheets-handlooms-towels` | 68 | Create collection |
+| Home & Car Accessories | `salt:category:home-car-accessories` | 174 | Rebuild `car-accessories` with a corrected scope |
+| Electronic Accessories | `salt:department:electronic-accessories` | 1,175 | Rebuild `portable-gadgets` |
+| Covers & Cases | `salt:category:covers-cases` | 390 | Create collection |
+| Mouse & Keyboard | `salt:category:mouse-keyboard` | 250 | Create collection |
+| Audio & Earbuds | `salt:category:audio` | 248 | Create collection |
+| Office & School Supplies | `salt:category:office-school-supplies` | 1,185 | Create collection |
+| Camping & Travel Essentials | `salt:department:camping-travel` | 355 | Rebuild `travel-outdoor` |
+| Watches | `salt:category:watches` | 359 | Rebuild `women-watches` as gender-neutral Watches |
+| Sports & Fitness | `salt:category:fitness-equipment` | 229 | Create collection |
+| Health & Wellness | `salt:category:health-wellness` | 155 | Create `health-wellness`, redirect legacy `face-mask` |
 
 ## Filter-Only Children
 
@@ -111,4 +113,4 @@ Approve or revise all of the following before any Shopify write:
 4. The redirect and consolidation actions in the Low-Volume Collection Consolidation table.
 5. The policy that children below 50 products remain tag-driven routes rather than thin physical Shopify collections.
 
-After approval, the apply phase will apply controlled additive product tags and classification metafields to eligible active products, without changing Shopify product categories. Collection creation, rebuild, merge, archive, and redirect work remains separately approval-gated and requires a fresh live readback before the final publication phase.
+The canonical release and the separately approved six-collection merge have been applied with fresh live readback. Future collection creation, rebuild, merge, archive, and redirect work remains separately approval-gated and requires a fresh live readback before publication.

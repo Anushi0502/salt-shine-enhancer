@@ -8,7 +8,7 @@ export const PRODUCT_SEARCH_MANIFEST_FORMAT = "salt-product-search-shards";
 export const PRODUCT_SEARCH_MANIFEST_VERSION = 1;
 export const DEFAULT_PRODUCT_SEARCH_SHARD_MAX_BYTES = Math.min(
   DEFAULT_PRODUCT_SHARD_MAX_BYTES,
-  5 * 1024 * 1024,
+  4.5 * 1024 * 1024,
 );
 
 export function isProductSearchManifest(payload) {

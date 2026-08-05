@@ -36,6 +36,7 @@ type JudgeMeProductReviewResponse = {
 
 const JUDGEME_STALE_TIME_MS = 0;
 const JUDGEME_AUTO_REFRESH_MS = 90 * 1000;
+const JUDGEME_TESTIMONIAL_FETCH_BATCH_SIZE = 6;
 const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
 const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
 
@@ -346,7 +347,7 @@ async function requestJudgeMeTestimonialsForProduct(
     shop_domain: shopDomain,
     external_id: String(productId),
     page: "1",
-    per_page: "25",
+    per_page: "100",
     t: String(Date.now()),
   });
   const endpoint = buildJudgeMeProxyUrl("widgets/product_review", params);
@@ -433,33 +434,45 @@ export async function fetchJudgeMeTestimonials(
   const domains = getJudgeMeShopDomains();
   const seenReviewKeys = new Set<string>();
   const collected: JudgeMeTestimonial[] = [];
+  const batchSize = Math.max(1, Math.min(JUDGEME_TESTIMONIAL_FETCH_BATCH_SIZE, normalizedIds.length));
 
   for (const domain of domains) {
-    for (const productId of normalizedIds) {
-      if (collected.length >= limit) {
-        break;
-      }
+    for (let index = 0; index < normalizedIds.length && collected.length < limit; index += batchSize) {
+      const batchIds = normalizedIds.slice(index, index + batchSize);
 
-      try {
-        const reviews = dedupeJudgeMeTestimonials(
-          await requestJudgeMeTestimonialsForProduct(domain, publicToken, productId),
-        );
+      const batchResults = await Promise.all(
+        batchIds.map(async (productId) => {
+          try {
+            return {
+              productId,
+              reviews: dedupeJudgeMeTestimonials(
+                await requestJudgeMeTestimonialsForProduct(domain, publicToken, productId),
+              ),
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
 
-        reviews.forEach((review) => {
+      for (const result of batchResults) {
+        if (!result || collected.length >= limit) {
+          continue;
+        }
+
+        for (const review of result.reviews) {
           if (collected.length >= limit) {
-            return;
+            break;
           }
 
           const reviewKey = buildJudgeMeReviewFingerprint(review) || `${review.productId}:${review.id}`;
           if (seenReviewKeys.has(reviewKey)) {
-            return;
+            continue;
           }
 
           seenReviewKeys.add(reviewKey);
           collected.push(review);
-        });
-      } catch {
-        continue;
+        }
       }
     }
 

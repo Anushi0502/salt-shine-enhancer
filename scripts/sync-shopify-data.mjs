@@ -48,9 +48,11 @@ const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SK
 const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
+const collectionMergeManifestPath = resolve(process.cwd(), "output", "catalog-collection-merge-manifest.json");
 const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
 const shopPath = resolve(outDir, "shop.json");
+let forceLiveCollectionHandles = new Set();
 let requestQueue = Promise.resolve();
 const execFileAsync = promisify(execFile);
 
@@ -140,6 +142,29 @@ async function fetchCollectionProductIdsFromCachedFile(handle) {
 
   process.stdout.write(`Using cached collection ids for "${handle}" with ${productIds.length} products\n`);
   return productIds;
+}
+
+async function loadForcedLiveCollectionHandles() {
+  try {
+    const manifest = JSON.parse(await readFile(collectionMergeManifestPath, "utf8"));
+    if (manifest?.mode !== "apply" || !manifest?.completedAt) return;
+
+    forceLiveCollectionHandles = new Set(
+      (Array.isArray(manifest.sourceCollections) ? manifest.sourceCollections : [])
+        .map((row) => String(row?.targetHandle || "").trim())
+        .filter(Boolean),
+    );
+    if (forceLiveCollectionHandles.size) {
+      process.stdout.write(
+        `Forcing live collection membership reads for completed merge targets: ${[...forceLiveCollectionHandles].join(", ")}\n`,
+      );
+    }
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      const message = error instanceof Error ? error.message : "unknown merge manifest error";
+      process.stdout.write(`Could not read collection merge manifest; retaining normal membership cache behavior (${message})\n`);
+    }
+  }
 }
 
 function buildAdminUrl(pathOrUrl) {
@@ -1125,11 +1150,16 @@ async function fetchShopCustomData() {
 }
 
 async function fetchCollectionProductIds(handle) {
-  try {
-    return await fetchCollectionProductIdsFromCachedFile(handle);
-  } catch (cacheError) {
-    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
-    process.stdout.write(`Cached collection ids unavailable for "${handle}"; falling back to live fetch (${cacheMessage})\n`);
+  const forceLive = forceLiveCollectionHandles.has(handle);
+  if (!forceLive) {
+    try {
+      return await fetchCollectionProductIdsFromCachedFile(handle);
+    } catch (cacheError) {
+      const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
+      process.stdout.write(`Cached collection ids unavailable for "${handle}"; falling back to live fetch (${cacheMessage})\n`);
+    }
+  } else {
+    process.stdout.write(`Bypassing cached collection ids for completed merge target "${handle}"\n`);
   }
 
   const ids = [];
@@ -1151,6 +1181,9 @@ async function fetchCollectionProductIds(handle) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
+    if (forceLive) {
+      throw new Error(`Live collection ids failed for completed merge target "${handle}": ${message}`);
+    }
     process.stdout.write(`Live collection ids failed for "${handle}"; trying cached mapping (${message})\n`);
 
     try {
@@ -1855,6 +1888,7 @@ async function fetchShopForSync() {
 
 async function main() {
   const startedAt = new Date().toISOString();
+  await loadForcedLiveCollectionHandles();
 
   const [products, collections, aboutPage, blogResult, shop] = await Promise.all([
     fetchProductsForSync(),

@@ -65,6 +65,7 @@ keep their independently configured Shopify prices.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
 - `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
 - `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
+- `npm run release:products`: run the frozen product-cohort release path. It requires `output/new-product-cohort-catalog.json` and `output/new-product-cohort-handles.json`, then scopes SEO, metafields, mappings, zero-image cleanup, publication, and storefront/theme rebuild to those handles only.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
 - `npm run release`: run the full SALT release pipeline with version output and staged failure reporting.

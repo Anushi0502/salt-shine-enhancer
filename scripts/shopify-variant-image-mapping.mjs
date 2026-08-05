@@ -44,55 +44,65 @@ const liveMediaPageSize = Math.max(
 );
 const graphqlTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_GRAPHQL_TIMEOUT_MS || 120_000));
 
+const LIVE_PRODUCT_SELECTION = /* GraphQL */ `
+  id
+  handle
+  title
+  variants(first: $variantFirst) {
+    nodes {
+      id
+      title
+      sku
+      selectedOptions {
+        name
+        value
+      }
+      media(first: 1) {
+        nodes {
+          __typename
+          id
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+  media(first: $mediaFirst) {
+    nodes {
+      __typename
+      ... on MediaImage {
+        id
+        image {
+          url
+          altText
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+`;
+
 const LIVE_PRODUCTS_QUERY = /* GraphQL */ `
   query ShopifyVariantImageProducts($first: Int!, $after: String, $variantFirst: Int!, $mediaFirst: Int!) {
     products(first: $first, after: $after) {
-      nodes {
-        id
-        handle
-        title
-        variants(first: $variantFirst) {
-          nodes {
-            id
-            title
-            sku
-            selectedOptions {
-              name
-              value
-            }
-            media(first: 1) {
-              nodes {
-                __typename
-                id
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-        }
-        media(first: $mediaFirst) {
-          nodes {
-            __typename
-            ... on MediaImage {
-              id
-              image {
-                url
-                altText
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-        }
-      }
+      nodes { ${LIVE_PRODUCT_SELECTION} }
       pageInfo {
         hasNextPage
         endCursor
       }
+    }
+  }
+`;
+
+const LIVE_PRODUCTS_BY_ID_QUERY = /* GraphQL */ `
+  query ShopifyVariantImageProductsById($ids: [ID!]!, $variantFirst: Int!, $mediaFirst: Int!) {
+    nodes(ids: $ids) {
+      ... on Product { ${LIVE_PRODUCT_SELECTION} }
     }
   }
 `;
@@ -424,6 +434,28 @@ async function fetchLiveProducts() {
   return products;
 }
 
+async function fetchLiveProductsByIds(ids) {
+  const products = [];
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  for (let index = 0; index < uniqueIds.length; index += 20) {
+    const batch = uniqueIds.slice(index, index + 20);
+    const data = await executeGraphQl(
+      LIVE_PRODUCTS_BY_ID_QUERY,
+      { ids: batch, variantFirst: liveVariantPageSize, mediaFirst: liveMediaPageSize },
+      { operation: `scoped product batch ${Math.floor(index / 20) + 1}/${Math.ceil(uniqueIds.length / 20)}` },
+    );
+    products.push(...(data.nodes || []).filter((product) => product?.id));
+  }
+  process.stdout.write(`Fetched ${products.length} scoped Shopify products by ID\n`);
+  return products;
+}
+
+function productIdForGraphql(product) {
+  if (product?.admin_graphql_api_id) return String(product.admin_graphql_api_id);
+  if (product?.id != null) return `gid://shopify/Product/${product.id}`;
+  return "";
+}
+
 function buildProductImages(mediaNodes) {
   return (Array.isArray(mediaNodes) ? mediaNodes : [])
     .map((node) => ({
@@ -613,11 +645,20 @@ async function verifyProducts(plannedProducts) {
 
 async function main() {
   const args = parseArgs(process.argv);
-  const [snapshot, liveProducts, scopeHandles] = await Promise.all([
+  const [snapshot, scopeHandles] = await Promise.all([
     loadSnapshot(args.inputPath),
-    fetchLiveProducts(),
     args.scope === "new-products" ? loadHandles(args.handlesPath) : Promise.resolve(null),
   ]);
+  const scopedProductIds = scopeHandles
+    ? (snapshot.products || [])
+        .filter((product) => scopeHandles.has(normalizeHandleValue(product?.handle)))
+        .map(productIdForGraphql)
+        .filter(Boolean)
+    : [];
+  if (scopeHandles && !scopedProductIds.length) {
+    throw new Error("New-products scope handles did not resolve to any local product IDs");
+  }
+  const liveProducts = scopeHandles ? await fetchLiveProductsByIds(scopedProductIds) : await fetchLiveProducts();
 
   const { plannedProducts, summary } = buildPlan(snapshot.products || [], liveProducts, scopeHandles);
   const manifest = {

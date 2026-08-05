@@ -1,0 +1,15 @@
+{
+  "approvalId": "salt-collection-rules-2026-08-04-user-approved",
+  "approved": true,
+  "approvedAt": "2026-08-04T00:00:00.000Z",
+  "approvalSource": "User instruction: collections bana do yrr iss rules se",
+  "taxonomyVersion": "2026-08-04.39",
+  "scope": {
+    "managedCollections": "create or rebuild only the canonical collections in the checked-in collection plan",
+    "controlledRuleTags": "salt:department and salt:category tags only",
+    "existingTags": "preserve exactly; add-only salt namespace",
+    "onlineStorePublication": "verify each collection is published to Online Store; do not mutate product publications",
+    "legacyHandleRedirects": "redirect only the explicitly mapped legacy handles when reusing their collection record",
+    "legacyMergesOrArchives": "not approved"
+  }
+}

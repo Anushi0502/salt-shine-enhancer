@@ -15,6 +15,7 @@ function parseArgs(argv) {
     baseline: resolve(rootDir, "output", ".shopify-metafield-live-catalog.json"),
     expectedCount: 0,
     latestCount: 0,
+    zeroSalesChannelOnly: false,
     handlesOutput: resolve(rootDir, "output", "new-product-cohort-handles.json"),
     catalogOutput: resolve(rootDir, "output", "new-product-cohort-catalog.json"),
     currentOutput: resolve(rootDir, "output", ".shopify-admin-current-catalog.json"),
@@ -51,6 +52,10 @@ function parseArgs(argv) {
       }
       args.latestCount = Number(next);
       index += 1;
+      continue;
+    }
+    if (token === "--zero-sales-channel-only") {
+      args.zeroSalesChannelOnly = true;
     }
   }
 
@@ -86,12 +91,24 @@ export function findNewProducts(baselineProducts, currentProducts) {
   });
 }
 
+function hasZeroPublishedSalesChannels(product) {
+  const publications = Array.isArray(product?.resourcePublications?.nodes)
+    ? product.resourcePublications.nodes
+    : [];
+  return publications.every((publication) => publication?.isPublished !== true);
+}
+
 export async function freezeNewProductCohort(options) {
-  const baselineProducts = await readProducts(options.baseline);
+  if (options.zeroSalesChannelOnly && options.latestCount) {
+    throw new Error("--latest-count cannot be combined with --zero-sales-channel-only");
+  }
+  const baselineProducts = options.zeroSalesChannelOnly ? [] : await readProducts(options.baseline);
   const retryInfo = [];
   const liveProducts = await fetchAllProducts(retryInfo);
   const currentProducts = liveProducts.map(convertLiveProductToCatalogProduct);
-  const rawNewProducts = findNewProducts(baselineProducts, currentProducts);
+  const rawNewProducts = options.zeroSalesChannelOnly
+    ? liveProducts.filter(hasZeroPublishedSalesChannels).map(convertLiveProductToCatalogProduct)
+    : findNewProducts(baselineProducts, currentProducts);
   const newProducts = options.latestCount
     ? [...rawNewProducts]
         .sort((left, right) => {
@@ -122,7 +139,11 @@ export async function freezeNewProductCohort(options) {
   const metadata = {
     ...currentMetadata,
     cohortCount: handles.length,
-    selectionMethod: options.latestCount ? "latest-created-from-baseline-delta" : "all-baseline-delta",
+    selectionMethod: options.zeroSalesChannelOnly
+      ? "active-products-with-zero-published-sales-channels"
+      : options.latestCount
+        ? "latest-created-from-baseline-delta"
+        : "all-baseline-delta",
     latestCount: options.latestCount || null,
     newestCreatedAt: newProducts[0]?.created_at || null,
     oldestCreatedAt: newProducts.at(-1)?.created_at || null,

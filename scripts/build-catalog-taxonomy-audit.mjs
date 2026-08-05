@@ -9,6 +9,7 @@ import {
   getCatalogDepartmentDefinitions,
   getCatalogTaxonomyDefinitions,
 } from "../src/lib/catalog-taxonomy.js";
+import { CATALOG_COLLECTION_PLAN } from "../src/lib/catalog-collection-plan.js";
 import { buildProductKnowledgePayload, classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
@@ -406,7 +407,7 @@ function tagMarkdown(tagCounts, existingTags, tagInventorySource) {
     "- `salt:compatibility:*`: limited to explicit device/platform compatibility such as iPhone, Android, AirPods, iPad, laptop, MacBook, Samsung, USB-C, and Type-C.",
     "",
   ];
-  return `${lines.join("\n")}\n`;
+  return lines.join("\n");
 }
 
 function markdownCell(value) {
@@ -444,19 +445,55 @@ function existingTagMarkdown(existingTags, tagInventorySource) {
     ),
     "",
   ];
-  return `${lines.join("\n")}\n`;
+  return lines.join("\n");
 }
 
-function collectionMarkdown(plan, collections) {
+async function collectionMarkdown(plan, collections) {
+  let collectionRelease = null;
+  try {
+    collectionRelease = JSON.parse(await readFile(resolve(outputDir, "catalog-collection-release-manifest.json"), "utf8"));
+  } catch {
+    // The audit can run before the separately approved collection release.
+  }
+  let collectionMergeRelease = null;
+  try {
+    collectionMergeRelease = JSON.parse(await readFile(resolve(outputDir, "catalog-collection-merge-manifest.json"), "utf8"));
+  } catch {
+    // The audit can run before the separately approved legacy merge release.
+  }
+  const canonicalApplyVerified = Boolean(
+    collectionRelease?.completedAt &&
+      collectionRelease?.summary?.canonicalCollections === CATALOG_COLLECTION_PLAN.length &&
+      collectionRelease?.summary?.failed === 0,
+  );
+  const mergeApplyVerified = Boolean(
+    collectionMergeRelease?.completedAt &&
+      collectionMergeRelease?.summary?.sourceCollections === 6 &&
+      collectionMergeRelease?.summary?.failures === 0,
+  );
   const lines = [
-    "# SALT Collection Rationalization Proposal",
+    `# SALT Collection Rationalization${canonicalApplyVerified ? " and Apply Audit" : " Proposal"}`,
     "",
     `Taxonomy version: \`${CATALOG_TAXONOMY_VERSION}\``,
     "",
-    "## Approval Boundary",
+    "## Canonical Collection Apply",
     "",
-    "This is a proposal only. Existing Shopify collections are not being changed, merged, archived, or recreated until approval.",
+    canonicalApplyVerified
+      ? `The ${CATALOG_COLLECTION_PLAN.length} canonical collection rules were applied and verified in live Shopify under approval \`${collectionRelease.approvalId}\`. Their Online Store publications and controlled tag sources were read back successfully.${mergeApplyVerified ? ` The six separately approved legacy merges were then applied under approval \`${collectionMergeRelease.approvalId}\`; source collection records were preserved in Admin and removed from Online Store publication.` : " Existing legacy merge/archive actions remain outside that approval and were not performed."}`
+      : "Canonical collection changes remain separately approval-gated. Existing Shopify collections are not changed, merged, archived, or recreated by this audit.",
     "",
+    ...(mergeApplyVerified
+      ? [
+          "## Approved Legacy Merge Apply",
+          "",
+          "The six approved source collections were merged without forcing unrelated products into taxonomy collections. Health & Wellness and Camping & Travel Essentials kept their controlled tag rules; Gifts Collection and Trending Finds unioned their existing merchandising conditions. The six source records remain in Shopify Admin for recovery and are no longer published to Online Store.",
+          "",
+          "| Source collection | Target collection | Mode | Source products read | Evidence-aligned products | Target count after |",
+          "| --- | --- | --- | ---: | ---: | ---: |",
+          ...asArray(collectionMergeRelease.sourceCollections).map((row) => `| \`${row.sourceHandle}\` | \`${row.targetHandle}\` | ${row.mode} | ${Number(row.sourceProductCount || 0).toLocaleString()} | ${Number(row.eligibleForTarget || 0).toLocaleString()} | ${Number(row.targetProductCountAfter || 0).toLocaleString()} |`),
+          "",
+        ]
+      : []),
     "## Taxonomy To Existing Collection Mapping",
     "",
     "| Taxonomy group | Eligible products | Held for review | Existing target(s) | Missing target(s) | Proposed action |",
@@ -475,14 +512,14 @@ function collectionMarkdown(plan, collections) {
     "",
     "## Existing Collections Under 50 Products",
     "",
-    `Current Shopify snapshot contains ${asArray(collections).length} collections. The rows below meet the under-50 rule and require approval before any merge or archive.`,
+    `Current Shopify snapshot contains ${asArray(collections).length} collections. The rows below meet the under-50 rule and still require separate approval before any merge or archive.`,
     "",
     "| Current collection | Products | Suggested action | Suggested target |",
     "| --- | ---: | --- | --- |",
     ...plan.lowVolumeCollections.map((row) => `| ${row.title || row.handle} (\`${row.handle}\`) | ${row.products.toLocaleString()} | ${row.action} | ${row.mergeTarget ? `\`${row.mergeTarget}\`` : "Needs taxonomy review"} |`),
     "",
   ];
-  return `${lines.join("\n")}\n`;
+  return `${lines.join("\n").trimEnd()}\n`;
 }
 
 async function main() {
@@ -569,7 +606,7 @@ async function main() {
     writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
     writeFile(tagsPath, tagMarkdown(tagCounts, existingTags, tagInventorySource), "utf8"),
     writeFile(existingTagsPath, existingTagMarkdown(existingTags, tagInventorySource), "utf8"),
-    writeFile(collectionsPath, collectionMarkdown(collectionPlan, collections), "utf8"),
+    writeFile(collectionsPath, await collectionMarkdown(collectionPlan, collections), "utf8"),
     writeFile(reviewPath, renderCsv(reviewQueue), "utf8"),
   ]);
 

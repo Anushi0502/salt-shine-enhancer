@@ -1,6 +1,6 @@
 import { getCatalogTaxonomyOverride } from "./catalog-taxonomy-overrides.js";
 
-export const CATALOG_TAXONOMY_VERSION = "2026-08-01.38";
+export const CATALOG_TAXONOMY_VERSION = "2026-08-04.39";
 export const CATALOG_TAG_PREFIX = "salt";
 
 const STOP_WORDS = new Set([
@@ -6467,6 +6467,15 @@ function buildEvidence(product) {
     tags: tokenizeCatalogText(tags),
     collectionSignal: tokenizeCatalogText(customData.collectionSignal),
   };
+
+  // Collection signals are generated merchandising metadata and can lag a
+  // product correction. Never let that derived field override direct product
+  // language or controlled tags; use it only when the catalog record has no
+  // direct evidence at all.
+  if (["title", "handle", "productType", "tags"].some((field) => fields[field].length)) {
+    fields.collectionSignal = [];
+  }
+
   const allTokens = unique(Object.values(fields).flat());
   const tokenSet = new Set([...allTokens, ...allTokens.map(singularizeCatalogToken)]);
   return { fields, allTokens, tokenSet };
@@ -6550,7 +6559,46 @@ function directEvidenceRank(fields) {
   return 0;
 }
 
+function directAudienceIds(evidence) {
+  const directTokens = ["title", "handle", "productType"].flatMap((field) => evidence.fields[field] || []);
+  const audienceIds = new Set();
+
+  for (const [audience, terms] of Object.entries(COMPILED_AUDIENCE_TERMS)) {
+    if (terms.some((term) => includesPhrase(directTokens, term.tokens))) {
+      audienceIds.add(audience === "baby" ? "kids" : audience);
+    }
+  }
+
+  return audienceIds;
+}
+
+function explicitRuleAudience(entry) {
+  const override = normalizeCatalogText(entry?.audienceOverride);
+  if (Object.prototype.hasOwnProperty.call(AUDIENCE_TERMS, override)) {
+    return override === "baby" ? "kids" : override;
+  }
+
+  const departmentId = normalizeCatalogText(entry?.departmentId);
+  if (["women", "men", "kids"].includes(departmentId)) return departmentId;
+
+  const categoryId = normalizeCatalogText(entry?.categoryId);
+  if (/^(women|men|kids)-/.test(categoryId)) return categoryId.split("-", 1)[0];
+  return null;
+}
+
 function scoreRule(entry, evidence) {
+  const expectedAudience = explicitRuleAudience(entry);
+  if (expectedAudience) {
+    const directAudiences = directAudienceIds(evidence);
+    const hasExpectedAudience = directAudiences.has(expectedAudience);
+    const hasConflictingAudience = [...directAudiences]
+      .filter((audience) => ["women", "men", "kids"].includes(audience))
+      .some((audience) => audience !== expectedAudience);
+    // A stale supplier tag may satisfy an audience-specific rule, but it must
+    // not override a direct audience phrase in the title or handle.
+    if (!hasExpectedAudience && hasConflictingAudience) return null;
+  }
+
   const excluded = normalizeTerms(entry.excludes).find((term) => hasPhraseInEvidence(evidence, term).length);
   if (excluded) return null;
 
@@ -6770,13 +6818,35 @@ function resolveRelatedCategories(entry, primaryTaxonomy) {
 export function extractCatalogAttributes(product, existingEvidence = null) {
   const evidence = existingEvidence || buildEvidence(product);
   const textTokens = evidence.allTokens;
+  const directTokens = unique([
+    ...evidence.fields.title,
+    ...evidence.fields.handle,
+    ...evidence.fields.productType,
+  ]);
   const attributes = {};
 
   const hasAttributeSignal = textTokens.some((token) => ATTRIBUTE_TRIGGER_TOKENS.has(token) || ATTRIBUTE_TRIGGER_TOKENS.has(singularizeCatalogToken(token)));
 
+  // Connectivity is frequently polluted by supplier tags. Require direct
+  // product language for these attributes so a tag such as "wireless" cannot
+  // turn an explicitly wired mouse or keyboard into a wireless product.
+  const hasDirectWireless = ["wireless", "cordless", "2.4g", "2.4 ghz", "wifi", "wi fi", "dual mode"]
+    .some((term) => includesPhrase(directTokens, phraseTokens(term)));
+  const hasDirectBluetooth = includesPhrase(directTokens, phraseTokens("bluetooth"));
+  const hasDirectWiredDevice = includesPhrase(directTokens, phraseTokens("wired")) && [
+    "mouse", "keyboard", "headset", "headphone", "earphone", "earbud", "controller", "gamepad", "microphone",
+  ].some((term) => includesPhrase(directTokens, phraseTokens(term)));
+
   if (hasAttributeSignal) {
     for (const [group, values] of Object.entries(COMPILED_ATTRIBUTE_GROUPS)) {
-      const matches = values.filter((entry) => includesPhrase(textTokens, entry.tokens)).map((entry) => entry.value);
+      const matches = values
+        .filter((entry) => {
+          if (entry.value === "wireless") return hasDirectWireless && !hasDirectWiredDevice;
+          if (entry.value === "bluetooth") return hasDirectBluetooth && !hasDirectWiredDevice;
+          return true;
+        })
+        .filter((entry) => includesPhrase(textTokens, entry.tokens))
+        .map((entry) => entry.value);
       if (matches.length) attributes[group] = unique(matches).slice(0, 8);
     }
   }

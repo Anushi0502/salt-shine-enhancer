@@ -473,6 +473,7 @@ describe("Shopify SEO release reconciliation", () => {
 
   it("keeps SEO release before merchandising and build stages", () => {
     const labels = buildReleaseSteps({ rootDir: "/tmp/salt-shine-enhancer" }).map((step) => step.label);
+    const merchandisingBackfillLabel = "Apply Shopify merchandising metafield backfill after catalog boundary changes";
 
     expect(labels.indexOf("Refresh Shopify data")).toBeLessThan(labels.indexOf("Reconcile and verify Shopify SEO/product fields"));
     expect(labels.indexOf("Refresh Shopify data")).toBeLessThan(
@@ -491,10 +492,13 @@ describe("Shopify SEO release reconciliation", () => {
       labels.indexOf("Ensure Shopify product metafield definitions"),
     );
     expect(labels.indexOf("Reconcile and verify Shopify SEO/product fields")).toBeLessThan(
-      labels.indexOf("Apply Shopify merchandising metafield backfill"),
+      labels.indexOf(merchandisingBackfillLabel),
     );
-    expect(labels.indexOf("Verify Shopify merchandising backfill")).toBeLessThan(
-      labels.indexOf("Delete verified active zero-image products"),
+    expect(labels.indexOf("Delete verified active zero-image products")).toBeLessThan(
+      labels.indexOf(merchandisingBackfillLabel),
+    );
+    expect(labels.indexOf(merchandisingBackfillLabel)).toBeLessThan(
+      labels.indexOf("Verify Shopify merchandising backfill"),
     );
     expect(labels.indexOf("Delete verified active zero-image products")).toBeLessThan(
       labels.indexOf("Publish every active product to all sales channels"),
@@ -505,7 +509,29 @@ describe("Shopify SEO release reconciliation", () => {
     expect(labels.indexOf("Refresh Shopify data after final product publication")).toBeLessThan(
       labels.indexOf("Build web app"),
     );
-    expect(labels.indexOf("Apply Shopify merchandising metafield backfill")).toBeLessThan(labels.indexOf("Build web app"));
+    expect(labels.indexOf(merchandisingBackfillLabel)).toBeLessThan(labels.indexOf("Build web app"));
     expect(labels.at(-1)).toBe("Sync Android Capacitor shell");
+  });
+
+  it("keeps the product release on the new-products SEO and publication path", () => {
+    const labels = buildReleaseSteps({ rootDir: "/tmp/salt-shine-enhancer", profile: "products" }).map(
+      (step) => step.label,
+    );
+
+    expect(labels).toEqual([
+      "Run frozen new-product SEO, metafield, and mapping pipeline",
+      "Delete verified zero-image products in the new cohort",
+      "Publish new-cohort products to all sales channels",
+      "Build web app",
+      "Generate Shopify theme bundle",
+      "Sync iOS Capacitor shell",
+      "Sync Android Capacitor shell",
+    ]);
+
+    const steps = buildReleaseSteps({ rootDir: "/tmp/salt-shine-enhancer", profile: "products" });
+    expect(steps[0].args).toContain("--frozen-catalog");
+    expect(steps[0].args).toContain("output/new-product-cohort-catalog.json");
+    expect(steps[1].args).toContain("--product-handles-file");
+    expect(steps[2].args).toContain("output/new-product-cohort-handles.json");
   });
 });

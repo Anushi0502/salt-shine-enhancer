@@ -68,6 +68,7 @@ function parseArgs(argv) {
     productHandles: [],
     productHandlesFile: "",
     onlyFields: [],
+    productOnly: false,
     skipLiveReviews: false,
   };
 
@@ -152,6 +153,11 @@ function parseArgs(argv) {
       }
       args.onlyFields.push(...String(next).split(",").map((value) => value.trim()).filter(Boolean));
       index += 1;
+      continue;
+    }
+
+    if (token === "--product-only") {
+      args.productOnly = true;
       continue;
     }
 
@@ -1539,15 +1545,26 @@ async function main() {
     diaperTypeOptions: diaperDiscovery.options,
     disclosureOptions: disclosureDiscovery.options,
   });
-  const marketingBackfillPlan = buildMarketingBackfillPlan({
-    products: hydratedProducts,
-    collections: Array.isArray(collectionsPayload.collections) ? collectionsPayload.collections : [],
-    collectionProducts: collectionProductsPayload,
-    shop:
-      /^gid:\/\/shopify\/Shop\/\d+$/i.test(String(shopPayload?.shop?.id || ""))
-        ? shopPayload.shop
-        : await fetchLiveShopRecord(),
-  });
+  const marketingBackfillPlan = args.productOnly
+    ? {
+        ownerPlans: [],
+        summary: {
+          scannedCollections: 0,
+          scannedProducts: 0,
+          totalWrites: 0,
+          writesByField: {},
+          skippedByReason: {},
+        },
+      }
+    : buildMarketingBackfillPlan({
+        products: hydratedProducts,
+        collections: Array.isArray(collectionsPayload.collections) ? collectionsPayload.collections : [],
+        collectionProducts: collectionProductsPayload,
+        shop:
+          /^gid:\/\/shopify\/Shop\/\d+$/i.test(String(shopPayload?.shop?.id || ""))
+            ? shopPayload.shop
+            : await fetchLiveShopRecord(),
+      });
 
   const onlyFields = new Set(args.onlyFields);
   const scopeWrites = (plans) =>
@@ -1564,7 +1581,7 @@ async function main() {
   const productBatches = buildMetafieldSetBatches(productPlans, 25);
   const marketingBatches = buildMarketingMetafieldSetBatches(marketingPlans, 25);
   const batches = [...productBatches, ...marketingBatches];
-  const categoryPlans = onlyFields.size ? [] : buildCategoryPlans(hydratedProducts);
+  const categoryPlans = args.productOnly || onlyFields.size ? [] : buildCategoryPlans(hydratedProducts);
   const scopedWritesByField = {};
   for (const plan of productPlans) {
     for (const write of plan.writes || []) {

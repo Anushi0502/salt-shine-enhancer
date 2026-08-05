@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -91,7 +91,13 @@ function isActiveProduct(product) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: "dry-run", output: defaultOutputPath, sample: 0 };
+  const args = {
+    mode: "dry-run",
+    output: defaultOutputPath,
+    sample: 0,
+    productHandlesFile: "",
+    concurrency: Math.max(1, Number(process.env.SALT_SHOPIFY_PUBLICATION_CONCURRENCY || 1) || 1),
+  };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--apply") {
@@ -110,9 +116,29 @@ function parseArgs(argv) {
     if (token === "--sample") {
       args.sample = Math.max(0, Number(argv[index + 1] || 0) || 0);
       index += 1;
+      continue;
+    }
+    if (token === "--concurrency") {
+      args.concurrency = Math.max(1, Number(argv[index + 1] || 1) || 1);
+      index += 1;
+      continue;
+    }
+    if (token === "--product-handles-file") {
+      args.productHandlesFile = resolve(rootDir, argv[index + 1] || "");
+      index += 1;
     }
   }
   return args;
+}
+
+async function readProductHandles(filePath) {
+  if (!filePath) return null;
+  const parsed = JSON.parse(await readFile(filePath, "utf8"));
+  const handles = Array.isArray(parsed) ? parsed : parsed?.handles;
+  if (!Array.isArray(handles) || !handles.length) {
+    throw new Error(`Product handles file contains no handles: ${filePath}`);
+  }
+  return new Set(handles.map((handle) => normalizeText(handle).toLowerCase()).filter(Boolean));
 }
 
 function formatUserErrors(errors) {
@@ -245,14 +271,52 @@ function refreshSummary(manifest) {
   manifest.summary.failed = tasks.filter((task) => task.status === "failed").length;
 }
 
+const resumableStatuses = new Set([
+  "published-verified",
+  "subscription-restricted-verified",
+  "already-published",
+  "skipped-not-active",
+  "skipped-missing",
+]);
+
+async function mergeResumableTasks(manifest, outputPath, args) {
+  if (args.mode !== "apply") return;
+  let previous;
+  try {
+    previous = JSON.parse(await readFile(outputPath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+
+  const sameScope = previous?.mode === "apply"
+    && previous?.source?.productHandlesFile === (args.productHandlesFile || null)
+    && previous?.summary?.selectedProducts === manifest.summary.selectedProducts
+    && Array.isArray(previous.tasks);
+  if (!sameScope) return;
+
+  const previousById = new Map(previous.tasks.map((task) => [task.productId, task]));
+  for (const task of manifest.tasks) {
+    const prior = previousById.get(task.productId);
+    if (!prior || !resumableStatuses.has(prior.status)) continue;
+    task.status = prior.status;
+    task.verifiedAt = prior.verifiedAt || "";
+    task.failure = prior.failure || "";
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv);
   if (args.mode === "apply") await verifyApprovalForApply();
 
   const retryInfo = [];
+  const productHandles = await readProductHandles(args.productHandlesFile);
   const publications = await fetchPublications(retryInfo);
   const activeProducts = await fetchActiveProducts(retryInfo);
-  const selectedProducts = args.sample > 0 ? activeProducts.slice(0, args.sample) : activeProducts;
+  const scopedProducts = productHandles
+    ? activeProducts.filter((product) => productHandles.has(normalizeText(product.handle).toLowerCase()))
+    : activeProducts;
+  const selectedProducts = args.sample > 0 ? scopedProducts.slice(0, args.sample) : scopedProducts;
   const manifest = {
     schemaVersion: 1,
     runId: `${Date.now()}-${process.pid}`,
@@ -264,11 +328,14 @@ async function main() {
       store: client.storeDomain,
       apiVersion: client.apiVersion,
       productQuery: activeProductQuery,
+      productHandlesFile: args.productHandlesFile || null,
       publications: publications.map((publication) => ({ id: publication.id, name: normalizeText(publication.name) })),
       freshLiveRead: true,
     },
     policy: {
-      scope: "active products only; draft and archived products are unchanged",
+      scope: args.productHandlesFile
+        ? "active products in the supplied cohort only; all other products are unchanged"
+        : "active products only; draft and archived products are unchanged",
       target: "all available Shopify sales-channel publications",
       subscriptionOnly: "publish Online Store only and verify all other known publications remain unpublished",
       readback: "the fresh live catalog scan proves no-op products; every product requiring a write or subscription exclusion is freshly read and verified afterward",
@@ -290,6 +357,10 @@ async function main() {
     tasks: selectedProducts.map((product) => taskFromPlan(planProductPublication(product, publications), args.mode)),
   };
 
+  await mergeResumableTasks(manifest, args.output, args);
+  refreshSummary(manifest);
+  await writeManifest(args.output, manifest);
+
   if (args.mode === "dry-run") {
     manifest.completedAt = new Date().toISOString();
     refreshSummary(manifest);
@@ -298,11 +369,7 @@ async function main() {
     return;
   }
 
-  for (const task of manifest.tasks) {
-    if (task.status === "already-published") {
-      task.verifiedAt = new Date().toISOString();
-      continue;
-    }
+  async function applyTask(task) {
     const taskRetryInfo = [];
     try {
       const current = await fetchProductById(task.productId, taskRetryInfo, `publication pre-write read ${task.handle}`);
@@ -359,9 +426,27 @@ async function main() {
       task.verifiedAt = new Date().toISOString();
     }
     manifest.retryInfo.push(...taskRetryInfo);
-    refreshSummary(manifest);
-    await writeManifest(args.output, manifest);
   }
+
+  let manifestWrite = Promise.resolve();
+  const persistManifest = async () => {
+    manifestWrite = manifestWrite.then(() => writeManifest(args.output, manifest));
+    await manifestWrite;
+  };
+  const pendingTasks = manifest.tasks.filter((task) => task.status === "pending");
+  let nextTaskIndex = 0;
+  const applyWorker = async () => {
+    while (nextTaskIndex < pendingTasks.length) {
+      const task = pendingTasks[nextTaskIndex];
+      nextTaskIndex += 1;
+      await applyTask(task);
+      refreshSummary(manifest);
+      await persistManifest();
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(args.concurrency, pendingTasks.length) }, () => applyWorker()),
+  );
 
   const finalPublications = await fetchPublications(retryInfo);
   if (publicationSignature(finalPublications) !== publicationSignature(publications)) {

@@ -191,6 +191,65 @@ describe("product knowledge base", () => {
     expect(hairCare.canonicalType).toBe("Hair Care");
   });
 
+  it("does not infer wireless connectivity from supplier tags on wired devices", () => {
+    const wiredMouse = classifyProductKnowledge({
+      id: 25,
+      title: "USB Optical Wired Mouse Laptop Office",
+      handle: "usb-optical-wired-mouse-laptop-office",
+      tags: ["wireless", "bluetooth", "computer mouse"],
+    });
+    const wirelessMouse = classifyProductKnowledge({
+      id: 26,
+      title: "Wireless Bluetooth Mouse",
+      handle: "wireless-bluetooth-mouse",
+    });
+
+    expect(wiredMouse.attributes.features || []).not.toEqual(expect.arrayContaining(["wireless", "bluetooth"]));
+    expect(wiredMouse.proposedTags).not.toContain("salt:feature:wireless");
+    expect(wiredMouse.proposedTags).not.toContain("salt:feature:bluetooth");
+    expect(wirelessMouse.attributes.features).toEqual(expect.arrayContaining(["wireless", "bluetooth"]));
+    expect(wirelessMouse.proposedTags).toEqual(expect.arrayContaining([
+      "salt:feature:wireless",
+      "salt:feature:bluetooth",
+    ]));
+  });
+
+  it("does not let stale merchandising signals override direct product evidence", () => {
+    const mensShoes = classifyProductKnowledge({
+      id: 27,
+      title: "Men Running Shoes Marathon Sneakers",
+      handle: "men-running-shoes-marathon-sneakers",
+      tags: ["salt:audience:men", "salt:category:men-fashion", "salt:department:men"],
+      customData: { collectionSignal: "Baby & Children's Athletic Shoes" },
+    });
+    const lunchBox = classifyProductKnowledge({
+      id: 28,
+      title: "Side Open Lunch Box",
+      handle: "side-open-lunch-box-bento-food-container",
+      tags: ["salt:category:kitchen-cookware", "salt:department:home-decor"],
+      customData: { collectionSignal: "Pen & Pencil Cases" },
+    });
+
+    expect(mensShoes.departmentId).toBe("men");
+    expect(mensShoes.categoryId).toBe("men-fashion");
+    expect(mensShoes.categoryId).not.toBe("kids-wear");
+    expect(lunchBox.categoryId).toBe("kitchen-cookware");
+    expect(lunchBox.categoryId).not.toBe("office-school-supplies");
+  });
+
+  it("does not let an audience supplier tag override a conflicting title", () => {
+    const womensShirt = classifyProductKnowledge({
+      id: 29,
+      title: "T-Shirt For Women Loose Cotton Top",
+      handle: "t-shirt-for-women-loose-cotton-top",
+      tags: ["Men T shirts", "salt:audience:women"],
+    });
+
+    expect(womensShirt.departmentId).toBe("women");
+    expect(womensShirt.categoryId).toBe("women-fashion");
+    expect(womensShirt.categoryId).not.toBe("men-fashion");
+  });
+
   it("lets a title-level product noun beat conflicting supplier-handle words", () => {
     const pants = classifyProductKnowledge({
       id: 21,

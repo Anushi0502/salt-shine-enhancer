@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
@@ -10,6 +10,7 @@ import { formatMoney, polishPlainText } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
+import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroEverydayEssentials from "@/assets/hero-everyday-essentials-square.png";
@@ -37,9 +38,10 @@ type ReviewTile = {
   author: string;
   rating: number;
   verifiedBuyer: boolean;
+  sourceLabel: string;
 };
 
-const HOME_REVIEW_SCROLL_PX_PER_MS = 0.035;
+const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -48,6 +50,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
+    sourceLabel: "Featured SALT pick",
   },
   {
     key: "fallback-review-2",
@@ -55,6 +58,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
+    sourceLabel: "Featured SALT pick",
   },
   {
     key: "fallback-review-3",
@@ -62,6 +66,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
+    sourceLabel: "Featured SALT pick",
   },
   {
     key: "fallback-review-4",
@@ -69,10 +74,20 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
+    sourceLabel: "Featured SALT pick",
   },
 ];
 
 const stars = Array.from({ length: 5 }, (_, index) => index);
+const reviewCountFormatter = new Intl.NumberFormat("en-US");
+
+function formatReviewAverage(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "0";
+  }
+
+  return Number(value.toFixed(2)).toString();
+}
 
 function SectionTitle({ title, to }: { title: string; to?: string }) {
   return (
@@ -308,20 +323,73 @@ const HomePage = () => {
     [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
-  // Homepage must not fan out to one external review request per product. Static
-  // testimonials keep the section instant; full Judge.me detail remains on product pages.
-  const reviewTiles = fallbackReviewTiles;
+  const reviewScrollPositionRef = useRef(0);
+  const reviewSourceProducts = useMemo(() => {
+    const products = [
+      ...(homeCollectionProductsPayload?.sections.everydayEssentials.products || []),
+      ...(homeCollectionProductsPayload?.sections.womensBeautyEssentials.products || []),
+      ...(homeCollectionProductsPayload?.sections.portableGadgets.products || []),
+      ...(homeCollectionProductsPayload?.sections.travelOutdoor.products || []),
+      ...(homeFeaturedProductsPayload?.bestSellerProducts || []),
+      ...(homeFeaturedProductsPayload?.quirkyGiftPicks || []),
+      ...(homeFeaturedProductsPayload?.everydayEssentialProducts || []),
+    ];
+
+    return products.filter(
+      (product, index, array) => array.findIndex((candidate) => candidate.id === product.id) === index,
+    );
+  }, [homeCollectionProductsPayload, homeFeaturedProductsPayload]);
+  const reviewProductTitles = useMemo(
+    () => new Map(reviewSourceProducts.map((product) => [product.id, product.title] as const)),
+    [reviewSourceProducts],
+  );
+  const reviewProductIds = useMemo(
+    () => reviewSourceProducts.map((product) => product.id),
+    [reviewSourceProducts],
+  );
+  const reviewFetchLimit = 500;
+  const { data: judgeMeTestimonials = [] } = useJudgeMeTestimonials(reviewProductIds, reviewFetchLimit);
+  const reviewTiles = useMemo<ReviewTile[]>(() => {
+    if (judgeMeTestimonials.length > 0) {
+      return judgeMeTestimonials
+        .map((review) => ({
+          key: review.id,
+          quote: polishPlainText(review.body || review.title),
+          author: polishPlainText(review.author || "Verified shopper") || "Verified shopper",
+          rating: Math.max(0, Math.min(5, review.rating || 0)),
+          verifiedBuyer: review.verifiedBuyer,
+          sourceLabel: reviewProductTitles.get(review.productId) || "Featured SALT pick",
+        }))
+        .filter((tile) => Boolean(tile.quote));
+    }
+
+    return fallbackReviewTiles;
+  }, [judgeMeTestimonials, reviewProductTitles]);
   const reviewLoopCopies = useMemo(() => {
-    if (reviewTiles.length >= 10) {
+    if (reviewTiles.length >= 120) {
+      return 1;
+    }
+
+    if (reviewTiles.length >= 48) {
       return 2;
     }
 
-    if (reviewTiles.length >= 5) {
+    if (reviewTiles.length >= 16) {
       return 3;
     }
 
     return 4;
   }, [reviewTiles.length]);
+  const reviewAverage = useMemo(() => {
+    if (!reviewTiles.length) {
+      return 0;
+    }
+
+    return reviewTiles.reduce((sum, tile) => sum + tile.rating, 0) / reviewTiles.length;
+  }, [reviewTiles]);
+  const reviewHeaderStarCount = Math.max(0, Math.min(5, Math.floor(reviewAverage)));
+  const reviewCountLabel = reviewCountFormatter.format(reviewTiles.length);
+  const reviewRatingLabel = formatReviewAverage(reviewAverage);
   const reviewTrackTiles = useMemo<ReviewTile[]>(() => {
     if (!reviewTiles.length) {
       return [];
@@ -350,6 +418,7 @@ const HomePage = () => {
     let animationFrameId = 0;
     let lastFrameAt = 0;
     let isPaused = false;
+    reviewScrollPositionRef.current = carousel.scrollLeft;
 
     const handleMouseEnter = () => {
       isPaused = true;
@@ -357,6 +426,10 @@ const HomePage = () => {
 
     const handleMouseLeave = () => {
       isPaused = false;
+    };
+
+    const handleScroll = () => {
+      reviewScrollPositionRef.current = carousel.scrollLeft;
     };
 
     const tick = (frameAt: number) => {
@@ -371,8 +444,12 @@ const HomePage = () => {
         const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
         const loopWidth = reviewLoopCopies > 1 ? carousel.scrollWidth / reviewLoopCopies : maxScrollLeft;
         if (maxScrollLeft > 0 && loopWidth > 0) {
-          const nextScrollLeft = carousel.scrollLeft + elapsed * HOME_REVIEW_SCROLL_PX_PER_MS;
-          carousel.scrollLeft = nextScrollLeft >= loopWidth ? nextScrollLeft - loopWidth : nextScrollLeft;
+          reviewScrollPositionRef.current += elapsed * HOME_REVIEW_SCROLL_PX_PER_MS;
+          if (reviewScrollPositionRef.current >= loopWidth) {
+            reviewScrollPositionRef.current -= loopWidth;
+          }
+
+          carousel.scrollLeft = reviewScrollPositionRef.current;
         }
       }
 
@@ -381,14 +458,32 @@ const HomePage = () => {
 
     carousel.addEventListener("mouseenter", handleMouseEnter);
     carousel.addEventListener("mouseleave", handleMouseLeave);
+    carousel.addEventListener("scroll", handleScroll, { passive: true });
     animationFrameId = window.requestAnimationFrame(tick);
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
       carousel.removeEventListener("mouseenter", handleMouseEnter);
       carousel.removeEventListener("mouseleave", handleMouseLeave);
+      carousel.removeEventListener("scroll", handleScroll);
     };
   }, [reviewLoopCopies, reviewTiles.length]);
+  const scrollReviewCarousel = (direction: -1 | 1) => {
+    const carousel = reviewCarouselRef.current;
+    if (!carousel) {
+      return;
+    }
+
+    const firstCard = carousel.querySelector<HTMLElement>("[data-review-card]");
+    const cardWidth = firstCard?.getBoundingClientRect().width || 272;
+    const cardGap = 20;
+
+    carousel.scrollBy({
+      left: direction * (cardWidth + cardGap),
+      behavior: "smooth",
+    });
+    reviewScrollPositionRef.current = carousel.scrollLeft;
+  };
 
   return (
     <section className="mt-1 w-full px-3 pb-3 sm:mt-3 sm:px-4 sm:pb-5 lg:px-5 lg:pb-6 xl:px-6">
@@ -461,38 +556,90 @@ const HomePage = () => {
 
         <Reveal delayMs={280}>
           <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
-            <SectionTitle title="What Our Customers Are Saying" />
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-muted-foreground sm:mt-5">
-              <p className="salt-editorial-meta inline-flex items-center px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em]">
-                {reviewTiles.length} reviews
-              </p>
+            <div className="mx-auto max-w-5xl text-center">
+              <h2 className="font-display text-[clamp(1.7rem,4vw,3rem)] leading-[0.94] tracking-[-0.05em] text-foreground sm:text-[clamp(1.85rem,3.3vw,3.25rem)]">
+                What Our Customers Are Saying
+              </h2>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.92rem] sm:mt-4 sm:gap-x-4">
+                <div className="flex items-center gap-1 text-foreground">
+                  {stars.map((starIndex) => (
+                    <Star
+                      key={starIndex}
+                      className={`h-4 w-4 ${starIndex < reviewHeaderStarCount ? "fill-current" : "text-border"}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-foreground">
+                  <span>{reviewRatingLabel}</span>
+                  <Star className="h-4 w-4 fill-current" />
+                  <span className="text-muted-foreground">({reviewCountLabel} reviews)</span>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/92 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground shadow-[0_10px_24px_-20px_rgba(15,23,42,0.2)]">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#4cc1ba] text-white shadow-sm">
+                    <Check className="h-3.5 w-3.5" />
+                  </span>
+                  Verified
+                </span>
+              </div>
             </div>
 
-            <div className="salt-surface mt-4 rounded-[1.25rem] p-3 shadow-[0_18px_40px_-34px_rgba(22,77,160,0.18)] sm:mt-5 sm:p-4">
-              <div ref={reviewCarouselRef} className="salt-review-carousel">
-                <div className="salt-review-carousel-track gap-3.5 sm:gap-4 lg:gap-5">
-                  {reviewTrackTiles.map((tile, index) => (
-                    <article
-                      key={`${tile.key}-${index}`}
-                      className="flex h-[13.75rem] w-[16rem] shrink-0 flex-col rounded-[1.05rem] border border-border/70 bg-background/96 p-4 text-foreground shadow-[0_14px_36px_-30px_rgba(22,77,160,0.14)] sm:h-[14rem] sm:w-[17rem] lg:h-[14.25rem] lg:w-[18rem]"
-                    >
-                      <div className="flex items-center gap-1 text-amber-500">
-                        {stars.map((starIndex) => (
-                          <Star
-                            key={starIndex}
-                            className={`h-4 w-4 ${starIndex < tile.rating ? "fill-current" : "text-border"}`}
-                          />
-                        ))}
-                      </div>
-                      <p className="mt-3 line-clamp-4 flex-1 text-sm leading-6 text-muted-foreground">
-                        "{tile.quote}"
-                      </p>
-                      <p className="mt-3 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        {tile.author}
-                        {tile.verifiedBuyer ? " - Verified Buyer" : ""}
-                      </p>
-                    </article>
-                  ))}
+            <div className="relative mt-6 sm:mt-7">
+              <button
+                type="button"
+                onClick={() => scrollReviewCarousel(-1)}
+                aria-label="Previous reviews"
+                className="absolute left-0 top-1/2 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] transition hover:-translate-y-1/2 hover:border-primary/30 hover:text-primary lg:inline-flex"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollReviewCarousel(1)}
+                aria-label="Next reviews"
+                className="absolute right-0 top-1/2 hidden h-12 w-12 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] transition hover:-translate-y-1/2 hover:border-primary/30 hover:text-primary lg:inline-flex"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+
+              <div className="salt-surface overflow-hidden rounded-[1.4rem] p-3 shadow-[0_18px_40px_-34px_rgba(22,77,160,0.18)] sm:p-4 lg:px-10 lg:py-5">
+                <div
+                  ref={reviewCarouselRef}
+                  className="salt-review-carousel snap-x snap-proximity"
+                  aria-label="Judge.me customer reviews carousel"
+                >
+                  <div className="salt-review-carousel-track gap-3.5 sm:gap-4 lg:gap-5">
+                    {reviewTrackTiles.map((tile, index) => (
+                      <article
+                        key={`${tile.key}-${index}`}
+                        data-review-card
+                        className="flex h-[23rem] w-[15.25rem] shrink-0 snap-start flex-col rounded-[1.25rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-4 text-foreground shadow-[0_18px_42px_-34px_rgba(22,77,160,0.16)] sm:h-[24rem] sm:w-[16rem] lg:h-[26rem] lg:w-[17rem]"
+                      >
+                        <div className="flex flex-1 flex-col">
+                          <div className="flex-1" />
+                          <p className="mx-auto max-w-[12rem] text-center text-[1rem] leading-7 tracking-[-0.01em] text-foreground/92 sm:text-[1.06rem]">
+                            {tile.quote}
+                          </p>
+                          <div className="flex-1" />
+                        </div>
+                        <div className="mt-auto space-y-3 text-center">
+                          <div className="flex items-center justify-center gap-1 text-primary">
+                            {stars.map((starIndex) => (
+                              <Star
+                                key={starIndex}
+                                className={`h-4 w-4 ${starIndex < tile.rating ? "fill-current" : "text-border"}`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-[1rem] font-semibold leading-tight tracking-[-0.02em] text-foreground">
+                            {tile.author}
+                          </p>
+                          <p className="line-clamp-1 text-[0.78rem] text-muted-foreground">
+                            {tile.sourceLabel}
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
