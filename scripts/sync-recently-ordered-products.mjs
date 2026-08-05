@@ -66,9 +66,11 @@ async function queryWithAdminToken() {
     body: JSON.stringify({ query: RECENT_ORDER_PRODUCTS_QUERY }),
   });
   const payload = await response.json();
-  if (!response.ok || payload.errors?.length) {
-    const detail = payload.errors?.map((error) => error.message).join(" | ") || response.statusText;
-    throw new Error(`Shopify recent orders query failed: ${detail}`);
+  if (!response.ok || payload.errors) {
+    const detail = formatShopifyErrors(payload.errors) || response.statusText;
+    const error = new Error(`Shopify recent orders query failed: ${detail}`);
+    error.status = response.status;
+    throw error;
   }
   return payload.data;
 }
@@ -98,8 +100,8 @@ async function queryWithShopifyCli() {
       { env: process.env, maxBuffer: 10 * 1024 * 1024 },
     );
     const payload = JSON.parse(await readFile(outputFile, "utf8"));
-    if (payload.errors?.length) {
-      throw new Error(payload.errors.map((error) => error.message).join(" | "));
+    if (payload.errors) {
+      throw new Error(formatShopifyErrors(payload.errors));
     }
     return payload.data || payload;
   } finally {
@@ -122,14 +124,48 @@ function isMissingShopifyAuth(error) {
   return /No stored app authentication found|shopify store auth/i.test(message);
 }
 
+function formatShopifyErrors(errors) {
+  if (Array.isArray(errors)) {
+    return errors
+      .map((error) => (typeof error === "string" ? error : error?.message || JSON.stringify(error)))
+      .filter(Boolean)
+      .join(" | ");
+  }
+
+  if (typeof errors === "string") {
+    return errors;
+  }
+
+  if (errors && typeof errors === "object") {
+    return errors.message || errors.error || JSON.stringify(errors);
+  }
+
+  return "";
+}
+
+function isAdminAuthFailure(error) {
+  const message = [error?.message, error?.stderr, error?.stdout]
+    .filter(Boolean)
+    .join(" ");
+  return error?.status === 401 || error?.status === 403 || /unauthori[sz]ed|access denied|invalid api key|invalid access token/i.test(message);
+}
+
 let payload;
 
 if (adminToken) {
-  const data = await queryWithAdminToken();
-  payload = buildRecentlyOrderedProductsPayload(data?.orders, {
-    limit: 4,
-    minPriceExclusive: 34,
-  });
+  try {
+    const data = await queryWithAdminToken();
+    payload = buildRecentlyOrderedProductsPayload(data?.orders, {
+      limit: 4,
+      minPriceExclusive: 34,
+    });
+  } catch (error) {
+    if (!isAdminAuthFailure(error)) throw error;
+    payload = await loadCommittedFallback();
+    process.stdout.write(
+      "Shopify Admin authentication is unavailable; preserving the committed recently ordered product feed.\n",
+    );
+  }
 } else {
   try {
     const data = await queryWithShopifyCli();
@@ -138,7 +174,7 @@ if (adminToken) {
       minPriceExclusive: 34,
     });
   } catch (error) {
-    if (error?.code !== "ENOENT" && !isMissingShopifyAuth(error)) throw error;
+    if (error?.code !== "ENOENT" && !isMissingShopifyAuth(error) && !isAdminAuthFailure(error)) throw error;
     payload = await loadCommittedFallback();
     process.stdout.write(
       "Shopify CLI authentication is unavailable; preserving the committed recently ordered product feed.\n",
