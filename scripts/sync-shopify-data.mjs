@@ -368,7 +368,7 @@ async function fetchAdminPaged(key, endpoint) {
     nextUrl = extractNextPageUrl(response.headers.get("link"));
   }
 
-  return rows;
+  return dedupeRowsByStableIdentity(rows, key);
 }
 
 async function fetchPaged(key, endpoint) {
@@ -390,7 +390,44 @@ async function fetchPaged(key, endpoint) {
     page += 1;
   }
 
-  return rows;
+  return dedupeRowsByStableIdentity(rows, key);
+}
+
+function dedupeRowsByStableIdentity(rows, label) {
+  const uniqueRows = [];
+  const indexByIdentity = new Map();
+
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const identity = String(row?.id || row?.admin_graphql_api_id || row?.handle || "")
+      .trim()
+      .toLowerCase();
+
+    if (!identity) {
+      uniqueRows.push(row);
+      continue;
+    }
+
+    const existingIndex = indexByIdentity.get(identity);
+    if (existingIndex === undefined) {
+      indexByIdentity.set(identity, uniqueRows.length);
+      uniqueRows.push(row);
+      continue;
+    }
+
+    const existing = uniqueRows[existingIndex];
+    const existingUpdatedAt = Date.parse(String(existing?.updated_at || existing?.updatedAt || ""));
+    const candidateUpdatedAt = Date.parse(String(row?.updated_at || row?.updatedAt || ""));
+    if (Number.isFinite(candidateUpdatedAt) && candidateUpdatedAt > existingUpdatedAt) {
+      uniqueRows[existingIndex] = row;
+    }
+  }
+
+  const duplicateCount = rows.length - uniqueRows.length;
+  if (duplicateCount > 0) {
+    process.stdout.write(`Deduplicated ${duplicateCount} duplicate ${label} rows by stable Shopify identity\n`);
+  }
+
+  return uniqueRows;
 }
 
 const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
