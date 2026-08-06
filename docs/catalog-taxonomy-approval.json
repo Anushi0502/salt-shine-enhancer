@@ -1,9 +1,9 @@
 {
-  "approvalId": "salt-full-catalog-release-2026-08-05-approved",
+  "approvalId": "salt-full-catalog-release-2026-08-06-approved",
   "approved": true,
-  "approvedAt": "2026-08-05T18:21:39Z",
-  "approvalSource": "User-approved full-catalog release instructions in the current SALT task",
-  "taxonomyVersion": "2026-08-05.47",
+  "approvedAt": "2026-08-06T13:10:00Z",
+  "approvalSource": "User request to diversify catalog classification, reduce misclassification, and run the unified release daily",
+  "taxonomyVersion": "2026-08-06.1",
   "scope": {
     "existingShopifyTags": "preserve-unmanaged-exactly",
     "managedTags": "exact replacement within checked-in salt managed namespaces",

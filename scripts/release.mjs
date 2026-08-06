@@ -12,6 +12,14 @@ const rootDir = resolve(__dirname, "..");
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const nodeBin = process.execPath;
 const require = createRequire(import.meta.url);
+const catalogBatchSize = Math.max(1, Math.min(1000, Number(process.env.SALT_CATALOG_BATCH_SIZE || 50)));
+
+const catalogIntegrityArgs = [
+  "--skip-vision",
+  "--reclassify",
+  "--batch-size",
+  String(catalogBatchSize),
+];
 
 function formatCommand(command, args) {
   return [command, ...args].join(" ");
@@ -132,13 +140,13 @@ function buildCatalogReleaseSteps({
     {
       label: "Dry-run exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:dry-run"],
+      args: ["run", "shopify:catalog-integrity:dry-run", "--", ...catalogIntegrityArgs],
       cwd: releaseRootDir,
     },
     {
       label: "Apply exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:apply"],
+      args: ["run", "shopify:catalog-integrity:apply", "--", ...catalogIntegrityArgs],
       cwd: releaseRootDir,
     },
     {
@@ -198,7 +206,7 @@ function buildCatalogReleaseSteps({
     {
       label: "Verify exact collection membership and price rules",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:verify"],
+      args: ["run", "shopify:catalog-integrity:verify", "--", ...catalogIntegrityArgs],
       cwd: releaseRootDir,
     },
     {

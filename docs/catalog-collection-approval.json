@@ -1,10 +1,10 @@
 {
-  "approvalId": "salt-full-catalog-collections-2026-08-05-approved",
+  "approvalId": "salt-full-catalog-collections-2026-08-06-approved",
   "approved": true,
-  "approvedAt": "2026-08-05T18:21:39Z",
-  "approvalSource": "User instruction to classify the full catalog, create Creator Essentials and Anime Collectables, repair every collection, and leave no product collectionless",
-  "taxonomyVersion": "2026-08-05.47",
-  "collectionPlanVersion": "2026-08-05.47-collections.2",
+  "approvedAt": "2026-08-06T13:10:00Z",
+  "approvalSource": "User request to diversify catalog classification, reduce misclassification, repair every collection, and leave no product collectionless",
+  "taxonomyVersion": "2026-08-06.1",
+  "collectionPlanVersion": "2026-08-06.1-collections.2",
   "governanceVersion": "2026-08-05.1",
   "scope": {
     "managedCollections": "create or repair only canonical collections in the checked-in full-catalog governance registry",

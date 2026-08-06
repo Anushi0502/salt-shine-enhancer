@@ -1,6 +1,6 @@
 import { getCatalogTaxonomyOverride } from "./catalog-taxonomy-overrides.js";
 
-export const CATALOG_TAXONOMY_VERSION = "2026-08-05.47";
+export const CATALOG_TAXONOMY_VERSION = "2026-08-06.1";
 export const CATALOG_TAG_PREFIX = "salt";
 
 const STOP_WORDS = new Set([
@@ -7535,6 +7535,18 @@ function scoreRule(entry, evidence) {
     const lengthBonus = Math.min(3, phraseTokens(match.term).length);
     return total + Math.max(...match.fields.map((field) => fieldWeight(field) * lengthBonus));
   }, 0);
+  const directFields = ["title", "handle", "productType"].filter((field) => fields.has(field));
+  const directPhraseMatches = matches.filter((match) =>
+    phraseTokens(match.term).length >= 2 && match.fields.some((field) => directFields.includes(field)),
+  );
+  const requiredGroupCount = entry.requires.filter((group) => normalizeTerms(group).some((term) => hasPhraseInEvidence(evidence, term).length)).length;
+  const evidenceLanes = unique([
+    directFields.length ? "direct-text" : "",
+    directPhraseMatches.length ? "phrase-anchor" : "",
+    requiredGroupCount >= 2 ? "required-groups" : "",
+    fields.has("tags") ? "supplier-metadata" : "",
+    fields.has("collectionSignal") ? "collection-signal" : "",
+  ]);
   const titleOrHandle = fields.has("title") || fields.has("handle");
   const primaryEvidence = titleOrHandle || fields.has("productType");
   // Priority resolves true taxonomy conflicts, while field evidence resolves
@@ -7542,12 +7554,24 @@ function scoreRule(entry, evidence) {
   // handle descriptor such as "sunscreen" rather than being trapped by a
   // broad high-priority skincare rule.
   const score = entry.priority * 3 + matchScore + requiredMatches.length * 24;
+  // Keep the legacy priority score, but rank candidates with independent
+  // evidence lanes as well. This prevents one incidental noun from beating a
+  // product noun supported by a phrase anchor and a second direct field.
+  const consensusScore = score +
+    directPhraseMatches.length * 10 +
+    Math.max(0, directFields.length - 1) * 5 +
+    (requiredGroupCount >= 2 ? 8 : 0);
 
   return {
     entry,
     score,
+    consensusScore,
     fields: [...fields],
     terms: unique(matches.map((match) => match.term)),
+    evidenceLanes,
+    directFields,
+    directPhraseCount: directPhraseMatches.length,
+    requiredGroupCount,
     titleOrHandle,
     primaryEvidence,
     directEvidenceRank: directEvidenceRank(fields),
@@ -7901,7 +7925,7 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
   const candidateMatches = candidateRules(evidence)
     .map((entry) => scoreRule(entry, evidence))
     .filter(Boolean)
-    .sort((left, right) => right.score - left.score || left.entry.id.localeCompare(right.entry.id));
+    .sort((left, right) => right.consensusScore - left.consensusScore || right.score - left.score || left.entry.id.localeCompare(right.entry.id));
 
   if (!candidateMatches.length) return fallbackClassification(product, audience, attributes);
 
@@ -7948,7 +7972,7 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
   const runnerUp = matches[1];
   const resolvedAudience = applyRuleAudienceOverride(best.entry, audience);
   const taxonomy = resolveAudienceTaxonomy(best.entry, resolvedAudience);
-  const scoreGap = runnerUp ? best.score - runnerUp.score : Number.POSITIVE_INFINITY;
+  const scoreGap = runnerUp ? best.consensusScore - runnerUp.consensusScore : Number.POSITIVE_INFINITY;
   const hasTitleOrHandle = best.titleOrHandle;
   const reviewReasons = [];
   const weakGenericMatch = best.entry.generic && (
@@ -7961,10 +7985,18 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
   else if (best.primaryEvidence) confidence += 8;
   else confidence -= 16;
   if (best.terms.length >= 2) confidence += 5;
+  if (best.directFields.length >= 2) confidence += 4;
+  if (best.directPhraseCount) confidence += 4;
   if (best.entry.generic) confidence -= weakGenericMatch ? 18 : 4;
-  if (scoreGap < 8 && runnerUp?.entry.familyId !== best.entry.familyId) {
+  const crossFamilyConflict = runnerUp && runnerUp.entry.familyId !== best.entry.familyId;
+  const hasStrongDirectPhrase = best.directPhraseCount > 0 && best.directEvidenceRank >= 2;
+  if (scoreGap < 8 && crossFamilyConflict) {
     confidence -= 12;
     reviewReasons.push(`ambiguous-with:${runnerUp.entry.id}`);
+  }
+  if (crossFamilyConflict && best.directFields.length <= 1 && !hasStrongDirectPhrase && scoreGap < 18) {
+    confidence -= 10;
+    reviewReasons.push(`weak-cross-family-consensus:${runnerUp.entry.id}`);
   }
   if (!hasTitleOrHandle) reviewReasons.push("no-title-or-handle-evidence");
   if (weakGenericMatch) reviewReasons.push("generic-fallback-rule");
@@ -7993,7 +8025,14 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
     confidence,
     reviewRequired: confidence < 72 || reviewReasons.length > 0,
     reviewReasons,
-    evidence: { fields: best.fields, terms: best.terms },
+    evidence: {
+      fields: best.fields,
+      terms: best.terms,
+      lanes: best.evidenceLanes,
+      directFields: best.directFields,
+      directPhraseCount: best.directPhraseCount,
+      requiredGroupCount: best.requiredGroupCount,
+    },
   };
   classification.seoEligible = best.entry.seoEligible !== false && !classification.reviewRequired;
   classification.proposedTags = classification.seoEligible ? buildTaxonomyTags(classification) : [];

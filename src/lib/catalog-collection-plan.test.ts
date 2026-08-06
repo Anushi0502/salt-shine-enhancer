@@ -14,7 +14,7 @@ describe("catalog collection plan", () => {
     expect(new Set(CATALOG_COLLECTION_PLAN.map((entry) => entry.handle)).size).toBe(CATALOG_COLLECTION_PLAN.length);
     expect(new Set(CATALOG_COLLECTION_RULE_TAGS).size).toBe(CATALOG_COLLECTION_RULE_TAGS.length);
     expect(CATALOG_COLLECTION_PLAN.every((entry) => entry.ruleTag.startsWith("salt:"))).toBe(true);
-    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-05.47-collections.2");
+    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-06.1-collections.2");
   });
 
   it("matches only the intended controlled tag source", () => {

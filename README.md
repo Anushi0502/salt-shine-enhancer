@@ -65,6 +65,7 @@ keep their independently configured Shopify prices.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
 - `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
 - `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
+- `npm run release:schedule:install`: install or replace the macOS launchd job that runs the unified daily release at 11:00 PM local time, with output in `output/scheduled-release.log`.
 - `npm run release:products`: run the frozen product-cohort release path. It requires `output/new-product-cohort-catalog.json` and `output/new-product-cohort-handles.json`, then scopes SEO, metafields, mappings, zero-image cleanup, publication, and storefront/theme rebuild to those handles only.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
@@ -229,6 +230,14 @@ npm run release:overnight
 This waits for the current SEO/apply manifest to report completion, then runs `npm run release` automatically.
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
+
+The daily background schedule runs `npm run release:daily`. It performs the full-catalog diversified classification and collection reconciliation in 50-product batches, then runs SEO, metafields, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs.
+
+Install or replace the schedule with:
+
+```bash
+npm run release:schedule:install
+```
 
 The metafield-definition stage uses Shopify CLI store auth. If the store session is missing, run:
 
