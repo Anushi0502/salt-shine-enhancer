@@ -15,6 +15,10 @@ import {
   managedMinimumQuantityTagFromTags,
   reconcileManagedMinimumQuantityTags,
 } from "./shopify-seo-managed-tags.js";
+import {
+  buildContentFingerprint,
+  tokenizeSpecificityText,
+} from "./product-content-specificity.js";
 
 const PRODUCT_FIELDS = ["title", "descriptionHtml", "productType"];
 const SEO_FIELDS = ["title", "description"];
@@ -39,6 +43,121 @@ function normalizeComparableText(value) {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function shortenSeoText(value, maximumLength) {
+  const text = normalizePlainText(value);
+  if (text.length <= maximumLength) return text;
+  const shortened = text.slice(0, Math.max(1, maximumLength + 1));
+  const boundary = shortened.lastIndexOf(" ");
+  return (boundary > maximumLength * 0.6 ? shortened.slice(0, boundary) : shortened.slice(0, maximumLength))
+    .replace(/[\s,;:|/-]+$/g, "")
+    .trim();
+}
+
+function stableCatalogReference(handle) {
+  let hash = 2166136261;
+  for (const character of normalizeHandleValue(handle)) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+}
+
+function titleCaseQualifier(value) {
+  return normalizePlainText(value)
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => (/^[a-z]/.test(word) ? `${word[0].toUpperCase()}${word.slice(1)}` : word))
+    .join(" ");
+}
+
+function buildSemanticGroupQualifier(product, members) {
+  const ownTokens = tokenizeSpecificityText(product.handle, { includeGeneric: false });
+  const otherTokens = new Set(
+    members
+      .filter((entry) => entry.handle !== product.handle)
+      .flatMap((entry) => tokenizeSpecificityText(entry.handle, { includeGeneric: false })),
+  );
+  const uniqueTokens = [...new Set(ownTokens)]
+    .filter((token) => !otherTokens.has(token) && !/^\d+$/.test(token))
+    .slice(0, 3);
+  return titleCaseQualifier(uniqueTokens.join(" "));
+}
+
+function duplicateSeoGroups(products, field) {
+  const groups = new Map();
+  for (const product of products) {
+    const value = product.desiredProductInput?.seo?.[field] || "";
+    const fingerprint = buildContentFingerprint(value);
+    if (!fingerprint) continue;
+    if (!groups.has(fingerprint)) groups.set(fingerprint, []);
+    groups.get(fingerprint).push(product);
+  }
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function appendSeoTitleQualifier(value, qualifier) {
+  const safeQualifier = shortenSeoText(qualifier, 26);
+  const suffix = ` | ${safeQualifier}`;
+  return `${shortenSeoText(value, 70 - suffix.length)}${suffix}`;
+}
+
+function appendSeoDescriptionQualifier(value, qualifier, isReference) {
+  const suffix = isReference
+    ? `SALT catalog reference ${qualifier.replace(/^Ref\s+/i, "")}.`
+    : `Identifying details include ${normalizePlainText(qualifier).toLowerCase()}.`;
+  const base = shortenSeoText(String(value || "").replace(/[.!?]+$/g, ""), 168 - suffix.length);
+  return `${base}. ${suffix}`;
+}
+
+function updateProductSeoField(product, field, value, qualifier) {
+  product.desiredProductInput = {
+    ...(product.desiredProductInput || {}),
+    seo: {
+      ...(product.desiredProductInput?.seo || {}),
+      [field]: value,
+    },
+  };
+  product.intelligence = {
+    ...(product.intelligence || {}),
+    [field === "title" ? "canonicalSeoTitle" : "canonicalSeoDescription"]: value,
+  };
+  product.productInput = {
+    ...(product.productInput || {}),
+    seo: {
+      ...(product.productInput?.seo || {}),
+      [field]: value,
+    },
+  };
+  product.reasons = [...(product.reasons || []), `seo-identity:${qualifier}`];
+}
+
+function disambiguateSeoContent(products) {
+  for (const field of ["title", "description"]) {
+    for (let pass = 0; pass < 2; pass += 1) {
+      const duplicateGroups = duplicateSeoGroups(products, field);
+      if (!duplicateGroups.length) break;
+      for (const group of duplicateGroups) {
+        const semanticQualifiers = group.map((product) => buildSemanticGroupQualifier(product, group));
+        const semanticQualifiersAreUnique =
+          pass === 0 &&
+          semanticQualifiers.every(Boolean) &&
+          new Set(semanticQualifiers.map((value) => normalizeComparableText(value))).size === group.length;
+        group.forEach((product, index) => {
+          const qualifier = semanticQualifiersAreUnique
+            ? semanticQualifiers[index]
+            : `Ref ${stableCatalogReference(product.handle)}`;
+          const currentValue = product.desiredProductInput?.seo?.[field] || "";
+          const nextValue = field === "title"
+            ? appendSeoTitleQualifier(currentValue, qualifier)
+            : appendSeoDescriptionQualifier(currentValue, qualifier, !semanticQualifiersAreUnique);
+          updateProductSeoField(product, field, nextValue, qualifier);
+        });
+      }
+    }
+  }
+  return products;
 }
 
 function decodeComparableHtmlEntities(value) {
@@ -334,7 +453,7 @@ function variantPlanMatches(left, right) {
   );
 }
 
-export async function buildShopifySeoReleasePlan(snapshot) {
+export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = false } = {}) {
   const rows = buildCatalogRowsFromSnapshot(snapshot);
   const catalogContext = createSeoCatalogContext({
     products: getProductList(snapshot),
@@ -346,7 +465,31 @@ export async function buildShopifySeoReleasePlan(snapshot) {
     suppressCategoryWarnings: true,
   });
 
-  const products = basePlan.products.map((productPlan) => {
+  const products = disambiguateSeoContent(basePlan.products.map((productPlan) => {
+    const desiredProductInput = { ...(productPlan.desiredProductInput || {}) };
+    if (forceExplicitSeo) {
+      const canonicalSeoTitleBase = normalizePlainText(
+        productPlan.intelligence?.canonicalSeoTitle || desiredProductInput.seo?.title || "",
+      );
+      const canonicalProductTitle = normalizePlainText(
+        productPlan.intelligence?.canonicalTitle || desiredProductInput.title || productPlan.title || "",
+      );
+      // Shopify treats an SEO title equal to the product title as the implicit
+      // default and stores it as null. Keep the title product-specific while
+      // making the explicit override durable on Shopify.
+      const canonicalSeoTitle = canonicalSeoTitleBase && canonicalProductTitle &&
+        normalizeComparableText(canonicalSeoTitleBase) === normalizeComparableText(canonicalProductTitle)
+        ? appendSeoTitleQualifier(canonicalSeoTitleBase, "SALT Online")
+        : canonicalSeoTitleBase;
+      const canonicalSeoDescription = normalizePlainText(
+        productPlan.intelligence?.canonicalSeoDescription || desiredProductInput.seo?.description || "",
+      );
+      desiredProductInput.seo = {
+        ...(desiredProductInput.seo || {}),
+        ...(canonicalSeoTitle ? { title: canonicalSeoTitle } : {}),
+        ...(canonicalSeoDescription ? { description: canonicalSeoDescription } : {}),
+      };
+    }
     const currentVariantUpdates = buildReleaseDesiredVariants(productPlan);
     // Shopify is the sole price authority. SEO can read every variant to
     // understand quality, size, color, or bundle tiers, but it must never
@@ -354,7 +497,7 @@ export async function buildShopifySeoReleasePlan(snapshot) {
     const desiredVariantUpdates = currentVariantUpdates.map((variant) => ({ ...variant }));
     return {
       ...productPlan,
-      desiredProductInput: buildReleaseDesiredProductInput(productPlan),
+      desiredProductInput: buildReleaseDesiredProductInput({ ...productPlan, desiredProductInput }),
       desiredVariantUpdates,
       currentVariantUpdates,
       desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
@@ -364,7 +507,7 @@ export async function buildShopifySeoReleasePlan(snapshot) {
       currentQuantityTag: getMinimumQuantityTagForPrices(currentVariantUpdates.map((variant) => variant.price)),
       categoryAuthoritative: Boolean(productPlan.categoryId && productPlan.categoryQuery),
     };
-  });
+  }));
 
   return {
     ...basePlan,
@@ -566,7 +709,9 @@ function buildProductDiff(liveProduct, productPlan) {
     }
 
     const liveSeoValue = field === "title" ? effectiveLiveSeoTitle : liveSeo[field];
-    if (normalizeComparableText(desiredSeo[field]) === normalizeComparableText(liveSeoValue)) {
+    const matchesLiveSeoValue = normalizeComparableText(desiredSeo[field]) === normalizeComparableText(liveSeoValue);
+    const needsExplicitSeoTitle = field === "title" && !normalizePlainText(liveSeo.title);
+    if (matchesLiveSeoValue && !needsExplicitSeoTitle) {
       skippedFields.push({
         field: `seo-${field}`,
         reason: field === "title" && !normalizePlainText(liveSeo.title) ? "uses product title default" : "already aligned",

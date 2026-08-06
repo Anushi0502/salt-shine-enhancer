@@ -1,15 +1,20 @@
 {
-  "approvalId": "salt-collection-rules-2026-08-04-user-approved",
+  "approvalId": "salt-full-catalog-collections-2026-08-05-approved",
   "approved": true,
-  "approvedAt": "2026-08-04T00:00:00.000Z",
-  "approvalSource": "User instruction: collections bana do yrr iss rules se",
-  "taxonomyVersion": "2026-08-04.39",
+  "approvedAt": "2026-08-05T18:21:39Z",
+  "approvalSource": "User instruction to classify the full catalog, create Creator Essentials and Anime Collectables, repair every collection, and leave no product collectionless",
+  "taxonomyVersion": "2026-08-05.47",
+  "collectionPlanVersion": "2026-08-05.47-collections.2",
+  "governanceVersion": "2026-08-05.1",
   "scope": {
-    "managedCollections": "create or rebuild only the canonical collections in the checked-in collection plan",
-    "controlledRuleTags": "salt:department and salt:category tags only",
-    "existingTags": "preserve exactly; add-only salt namespace",
-    "onlineStorePublication": "verify each collection is published to Online Store; do not mutate product publications",
-    "legacyHandleRedirects": "redirect only the explicitly mapped legacy handles when reusing their collection record",
-    "legacyMergesOrArchives": "not approved"
+    "managedCollections": "create or repair only canonical collections in the checked-in full-catalog governance registry",
+    "controlledRuleTags": "exactly one salt:collection:<handle> tag condition per semantic collection",
+    "existingTags": "preserve unmanaged tags exactly; exact-replace checked-in salt managed namespaces",
+    "onlineStorePublication": "publish newly created canonical collections to Online Store; preserve existing publication state",
+    "legacyHandleRedirects": "redirect only explicitly checked-in legacy handles when reusing their collection record",
+    "legacyMergesOrArchives": "not approved",
+    "priceCollections": "repair exact variant-price conditions and verify exact live membership",
+    "collectionlessProducts": "forbidden; every active product must be verified in at least one live collection",
+    "specialCollections": "Creator Essentials must contain at least 500 products and Anime Collectables at least 1000 products across the full catalog"
   }
 }

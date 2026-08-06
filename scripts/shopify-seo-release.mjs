@@ -2,7 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -20,6 +20,10 @@ import {
 import { isActiveShopifyProduct } from "../src/lib/catalog-taxonomy-release.js";
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { managedMinimumQuantityTagFromTags } from "../src/lib/shopify-seo-managed-tags.js";
+import {
+  assessProductContentSpecificity,
+  findCatalogContentCollisions,
+} from "../src/lib/product-content-specificity.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -44,6 +48,7 @@ const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
 const seoApplyBatchSize = Math.max(1, Math.min(5, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 5)));
+const seoReadConcurrency = Math.max(1, Number(process.env.SALT_SHOPIFY_SEO_READ_CONCURRENCY || 4));
 const ACTIVE_PRODUCT_QUERY = "status:active";
 
 const PRODUCT_SELECTION = /* GraphQL */ `
@@ -327,6 +332,50 @@ const MEDIA_UPDATE_MUTATION = /* GraphQL */ `
         field
         message
       }
+    }
+  }
+`;
+
+const STAGED_UPLOAD_CREATE_MUTATION = /* GraphQL */ `
+  mutation ShopifySeoReleaseStagedUpload($input: [StagedUploadInput!]!) {
+    stagedUploadsCreate(input: $input) {
+      stagedTargets { url parameters { name value } }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_RUN_MUTATION = /* GraphQL */ `
+  mutation ShopifySeoReleaseRunBulk($mutation: String!, $stagedUploadPath: String!) {
+    bulkOperationRunMutation(mutation: $mutation, stagedUploadPath: $stagedUploadPath) {
+      bulkOperation { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_STATUS_QUERY = /* GraphQL */ `
+  query ShopifySeoReleaseBulkStatus($id: ID!) {
+    bulkOperation(id: $id) {
+      id status errorCode objectCount fileSize url partialDataUrl createdAt completedAt
+    }
+  }
+`;
+
+const BULK_PRODUCT_UPDATE_MUTATION = /* GraphQL */ `
+  mutation ShopifySeoReleaseBulkProductUpdate($product: ProductUpdateInput!) {
+    productUpdate(product: $product) {
+      product { id }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_MEDIA_UPDATE_MUTATION = /* GraphQL */ `
+  mutation ShopifySeoReleaseBulkMediaUpdate($productId: ID!, $media: [UpdateMediaInput!]!) {
+    productUpdateMedia(productId: $productId, media: $media) {
+      media { id }
+      userErrors { field message }
     }
   }
 `;
@@ -681,14 +730,30 @@ async function fetchProductsById(ids, retryInfo, operation = "read product batch
     return new Map();
   }
 
-  const data = await runShopifyCliGraphQL(
-    PRODUCTS_BY_ID_QUERY,
-    { ids: uniqueIds },
-    { operation, retryInfo },
-  );
-  const products = Array.isArray(data?.nodes)
-    ? data.nodes.filter((node) => node?.id && isActiveShopifyProduct(node))
-    : [];
+  // Shopify caps `nodes(ids: ...)` input arrays at 250 IDs.
+  const batches = [];
+  for (let index = 0; index < uniqueIds.length; index += 250) {
+    batches.push(uniqueIds.slice(index, index + 250));
+  }
+  const results = new Array(batches.length);
+  let nextBatchIndex = 0;
+  const worker = async () => {
+    while (true) {
+      const batchIndex = nextBatchIndex;
+      nextBatchIndex += 1;
+      if (batchIndex >= batches.length) return;
+      const data = await runShopifyCliGraphQL(
+        PRODUCTS_BY_ID_QUERY,
+        { ids: batches[batchIndex] },
+        { operation: `${operation} ${batchIndex + 1}/${batches.length}`, retryInfo },
+      );
+      results[batchIndex] = Array.isArray(data?.nodes)
+        ? data.nodes.filter((node) => node?.id && isActiveShopifyProduct(node))
+        : [];
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(seoReadConcurrency, batches.length) }, () => worker()));
+  const products = results.flat();
   const hydratedProducts = [];
   for (const product of products) {
     hydratedProducts.push(hasNestedPaginationGap(product) ? await hydrateNestedProductConnections(product, retryInfo) : product);
@@ -765,17 +830,26 @@ async function hydrateNestedProductConnections(product, retryInfo) {
 async function fetchLiveProductsForPlan(plan, retryInfo, sample, scopeToPlan = false) {
   if (scopeToPlan) {
     const ids = plan.products.map((entry) => entry.productId).filter(Boolean);
-    const products = [];
+    const batches = [];
     for (let index = 0; index < ids.length; index += 100) {
-      const batch = ids.slice(index, index + 100);
-      const byId = await fetchProductsById(
-        batch,
-        retryInfo,
-        `scoped product batch ${Math.floor(index / 100) + 1}/${Math.ceil(ids.length / 100)}`,
-      );
-      products.push(...byId.values());
+      batches.push(ids.slice(index, index + 100));
     }
-    return products;
+    const results = new Array(batches.length);
+    let nextBatchIndex = 0;
+    const worker = async () => {
+      while (true) {
+        const batchIndex = nextBatchIndex;
+        nextBatchIndex += 1;
+        if (batchIndex >= batches.length) return;
+        results[batchIndex] = await fetchProductsById(
+          batches[batchIndex],
+          retryInfo,
+          `scoped product batch ${batchIndex + 1}/${batches.length}`,
+        );
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(seoReadConcurrency, batches.length) }, () => worker()));
+    return results.flatMap((result) => [...(result?.values() || [])]);
   }
 
   if (!sample) {
@@ -1243,28 +1317,86 @@ function assertNoUnverifiedFailures(manifest) {
 function auditLiveSeoPlan(plan, manifest) {
   const allowedTags = new Set(["h2", "h3", "p", "ul", "li", "strong", "ol"]);
   const genericTitle = /beauty product|personal care item|portable false eyelashes|lines water light/i;
+  const plannedContent = plan.products.map((product) => {
+    const desired = product.desiredProductInput || {};
+    const intelligence = product.intelligence || {};
+    return {
+      product,
+      id: product.productId || null,
+      handle: product.handle,
+      title: desired.title || intelligence.canonicalTitle || intelligence.sourceTitle || "",
+      evidence: {
+        handle: product.handle,
+        title: desired.title || intelligence.canonicalTitle || intelligence.sourceTitle || "",
+        productType: desired.productType || product.productType || intelligence.productType || "",
+        tags: intelligence.tags || [],
+      },
+      title: String(desired.title || intelligence.canonicalTitle || intelligence.sourceTitle || "").trim(),
+      body: String(desired.descriptionHtml || ""),
+      seoTitle: String(desired.seo?.title || "").trim(),
+      seoDescription: String(desired.seo?.description || "").trim(),
+    };
+  });
+  const collisions = findCatalogContentCollisions(plannedContent, [
+    { id: "seo-title", getValue: (entry) => entry.seoTitle },
+    { id: "seo-description", getValue: (entry) => entry.seoDescription },
+  ]);
+  const collisionsByHandle = new Map();
+  for (const collision of collisions) {
+    for (const member of collision.members) {
+      if (!member.handle) continue;
+      if (!collisionsByHandle.has(member.handle)) collisionsByHandle.set(member.handle, []);
+      collisionsByHandle.get(member.handle).push(collision.field);
+    }
+  }
   let passed = 0;
-  for (const product of plan.products) {
+  for (const content of plannedContent) {
+    const { product, evidence, title, body, seoTitle, seoDescription } = content;
     const desired = product.desiredProductInput || {};
     const proposesSeoContent = Boolean(
       desired.title || desired.descriptionHtml || desired.seo?.title || desired.seo?.description,
     );
-    if (!proposesSeoContent) {
+    if (!proposesSeoContent && !manifest.policy.forceFullCatalog) {
       passed += 1;
       continue;
     }
-    const title = String(desired.title || product.sourceTitle || "").trim();
-    const body = String(desired.descriptionHtml || product.sourceBodyHtml || "");
-    const seoTitle = String(desired.seo?.title || title).trim();
-    const seoDescription = String(desired.seo?.description || "").trim();
     const issues = [];
     if (!title || title.length > 75 || genericTitle.test(title)) issues.push("invalid-title");
     if (!seoTitle || seoTitle.length > 70 || genericTitle.test(seoTitle)) issues.push("invalid-seo-title");
     if (!seoDescription || seoDescription.length < 120 || seoDescription.length > 170) issues.push("invalid-seo-description");
-    if (!body || !/<h2>About /i.test(body) || !/Key Details/i.test(body) || !/Use &amp; Care|Use & Care/i.test(body) || !/FAQs/i.test(body)) issues.push("invalid-description-structure");
-    if ((body.match(/<h[23]>/gi) || []).length > 5) issues.push("cluttered-description-structure");
-    for (const match of body.matchAll(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi)) {
-      if (!allowedTags.has(match[1].toLowerCase())) issues.push(`unsupported-html:${match[1].toLowerCase()}`);
+    const seoTitleAssessment = assessProductContentSpecificity(seoTitle, evidence, {
+      field: "seo-title",
+      minimumEvidenceMatches: 2,
+      rejectGenericPatterns: true,
+    });
+    const seoDescriptionAssessment = assessProductContentSpecificity(seoDescription, evidence, {
+      field: "seo-description",
+      minimumEvidenceMatches: 2,
+      rejectGenericPatterns: true,
+    });
+    if (!seoTitleAssessment.specific) {
+      issues.push(...seoTitleAssessment.issues.map((issue) => `seo-title:${issue}`));
+    }
+    if (!seoDescriptionAssessment.specific) {
+      issues.push(...seoDescriptionAssessment.issues.map((issue) => `seo-description:${issue}`));
+    }
+    for (const field of collisionsByHandle.get(product.handle) || []) {
+      issues.push(`duplicate-${field}`);
+    }
+    if (body) {
+      if (!/<h2>About /i.test(body) || !/Key Details/i.test(body) || !/Use &amp; Care|Use & Care/i.test(body) || !/FAQs/i.test(body)) issues.push("invalid-description-structure");
+      if ((body.match(/<h[23]>/gi) || []).length > 5) issues.push("cluttered-description-structure");
+      const bodyAssessment = assessProductContentSpecificity(body, evidence, {
+        field: "description-html",
+        minimumEvidenceMatches: 2,
+        rejectGenericPatterns: true,
+      });
+      if (!bodyAssessment.specific) {
+        issues.push(...bodyAssessment.issues.map((issue) => `body:${issue}`));
+      }
+      for (const match of body.matchAll(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi)) {
+        if (!allowedTags.has(match[1].toLowerCase())) issues.push(`unsupported-html:${match[1].toLowerCase()}`);
+      }
     }
     if (issues.length) {
       markFailure(manifest, manifest.products.find((entry) => entry.handle === product.handle), "failed-quality-audit", new Error(issues.join(", ")));
@@ -1272,7 +1404,13 @@ function auditLiveSeoPlan(plan, manifest) {
       passed += 1;
     }
   }
-  manifest.qualityAudit = { products: plan.products.length, passed, failed: plan.products.length - passed };
+  manifest.qualityAudit = {
+    products: plan.products.length,
+    passed,
+    failed: plan.products.length - passed,
+    duplicateSeoTitles: collisions.filter((entry) => entry.field === "seo-title").length,
+    duplicateSeoDescriptions: collisions.filter((entry) => entry.field === "seo-description").length,
+  };
   assertNoUnverifiedFailures(manifest);
 }
 
@@ -1376,7 +1514,210 @@ async function preflight({ plan, manifest, liveProducts, output }) {
   assertNoUnverifiedFailures(manifest);
 }
 
-async function applyPlan({ plan, manifest, output, liveProducts = [] }) {
+async function uploadSeoBulkInput(inputPath, retryInfo, label) {
+  const data = await runShopifyCliGraphQL(STAGED_UPLOAD_CREATE_MUTATION, {
+    input: [{
+      resource: "BULK_MUTATION_VARIABLES",
+      filename: basename(inputPath),
+      mimeType: "text/jsonl",
+      httpMethod: "POST",
+    }],
+  }, { allowMutations: true, operation: `${label} staged upload reservation`, retryInfo });
+  const errors = data?.stagedUploadsCreate?.userErrors || [];
+  if (errors.length) throw new Error(`${label} staged upload failed: ${formatUserErrors(errors)}`);
+  const target = data?.stagedUploadsCreate?.stagedTargets?.[0];
+  if (!target?.url) throw new Error(`Shopify returned no ${label} staged upload target`);
+  const curlArgs = ["-sS", "-X", "POST", target.url];
+  for (const parameter of target.parameters || []) curlArgs.push("-F", `${parameter.name}=${parameter.value}`);
+  curlArgs.push("-F", `file=@${inputPath};type=text/jsonl`);
+  await execFileAsync("curl", curlArgs, { cwd: rootDir, maxBuffer: 20 * 1024 * 1024 });
+  const stagedUploadPath = (target.parameters || []).find((parameter) => parameter.name === "key")?.value;
+  if (!stagedUploadPath) throw new Error(`Shopify ${label} staged upload target did not include a key`);
+  return stagedUploadPath;
+}
+
+async function waitForSeoBulkOperation(operationId, retryInfo, label) {
+  while (true) {
+    const data = await runShopifyCliGraphQL(BULK_OPERATION_STATUS_QUERY, { id: operationId }, {
+      operation: `${label} bulk status`,
+      retryInfo,
+    });
+    const operation = data?.bulkOperation;
+    if (!operation) throw new Error(`${label} bulk operation not found: ${operationId}`);
+    process.stdout.write(`${label} bulk operation: ${operation.status}, ${operation.objectCount || 0} object(s).\n`);
+    if (operation.status === "COMPLETED") return operation;
+    if (["FAILED", "CANCELED", "EXPIRED"].includes(operation.status)) {
+      throw new Error(`${label} bulk operation ended ${operation.status}: ${operation.errorCode || "unknown error"}`);
+    }
+    await sleep(5000);
+  }
+}
+
+async function verifySeoBulkResult(resultPath, tasks, responseKey, label) {
+  const lines = (await readFile(resultPath, "utf8")).split(/\r?\n/).filter(Boolean);
+  const completed = new Set();
+  for (const [fallbackIndex, line] of lines.entries()) {
+    const payload = JSON.parse(line);
+    const lineNumber = Number.isInteger(Number(payload.__lineNumber)) ? Number(payload.__lineNumber) : fallbackIndex;
+    const task = tasks[lineNumber];
+    if (!task) throw new Error(`${label} returned an unknown input line ${lineNumber}`);
+    const topLevelErrors = Array.isArray(payload.errors) ? payload.errors : [];
+    if (topLevelErrors.length) {
+      throw new Error(`${task.entry.handle}: ${topLevelErrors.map((error) => error?.message || "bulk error").join(" | ")}`);
+    }
+    const response = payload?.data?.[responseKey];
+    const userErrors = response?.userErrors || [];
+    if (userErrors.length) throw new Error(`${task.entry.handle}: ${formatUserErrors(userErrors)}`);
+    if (!response) throw new Error(`${task.entry.handle}: ${label} returned no ${responseKey} payload`);
+    completed.add(lineNumber);
+  }
+  if (completed.size !== tasks.length) {
+    throw new Error(`${label} covered ${completed.size}/${tasks.length} input line(s)`);
+  }
+}
+
+async function runSeoBulkMutation({ tasks, variablesForTask, mutation, responseKey, label, outputPath, retryInfo }) {
+  if (!tasks.length) return null;
+  const inputPath = outputPath.replace(/\.json$/i, `-${label.replace(/\s+/g, "-")}-bulk-input.jsonl`);
+  const resultPath = outputPath.replace(/\.json$/i, `-${label.replace(/\s+/g, "-")}-bulk-result.jsonl`);
+  await writeFile(inputPath, `${tasks.map((task) => JSON.stringify(variablesForTask(task))).join("\n")}\n`, "utf8");
+  process.stdout.write(`Prepared ${tasks.length} ${label} input(s) for Shopify bulk mutation.\n`);
+  const stagedUploadPath = await uploadSeoBulkInput(inputPath, retryInfo, label);
+  const data = await runShopifyCliGraphQL(BULK_OPERATION_RUN_MUTATION, { mutation, stagedUploadPath }, {
+    allowMutations: true,
+    operation: `start ${label} bulk operation`,
+    retryInfo,
+  });
+  const errors = data?.bulkOperationRunMutation?.userErrors || [];
+  if (errors.length) throw new Error(`${label} bulk operation failed to start: ${formatUserErrors(errors)}`);
+  const operationId = data?.bulkOperationRunMutation?.bulkOperation?.id;
+  if (!operationId) throw new Error(`Shopify returned no ${label} bulk operation id`);
+  const operation = await waitForSeoBulkOperation(operationId, retryInfo, label);
+  if (!operation.url) throw new Error(`Completed ${label} bulk operation returned no result URL`);
+  const response = await fetch(operation.url);
+  if (!response.ok) throw new Error(`${label} bulk result download failed (${response.status})`);
+  await writeFile(resultPath, Buffer.from(await response.arrayBuffer()));
+  await verifySeoBulkResult(resultPath, tasks, responseKey, label);
+  return {
+    id: operation.id,
+    status: operation.status,
+    objectCount: Number(operation.objectCount || 0),
+    completedAt: operation.completedAt || new Date().toISOString(),
+    inputPath,
+    resultPath,
+  };
+}
+
+async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
+  const retryInfo = [];
+  const planByHandle = new Map(plan.products.map((entry) => [entry.handle, entry]));
+  const initialLiveById = new Map(liveProducts.map((product) => [product.id, product]));
+  const pendingEntries = manifest.products.filter(
+    (entry) => entry.status !== "skipped-exact-match" && !entry.status.startsWith("failed"),
+  );
+  const tasks = [];
+
+  for (const entry of pendingEntries) {
+    const productPlan = planByHandle.get(entry.handle);
+    const liveProduct = initialLiveById.get(entry.liveProductId);
+    if (!productPlan || !liveProduct || !isActiveShopifyProduct(liveProduct)) {
+      markFailure(manifest, entry, "failed-unresolved", new Error(`Bulk apply identity missing or inactive: ${entry.handle}`));
+      continue;
+    }
+    const diff = compareLiveProductToPlan(liveProduct, productPlan);
+    entry.changedFields = diff.changedFields;
+    entry.skippedFields = diff.skippedFields;
+    entry.writeCounts = {
+      product: productMutationFields(diff.productInput).length ? 1 : 0,
+      variants: diff.variantInputs.length,
+      media: diff.mediaInputs.length,
+      total: diff.writeCount,
+    };
+    entry.writeCount = diff.writeCount;
+    if (diff.unresolved.length) {
+      markFailure(manifest, entry, "failed-unresolved", new Error(diff.unresolved.map((item) => `${item.kind}:${item.reason}`).join(", ")));
+      continue;
+    }
+    if (!diff.hasMutations) {
+      entry.status = "skipped-exact-match";
+      entry.verifiedAt = new Date().toISOString();
+      continue;
+    }
+    tasks.push({ entry, productPlan, liveProduct, diff });
+  }
+
+  refreshSummary(manifest);
+  await writeManifest(output.path, manifest);
+  assertNoUnverifiedFailures(manifest);
+
+  const productTasks = tasks.filter((task) => productMutationFields(task.diff.productInput).length);
+  const mediaTasks = tasks.filter((task) => task.diff.mediaInputs.length);
+  manifest.bulkOperations = manifest.bulkOperations || {};
+  manifest.bulkOperations.product = await runSeoBulkMutation({
+    tasks: productTasks,
+    variablesForTask: (task) => ({ product: task.diff.productInput }),
+    mutation: BULK_PRODUCT_UPDATE_MUTATION,
+    responseKey: "productUpdate",
+    label: "SEO product",
+    outputPath: output.path,
+    retryInfo,
+  });
+  await writeManifest(output.path, manifest);
+  manifest.bulkOperations.media = await runSeoBulkMutation({
+    tasks: mediaTasks,
+    variablesForTask: (task) => ({ productId: task.liveProduct.id, media: task.diff.mediaInputs }),
+    mutation: BULK_MEDIA_UPDATE_MUTATION,
+    responseKey: "productUpdateMedia",
+    label: "SEO media",
+    outputPath: output.path,
+    retryInfo,
+  });
+  await writeManifest(output.path, manifest);
+
+  // The preflight already validated the complete active catalog. For final
+  // mutation proof, read only the product IDs actually sent to the bulk job;
+  // fetching every active product again through Shopify CLI pagination adds
+  // minutes without improving field-level readback confidence.
+  process.stdout.write(`Reading ${tasks.length} mutated products back after SEO bulk mutations.\n`);
+  const finalById = await fetchProductsById(
+    tasks.map((task) => task.liveProduct.id),
+    retryInfo,
+    "SEO final mutation readback",
+  );
+  const verificationFailures = [];
+  for (const [index, task] of tasks.entries()) {
+    const finalLive = finalById.get(task.liveProduct.id);
+    try {
+      if (!finalLive) throw new Error("Final verification product missing");
+      const finalDiff = compareLiveProductToPlan(finalLive, task.productPlan);
+      if (finalDiff.unresolved.length) {
+        throw new Error(`Final verification identity failure: ${finalDiff.unresolved.map((item) => `${item.kind}:${item.reason}`).join(", ")}`);
+      }
+      if (finalDiff.hasMutations) {
+        throw new Error(`Final verification still has differences: ${finalDiff.changedFields.join(", ")}`);
+      }
+      task.entry.liveFingerprint = buildLiveFingerprint(finalLive);
+      task.entry.skippedFields = finalDiff.skippedFields;
+      task.entry.status = "updated-verified";
+      task.entry.verifiedAt = new Date().toISOString();
+    } catch (error) {
+      verificationFailures.push(`${task.entry.handle}: ${error.message}`);
+      markFailure(manifest, task.entry, "failed", error);
+    }
+    if ((index + 1) % 250 === 0 || index + 1 === tasks.length) {
+      process.stdout.write(`SEO bulk readback verified ${index + 1}/${tasks.length} updated product(s).\n`);
+    }
+  }
+  manifest.retryInfo.push(...retryInfo);
+  refreshSummary(manifest);
+  await writeManifest(output.path, manifest);
+  if (verificationFailures.length) {
+    throw new Error(`SEO bulk verification failed for ${verificationFailures.length} product(s): ${verificationFailures.slice(0, 12).join(" | ")}`);
+  }
+  assertNoUnverifiedFailures(manifest);
+}
+
+async function applyPlanBatched({ plan, manifest, output, liveProducts = [] }) {
   const planByHandle = new Map(plan.products.map((entry) => [entry.handle, entry]));
   const initialLiveById = new Map(liveProducts.map((product) => [product.id, product]));
 
@@ -1573,6 +1914,17 @@ async function applyPlan({ plan, manifest, output, liveProducts = [] }) {
   }
 }
 
+async function applyPlan(args) {
+  const pendingCount = args.manifest.products.filter(
+    (entry) => entry.status !== "skipped-exact-match" && !entry.status.startsWith("failed"),
+  ).length;
+  const bulkThreshold = Math.max(1, Number(process.env.SALT_SHOPIFY_SEO_BULK_THRESHOLD || 500));
+  if (pendingCount >= bulkThreshold) {
+    return applyPlanBulk(args);
+  }
+  return applyPlanBatched(args);
+}
+
 export async function runShopifySeoRelease({
   mode = "dry-run",
   output = outputPath,
@@ -1589,7 +1941,7 @@ export async function runShopifySeoRelease({
   const localSnapshot = await loadCatalogSnapshot();
   const snapshot = await loadFrozenCatalogSnapshot(frozenCatalog, localSnapshot);
   const explicitNewProductHandles = newProductsOnly ? await readProductHandles(productHandlesFile) : null;
-  const localPlan = await buildShopifySeoReleasePlan(snapshot);
+  const localPlan = await buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo: true });
   const selectedProducts = explicitNewProductHandles
     ? localPlan.products.filter((product) => explicitNewProductHandles.has(product.handle))
     : localPlan.products;
@@ -1637,7 +1989,7 @@ export async function runShopifySeoRelease({
     total: mergedSnapshot.products.length,
     products: mergedSnapshot.products,
   });
-  const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot);
+  const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot, { forceExplicitSeo: true });
   const selectedHandles = new Set(localPlanSelection.products.map((entry) => entry.handle));
   const selectedPlan =
     sample > 0

@@ -339,7 +339,7 @@ describe("shopify product metafield backfill planner", () => {
     expect(collectionSignal).not.toContain("featured");
   });
 
-  it("refreshes only unmistakable legacy generated highlights", () => {
+  it("refreshes generic highlights while preserving product-specific merchant evidence", () => {
     const legacy = makeProduct({
       id: 112,
       title: "Portable Wireless Charger",
@@ -350,7 +350,7 @@ describe("shopify product metafield backfill planner", () => {
       id: 113,
       title: "Portable Wireless Charger",
       handle: "portable-wireless-charger-20w-for-travel",
-      customData: { highlights: ["Compact charging companion"] },
+      customData: { highlights: ["Compact 20W wireless charging companion"] },
     });
     const plan = buildBackfillPlan({
       products: [legacy, merchant],
@@ -372,7 +372,7 @@ describe("shopify product metafield backfill planner", () => {
     expect(merchantWrite).toBeUndefined();
   });
 
-  it("repairs malformed generated highlights without replacing merchant prose", () => {
+  it("repairs malformed generated highlights without replacing product-specific merchant prose", () => {
     const malformed = [
       makeProduct({
         id: 114,
@@ -390,7 +390,7 @@ describe("shopify product metafield backfill planner", () => {
         id: 116,
         title: "Compact Travel Organizer",
         handle: "compact-travel-organizer-for-daily-essentials",
-        customData: { highlights: ["Keeps small essentials organized"] },
+        customData: { highlights: ["Keeps compact travel organizer essentials organized"] },
       }),
     ];
     const plan = buildBackfillPlan({
@@ -410,6 +410,48 @@ describe("shopify product metafield backfill planner", () => {
       /home home|minimum-qty|shockproof phone/i,
     );
     expect(plan.productPlans[2]?.writes.some((entry) => entry.fieldId === BACKFILL_FIELD_IDS.highlights)).toBe(false);
+  });
+
+  it("replaces otherwise specific textual metafields when they collide across products", () => {
+    const sharedCustomData = {
+      subtitle: "Portable wireless charger",
+      highlights: ["Portable wireless charger"],
+      collectionSignal: "Portable wireless charger",
+      searchProductBoosts: ["portable wireless charger"],
+    };
+    const plan = buildBackfillPlan({
+      products: [
+        makeProduct({
+          id: 117,
+          title: "Portable Wireless Charger 15W",
+          handle: "portable-wireless-charger-15w-for-iphone",
+          customData: sharedCustomData,
+        }),
+        makeProduct({
+          id: 118,
+          title: "Portable Wireless Charger 20W",
+          handle: "portable-wireless-charger-20w-for-android",
+          customData: sharedCustomData,
+        }),
+      ],
+      collections: [],
+      collectionProducts: { collections: {} },
+      reviewSummaries: new Map(),
+      diaperTypeOptions: [],
+    });
+
+    for (const productPlan of plan.productPlans) {
+      const replacedFields = new Set(productPlan.writes.map((entry) => entry.fieldId));
+      expect([...replacedFields]).toEqual(
+        expect.arrayContaining([
+          BACKFILL_FIELD_IDS.subtitle,
+          BACKFILL_FIELD_IDS.highlights,
+          BACKFILL_FIELD_IDS.collectionSignal,
+          BACKFILL_FIELD_IDS.searchProductBoosts,
+        ]),
+      );
+      expect(productPlan.writes.map((entry) => entry.reason).join(" ")).toContain("catalog-duplicate");
+    }
   });
 
   it("keeps room for complementary products when the candidate pool is small", () => {

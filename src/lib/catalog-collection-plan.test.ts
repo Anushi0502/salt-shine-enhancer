@@ -10,11 +10,11 @@ import {
 
 describe("catalog collection plan", () => {
   it("keeps every canonical collection on a unique controlled tag", () => {
-    expect(CATALOG_COLLECTION_PLAN).toHaveLength(27);
+    expect(CATALOG_COLLECTION_PLAN).toHaveLength(29);
     expect(new Set(CATALOG_COLLECTION_PLAN.map((entry) => entry.handle)).size).toBe(CATALOG_COLLECTION_PLAN.length);
     expect(new Set(CATALOG_COLLECTION_RULE_TAGS).size).toBe(CATALOG_COLLECTION_RULE_TAGS.length);
     expect(CATALOG_COLLECTION_PLAN.every((entry) => entry.ruleTag.startsWith("salt:"))).toBe(true);
-    expect(CATALOG_COLLECTION_PLAN_VERSION).toMatch(/^2026-08-04\.39-collections\.1$/);
+    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-05.47-collections.2");
   });
 
   it("matches only the intended controlled tag source", () => {

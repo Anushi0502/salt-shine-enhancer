@@ -1,6 +1,6 @@
 // Visual decisions are recorded separately from text-only rules so catalog
 // releases can prove that an ambiguous product was actually inspected.
-export const CATALOG_TAXONOMY_IMAGE_OVERRIDE_VERSION = "2026-08-02.12";
+export const CATALOG_TAXONOMY_IMAGE_OVERRIDE_VERSION = "2026-08-05.13";
 
 export const CATALOG_TAXONOMY_IMAGE_OVERRIDES = Object.freeze([
   {
@@ -332,6 +332,50 @@ export const CATALOG_TAXONOMY_IMAGE_OVERRIDES = Object.freeze([
     imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ha5204c3bc3374a93a5c03afbecf564ace.webp?v=1785572082",
     reviewedAt: "2026-08-02T09:10:00Z",
     reason: "Inspected all six live product images: they consistently show men's black slim-fit denim jeans with a five-pocket construction, not writing supplies.",
+  },
+  {
+    id: "image-care-bears-plush-keychains-8066098397283",
+    productId: "8066098397283",
+    handle: "care-bears-cartoon-plush-toy-backpack-pendant-keychain-boys-girls-toy-schoolbag-decoration-birthday-present-cute-stuffed-keyring",
+    ruleId: "plush-keychains",
+    approved: true,
+    imageReviewed: true,
+    imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S99ac6b07c4da472e95ce585ca435adaaV.webp?v=1784028787",
+    reviewedAt: "2026-08-05T17:05:00Z",
+    reason: "Visually verified small Care Bears plush character toys with attached hanging straps and keychain-style backpack pendants, rather than full-size soft toys.",
+  },
+  {
+    id: "image-kpop-skz-phone-charm-8097532575843",
+    productId: "8097532575843",
+    handle: "k-pop-skz-black-and-red-mobile-phone-accessories",
+    ruleId: "phone-charms-dust-plugs",
+    approved: true,
+    imageReviewed: true,
+    imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1eb1e4bbb4c042db8a01daa3d5778d4b3.webp?v=1785840254",
+    reviewedAt: "2026-08-05T17:05:00Z",
+    reason: "Visually verified a beaded SKZ mobile-phone charm with a handset loop, letter beads, and decorative pendants; the imported title only says phone accessories.",
+  },
+  {
+    id: "image-buckwheat-sleep-pillow-8097451343971",
+    productId: "8097451343971",
+    handle: "pure-buckwheat-husk-pillow-cervical-pillow-adult-cervical-pillow",
+    ruleId: "sleep-support-pillows",
+    approved: true,
+    imageReviewed: true,
+    imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3d3d54e17c3842dcb005d6d122cc5e39f.webp?v=1785834905",
+    reviewedAt: "2026-08-05T17:05:00Z",
+    reason: "Visually verified a full-size buckwheat-husk bed pillow supporting the head and neck during sleep, not an inflatable travel pillow.",
+  },
+  {
+    id: "image-palestine-map-mens-tshirt-8094213210211",
+    productId: "8094213210211",
+    handle: "t-shirts-for-women-clothing-kids-palestine-map-print-short-sleeve-cotton-t-shirt-for-men-arabic-shemagh-palestine-flag-72711",
+    ruleId: "mens-graphic-tshirts",
+    approved: true,
+    imageReviewed: true,
+    imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0399982dbb57473cb2d9857bb48771ade_d7bf7c14-d14f-4b88-b437-4d7d4c84d50b.webp?v=1785573358",
+    reviewedAt: "2026-08-05T17:05:00Z",
+    reason: "Visually verified a men's short-sleeve white graphic T-shirt modeled on an adult man; the supplier title mixes women, kids, and men audience terms.",
   },
 ]);
 

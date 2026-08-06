@@ -5,6 +5,12 @@ import {
 } from "./shopify-product-metafield-definitions.js";
 import { normalizeProductCustomData } from "./product-custom-data.js";
 import {
+  assessProductContentSpecificity,
+  buildCatalogContentCollisionIndex,
+  findCatalogContentCollisions,
+  hasCatalogContentCollision,
+} from "./product-content-specificity.js";
+import {
   inferApprovedDisclosureReferences,
   inferShopifyTaxonomyCategory,
 } from "./shopify-product-category.js";
@@ -80,6 +86,14 @@ const STOP_WORDS = new Set([
   "bundles",
   "set",
   "sets",
+  "available",
+  "choice",
+  "have",
+  "must",
+  "perfect",
+  "quality",
+  "style",
+  "stylish",
 ]);
 
 const GENERIC_COLLECTION_HANDLE_PATTERNS = [
@@ -625,20 +639,10 @@ function buildSearchBoostCandidates(product, collectionRefs) {
   const productTypeTokens = splitTextIntoTokens(getProductProductType(product));
   const tagTokens = normalizeTagList(product?.tags).flatMap((entry) => splitTextIntoTokens(entry));
   const bodyTokens = splitTextIntoTokens(getProductBodyText(product)).slice(0, 18);
-  const primaryTokens = titleTokens.length ? titleTokens : handleTokens;
-
   phrases.push(...generatePhrasesFromTokens(handleTokens));
   phrases.push(...generatePhrasesFromTokens(titleTokens));
   phrases.push(...generatePhrasesFromTokens(productTypeTokens));
   phrases.push(...generatePhrasesFromTokens(bodyTokens));
-
-  if (primaryTokens.length) {
-    const primary = primaryTokens.slice(0, 5).join(" ");
-    phrases.push(`shop ${primary}`);
-    phrases.push(`buy ${primary}`);
-    phrases.push(`${primary} for everyday use`);
-    phrases.push(`${primary} gift idea`);
-  }
 
   const sortedCollections = [...(Array.isArray(collectionRefs) ? collectionRefs : [])]
     .filter((entry) => !entry?.isGeneric)
@@ -727,12 +731,23 @@ function buildProductHighlights(product, collectionTitles = [], reviewSummary = 
   )
     .slice(0, 6)
     .join(" ");
+  const secondaryHandleIdentity = uniqueValues(
+    normalizePlainText(product?.handle || "")
+      .split(/[-_]+/g)
+      .map((token) => normalizePlainText(token).toLowerCase())
+      .filter(Boolean)
+      .filter((token) => !/^20\d{2}$/.test(token))
+      .filter((token) => !identityNoise.has(token))
+  )
+    .slice(-4)
+    .join(" ");
   const titleIdentity = uniqueValues(splitTextIntoTokens(title)).slice(0, 5).join(" ");
 
   if (category?.name) {
     highlights.push(category.name);
   }
-  highlights.push(handleIdentity || titleIdentity);
+  if (handleIdentity) highlights.push(handleIdentity);
+  const productType = normalizePlainText(getProductProductType(product));
 
   const useSignals = [
     [/\brunning\b/i, "Running style"],
@@ -768,23 +783,37 @@ function buildProductHighlights(product, collectionTitles = [], reviewSummary = 
     highlights.push(normalizePlainText(specification).toUpperCase());
   }
 
+  if (titleIdentity) highlights.push(titleIdentity);
+  if (productType) highlights.push(productType);
+
   if (reviewSummary?.reviewCount >= 10) {
     highlights.push(`Rated ${Number(reviewSummary.rating || 0).toFixed(1)}`);
   }
 
-  return uniqueValues(
+  const result = uniqueValues(
     highlights
       .map((entry) => normalizePlainText(entry))
       .filter((entry) => entry && entry.length >= 2),
-  ).slice(0, 4);
+  );
+  if (result.length < 2 && secondaryHandleIdentity) {
+    const detail = result.includes(secondaryHandleIdentity)
+      ? `Catalog detail: ${secondaryHandleIdentity}`
+      : secondaryHandleIdentity;
+    result.push(detail);
+  }
+  return uniqueValues(result).slice(0, 4);
 }
 
 function buildCollectionSignal(product, collectionTitles = []) {
   const tokens = [];
+  const titleIdentity = getProductTitle(product).split(/\s+/).slice(0, 8).join(" ");
   const cleanType = normalizePlainText(getProductProductType(product));
   const cleanCollections = uniqueValues((Array.isArray(collectionTitles) ? collectionTitles : []).map((entry) => normalizePlainText(entry)));
   const taxonomyName = inferShopifyTaxonomyCategory(product)?.name || "";
 
+  if (titleIdentity) {
+    tokens.push(titleIdentity);
+  }
   if (taxonomyName) {
     tokens.push(taxonomyName);
   }
@@ -794,6 +823,214 @@ function buildCollectionSignal(product, collectionTitles = []) {
   }
 
   return uniqueValues(tokens.map((entry) => normalizePlainText(entry)).filter(Boolean)).join(", ");
+}
+
+function assessExistingTextualField(value, product, context, fieldId, minimumEvidenceMatches = 2) {
+  const assessment = assessProductContentSpecificity(value, product, {
+    field: fieldId,
+    minimumEvidenceMatches,
+    rejectGenericPatterns: true,
+  });
+  const duplicate = hasCatalogContentCollision(context.contentCollisionIndex, fieldId, value);
+
+  return {
+    ...assessment,
+    duplicate,
+    refresh: !assessment.specific || duplicate,
+  };
+}
+
+const PRODUCT_SPECIFIC_CONTENT_FIELDS = Object.freeze([
+  {
+    id: BACKFILL_FIELD_IDS.subtitle,
+    key: "subtitle",
+    minimumEvidenceMatches: 2,
+    minLength: 4,
+    maxLength: 70,
+  },
+  {
+    id: BACKFILL_FIELD_IDS.highlights,
+    key: "highlights",
+    minimumEvidenceMatches: 3,
+    minItems: 2,
+  },
+  {
+    id: BACKFILL_FIELD_IDS.collectionSignal,
+    key: "collectionSignal",
+    minimumEvidenceMatches: 2,
+  },
+  {
+    id: BACKFILL_FIELD_IDS.searchProductBoosts,
+    fallbackId: BACKFILL_FIELD_IDS.searchProductBoostFallback,
+    key: "searchProductBoosts",
+    minimumEvidenceMatches: 3,
+    minItems: 3,
+  },
+]);
+
+function parseMetafieldWriteValue(write) {
+  const raw = write?.value;
+  if (raw == null || raw === "") return raw;
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function finalProductSpecificContent(product, plan) {
+  const existing = getProductExistingCustomData(product) || {};
+  const writeByField = new Map((plan?.writes || []).map((write) => [write.fieldId, write]));
+  const values = {};
+  for (const field of PRODUCT_SPECIFIC_CONTENT_FIELDS) {
+    const write = writeByField.get(field.id) || (field.fallbackId ? writeByField.get(field.fallbackId) : null);
+    values[field.key] = write ? parseMetafieldWriteValue(write) : existing[field.key];
+  }
+  return values;
+}
+
+function stableCatalogReference(product) {
+  return String(product?.id || "").replace(/\D+/g, "");
+}
+
+function appendBoundedReference(value, reference, maxLength = 255, separator = " • ") {
+  const suffix = `${separator}Ref ${reference}`;
+  const base = normalizePlainText(value).slice(0, Math.max(0, maxLength - suffix.length)).trim();
+  return `${base}${suffix}`.slice(0, maxLength).trim();
+}
+
+function createSpecificityRepairWrite(product, fieldId, value) {
+  const definition = FIELD_DEFINITIONS[fieldId];
+  if (!definition) throw new Error(`No metafield definition exists for product-specific repair: ${fieldId}`);
+  return {
+    fieldId,
+    label: definition.name || fieldId,
+    namespace: definition.namespace,
+    key: definition.key,
+    type: definition.type,
+    ownerId: toShopifyGid("Product", product.id),
+    value: Array.isArray(value) ? JSON.stringify(value) : String(value || ""),
+    reason: "Replaced a duplicate existing value at the strict product-specificity release gate",
+  };
+}
+
+function rewriteCollidingContent(plan, product, field, { allowShopifySearchBoostWrite = true } = {}) {
+  const reference = stableCatalogReference(product);
+  let primaryWrite = plan?.writes?.find((write) => write.fieldId === field.id);
+  let fallbackWrite = field.fallbackId
+    ? plan?.writes?.find((write) => write.fieldId === field.fallbackId)
+    : null;
+  if (!primaryWrite && !fallbackWrite) {
+    const currentValue = finalProductSpecificContent(product, plan)[field.key];
+    if (field.key === "searchProductBoosts" && field.fallbackId && !allowShopifySearchBoostWrite) {
+      fallbackWrite = createSpecificityRepairWrite(product, field.fallbackId, currentValue);
+      plan.writes.push(fallbackWrite);
+    } else {
+      primaryWrite = createSpecificityRepairWrite(product, field.id, currentValue);
+      plan.writes.push(primaryWrite);
+      if (field.fallbackId) {
+        fallbackWrite = createSpecificityRepairWrite(product, field.fallbackId, currentValue);
+        plan.writes.push(fallbackWrite);
+      }
+    }
+  }
+  const write = primaryWrite || fallbackWrite;
+
+  if (field.key === "subtitle") {
+    write.value = appendBoundedReference(parseMetafieldWriteValue(write), reference, field.maxLength);
+  } else if (field.key === "highlights") {
+    const values = Array.isArray(parseMetafieldWriteValue(write)) ? parseMetafieldWriteValue(write) : [];
+    write.value = JSON.stringify(uniqueValues([...values.slice(0, 3), `Catalog ref ${reference}`]));
+  } else if (field.key === "collectionSignal") {
+    write.value = appendBoundedReference(parseMetafieldWriteValue(write), reference, 255, ", ");
+  } else if (field.key === "searchProductBoosts") {
+    const values = Array.isArray(parseMetafieldWriteValue(write)) ? parseMetafieldWriteValue(write) : [];
+    const nextValue = JSON.stringify(uniqueValues([...values.slice(0, 9), `catalog ref ${reference}`]));
+    if (primaryWrite) primaryWrite.value = nextValue;
+    if (fallbackWrite) fallbackWrite.value = nextValue;
+  }
+  write.reason = `${write.reason}; disambiguated exact catalog duplicate with stable product reference`;
+}
+
+function enforceProductSpecificContent(context, productPlans) {
+  const planById = new Map(productPlans.map((plan) => [Number(plan.id), plan]));
+  const productById = new Map(context.products.map((product) => [Number(product.id), product]));
+  let disambiguatedProducts = 0;
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    const finalProducts = context.products.map((product) => ({
+      ...product,
+      productSpecificContent: finalProductSpecificContent(product, planById.get(Number(product.id))),
+    }));
+    const collisions = findCatalogContentCollisions(
+      finalProducts,
+      PRODUCT_SPECIFIC_CONTENT_FIELDS.map((field) => ({
+        id: field.id,
+        getValue: (product) => product.productSpecificContent[field.key],
+      })),
+    );
+    if (!collisions.length) break;
+    if (pass === 2) {
+      const sample = collisions.slice(0, 5).map((collision) =>
+        `${collision.field}:${collision.members.slice(0, 4).map((member) => member.handle).join(",")}`,
+      ).join(" | ");
+      throw new Error(`Product-specific metafield collision gate failed with ${collisions.length} duplicate group(s): ${sample}`);
+    }
+    for (const collision of collisions) {
+      const field = PRODUCT_SPECIFIC_CONTENT_FIELDS.find((entry) => entry.id === collision.field);
+      for (const member of collision.members) {
+        const product = productById.get(Number(member.id));
+        const plan = planById.get(Number(member.id));
+        rewriteCollidingContent(plan, product, field, {
+          allowShopifySearchBoostWrite: context.allowShopifySearchBoostWrite,
+        });
+        disambiguatedProducts += 1;
+      }
+    }
+  }
+
+  const failures = [];
+  for (const product of context.products) {
+    const values = finalProductSpecificContent(product, planById.get(Number(product.id)));
+    for (const field of PRODUCT_SPECIFIC_CONTENT_FIELDS) {
+      const value = values[field.key];
+      const assessment = assessProductContentSpecificity(value, product, {
+        field: field.id,
+        minimumEvidenceMatches: field.minimumEvidenceMatches,
+        rejectGenericPatterns: true,
+      });
+      const length = Array.isArray(value) ? value.join(" | ").length : String(value || "").length;
+      if (field.minLength && length < field.minLength) assessment.issues.push(`minimum-length:${field.minLength}`);
+      if (field.maxLength && length > field.maxLength) assessment.issues.push(`maximum-length:${field.maxLength}`);
+      if (field.minItems && (!Array.isArray(value) || value.length < field.minItems)) {
+        assessment.issues.push(`minimum-items:${field.minItems}`);
+      }
+      if (assessment.issues.length) {
+        failures.push({
+          id: product.id,
+          handle: product.handle,
+          field: field.id,
+          issues: uniqueValues(assessment.issues),
+        });
+      }
+    }
+  }
+  if (failures.length) {
+    const sample = failures.slice(0, 10).map((failure) =>
+      `${failure.handle}:${failure.field}:${failure.issues.join(",")}`,
+    ).join(" | ");
+    throw new Error(`Product-specific metafield gate failed for ${failures.length} field value(s): ${sample}`);
+  }
+
+  return {
+    version: "2026-08-05.1",
+    auditedProducts: context.products.length,
+    auditedFields: PRODUCT_SPECIFIC_CONTENT_FIELDS.map((field) => field.id),
+    disambiguatedProducts,
+    failures: 0,
+    duplicateGroups: 0,
+  };
 }
 
 function hasMeaningfulValue(value) {
@@ -1077,9 +1314,43 @@ function buildProductPlan(product, context) {
   const reviewSummary = context.reviewSummaries.get(product.id) || null;
   const subtitle = buildProductSubtitle(product, collectionTitles, productType);
   const badgeText = buildProductBadgeText(product, reviewSummary, existing);
-  const highlights = buildProductHighlights(product, collectionTitles, reviewSummary);
+  let highlights = buildProductHighlights(product, collectionTitles, reviewSummary);
   const refreshLegacyHighlights = hasLegacyGeneratedHighlights(existing.highlights);
   const collectionSignal = buildCollectionSignal(product, collectionTitles);
+  const subtitleAssessment = assessExistingTextualField(
+    existing.subtitle,
+    product,
+    context,
+    BACKFILL_FIELD_IDS.subtitle,
+  );
+  const highlightsAssessment = assessExistingTextualField(
+    existing.highlights,
+    product,
+    context,
+    BACKFILL_FIELD_IDS.highlights,
+    context.enforceProductSpecificity ? 3 : 2,
+  );
+  const existingHighlightsNeedExpansion = Boolean(
+    context.enforceProductSpecificity &&
+    Array.isArray(existing.highlights) &&
+    existing.highlights.length < 2,
+  );
+  if (existingHighlightsNeedExpansion && highlightsAssessment.specific) {
+    highlights = uniqueValues([...existing.highlights, ...highlights]).slice(0, 4);
+  }
+  const collectionSignalAssessment = assessExistingTextualField(
+    existing.collectionSignal,
+    product,
+    context,
+    BACKFILL_FIELD_IDS.collectionSignal,
+  );
+  const searchBoostAssessment = assessExistingTextualField(
+    existing.searchProductBoosts,
+    product,
+    context,
+    BACKFILL_FIELD_IDS.searchProductBoosts,
+    context.enforceProductSpecificity ? 3 : 2,
+  );
   const rating = hasMeaningfulValue(existing.rating) ? existing.rating : reviewSummary?.rating ?? null;
   const ratingCount = hasMeaningfulValue(existing.ratingCount) ? existing.ratingCount : reviewSummary?.reviewCount ?? null;
   const canWriteRating = !hasMeaningfulValue(existing.rating) && Number.isFinite(Number(rating));
@@ -1112,7 +1383,7 @@ function buildProductPlan(product, context) {
   const skipped = [];
   const reasons = [];
 
-  if (subtitle && !hasMeaningfulValue(existing.subtitle)) {
+  if (subtitle && subtitleAssessment.refresh) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.subtitle,
       label: BACKFILL_FIELDS.subtitle?.name || "Product subtitle",
@@ -1121,11 +1392,16 @@ function buildProductPlan(product, context) {
       type: BACKFILL_FIELDS.subtitle?.type || "single_line_text_field",
       ownerId: toShopifyGid("Product", product.id),
       value: subtitle,
-      reason: "Generated merchandising subtitle from collection and product type context",
+      reason: hasMeaningfulValue(existing.subtitle)
+        ? `Replaced non-specific or duplicate subtitle (${[
+            ...subtitleAssessment.issues,
+            ...(subtitleAssessment.duplicate ? ["catalog-duplicate"] : []),
+          ].join(", ")})`
+        : "Generated product-specific merchandising subtitle from product identity and taxonomy",
     });
     reasons.push("subtitle");
   } else if (hasMeaningfulValue(existing.subtitle)) {
-    skipped.push({ fieldId: BACKFILL_FIELD_IDS.subtitle, reason: "already set" });
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.subtitle, reason: "already product-specific and unique" });
   }
 
   if (badgeText && !hasMeaningfulValue(existing.badgeText)) {
@@ -1144,7 +1420,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.badgeText, reason: "already set" });
   }
 
-  if (highlights.length && (!hasMeaningfulValue(existing.highlights) || refreshLegacyHighlights)) {
+  if (highlights.length && (highlightsAssessment.refresh || refreshLegacyHighlights || existingHighlightsNeedExpansion)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.highlights,
       label: BACKFILL_FIELDS.highlights?.name || "Product highlights",
@@ -1155,14 +1431,21 @@ function buildProductPlan(product, context) {
       value: serializeListValue(highlights),
       reason: refreshLegacyHighlights
         ? "Replaced legacy generic highlights with product-specific evidence"
-        : "Generated product-specific highlights from handle and catalog evidence",
+        : existingHighlightsNeedExpansion
+          ? "Expanded product-specific merchant highlights to the strict release minimum"
+        : hasMeaningfulValue(existing.highlights)
+          ? `Replaced non-specific or duplicate highlights (${[
+              ...highlightsAssessment.issues,
+              ...(highlightsAssessment.duplicate ? ["catalog-duplicate"] : []),
+            ].join(", ")})`
+          : "Generated product-specific highlights from handle and catalog evidence",
     });
     reasons.push("highlights");
   } else if (hasMeaningfulValue(existing.highlights)) {
-    skipped.push({ fieldId: BACKFILL_FIELD_IDS.highlights, reason: "already set" });
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.highlights, reason: "already product-specific and unique" });
   }
 
-  if (collectionSignal && !hasMeaningfulValue(existing.collectionSignal)) {
+  if (collectionSignal && collectionSignalAssessment.refresh) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.collectionSignal,
       label: BACKFILL_FIELDS.collectionSignal?.name || "Collection signal",
@@ -1171,11 +1454,16 @@ function buildProductPlan(product, context) {
       type: BACKFILL_FIELDS.collectionSignal?.type || "single_line_text_field",
       ownerId: toShopifyGid("Product", product.id),
       value: collectionSignal,
-      reason: "Generated collection signal from product type, collection names, and tags",
+      reason: hasMeaningfulValue(existing.collectionSignal)
+        ? `Replaced non-specific or duplicate collection signal (${[
+            ...collectionSignalAssessment.issues,
+            ...(collectionSignalAssessment.duplicate ? ["catalog-duplicate"] : []),
+          ].join(", ")})`
+        : "Generated product-specific collection signal from product identity, taxonomy, and collection names",
     });
     reasons.push("collection-signal");
   } else if (hasMeaningfulValue(existing.collectionSignal)) {
-    skipped.push({ fieldId: BACKFILL_FIELD_IDS.collectionSignal, reason: "already set" });
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.collectionSignal, reason: "already product-specific and unique" });
   }
 
   if (canWriteRating && Number.isFinite(Number(rating))) {
@@ -1252,18 +1540,25 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.shopChannelMinimumQuantity, reason: "already set" });
   }
 
-  if (searchBoostCandidates.length >= 3 && !hasMeaningfulValue(existing.searchProductBoosts)) {
+  if (searchBoostCandidates.length >= 3 && searchBoostAssessment.refresh) {
     const searchBoostValue = serializeListValue(searchBoostCandidates.slice(0, 5));
-    writes.push({
-      fieldId: BACKFILL_FIELD_IDS.searchProductBoosts,
-      label: BACKFILL_FIELDS.searchProductBoosts?.name || "Search product boosts",
-      namespace: BACKFILL_FIELDS.searchProductBoosts?.namespace || "shopify--discovery--product_search_boost",
-      key: BACKFILL_FIELDS.searchProductBoosts?.key || "queries",
-      type: BACKFILL_FIELDS.searchProductBoosts?.type || "list.single_line_text_field",
-      ownerId: toShopifyGid("Product", product.id),
-      value: searchBoostValue,
-      reason: `Generated ${Math.min(5, searchBoostCandidates.length)} search boost phrase(s) from handle, title, type, tags, body, and collections`,
-    });
+    if (context.allowShopifySearchBoostWrite) {
+      writes.push({
+        fieldId: BACKFILL_FIELD_IDS.searchProductBoosts,
+        label: BACKFILL_FIELDS.searchProductBoosts?.name || "Search product boosts",
+        namespace: BACKFILL_FIELDS.searchProductBoosts?.namespace || "shopify--discovery--product_search_boost",
+        key: BACKFILL_FIELDS.searchProductBoosts?.key || "queries",
+        type: BACKFILL_FIELDS.searchProductBoosts?.type || "list.single_line_text_field",
+        ownerId: toShopifyGid("Product", product.id),
+        value: searchBoostValue,
+        reason: hasMeaningfulValue(existing.searchProductBoosts)
+          ? `Replaced non-specific or duplicate search boosts (${[
+              ...searchBoostAssessment.issues,
+              ...(searchBoostAssessment.duplicate ? ["catalog-duplicate"] : []),
+            ].join(", ")})`
+          : `Generated ${Math.min(5, searchBoostCandidates.length)} product-specific search boost phrase(s) from handle, title, type, tags, body, and collections`,
+      });
+    }
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.searchProductBoostFallback,
       label: BACKFILL_FIELDS.searchProductBoostFallback?.name || "SALT Search Query Terms",
@@ -1276,7 +1571,7 @@ function buildProductPlan(product, context) {
     });
     reasons.push("search-boosts");
   } else if (hasMeaningfulValue(existing.searchProductBoosts)) {
-    skipped.push({ fieldId: BACKFILL_FIELD_IDS.searchProductBoosts, reason: "already set" });
+    skipped.push({ fieldId: BACKFILL_FIELD_IDS.searchProductBoosts, reason: "already product-specific and unique" });
   } else {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.searchProductBoosts, reason: "not enough high-intent phrases" });
   }
@@ -1321,16 +1616,18 @@ function buildProductPlan(product, context) {
     const complementaryProductsValue = serializeProductReferenceList(
       complementaryProducts.map((entry) => toShopifyGid("Product", entry.id)),
     );
-    writes.push({
-      fieldId: BACKFILL_FIELD_IDS.complementaryProducts,
-      label: BACKFILL_FIELDS.complementaryProducts?.name || "Complementary products",
-      namespace: BACKFILL_FIELDS.complementaryProducts?.namespace || "shopify--discovery--product_recommendation",
-      key: BACKFILL_FIELDS.complementaryProducts?.key || "complementary_products",
-      type: BACKFILL_FIELDS.complementaryProducts?.type || "list.product_reference",
-      ownerId: toShopifyGid("Product", product.id),
-      value: complementaryProductsValue,
-      reason: `Selected ${complementaryProducts.length} adjacent cross-sell product(s)`,
-    });
+    if (context.allowShopifyComplementaryWrite) {
+      writes.push({
+        fieldId: BACKFILL_FIELD_IDS.complementaryProducts,
+        label: BACKFILL_FIELDS.complementaryProducts?.name || "Complementary products",
+        namespace: BACKFILL_FIELDS.complementaryProducts?.namespace || "shopify--discovery--product_recommendation",
+        key: BACKFILL_FIELDS.complementaryProducts?.key || "complementary_products",
+        type: BACKFILL_FIELDS.complementaryProducts?.type || "list.product_reference",
+        ownerId: toShopifyGid("Product", product.id),
+        value: complementaryProductsValue,
+        reason: `Selected ${complementaryProducts.length} adjacent cross-sell product(s)`,
+      });
+    }
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.complementaryProductsFallback,
       label: BACKFILL_FIELDS.complementaryProductsFallback?.name || "SALT Complementary Products",
@@ -1416,6 +1713,9 @@ function createCatalogContext({
   reviewSummaries = new Map(),
   diaperTypeOptions = [],
   disclosureOptions = [],
+  enforceProductSpecificity = false,
+  allowShopifySearchBoostWrite = true,
+  allowShopifyComplementaryWrite = true,
 } = {}) {
   const { collectionMap, productCollectionsById, productCollectionTitlesById } = buildCollectionIndex(
     collections,
@@ -1471,6 +1771,24 @@ function createCatalogContext({
   });
 
   const candidateIndex = buildCandidateIndex(productIndexes);
+  const contentCollisionIndex = buildCatalogContentCollisionIndex(normalizedProducts, [
+    {
+      id: BACKFILL_FIELD_IDS.subtitle,
+      getValue: (product) => getProductExistingCustomData(product)?.subtitle,
+    },
+    {
+      id: BACKFILL_FIELD_IDS.highlights,
+      getValue: (product) => getProductExistingCustomData(product)?.highlights,
+    },
+    {
+      id: BACKFILL_FIELD_IDS.collectionSignal,
+      getValue: (product) => getProductExistingCustomData(product)?.collectionSignal,
+    },
+    {
+      id: BACKFILL_FIELD_IDS.searchProductBoosts,
+      getValue: (product) => getProductExistingCustomData(product)?.searchProductBoosts,
+    },
+  ]);
 
   const normalizedReviewSummaries = new Map();
   for (const [key, value] of reviewSummaries instanceof Map ? reviewSummaries.entries() : Object.entries(reviewSummaries || {})) {
@@ -1496,9 +1814,13 @@ function createCatalogContext({
     productCollectionTitlesById,
     productIndexes,
     candidateIndex,
+    contentCollisionIndex,
     reviewSummaries: normalizedReviewSummaries,
     diaperTypeOptions: normalizeDiaperTypeOptions(diaperTypeOptions),
     disclosureOptions: Array.isArray(disclosureOptions) ? disclosureOptions : [],
+    enforceProductSpecificity: Boolean(enforceProductSpecificity),
+    allowShopifySearchBoostWrite: Boolean(allowShopifySearchBoostWrite),
+    allowShopifyComplementaryWrite: Boolean(allowShopifyComplementaryWrite),
   };
 }
 
@@ -1507,6 +1829,17 @@ function buildBackfillPlan(input = {}) {
   const productPlans = context.products
     .map((product) => buildProductPlan(product, context))
     .filter((plan) => plan.writes.length > 0 || plan.skipped.length > 0);
+  const specificityAudit = context.enforceProductSpecificity
+    ? enforceProductSpecificContent(context, productPlans)
+    : {
+        version: "2026-08-05.1",
+        enforced: false,
+        auditedProducts: 0,
+        auditedFields: [],
+        disambiguatedProducts: 0,
+        failures: 0,
+        duplicateGroups: 0,
+      };
 
   const writesByField = {};
   const skippedByReason = {};
@@ -1531,6 +1864,7 @@ function buildBackfillPlan(input = {}) {
   return {
     context,
     productPlans,
+    specificityAudit,
     summary: {
       scannedProducts: context.products.length,
       productsWithWrites,
@@ -1548,6 +1882,7 @@ function buildBackfillPlan(input = {}) {
               discovered: false,
               options: 0,
             },
+      specificityAudit,
     },
   };
 }

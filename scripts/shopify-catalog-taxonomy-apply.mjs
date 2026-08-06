@@ -2,7 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
@@ -13,12 +13,18 @@ import {
   taxonomyMetafieldMatches,
   verifyTaxonomyTaskReadback,
 } from "../src/lib/catalog-taxonomy-release.js";
+import {
+  CATALOG_TAXONOMY_VERSION,
+  classifyCatalogTaxonomyByRuleId,
+} from "../src/lib/catalog-taxonomy.js";
+import { buildProductKnowledgeFromTaxonomy } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
 const inputDir = resolve(rootDir, "public", "data");
 const defaultOutputPath = resolve(rootDir, "output", "catalog-taxonomy-apply-manifest.json");
+const catalogIntegrityManifestPath = resolve(rootDir, "output", "shopify-catalog-integrity-manifest.json");
 const shopBase = process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com";
 const storeDomain = new URL(shopBase).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
@@ -91,6 +97,41 @@ const METAFIELDS_SET_MUTATION = /* GraphQL */ `
         message
         code
       }
+    }
+  }
+`;
+
+const STAGED_UPLOAD_CREATE_MUTATION = /* GraphQL */ `
+  mutation CatalogTaxonomyStagedUpload($input: [StagedUploadInput!]!) {
+    stagedUploadsCreate(input: $input) {
+      stagedTargets { url parameters { name value } }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_RUN_MUTATION = /* GraphQL */ `
+  mutation CatalogTaxonomyRunBulk($mutation: String!, $stagedUploadPath: String!) {
+    bulkOperationRunMutation(mutation: $mutation, stagedUploadPath: $stagedUploadPath) {
+      bulkOperation { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_STATUS_QUERY = /* GraphQL */ `
+  query CatalogTaxonomyBulkStatus($id: ID!) {
+    bulkOperation(id: $id) {
+      id status errorCode objectCount fileSize url partialDataUrl createdAt completedAt
+    }
+  }
+`;
+
+const BULK_METAFIELDS_SET_MUTATION = /* GraphQL */ `
+  mutation CatalogTaxonomyBulkMetafields($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields { id namespace key }
+      userErrors { field message code }
     }
   }
 `;
@@ -394,13 +435,14 @@ function createManifest({ mode, plan, output }) {
       salesChannelQuery: "none; publication is intentionally deferred to the final release phase",
       publicationMutation: "none",
       existingTags: "preserve exactly",
-      managedTags: "add-only salt namespace",
+      managedTags: "unchanged; exact collection integrity is authoritative",
       prices: "preserve",
       variants: "no mutation",
       collections: "no mutation",
       categoryMutation: "no mutation in taxonomy tag/metafield phase",
       metafield: "salt_taxonomy.classification JSON only",
-      readback: "tag superset and exact classification metafield required",
+      classificationSource: "completed full-catalog collection-integrity manifest",
+      readback: "unchanged tag superset and exact classification metafield required",
       batchSize,
       concurrency,
     },
@@ -429,9 +471,52 @@ function refreshTaskAgainstLive(task, liveProduct) {
   return {
     ...task,
     initialTags: asArray(liveProduct.tags).map(normalizeText).filter(Boolean),
-    tagsToAdd: buildManagedTagAdditions(liveProduct.tags, task.proposedTags),
+    tagsToAdd: task.mutateTags
+      ? buildManagedTagAdditions(liveProduct.tags, task.proposedTags)
+      : [],
     metafieldNeedsUpdate: !taxonomyMetafieldMatches(liveProduct, taxonomyMetafield),
   };
+}
+
+async function readCatalogIntegrityClassifications(liveProducts) {
+  const manifest = JSON.parse(await readFile(catalogIntegrityManifestPath, "utf8"));
+  const classifications = asArray(manifest?.classifications);
+  const activeCount = Number(manifest?.summary?.activeProducts || 0);
+  const failures = Number(manifest?.summary?.failures || 0);
+  const guesses = Number(manifest?.summary?.guessedAssignments || 0);
+
+  if (!manifest?.completedAt) {
+    throw new Error(`Catalog integrity manifest is incomplete: ${catalogIntegrityManifestPath}`);
+  }
+  if (failures !== 0 || guesses !== 0) {
+    throw new Error(`Catalog integrity manifest is not release-safe: ${failures} failure(s), ${guesses} guess assignment(s).`);
+  }
+  if (activeCount !== liveProducts.length || classifications.length !== liveProducts.length) {
+    throw new Error(
+      `Catalog integrity scope drifted: manifest has ${activeCount} active products and ${classifications.length} classifications; Shopify has ${liveProducts.length}.`,
+    );
+  }
+
+  const byHandle = new Map();
+  for (const classification of classifications) {
+    const handle = normalizeText(classification?.handle).toLowerCase();
+    if (!handle || !classification?.ruleId) {
+      throw new Error("Catalog integrity manifest contains a classification without a handle or rule id.");
+    }
+    if (byHandle.has(handle)) {
+      throw new Error(`Catalog integrity manifest contains duplicate handle: ${handle}`);
+    }
+    byHandle.set(handle, classification);
+  }
+
+  for (const product of liveProducts) {
+    const handle = normalizeText(product?.handle).toLowerCase();
+    if (!byHandle.has(handle)) {
+      throw new Error(`Catalog integrity manifest has no classification for active product: ${handle}`);
+    }
+  }
+
+  return { manifest, byHandle };
 }
 
 function buildTagsAddMutation(tasks) {
@@ -513,6 +598,122 @@ async function applyMetafieldBatch(tasks, retryInfo, batchLabel) {
   }
 }
 
+function chunkTasks(tasks, size) {
+  const chunks = [];
+  for (let index = 0; index < tasks.length; index += size) chunks.push(tasks.slice(index, index + size));
+  return chunks;
+}
+
+async function uploadTaxonomyBulkInput(inputPath, retryInfo) {
+  const payload = await runShopifyGraphQL(STAGED_UPLOAD_CREATE_MUTATION, {
+    input: [{
+      resource: "BULK_MUTATION_VARIABLES",
+      filename: basename(inputPath),
+      mimeType: "text/jsonl",
+      httpMethod: "POST",
+    }],
+  }, { allowMutations: true, operation: "taxonomy staged upload reservation", retryInfo });
+  const userErrors = asArray(payload?.stagedUploadsCreate?.userErrors);
+  if (userErrors.length) throw new Error(`Taxonomy staged upload failed: ${formatGraphqlErrors(userErrors)}`);
+  const target = payload?.stagedUploadsCreate?.stagedTargets?.[0];
+  if (!target?.url) throw new Error("Shopify returned no taxonomy staged upload target");
+  const curlArgs = ["-sS", "-X", "POST", target.url];
+  for (const parameter of asArray(target.parameters)) curlArgs.push("-F", `${parameter.name}=${parameter.value}`);
+  curlArgs.push("-F", `file=@${inputPath};type=text/jsonl`);
+  await execFileAsync("curl", curlArgs, { cwd: rootDir, maxBuffer: 20 * 1024 * 1024 });
+  const stagedUploadPath = asArray(target.parameters).find((parameter) => parameter.name === "key")?.value;
+  if (!stagedUploadPath) throw new Error("Shopify taxonomy staged upload target did not include a key");
+  return stagedUploadPath;
+}
+
+async function waitForTaxonomyBulkOperation(operationId, retryInfo) {
+  while (true) {
+    const payload = await runShopifyGraphQL(BULK_OPERATION_STATUS_QUERY, { id: operationId }, {
+      operation: "taxonomy bulk operation status",
+      retryInfo,
+    });
+    const operation = payload?.bulkOperation;
+    if (!operation) throw new Error(`Taxonomy bulk operation not found: ${operationId}`);
+    process.stdout.write(`Taxonomy bulk operation: ${operation.status}, ${operation.objectCount || 0} object(s)\n`);
+    if (operation.status === "COMPLETED") return operation;
+    if (["FAILED", "CANCELED", "EXPIRED"].includes(operation.status)) {
+      throw new Error(`Taxonomy bulk operation ended ${operation.status}: ${operation.errorCode || "unknown error"}`);
+    }
+    await sleep(5000);
+  }
+}
+
+async function applyTaxonomyMetafieldsBulk({ tasks, retryInfo, output, manifest, manifestById }) {
+  const groups = chunkTasks(tasks, 25);
+  const inputPath = output.replace(/\.json$/i, "-bulk-input.jsonl");
+  const resultPath = output.replace(/\.json$/i, "-bulk-result.jsonl");
+  const lines = groups.map((group) => JSON.stringify({
+    metafields: group.map((task) => task.taxonomyMetafield),
+  }));
+  await writeFile(inputPath, `${lines.join("\n")}\n`, "utf8");
+  process.stdout.write(`Prepared ${groups.length} taxonomy metafield bulk batch(es) for ${tasks.length} products.\n`);
+  const stagedUploadPath = await uploadTaxonomyBulkInput(inputPath, retryInfo);
+  const payload = await runShopifyGraphQL(BULK_OPERATION_RUN_MUTATION, {
+    mutation: BULK_METAFIELDS_SET_MUTATION,
+    stagedUploadPath,
+  }, { allowMutations: true, operation: "start taxonomy bulk operation", retryInfo });
+  const startErrors = asArray(payload?.bulkOperationRunMutation?.userErrors);
+  if (startErrors.length) throw new Error(`Taxonomy bulk operation failed to start: ${formatGraphqlErrors(startErrors)}`);
+  const operationId = payload?.bulkOperationRunMutation?.bulkOperation?.id;
+  if (!operationId) throw new Error("Shopify returned no taxonomy bulk operation id");
+  const operation = await waitForTaxonomyBulkOperation(operationId, retryInfo);
+  if (!operation.url) throw new Error("Completed taxonomy bulk operation returned no result URL");
+  const response = await fetch(operation.url);
+  if (!response.ok) throw new Error(`Taxonomy bulk result download failed (${response.status})`);
+  await writeFile(resultPath, Buffer.from(await response.arrayBuffer()));
+
+  const resultLines = (await readFile(resultPath, "utf8")).split(/\r?\n/).filter(Boolean);
+  const completed = new Set();
+  for (const [fallbackIndex, line] of resultLines.entries()) {
+    const result = JSON.parse(line);
+    const lineNumber = Number.isInteger(Number(result.__lineNumber)) ? Number(result.__lineNumber) : fallbackIndex;
+    const group = groups[lineNumber];
+    if (!group) throw new Error(`Taxonomy bulk result returned unknown input line ${lineNumber}`);
+    const topLevelErrors = asArray(result.errors);
+    if (topLevelErrors.length) {
+      throw new Error(`${group[0].handle}: ${formatGraphqlErrors(topLevelErrors)}`);
+    }
+    const mutationResult = result?.data?.metafieldsSet;
+    if (!mutationResult) throw new Error(`${group[0].handle}: taxonomy bulk result returned no metafieldsSet payload`);
+    const userErrors = asArray(mutationResult.userErrors);
+    if (userErrors.length) throw new Error(`${group[0].handle}: ${formatGraphqlErrors(userErrors)}`);
+    completed.add(lineNumber);
+  }
+  if (completed.size !== groups.length) {
+    throw new Error(`Taxonomy bulk result covered ${completed.size}/${groups.length} input line(s)`);
+  }
+
+  process.stdout.write("Reading all active taxonomy metafields back after the bulk mutation.\n");
+  const finalProducts = await fetchActiveProducts(retryInfo);
+  const finalById = new Map(finalProducts.map((product) => [product.id, product]));
+  for (const [index, task] of tasks.entries()) {
+    const finalProduct = finalById.get(task.productId);
+    if (!finalProduct) throw new Error(`${task.handle}: product missing from taxonomy bulk readback`);
+    assertTaskReadback(task, finalProduct);
+    Object.assign(manifestById.get(task.productId), manifestTask(task, "updated-verified"), {
+      verifiedAt: new Date().toISOString(),
+    });
+    if ((index + 1) % 250 === 0 || index + 1 === tasks.length) {
+      process.stdout.write(`Taxonomy bulk readback verified ${index + 1}/${tasks.length} updated product(s).\n`);
+    }
+  }
+  manifest.bulkOperation = {
+    id: operation.id,
+    status: operation.status,
+    objectCount: Number(operation.objectCount || 0),
+    completedAt: operation.completedAt || new Date().toISOString(),
+    inputPath,
+    resultPath,
+  };
+  refreshManifestSummary(manifest);
+  await writeManifest(output, manifest);
+}
+
 function assertTaskReadback(task, product) {
   const verification = verifyTaxonomyTaskReadback(task, product);
   if (verification.ok) {
@@ -541,6 +742,8 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
     readProductCatalogPayload(inputDir),
     fetchActiveProducts(retryInfo),
   ]);
+  const { manifest: integrityManifest, byHandle: classificationByHandle } =
+    await readCatalogIntegrityClassifications(liveProducts);
   const localByHandle = new Map(
     asArray(catalog.products)
       .map((product) => [normalizeText(product?.handle).toLowerCase(), product])
@@ -553,16 +756,37 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
       ...localProduct,
       id: localProduct.id || liveProduct.id,
       handle: liveProduct.handle || localProduct.handle,
-      title: liveProduct.title || localProduct.title,
-      body_html: liveProduct.descriptionHtml || localProduct.body_html,
-      product_type: liveProduct.productType || localProduct.product_type,
+      title: localProduct.title || liveProduct.title,
+      body_html: localProduct.body_html || liveProduct.descriptionHtml,
+      product_type: localProduct.product_type || liveProduct.productType,
       vendor: liveProduct.vendor || localProduct.vendor,
       tags: asArray(liveProduct.tags),
     };
   });
   const localProducts = sample > 0 ? sourceProducts.slice(0, sample) : sourceProducts;
-  const plan = buildCatalogTaxonomyReleasePlan(localProducts, liveProducts);
+  const knowledgeByHandle = new Map(localProducts.map((product) => {
+    const handle = normalizeText(product?.handle).toLowerCase();
+    const frozen = classificationByHandle.get(handle);
+    const taxonomy = classifyCatalogTaxonomyByRuleId(product, frozen.ruleId, {
+      source: `catalog-integrity-${frozen.source || "verified"}`,
+      reason: "Frozen full-catalog collection-integrity classification",
+    });
+    return [handle, buildProductKnowledgeFromTaxonomy(product, taxonomy)];
+  }));
+  const plan = buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
+    mutateTags: false,
+    knowledgeByHandle,
+  });
   const manifest = createManifest({ mode, plan, output });
+  manifest.taxonomyVersion = CATALOG_TAXONOMY_VERSION;
+  manifest.catalogIntegrityManifest = {
+    path: catalogIntegrityManifestPath,
+    completedAt: integrityManifest.completedAt,
+    activeProducts: integrityManifest.summary.activeProducts,
+    classifications: integrityManifest.classifications.length,
+    failures: integrityManifest.summary.failures,
+    guessedAssignments: integrityManifest.summary.guessedAssignments,
+  };
   manifest.retryInfo = retryInfo;
 
   if (mode === "dry-run") {
@@ -584,6 +808,33 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
   const actionableTasks = plan.tasks.filter(
     (task) => task.tagsToAdd.length > 0 || task.metafieldNeedsUpdate,
   );
+
+  const useMetafieldBulk =
+    actionableTasks.length >= Math.max(1, Number(process.env.SALT_CATALOG_TAXONOMY_BULK_THRESHOLD || 500)) &&
+    actionableTasks.every((task) => task.tagsToAdd.length === 0 && task.metafieldNeedsUpdate);
+  if (useMetafieldBulk) {
+    await applyTaxonomyMetafieldsBulk({
+      tasks: actionableTasks,
+      retryInfo: manifest.retryInfo,
+      output,
+      manifest,
+      manifestById,
+    });
+    for (const task of plan.tasks) {
+      const entry = manifestById.get(task.productId);
+      if (entry?.status === "pending") {
+        entry.status = "skipped-exact-match";
+        entry.verifiedAt = new Date().toISOString();
+      }
+    }
+    manifest.completedAt = new Date().toISOString();
+    refreshManifestSummary(manifest);
+    await writeManifest(output, manifest);
+    process.stdout.write(
+      `Catalog taxonomy release complete: ${manifest.summary.updatedVerified} updated and verified, ${manifest.summary.exact} exact, ${manifest.summary.skipped} skipped.\n`,
+    );
+    return manifest;
+  }
 
   // Batches are disjoint, so they can be verified concurrently. Checkpoint
   // writes remain serialized to keep the manifest valid if a worker fails.

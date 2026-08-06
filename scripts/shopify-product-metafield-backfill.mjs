@@ -2,7 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
@@ -25,6 +25,7 @@ const DEFAULT_OUTPUT_FILE = resolve(process.cwd(), "output", "product-metafield-
 const DEFAULT_INPUT_DIR = resolve(process.cwd(), "public", "data");
 const PRODUCT_CATALOG_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-live-catalog.json");
 const PRODUCT_CUSTOM_DATA_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-custom-data.json");
+const PRODUCT_CUSTOM_DATA_BULK_RESULT = resolve(process.cwd(), "output", ".shopify-metafield-custom-data-bulk.jsonl");
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
 const SHOPIFY_ADMIN_API_VERSION = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
@@ -37,7 +38,8 @@ const JUDGEME_PUBLIC_TOKEN =
   process.env.JUDGEME_PUBLIC_TOKEN ||
   process.env.SALT_JUDGEME_PUBLIC_TOKEN ||
   "TQ0rk940ADN89zj_f83SKuTYIfY";
-const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 1));
+const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 4));
+const BACKFILL_BULK_THRESHOLD = Math.max(1, Number(process.env.SALT_BACKFILL_BULK_THRESHOLD || 500));
 const JUDGEME_SHOP_DOMAINS = Array.from(
   new Set(
     [
@@ -56,6 +58,104 @@ const JUDGEME_FETCH_ENABLED = process.env.SALT_BACKFILL_LIVE_JUDGEME !== "0";
 const JUDGEME_CONCURRENCY = Number(process.env.SALT_BACKFILL_JUDGEME_CONCURRENCY || 8);
 const DIAPER_METAOBJECT_DEFINITION_ID = "gid://shopify/MetaobjectDefinition/9632874595";
 const execFileAsync = promisify(execFile);
+
+const STAGED_UPLOAD_CREATE_MUTATION = /* GraphQL */ `
+  mutation BackfillStagedUpload($input: [StagedUploadInput!]!) {
+    stagedUploadsCreate(input: $input) {
+      stagedTargets { url parameters { name value } }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_RUN_MUTATION = /* GraphQL */ `
+  mutation BackfillRunBulk($mutation: String!, $stagedUploadPath: String!) {
+    bulkOperationRunMutation(mutation: $mutation, stagedUploadPath: $stagedUploadPath) {
+      bulkOperation { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_RUN_QUERY = /* GraphQL */ `
+  mutation BackfillRunBulkQuery($query: String!) {
+    bulkOperationRunQuery(query: $query) {
+      bulkOperation { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+const BULK_OPERATION_STATUS_QUERY = /* GraphQL */ `
+  query BackfillBulkStatus($id: ID!) {
+    bulkOperation(id: $id) {
+      id status errorCode objectCount fileSize url partialDataUrl createdAt completedAt
+    }
+  }
+`;
+
+const BULK_METAFIELDS_SET_MUTATION = /* GraphQL */ `
+  mutation BackfillBulkMetafields($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields { id namespace key }
+      userErrors { field message code }
+    }
+  }
+`;
+
+const BULK_PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
+  {
+    products(query: "status:active") {
+      edges {
+        node {
+          id
+          legacyResourceId
+          handle
+          title
+          descriptionHtml
+          productType
+          vendor
+          tags
+          status
+          createdAt
+          updatedAt
+          publishedAt
+          variants {
+            edges {
+              node {
+                id
+                legacyResourceId
+                title
+                price
+                compareAtPrice
+                availableForSale
+                sku
+                barcode
+              }
+            }
+          }
+          category { id name fullName }
+          subtitle: metafield(namespace: "descriptors", key: "subtitle") { jsonValue value }
+          badgeText: metafield(namespace: "salt-marketing", key: "badge_text") { jsonValue value }
+          highlights: metafield(namespace: "salt-marketing", key: "highlights") { jsonValue value }
+          collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") { jsonValue value }
+          rating: metafield(namespace: "reviews", key: "rating") { jsonValue value }
+          ratingCount: metafield(namespace: "reviews", key: "rating_count") { jsonValue value }
+          relatedProductsDisplay: metafield(namespace: "shopify--discovery--product_recommendation", key: "related_products_display") { jsonValue value }
+          relatedProducts: metafield(namespace: "shopify--discovery--product_recommendation", key: "related_products") { jsonValue value }
+          complementaryProducts: metafield(namespace: "shopify--discovery--product_recommendation", key: "complementary_products") { jsonValue value }
+          complementaryProductsFallback: metafield(namespace: "salt-recommendations", key: "complementary_products") { jsonValue value }
+          searchProductBoosts: metafield(namespace: "shopify--discovery--product_search_boost", key: "queries") { jsonValue value }
+          searchProductBoostFallback: metafield(namespace: "salt-search", key: "query_terms") { jsonValue value }
+          googleCustomProduct: metafield(namespace: "mm-google-shopping", key: "custom_product") { jsonValue value }
+          shopChannelMinimumQuantity: metafield(namespace: "salt-marketing", key: "shop_channel_minimum_quantity") { jsonValue value }
+          diaperType: metafield(namespace: "shopify", key: "diaper-type") { jsonValue value }
+          disclosures: metafield(namespace: "shopify", key: "disclosure") { jsonValue value }
+        }
+      }
+    }
+  }
+`;
 
 function parseArgs(argv) {
   const args = {
@@ -710,32 +810,7 @@ function normalizeLiveProductCustomDataNode(node) {
   });
 }
 
-async function fetchLiveProductCustomDataMap(products) {
-  const productIds = Array.isArray(products)
-    ? products
-        .map((product) => toShopifyGid("Product", product.id))
-        .filter(Boolean)
-    : [];
-
-  const fingerprint = `v4:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
-  try {
-    const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
-    const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
-    if (
-      checkpoint?.complete &&
-      checkpoint?.fingerprint === fingerprint &&
-      Number.isFinite(age) &&
-      age >= 0 &&
-      age < 6 * 60 * 60 * 1000 &&
-      Array.isArray(checkpoint.records)
-    ) {
-      process.stdout.write(`Using fresh metafield readback checkpoint for ${checkpoint.records.length} products\n`);
-      return new Map(checkpoint.records);
-    }
-  } catch {
-    // Missing or stale checkpoints fall through to live Shopify reads.
-  }
-
+async function fetchLiveProductCustomDataMapBatched(products, productIds, fingerprint) {
   const records = new Map();
   const batches = chunkArray(productIds, 50);
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
@@ -755,39 +830,7 @@ async function fetchLiveProductCustomDataMap(products) {
       }
 
       const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
-      records.set(Number(node.legacyResourceId), {
-        liveProduct: {
-          id: Number(node.legacyResourceId),
-          handle: String(node.handle || ""),
-          title: String(node.title || ""),
-          body_html: String(node.descriptionHtml || ""),
-          product_type: String(node.productType || ""),
-          vendor: String(node.vendor || ""),
-          tags: Array.isArray(node.tags) ? node.tags : [],
-          status: String(node.status || "").toLowerCase(),
-          created_at: node.createdAt || null,
-          updated_at: node.updatedAt || null,
-          published_at: node.publishedAt || null,
-          variants: (node.variants?.nodes || []).map((variant) => ({
-            id: Number(variant.legacyResourceId),
-            title: String(variant.title || ""),
-            price: String(variant.price || ""),
-            compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
-            available: Boolean(variant.availableForSale),
-            sku: String(variant.sku || ""),
-            barcode: String(variant.barcode || ""),
-          })),
-        },
-        customData,
-        category: node.category
-          ? {
-              id: String(node.category.id || ""),
-              name: String(node.category.name || ""),
-              fullName: String(node.category.fullName || ""),
-            }
-          : null,
-        disclosures: normalizeMetafieldReferenceList(node.disclosures?.references?.nodes || []),
-      });
+      records.set(Number(node.legacyResourceId), buildLiveCustomDataRecord(node, customData));
     }
 
     if ((batchIndex + 1) % 10 === 0 || batchIndex + 1 === batches.length) {
@@ -795,6 +838,80 @@ async function fetchLiveProductCustomDataMap(products) {
     }
   }
 
+  await writeProductCustomDataCheckpoint(fingerprint, records);
+  return records;
+}
+
+function buildLiveCustomDataRecord(node, customData) {
+  return {
+    liveProduct: {
+      id: Number(node.legacyResourceId),
+      handle: String(node.handle || ""),
+      title: String(node.title || ""),
+      body_html: String(node.descriptionHtml || ""),
+      product_type: String(node.productType || ""),
+      vendor: String(node.vendor || ""),
+      tags: Array.isArray(node.tags) ? node.tags : [],
+      status: String(node.status || "").toLowerCase(),
+      created_at: node.createdAt || null,
+      updated_at: node.updatedAt || null,
+      published_at: node.publishedAt || null,
+      variants: (node.variants?.nodes || []).map((variant) => ({
+        id: Number(variant.legacyResourceId),
+        title: String(variant.title || ""),
+        price: String(variant.price || ""),
+        compare_at_price: variant.compareAtPrice == null ? null : String(variant.compareAtPrice),
+        available: Boolean(variant.availableForSale),
+        sku: String(variant.sku || ""),
+        barcode: String(variant.barcode || ""),
+      })),
+    },
+    customData,
+    category: node.category
+      ? {
+          id: String(node.category.id || ""),
+          name: String(node.category.name || ""),
+          fullName: String(node.category.fullName || ""),
+        }
+      : null,
+    disclosures: normalizeMetafieldReferenceList(node.disclosures?.references?.nodes || []),
+  };
+}
+
+function parseMetafieldReferenceNodes(field) {
+  const raw = field?.jsonValue ?? field?.value ?? [];
+  let values = raw;
+  if (typeof values === "string") {
+    try {
+      values = JSON.parse(values);
+    } catch {
+      values = [];
+    }
+  }
+  if (!Array.isArray(values)) values = values ? [values] : [];
+  return values.map((value) => {
+    const id = typeof value === "string" ? value : String(value?.id || "");
+    return {
+      id,
+      legacyResourceId: Number(id.match(/(\d+)$/)?.[1] || 0) || null,
+      __typename: id.includes("/Metaobject/") ? "Metaobject" : "Product",
+    };
+  }).filter((value) => value.id);
+}
+
+function attachBulkReferenceNodes(node) {
+  const result = { ...node };
+  for (const key of ["relatedProducts", "complementaryProducts", "complementaryProductsFallback", "diaperType", "disclosures"]) {
+    if (!node?.[key]) continue;
+    result[key] = {
+      ...node[key],
+      references: { nodes: parseMetafieldReferenceNodes(node[key]) },
+    };
+  }
+  return result;
+}
+
+async function writeProductCustomDataCheckpoint(fingerprint, records) {
   await mkdir(dirname(PRODUCT_CUSTOM_DATA_CHECKPOINT), { recursive: true });
   await writeFile(
     PRODUCT_CUSTOM_DATA_CHECKPOINT,
@@ -806,8 +923,90 @@ async function fetchLiveProductCustomDataMap(products) {
     })}\n`,
     "utf8",
   );
+}
 
-  return records;
+async function fetchLiveProductCustomDataMapBulk(productIds, fingerprint) {
+  const selectedIds = new Set(productIds);
+  const payload = await runShopifyStoreGraphQL(BULK_OPERATION_RUN_QUERY, {
+    query: BULK_PRODUCT_CUSTOM_DATA_QUERY,
+  }, { allowMutations: true });
+  const startErrors = payload?.bulkOperationRunQuery?.userErrors || [];
+  if (startErrors.length) {
+    throw new Error(`Metafield export failed to start: ${formatMetafieldUserErrors(startErrors)}`);
+  }
+  const operationId = payload?.bulkOperationRunQuery?.bulkOperation?.id;
+  if (!operationId) throw new Error("Shopify returned no metafield export operation id");
+  const operation = await waitForBackfillBulkOperation(operationId, "Metafield export");
+  if (!operation.url) throw new Error("Completed metafield export returned no result URL");
+  const response = await fetch(operation.url);
+  if (!response.ok) throw new Error(`Metafield export download failed (${response.status})`);
+  await writeFile(PRODUCT_CUSTOM_DATA_BULK_RESULT, Buffer.from(await response.arrayBuffer()));
+
+  const productsById = new Map();
+  const variantsByProductId = new Map();
+  for (const line of (await readFile(PRODUCT_CUSTOM_DATA_BULK_RESULT, "utf8")).split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const node = JSON.parse(line);
+    if (node.__parentId) {
+      if (!variantsByProductId.has(node.__parentId)) variantsByProductId.set(node.__parentId, []);
+      variantsByProductId.get(node.__parentId).push(node);
+      continue;
+    }
+    if (node?.id && selectedIds.has(node.id)) productsById.set(node.id, node);
+  }
+
+  const records = new Map();
+  for (const [id, rawNode] of productsById) {
+    const node = attachBulkReferenceNodes({
+      ...rawNode,
+      variants: { nodes: variantsByProductId.get(id) || [] },
+    });
+    const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
+    records.set(Number(node.legacyResourceId), buildLiveCustomDataRecord(node, customData));
+  }
+  if (records.size !== productIds.length) {
+    process.stdout.write(`Metafield export matched ${records.size}/${productIds.length} selected Shopify products\n`);
+  } else {
+    process.stdout.write(`Metafield export read ${records.size} selected Shopify products\n`);
+  }
+  await writeProductCustomDataCheckpoint(fingerprint, records);
+  return { records, operation };
+}
+
+async function fetchLiveProductCustomDataMap(products) {
+  const productIds = Array.isArray(products)
+    ? products
+        .map((product) => toShopifyGid("Product", product.id))
+        .filter(Boolean)
+    : [];
+
+  const fingerprint = `v5:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
+  try {
+    const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
+    const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
+    if (
+      checkpoint?.complete &&
+      checkpoint?.fingerprint === fingerprint &&
+      Number.isFinite(age) &&
+      age >= 0 &&
+      age < 6 * 60 * 60 * 1000 &&
+      Array.isArray(checkpoint.records)
+    ) {
+      process.stdout.write(`Using fresh metafield readback checkpoint for ${checkpoint.records.length} products\n`);
+      return new Map(checkpoint.records);
+    }
+  } catch {
+    // Missing or stale checkpoints fall through to live Shopify reads.
+  }
+
+  if (productIds.length >= 500) {
+    try {
+      return (await fetchLiveProductCustomDataMapBulk(productIds, fingerprint)).records;
+    } catch (error) {
+      process.stdout.write(`Bulk metafield export failed; falling back to bounded batches: ${error.message || error}\n`);
+    }
+  }
+  return fetchLiveProductCustomDataMapBatched(products, productIds, fingerprint);
 }
 
 function normalizeLiveCatalogProduct(node) {
@@ -1349,6 +1548,137 @@ async function writeManifest(filePath, manifest) {
   await writeFile(filePath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
+function bulkMetafieldVariables(batch) {
+  return {
+    metafields: batch.entries.map((entry) => ({
+      ownerId: entry.ownerId,
+      namespace: entry.namespace,
+      key: entry.key,
+      type: entry.type,
+      value: entry.value,
+    })),
+  };
+}
+
+async function uploadBackfillBulkInput(inputPath) {
+  const payload = await runShopifyStoreGraphQL(STAGED_UPLOAD_CREATE_MUTATION, {
+    input: [{
+      resource: "BULK_MUTATION_VARIABLES",
+      filename: basename(inputPath),
+      mimeType: "text/jsonl",
+      httpMethod: "POST",
+    }],
+  }, { allowMutations: true });
+  const userErrors = payload?.stagedUploadsCreate?.userErrors || [];
+  if (userErrors.length) throw new Error(`Metafield staged upload failed: ${formatMetafieldUserErrors(userErrors)}`);
+  const target = payload?.stagedUploadsCreate?.stagedTargets?.[0];
+  if (!target?.url) throw new Error("Shopify returned no metafield staged upload target");
+  const curlArgs = ["-sS", "-X", "POST", target.url];
+  for (const parameter of target.parameters || []) curlArgs.push("-F", `${parameter.name}=${parameter.value}`);
+  curlArgs.push("-F", `file=@${inputPath};type=text/jsonl`);
+  await execFileAsync("curl", curlArgs, { maxBuffer: 20 * 1024 * 1024 });
+  const stagedUploadPath = (target.parameters || []).find((parameter) => parameter.name === "key")?.value;
+  if (!stagedUploadPath) throw new Error("Shopify metafield staged upload target did not include a key");
+  return stagedUploadPath;
+}
+
+async function waitForBackfillBulkOperation(operationId, label = "Metafield bulk operation") {
+  while (true) {
+    const payload = await runShopifyStoreGraphQL(BULK_OPERATION_STATUS_QUERY, { id: operationId });
+    const operation = payload?.bulkOperation;
+    if (!operation) throw new Error(`Metafield bulk operation not found: ${operationId}`);
+    process.stdout.write(`${label}: ${operation.status}, ${operation.objectCount || 0} object(s)\n`);
+    if (operation.status === "COMPLETED") return operation;
+    if (["FAILED", "CANCELED", "EXPIRED"].includes(operation.status)) {
+      throw new Error(`Metafield bulk operation ended ${operation.status}: ${operation.errorCode || "unknown error"}`);
+    }
+    await sleep(5000);
+  }
+}
+
+async function applyBatchesBulk(batches, outputFile) {
+  const inputPath = outputFile.replace(/\.json$/i, "-bulk-input.jsonl");
+  const resultPath = outputFile.replace(/\.json$/i, "-bulk-result.jsonl");
+  await writeFile(inputPath, `${batches.map((batch) => JSON.stringify(bulkMetafieldVariables(batch))).join("\n")}\n`, "utf8");
+  process.stdout.write(`Prepared ${batches.length} Shopify metafield bulk batch(es).\n`);
+  const stagedUploadPath = await uploadBackfillBulkInput(inputPath);
+  const payload = await runShopifyStoreGraphQL(BULK_OPERATION_RUN_MUTATION, {
+    mutation: BULK_METAFIELDS_SET_MUTATION,
+    stagedUploadPath,
+  }, { allowMutations: true });
+  const startErrors = payload?.bulkOperationRunMutation?.userErrors || [];
+  if (startErrors.length) throw new Error(`Metafield bulk operation failed to start: ${formatMetafieldUserErrors(startErrors)}`);
+  const operationId = payload?.bulkOperationRunMutation?.bulkOperation?.id;
+  if (!operationId) throw new Error("Shopify returned no metafield bulk operation id");
+  const operation = await waitForBackfillBulkOperation(operationId);
+  if (!operation.url) throw new Error("Completed metafield bulk operation returned no result URL");
+  const response = await fetch(operation.url);
+  if (!response.ok) throw new Error(`Metafield bulk result download failed (${response.status})`);
+  await writeFile(resultPath, Buffer.from(await response.arrayBuffer()));
+
+  const lines = (await readFile(resultPath, "utf8")).split(/\r?\n/).filter(Boolean);
+  const completed = new Set();
+  const retryBatches = [];
+  const results = [];
+  for (const [fallbackIndex, line] of lines.entries()) {
+    const result = JSON.parse(line);
+    const lineNumber = Number.isInteger(Number(result.__lineNumber)) ? Number(result.__lineNumber) : fallbackIndex;
+    const batch = batches[lineNumber];
+    if (!batch) throw new Error(`Metafield bulk result returned unknown input line ${lineNumber}`);
+    const topLevelErrors = Array.isArray(result.errors) ? result.errors : [];
+    if (topLevelErrors.length) {
+      throw new Error(`Metafield bulk batch ${lineNumber + 1}: ${topLevelErrors.map((error) => error?.message || "bulk error").join(" | ")}`);
+    }
+    const mutationResult = result?.data?.metafieldsSet;
+    if (!mutationResult) throw new Error(`Metafield bulk batch ${lineNumber + 1} returned no metafieldsSet payload`);
+    const userErrors = Array.isArray(mutationResult.userErrors) ? mutationResult.userErrors : [];
+    if (userErrors.length) {
+      retryBatches.push({ batch, lineNumber });
+    } else {
+      results.push({
+        batch: lineNumber + 1,
+        owners: batch.ownerDescriptors || batch.productIds || [],
+        writeCount: batch.entries.length,
+        metafields: batch.entries.length,
+        skippedWriteCount: 0,
+        skippedWrites: [],
+      });
+    }
+    completed.add(lineNumber);
+  }
+  if (completed.size !== batches.length) {
+    throw new Error(`Metafield bulk result covered ${completed.size}/${batches.length} input line(s)`);
+  }
+
+  const retryResults = new Array(retryBatches.length);
+  let nextRetryIndex = 0;
+  const retryWorker = async () => {
+    while (true) {
+      const retryIndex = nextRetryIndex;
+      nextRetryIndex += 1;
+      if (retryIndex >= retryBatches.length) return;
+      const { batch, lineNumber } = retryBatches[retryIndex];
+      process.stdout.write(
+        `Retrying schema-incompatible metafield bulk batch ${lineNumber + 1} (${retryIndex + 1}/${retryBatches.length})\n`,
+      );
+      retryResults[retryIndex] = await applySingleBatch(batch, lineNumber, batches.length);
+    }
+  };
+  const retryWorkerCount = Math.min(BACKFILL_APPLY_CONCURRENCY, retryBatches.length);
+  await Promise.all(Array.from({ length: retryWorkerCount }, () => retryWorker()));
+  results.push(...retryResults.filter(Boolean));
+  results.bulkOperation = {
+    id: operation.id,
+    status: operation.status,
+    objectCount: Number(operation.objectCount || 0),
+    completedAt: operation.completedAt || new Date().toISOString(),
+    inputPath,
+    resultPath,
+    retriedBatches: retryBatches.length,
+  };
+  return results;
+}
+
 async function applySingleBatch(batch, batchIndex, batchTotal) {
   const mutation = /* GraphQL */ `
     mutation BackfillProductMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -1441,6 +1771,14 @@ async function applySingleBatch(batch, batchIndex, batchTotal) {
     }
   }
 
+  if (failedWrites.length) {
+    process.stdout.write(
+      `Batch ${batchIndex + 1}: skipped fields ${failedWrites
+        .map((entry) => `${entry.fieldId} (${entry.error})`)
+        .join(" | ")}\n`,
+    );
+  }
+
   return {
     batch: batchIndex + 1,
     owners: batch.ownerDescriptors || batch.productIds || [],
@@ -1451,7 +1789,11 @@ async function applySingleBatch(batch, batchIndex, batchTotal) {
   }
 }
 
-async function applyBatches(batches) {
+async function applyBatches(batches, outputFile) {
+  const totalEntries = batches.reduce((sum, batch) => sum + batch.entries.length, 0);
+  if (totalEntries >= BACKFILL_BULK_THRESHOLD) {
+    return applyBatchesBulk(batches, outputFile);
+  }
   const results = new Array(batches.length);
   let nextIndex = 0;
 
@@ -1544,6 +1886,9 @@ async function main() {
     reviewSummaries,
     diaperTypeOptions: diaperDiscovery.options,
     disclosureOptions: disclosureDiscovery.options,
+    enforceProductSpecificity: true,
+    allowShopifySearchBoostWrite: false,
+    allowShopifyComplementaryWrite: false,
   });
   const marketingBackfillPlan = args.productOnly
     ? {
@@ -1692,7 +2037,7 @@ async function main() {
   const categoryResults = categoryPlans.length ? await applyCategoryPlans(categoryPlans) : [];
   // Conditional standard metafields validate against the live product category.
   // Categories must be committed and read back before those metafields are set.
-  const applyResults = batches.length ? await applyBatches(batches) : [];
+  const applyResults = batches.length ? await applyBatches(batches, args.outputFile) : [];
   manifest.applied = {
     completedAt: new Date().toISOString(),
     batchCount: applyResults.length,
@@ -1701,6 +2046,7 @@ async function main() {
     batches: applyResults,
     categoryCount: categoryResults.length,
     categories: categoryResults,
+    bulkOperation: applyResults.bulkOperation || null,
   };
   await writeManifest(args.outputFile, manifest);
   await rm(PRODUCT_CUSTOM_DATA_CHECKPOINT, { force: true });

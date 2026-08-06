@@ -66,6 +66,11 @@ const GENERIC_TITLE_WORDS = new Set([
   "premium",
   "featured",
   "feature",
+  "must",
+  "have",
+  "perfect",
+  "great",
+  "brand",
   "bundle",
   "bundles",
   "set",
@@ -1007,17 +1012,52 @@ function titleHandleOverlap(title, signals) {
   return countOverlap(handleTokens, buildTokenSet(title));
 }
 
-function buildCanonicalSeoTitle(canonicalTitle) {
+function buildCanonicalSeoTitle(canonicalTitle, signals) {
   const title = normalizePlainText(canonicalTitle);
   if (!title) {
     return "";
   }
-  const shortened = shortenAtWordBoundary(title, MARKETPLACE_CONTENT_POLICY.seo.titleLength[1])
+  let shortened = shortenAtWordBoundary(title, MARKETPLACE_CONTENT_POLICY.seo.titleLength[1])
     .replace(/\b(?:and|for|with|of|to)$/i, "")
     .trim();
-  return shortened.length < MARKETPLACE_CONTENT_POLICY.seo.titleLength[0]
-    ? `${shortened} | Shop Online at SALT`
-    : shortened;
+  if (shortened.length >= MARKETPLACE_CONTENT_POLICY.seo.titleLength[0]) {
+    return shortened;
+  }
+
+  const titleTokens = buildTokenSet(shortened);
+  const facts = extractSupportedProductFacts(signals);
+  const evidenceValues = [
+    ...facts.filter((fact) => fact.label !== "Product focus").map((fact) => fact.value),
+    normalizePlainText(signals.productTypeText),
+    ...facts.filter((fact) => fact.label === "Product focus").map((fact) => fact.value),
+  ];
+  const evidenceWords = [];
+  for (const value of evidenceValues) {
+    for (const word of normalizePlainText(value).split(/[,/|\s]+/)) {
+      const normalizedWord = normalizeComparableText(word);
+      if (
+        !normalizedWord ||
+        GENERIC_TITLE_WORDS.has(normalizedWord) ||
+        titleTokens.has(normalizedWord) ||
+        evidenceWords.some((entry) => normalizeComparableText(entry) === normalizedWord)
+      ) {
+        continue;
+      }
+      const candidate = `${shortened} | ${titleCase([...evidenceWords, word].join(" "))}`;
+      if (candidate.length > MARKETPLACE_CONTENT_POLICY.seo.titleLength[1]) {
+        continue;
+      }
+      evidenceWords.push(word);
+      if (candidate.length >= MARKETPLACE_CONTENT_POLICY.seo.titleLength[0]) {
+        return candidate;
+      }
+    }
+  }
+
+  if (evidenceWords.length) {
+    shortened = `${shortened} | ${titleCase(evidenceWords.join(" "))}`;
+  }
+  return shortened;
 }
 
 function selectBestTitleCandidate(candidates, signals, sourceTitle) {
@@ -1150,8 +1190,9 @@ function buildSearchPhrases(signals) {
 
   return uniqueValues(
     phrases
-      .map((phrase) => normalizePlainText(phrase).toLowerCase())
+      .map((phrase) => sanitizeMarketplaceClaims(normalizePlainText(phrase)).toLowerCase())
       .filter((phrase) => phrase && phrase.length >= 3)
+      .filter((phrase) => !containsUnsafeMarketplaceClaim(phrase))
       .filter((phrase) => !GENERIC_TITLE_PHRASES.some((pattern) => pattern.test(phrase)))
       .sort((left, right) => scorePhraseCandidate(right, signals) - scorePhraseCandidate(left, signals))
       .slice(0, 5),
@@ -1167,11 +1208,11 @@ function buildSeoDescription(title, signals, searchPhrases) {
     if (fact.label === "Device compatibility") return `compatible with ${fact.value}`;
     if (fact.label === "Size or capacity") return `available in ${fact.value}`;
     if (fact.label === "Material") return `made with the stated ${fact.value} material`;
-    if (fact.label === "Supported features") return `with ${fact.value}`;
-    if (fact.label === "Available options") return `with options including ${fact.value}`;
-    if (fact.label === "Intended user") return `intended for ${fact.value}`;
-    if (fact.label === "Use or occasion") return `suited to ${fact.value}`;
-    if (fact.label === "Placement or setting") return `designed for ${fact.value}`;
+    if (fact.label === "Supported features") return `supported features: ${fact.value}`;
+    if (fact.label === "Available options") return `available options: ${fact.value}`;
+    if (fact.label === "Intended user") return `intended users: ${fact.value}`;
+    if (fact.label === "Use or occasion") return `supported uses: ${fact.value}`;
+    if (fact.label === "Placement or setting") return `supported settings: ${fact.value}`;
     if (fact.label === "Pack format") return `pack format ${fact.value}`;
     return `${fact.label.toLowerCase()}: ${fact.value}`;
   });
@@ -1184,15 +1225,7 @@ function buildSeoDescription(title, signals, searchPhrases) {
   } else {
     sentences.push(`${knowledge.copy.benefit}`);
   }
-  const distinctivePhrase = (searchPhrases || []).find((phrase) => {
-    const normalizedPhrase = normalizePlainText(phrase);
-    return normalizedPhrase.length >= 5 && normalizedPhrase.length <= 36 && !titleText.toLowerCase().includes(normalizedPhrase.toLowerCase());
-  });
-  sentences.push(
-    distinctivePhrase
-      ? `Compare ${distinctivePhrase} details and available options at SALT.`
-      : "Compare available options and order online from SALT.",
-  );
+  sentences.push(`Review the listed ${titleText} details and available options at SALT.`);
   let sentence = sentences.join(" ");
   while (sentence.length > 160 && factClauses.length > 1) {
     factClauses.pop();
@@ -2049,7 +2082,7 @@ function buildProductProfile(signals) {
     ? guardedTitle
     : safeGuardedTitle;
   const searchPhrases = buildSearchPhrases(signals);
-  const seoTitle = buildCanonicalSeoTitle(canonicalTitle);
+  const seoTitle = buildCanonicalSeoTitle(canonicalTitle, signals);
   const seoDescription = buildSeoDescription(canonicalTitle, signals, searchPhrases);
   const descriptionHtml = buildDescriptionHtml(canonicalTitle, signals);
   const altText = buildCanonicalAltText(signals, canonicalTitle);

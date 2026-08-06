@@ -1,4 +1,4 @@
-export const PRODUCT_CONTENT_KNOWLEDGE_VERSION = "2026-07-16.2";
+export const PRODUCT_CONTENT_KNOWLEDGE_VERSION = "2026-08-05.1";
 
 export const MARKETPLACE_CONTENT_POLICY = Object.freeze({
   market: "US",
@@ -51,6 +51,7 @@ export const MARKETPLACE_CONTENT_POLICY = Object.freeze({
 
 const UNSAFE_CLAIM_PATTERNS = Object.freeze([
   /\b(?:best[ -]?selling|best seller|high quality|premium|luxury|maximum|guaranteed|miracle)\b/gi,
+  /\b(?:must[ -]?have|perfect gift|great gift|hot brand)\b/gi,
   /\b(?:visible|instant|proven) results?\b/gi,
   /\b(?:pain relief|pain support|fast recovery|hair growth|hair regrowth|regrowth|growth inhibitor|stop hair growth|permanent hair removal|painless|prevent hair loss|hair loss prevention)\b/gi,
   /\b(?:anti[ -]?aging|anti[ -]?wrinkle|wrinkle[ -]?free|acne treatment|spot treatment)\b/gi,

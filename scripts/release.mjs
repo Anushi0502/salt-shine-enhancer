@@ -94,9 +94,9 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
-      label: "Verify canonical Shopify collection membership",
+      label: "Stress-test two million unique product classifications",
       command: npmBin,
-      args: ["run", "sync:collection-membership:dry-run"],
+      args: ["run", "catalog:taxonomy:scale:2m"],
       cwd: releaseRootDir,
     },
     {
@@ -130,23 +130,21 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
-      label: "Rework low Shopify prices with the approved campaign cost",
+      label: "Dry-run exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:price-rework:apply"],
+      args: ["run", "shopify:catalog-integrity:dry-run"],
       cwd: releaseRootDir,
     },
     {
-      label: "Verify every live Shopify price and compare-at target",
+      label: "Apply exact full-catalog collection reconciliation",
       command: npmBin,
-      args: [
-        "run",
-        "shopify:price-rework:verify",
-        "--",
-        "--verify-manifest",
-        "output/shopify-price-rework-manifest.json",
-        "--output",
-        "output/shopify-price-rework-verification-manifest.json",
-      ],
+      args: ["run", "shopify:catalog-integrity:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Refresh Shopify data after collection reconciliation",
+      command: npmBin,
+      args: ["run", "sync:data"],
       cwd: releaseRootDir,
     },
     {
@@ -159,12 +157,6 @@ function buildCatalogReleaseSteps({
       label: "Reconcile and verify Shopify SEO/product fields",
       command: npmBin,
       args: ["run", "shopify:seo:release"],
-      cwd: releaseRootDir,
-    },
-    {
-      label: "Map Shopify variant images",
-      command: npmBin,
-      args: ["run", "shopify:variant-image-mapping:apply"],
       cwd: releaseRootDir,
     },
     {
@@ -195,6 +187,18 @@ function buildCatalogReleaseSteps({
       label: "Refresh Shopify data after merchandising backfill",
       command: npmBin,
       args: ["run", "sync:data"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify every active product has product-specific SEO and metafields",
+      command: npmBin,
+      args: ["run", "shopify:product-specificity:verify"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify exact collection membership and price rules",
+      command: npmBin,
+      args: ["run", "shopify:catalog-integrity:verify"],
       cwd: releaseRootDir,
     },
     {
@@ -316,8 +320,8 @@ export function buildReleaseSteps({
     return buildProductReleaseSteps({ releaseRootDir, includeMobile });
   }
 
-  if (profile !== "catalog") {
-    throw new Error(`Invalid release profile ${profile}; expected catalog or products`);
+  if (!["catalog", "daily"].includes(profile)) {
+    throw new Error(`Invalid release profile ${profile}; expected catalog, daily, or products`);
   }
 
   return buildCatalogReleaseSteps({ releaseRootDir, includeMobile });
@@ -351,8 +355,8 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["catalog", "products"].includes(args.profile)) {
-    throw new Error(`Invalid release profile ${args.profile}; expected catalog or products`);
+  if (!["catalog", "daily", "products"].includes(args.profile)) {
+    throw new Error(`Invalid release profile ${args.profile}; expected catalog, daily, or products`);
   }
 
   return args;

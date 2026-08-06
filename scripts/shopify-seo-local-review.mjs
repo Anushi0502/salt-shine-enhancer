@@ -37,6 +37,19 @@ const protectedFields = [
 ];
 const metafieldColumns = [];
 const ADVISORY_AUDIT_ISSUES = new Set(["insufficient-product-facts", "weak-handle-alignment", "title-length"]);
+const MANAGED_MINIMUM_QUANTITY_TAG = /^minimum-qty-(?:2|3)$/i;
+
+function normalizeProtectedFieldValue(field, value) {
+  if (field !== "Tags") return String(value ?? "");
+
+  return String(value ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .filter((tag) => !MANAGED_MINIMUM_QUANTITY_TAG.test(tag))
+    .sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }))
+    .join(",");
+}
 
 function parseCsvMatrix(text) {
   const matrix = [];
@@ -157,7 +170,12 @@ function checkRows(sourceRows, outputRows, header, plans, fileName) {
     const plan = planByHandle.get(handle);
     const isPrimary = first.get(handle) === index;
     for (const field of header) {
-      if (protectedFields.includes(field) && String(before[field] ?? "") !== String(after[field] ?? "")) protectedChanged += 1;
+      if (
+        protectedFields.includes(field) &&
+        normalizeProtectedFieldValue(field, before[field]) !== normalizeProtectedFieldValue(field, after[field])
+      ) {
+        protectedChanged += 1;
+      }
     }
     if (isPrimary && plan) {
       const body = get(after, ["Body (HTML)"]);

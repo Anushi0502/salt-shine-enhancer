@@ -144,6 +144,17 @@ export function classifyProductKnowledge(product) {
   }
 
   const taxonomy = classifyCatalogTaxonomy(product);
+  const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy);
+
+  if (product && typeof product === "object") {
+    PRODUCT_KNOWLEDGE_CACHE.set(product, knowledge);
+  }
+
+  return knowledge;
+}
+
+export function buildProductKnowledgeFromTaxonomy(product, taxonomy) {
+  if (!taxonomy?.ruleId) throw new Error("A taxonomy classification is required to build product knowledge.");
   const leafType = canonicalLeafType(product, taxonomy);
   const specificType = specificProductType(product, taxonomy);
   const typeKey = slugify(leafType) || "unclassified-product";
@@ -154,7 +165,7 @@ export function classifyProductKnowledge(product) {
   const searchTerms = taxonomy.ruleId === "unclassified"
     ? buildFallbackSearchTerms(product, leafType)
     : buildSearchTerms(product, taxonomy, leafType, aliases);
-  const knowledge = {
+  return {
     version: PRODUCT_KNOWLEDGE_BASE_VERSION,
     productKnowledgeId: productKnowledgeId(product),
     typeKey,
@@ -193,12 +204,6 @@ export function classifyProductKnowledge(product) {
     seoEligible: taxonomy.seoEligible,
     evidence: taxonomy.evidence,
   };
-
-  if (product && typeof product === "object") {
-    PRODUCT_KNOWLEDGE_CACHE.set(product, knowledge);
-  }
-
-  return knowledge;
 }
 
 export function compactProductKnowledge(productKnowledge) {

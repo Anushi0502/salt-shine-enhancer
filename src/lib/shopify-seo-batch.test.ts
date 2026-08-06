@@ -87,6 +87,37 @@ describe("shopify SEO batch intelligence", () => {
     expect(title.length).toBeLessThanOrEqual(68);
   });
 
+  it("extends short SEO titles with product evidence instead of generic store copy", async () => {
+    const plan = await buildSeoBatchPlan([{
+      Handle: "50pcs-linen-drawstring-christmas-gift-bag",
+      "Product ID": "303",
+      Title: "Christmas Gift Bag",
+      Type: "Gift Bag",
+      "Variant SKU": "GIFT-50",
+      "Variant Price": "19.99",
+    }]);
+    const seoTitle = plan.products[0].intelligence.canonicalSeoTitle;
+
+    expect(seoTitle).toMatch(/Christmas Gift Bag/i);
+    expect(seoTitle).toMatch(/50pcs|linen|drawstring/i);
+    expect(seoTitle).not.toMatch(/shop online|buy now|order online/i);
+    expect(seoTitle.length).toBeLessThanOrEqual(70);
+  });
+
+  it("removes generic marketplace claims from SEO descriptions", async () => {
+    const plan = await buildSeoBatchPlan([{
+      Handle: "must-have-perfect-gift-blue-green-photo-accessory",
+      "Product ID": "304",
+      Title: "Blue Green Photo Accessory",
+      Type: "Photo Accessory",
+      "Variant SKU": "PHOTO-304",
+      "Variant Price": "24.99",
+    }]);
+    const content = `${plan.products[0].intelligence.canonicalSeoTitle} ${plan.products[0].intelligence.canonicalSeoDescription}`;
+
+    expect(content).not.toMatch(/must[- ]?have|perfect gift|great gift|hot brand/i);
+  });
+
   it("removes unsafe supplier claims and repairs family-mismatched titles", async () => {
     const plan = await buildSeoBatchPlan([{
       Handle: "knee-brace-maximum-knee-pain-support-fast-recovery-for-men-women",
@@ -103,6 +134,7 @@ describe("shopify SEO batch intelligence", () => {
     expect(product.intelligence.knowledge.family).toBe("tool-protective-gear");
     expect(product.intelligence.canonicalTitle).toMatch(/knee brace/i);
     expect(generated).not.toMatch(/maximum|pain relief|pain support|fast recovery/i);
+    expect(generated).not.toMatch(/must[- ]?have|perfect gift|great gift|hot brand/i);
     expect(product.intelligence.canonicalTitle).not.toMatch(/perfume/i);
     expect(product.intelligence.canonicalDescriptionHtml).not.toMatch(/Buy 2|Get 1 Free/i);
   });
@@ -210,11 +242,11 @@ describe("shopify SEO batch intelligence", () => {
     expect(exportRows[0].Title).not.toBe(rows[0].Title);
     expect(exportRows[0]["SEO Title"]).toContain("Modern Arc Floor Lamp");
     expect(exportRows[0]["SEO Description"]).toMatch(/trusted reviews/);
-    expect(exportRows[1]["Variant Price"]).toBe("22.99");
-    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeGreaterThanOrEqual(22.99 * 1.2 - 0.02);
-    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeLessThanOrEqual(22.99 * 1.4 + 0.02);
+    expect(exportRows[1]["Variant Price"]).toBe("29.99");
+    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeGreaterThanOrEqual(29.99 * 1.2 - 0.02);
+    expect(Number(exportRows[1]["Variant Compare At Price"])).toBeLessThanOrEqual(29.99 * 1.4 + 0.02);
     expect(planResult.products[0].productInput).not.toHaveProperty("tags");
-    expect(exportRows[0].Tags).toBe("home decor, minimum-qty-2");
+    expect(exportRows[0].Tags).toBe("home decor");
     expect(exportRows[1]).not.toHaveProperty("Tags");
     expect(rows[0].Title).toBe("Completely Wrong Title");
     expect(Object.keys(exportRows[0])).toEqual(Object.keys(rows[0]));
@@ -275,6 +307,6 @@ describe("shopify SEO batch intelligence", () => {
     );
     expect(manifest.knowledgeBank.version).toBe(PRODUCT_CONTENT_KNOWLEDGE_VERSION);
     expect(manifest.products[0].knowledge.family).toBe("home-lighting");
-    expect(manifest.products[0].desiredQuantityTag).toBe("minimum-qty-2");
+    expect(manifest.products[0].desiredQuantityTag).toBe("");
   });
 });

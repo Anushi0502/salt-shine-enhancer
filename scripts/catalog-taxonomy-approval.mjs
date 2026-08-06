@@ -37,32 +37,32 @@ async function main() {
       `Approval targets taxonomy ${String(approval?.taxonomyVersion || "unknown")}, but the active taxonomy is ${CATALOG_TAXONOMY_VERSION}.`,
     );
   }
-  if (approval?.scope?.existingShopifyTags !== "preserve-exactly") {
-    approvalError("Approval does not require exact preservation of existing Shopify tags.");
+  if (approval?.scope?.existingShopifyTags !== "preserve-unmanaged-exactly") {
+    approvalError("Approval does not require exact preservation of unmanaged Shopify tags.");
   }
-  if (approval?.scope?.managedTags !== "add-only salt namespace") {
-    approvalError("Approval does not limit managed tags to the additive salt namespace.");
+  if (approval?.scope?.managedTags !== "exact replacement within checked-in salt managed namespaces") {
+    approvalError("Approval does not limit exact tag replacement to checked-in salt namespaces.");
   }
-  if (approval?.scope?.taxonomyClassification !== "approved for every active Shopify product; image-verified ambiguity overrides are required before controlled category tags") {
-    approvalError("Approval does not require image-verified resolution before ambiguous controlled category tags.");
+  if (approval?.scope?.taxonomyClassification !== "deterministic checked-in taxonomy first; guarded local image evidence only for opaque products; auditable release-boundary guess only if the release would otherwise fail") {
+    approvalError("Approval does not enforce deterministic-first guarded classification.");
   }
-  if (approval?.scope?.seo !== "approved for every active Shopify product through guarded flow with prices preserved") {
-    approvalError("Approval does not cover SEO for every active Shopify product.");
+  if (approval?.scope?.seo !== "product-specific SEO and metafields required for every active Shopify product; generic, duplicate, or evidence-free content blocks release; prices preserved") {
+    approvalError("Approval does not require product-specific SEO and metafields for every active product.");
   }
   if (approval?.scope?.salesChannel !== "publish every active product to every available sales channel only after all release tasks verify; never change draft or archived status") {
     approvalError("Approval does not enforce the final all-sales-channel publication phase.");
   }
-  if (approval?.scope?.categoriesAndMetafields !== "classification metafields and additive controlled category tags approved for every active Shopify product; no Shopify product category writes") {
+  if (approval?.scope?.categoriesAndMetafields !== "classification and product-specific merchandising metafields plus controlled collection tags approved for every active Shopify product; no Shopify product category writes") {
     approvalError("Approval does not restrict category membership to controlled tags and classification metafields.");
   }
   if (approval?.scope?.zeroImageProducts !== "delete only after a fresh live Shopify image read confirms zero product images") {
     approvalError("Approval does not limit permanent deletion to products with zero freshly verified Shopify images.");
   }
-  if (approval?.scope?.prices !== "preserve") {
+  if (approval?.scope?.prices !== "preserve product and variant prices; collection price conditions may be repaired exactly") {
     approvalError("Approval does not preserve prices.");
   }
-  if (approval?.scope?.newCollections !== "not approved" || approval?.scope?.collectionMergesOrArchives !== "not approved") {
-    approvalError("New collection creation, merges, and archives require a separate explicit approval.");
+  if (approval?.scope?.newCollections !== "approved only for missing canonical collections in the checked-in governance registry" || approval?.scope?.collectionMergesOrArchives !== "not approved") {
+    approvalError("Approval does not limit collection creation to checked-in canonical records or forbids merges and archives.");
   }
   if (process.env.SALT_CATALOG_TAXONOMY_APPROVED !== "1") {
     approvalError("Set SALT_CATALOG_TAXONOMY_APPROVED=1 only for the approved release run.");

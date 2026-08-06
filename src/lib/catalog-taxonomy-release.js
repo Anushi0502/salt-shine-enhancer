@@ -141,7 +141,10 @@ export function taxonomyMetafieldMatches(product, expectedMetafield) {
   return normalizeText(getTaxonomyMetafield(product)?.value) === normalizeText(expectedMetafield?.value);
 }
 
-export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts) {
+export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
+  mutateTags = true,
+  knowledgeByHandle = new Map(),
+} = {}) {
   const liveByHandle = new Map(
     asArray(liveProducts)
       .map((product) => [normalizeCatalogHandle(product?.handle), product])
@@ -152,7 +155,6 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts) {
 
   for (const product of asArray(localProducts)) {
     const handle = normalizeCatalogHandle(product?.handle);
-    const knowledge = classifyProductKnowledge(product);
     const liveProduct = liveByHandle.get(handle);
 
     if (!handle) {
@@ -170,7 +172,13 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts) {
       continue;
     }
 
-    const tagsToAdd = buildManagedTagAdditions(liveProduct.tags, knowledge.proposedTags);
+    const suppliedKnowledge = knowledgeByHandle instanceof Map
+      ? knowledgeByHandle.get(handle)
+      : knowledgeByHandle?.[handle];
+    const knowledge = suppliedKnowledge || classifyProductKnowledge(product);
+    const tagsToAdd = mutateTags
+      ? buildManagedTagAdditions(liveProduct.tags, knowledge.proposedTags)
+      : [];
     const taxonomyMetafield = buildTaxonomyMetafieldInput(liveProduct.id, product, knowledge);
     tasks.push({
       productId: liveProduct.id,
@@ -180,6 +188,7 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts) {
       initialTags: asArray(liveProduct.tags).map(normalizeText).filter(Boolean),
       proposedTags: asArray(knowledge.proposedTags).map(normalizeText).filter(Boolean),
       tagsToAdd,
+      mutateTags,
       taxonomyMetafield,
       metafieldNeedsUpdate: !taxonomyMetafieldMatches(liveProduct, taxonomyMetafield),
       knowledge: {
@@ -201,10 +210,14 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts) {
     taxonomyVersion: CATALOG_TAXONOMY_VERSION,
     policy: {
       existingTags: "preserve-exactly",
-      managedTags: `add-only ${CATALOG_TAG_PREFIX}: namespace`,
+      managedTags: mutateTags
+        ? `add-only ${CATALOG_TAG_PREFIX}: namespace`
+        : "unchanged; exact collection integrity is authoritative",
       lowConfidenceTaxonomy: "classification metafield only; controlled category tags withheld pending review",
       productScope: "all active Shopify products",
-      categoryMembership: "controlled add-only salt:department and salt:category tags; no Shopify product category mutation",
+      categoryMembership: mutateTags
+        ? "controlled add-only salt:department and salt:category tags; no Shopify product category mutation"
+        : "no tag mutation; exact collection integrity is authoritative",
       publicationMutation: "none",
       priceMutation: "none",
       variantMutation: "none",

@@ -9,9 +9,155 @@ import {
   taxonomyMetafieldMatches,
   verifyTaxonomyTaskReadback,
 } from "@/lib/catalog-taxonomy-release.js";
-import { classifyCatalogTaxonomy } from "@/lib/catalog-taxonomy.js";
+import { classifyCatalogTaxonomy, classifyCatalogTaxonomyByRuleId } from "@/lib/catalog-taxonomy.js";
+import { buildProductKnowledgeFromTaxonomy } from "@/lib/product-knowledge-base.js";
 
 describe("catalog taxonomy release", () => {
+  it("keeps short-sleeve shirts out of the shorts taxonomy", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Custom Name And Number Men's Embroidery Baseball Jersey Short Sleeve T-Shirt",
+      handle: "custom-name-and-number-mens-embroidery-baseball-jersey-short-sleeve-t-shirt",
+    });
+
+    expect(classification.ruleId).not.toBe("shorts");
+  });
+
+  it("keeps lavalier microphones out of phone-case taxonomy", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Wireless Lavalier Microphone With Windproof Cover For iPhone",
+      handle: "wireless-lavalier-microphone-with-windproof-cover-for-iphone",
+    });
+
+    expect(classification.ruleId).toBe("microphones");
+    expect(classification.ruleId).not.toBe("phone-case");
+  });
+
+  it("classifies compact flowerpots as planters rather than cookware", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Plastic Flowerpot Grow Box For Flowers And Plants",
+      handle: "flowerpot-plastic-grow-box-for-flowers-and-plants",
+    });
+
+    expect(classification.ruleId).toBe("plant-pots");
+    expect(classification.ruleId).not.toBe("cookware");
+  });
+
+  it("prefers cycling jerseys over shorts when the handle says short sleeve", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Netcompany Ineos Cycling Team 2026 Jersey Set Bicycle Short Sleeve",
+      handle: "netcompany-ineos-cycling-team-2026-jersey-set-bicycle-short-sleeve-clothing-kits-bike-shirts-suit-bicycle-bib-shorts-maillot",
+    });
+
+    expect(classification.ruleId).toBe("cycling-jerseys");
+    expect(classification.ruleId).not.toBe("shorts");
+  });
+
+  it("keeps anime short-sleeve t-shirts out of anime shorts", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Demon Slayer Anime Clothes Men's Short Sleeve T Shirt",
+      handle: "demon-slayer-anime-clothes-mens-short-sleeve-t-shirt-spring-summer-outfit-middle-school-teen-kids-trendy-t-shirt-top",
+    });
+
+    expect(classification.ruleId).toBe("anime-graphic-tshirts");
+    expect(classification.ruleId).not.toBe("anime-shorts");
+  });
+
+  it("prefers a child sleep sack over a generic camping sleeping bag", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Sleeping Bag For Children 3 24 Months Kids Sleepwear Sleeve Removable",
+      handle: "sleeping-bag-for-children-3-24months-kids-sleepwear-sleeve-removable-winter-warm-thicker-anti-kick-blanket-baby-sleepsack-3-5tog",
+    });
+
+    expect(classification.ruleId).toBe("kids-sleepwear");
+    expect(classification.ruleId).not.toBe("camping-gear");
+  });
+
+  it("keeps artificial potted foliage out of cookware and planter taxonomy", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Plastic Leaf Pots Kitchen Dining Accessories",
+      handle: "artificial-ivy-plant-plastic-leaf-with-pots-wedding-festival-arch-decoration-home-window-sill-ornamental-flowerpot-wall-hanging",
+    });
+
+    expect(classification.ruleId).toBe("artificial-plants");
+    expect(classification.ruleId).not.toBe("cookware");
+    expect(classification.ruleId).not.toBe("plant-pots");
+  });
+
+  it("classifies collapsed baby jumpsuit handles as baby clothing", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Gentleman Handsome Formal Dress Party Cotton",
+      handle: "newborn-clothes-spring-and-autumn-0-18m-gentleman-style-handsome-formal-dress-party-cotton-comfortable-long-sleeved-babyjumpsuit",
+    });
+
+    expect(classification.ruleId).toBe("baby-rompers-clothing");
+    expect(classification.ruleId).not.toBe("dresses");
+  });
+
+  it("uses explicit handkerchief handle evidence over incidental pants or towel words", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Square Hanky Chest Towel Suit Accessories",
+      handle: "brand-handkerchief-man-floral-paisley-striped-fit-formal-party-pocket-square-hanky-chest-towel-suit-accessories-men-necktie",
+    });
+
+    expect(classification.ruleId).toBe("handkerchiefs-pocket-squares");
+    expect(classification.ruleId).not.toBe("towels");
+    expect(classification.ruleId).not.toBe("ties");
+  });
+
+  it("keeps Crocs decorations out of the shoe taxonomy", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Cartoon Cute 11pcs Demon Slayer Collection",
+      handle: "cartoon-cute-11pcs-demon-slayer-collection-charms-diy-decorations-decorations-sandal-decorate-for-crocs-party-gift",
+    });
+
+    expect(classification.ruleId).toBe("shoe-charms");
+    expect(classification.ruleId).not.toBe("shoes");
+  });
+
+  it("uses explicit anime figure and keychain handle nouns over stale generated copy", () => {
+    const figure = classifyCatalogTaxonomy({
+      title: "Car Ornaments Cartoon Toys Gifts",
+      handle: "anime-naruto-figure-naruto-kakashi-figures-action-figure-accessories-car-ornaments-cartoon-kids-toys-gifts",
+    });
+    const keychain = classifyCatalogTaxonomy({
+      title: "Jiraiya Pvc Keychain Bag Keyring Charm",
+      handle: "naruto-anime-figures-naruto-sasuke-kakashi-itachi-jiraiya-pvc-keychain-bag-keyring-charm-accessories-kids-toys-birthday-gifts",
+    });
+
+    expect(figure.ruleId).toBe("anime-figures-standees");
+    expect(keychain.ruleId).toBe("key-ring");
+  });
+
+  it("routes photo album keychains to card-collecting supplies instead of wallets", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Holder Photo Keychain Albums Pendant",
+      handle: "holder-photo-keychain-albums-pendant-pictures-storage-card-bag-collection-card-holder-card-book-keyring-photo-album-keychain",
+    });
+
+    expect(classification.ruleId).toBe("photo-album-keychains");
+    expect(classification.collectionTargets).toContain("office-school-supplies");
+    expect(classification.ruleId).not.toBe("wallets");
+  });
+
+  it("keeps anime card-holder lanyards out of trading-card collections", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Anime Characters Card Holder Lanyard Keychain Id Credit Bus Card",
+      handle: "anime-characters-card-holder-lanyard-keychain-id-credit-bus-card-cover-hang-rope-lariat-lanyard-key-rings-fans-gifts",
+    });
+
+    expect(classification.ruleId).toBe("card-holder-lanyards");
+    expect(classification.ruleId).not.toBe("anime-trading-cards");
+  });
+
+  it("does not treat a camera lanyard as a card-holder product", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Kids Instant Print Camera With Print Paper",
+      handle: "kids-instant-print-camera-ips-screen-selfie-toy-camera-with-print-paper-32g-card-lanyard-diy-gift-for-3-12-years-boys-girls",
+    });
+
+    expect(classification.ruleId).not.toBe("card-holder-lanyards");
+  });
+
   it("only adds missing managed tags and preserves legacy tags exactly", () => {
     expect(
       buildManagedTagAdditions(
@@ -46,6 +192,20 @@ describe("catalog taxonomy release", () => {
     expect(isActiveShopifyProduct({ status: "ARCHIVED" })).toBe(false);
   });
 
+  it("resolves checked-in hyphenated rule ids at the release boundary", () => {
+    const classification = classifyCatalogTaxonomyByRuleId(
+      { title: "Order Price Difference Adjustment", handle: "order-price-difference-adjustment" },
+      "order-price-adjustments",
+      { source: "test" },
+    );
+
+    expect(classification).toMatchObject({
+      ruleId: "order-price-adjustments",
+      reviewRequired: false,
+      seoEligible: false,
+    });
+  });
+
   it("creates an additive task for an active product before the publication phase", () => {
     const local = {
       id: 1,
@@ -67,6 +227,35 @@ describe("catalog taxonomy release", () => {
     expect(plan.tasks[0]?.tagsToAdd).toContain("salt:type:belt");
     expect(plan.tasks[0]?.tagsToAdd.every((tag) => tag.startsWith("salt:"))).toBe(true);
     expect(plan.tasks[0]?.metafieldNeedsUpdate).toBe(true);
+  });
+
+  it("uses frozen product knowledge without mutating authoritative collection tags", () => {
+    const local = {
+      id: 4,
+      handle: "wireless-lavalier-microphone-for-phone",
+      title: "Wireless Lavalier Microphone For Phone",
+    };
+    const taxonomy = classifyCatalogTaxonomyByRuleId(local, "microphones", {
+      source: "catalog-integrity-test",
+    });
+    const knowledge = buildProductKnowledgeFromTaxonomy(local, taxonomy);
+    const plan = buildCatalogTaxonomyReleasePlan([local], [
+      {
+        id: "gid://shopify/Product/4",
+        handle: local.handle,
+        status: "ACTIVE",
+        tags: ["salt:collection:microphones"],
+      },
+    ], {
+      mutateTags: false,
+      knowledgeByHandle: new Map([[local.handle, knowledge]]),
+    });
+
+    expect(plan.tasks[0]?.knowledge.classificationRule).toBe("microphones");
+    expect(plan.tasks[0]?.proposedTags).toContain("salt:type:microphone");
+    expect(plan.tasks[0]?.tagsToAdd).toEqual([]);
+    expect(plan.tasks[0]?.mutateTags).toBe(false);
+    expect(plan.policy.managedTags).toContain("collection integrity is authoritative");
   });
 
   it("does not schedule a taxonomy metafield rewrite when the live value is exact", () => {
@@ -670,5 +859,55 @@ describe("catalog taxonomy release", () => {
 
     expect(classification.ruleId).toBe("car-fragrance");
     expect(classification.reviewRequired).toBe(false);
+  });
+
+  it("never derives taxonomy or physical features from managed salt tags", () => {
+    const base = classifyCatalogTaxonomy({
+      title: "Scented Decorative Candle Aromatherapy Nordic Room Decor",
+      handle: "scented-decorative-candle-aromatherapy-nordic-room-decor",
+      tags: ["Home Decor"],
+    });
+    const rerun = classifyCatalogTaxonomy({
+      title: "Scented Decorative Candle Aromatherapy Nordic Room Decor",
+      handle: "scented-decorative-candle-aromatherapy-nordic-room-decor",
+      tags: [
+        "Home Decor",
+        "salt:collection:smart-lighting",
+        "salt:feature:smart",
+        "salt:category:lighting-decor",
+      ],
+    });
+
+    expect(rerun.ruleId).toBe(base.ruleId);
+    expect(rerun.attributes.features || []).not.toContain("smart");
+    expect(rerun.proposedTags).not.toContain("salt:feature:smart");
+  });
+
+  it.each([
+    ["Car Sun Shade Umbrella Foldable Windshield", "car-windshield-sunshade-umbrellas"],
+    ["Kids Sneakers For Boys Girls Running Tennis Shoes Lightweight", "kids-sports-footwear"],
+    ["For DJI Mic Stick Rode Wireless GO Mic Wireless Lavalier Microphone Handle", "microphone-accessories"],
+    ["Newborn Photography Props Baby Crochet Knit Costume Accessories Infant Photo Shoot", "newborn-photography-props"],
+    ["Sleeping Bag For Children Kids Sleepwear Anti-Kick Blanket Baby Sleepsack", "kids-sleepwear"],
+    ["Code Geass Lelouch Anime School Uniform Cosplay Costume", "anime-cosplay-costumes"],
+    ["Demon Slayer Anime Printed Gym Shorts", "anime-shorts"],
+    ["Demon Slayer Anime Retro Cosplay T-Shirt", "anime-graphic-tshirts"],
+    ["Demon Slayer Anime Printed Pajamas And Loungewear", "anime-pajamas"],
+    ["Demon Slayer Cartoon Cookie Molds", "cookie-cutters-molds"],
+    ["Evangelion Anime Cosplay Doll Plush Stuffed Doll", "anime-plush-dolls"],
+    ["Anime Character Line Art Drawing Exercise Book", "books-learning"],
+    ["Large Handkerchief High Absorbency Pocket Towel For Gym", "towels"],
+    ["Kids Adults Barefoot Water Shoes Quick Dry Aqua Socks", "water-shoes-aqua-socks"],
+    ["Anime Vest Clothing Is Suitable For 1 12 Movable Humanoid Toys", "action-figure-clothing-accessories"],
+    ["LED Cat Dog Nail Clipper Professional Pet Claw Trimmer With Safety Lock", "pet-nail-clippers"],
+    ["Photocard Holder With Keychains 3 Inch Card Protect Sleeves", "photocard-holders-keychains"],
+    ["Umbrella Corporation Lanyard Card ID Holder Employee Information Neck Strap", "id-card-lanyards-badge-holders"],
+  ])("classifies release-boundary long-tail products without a guess: %s", (title, ruleId) => {
+    const classification = classifyCatalogTaxonomy({
+      title,
+      handle: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    });
+
+    expect(classification).toMatchObject({ ruleId, reviewRequired: false });
   });
 });

@@ -1,6 +1,6 @@
 import { CATALOG_TAG_PREFIX, CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
 
-export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.1`;
+export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.2`;
 export const CATALOG_COLLECTION_SOURCE_TITLE = `SALT taxonomy ${CATALOG_TAXONOMY_VERSION}`;
 
 function collection(handle, title, ruleTag, description, legacyHandles = []) {
@@ -41,6 +41,8 @@ export const CATALOG_COLLECTION_PLAN = Object.freeze([
   collection("watches", "Watches", "salt:category:watches", "Shop fashion watches, smart watches, watch bands, and watch accessories.", ["women-watches"]),
   collection("fitness-equipment", "Sports & Fitness", "salt:category:fitness-equipment", "Shop fitness training, sports protection, recovery, and active lifestyle essentials."),
   collection("health-wellness", "Health & Wellness", "salt:category:health-wellness", "Shop wellness, mobility, posture, relaxation, self-care, and health-support accessories.", ["face-mask"]),
+  collection("creator-essentials", "Creator Essentials", "salt:category:creator-essentials", "Shop creator tools for filming, streaming, podcasting, photography, and content production."),
+  collection("anime-collectables", "Anime Collectables", "salt:category:anime-collectables", "Shop anime, manga, cosplay, character, and fan collectables."),
 ]);
 
 export const CATALOG_COLLECTION_RULE_TAGS = Object.freeze(

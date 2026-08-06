@@ -169,6 +169,55 @@ describe("Shopify SEO release reconciliation", () => {
     expect(isHandleContentMismatch(plan.products[0])).toBe(true);
   });
 
+  it("makes SEO titles explicit when Shopify would collapse them to the product-title default", async () => {
+    const plan = await buildShopifySeoReleasePlan({
+      products: [
+        {
+          id: 203,
+          handle: "creative-womens-tote-bag-trend-face",
+          title: "Creative Womens Tote Bag Trend Face",
+          body_html: "<p>Creative Womens Tote Bag Trend Face bag.</p>",
+          product_type: "Bag",
+          tags: ["merchant-tag"],
+          variants: [{ id: 2303, title: "Default Title", sku: "BAG-1", price: "19.99" }],
+        },
+      ],
+      collections: [],
+      collectionProducts: {},
+    }, { forceExplicitSeo: true });
+
+    const product = plan.products[0];
+    expect(product.desiredProductInput.seo.title).not.toBe(product.desiredProductInput.title);
+    expect(product.desiredProductInput.seo.title).toContain("SALT Online");
+  });
+
+  it("disambiguates duplicate SEO without inventing product attributes", async () => {
+    const duplicate = (id, handle) => ({
+      id,
+      handle,
+      title: "Adjustable Kids Baseball Cap",
+      body_html: "<p>Adjustable kids baseball cap.</p>",
+      product_type: "Baseball Cap",
+      tags: ["merchant-tag"],
+      variants: [{ id: id * 10, title: "Default Title", sku: `CAP-${id}`, price: "19.99" }],
+    });
+    const plan = await buildShopifySeoReleasePlan({
+      products: [
+        duplicate(401, "adjustable-kids-baseball-cap"),
+        duplicate(402, "adjustable-kids-baseball-cap-1"),
+      ],
+      collections: [],
+      collectionProducts: {},
+    });
+    const seoTitles = plan.products.map((product) => product.desiredProductInput.seo.title);
+    const seoDescriptions = plan.products.map((product) => product.desiredProductInput.seo.description);
+
+    expect(new Set(seoTitles)).toHaveLength(2);
+    expect(new Set(seoDescriptions)).toHaveLength(2);
+    expect(seoTitles.every((value) => /Ref [A-Z0-9]{6}/.test(value))).toBe(true);
+    expect(`${seoTitles.join(" ")} ${seoDescriptions.join(" ")}`).not.toMatch(/silk|leather|waterproof/i);
+  });
+
   it("produces zero mutations for an exact handle-aligned product", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
     const diff = compareLiveProductToPlan(liveProduct, productPlan);
@@ -509,8 +558,30 @@ describe("Shopify SEO release reconciliation", () => {
     expect(labels.indexOf("Refresh Shopify data after final product publication")).toBeLessThan(
       labels.indexOf("Build web app"),
     );
+    expect(labels.indexOf("Apply Shopify merchandising metafield backfill after catalog boundary changes")).toBeLessThan(
+      labels.indexOf("Verify every active product has product-specific SEO and metafields"),
+    );
+    expect(labels.indexOf("Verify every active product has product-specific SEO and metafields")).toBeLessThan(
+      labels.indexOf("Verify exact collection membership and price rules"),
+    );
     expect(labels.indexOf(merchandisingBackfillLabel)).toBeLessThan(labels.indexOf("Build web app"));
     expect(labels.at(-1)).toBe("Sync Android Capacitor shell");
+  });
+
+  it("uses the complete catalog workflow for the daily background release", () => {
+    const labels = buildReleaseSteps({
+      rootDir: "/tmp/salt-shine-enhancer",
+      profile: "daily",
+      includeMobile: false,
+    }).map((step) => step.label);
+
+    expect(labels).toContain("Stress-test two million unique product classifications");
+    expect(labels).toContain("Dry-run exact full-catalog collection reconciliation");
+    expect(labels).toContain("Apply exact full-catalog collection reconciliation");
+    expect(labels).toContain("Verify every active product has product-specific SEO and metafields");
+    expect(labels).toContain("Verify exact collection membership and price rules");
+    expect(labels).not.toContain("Rework low Shopify prices with the approved campaign cost");
+    expect(labels.at(-1)).toBe("Generate Shopify theme bundle");
   });
 
   it("keeps the product release on the new-products SEO and publication path", () => {
