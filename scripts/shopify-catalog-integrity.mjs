@@ -52,6 +52,7 @@ const liveInputCheckpointPath = resolve(rootDir, "output", ".shopify-catalog-int
 const collectionApprovalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
 const membershipPollAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_ATTEMPTS || 12));
 const membershipPollDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_DELAY_MS || 10_000));
+const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
 const classificationConcurrency = Math.max(
@@ -280,7 +281,14 @@ function sleep(ms) {
 }
 
 function parseArgs(argv) {
-  const args = { mode: "dry-run", output: defaultOutputPath, skipVision: false, useLiveCheckpoint: false, reclassify: false };
+  const args = {
+    mode: "dry-run",
+    output: defaultOutputPath,
+    skipVision: false,
+    useLiveCheckpoint: false,
+    reclassify: false,
+    batchSize: defaultCatalogBatchSize,
+  };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
     const next = argv[index + 1];
@@ -290,6 +298,14 @@ function parseArgs(argv) {
     else if (token === "--skip-vision") args.skipVision = true;
     else if (token === "--use-live-checkpoint") args.useLiveCheckpoint = true;
     else if (token === "--reclassify") args.reclassify = true;
+    else if (token === "--batch-size") {
+      const batchSize = Number(next);
+      if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1000) {
+        throw new Error("--batch-size must be an integer between 1 and 1000");
+      }
+      args.batchSize = batchSize;
+      index += 1;
+    }
     else if (token === "--output") {
       if (!next) throw new Error("Missing value for --output");
       args.output = resolve(rootDir, next);
@@ -1161,9 +1177,21 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
   const byHandle = new Map(liveCollections.map((collection) => [normalizeCollectionHandle(collection.handle), collection]));
   const expectedByTag = new Map(SEMANTIC_COLLECTION_POLICIES.map((policy) => [normalizeTag(policy.tag), new Set()]));
   const taskByProductId = new Map(tagTasks.map((task) => [task.productId, task]));
+  const expectedCollectionsByProduct = new Map(products.map((product) => [product.id, new Set([ALL_PRODUCTS_COLLECTION_POLICY.handle])]));
   for (const product of products) {
     const task = taskByProductId.get(product.id);
-    for (const tag of task?.desiredManagedTags || []) expectedByTag.get(normalizeTag(tag))?.add(product.id);
+    for (const tag of task?.desiredManagedTags || []) {
+      expectedByTag.get(normalizeTag(tag))?.add(product.id);
+      const handle = normalizeTag(tag).startsWith(COLLECTION_TAG_PREFIX)
+        ? normalizeCollectionHandle(tag.slice(COLLECTION_TAG_PREFIX.length))
+        : "";
+      if (handle) expectedCollectionsByProduct.get(product.id)?.add(handle);
+    }
+    for (const target of targets) {
+      if (target.policy.kind === "price" && productMatchesPricePolicy(product, target.policy)) {
+        expectedCollectionsByProduct.get(product.id)?.add(target.policy.handle);
+      }
+    }
   }
 
   const failures = [];
@@ -1196,12 +1224,35 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
     if (issues.length) failures.push(`${target.policy.handle}: ${issues.join(", ")}`);
   }
 
+  const expectedLiveHandles = new Set([
+    ALL_PRODUCTS_COLLECTION_POLICY.handle,
+    ...targets.map((target) => target.policy.handle),
+  ]);
+  const unexpectedLiveCollections = [...byHandle.keys()].filter((handle) => !expectedLiveHandles.has(handle));
+  if (unexpectedLiveCollections.length) {
+    failures.push(`live collections outside canonical governance: ${unexpectedLiveCollections.join(", ")}`);
+  }
+
   const allProductsCollection = byHandle.get(ALL_PRODUCTS_COLLECTION_POLICY.handle);
   if (!allProductsCollection) failures.push("all-products: collection missing");
   else {
     const members = membership.membersByCollectionId.get(allProductsCollection.id) || new Set();
+    const expectedMembers = new Set(products.map((product) => product.id));
+    const difference = compareSets(expectedMembers, members);
+    if (difference.missing.length) failures.push(`all-products: ${difference.missing.length} missing products`);
+    if (difference.extra.length) failures.push(`all-products: ${difference.extra.length} extra products`);
     for (const id of members) actualMembershipByProduct.get(id)?.add(ALL_PRODUCTS_COLLECTION_POLICY.handle);
   }
+
+  for (const product of products) {
+    const expected = expectedCollectionsByProduct.get(product.id) || new Set();
+    const actual = actualMembershipByProduct.get(product.id) || new Set();
+    const difference = compareSets(expected, actual);
+    if (difference.missing.length || difference.extra.length) {
+      failures.push(`${product.handle}: wrong collection set (missing ${difference.missing.length}, extra ${difference.extra.length})`);
+    }
+  }
+
   const collectionless = [...actualMembershipByProduct.entries()].filter(([, handles]) => handles.size === 0).map(([id]) => id);
   if (collectionless.length) failures.push(`${collectionless.length} active products are collectionless`);
   return { failures, collectionless, liveCollections, bulkOperation: membership.operation };
@@ -1246,39 +1297,53 @@ async function run(args) {
   const classifications = [];
   const resolvedProducts = new Array(products.length);
   const unresolvedProducts = [];
-  for (const [index, product] of products.entries()) {
-    const prior = args.reclassify ? null : priorSnapshot?.byHandle.get(normalizeCollectionHandle(product.handle));
-    let deterministic = null;
-    if (prior) {
-      const taxonomy = classifyCatalogTaxonomyByRuleId(product, prior.classification.ruleId, {
-        source: `prior-catalog-integrity-${prior.classification.source || "verified"}`,
-        reason: "Reused the last completed collection-integrity classification for an unchanged handle.",
-      });
-      deterministic = {
-        knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
-        source: prior.classification.source,
-        frozenDesiredManagedTags: prior.tagTask.desiredManagedTags,
-        priorClassification: prior.classification,
-        reused: true,
-      };
-    } else {
-      deterministic = resolveDeterministicKnowledge(product);
+  const taxonomyBatchCount = Math.ceil(products.length / args.batchSize);
+  for (let batchStart = 0; batchStart < products.length; batchStart += args.batchSize) {
+    const batchEnd = Math.min(batchStart + args.batchSize, products.length);
+    for (let index = batchStart; index < batchEnd; index += 1) {
+      const product = products[index];
+      const prior = args.reclassify ? null : priorSnapshot?.byHandle.get(normalizeCollectionHandle(product.handle));
+      let deterministic = null;
+      if (prior) {
+        const taxonomy = classifyCatalogTaxonomyByRuleId(product, prior.classification.ruleId, {
+          source: `prior-catalog-integrity-${prior.classification.source || "verified"}`,
+          reason: "Reused the last completed collection-integrity classification for an unchanged handle.",
+        });
+        deterministic = {
+          knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
+          source: prior.classification.source,
+          frozenDesiredManagedTags: prior.tagTask.desiredManagedTags,
+          priorClassification: prior.classification,
+          reused: true,
+        };
+      } else {
+        deterministic = resolveDeterministicKnowledge(product);
+      }
+      if (deterministic) resolvedProducts[index] = deterministic;
+      else unresolvedProducts.push({ index, product });
     }
-    if (deterministic) resolvedProducts[index] = deterministic;
-    else unresolvedProducts.push({ index, product });
-    if ((index + 1) % 250 === 0 || index + 1 === products.length) {
-      process.stdout.write(`Deterministic taxonomy evaluated ${index + 1}/${products.length} products.\n`);
+    const batchNumber = Math.floor(batchStart / args.batchSize) + 1;
+    if (batchNumber % 10 === 0 || batchNumber === taxonomyBatchCount) {
+      process.stdout.write(`Taxonomy batches checked ${batchNumber}/${taxonomyBatchCount} (${batchEnd}/${products.length} products).\n`);
     }
   }
   process.stdout.write(`${unresolvedProducts.length} products require visual enrichment or release-boundary fallback.\n`);
-  const unresolvedResolutions = await mapWithConcurrency(
-    unresolvedProducts,
-    classificationConcurrency,
-    (entry) => resolveKnowledge(entry.product, args),
-    "Visual resolution processed",
-  );
-  for (const [index, entry] of unresolvedProducts.entries()) {
-    resolvedProducts[entry.index] = unresolvedResolutions[index];
+  const resolutionBatchCount = Math.ceil(unresolvedProducts.length / args.batchSize);
+  for (let batchStart = 0; batchStart < unresolvedProducts.length; batchStart += args.batchSize) {
+    const batch = unresolvedProducts.slice(batchStart, batchStart + args.batchSize);
+    const resolutions = await mapWithConcurrency(
+      batch,
+      classificationConcurrency,
+      (entry) => resolveKnowledge(entry.product, args),
+      "Visual resolution processed",
+    );
+    for (const [index, entry] of batch.entries()) {
+      resolvedProducts[entry.index] = resolutions[index];
+    }
+    const batchNumber = Math.floor(batchStart / args.batchSize) + 1;
+    if (batchNumber % 10 === 0 || batchNumber === resolutionBatchCount) {
+      process.stdout.write(`Resolution batches checked ${batchNumber}/${resolutionBatchCount}.\n`);
+    }
   }
 
   for (const [index, product] of products.entries()) {
@@ -1346,6 +1411,7 @@ async function run(args) {
       priceCollections: "exact variant-price source plus exact live membership verification",
       collectionlessProducts: "forbidden",
       stableClassification: "reuse the last completed same-version rule and exact managed tag set for unchanged handles",
+      auditBatchSize: args.batchSize,
     },
     summary: {
       activeProducts: products.length,
@@ -1364,6 +1430,8 @@ async function run(args) {
       collectionlessProducts: null,
       failures: null,
       specialCollectionCounts,
+      auditBatchSize: args.batchSize,
+      auditBatchCount: taxonomyBatchCount,
     },
     classifications,
     tagTasks,
