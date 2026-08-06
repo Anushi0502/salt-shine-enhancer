@@ -52,6 +52,14 @@ function isShopifyAuthFailure(error) {
   );
 }
 
+function productIdsForControlledTags(products, tags, catalogProductIds) {
+  const controlledTags = new Set(tags);
+  return products
+    .filter((product) => Array.isArray(product?.tags) && product.tags.some((tag) => controlledTags.has(tag)))
+    .map((product) => Number(product?.id))
+    .filter((id) => catalogProductIds.has(id));
+}
+
 async function fetchLiveCollectionProducts(handle) {
   const productIds = [];
   const seen = new Set();
@@ -116,11 +124,6 @@ async function main() {
   let authFallbackLogged = false;
 
   for (const entry of CATALOG_COLLECTION_PLAN) {
-    const collectionIndex = nextCollections.findIndex((collection) => collection.handle === entry.handle);
-    if (collectionIndex < 0) {
-      throw new Error(`Local collections payload is missing canonical handle "${entry.handle}"`);
-    }
-
     const currentMapping = nextCollectionProducts.collections[entry.handle] || {};
     let live = null;
     let source = "live";
@@ -144,13 +147,31 @@ async function main() {
     }
 
     if (!live) {
+      const taggedProductIds = productIdsForControlledTags(
+        productPayload.products || [],
+        [entry.ruleTag, `salt:collection:${entry.handle}`],
+        catalogProductIds,
+      );
       live = {
         title: String(currentMapping.title || entry.title).trim(),
-        productIds: Array.isArray(currentMapping.productIds) ? currentMapping.productIds : [],
+        productIds: Array.isArray(currentMapping.productIds) && currentMapping.productIds.length
+          ? currentMapping.productIds
+          : taggedProductIds,
       };
+      if (!currentMapping.productIds?.length && taggedProductIds.length) source = "controlled-tag-fallback";
     }
 
     const visibleProductIds = live.productIds.filter((id) => catalogProductIds.has(id));
+    let collectionIndex = nextCollections.findIndex((collection) => collection.handle === entry.handle);
+    if (collectionIndex < 0) {
+      nextCollections.push({
+        handle: entry.handle,
+        title: live.title || entry.title,
+        description: entry.description,
+        products_count: visibleProductIds.length,
+      });
+      collectionIndex = nextCollections.length - 1;
+    }
     nextCollectionProducts.collections[entry.handle] = {
       ...currentMapping,
       title: live.title || currentMapping.title || entry.title,
