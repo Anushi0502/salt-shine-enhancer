@@ -148,6 +148,7 @@ type NormalizedOrder = {
   id: string;
   name: string;
   createdAt: string;
+  status: FinanceOrderRow["status"];
   currency: string;
   grossSalesCents: number;
   discountsCents: number;
@@ -190,16 +191,12 @@ const ORDER_QUERY = /* GraphQL */ `
           ready
           firstVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign }
           }
           lastVisit {
             utmParameters { source medium campaign content term }
-            marketingEvent { utmSource utmMedium utmCampaign }
           }
         }
-        disputes(first: 20) {
-          nodes { id status initiatedAs }
-        }
+        disputes { id status initiatedAs }
         refunds(first: 50) {
           id
           createdAt
@@ -1323,7 +1320,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   if (shopifySubscriptionData.message) exceptions.push(exception("shopify-subscriptions", shopifySubscriptionData.message, 1, "medium"));
   if (manualCosts.message) exceptions.push(exception("subscriptions", manualCosts.message, 1, "medium"));
   if (disputeData.message) exceptions.push(exception("shopify-disputes", disputeData.message, 1, disputeData.state === "unavailable" ? "high" : "medium"));
-  if (campaignData.message) exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
+  if (campaignData.message && campaignData.state !== "manual" && campaignData.state !== "connected") {
+    exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
+  }
 
   const normalized = normalizeOrders(orders, supplierCosts, disputeData.byOrderId, start, end);
   if (normalized.missingCostCount) {
@@ -1451,7 +1450,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     pnlRows: [
       { label: "Gross sales", cents: grossSalesCents, tone: "positive", detail: "Product revenue before discounts" },
       { label: "Discounts", cents: -discountsCents, tone: "negative", detail: "Promotions and order discounts" },
-      { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Difference between original and current order totals" },
+      { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Refund event records created in the selected period" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
       { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
