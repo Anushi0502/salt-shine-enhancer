@@ -929,6 +929,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const totalItems = normalized.rows.reduce((sum, row) => sum + row.itemCount, 0);
   const coveredItems = normalized.rows.reduce((sum, row) => sum + row.coveredItemCount, 0);
   const feeRatio = netSalesCents + shippingIncomeCents ? paymentFeesCents / (netSalesCents + shippingIncomeCents) : 0;
+  const cancelledOrdersCount = orders.filter((order) => Boolean(order.cancelledAt)).length;
+  const disputedOrdersCount = 0;
+  const campaignCostsCents = 0;
 
   const orderRows: FinanceOrderRow[] = normalized.rows.slice(-200).reverse().map((row) => {
     const allocatedFeesCents = Math.round(row.netRevenueCents * feeRatio);
@@ -937,17 +940,21 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       id: row.id,
       name: row.name,
       createdAt: row.createdAt,
+      status: "open",
       grossSalesCents: row.grossSalesCents,
       discountsCents: row.discountsCents,
       refundsCents: row.refundsCents,
       netRevenueCents: row.netRevenueCents,
       cogsCents: row.cogsCents,
       allocatedFeesCents,
+      campaignCostCents: 0,
       profitCents,
       marginPercent: percent(profitCents, row.netRevenueCents),
       currency: row.currency,
       itemCount: row.itemCount,
       costCoverage: row.hasMissingCost ? (row.hasCost ? "partial" : "missing") : "complete",
+      disputeCount: 0,
+      campaignKey: null,
     };
   });
 
@@ -971,6 +978,8 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       payouts: payoutData.state,
       dsers: dsersState,
       subscriptions: subscriptionState,
+      campaigns: "missing",
+      reconciliation: "missing",
       messages: [
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
@@ -992,12 +1001,15 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       taxCollectedCents,
       cogsCents,
       paymentFeesCents,
+      campaignCostsCents,
       subscriptionCostsCents,
       payoutsReceivedCents,
       grossProfitCents,
       operatingProfitCents,
       marginPercent: percent(operatingProfitCents, netSalesCents + shippingIncomeCents),
       orderCount: normalized.rows.length,
+      cancelledOrdersCount,
+      disputedOrdersCount,
       costCoveragePercent: totalItems ? Math.round((coveredItems / totalItems) * 1000) / 10 : null,
     },
     pnlRows: [
