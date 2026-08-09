@@ -19,6 +19,7 @@ export type FinanceKpis = {
   taxCollectedCents: number;
   cogsCents: number;
   paymentFeesCents: number;
+  chargebacksCents: number;
   campaignCostsCents: number;
   subscriptionCostsCents: number;
   payoutsReceivedCents: number;
