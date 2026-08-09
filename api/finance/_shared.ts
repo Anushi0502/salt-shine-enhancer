@@ -6,7 +6,7 @@ import type {
   FinanceSourceState,
   FinanceSubscription,
   FinanceSummary,
-} from "../../src/lib/finance-types";
+} from "../../src/lib/finance-types.js";
 
 const SESSION_COOKIE = "salt_finance_session";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
