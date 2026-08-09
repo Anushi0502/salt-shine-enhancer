@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": null,
+  "buildCommand": "echo 'Finance API only'",
+  "outputDirectory": "public",
   "headers": [
     {
       "source": "/__salt_shopify/(.*)",
