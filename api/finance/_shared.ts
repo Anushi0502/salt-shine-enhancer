@@ -464,11 +464,46 @@ async function queryShopify(query: string, variables: Record<string, unknown>): 
     body: JSON.stringify({ query, variables }),
   });
   const body = await response.json();
-  if (!response.ok || body.errors?.length) {
-    const message = body.errors?.map((error: { message?: string }) => error.message).filter(Boolean).join(" | ");
+  const message = formatShopifyApiError(body, response.status);
+  if (!response.ok || message) {
     throw new Error(message || `Shopify Admin request failed with ${response.status}`);
   }
   return body.data;
+}
+
+function errorMessage(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (!value || typeof value !== "object") return "";
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.message === "string") return record.message.trim();
+  if (typeof record.error === "string") return record.error.trim();
+  if (Array.isArray(record.errors)) return record.errors.map(errorMessage).filter(Boolean).join(" | ");
+
+  return Object.entries(record)
+    .flatMap(([key, entry]) => {
+      const message = errorMessage(entry);
+      return message ? `${key}: ${message}` : [];
+    })
+    .join(" | ");
+}
+
+export function formatShopifyApiError(body: unknown, status: number): string {
+  const payload = body && typeof body === "object" ? body as Record<string, unknown> : {};
+  const candidate = payload.errors ?? payload.error ?? payload.message;
+  const message = errorMessage(candidate);
+  if (!message) return "";
+
+  if (/invalid api key|invalid.*access token|unrecognized login|wrong password|unauthorized/i.test(message)) {
+    return "Shopify Admin access token is invalid or expired. Reconnect the finance app authorization and update the deployed finance API token.";
+  }
+
+  if (/access denied|missing[_ ]shopify[_ ]permission|missing.*permission|required access/i.test(message)) {
+    return `Shopify Admin permission is missing: ${message}`;
+  }
+
+  return status === 401 || status === 403 ? `Shopify Admin authorization failed: ${message}` : message;
 }
 
 async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
@@ -607,10 +642,6 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
   } catch (error) {
     graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
-    if (isShopifyPaymentsAccessError(graphqlError)) {
-      if (manual.state === "manual" && manual.payouts.length) return manual;
-      return { payouts: [], state: "partial", message: shopifyPayoutsAccessMessage() };
-    }
   }
 
   let restError = "";
@@ -621,7 +652,7 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     url.searchParams.set("limit", "250");
     const response = await fetch(url, { headers: shopifyHeaders() });
     const body = await response.json();
-    if (!response.ok) throw new Error(body?.errors || `Shopify payouts unavailable (${response.status})`);
+    if (!response.ok) throw new Error(formatShopifyApiError(body, response.status) || `Shopify payouts unavailable (${response.status})`);
 
     const payouts = ((body?.payouts || []) as RawPayout[]).map((payout) => {
       const amountCents = cents(payout.amount);
