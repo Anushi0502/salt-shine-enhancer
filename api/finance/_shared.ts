@@ -112,6 +112,7 @@ type ShopifyOrder = {
       quantity?: number;
       title?: string;
       sku?: string | null;
+      product?: { id?: string | null } | null;
       originalUnitPriceSet?: ShopifyMoneySet | null;
       discountedUnitPriceSet?: ShopifyMoneySet | null;
       variant?: {
@@ -230,6 +231,7 @@ const ORDER_QUERY = /* GraphQL */ `
             quantity
             title
             sku
+            product { id }
             originalUnitPriceSet { shopMoney { amount currencyCode } }
             discountedUnitPriceSet { shopMoney { amount currencyCode } }
             variant {
@@ -256,6 +258,22 @@ const DISPUTE_QUERY = /* GraphQL */ `
         amount { amount currencyCode }
         initiatedAt
         order { id name }
+      }
+    }
+  }
+`;
+
+const PRODUCT_VARIANT_COST_QUERY = /* GraphQL */ `
+  query FinanceProductVariantCosts($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Product {
+        id
+        variants(first: 100) {
+          nodes {
+            sku
+            inventoryItem { unitCost { amount currencyCode } }
+          }
+        }
       }
     }
   }
@@ -657,7 +675,52 @@ async function loadOrders(start: string, end: string): Promise<ShopifyOrder[]> {
     after = connection.pageInfo.endCursor;
   }
 
+  await hydrateUnresolvedOrderCosts(orders);
   return orders;
+}
+
+async function hydrateUnresolvedOrderCosts(orders: ShopifyOrder[]): Promise<void> {
+  const productIds = new Set<string>();
+  for (const order of orders) {
+    for (const line of order.lineItems?.nodes || []) {
+      if (!line.variant?.inventoryItem?.unitCost && line.product?.id) productIds.add(String(line.product.id));
+    }
+  }
+  if (!productIds.size) return;
+
+  try {
+    const data = await queryShopify(PRODUCT_VARIANT_COST_QUERY, { ids: [...productIds] });
+    const costsByProduct = new Map<string, Map<string, ShopifyMoney>>();
+    for (const product of data?.nodes || []) {
+      const productId = String(product?.id || "").trim();
+      if (!productId) continue;
+      const costsBySku = new Map<string, ShopifyMoney>();
+      for (const variant of product?.variants?.nodes || []) {
+        const sku = String(variant?.sku || "").trim();
+        const unitCost = variant?.inventoryItem?.unitCost;
+        if (sku && unitCost?.amount != null) costsBySku.set(sku, unitCost);
+      }
+      if (costsBySku.size) costsByProduct.set(productId, costsBySku);
+    }
+
+    for (const order of orders) {
+      for (const line of order.lineItems?.nodes || []) {
+        if (line.variant?.inventoryItem?.unitCost || !line.product?.id) continue;
+        const sku = String(line.sku || line.variant?.sku || "").trim();
+        const unitCost = costsByProduct.get(String(line.product.id))?.get(sku);
+        if (unitCost) {
+          line.variant = {
+            ...(line.variant || {}),
+            sku: line.variant?.sku || line.sku,
+            inventoryItem: { ...(line.variant?.inventoryItem || {}), unitCost },
+          };
+        }
+      }
+    }
+  } catch {
+    // The primary order query and configured DSers map remain valid fallback
+    // sources when the targeted product-cost hydration is unavailable.
+  }
 }
 
 function simpleMoneyCents(input?: ShopifyMoney | null): number {
