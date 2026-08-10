@@ -111,6 +111,7 @@ type ShopifyOrder = {
     nodes?: Array<{
       quantity?: number;
       title?: string;
+      sku?: string | null;
       originalUnitPriceSet?: ShopifyMoneySet | null;
       discountedUnitPriceSet?: ShopifyMoneySet | null;
       variant?: {
@@ -228,6 +229,7 @@ const ORDER_QUERY = /* GraphQL */ `
           nodes {
             quantity
             title
+            sku
             originalUnitPriceSet { shopMoney { amount currencyCode } }
             discountedUnitPriceSet { shopMoney { amount currencyCode } }
             variant {
@@ -1351,7 +1353,10 @@ function normalizeOrders(
         const unitCost = line.variant?.inventoryItem?.unitCost;
         const variantId = String(line.variant?.id || "").trim();
         const numericVariantId = variantId.split("/").pop() || variantId;
-        const sku = String(line.variant?.sku || "").trim();
+        // Shopify keeps the purchased SKU on the order line even when the
+        // historical variant record is no longer resolvable. Prefer that
+        // snapshot value, then fall back to the current variant relation.
+        const sku = String(line.sku || line.variant?.sku || "").trim();
         const supplierCostCents = supplierCosts.costs.get(variantId) ?? supplierCosts.costs.get(numericVariantId) ?? supplierCosts.costs.get(sku);
         const unitCostCents = unitCost?.amount != null ? cents(unitCost.amount) : supplierCostCents;
         if (unitCostCents != null) {
