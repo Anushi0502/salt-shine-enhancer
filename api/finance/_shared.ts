@@ -84,6 +84,12 @@ type ShopifyRefund = {
   id?: string;
   createdAt?: string;
   totalRefundedSet?: ShopifyMoneySet | null;
+  refundLineItems?: {
+    nodes?: Array<{
+      subtotalSet?: ShopifyMoneySet | null;
+      totalTaxSet?: ShopifyMoneySet | null;
+    }>;
+  } | null;
 };
 
 type ShopifyOrder = {
@@ -162,6 +168,7 @@ type NormalizedOrder = {
   grossSalesCents: number;
   discountsCents: number;
   refundsCents: number;
+  returnDeductionsCents: number;
   netRevenueCents: number;
   taxCollectedCents: number;
   shippingIncomeCents: number;
@@ -210,6 +217,12 @@ const ORDER_QUERY = /* GraphQL */ `
           id
           createdAt
           totalRefundedSet { shopMoney { amount currencyCode } }
+          refundLineItems(first: 100) {
+            nodes {
+              subtotalSet { shopMoney { amount currencyCode } }
+              totalTaxSet { shopMoney { amount currencyCode } }
+            }
+          }
         }
         lineItems(first: 100) {
           nodes {
@@ -939,6 +952,28 @@ function orderPeriodRefundCents(order: ShopifyOrder, start: string, end: string)
     .reduce((sum, refund) => sum + moneyCents(refund.totalRefundedSet), 0);
 }
 
+function refundLineSubtotalCents(refund: ShopifyRefund): number {
+  return (refund.refundLineItems?.nodes || []).reduce((sum, line) => sum + Math.max(moneyCents(line.subtotalSet), 0), 0);
+}
+
+function orderPeriodReturnDeductionCents(order: ShopifyOrder, start: string, end: string): number {
+  let remainingProductCents = Math.max(moneyCents(order.subtotalPriceSet), 0);
+  return (Array.isArray(order.refunds) ? order.refunds : [])
+    .filter((refund) => isDateInPeriod(refund.createdAt, start, end))
+    .reduce((sum, refund) => {
+      if (remainingProductCents <= 0) return sum;
+      const lineSubtotalCents = refundLineSubtotalCents(refund);
+      const refundCents = Math.max(moneyCents(refund.totalRefundedSet), 0);
+      // Shopify can record a payment refund without refundLineItems (for example,
+      // a full refund or a payment-discrepancy refund). Keep product net sales
+      // accurate by capping that cash refund at the order's product subtotal.
+      const candidateCents = lineSubtotalCents || refundCents;
+      const appliedCents = Math.min(candidateCents, remainingProductCents);
+      remainingProductCents -= appliedCents;
+      return sum + appliedCents;
+    }, 0);
+}
+
 function reconciliationAmountCents(value: Record<string, unknown>, centsKey: string, ...dollarKeys: string[]): number {
   const explicit = value[centsKey];
   if (explicit != null) {
@@ -1293,8 +1328,9 @@ function normalizeOrders(
       const subtotalCents = moneyCents(order.subtotalPriceSet);
       const discountsCents = moneyCents(order.totalDiscountsSet);
       const refundsCents = orderPeriodRefundCents(order, start, end);
+      const returnDeductionsCents = orderPeriodReturnDeductionCents(order, start, end);
       const grossSalesCents = subtotalCents + discountsCents;
-      const netRevenueCents = Math.max(subtotalCents - refundsCents, 0) + moneyCents(order.totalShippingPriceSet);
+      const netRevenueCents = subtotalCents - returnDeductionsCents + moneyCents(order.totalShippingPriceSet);
       const lineItems = order.lineItems?.nodes || [];
       const orderId = String(order.id || order.name || "unknown");
       const disputes = disputesByOrderId.get(orderId) || order.disputes?.nodes || [];
@@ -1340,6 +1376,7 @@ function normalizeOrders(
         grossSalesCents,
         discountsCents,
         refundsCents,
+        returnDeductionsCents,
         netRevenueCents,
         taxCollectedCents: moneyCents(order.totalTaxSet),
         shippingIncomeCents: moneyCents(order.totalShippingPriceSet),
@@ -1494,6 +1531,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const grossSalesCents = normalized.rows.reduce((sum, row) => sum + row.grossSalesCents, 0);
   const discountsCents = normalized.rows.reduce((sum, row) => sum + row.discountsCents, 0);
   const refundsCents = normalized.rows.reduce((sum, row) => sum + row.refundsCents, 0);
+  const returnDeductionsCents = normalized.rows.reduce((sum, row) => sum + row.returnDeductionsCents, 0);
   const netSalesCents = normalized.rows.reduce((sum, row) => sum + row.netRevenueCents - row.shippingIncomeCents, 0);
   const shippingIncomeCents = normalized.rows.reduce((sum, row) => sum + row.shippingIncomeCents, 0);
   const taxCollectedCents = normalized.rows.reduce((sum, row) => sum + row.taxCollectedCents, 0);
@@ -1577,7 +1615,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
             : "No Shopify disputes were initiated in the selected period."
           : "Shopify dispute data is unavailable, so chargeback deductions cannot be fully verified.",
         normalized.periodRefundsCents
-          ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in refund events created during the selected period.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to cancelled orders and is excluded from the accrual P&L to avoid counting cancelled revenue twice.` : ""}`
+          ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in cash refund events created during the selected period. Net sales applies ${formatMoneyText(returnDeductionsCents, currency)} of product return deductions; line-item returns are read from Shopify and payment-only refunds are capped at the order product subtotal.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to cancelled orders and is excluded from the accrual P&L to avoid counting cancelled revenue twice.` : ""}`
           : "No Shopify refund events were created during the selected period.",
         campaignData.state === "connected"
           ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to attributed orders.`
@@ -1593,6 +1631,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       grossSalesCents,
       discountsCents,
       refundsCents,
+      returnDeductionsCents,
       periodRefundsCents: normalized.periodRefundsCents,
       cancelledOrderRefundsCents: normalized.cancelledOrderRefundsCents,
       netSalesCents,
@@ -1615,7 +1654,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     pnlRows: [
       { label: "Gross sales", cents: grossSalesCents, tone: "positive", detail: "Product revenue before discounts" },
       { label: "Discounts", cents: -discountsCents, tone: "negative", detail: "Promotions and order discounts" },
-      { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Refund events created in the period and applied to non-cancelled order P&L" },
+      { label: "Refunds and returns", cents: -returnDeductionsCents, tone: "negative", detail: "Product return deductions; cash refund events remain visible in reconciliation" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
       { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
