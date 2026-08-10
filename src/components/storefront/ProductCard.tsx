@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Heart, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ArrowUpRight, Heart, ShoppingBag, Star } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
 import {
@@ -10,7 +10,6 @@ import {
   formatMoney,
   minPrice,
   productImage,
-  savingsPercent,
 } from "@/lib/formatters";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
@@ -81,12 +80,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   const nativeApp = isNativeApp();
   const isDense = variant === "dense";
   const isShop = variant === "shop";
-  const sale = savingsPercent(product);
   const min = minPrice(product);
   const compare = compareAt(product);
   const image = productImage(product);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
-  const subtitle = conciseTitle(product.customData?.subtitle || product.product_type || "Curated pick", isShop ? 44 : 58);
   const minimumQuantity = getMinimumProductQuantity(
     product.handle,
     min,
@@ -104,9 +101,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         }
       : null;
   const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
-  const publishedAt = new Date(product.published_at || product.created_at || "").getTime();
-  const isNew = Number.isFinite(publishedAt) && Date.now() - publishedAt <= 1000 * 60 * 60 * 24 * 45;
-  const badgeLabel = product.customData?.badgeText?.trim() || (sale > 0 ? `Save ${sale}%` : isNew ? "New" : "SALT pick");
   const hasReviews = Boolean(displaySummary && displaySummary.reviewCount > 0);
   const formattedRating = hasReviews ? displaySummary.rating.toFixed(1) : "";
 
@@ -158,27 +152,14 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </div>
             )}
 
-            <div className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.16em] shadow-[0_10px_20px_-18px_rgba(15,23,42,0.24)] backdrop-blur ${
-              nativeApp
-                ? "border-border/70 bg-background/92 text-foreground"
-                : "salt-editorial-meta border-border/70 bg-background/88 text-primary"
-            }`}>
-              {badgeLabel}
-            </div>
           </div>
 
           <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {subtitle}
-            </p>
-            <h3 className={`mt-2 line-clamp-2 font-display text-[1rem] leading-[1.08] tracking-[-0.03em] ${
+            <h3 className={`line-clamp-2 font-display text-[1rem] leading-[1.08] tracking-[-0.03em] ${
               nativeApp ? "text-foreground" : "text-foreground"
             }`}>
               {title}
             </h3>
-            <p className="mt-1 line-clamp-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              {product.product_type || "Curated pick"}
-            </p>
             {highlights.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {highlights.map((highlight) => (
@@ -212,13 +193,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   </p>
                 ) : null}
               </div>
-              <span className={`salt-editorial-meta inline-flex h-8 shrink-0 items-center justify-center px-3 text-[0.62rem] font-bold uppercase tracking-[0.1em] transition group-hover:-translate-y-[1px] ${
-                nativeApp
-                  ? "border-border/70 bg-background text-foreground group-hover:border-primary/20 group-hover:text-primary"
-                  : "group-hover:border-primary/30 group-hover:bg-background"
-              }`}>
-                Shop
-              </span>
             </div>
 
             {minimumQuantity > 1 ? (
@@ -286,29 +260,11 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           </div>
         )}
 
-        <div
-          className={`absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.11em] ${
-            nativeApp
-              ? "border-border/70 bg-foreground text-background"
-              : "salt-editorial-meta border-border/70 bg-background/86 text-foreground"
-          }`}
-        >
-          <Sparkles className={`h-3 w-3 ${nativeApp ? "text-background" : "text-amber-400"}`} />
-          {badgeLabel}
-        </div>
       </Link>
 
       <div className="mt-2 flex flex-1 flex-col">
         <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-foreground" : "text-foreground"}`}>
           {title}
-        </p>
-        {subtitle ? (
-          <p className="mt-0.5 line-clamp-1 text-[0.64rem] font-medium tracking-[0.08em] text-muted-foreground">
-            {subtitle}
-          </p>
-        ) : null}
-        <p className="mt-0.5 line-clamp-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          {product.product_type || "Curated pick"}
         </p>
         {highlights.length > 0 ? (
           <div className="mt-1.5 flex flex-wrap gap-1">

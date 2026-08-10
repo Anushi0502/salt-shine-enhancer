@@ -513,9 +513,6 @@ const CartPage = () => {
                         <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
                           {product.title}
                         </p>
-                        <p className="mt-1 text-[0.66rem] uppercase tracking-[0.12em] text-muted-foreground">
-                          {product.product_type || "Curated pick"}
-                        </p>
                       </div>
                       <strong className="shrink-0 text-sm text-primary">
                         {formatMoney(Number(product.variants[0]?.price || 0))}

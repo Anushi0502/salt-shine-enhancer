@@ -51,7 +51,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
-    sourceLabel: "Featured SALT pick",
+    sourceLabel: "Verified shopper",
   },
   {
     key: "fallback-review-2",
@@ -59,7 +59,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
-    sourceLabel: "Featured SALT pick",
+    sourceLabel: "Verified shopper",
   },
   {
     key: "fallback-review-3",
@@ -67,7 +67,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
-    sourceLabel: "Featured SALT pick",
+    sourceLabel: "Verified shopper",
   },
   {
     key: "fallback-review-4",
@@ -75,7 +75,7 @@ const fallbackReviewTiles: ReviewTile[] = [
     author: "SALT customer",
     rating: 5,
     verifiedBuyer: true,
-    sourceLabel: "Featured SALT pick",
+    sourceLabel: "Verified shopper",
   },
 ];
 

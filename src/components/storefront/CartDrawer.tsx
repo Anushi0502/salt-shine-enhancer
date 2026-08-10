@@ -297,9 +297,6 @@ const CartDrawer = () => {
                           >
                             {product.title}
                           </Link>
-                          <p className="mt-1 text-[0.72rem] uppercase tracking-[0.14em] text-muted-foreground">
-                            {product.product_type || "Curated pick"}
-                          </p>
                           <p className="mt-2 text-base font-semibold text-foreground">
                             {formatMoney(Number(defaultVariant?.price || 0))}
                           </p>

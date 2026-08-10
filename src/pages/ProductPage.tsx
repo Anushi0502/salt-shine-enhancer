@@ -714,7 +714,9 @@ const ProductPage = () => {
   const imageSources = (productImages.length
     ? productImages.map((image) => image.src)
     : [primaryImage]).filter(Boolean);
-  const subtitle = product.customData?.subtitle?.trim() || product.product_type || "Featured";
+  // Product type/subtitle metadata is intentionally omitted from the visual
+  // product header so collection labels cannot be mistaken for product names.
+  const subtitle = "";
   const badgeText = product.customData?.badgeText?.trim() || "";
   const customHighlights = (product.customData?.highlights || []).map((entry) => entry.trim()).filter(Boolean);
   const productSummary = productBenefitText(product, 170);
@@ -723,9 +725,9 @@ const ProductPage = () => {
   const wishlisted = isWishlisted(product.handle);
   const brandLabel = product.vendor?.trim() || "SALT";
   const heroThumbnailSources = imageSources.slice(0, 8);
-  const reviewBadgeLabel = reviewSummary
+  const reviewBadgeLabel = reviewSummary && reviewSummary.reviewCount > 0
     ? `${reviewSummary.rating.toFixed(1)} · ${reviewSummary.reviewCount.toLocaleString()} reviews`
-    : "Fresh pick";
+    : "";
 
   const toggleWishlistState = () => {
     const nextSaved = !wishlisted;
@@ -998,10 +1000,12 @@ const ProductPage = () => {
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground">{subtitle}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-xs font-semibold text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.22)]">
-                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                    {reviewBadgeLabel}
-                  </span>
+                  {reviewBadgeLabel ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-xs font-semibold text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.22)]">
+                      <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                      {reviewBadgeLabel}
+                    </span>
+                  ) : null}
                   {purchasedLastMonth > 0 ? (
                     <span className="inline-flex items-center rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.2)]">
                       {purchasedLastMonth.toLocaleString()} bought last month

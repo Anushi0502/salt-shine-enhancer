@@ -262,9 +262,6 @@ const HeaderSearchResults = ({
                     <p className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
                       {conciseTitle(product.title, 44)}
                     </p>
-                    <p className="mt-0.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                      {product.product_type || "Curated pick"}
-                    </p>
                     {matchExplanations.get(product.id)?.[0] ? (
                       <p className="mt-1 line-clamp-1 text-[0.58rem] font-medium leading-4 text-primary/80">
                         {matchExplanations.get(product.id)?.[0]}
@@ -274,10 +271,6 @@ const HeaderSearchResults = ({
 
                   <div className="flex min-h-full flex-col items-end gap-1.5 text-right">
                     <p className="text-sm font-semibold leading-none text-foreground">{price}</p>
-                    <span className="inline-flex items-center gap-0.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                      View
-                      <ChevronRight className="h-3 w-3" />
-                    </span>
                   </div>
                 </Link>
               );

@@ -108,8 +108,6 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
                     currentPrice > 0 && compareAtPrice > currentPrice
                       ? Math.round(((compareAtPrice - currentPrice) / compareAtPrice) * 100)
                       : 0;
-                  const badgeLabel = savings > 0 ? `${savings}% off` : "Curated pick";
-
                   return (
                     <Reveal key={product.id} delayMs={120 + index * 120} className="salt-reveal-instant h-full">
                       <Link
@@ -133,26 +131,21 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
                           <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.03)_52%,hsl(var(--foreground)/0.12))]" />
 
-                          <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
-                            {badgeLabel}
-                          </div>
+                          {savings > 0 ? (
+                            <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
+                              {savings}% off
+                            </div>
+                          ) : null}
                         </div>
 
                         <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-                          <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                            Curated pick
-                          </p>
-                          <h3 className="mt-2 line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
+                          <h3 className="line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
                             {product.title}
                           </h3>
 
-                          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+                          <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
                             <span className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               {formatMoney(currentPrice)}
-                            </span>
-                            <span className="salt-editorial-meta inline-flex items-center gap-1 px-3 py-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] transition group-hover:border-primary/30 group-hover:bg-background">
-                              Shop
-                              <ArrowRight className="h-3 w-3" />
                             </span>
                           </div>
                         </div>
@@ -253,8 +246,6 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
                   currentPrice > 0 && compareAtPrice > currentPrice
                     ? Math.round(((compareAtPrice - currentPrice) / compareAtPrice) * 100)
                     : 0;
-                const badgeLabel = savings > 0 ? `${savings}% off` : "Curated pick";
-
                 return (
                   <Reveal key={product.id} delayMs={120 + index * 120} className="salt-reveal-instant h-full">
                     <Link
@@ -278,26 +269,21 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.03)_52%,hsl(var(--foreground)/0.12))]" />
 
-                        <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
-                          {badgeLabel}
-                        </div>
+                        {savings > 0 ? (
+                          <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
+                            {savings}% off
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-                        <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                          Curated pick
-                        </p>
-                        <h3 className="mt-2 line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
+                        <h3 className="line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
                           {product.title}
                         </h3>
 
-                        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+                        <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
                           <span className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                             {formatMoney(currentPrice)}
-                          </span>
-                          <span className="salt-editorial-meta inline-flex items-center gap-1 px-3 py-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] transition group-hover:border-primary/30 group-hover:bg-background">
-                            Shop
-                            <ArrowRight className="h-3 w-3" />
                           </span>
                         </div>
                       </div>

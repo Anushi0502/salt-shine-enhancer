@@ -413,15 +413,9 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
               <div className="min-w-0 flex-1 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                      {product.collectionLabel || "Supporting pick"}
-                    </p>
-                    <h4 className="mt-1 font-display text-[1.02rem] leading-[1.02] text-foreground transition group-hover:text-primary">
+                    <h4 className="font-display text-[1.02rem] leading-[1.02] text-foreground transition group-hover:text-primary">
                       {product.title}
                     </h4>
-                    <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      {product.product.product_type || "SALT pick"}
-                    </p>
                   </div>
                   <span className="salt-editorial-meta shrink-0 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em]">
                     {product.price}
