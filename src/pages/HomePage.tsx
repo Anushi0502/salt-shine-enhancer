@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
@@ -190,16 +190,9 @@ function OverlayProductCard({
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.04)_52%,hsl(var(--foreground)/0.12))]" />
       </div>
       <div className={`flex flex-1 flex-col ${bodyClass}`}>
-        <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          SALT pick
-        </p>
         <p className={titleClass}>{title}</p>
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <span className={priceClass}>{price}</span>
-          <span className="salt-editorial-meta inline-flex items-center gap-1 px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.12em] transition group-hover:border-primary/30 group-hover:bg-background">
-            View
-            <ArrowRight className="h-3 w-3" />
-          </span>
         </div>
       </div>
     </Link>
