@@ -1992,7 +1992,7 @@ export function useProductByHandle(
   });
 }
 
-export function useProductSearchIndex(enabled = true) {
+export function useProductSearchIndex(enabled = true, hydrateCollectionPage = true) {
   const catalogQuery = useQuery({
     queryKey: ["product-search", DATA_MODE],
     queryFn: loadProductSearchIndex,
@@ -2015,7 +2015,7 @@ export function useProductSearchIndex(enabled = true) {
       collectionPage?.page || 0,
     ],
     queryFn: () => loadCollectionPageProducts(collectionPage?.handle || "", collectionPage?.page || 1),
-    enabled: enabled && Boolean(collectionPage),
+    enabled: enabled && hydrateCollectionPage && Boolean(collectionPage),
     staleTime: COLLECTION_PAGE_HYDRATION_STALE_TIME_MS,
     refetchOnMount: false,
     refetchOnWindowFocus: false,

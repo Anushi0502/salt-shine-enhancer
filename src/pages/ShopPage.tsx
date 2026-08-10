@@ -250,9 +250,13 @@ const ShopPage = () => {
   const resolvedCollectionSelectionHandle = priceFilterMatch
     ? routeFeedHandle || priceFilterMatch.subcollection.shopifyHandle || priceFilterMatch.subcollection.handle
     : explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : "");
-  const collectionHandle = resolveCollectionShopifyHandle(
-    resolvedCollectionSelectionHandle,
-  );
+  // Price-only views must use the complete live-synced catalog. Shopify's
+  // legacy under-25 collection can report a count while returning no
+  // storefront products, so treating it as collection membership hides every
+  // valid catalog item. Real collections still use Shopify membership/order.
+  const collectionHandle = priceFilterMatch
+    ? DEFAULT_COLLECTION_HANDLE
+    : resolveCollectionShopifyHandle(resolvedCollectionSelectionHandle);
   const isAllProductsCollection = collectionHandle === DEFAULT_COLLECTION_HANDLE;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
@@ -324,7 +328,7 @@ const ShopPage = () => {
     isLoading: productsLoading,
     error: productsError,
     refetch: refetchProducts,
-  } = useProductSearchIndex();
+  } = useProductSearchIndex(true, !isVirtualPriceSubcollection);
   const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
@@ -473,9 +477,11 @@ const ShopPage = () => {
     return base;
   }, [collectionHandle, curatedCollection?.title, curatedSubcollection?.title, deferredQuery, priceFilteredProducts, selectedCollectionOrder, sort, typeFilter]);
 
-  const selectedCollection = collections.find(
-    (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
-  );
+  const selectedCollection = isVirtualPriceSubcollection
+    ? undefined
+    : collections.find(
+        (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
+      );
   const collectionHeroKicker =
     selectedCollection?.customData?.heroKicker ||
     curatedSubcollection?.title ||
@@ -529,7 +535,7 @@ const ShopPage = () => {
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
-  const visibleProducts = liveCollectionPageProductIds?.length
+  const visibleProducts = liveCollectionPageProductIds?.length && !isVirtualPriceSubcollection
     ? sortedProducts
     : sortedProducts.slice(startIndex, endIndex);
   const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
