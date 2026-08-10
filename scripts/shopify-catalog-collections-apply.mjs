@@ -18,6 +18,7 @@ import {
   isOnlineStorePublishedLiveProduct,
 } from "../src/lib/catalog-taxonomy-release.js";
 import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
@@ -408,10 +409,10 @@ async function verifyCollectionApproval() {
   if (approval?.scope?.managedCollections !== "create or rebuild only the canonical collections in the checked-in collection plan") {
     throw new Error("Collection approval does not restrict writes to the checked-in canonical collection plan.");
   }
-  if (approval?.scope?.controlledRuleTags !== "salt:department and salt:category tags only") {
+  if (approval?.scope?.controlledRuleTags !== "canonical department and category tags only") {
     throw new Error("Collection approval does not restrict collection rules to controlled department/category tags.");
   }
-  if (approval?.scope?.existingTags !== "preserve exactly; add-only salt namespace") {
+  if (approval?.scope?.existingTags !== "preserve unmanaged tags exactly; exact-replace checked-in canonical managed tags") {
     throw new Error("Collection approval does not preserve existing tags.");
   }
   if (approval?.scope?.legacyMergesOrArchives !== "not approved") {
@@ -516,6 +517,7 @@ function buildCollectionTagPlan(
   liveProducts,
   reviewOverrides = new Map(),
   additionalTags = new Map(),
+  knowledgeModel = null,
 ) {
   const localByHandle = new Map(
     asArray(catalog?.products)
@@ -550,7 +552,7 @@ function buildCollectionTagPlan(
       continue;
     }
 
-    const baseKnowledge = classifyProductKnowledge(product);
+    const baseKnowledge = classifyProductKnowledge(product, { knowledgeModel });
     const reviewOverride = reviewOverrides.get(normalizeHandle(liveProduct.handle));
     const knowledge = reviewOverride
       ? {
@@ -716,7 +718,7 @@ function buildManifest({
     policy: {
       existingProductTags: "preserve-exactly",
       managedProductTags: "add-only salt namespace; only collection-rule department/category tags",
-      collectionRules: "one exact controlled salt:department or salt:category tag per canonical collection",
+      collectionRules: "one exact controlled canonical simple tag per canonical collection",
       productPublication: "read Online Store publication and never mutate product publications",
       collectionPublication: "publish canonical collections to Online Store only",
       legacyMergesOrArchives: "not approved and not performed",
@@ -935,6 +937,9 @@ async function runRelease({
   tagsOnly,
 }) {
   const approvalId = mode === "apply" ? await verifyCollectionApproval() : null;
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const productHandles = await readProductHandles(productHandlesFile);
   const reviewOverrides = await readReviewOverrides(reviewOverridesFile);
   const additionalTags = await readAdditionalTags(additionalTagsFile);
@@ -950,7 +955,7 @@ async function runRelease({
   const scope = productHandlesFile
     ? `active products in supplied cohort only; ${scopedLiveProducts.length} live products selected`
     : "full active catalog";
-  const tagPlan = buildCollectionTagPlan(catalog, scopedLiveProducts, reviewOverrides, additionalTags);
+  const tagPlan = buildCollectionTagPlan(catalog, scopedLiveProducts, reviewOverrides, additionalTags, knowledgeModel);
   const manifest = buildManifest({
     mode,
     collections,

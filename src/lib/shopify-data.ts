@@ -22,7 +22,11 @@ import {
   getEditorialPageContent,
   type EditorialPagePayload,
 } from "@/lib/editorial-pages";
-import { getMergedCollectionHandles } from "@/lib/site-navigation";
+import {
+  getMergedCollectionHandles,
+  resolveCollectionFeedHandle,
+  resolveCollectionShopifyHandle,
+} from "@/lib/site-navigation";
 import {
   getRuntimeContext,
   getShopBaseOrigin,
@@ -71,8 +75,11 @@ const SHOP_DATA_PATH = "/data/shop.json";
 // the current browser session instead of repeatedly rebuilding the full catalog.
 const CATALOG_STALE_TIME_MS = isNativeApp() ? 10 * 60 * 1000 : 30 * 60 * 1000;
 // Merchandisers set collection order in Shopify. Do not keep that order behind
-// the longer catalog snapshot cache: refresh it on every collection page visit.
-const COLLECTION_ORDER_STALE_TIME_MS = 0;
+// the longer catalog snapshot cache, but avoid refetching it repeatedly during
+// a short navigation/session window.
+const COLLECTION_ORDER_STALE_TIME_MS = 60 * 1000;
+const COLLECTION_PAGE_HYDRATION_SIZE = 36;
+const COLLECTION_PAGE_HYDRATION_STALE_TIME_MS = 2 * 60 * 1000;
 const LIVE_QUERY_MAX_RETRIES = 4;
 const LIVE_QUERY_BASE_RETRY_DELAY_MS = 700;
 const LIVE_QUERY_MAX_RETRY_DELAY_MS = 9_000;
@@ -112,6 +119,16 @@ type CollectionProductIdsPayload = {
   total: number;
   productIds: number[];
   complete?: boolean;
+};
+
+export type CollectionPageProductsPayload = {
+  generatedAt: string;
+  source: string;
+  handle: string;
+  page: number;
+  total: number;
+  productIds: number[];
+  products: ShopifyProduct[];
 };
 
 type HeadPreloadedCollection = {
@@ -294,6 +311,26 @@ function getHeadPreloadedCollection(base?: string): HeadPreloadedCollection | nu
   }
 
   return prefetch;
+}
+
+function getHeadPreloadedProduct(handle: string): ShopifyProduct | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const prefetch = (window as SaltPreloadWindow).__SALT_PRODUCT_PREFETCH__;
+  const preloadedHandle = String(prefetch?.handle || "").trim().toLowerCase();
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const rawProduct = prefetch?.raw;
+  if (!normalizedHandle || preloadedHandle !== normalizedHandle || !rawProduct) {
+    return null;
+  }
+
+  try {
+    return normalizeProductRecord(normalizeStorefrontProductPayload(rawProduct));
+  } catch {
+    return null;
+  }
 }
 
 function getLivePolicyBases(): string[] {
@@ -564,6 +601,152 @@ async function fetchCollectionProductIdsFromLive(base: string, handle: string): 
   return Array.from(productIds);
 }
 
+const collectionPageProductRequests = new Map<string, Promise<ShopifyProduct[]>>();
+
+async function fetchCollectionPageProductsFromLive(
+  base: string,
+  handle: string,
+  page: number,
+): Promise<ShopifyProduct[]> {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const normalizedPage = Math.max(1, Math.floor(page));
+  const requestKey = `${base}|${normalizedHandle}|${normalizedPage}`;
+  const existingRequest = collectionPageProductRequests.get(requestKey);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = (async () => {
+    const url = `${base}/collections/${encodeURIComponent(normalizedHandle)}/products.json?limit=${COLLECTION_PAGE_HYDRATION_SIZE}&page=${normalizedPage}&sort_by=manual`;
+    const payload = await fetchJson<{ products: Array<Record<string, unknown>> }>(url);
+
+    return (Array.isArray(payload.products) ? payload.products : []).flatMap((product) => {
+      try {
+        const normalized = normalizeProductRecord(normalizeStorefrontProductPayload(product));
+        return normalized.id && normalized.handle ? [normalized] : [];
+      } catch {
+        return [];
+      }
+    });
+  })();
+
+  collectionPageProductRequests.set(requestKey, request);
+  request.then(
+    () => {
+      if (collectionPageProductRequests.get(requestKey) === request) {
+        collectionPageProductRequests.delete(requestKey);
+      }
+    },
+    () => {
+      if (collectionPageProductRequests.get(requestKey) === request) {
+        collectionPageProductRequests.delete(requestKey);
+      }
+    },
+  );
+  return request;
+}
+
+async function fetchCollectionProductCountFromLive(base: string, handle: string): Promise<number | null> {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  try {
+    const payload = await fetchJson<{
+      collection?: { products_count?: number | string };
+    }>(`${base}/collections/${encodeURIComponent(normalizedHandle)}.json`, "no-cache");
+    const count = Number(payload.collection?.products_count);
+    return Number.isFinite(count) && count >= 0 ? count : null;
+  } catch {
+    return null;
+  }
+}
+
+function getCurrentCollectionPageContext(): { handle: string; page: number } | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const routeMatch = window.location.pathname.match(/^\/collections\/([^/?#]+)(?:\/([^/?#]+))?\/?$/i);
+  const queryCollectionHandle = new URLSearchParams(window.location.search).get("collection")?.trim() || "";
+  const routeHandle = routeMatch ? decodeURIComponent(routeMatch[1]).trim() : "";
+  const routeSubcollectionHandle = routeMatch?.[2] ? decodeURIComponent(routeMatch[2]).trim() : "";
+
+  let handle = queryCollectionHandle ? resolveCollectionShopifyHandle(queryCollectionHandle) : "";
+  if (!handle && routeHandle) {
+    handle = routeSubcollectionHandle
+      ? resolveCollectionFeedHandle(routeHandle, routeSubcollectionHandle)
+      : resolveCollectionShopifyHandle(routeHandle);
+  }
+
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle || normalizedHandle === "all-products") {
+    return null;
+  }
+
+  const requestedPage = Number(new URLSearchParams(window.location.search).get("page"));
+  return {
+    handle: normalizedHandle,
+    page: Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1,
+  };
+}
+
+async function fetchCollectionPageProducts(handle: string, page: number): Promise<CollectionPageProductsPayload> {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  if (!normalizedHandle) {
+    throw new Error("Collection handle is required");
+  }
+
+  const endpointErrors: string[] = [];
+  const mergedHandles = getMergedCollectionHandles(normalizedHandle);
+
+  for (const base of getLiveCatalogBases()) {
+    try {
+      const productsById = new Map<number, ShopifyProduct>();
+      const handlesToFetch = mergedHandles.length ? mergedHandles : [normalizedHandle];
+      let liveTotal: number | null = null;
+
+      await Promise.all(
+        handlesToFetch.map(async (currentHandle, index) => {
+          const [products, count] = await Promise.all([
+            fetchCollectionPageProductsFromLive(base, currentHandle, page),
+            index === 0 ? fetchCollectionProductCountFromLive(base, currentHandle) : Promise.resolve(null),
+          ]);
+          products.forEach((product) => productsById.set(product.id, product));
+          if (index === 0 && count != null) {
+            liveTotal = count;
+          }
+        }),
+      );
+
+      const products = Array.from(productsById.values());
+      return {
+        generatedAt: new Date().toISOString(),
+        source: base,
+        handle: normalizedHandle,
+        page,
+        total: liveTotal ?? products.length,
+        productIds: products.map((product) => product.id),
+        products,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      endpointErrors.push(`${base} -> ${message}`);
+    }
+  }
+
+  const details = endpointErrors.length > 0 ? endpointErrors.slice(0, 4).join(" | ") : "No reachable live collection endpoints.";
+  throw new Error(`Live collection page fetch failed for "${normalizedHandle}". ${details}`);
+}
+
+export async function loadCollectionPageProducts(
+  handle: string,
+  page = 1,
+): Promise<CollectionPageProductsPayload> {
+  return fetchCollectionPageProducts(handle, Math.max(1, Math.floor(page)));
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
@@ -714,13 +897,9 @@ function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): Product
     mergedIds.add(String(liveProduct.id));
     mergedHandles.add(String(liveProduct.handle || "").trim().toLowerCase());
     const mergedProduct = mergeProductRecords(liveProduct, cachedProduct);
-    // The compact generated index is the pricing authority for search. Liquid
-    // collection data is still useful for fresh titles and newly added items,
-    // but must not overwrite a newer search-shard price with stale snapshot data.
-    return {
-      ...mergedProduct,
-      variants: cachedProduct.variants.length ? cachedProduct.variants : liveProduct.variants,
-    };
+    // Shopify's current Liquid payload is authoritative for the visible
+    // collection card; cached custom merchandising fields are only an overlay.
+    return mergedProduct;
   });
 
   // A product added in Shopify after the static index was built should still
@@ -1447,6 +1626,78 @@ export async function loadProductSearchIndex(): Promise<ProductsPayload> {
   }
 }
 
+export function mergeCollectionPageProducts(
+  payload: ProductsPayload,
+  hydratedProducts: ShopifyProduct[],
+): ProductsPayload {
+  if (!hydratedProducts.length) {
+    return payload;
+  }
+
+  const hydratedById = new Map(hydratedProducts.map((product) => [String(product.id), product]));
+  const hydratedByHandle = new Map(
+    hydratedProducts.map((product) => [String(product.handle || "").trim().toLowerCase(), product]),
+  );
+  const mergedIds = new Set<string>();
+  const mergedHandles = new Set<string>();
+
+  const products = payload.products.map((cachedProduct) => {
+    const normalizedHandle = String(cachedProduct.handle || "").trim().toLowerCase();
+    const hydratedProduct = hydratedById.get(String(cachedProduct.id)) || hydratedByHandle.get(normalizedHandle);
+    if (!hydratedProduct) {
+      return cachedProduct;
+    }
+
+    mergedIds.add(String(hydratedProduct.id));
+    mergedHandles.add(String(hydratedProduct.handle || "").trim().toLowerCase());
+    const mergedProduct = mergeProductRecords(hydratedProduct, cachedProduct);
+
+    // Shopify's current collection record is authoritative for the visible
+    // card, while cached custom merchandising fields remain an overlay.
+    return mergedProduct;
+  });
+
+  hydratedProducts.forEach((hydratedProduct) => {
+    const normalizedHandle = String(hydratedProduct.handle || "").trim().toLowerCase();
+    if (mergedIds.has(String(hydratedProduct.id)) || mergedHandles.has(normalizedHandle)) {
+      return;
+    }
+
+    products.push(hydratedProduct);
+    mergedIds.add(String(hydratedProduct.id));
+    mergedHandles.add(normalizedHandle);
+  });
+
+  const seenProductIds = new Set<string>();
+  const seenProductHandles = new Set<string>();
+  const deduplicatedProducts = products.filter((product) => {
+    const productId = String(product.id || "");
+    const productHandle = String(product.handle || "").trim().toLowerCase();
+    if (
+      (productId && seenProductIds.has(productId)) ||
+      (productHandle && seenProductHandles.has(productHandle))
+    ) {
+      return false;
+    }
+
+    if (productId) {
+      seenProductIds.add(productId);
+    }
+    if (productHandle) {
+      seenProductHandles.add(productHandle);
+    }
+    return true;
+  });
+
+  return normalizeProductsPayload({
+    ...payload,
+    generatedAt: new Date().toISOString(),
+    source: `${payload.source}+shopify-collection-page`,
+    total: deduplicatedProducts.length,
+    products: deduplicatedProducts,
+  });
+}
+
 export async function loadCollections(): Promise<CollectionsPayload> {
   try {
     return await fetchCollectionsFromCache();
@@ -1589,7 +1840,7 @@ function getHeadPreloadedCollectionIdsPayload(
     generatedAt: inlineCollection?.generatedAt || new Date().toISOString(),
     source: `shopify-liquid${inlineCollection?.complete ? "" : "-partial"}:${normalizedHandle}`,
     handle: normalizedHandle,
-    total: inlineProductIds.length,
+    total: Number(inlineCollection?.total) > 0 ? Number(inlineCollection?.total) : inlineProductIds.length,
     productIds: inlineProductIds,
     complete: inlineCollection?.complete === true,
   };
@@ -1607,17 +1858,28 @@ export async function loadCollectionProductIds(handle: string): Promise<Collecti
   }
 
   const endpointErrors: string[] = [];
+  let emptyLivePayload: CollectionProductIdsPayload | null = null;
 
   for (const base of getLiveCatalogBases()) {
     try {
       const productIds = await fetchCollectionProductIdsFromLive(base, normalizedHandle);
-      return {
+      const livePayload = {
         generatedAt: new Date().toISOString(),
         source: base,
         handle: normalizedHandle,
         total: productIds.length,
         productIds,
+        complete: true,
       };
+
+      // A successful empty response is not authoritative when the bundled
+      // collection map still has membership. Keep looking for a real live
+      // manual order first, then use the cache below as the safe fallback.
+      if (productIds.length > 0) {
+        return livePayload;
+      }
+
+      emptyLivePayload ||= livePayload;
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
@@ -1627,6 +1889,10 @@ export async function loadCollectionProductIds(handle: string): Promise<Collecti
   try {
     return await fetchCollectionProductIdsFromCache(normalizedHandle);
   } catch (cacheError) {
+    if (emptyLivePayload) {
+      return emptyLivePayload;
+    }
+
     const details =
       endpointErrors.length > 0
         ? endpointErrors.slice(0, 4).join(" | ")
@@ -1698,13 +1964,24 @@ export function useProducts(enabled = true) {
   });
 }
 
-export function useProductByHandle(handle: string | undefined, enabled = true, liveRefresh = false) {
+export function useProductByHandle(
+  handle: string | undefined,
+  enabled = true,
+  liveRefresh = false,
+  cachedProduct?: ShopifyProduct,
+) {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const headProduct = getHeadPreloadedProduct(normalizedHandle);
+  const initialProduct = headProduct || cachedProduct;
 
   return useQuery({
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
+    // The compact search/catalog payload is safe to paint immediately. Mark
+    // it stale so the full Shopify detail still refreshes in the background.
+    initialData: initialProduct,
+    initialDataUpdatedAt: initialProduct ? 0 : undefined,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,
     refetchOnWindowFocus: false,
@@ -1716,7 +1993,7 @@ export function useProductByHandle(handle: string | undefined, enabled = true, l
 }
 
 export function useProductSearchIndex(enabled = true) {
-  return useQuery({
+  const catalogQuery = useQuery({
     queryKey: ["product-search", DATA_MODE],
     queryFn: loadProductSearchIndex,
     enabled,
@@ -1728,6 +2005,41 @@ export function useProductSearchIndex(enabled = true) {
     retry: shouldRetryLiveQuery,
     retryDelay: liveQueryRetryDelay,
   });
+
+  const collectionPage = getCurrentCollectionPageContext();
+  const collectionPageQuery = useQuery({
+    queryKey: [
+      "collection-page-products",
+      DATA_MODE,
+      collectionPage?.handle || "",
+      collectionPage?.page || 0,
+    ],
+    queryFn: () => loadCollectionPageProducts(collectionPage?.handle || "", collectionPage?.page || 1),
+    enabled: enabled && Boolean(collectionPage),
+    staleTime: COLLECTION_PAGE_HYDRATION_STALE_TIME_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+    retry: shouldRetryLiveQuery,
+    retryDelay: liveQueryRetryDelay,
+  });
+
+  return {
+    ...catalogQuery,
+    // The static search shard remains the initial result. Live collection
+    // hydration is deliberately a second query so a slow Shopify endpoint
+    // cannot block the catalog grid or its filters.
+    data:
+      catalogQuery.data && collectionPageQuery.data?.products.length
+        ? mergeCollectionPageProducts(catalogQuery.data, collectionPageQuery.data.products)
+        : catalogQuery.data,
+    collectionPageProductIds: collectionPageQuery.data?.productIds || [],
+    collectionPageTotal: collectionPageQuery.data?.total || 0,
+    collectionPageLoading: collectionPageQuery.isLoading,
+    collectionPageError: collectionPageQuery.error,
+    isFetching: catalogQuery.isFetching || collectionPageQuery.isFetching,
+  };
 }
 
 export function useCollections(enabled = true) {

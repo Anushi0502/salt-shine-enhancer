@@ -461,6 +461,48 @@ describe("Shopify SEO release reconciliation", () => {
     expect(diff.changedFields.some((field) => field.includes("variant:"))).toBe(false);
   });
 
+  it("creates variant price inputs only when explicit repair mode is enabled", async () => {
+    const snapshot = {
+      products: [{
+        id: 304,
+        handle: "rosemary-pack",
+        title: "Rosemary Shampoo",
+        body_html: "<p>Rosemary shampoo.</p>",
+        product_type: "Shampoo",
+        tags: ["merchant-tag"],
+        variants: [
+          { id: 3401, title: "1pcs", option1: "1pcs", sku: "R-1", price: "49.99", compare_at_price: "64.99" },
+          { id: 3402, title: "2pcs", option1: "2pcs", sku: "R-2", price: "49.99", compare_at_price: "64.99" },
+        ],
+      }],
+      collections: [],
+      collectionProducts: {},
+    };
+    const plan = await buildShopifySeoReleasePlan(snapshot, { repairVariantPricing: true });
+    const productPlan = plan.products[0];
+    const diff = compareLiveProductToPlan({
+      id: "gid://shopify/Product/304",
+      handle: "rosemary-pack",
+      title: "Rosemary Shampoo",
+      descriptionHtml: "<p>Rosemary shampoo.</p>",
+      productType: "Shampoo",
+      tags: ["merchant-tag"],
+      seo: { title: productPlan.desiredProductInput.seo.title, description: productPlan.desiredProductInput.seo.description },
+      variants: { nodes: [
+        { id: "gid://shopify/ProductVariant/3401", title: "1pcs", sku: "R-1", price: "49.99", compareAtPrice: "64.99" },
+        { id: "gid://shopify/ProductVariant/3402", title: "2pcs", sku: "R-2", price: "49.99", compareAtPrice: "64.99" },
+      ] },
+      media: { nodes: [] },
+    }, productPlan);
+
+    expect(productPlan.desiredVariantPriceUpdates).toEqual([
+      expect.objectContaining({ variantId: "3402", price: "99.99" }),
+    ]);
+    expect(diff.variantInputs).toEqual([
+      { id: "gid://shopify/ProductVariant/3402", price: "99.99", compareAtPrice: "129.99" },
+    ]);
+  });
+
   it("keeps desired and live fingerprints stable", async () => {
     const { productPlan, liveProduct } = await makePlanAndLive();
 
@@ -575,13 +617,13 @@ describe("Shopify SEO release reconciliation", () => {
       includeMobile: false,
     }).map((step) => step.label);
 
-    expect(labels).toContain("Stress-test two million unique product classifications");
+    expect(labels).toContain("Verify trained 128M-record catalog knowledge model");
     expect(labels).toContain("Dry-run exact full-catalog collection reconciliation");
     expect(labels).toContain("Apply exact full-catalog collection reconciliation");
     expect(labels).toContain("Verify every active product has product-specific SEO and metafields");
     expect(labels).toContain("Verify exact collection membership and price rules");
     expect(labels).not.toContain("Rework low Shopify prices with the approved campaign cost");
-    expect(labels.at(-1)).toBe("Generate Shopify theme bundle");
+    expect(labels.at(-1)).toBe("Final live-readback gate after tag cleanup and collection merges");
   });
 
   it("keeps the product release on the new-products SEO and publication path", () => {

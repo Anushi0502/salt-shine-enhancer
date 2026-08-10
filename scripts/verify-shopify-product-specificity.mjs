@@ -217,10 +217,13 @@ function normalizeProduct(node) {
     subtitle: String(metafieldValue(node.subtitle) || ""),
     highlights: normalizeList(metafieldValue(node.highlights)),
     collectionSignal: String(metafieldValue(node.collectionSignal) || ""),
-    searchBoosts: standardBoosts.length ? standardBoosts : fallbackBoosts,
+    // Shopify's discovery-owned field is not writable for this store's
+    // product owner subtype. The source-owned fallback is the verified
+    // product-specific search signal whenever it exists.
+    searchBoosts: fallbackBoosts.length ? fallbackBoosts : standardBoosts,
     searchBoostSource:
       node.searchBoostSource ||
-      (standardBoosts.length ? "shopify-discovery" : fallbackBoosts.length ? "salt-fallback" : "missing"),
+      (fallbackBoosts.length ? "salt-fallback" : standardBoosts.length ? "shopify-discovery" : "missing"),
   };
 }
 

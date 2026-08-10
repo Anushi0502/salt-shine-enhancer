@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, type PropsWithChildren } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import ChatBootstrap from "@/components/integrations/ChatBootstrap";
-import MainFooter from "@/components/layout/MainFooter";
 import MainHeader from "@/components/layout/MainHeader";
 import NativeAppBottomBar from "@/components/layout/NativeAppBottomBar";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
+import { scheduleAfterPaint } from "@/lib/after-paint";
 import { LoadingState } from "@/components/storefront/LoadState";
 import { isNativeApp } from "@/lib/mobile";
 import { useCart } from "@/lib/cart";
@@ -12,6 +11,8 @@ import { useShop } from "@/lib/shop-data";
 import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "@/lib/structured-data";
 
 const CartDrawer = lazy(() => import("@/components/storefront/CartDrawer"));
+const ChatBootstrap = lazy(() => import("@/components/integrations/ChatBootstrap"));
+const MainFooter = lazy(() => import("@/components/layout/MainFooter"));
 const PUMPER_BRIDGE_ROUTE = /^\/(?:products?|cart)(?:\/|$)/;
 const FINANCE_PATHS = new Set(["/pages/finance", "/apps:finance", "/apps/finance"]);
 
@@ -46,8 +47,17 @@ const SiteShell = ({ children }: PropsWithChildren) => {
     (location.pathname === "/" && new URLSearchParams(location.search).get("finance") === "1");
   const nativeApp = isNativeApp();
   const hideFooter = nativeApp;
+  const [deferredShellReady, setDeferredShellReady] = useState(false);
   const { data: shopPayload } = useShop(!isFinancePage);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+
+  useEffect(() => {
+    if (isFinancePage) {
+      return;
+    }
+
+    return scheduleAfterPaint(() => setDeferredShellReady(true));
+  }, [isFinancePage]);
 
   useEffect(() => {
     if (!PUMPER_BRIDGE_ROUTE.test(location.pathname)) {
@@ -88,7 +98,11 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       ) : null}
 
       {isFinancePage ? null : <MainHeader />}
-      {isFinancePage ? null : <ChatBootstrap />}
+      {!isFinancePage && deferredShellReady ? (
+        <Suspense fallback={null}>
+          <ChatBootstrap />
+        </Suspense>
+      ) : null}
       {isFinancePage ? null : <DeferredCartDrawer />}
       <main
         id="main-content"
@@ -99,7 +113,11 @@ const SiteShell = ({ children }: PropsWithChildren) => {
         </Suspense>
       </main>
       {isFinancePage ? null : <NativeAppBottomBar />}
-      {isFinancePage || hideFooter ? null : <MainFooter />}
+      {!isFinancePage && !hideFooter && deferredShellReady ? (
+        <Suspense fallback={null}>
+          <MainFooter />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

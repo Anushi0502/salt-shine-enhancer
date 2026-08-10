@@ -17,6 +17,7 @@ const catalogBatchSize = Math.max(1, Math.min(1000, Number(process.env.SALT_CATA
 const catalogIntegrityArgs = [
   "--skip-vision",
   "--reclassify",
+  "--deterministic-only",
   "--batch-size",
   String(catalogBatchSize),
 ];
@@ -90,6 +91,12 @@ function buildCatalogReleaseSteps({
 
   return [
     {
+      label: "Verify trained 128M-record catalog knowledge model",
+      command: npmBin,
+      args: ["run", "catalog:knowledge:model:verify"],
+      cwd: releaseRootDir,
+    },
+    {
       label: "Verify approved catalog taxonomy release",
       command: nodeBin,
       args: ["scripts/catalog-taxonomy-approval.mjs"],
@@ -99,12 +106,6 @@ function buildCatalogReleaseSteps({
       label: "Refresh Shopify data",
       command: npmBin,
       args: ["run", "sync:data"],
-      cwd: releaseRootDir,
-    },
-    {
-      label: "Stress-test two million unique product classifications",
-      command: npmBin,
-      args: ["run", "catalog:taxonomy:scale:2m"],
       cwd: releaseRootDir,
     },
     {
@@ -159,6 +160,24 @@ function buildCatalogReleaseSteps({
       label: "Ensure Shopify product metafield definitions",
       command: npmBin,
       args: ["run", "shopify:product-metafields:ensure"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Dry-run approved full-catalog variant price floor before base SEO",
+      command: npmBin,
+      args: ["run", "shopify:price-rework:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply approved full-catalog variant price floor before base SEO",
+      command: npmBin,
+      args: ["run", "shopify:price-rework:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify live full-catalog variant price floor before base SEO",
+      command: npmBin,
+      args: ["run", "shopify:price-rework:verify"],
       cwd: releaseRootDir,
     },
     {
@@ -231,6 +250,42 @@ function buildCatalogReleaseSteps({
       label: "Generate Shopify theme bundle",
       command: npmBin,
       args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Dry-run approved similar-purpose collection merges",
+      command: npmBin,
+      args: ["run", "shopify:collection-merges:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply approved similar-purpose collection merges with live readback",
+      command: npmBin,
+      args: ["run", "shopify:collection-merges:apply:approved"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Snapshot and dry-run guarded SALT tag and collection cleanup",
+      command: npmBin,
+      args: ["run", "shopify:tag-collection-cleanup:snapshot"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Abort on ambiguous SALT tag or collection cleanup changes",
+      command: npmBin,
+      args: ["run", "shopify:tag-collection-cleanup:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply verified SALT tag and collection cleanup with live readback",
+      command: npmBin,
+      args: ["run", "shopify:tag-collection-cleanup:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Final live-readback gate after tag cleanup and collection merges",
+      command: npmBin,
+      args: ["run", "shopify:catalog-integrity:verify", "--", ...catalogIntegrityArgs],
       cwd: releaseRootDir,
     },
     ...(includeMobile ? [

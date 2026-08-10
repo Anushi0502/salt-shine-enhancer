@@ -351,21 +351,20 @@ const ProductPage = () => {
   const { handle } = useParams();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
+  // Shopify's Liquid product prefetch or the in-flight route warmup is the
+  // first-paint source. The direct Shopify product endpoint immediately
+  // revalidates it; a stale catalog record is never painted as the PDP truth.
   const { data: productData, isLoading, error, refetch } = useProductByHandle(handle, true, true);
   const secondaryContentAnchorRef = useRef<HTMLDivElement | null>(null);
   const [secondaryContentProductId, setSecondaryContentProductId] = useState<number | null>(null);
-  const loadSecondaryContent = Boolean(productData?.id && secondaryContentProductId === productData.id);
-  const shouldLoadMerchandisingData = Boolean(productData && loadSecondaryContent);
-  const { data: productSearchPayload } = useProductSearchIndex(shouldLoadMerchandisingData);
+  const product = useMemo(() => productData, [productData]);
+  const loadSecondaryContent = Boolean(product?.id && secondaryContentProductId === product.id);
+  const shouldLoadMerchandisingData = Boolean(product && loadSecondaryContent);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadMerchandisingData);
+  const { data: productSearchPayload } = useProductSearchIndex(shouldLoadMerchandisingData);
+  const products = useMemo(() => productSearchPayload?.products ?? [], [productSearchPayload]);
   const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
-
-  const products = useMemo(() => productSearchPayload?.products ?? [], [productSearchPayload]);
-  const product = useMemo(
-    () => productData || products.find((entry) => entry.handle === handle),
-    [handle, productData, products],
-  );
   const primaryProductImage = product ? productImage(product) || "" : "";
   const heroImageRef = useRef<HTMLImageElement | null>(null);
   const collectionIndex = useMemo(
@@ -375,7 +374,7 @@ const ProductPage = () => {
 
   useEffect(() => {
     const node = secondaryContentAnchorRef.current;
-    const productId = Number(productData?.id || 0);
+    const productId = Number(product?.id || 0);
     setSecondaryContentProductId(null);
 
     if (!node || !productId || typeof IntersectionObserver === "undefined") {
@@ -399,7 +398,7 @@ const ProductPage = () => {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [handle, productData?.id]);
+  }, [handle, product?.id]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);
   const initialVariant = useMemo(
@@ -622,11 +621,13 @@ const ProductPage = () => {
     ].filter(Boolean);
   }, [origin, product, reviewSummary]);
 
-  if (isLoading) {
+  // Keep the blocking state limited to the short live Shopify detail request;
+  // the page never substitutes an older catalog record for the canonical PDP.
+  if (isLoading && !product) {
     return <LoadingState title="Loading product" subtitle="Preparing details, variants, and delivery info." />;
   }
 
-  if (error) {
+  if (error && !product) {
     return (
       <ErrorState
         title="We could not load this product"

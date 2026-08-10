@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { buildProductKnowledgePayload } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 const dataDir = resolve(process.cwd(), "public", "data");
 const outputDir = resolve(process.cwd(), "output");
@@ -11,7 +12,10 @@ const knowledgePath = resolve(outputDir, "product-knowledge.json");
 
 async function main() {
   const productsPayload = await readProductCatalogPayload(dataDir);
-  const knowledgePayload = buildProductKnowledgePayload(productsPayload);
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
+  const knowledgePayload = buildProductKnowledgePayload(productsPayload, { knowledgeModel });
 
   await mkdir(outputDir, { recursive: true });
   await writeFile(knowledgePath, JSON.stringify(knowledgePayload));

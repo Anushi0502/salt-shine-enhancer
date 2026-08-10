@@ -18,7 +18,7 @@
       "posture-support": "health-wellness",
       "camping-gear": "travel-outdoor",
       "holiday-gifts": "gifts",
-      "viral-tiktok-products": "unique-products"
+      "viral-tiktok-products": "trending-finds"
     },
     "taxonomySafety": "Only products with matching controlled taxonomy evidence receive a canonical Health or Camping & Travel tag. Unrelated products are not forced into the target collection.",
     "merchandisingSafety": "Gifts and Trending Finds retain source-driven merchandising membership by unioning their existing collection conditions.",

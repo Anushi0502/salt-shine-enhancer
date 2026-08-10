@@ -13,6 +13,12 @@ const collectionsPath = resolve(dataDir, "collections.json");
 const collectionProductsPath = resolve(dataDir, "collection-products.json");
 const dryRun = process.argv.includes("--dry-run");
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_COLLECTION_MEMBERSHIP_PAGE_SIZE || 250)));
+const allowedPendingCreationHandles = new Set(
+  String(process.env.SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS || "")
+    .split(",")
+    .map((handle) => handle.trim().toLowerCase())
+    .filter(Boolean),
+);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "managed-collection-membership" });
 
 const COLLECTION_PRODUCTS_QUERY = /* GraphQL */ `
@@ -132,14 +138,33 @@ async function main() {
       try {
         live = await fetchLiveCollectionProducts(entry.handle);
       } catch (error) {
-        if (!isShopifyAuthFailure(error)) throw error;
-        liveMembershipAvailable = false;
-        source = "cached";
-        if (!authFallbackLogged) {
-          process.stdout.write(
-            "Shopify Admin authentication is unavailable; retaining committed canonical collection memberships.\n",
+        const isExpectedPendingCreation =
+          allowedPendingCreationHandles.has(entry.handle) &&
+          /Live Shopify collection not found for canonical handle/i.test(String(error?.message || error));
+        if (isExpectedPendingCreation) {
+          const taggedProductIds = productIdsForControlledTags(
+            productPayload.products || [],
+            [entry.ruleTag, entry.handle],
+            catalogProductIds,
           );
-          authFallbackLogged = true;
+          live = {
+            title: entry.title,
+            productIds: taggedProductIds,
+          };
+          source = "pending-creation-controlled-tag-fallback";
+          process.stdout.write(
+            `Canonical collection "${entry.handle}" is not live yet; retaining controlled-tag membership until the approved collection reconciliation creates it.\n`,
+          );
+        } else {
+          if (!isShopifyAuthFailure(error)) throw error;
+          liveMembershipAvailable = false;
+          source = "cached";
+          if (!authFallbackLogged) {
+            process.stdout.write(
+              "Shopify Admin authentication is unavailable; retaining committed canonical collection memberships.\n",
+            );
+            authFallbackLogged = true;
+          }
         }
       }
     } else {
@@ -149,7 +174,7 @@ async function main() {
     if (!live) {
       const taggedProductIds = productIdsForControlledTags(
         productPayload.products || [],
-        [entry.ruleTag, `salt:collection:${entry.handle}`],
+        [entry.ruleTag, entry.handle],
         catalogProductIds,
       );
       live = {

@@ -54,7 +54,7 @@ The release workflow reads the live Shopify tag inventory after refreshing catal
 
 ## Scale Check
 
-Run `npm run catalog:taxonomy:scale-check` to stream 500,000 distinct product records through the knowledge base. The check deliberately repeats the supplier product type across all records, then verifies that every record still receives its own immutable knowledge identity and descriptor key without creating an in-memory synthetic catalog.
+Run `npm run catalog:taxonomy:scale-check` to stream 128,000,000 distinct product records through the knowledge base. The check deliberately repeats supplier product types across all records, then verifies that every record still receives its own immutable knowledge identity and descriptor key without creating an in-memory synthetic catalog. The enhanced deterministic evidence model is produced separately with `npm run catalog:knowledge:model:train` and must pass `npm run catalog:knowledge:model:verify` before any release. Its 128M count is exact representative-record multiplicity, not a claim of 128M raw merchant examples.
 
 ## Approval Flow
 

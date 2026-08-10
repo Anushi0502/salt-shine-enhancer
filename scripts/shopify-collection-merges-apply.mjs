@@ -9,6 +9,7 @@ import {
   isOnlineStorePublishedLiveProduct,
 } from "../src/lib/catalog-taxonomy-release.js";
 import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
@@ -21,12 +22,12 @@ const batchSize = Math.max(1, Math.min(50, Number(process.env.SALT_COLLECTION_ME
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "collection-merges" });
 
 const MERGE_PLAN = Object.freeze([
-  { sourceHandle: "caregiver-essentials", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "salt:category:health-wellness" },
-  { sourceHandle: "mobility-support", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "salt:category:health-wellness" },
-  { sourceHandle: "posture-support", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "salt:category:health-wellness" },
-  { sourceHandle: "camping-gear", targetHandle: "travel-outdoor", mode: "taxonomy", targetRuleTag: "salt:department:camping-travel" },
-  { sourceHandle: "holiday-gifts", targetHandle: "gifts", mode: "source-union" },
-  { sourceHandle: "viral-tiktok-products", targetHandle: "unique-products", mode: "source-union" },
+  { sourceHandle: "caregiver-essentials", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "health-wellness" },
+  { sourceHandle: "mobility-support", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "health-wellness" },
+  { sourceHandle: "posture-support", targetHandle: "health-wellness", mode: "taxonomy", targetRuleTag: "health-wellness" },
+  { sourceHandle: "camping-gear", targetHandle: "travel-outdoor", mode: "taxonomy", targetRuleTag: "travel-outdoor" },
+  { sourceHandle: "holiday-gifts", targetHandle: "gifts", mode: "source-union", targetRuleTag: "gifts" },
+  { sourceHandle: "viral-tiktok-products", targetHandle: "trending-finds", mode: "source-union", targetRuleTag: "trending-finds" },
 ]);
 
 const COLLECTIONS_QUERY = /* GraphQL */ `
@@ -340,11 +341,22 @@ async function unionTargetSource(target, expectedSource) {
     throw new Error(`${target.handle}: target must have one conditions source before merge.`);
   }
   if (sourceMatchesUnion(currentSource, expectedSource)) return false;
+  const currentConditions = sourceConditions(currentSource);
   const data = await client.run(COLLECTION_UPDATE_MUTATION, {
     collection: {
       id: target.id,
-      sourcesToDelete: [currentSource.id],
-      sourcesToCreate: [{ source: expectedSource }],
+      sourcesToUpdate: [{
+        condition: {
+          id: currentSource.id,
+          title: expectedSource.title,
+          description: expectedSource.description,
+          inclusion: {
+            matchType: expectedSource.inclusion.matchType,
+            conditionsToDelete: currentConditions.map((condition) => condition.id).filter(Boolean),
+            conditionsToCreate: asArray(expectedSource.inclusion.conditions),
+          },
+        },
+      }],
     },
   }, { allowMutations: true, operation: `union collection ${target.handle}` });
   const errors = asArray(data?.collectionUpdate?.userErrors);
@@ -365,8 +377,19 @@ async function writeManifest(manifest) {
   await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
+async function readPreviousManifest() {
+  try {
+    return JSON.parse(await readFile(outputPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   const approval = await readApproval();
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const [catalog, collections, publications] = await Promise.all([
     readProductCatalogPayload(dataDir),
     fetchCollections(),
@@ -375,6 +398,43 @@ async function main() {
   const byHandle = new Map(collections.map((collection) => [collection.handle, collection]));
   const onlineStorePublication = publications.find((publication) => normalize(publication.name) === "online store");
   if (!onlineStorePublication) throw new Error("Online Store publication was not found.");
+  const previousManifest = await readPreviousManifest();
+  const priorMergeRows = new Map(
+    asArray(previousManifest?.sourceCollections).map((row) => [row.sourceHandle, row]),
+  );
+  const mergeAlreadyVerified = previousManifest?.completedAt &&
+    MERGE_PLAN.every((plan) => {
+      const source = byHandle.get(plan.sourceHandle);
+      const target = byHandle.get(plan.targetHandle);
+      const priorRow = priorMergeRows.get(plan.sourceHandle);
+      return Boolean(target && priorRow?.targetRuleVerified && (!source || !isOnlineStoreCollection(source)));
+    });
+  if (mergeAlreadyVerified) {
+    const manifest = {
+      ...previousManifest,
+      mode: dryRun ? "dry-run" : "apply",
+      generatedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      sourceCollections: MERGE_PLAN.map((plan) => ({
+        ...(priorMergeRows.get(plan.sourceHandle) || {}),
+        sourceHandle: plan.sourceHandle,
+        targetHandle: plan.targetHandle,
+        status: "already-verified-retired",
+      })),
+      summary: {
+        sourceCollections: MERGE_PLAN.length,
+        sourceProducts: 0,
+        eligibleTaxonomyTargetProducts: 0,
+        tagsToAdd: 0,
+        merchandisingRulesToUnion: 0,
+        sourceCollectionsPublishedBefore: 0,
+        failures: 0,
+      },
+    };
+    await writeManifest(manifest);
+    process.stdout.write(`${dryRun ? "Dry run" : "Apply"}: six collection merges already verified; no duplicate collection changes pending.\n`);
+    return;
+  }
   const localById = new Map(asArray(catalog.products).map((product) => [Number(product.id), product]));
   const productCache = new Map();
   const targetProductsCache = new Map();
@@ -402,15 +462,17 @@ async function main() {
       if (isOnlineStorePublishedLiveProduct(product)) onlineSourceProducts += 1;
       if (targetIds.has(product.id)) expectedTargetIds.add(product.id);
       const localProduct = localById.get(id);
-      if (plan.mode !== "taxonomy" || !localProduct || !isOnlineStorePublishedLiveProduct(product)) continue;
-      const knowledge = classifyProductKnowledge(localProduct);
-      const matchesTarget = plan.targetHandle === "health-wellness"
+      if (!localProduct || !isOnlineStorePublishedLiveProduct(product)) continue;
+      const knowledge = plan.mode === "taxonomy"
+        ? classifyProductKnowledge(localProduct, { knowledgeModel })
+        : null;
+      const matchesTarget = plan.mode === "source-union" || (plan.targetHandle === "health-wellness"
         ? knowledge.departmentId === "health-wellness" || knowledge.categoryId === "health-wellness"
-        : knowledge.departmentId === "camping-travel";
-      if (!matchesTarget || knowledge.reviewRequired) continue;
+        : knowledge.departmentId === "camping-travel");
+      if (!matchesTarget || knowledge?.reviewRequired) continue;
       eligibleForTarget += 1;
       expectedTargetIds.add(product.id);
-      const tagsToAdd = buildManagedTagAdditions(product.tags, [plan.targetRuleTag]);
+      const tagsToAdd = buildManagedTagAdditions(product.tags, plan.targetRuleTag ? [plan.targetRuleTag] : []);
       if (tagsToAdd.length) {
         tagTasks.push({
           productId: product.id,
@@ -419,10 +481,10 @@ async function main() {
           targetHandle: plan.targetHandle,
           tagsToAdd,
           knowledge: {
-            classificationRule: knowledge.classificationRule,
-            confidence: knowledge.confidence,
-            departmentId: knowledge.departmentId,
-            categoryId: knowledge.categoryId,
+            classificationRule: knowledge?.classificationRule || null,
+            confidence: knowledge?.confidence || null,
+            departmentId: knowledge?.departmentId || null,
+            categoryId: knowledge?.categoryId || null,
           },
         });
       }

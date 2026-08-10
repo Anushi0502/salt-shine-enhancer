@@ -10,11 +10,11 @@ import {
 
 describe("catalog collection plan", () => {
   it("keeps every canonical collection on a unique controlled tag", () => {
-    expect(CATALOG_COLLECTION_PLAN).toHaveLength(29);
+    expect(CATALOG_COLLECTION_PLAN).toHaveLength(30);
     expect(new Set(CATALOG_COLLECTION_PLAN.map((entry) => entry.handle)).size).toBe(CATALOG_COLLECTION_PLAN.length);
     expect(new Set(CATALOG_COLLECTION_RULE_TAGS).size).toBe(CATALOG_COLLECTION_RULE_TAGS.length);
-    expect(CATALOG_COLLECTION_PLAN.every((entry) => entry.ruleTag.startsWith("salt:"))).toBe(true);
-    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-06.1-collections.2");
+    expect(CATALOG_COLLECTION_PLAN.every((entry) => !entry.ruleTag.includes(":"))).toBe(true);
+    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-06.1-collections.3");
   });
 
   it("matches only the intended controlled tag source", () => {
@@ -38,6 +38,13 @@ describe("catalog collection plan", () => {
       ...source,
       inclusion: { ...source.inclusion, matchType: "ANY" },
     })).toBe(false);
-    expect(buildCollectionSource(entry).inclusion.conditions[0].productTag.values).toEqual(["salt:category:watches"]);
+    expect(buildCollectionSource(entry).inclusion.conditions[0].productTag.values).toEqual(["watches"]);
+  });
+
+  it("registers hats as a canonical collection", () => {
+    expect(CATALOG_COLLECTION_PLAN.find((entry) => entry.handle === "hats")).toMatchObject({
+      title: "Hats",
+      ruleTag: "hats",
+    });
   });
 });

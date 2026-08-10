@@ -19,15 +19,16 @@ function run(label, command, args) {
   }
 }
 
-run("1. Verify catalog taxonomy approval", nodeBin, ["scripts/catalog-taxonomy-approval.mjs"]);
-run("2. Validate local catalog taxonomy", npmBin, ["run", "catalog:taxonomy:validate"]);
-run("3. Build the visual taxonomy review queue", npmBin, ["run", "catalog:image-review:build"]);
-run("4. Require image-backed evidence for every review-required product", npmBin, ["run", "catalog:image-review:validate"]);
-run("5. Full local catalog SEO audit", npmBin, ["run", "shopify:seo:local-review"]);
-run("6. Live taxonomy tags and metafields dry-run", npmBin, ["run", "shopify:taxonomy:dry-run"]);
-run("7. Live full-catalog Shopify SEO dry-run with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--dry-run", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
-run("8. Guarded full-catalog Shopify SEO apply with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
-run("9. Apply taxonomy tags and metafields with live readback", npmBin, ["run", "shopify:taxonomy:apply"]);
-run("10. Auto-run variant image mapping", nodeBin, ["scripts/shopify-variant-image-mapping.mjs", "--apply", "--scope", "all-products"]);
+run("1. Verify trained 128M-record catalog knowledge model", npmBin, ["run", "catalog:knowledge:model:verify"]);
+run("2. Verify catalog taxonomy approval", nodeBin, ["scripts/catalog-taxonomy-approval.mjs"]);
+run("3. Validate local catalog taxonomy", npmBin, ["run", "catalog:taxonomy:validate"]);
+run("4. Build the visual taxonomy review queue", npmBin, ["run", "catalog:image-review:build"]);
+run("5. Require image-backed evidence for every review-required product", npmBin, ["run", "catalog:image-review:validate"]);
+run("6. Full local catalog SEO audit", npmBin, ["run", "shopify:seo:local-review"]);
+run("7. Live taxonomy tags and metafields dry-run", npmBin, ["run", "shopify:taxonomy:dry-run"]);
+run("8. Live full-catalog Shopify SEO dry-run with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--dry-run", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
+run("9. Guarded full-catalog Shopify SEO apply with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
+run("10. Apply taxonomy tags and metafields with live readback", npmBin, ["run", "shopify:taxonomy:apply"]);
+run("11. Auto-run variant image mapping", nodeBin, ["scripts/shopify-variant-image-mapping.mjs", "--apply", "--scope", "all-products"]);
 
 process.stdout.write("\nGuarded Shopify SEO apply completed.\n");

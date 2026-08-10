@@ -76,6 +76,7 @@ const ResilientImage = ({
       ref={imageRef}
       src={shouldLoad ? resolvedSrc : undefined}
       alt={alt}
+      decoding={rest.decoding || "async"}
       onError={handleError}
     />
   );

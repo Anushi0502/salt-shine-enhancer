@@ -24,7 +24,9 @@ import {
   assessProductContentSpecificity,
   findCatalogContentCollisions,
 } from "../src/lib/product-content-specificity.js";
+import { PRICE_REWORK_RULES } from "../src/lib/shopify-price-rework-policy.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +39,32 @@ const defaultShopBase = "https://0309d3-72.myshopify.com";
 const shopBase = process.env.SALT_SHOP_URL || defaultShopBase;
 const storeDomain = new URL(shopBase).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
+
+export function assertBaseSeoPriceFloor(products, threshold = PRICE_REWORK_RULES.threshold) {
+  const violations = [];
+  let variantsChecked = 0;
+  for (const product of Array.isArray(products) ? products : []) {
+    const variants = Array.isArray(product?.variants?.nodes)
+      ? product.variants.nodes
+      : Array.isArray(product?.variants)
+        ? product.variants
+        : [];
+    for (const variant of variants) {
+      variantsChecked += 1;
+      const price = Number(variant?.price);
+      if (!Number.isFinite(price) || price < threshold) {
+        violations.push(`${product?.handle || product?.id || "unknown-product"}:${variant?.id || variant?.title || "unknown-variant"}=${Number.isFinite(price) ? price.toFixed(2) : "missing"}`);
+      }
+    }
+  }
+  if (violations.length) {
+    throw new Error(
+      `Base SEO price-floor gate failed: ${violations.length} variant(s) below $${Number(threshold).toFixed(2)} or missing a price. ` +
+      `Run the approved catalog price rework before SEO. Examples: ${violations.slice(0, 10).join(", ")}`,
+    );
+  }
+  return { threshold, productsChecked: Array.isArray(products) ? products.length : 0, variantsChecked, violations: 0 };
+}
 const adminAccessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
@@ -371,6 +399,14 @@ const BULK_PRODUCT_UPDATE_MUTATION = /* GraphQL */ `
   }
 `;
 
+const BULK_VARIANT_UPDATE_MUTATION = /* GraphQL */ `
+  mutation ShopifySeoReleaseBulkVariantUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+    productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+      userErrors { field message }
+    }
+  }
+`;
+
 const BULK_MEDIA_UPDATE_MUTATION = /* GraphQL */ `
   mutation ShopifySeoReleaseBulkMediaUpdate($productId: ID!, $media: [UpdateMediaInput!]!) {
     productUpdateMedia(productId: $productId, media: $media) {
@@ -390,6 +426,7 @@ function parseArgs(argv) {
     output: outputPath,
     sample: 0,
     preservePrices: true,
+    repairVariantPricing: false,
     preserveTags: false,
     tagsOnly: false,
     fullCatalog: false,
@@ -420,6 +457,10 @@ function parseArgs(argv) {
     }
     if (token === "--preserve-prices") {
       args.preservePrices = true;
+      continue;
+    }
+    if (token === "--repair-variant-pricing") {
+      args.repairVariantPricing = true;
       continue;
     }
     if (token === "--preserve-tags") {
@@ -935,6 +976,7 @@ function buildScopedPlanForLiveCatalog(
         ...scopedProduct,
         desiredProductInput: {},
         desiredVariantUpdates: [],
+        desiredVariantPriceUpdates: [],
         desiredMediaTargets: [],
         eligibility: {
           ...scopedProduct.eligibility,
@@ -957,7 +999,7 @@ function productMutationFields(input) {
   return Object.keys(input || {}).filter((key) => key !== "id");
 }
 
-function buildBatchMutation(tasks) {
+function buildBatchMutation(tasks, { allowVariantPricing = false } = {}) {
   const declarations = [];
   const fields = [];
   const variables = {};
@@ -981,7 +1023,7 @@ function buildBatchMutation(tasks) {
       const forbiddenFields = diff.variantInputs.flatMap((input) =>
         ["price", "compareAtPrice"].filter((field) => Object.prototype.hasOwnProperty.call(input || {}, field)),
       );
-      if (forbiddenFields.length) {
+      if (forbiddenFields.length && !allowVariantPricing) {
         throw new Error(
           `SEO release invariant violated: variant pricing mutation requested (${[...new Set(forbiddenFields)].join(", ")})`,
         );
@@ -1653,12 +1695,23 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
   const productTasks = tasks.filter((task) => productMutationFields(task.diff.productInput).length);
   const mediaTasks = tasks.filter((task) => task.diff.mediaInputs.length);
   manifest.bulkOperations = manifest.bulkOperations || {};
-  manifest.bulkOperations.product = await runSeoBulkMutation({
+    manifest.bulkOperations.product = await runSeoBulkMutation({
     tasks: productTasks,
     variablesForTask: (task) => ({ product: task.diff.productInput }),
     mutation: BULK_PRODUCT_UPDATE_MUTATION,
     responseKey: "productUpdate",
     label: "SEO product",
+    outputPath: output.path,
+    retryInfo,
+  });
+  await writeManifest(output.path, manifest);
+  const variantTasks = tasks.filter((task) => task.diff.variantInputs.length);
+  manifest.bulkOperations.variants = await runSeoBulkMutation({
+    tasks: variantTasks,
+    variablesForTask: (task) => ({ productId: task.liveProduct.id, variants: task.diff.variantInputs }),
+    mutation: BULK_VARIANT_UPDATE_MUTATION,
+    responseKey: "productVariantsBulkUpdate",
+    label: "SEO variant pricing",
     outputPath: output.path,
     retryInfo,
   });
@@ -1808,7 +1861,9 @@ async function applyPlanBatched({ plan, manifest, output, liveProducts = [] }) {
         continue;
       }
 
-      const batchMutation = buildBatchMutation(tasks);
+      const batchMutation = buildBatchMutation(tasks, {
+        allowVariantPricing: Boolean(manifest.policy.variantPriceRepair),
+      });
       let response;
       try {
         response = await runShopifyCliGraphQL(batchMutation.query, batchMutation.variables, {
@@ -1930,6 +1985,7 @@ export async function runShopifySeoRelease({
   output = outputPath,
   sample = 0,
   preservePrices = true,
+  repairVariantPricing = false,
   preserveTags = false,
   tagsOnly = false,
   fullCatalog = false,
@@ -1940,8 +1996,15 @@ export async function runShopifySeoRelease({
   const priorManifest = await readPriorManifest(output);
   const localSnapshot = await loadCatalogSnapshot();
   const snapshot = await loadFrozenCatalogSnapshot(frozenCatalog, localSnapshot);
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const explicitNewProductHandles = newProductsOnly ? await readProductHandles(productHandlesFile) : null;
-  const localPlan = await buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo: true });
+  const localPlan = await buildShopifySeoReleasePlan(snapshot, {
+    forceExplicitSeo: true,
+    repairVariantPricing,
+    knowledgeModel,
+  });
   const selectedProducts = explicitNewProductHandles
     ? localPlan.products.filter((product) => explicitNewProductHandles.has(product.handle))
     : localPlan.products;
@@ -1978,6 +2041,13 @@ export async function runShopifySeoRelease({
     await writeManifest(output, manifest);
     throw error;
   }
+  const priceFloorGate = assertBaseSeoPriceFloor(liveProducts);
+  manifest.policy.priceFloor = {
+    threshold: priceFloorGate.threshold,
+    variantsChecked: priceFloorGate.variantsChecked,
+    requirement: "every live SEO-scope variant must have a price at or above the approved floor before base SEO runs",
+  };
+  await writeManifest(output, manifest);
   // A frozen catalog is the immutable pre-apply source of truth for safe resume.
   // Never merge current live prices into it or a resumed run could compound pricing.
   const mergedSnapshot = frozenCatalog
@@ -1989,7 +2059,11 @@ export async function runShopifySeoRelease({
     total: mergedSnapshot.products.length,
     products: mergedSnapshot.products,
   });
-  const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot, { forceExplicitSeo: true });
+  const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot, {
+    forceExplicitSeo: true,
+    repairVariantPricing,
+    knowledgeModel,
+  });
   const selectedHandles = new Set(localPlanSelection.products.map((entry) => entry.handle));
   const selectedPlan =
     sample > 0
@@ -2050,13 +2124,25 @@ export async function runShopifySeoRelease({
           ...product,
           desiredProductInput: {},
           desiredVariantUpdates: [],
+          desiredVariantPriceUpdates: [],
           desiredMediaTargets: [],
         })),
       }
     : tagScopedPlan;
-  manifest.policy.pricing = "Shopify-authoritative; SEO never mutates variant price or compare-at price";
+  manifest.policy.variantPriceRepair = repairVariantPricing;
+  manifest.policy.pricing = repairVariantPricing
+    ? "Explicit quantity-tier repair only; repeated prices are raised from the smallest-quantity unit price and verified per variant"
+    : "Shopify-authoritative; SEO never mutates variant price or compare-at price";
   manifest.policy.tags = preserveTags ? "all live Shopify tags preserved exactly" : manifest.policy.tags;
   manifest.policy.mutationScope = tagsOnly ? "managed minimum-quantity tags only" : "eligible SEO plus managed tags";
+  if (repairVariantPricing && (scopedPlan.summary?.variantPriceRepairHeld || []).length) {
+    markFailure(
+      manifest,
+      null,
+      "failed-pricing-review",
+      new Error(`Variant pricing requires manual review for ${(scopedPlan.summary.variantPriceRepairHeld || []).length} ambiguous group(s).`),
+    );
+  }
   await preflight({ plan: scopedPlan, manifest, liveProducts, output: { mode, path: output } });
 
   if (mode === "dry-run") {

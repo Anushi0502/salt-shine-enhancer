@@ -3,7 +3,6 @@
 import { resolve } from "node:path";
 
 import {
-  CATALOG_TAG_PREFIX,
   CATALOG_TAXONOMY_VERSION,
   getCatalogTaxonomyDefinitions,
 } from "../src/lib/catalog-taxonomy.js";
@@ -11,10 +10,10 @@ import { CATALOG_TAXONOMY_OVERRIDES } from "../src/lib/catalog-taxonomy-override
 import { isImageReviewedCatalogTaxonomyOverride } from "../src/lib/catalog-taxonomy-image-overrides.js";
 import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
-const managedTagPrefix = `${CATALOG_TAG_PREFIX}:`;
 const ruleIds = new Set(getCatalogTaxonomyDefinitions().map((entry) => entry.id));
 
 function addError(errors, message) {
@@ -131,6 +130,9 @@ function validateFalseFriendFixtures(errors) {
 async function main() {
   const payload = await readProductCatalogPayload(dataDir);
   const products = Array.isArray(payload?.products) ? payload.products : [];
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const errors = [];
   const knowledgeIds = new Set();
   const specificTypeKeys = new Set();
@@ -142,7 +144,7 @@ async function main() {
   validateFalseFriendFixtures(errors);
 
   for (const product of products) {
-    const knowledge = classifyProductKnowledge(product);
+    const knowledge = classifyProductKnowledge(product, { knowledgeModel });
     const label = String(product?.handle || product?.id || "unknown-product");
     const tags = Array.isArray(knowledge.proposedTags) ? knowledge.proposedTags : [];
 
@@ -171,10 +173,10 @@ async function main() {
     if (!knowledge.departmentId || !knowledge.categoryId || !knowledge.subcategoryId || !knowledge.canonicalTypeId) {
       addError(errors, `${label}: SEO-eligible product is missing taxonomy fields.`);
     }
-    if (tags.length < 3) addError(errors, `${label}: SEO-eligible product has incomplete managed tags.`);
+    if (!tags.length) addError(errors, `${label}: SEO-eligible product has no canonical managed tags.`);
     if (new Set(tags).size !== tags.length) addError(errors, `${label}: proposed managed tags contain duplicates.`);
-    if (tags.some((tag) => !String(tag).startsWith(managedTagPrefix))) {
-      addError(errors, `${label}: proposed tags contain an unmanaged namespace.`);
+    if (tags.some((tag) => !String(tag).trim() || String(tag).includes(":"))) {
+      addError(errors, `${label}: proposed tags must use canonical simple syntax.`);
     }
   }
 

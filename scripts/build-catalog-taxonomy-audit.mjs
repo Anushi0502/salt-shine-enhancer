@@ -4,7 +4,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import {
-  CATALOG_TAG_PREFIX,
   CATALOG_TAXONOMY_VERSION,
   getCatalogDepartmentDefinitions,
   getCatalogTaxonomyDefinitions,
@@ -12,6 +11,7 @@ import {
 import { CATALOG_COLLECTION_PLAN } from "../src/lib/catalog-collection-plan.js";
 import { buildProductKnowledgePayload, classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -249,8 +249,8 @@ function renderCsv(records) {
   return `${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
 }
 
-function toProductRecord(product) {
-  const knowledge = classifyProductKnowledge(product);
+function toProductRecord(product, knowledgeModel = null) {
+  const knowledge = classifyProductKnowledge(product, { knowledgeModel });
   const variants = asArray(product?.variants);
   return {
     id: Number(product?.id) || 0,
@@ -274,6 +274,7 @@ function toProductRecord(product) {
     canonicalTypeId: knowledge.canonicalTypeId,
     audience: knowledge.audience,
     confidence: knowledge.confidence,
+    modelEvidence: knowledge.modelEvidence,
     reviewRequired: knowledge.reviewRequired,
     reviewReasons: knowledge.reviewReasons,
     seoEligible: knowledge.seoEligible,
@@ -379,17 +380,17 @@ function tagMarkdown(tagCounts, existingTags, tagInventorySource) {
     "## Tag Policy",
     "",
     "- Preserve every existing merchant and supplier tag exactly as-is.",
-    `- Add only controlled \`${CATALOG_TAG_PREFIX}:\` tags after written approval.`,
+    "- Add only controlled canonical simple tags after written approval.",
     "- Use product knowledge aliases for shopper search. Do not create free-form alias tags for every query.",
     "- Low-confidence classifications remain untagged until reviewed; the review CSV identifies them.",
     "",
     "## Existing Shopify Tags Are Not The Controlled Vocabulary",
     "",
     `- ${existingTags.length.toLocaleString()} existing Shopify tags with ${existingAssignments.toLocaleString()} current product assignments are documented separately in \`output/catalog-existing-tag-inventory.md\`.`,
-    `- The ${tagCounts.length.toLocaleString()} tags below are proposed additive \`${CATALOG_TAG_PREFIX}:\` companion tags, not a replacement for the existing Shopify tag list.`,
+    `- The ${tagCounts.length.toLocaleString()} tags below are proposed canonical simple tags, not a replacement for unrelated merchant tags.`,
     `- Inventory source: ${tagInventorySource}.`,
     "- Existing tags stay available for raw shopper discovery and low-priority evidence. They never override title, handle, or product-type evidence, and they are never used alone as collection rules.",
-    "- Any future apply must add approved `salt:` tags only and must verify that every existing Shopify tag remains present. Tag removals are forbidden by this taxonomy flow.",
+    "- Any future apply must add canonical simple tags before removing their mapped legacy SALT tags and must verify every unrelated merchant tag remains present.",
     "",
     "## Controlled Vocabulary",
     "",
@@ -399,12 +400,7 @@ function tagMarkdown(tagCounts, existingTags, tagInventorySource) {
     "",
     "## Tag Families",
     "",
-    "- `salt:department:*`: primary navigation department.",
-    "- `salt:category:*`: shopper-facing category inside a department.",
-    "- `salt:type:*`: canonical product noun used for search and collections.",
-    "- `salt:audience:*`: only when product evidence names women, men, kids, baby, or pets.",
-    "- `salt:feature:*`: limited to useful filterable attributes such as wireless, rechargeable, portable, waterproof, foldable, adjustable, LED, smart, Bluetooth, and insulated.",
-    "- `salt:compatibility:*`: limited to explicit device/platform compatibility such as iPhone, Android, AirPods, iPad, laptop, MacBook, Samsung, USB-C, and Type-C.",
+    "- Department, category, type, audience, feature, and compatibility values use normalized simple tags.",
     "",
   ];
   return lines.join("\n");
@@ -432,7 +428,7 @@ function existingTagMarkdown(existingTags, tagInventorySource) {
     "",
     "- They remain searchable by their original wording, including terms such as `earbuds`, `WOMEN FAISHON`, and `Hair Nourishment`.",
     "- They contribute low-priority evidence only after title, handle, and explicit product type. This prevents an old or broad tag from turning a belt into pants or a charger into lighting.",
-    "- They do not create, rename, or drive Shopify collections. Controlled `salt:` tags are the only proposed future collection-rule inputs.",
+    "- They do not create, rename, or drive Shopify collections. Canonical simple collection tags are the only collection-rule inputs.",
     "- The per-product review CSV marks existing tags as preserved and has an intentionally empty `Tags To Remove` column.",
     "",
     "## Exact Existing Tag List",
@@ -529,7 +525,10 @@ async function main() {
   ]);
   const products = asArray(productsPayload?.products);
   const collections = asArray(collectionsPayload?.collections);
-  const records = products.map(toProductRecord).filter((record) => record.id && record.handle);
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
+  const records = products.map((product) => toProductRecord(product, knowledgeModel)).filter((record) => record.id && record.handle);
   const reviewQueue = records.filter((record) => record.reviewRequired);
   const safeForApproval = records.filter((record) => record.seoEligible && !record.reviewRequired);
   const tagCounts = countTags(safeForApproval);
@@ -548,7 +547,7 @@ async function main() {
   };
   variants.variantsWithoutFeaturedImage = variants.totalVariants - variants.variantsWithFeaturedImage;
 
-  const knowledgePayload = buildProductKnowledgePayload(productsPayload);
+  const knowledgePayload = buildProductKnowledgePayload(productsPayload, { knowledgeModel });
   const manifest = {
     version: CATALOG_TAXONOMY_VERSION,
     generatedAt: new Date().toISOString(),
@@ -563,7 +562,7 @@ async function main() {
       preserveExistingTags: true,
       existingTagMutation: "none",
       approvedManagedTagApply: "add-only with a live tag-superset verification",
-      managedTagPrefix: `${CATALOG_TAG_PREFIX}:`,
+      managedTagSyntax: "canonical simple tags",
       lowConfidencePolicy: "review-before-apply",
     },
     summary: {
@@ -595,6 +594,7 @@ async function main() {
       uniqueProductTypes: knowledgePayload.uniqueProductTypes,
       uniqueProductKnowledgeRecords: knowledgePayload.uniqueProductKnowledgeRecords,
       uniqueSpecificProductTypes: new Set(records.map((record) => record.specificTypeKey)).size,
+      model: knowledgePayload.knowledgeModel,
       families: knowledgePayload.families,
       departments: knowledgePayload.departments,
       categories: knowledgePayload.categories,

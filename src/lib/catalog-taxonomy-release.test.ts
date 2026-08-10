@@ -162,9 +162,9 @@ describe("catalog taxonomy release", () => {
     expect(
       buildManagedTagAdditions(
         ["WOMEN FAISHON", "Hair Nourishment", "salt:department:women"],
-        ["salt:department:women", "salt:category:women-fashion", "salt:type:belt"],
+        ["women", "women-fashion", "belt"],
       ),
-    ).toEqual(["salt:category:women-fashion", "salt:type:belt"]);
+    ).toEqual(["women-fashion", "belt"]);
   });
 
   it("fails closed for products that are not published to Online Store", () => {
@@ -224,8 +224,8 @@ describe("catalog taxonomy release", () => {
 
     expect(plan.summary.ready).toBe(1);
     expect(plan.tasks[0]?.initialTags).toEqual(["WOMEN FAISHON"]);
-    expect(plan.tasks[0]?.tagsToAdd).toContain("salt:type:belt");
-    expect(plan.tasks[0]?.tagsToAdd.every((tag) => tag.startsWith("salt:"))).toBe(true);
+    expect(plan.tasks[0]?.tagsToAdd).toContain("belt");
+    expect(plan.tasks[0]?.tagsToAdd.every((tag) => !tag.includes(":"))).toBe(true);
     expect(plan.tasks[0]?.metafieldNeedsUpdate).toBe(true);
   });
 
@@ -252,7 +252,7 @@ describe("catalog taxonomy release", () => {
     });
 
     expect(plan.tasks[0]?.knowledge.classificationRule).toBe("microphones");
-    expect(plan.tasks[0]?.proposedTags).toContain("salt:type:microphone");
+    expect(plan.tasks[0]?.proposedTags).toContain("microphone");
     expect(plan.tasks[0]?.tagsToAdd).toEqual([]);
     expect(plan.tasks[0]?.mutateTags).toBe(false);
     expect(plan.policy.managedTags).toContain("collection integrity is authoritative");
@@ -338,8 +338,8 @@ describe("catalog taxonomy release", () => {
     const metafield = JSON.parse(task?.taxonomyMetafield.value || "{}");
 
     expect(task?.tagsToAdd).toEqual(expect.arrayContaining([
-      "salt:category:kitchen-cookware",
-      "salt:category:camping-essentials",
+      "kitchen-cookware",
+      "camping-essentials",
     ]));
     expect(metafield.relatedCategories).toEqual([
       expect.objectContaining({

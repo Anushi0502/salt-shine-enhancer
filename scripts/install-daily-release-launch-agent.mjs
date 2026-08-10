@@ -61,11 +61,14 @@ async function main() {
     HOME: homeDir,
     PATH: pathValue,
     SALT_RELEASE_SKIP_MOBILE: "1",
+    SALT_SHOPIFY_SYNC_ACTIVE_CATALOG: "1",
+    SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS: "hats",
+    SALT_REQUIRE_KNOWLEDGE_MODEL: "1",
     SALT_CATALOG_BATCH_SIZE: "50",
     SALT_CATALOG_TAXONOMY_APPROVED: "1",
     SALT_CATALOG_TAXONOMY_APPROVAL_ID: "salt-full-catalog-release-2026-08-06-approved",
     SALT_CATALOG_COLLECTIONS_APPROVED: "1",
-    SALT_CATALOG_COLLECTIONS_APPROVAL_ID: "salt-full-catalog-collections-2026-08-06-approved",
+    SALT_CATALOG_COLLECTIONS_APPROVAL_ID: "salt-full-catalog-collections-2026-08-10-hats-approved",
   };
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

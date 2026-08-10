@@ -262,7 +262,6 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
     handle: "face-mask",
     label: "Health & Wellness",
     childHandles: [
-      "posture-support",
       "sleep-essentials",
       "relaxation-products",
       "massage-tools",
@@ -272,7 +271,7 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
   {
     handle: "shopping-bags-jute-bags",
     label: "Travel & Outdoor",
-    childHandles: ["travel-organizers", "car-accessories", "camping-gear", "portable-gadgets", "outdoor-essentials"],
+    childHandles: ["travel-organizers", "car-accessories", "portable-gadgets", "outdoor-essentials"],
   },
   {
     handle: "books",
@@ -281,20 +280,23 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
       "daily-living-aids",
       "home-safety",
       "memory-organization",
-      "caregiver-essentials",
       "gifts-for-seniors",
-      "mobility-support",
     ],
   },
   {
     handle: "gifts",
     label: "Gifts Collection",
-    childHandles: ["gifts-for-mom", "gifts-for-dad", "gifts-for-seniors", "housewarming-gifts", "birthday-gifts", "holiday-gifts"],
+    childHandles: ["gifts-for-mom", "gifts-for-dad", "gifts-for-seniors", "housewarming-gifts", "birthday-gifts"],
   },
   {
     handle: "unique-products",
     label: "Trending Finds",
-    childHandles: ["viral-tiktok-products", "appplaza-best-sellers", "new-arrivals", "staff-picks", "under-25", "under-50"],
+    childHandles: ["appplaza-best-sellers", "new-arrivals", "staff-picks", "under-25", "under-50"],
+  },
+  {
+    handle: "hats",
+    label: "Hats",
+    childHandles: [],
   },
 ];
 
@@ -316,7 +318,17 @@ export const SITE_HOME_FEATURED_SHORTCUTS: SiteFeaturedShortcut[] = [
 const COLLECTION_ROUTE_ALIASES: Record<string, string> = {
   apparel: "men-collection",
   "cooking-essential": "cookware",
+  "unique-products": "trending-finds",
   "winter-wear": "clearance-archive",
+};
+
+// Keep storefront route handles stable while sending only live Shopify handles
+// to collection product endpoints. Under $25 is a virtual price-filtered view
+// backed by the live Under $50 collection.
+const COLLECTION_SHOPIFY_HANDLE_ALIASES: Record<string, string> = {
+  "appplaza-best-sellers": "best-sellers",
+  "unique-products": "trending-finds",
+  "under-25": "under-50",
 };
 
 const COLLECTION_ROUTE_ALIAS_SOURCES_BY_TARGET = Object.entries(COLLECTION_ROUTE_ALIASES).reduce<
@@ -350,6 +362,15 @@ function resolveCollectionRouteAlias(handle: string | null | undefined): string 
   return COLLECTION_ROUTE_ALIASES[normalizedHandle] || normalizedHandle;
 }
 
+function resolveCanonicalShopifyHandle(handle: string | null | undefined): string {
+  const normalizedHandle = normalizeHandle(handle);
+  if (!normalizedHandle) {
+    return "";
+  }
+
+  return COLLECTION_SHOPIFY_HANDLE_ALIASES[normalizedHandle] || normalizedHandle;
+}
+
 function getCollectionRouteAliasSources(handle: string | null | undefined): string[] {
   const normalizedHandle = normalizeHandle(handle);
   if (!normalizedHandle) {
@@ -357,6 +378,17 @@ function getCollectionRouteAliasSources(handle: string | null | undefined): stri
   }
 
   return COLLECTION_ROUTE_ALIAS_SOURCES_BY_TARGET[normalizedHandle] || [];
+}
+
+function getCollectionShopifyAliasSources(handle: string | null | undefined): string[] {
+  const normalizedHandle = resolveCanonicalShopifyHandle(handle);
+  if (!normalizedHandle) {
+    return [];
+  }
+
+  return Object.entries(COLLECTION_SHOPIFY_HANDLE_ALIASES)
+    .filter(([, targetHandle]) => targetHandle === normalizedHandle)
+    .map(([sourceHandle]) => sourceHandle);
 }
 
 export function getMergedCollectionHandles(handle: string): string[] {
@@ -562,12 +594,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     },
     subcollections: [
       {
-        title: "Posture Support",
-        handle: "posture-support",
-        summary: "Support-focused products for better alignment and daily comfort.",
-        searchQuery: "windproof",
-      },
-      {
         title: "Sleep Essentials",
         handle: "sleep-essentials",
         summary: "Tools that help the bedroom feel more restful and prepared.",
@@ -624,12 +650,6 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         searchQuery: "car",
       },
       {
-        title: "Camping Gear",
-        handle: "camping-gear",
-        summary: "Simple gear for campsites, tailgates, and outdoor stays.",
-        searchQuery: "travel",
-      },
-      {
         title: "Portable Gadgets",
         handle: "portable-gadgets",
         summary: "Battery-friendly tools and portable helpers that travel well.",
@@ -681,23 +701,11 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         searchQuery: "goal setting",
       },
       {
-        title: "Caregiver Essentials",
-        handle: "caregiver-essentials",
-        summary: "Tools that make caregiving more organized, calm, and straightforward.",
-        searchQuery: "tracker",
-      },
-      {
         title: "Gifts for Seniors",
         handle: "gifts-for-seniors",
         shopifyHandle: "gifts",
         summary: "Thoughtful gift ideas that feel personal, practical, and easy to appreciate.",
         searchQuery: "gifts for seniors thoughtful practical",
-      },
-      {
-        title: "Mobility Support",
-        handle: "mobility-support",
-        summary: "Comfortable supports for balance, movement, and around-the-home travel.",
-        searchQuery: "exercise",
       },
     ],
   },
@@ -750,18 +758,12 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
         summary: "Birthday picks that are easy to match with the person and the moment.",
         searchQuery: "birthday",
       },
-      {
-        title: "Holiday Gifts",
-        handle: "holiday-gifts",
-        summary: "Seasonal picks for winter, celebrations, and gifting rushes.",
-        searchQuery: "candle",
-      },
     ],
   },
   {
     title: "Trending Finds",
     handle: "trending-finds",
-    shopifyHandle: "unique-products",
+    shopifyHandle: "trending-finds",
     summary:
       "What’s moving now: viral picks, best sellers, new arrivals, staff picks, and budget-friendly favorites.",
     searchQuery: "humidifier",
@@ -778,15 +780,9 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
     },
     subcollections: [
       {
-        title: "Viral TikTok Products",
-        handle: "viral-tiktok-products",
-        summary: "Social-first picks that capture attention quickly.",
-        searchQuery: "humidifier",
-      },
-      {
         title: "Best Sellers",
         handle: "best-sellers",
-        shopifyHandle: "appplaza-best-sellers",
+        shopifyHandle: "best-sellers",
         summary: "The most consistently chosen items from the current catalog.",
         searchQuery: "best sellers",
       },
@@ -815,6 +811,7 @@ export const SITE_COLLECTIONS: SiteCollection[] = [
       {
         title: "Under $50",
         handle: "under-50",
+        shopifyHandle: "under-50",
         priceFilter: {
           max: 50,
         },
@@ -839,8 +836,11 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = SITE_COL
     new Set([
       collection.handle,
       collection.shopifyHandle,
+      ...getCollectionRouteAliasSources(collection.handle),
+      ...getCollectionShopifyAliasSources(collection.handle),
       ...collection.subcollections.map((subcollection) => subcollection.handle),
       ...collection.subcollections.map((subcollection) => subcollection.shopifyHandle),
+      ...collection.subcollections.flatMap((subcollection) => getCollectionShopifyAliasSources(subcollection.handle)),
     ].filter(Boolean)),
   ),
   to: `/collections/${normalizeHandle(collection.shopifyHandle || collection.handle)}`,
@@ -894,9 +894,15 @@ function findSubcollectionMatch(collection: SiteCollection, handle: string): Sit
     return null;
   }
 
+  const canonicalHandle = resolveCanonicalShopifyHandle(normalizedHandle);
+
   return (
     collection.subcollections.find(
-      (subcollection) => subcollection.handle === normalizedHandle || subcollection.shopifyHandle === normalizedHandle,
+      (subcollection) =>
+        subcollection.handle === normalizedHandle ||
+        subcollection.shopifyHandle === normalizedHandle ||
+        subcollection.handle === canonicalHandle ||
+        subcollection.shopifyHandle === canonicalHandle,
     ) || null
   );
 }
@@ -923,26 +929,29 @@ export function resolveCollectionRouteHandle(handle: string): string {
 export function resolveCollectionShopifyHandle(handle: string): string {
   const collection = findCollectionMatch(handle);
   if (!collection) {
-    return String(handle || "").trim().toLowerCase();
+    return resolveCanonicalShopifyHandle(handle);
   }
 
-  return collection.shopifyHandle || collection.handle;
+  return resolveCanonicalShopifyHandle(collection.shopifyHandle || collection.handle);
 }
 
 export function resolveCollectionFeedHandle(collectionHandle: string, subcollectionHandle?: string | null): string {
   const collection = findCollectionMatch(collectionHandle);
   if (!collection) {
-    return String(collectionHandle || "").trim().toLowerCase();
+    return resolveCanonicalShopifyHandle(collectionHandle);
   }
 
   if (subcollectionHandle) {
     const subcollection = findSubcollectionMatch(collection, subcollectionHandle);
-    if (subcollection?.shopifyHandle) {
-      return subcollection.shopifyHandle;
+    if (subcollection) {
+      const subcollectionFeedHandle = subcollection.shopifyHandle || (subcollection.priceFilter ? subcollection.handle : "");
+      if (subcollectionFeedHandle) {
+        return resolveCanonicalShopifyHandle(subcollectionFeedHandle);
+      }
     }
   }
 
-  return collection.shopifyHandle || collection.handle;
+  return resolveCanonicalShopifyHandle(collection.shopifyHandle || collection.handle);
 }
 
 export function getCollectionRoutePaths(handle: string): string[] {

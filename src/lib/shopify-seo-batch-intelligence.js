@@ -118,6 +118,11 @@ const GENERIC_TITLE_PHRASES = [
 ];
 
 const HANDLE_TITLE_OVERRIDES = new Map([
+  ["men-formal-shoes", "Men's Formal Shoes for Work and Occasions"],
+  ["t-shirt-t-shirt-t-shirt", "Everyday T-Shirt for Casual Clothing"],
+  ["candy-candy-anime", "Candy Candy Anime Graphic T-Shirt Top"],
+  ["nana-anime", "Nana Anime Graphic Printed T-Shirt Top"],
+  ["nana-anime-1", "Nana Anime Graphic Printed T-Shirt Top"],
   ["case-for-iphone-13-case-iphone-11-12-13-mini-14-15-16-pro-max-cover-funda-tpu-cases-matte-liquid-silicone-cover-iphone-13", "Matte Silicone iPhone Case for Multiple Models"],
   ["case-for-iphone-15-plus-case-iphone-11-12-13-mini-14-15-16-pro-max-cover-shockproof-soft-silicone-cover-iphone-15plus", "Shockproof Silicone iPhone Case for Multiple Models"],
   ["12-24-card-holder-card-holder-multi-card-holder-mens-and-womens-card-holder-change-bag-for-men-and-women", "12-24 Slot Card Holder for Men and Women"],
@@ -1770,7 +1775,7 @@ export function createSeoCatalogContext({
   };
 }
 
-function buildSignalsFromGroup(rows, handle, catalogContext) {
+function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = null) {
   const sourceTitle = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Title"]))));
   const sourceBodyHtml = normalizeHtmlValue(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Body (HTML)"]))));
   const sourceProductType = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Type", "Product Type"]))));
@@ -1868,7 +1873,7 @@ function buildSignalsFromGroup(rows, handle, catalogContext) {
       collectionSignal,
       searchProductBoosts: catalogSearchBoosts,
     },
-  });
+  }, { knowledgeModel });
 
   const handleTokens = buildTokenSet(handle);
   const sourceTitleTokens = buildTokenSet(sourceTitle);
@@ -2061,9 +2066,20 @@ function buildCanonicalAltText(signals, canonicalTitle) {
 function buildProductProfile(signals) {
   const confidence = computeConfidence(signals);
   const knowledge = resolveProductKnowledge(signals.handle);
+  const classificationHeld = Boolean(
+    signals.productKnowledge?.reviewRequired || signals.productKnowledge?.seoEligible === false,
+  );
   const explicitTitle = HANDLE_TITLE_OVERRIDES.get(signals.handle) || "";
   const recognizedHandleFamily = /^(iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Lip Balm|Hair Oil)$/i.test(normalizePlainText(signals.handlePhrase));
-  const rewriteLevel = explicitTitle || recognizedHandleFamily ? "high" : confidence >= 70 ? "high" : confidence >= 45 ? "medium" : "low";
+  const rewriteLevel = classificationHeld
+    ? "low"
+    : explicitTitle || recognizedHandleFamily
+      ? "high"
+      : confidence >= 70
+        ? "high"
+        : confidence >= 45
+          ? "medium"
+          : "low";
   const selectedTitle = normalizePlainText(selectCanonicalTitle(signals).candidate || signals.sourceTitle || signals.catalogTitle);
   const safeHandleTitle = buildSafeHandleTitle(signals);
   const selectedTitleIsWeak =
@@ -2098,6 +2114,9 @@ function buildProductProfile(signals) {
     reasons.push(`handle:${signals.handlePhrase}`);
   }
   reasons.push(`knowledge:${knowledge.id}@${PRODUCT_CONTENT_KNOWLEDGE_VERSION}`);
+  if (classificationHeld) {
+    reasons.push("classification-review:model-or-taxonomy-conflict");
+  }
   if (signals.catalogProduct) {
     reasons.push("catalog-anchor");
   }
@@ -2209,6 +2228,13 @@ function buildProductProfile(signals) {
       classificationFamily: signals.productKnowledge?.familyId || "other",
       classificationType: signals.productKnowledge?.typeKey || "unclassified-product",
       classificationConfidence: signals.productKnowledge?.confidence || 0,
+      modelVersion: signals.productKnowledge?.modelEvidence?.modelVersion || "",
+      modelTrainingRecords: signals.productKnowledge?.modelEvidence?.trainingRecords || 0,
+      modelTopRuleId: signals.productKnowledge?.modelEvidence?.topRuleId || "",
+      modelAgreesWithTaxonomy: signals.productKnowledge?.modelEvidence
+        ? signals.productKnowledge.modelEvidence.topRuleId === signals.productKnowledge.classificationRule
+        : null,
+      classificationHeld,
       priorityFacts: knowledge.priorityFacts,
       factCount: extractSupportedProductFacts(signals).length,
       policy: MARKETPLACE_CONTENT_POLICY.market,
@@ -2411,6 +2437,7 @@ export async function buildSeoBatchPlan(
     products,
     collections,
     collectionProducts,
+    knowledgeModel,
   } = {},
 ) {
   const warnings = [];
@@ -2455,6 +2482,7 @@ export async function buildSeoBatchPlan(
       group.rows.map((entry) => entry.row),
       group.handle,
       catalogContext,
+      knowledgeModel,
     );
     signals.productTypeText = signals.sourceProductType || signals.catalogProductType;
     signals.sourcePrice = getSourceExplicitPrice(group.rows.map((entry) => entry.row));

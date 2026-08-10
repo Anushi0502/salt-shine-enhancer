@@ -19,6 +19,7 @@ import {
   buildContentFingerprint,
   tokenizeSpecificityText,
 } from "./product-content-specificity.js";
+import { buildVariantPriceRepairPlan } from "./shopify-variant-pricing.js";
 
 const PRODUCT_FIELDS = ["title", "descriptionHtml", "productType"];
 const SEO_FIELDS = ["title", "description"];
@@ -111,6 +112,11 @@ function appendSeoDescriptionQualifier(value, qualifier, isReference) {
   return `${base}. ${suffix}`;
 }
 
+function appendDescriptionHtmlQualifier(value, qualifier) {
+  const safeQualifier = normalizePlainText(qualifier);
+  return `${String(value || "").trim()}\n<p>SALT catalog listing reference ${safeQualifier}.</p>`;
+}
+
 function updateProductSeoField(product, field, value, qualifier) {
   product.desiredProductInput = {
     ...(product.desiredProductInput || {}),
@@ -155,6 +161,44 @@ function disambiguateSeoContent(products) {
           updateProductSeoField(product, field, nextValue, qualifier);
         });
       }
+    }
+  }
+  return products;
+}
+
+function duplicateDescriptionGroups(products) {
+  const groups = new Map();
+  for (const product of products) {
+    const value = product.desiredProductInput?.descriptionHtml || "";
+    const fingerprint = buildContentFingerprint(value);
+    if (!fingerprint) continue;
+    if (!groups.has(fingerprint)) groups.set(fingerprint, []);
+    groups.get(fingerprint).push(product);
+  }
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function disambiguateDescriptionContent(products) {
+  for (const group of duplicateDescriptionGroups(products)) {
+    for (const product of group) {
+      const qualifier = `Ref ${stableCatalogReference(product.handle)}`;
+      const descriptionHtml = appendDescriptionHtmlQualifier(
+        product.desiredProductInput?.descriptionHtml,
+        qualifier,
+      );
+      product.desiredProductInput = {
+        ...(product.desiredProductInput || {}),
+        descriptionHtml,
+      };
+      product.productInput = {
+        ...(product.productInput || {}),
+        descriptionHtml,
+      };
+      product.intelligence = {
+        ...(product.intelligence || {}),
+        canonicalDescriptionHtml: descriptionHtml,
+      };
+      product.reasons = [...(product.reasons || []), `description-identity:${qualifier}`];
     }
   }
   return products;
@@ -453,7 +497,10 @@ function variantPlanMatches(left, right) {
   );
 }
 
-export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = false } = {}) {
+export async function buildShopifySeoReleasePlan(
+  snapshot,
+  { forceExplicitSeo = false, repairVariantPricing = false, knowledgeModel = null } = {},
+) {
   const rows = buildCatalogRowsFromSnapshot(snapshot);
   const catalogContext = createSeoCatalogContext({
     products: getProductList(snapshot),
@@ -463,9 +510,25 @@ export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = 
   const basePlan = await buildSeoBatchPlan(rows, {
     catalogContext,
     suppressCategoryWarnings: true,
+    knowledgeModel,
   });
+  const variantPriceRepair = repairVariantPricing
+    ? buildVariantPriceRepairPlan(getProductList(snapshot))
+    : {
+        byHandle: new Map(),
+        held: [],
+        summary: {
+          products: getProductList(snapshot).length,
+          variantsInspected: 0,
+          productsWithRepeatedQuantityPrices: 0,
+          productsWithPriceRepairs: 0,
+          variantsToUpdate: 0,
+          totalPriceDelta: "0.00",
+          heldGroups: 0,
+        },
+      };
 
-  const products = disambiguateSeoContent(basePlan.products.map((productPlan) => {
+  const products = disambiguateDescriptionContent(disambiguateSeoContent(basePlan.products.map((productPlan) => {
     const desiredProductInput = { ...(productPlan.desiredProductInput || {}) };
     if (forceExplicitSeo) {
       const canonicalSeoTitleBase = normalizePlainText(
@@ -491,6 +554,7 @@ export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = 
       };
     }
     const currentVariantUpdates = buildReleaseDesiredVariants(productPlan);
+    const desiredVariantPriceUpdates = variantPriceRepair.byHandle.get(productPlan.handle) || [];
     // Shopify is the sole price authority. SEO can read every variant to
     // understand quality, size, color, or bundle tiers, but it must never
     // normalize their independent prices or compare-at prices.
@@ -499,6 +563,7 @@ export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = 
       ...productPlan,
       desiredProductInput: buildReleaseDesiredProductInput({ ...productPlan, desiredProductInput }),
       desiredVariantUpdates,
+      desiredVariantPriceUpdates,
       currentVariantUpdates,
       desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
       desiredQuantityTag: productPlan?.intelligence?.knowledge?.family === "order-adjustment"
@@ -507,7 +572,7 @@ export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = 
       currentQuantityTag: getMinimumQuantityTagForPrices(currentVariantUpdates.map((variant) => variant.price)),
       categoryAuthoritative: Boolean(productPlan.categoryId && productPlan.categoryQuery),
     };
-  }));
+  })));
 
   return {
     ...basePlan,
@@ -519,6 +584,8 @@ export async function buildShopifySeoReleasePlan(snapshot, { forceExplicitSeo = 
       releaseProducts: products.length,
       desiredVariantCount: products.reduce((count, entry) => count + entry.desiredVariantUpdates.length, 0),
       desiredMediaCount: products.reduce((count, entry) => count + entry.desiredMediaTargets.length, 0),
+      variantPriceRepair: variantPriceRepair.summary,
+      variantPriceRepairHeld: variantPriceRepair.held,
     },
   };
 }
@@ -762,17 +829,40 @@ function buildVariantDiff(liveProduct, productPlan, changedFields, skippedFields
   const protectedVariants = Array.isArray(productPlan?.desiredVariantUpdates)
     ? productPlan.desiredVariantUpdates
     : [];
+  const priceRepairs = Array.isArray(productPlan?.desiredVariantPriceUpdates)
+    ? productPlan.desiredVariantPriceUpdates
+    : [];
 
-  if (protectedVariants.length) {
+  if (protectedVariants.length && !priceRepairs.length) {
     skippedFields.push({
       field: "variant-pricing",
       reason: "Shopify-authoritative; SEO preserves each variant price and compare-at price",
     });
   }
 
-  // There is intentionally no variant mutation path in an SEO release. This
-  // prevents source-plan drift from overwriting different quality-tier prices.
-  return { inputs: [], unresolved: [] };
+  const inputs = [];
+  const unresolved = [];
+  for (const repair of priceRepairs) {
+    const resolution = resolveLiveVariant(liveProduct?.variants?.nodes || liveProduct?.variants, repair);
+    if (!resolution.match?.id) {
+      unresolved.push({ kind: "variant-price", reason: resolution.error || "not-found", label: repair.label || repair.variantId });
+      continue;
+    }
+
+    const input = { id: resolution.match.id, price: repair.price };
+    if (repair.compareAtPrice) input.compareAtPrice = repair.compareAtPrice;
+    const priceMatches = normalizeComparableMoney(resolution.match.price) === normalizeComparableMoney(repair.price);
+    const compareMatches = !repair.compareAtPrice || normalizeComparableMoney(resolution.match.compareAtPrice) === normalizeComparableMoney(repair.compareAtPrice);
+    if (priceMatches && compareMatches) {
+      skippedFields.push({ field: `variant-pricing:${resolution.match.id}`, reason: "already aligned" });
+      continue;
+    }
+
+    inputs.push(input);
+    changedFields.push(`variant-pricing:${resolution.match.id}`);
+  }
+
+  return { inputs, unresolved };
 }
 
 function buildMediaDiff(liveProduct, productPlan, changedFields, skippedFields) {
@@ -880,7 +970,9 @@ export function buildDesiredFingerprint(productPlan) {
     },
     category: normalizePlainText(desired.category),
     managedMinimumQuantityTag: productPlan?.desiredQuantityTag || "",
-    variants: (productPlan?.desiredVariantUpdates || [])
+    variants: (productPlan?.desiredVariantPriceUpdates?.length
+      ? productPlan.desiredVariantPriceUpdates
+      : productPlan?.desiredVariantUpdates || [])
       .map((variant) => ({
         id: normalizeIdentity(variant.variantId, "ProductVariant"),
         sku: normalizeComparableText(variant.sku),

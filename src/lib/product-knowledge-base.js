@@ -5,6 +5,7 @@ import {
   singularizeCatalogToken,
   tokenizeCatalogText,
 } from "./catalog-taxonomy.js";
+import { scoreCatalogKnowledgeModel } from "./catalog-knowledge-model.js";
 
 export const PRODUCT_KNOWLEDGE_BASE_VERSION = CATALOG_TAXONOMY_VERSION;
 
@@ -137,23 +138,23 @@ function buildFallbackSearchTerms(product, leafType) {
     .slice(0, 40);
 }
 
-export function classifyProductKnowledge(product) {
+export function classifyProductKnowledge(product, { knowledgeModel = null } = {}) {
   if (product && typeof product === "object") {
     const cached = PRODUCT_KNOWLEDGE_CACHE.get(product);
-    if (cached) return cached;
+    if (cached && !knowledgeModel) return cached;
   }
 
   const taxonomy = classifyCatalogTaxonomy(product);
-  const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy);
+  const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel });
 
-  if (product && typeof product === "object") {
+  if (product && typeof product === "object" && !knowledgeModel) {
     PRODUCT_KNOWLEDGE_CACHE.set(product, knowledge);
   }
 
   return knowledge;
 }
 
-export function buildProductKnowledgeFromTaxonomy(product, taxonomy) {
+export function buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel = null } = {}) {
   if (!taxonomy?.ruleId) throw new Error("A taxonomy classification is required to build product knowledge.");
   const leafType = canonicalLeafType(product, taxonomy);
   const specificType = specificProductType(product, taxonomy);
@@ -165,6 +166,20 @@ export function buildProductKnowledgeFromTaxonomy(product, taxonomy) {
   const searchTerms = taxonomy.ruleId === "unclassified"
     ? buildFallbackSearchTerms(product, leafType)
     : buildSearchTerms(product, taxonomy, leafType, aliases);
+  const modelEvidence = scoreCatalogKnowledgeModel(knowledgeModel, product);
+  const modelConflict = Boolean(
+    modelEvidence &&
+    modelEvidence.topRuleId &&
+    modelEvidence.topRuleId !== taxonomy.ruleId &&
+    modelEvidence.reliable === true &&
+    modelEvidence.margin >= Number(knowledgeModel?.conflictMargin || 0),
+  );
+  const reviewReasons = unique([
+    ...(taxonomy.reviewReasons || []),
+    ...(modelConflict
+      ? [`Trained knowledge model disagrees with checked-in taxonomy: ${modelEvidence.topRuleId}.`]
+      : []),
+  ]);
   return {
     version: PRODUCT_KNOWLEDGE_BASE_VERSION,
     productKnowledgeId: productKnowledgeId(product),
@@ -199,10 +214,11 @@ export function buildProductKnowledgeFromTaxonomy(product, taxonomy) {
     collectionTargets: taxonomy.collectionTargets,
     shopifyCategory: taxonomy.shopifyCategory,
     confidence: taxonomy.confidence,
-    reviewRequired: taxonomy.reviewRequired,
-    reviewReasons: taxonomy.reviewReasons,
-    seoEligible: taxonomy.seoEligible,
+    reviewRequired: Boolean(taxonomy.reviewRequired || modelConflict),
+    reviewReasons,
+    seoEligible: taxonomy.seoEligible !== false && !modelConflict,
     evidence: taxonomy.evidence,
+    modelEvidence,
   };
 }
 
@@ -236,10 +252,11 @@ export function compactProductKnowledge(productKnowledge) {
     ),
     confidence: productKnowledge.confidence,
     reviewRequired: productKnowledge.reviewRequired,
+    modelEvidence: productKnowledge.modelEvidence,
   };
 }
 
-export function buildProductKnowledgePayload(productsPayload) {
+export function buildProductKnowledgePayload(productsPayload, { knowledgeModel = null } = {}) {
   const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
   const typeMap = new Map();
   const familyMap = new Map();
@@ -247,7 +264,7 @@ export function buildProductKnowledgePayload(productsPayload) {
   const categoryMap = new Map();
   const records = products
     .map((product) => {
-      const knowledge = classifyProductKnowledge(product);
+      const knowledge = classifyProductKnowledge(product, { knowledgeModel });
       if (!typeMap.has(knowledge.typeKey)) {
         typeMap.set(knowledge.typeKey, {
           typeKey: knowledge.typeKey,
@@ -293,6 +310,7 @@ export function buildProductKnowledgePayload(productsPayload) {
         collectionTargets: knowledge.collectionTargets,
         searchTerms: knowledge.searchTerms,
         negativeTerms: knowledge.negativeTerms,
+        modelEvidence: knowledge.modelEvidence,
       };
     })
     .filter((record) => record.id && record.handle);
@@ -304,6 +322,13 @@ export function buildProductKnowledgePayload(productsPayload) {
     totalProducts: records.length,
     uniqueProductKnowledgeRecords: records.length,
     uniqueProductTypes: typeMap.size,
+    knowledgeModel: knowledgeModel
+      ? {
+          modelVersion: knowledgeModel.modelVersion,
+          trainingRecords: knowledgeModel.trainingRecords,
+          algorithm: knowledgeModel.algorithm,
+        }
+      : null,
     families: [...familyMap.values()].sort((left, right) => left.id.localeCompare(right.id)),
     departments: [...departmentMap.values()].sort((left, right) => left.id.localeCompare(right.id)),
     categories: [...categoryMap.values()].sort((left, right) => left.id.localeCompare(right.id)),

@@ -40,8 +40,18 @@ describe("catalog collection governance", () => {
   it("uses one unique controlled tag for every semantic collection", () => {
     const tags = SEMANTIC_COLLECTION_POLICIES.map((policy) => policy.tag);
     expect(new Set(tags).size).toBe(tags.length);
-    expect(tags.every((tag) => tag.startsWith("salt:collection:"))).toBe(true);
+    expect(tags.every((tag) => !tag.includes(":"))).toBe(true);
     expect(buildSemanticCollectionSource(SEMANTIC_COLLECTION_POLICIES[0]).inclusion.conditions).toHaveLength(1);
+  });
+
+  it("preserves approved union rules for merged canonical collections", () => {
+    const gifts = SEMANTIC_COLLECTION_POLICIES.find((policy) => policy.handle === "gifts");
+    const source = buildSemanticCollectionSource(gifts);
+    expect(source.inclusion.matchType).toBe("ANY");
+    expect(source.inclusion.conditions.map((condition) => condition.productTag.values)).toEqual([
+      ["gifts"],
+      ["holiday-gifts"],
+    ]);
   });
 
   it("repairs drifted price handles and writes exact price conditions", () => {
@@ -71,6 +81,20 @@ describe("catalog collection governance", () => {
       audience: { id: "unisex" },
     };
     expect(buildProductCollectionTags(product, knowledge)).toContain(collectionTagForHandle("car-accessories"));
+  });
+
+  it("assigns headwear to the governed hats collection", () => {
+    const hats = SEMANTIC_COLLECTION_POLICIES.find((policy) => policy.handle === "hats");
+    const product = { title: "Foldable Summer Sun Hat", handle: "foldable-summer-sun-hat" };
+    const knowledge = {
+      subcategoryId: "hats-caps",
+      proposedTags: [],
+      collectionTargets: ["hats"],
+      classificationRule: "hats-caps",
+    };
+    expect(hats).toBeDefined();
+    expect(collectionTagForHandle("hats")).toBe("hats");
+    expect(buildProductCollectionTags(product, knowledge)).toContain("hats");
   });
 
   it("has no duplicate canonical handles or aliases", () => {

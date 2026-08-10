@@ -7,6 +7,7 @@ import {
   isSiteHeaderCollectionLinkActive,
   resolveCollectionFeedHandle,
   resolveCollectionRouteHandle,
+  resolveCollectionShopifyHandle,
 } from "@/lib/site-navigation";
 
 describe("resolveCollectionFeedHandle", () => {
@@ -20,6 +21,22 @@ describe("resolveCollectionFeedHandle", () => {
 
   it("falls back to the parent collection feed when the subcollection is not mapped", () => {
     expect(resolveCollectionFeedHandle("home-kitchen", "kitchen-gadgets")).toBe("cookware");
+  });
+
+  it("resolves legacy and virtual collection handles to live Shopify feeds", () => {
+    expect(resolveCollectionShopifyHandle("best-sellers")).toBe("best-sellers");
+    expect(resolveCollectionShopifyHandle("new-arrivals")).toBe("new-arrivals");
+    expect(resolveCollectionShopifyHandle("under-50")).toBe("under-50");
+    expect(resolveCollectionShopifyHandle("trending-finds")).toBe("trending-finds");
+    expect(resolveCollectionShopifyHandle("appplaza-best-sellers")).toBe("best-sellers");
+    expect(resolveCollectionShopifyHandle("unique-products")).toBe("trending-finds");
+    expect(resolveCollectionShopifyHandle("under-25")).toBe("under-50");
+  });
+
+  it("canonicalizes nested legacy and virtual feeds without changing their routes", () => {
+    expect(resolveCollectionFeedHandle("unique-products", "appplaza-best-sellers")).toBe("best-sellers");
+    expect(resolveCollectionFeedHandle("trending-finds", "best-sellers")).toBe("best-sellers");
+    expect(resolveCollectionFeedHandle("trending-finds", "under-25")).toBe("under-50");
   });
 
   it("builds a Shopify-safe collection URL for subcollections", () => {
@@ -86,7 +103,6 @@ describe("resolveCollectionFeedHandle", () => {
       "Pet Toys",
     ]);
     expect(SITE_COLLECTIONS.find((collection) => collection.handle === "health-wellness")?.subcollections.map((entry) => entry.title)).toEqual([
-      "Posture Support",
       "Sleep Essentials",
       "Relaxation Products",
       "Massage Tools",
@@ -116,7 +132,7 @@ describe("resolveCollectionFeedHandle", () => {
       "/collections/shopping-bags-jute-bags",
       "/collections/books",
       "/collections/gifts",
-      "/collections/unique-products",
+      "/collections/trending-finds",
     ]);
   });
 

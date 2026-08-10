@@ -43,3 +43,5 @@ output/vscode-sync-backup/
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*

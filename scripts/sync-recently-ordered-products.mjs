@@ -18,6 +18,7 @@ const adminToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN ||
   process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN ||
   "";
+const RECENTLY_ORDERED_PRODUCT_LIMIT = 1000;
 
 export const RECENT_ORDER_PRODUCTS_QUERY = /* GraphQL */ `
   query RecentlyOrderedProducts {
@@ -156,7 +157,7 @@ if (adminToken) {
   try {
     const data = await queryWithAdminToken();
     payload = buildRecentlyOrderedProductsPayload(data?.orders, {
-      limit: 4,
+      limit: RECENTLY_ORDERED_PRODUCT_LIMIT,
       minPriceExclusive: 34,
     });
   } catch (error) {
@@ -170,7 +171,7 @@ if (adminToken) {
   try {
     const data = await queryWithShopifyCli();
     payload = buildRecentlyOrderedProductsPayload(data?.orders, {
-      limit: 4,
+      limit: RECENTLY_ORDERED_PRODUCT_LIMIT,
       minPriceExclusive: 34,
     });
   } catch (error) {

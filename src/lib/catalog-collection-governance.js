@@ -1,8 +1,20 @@
 import { CATALOG_COLLECTION_PLAN } from "./catalog-collection-plan.js";
 import { normalizeCatalogText } from "./catalog-taxonomy.js";
 
-export const COLLECTION_GOVERNANCE_VERSION = "2026-08-05.1";
+export const COLLECTION_GOVERNANCE_VERSION = "2026-08-10.3";
 export const COLLECTION_TAG_PREFIX = "salt:collection:";
+
+// These collections were merged into their canonical targets. Keep the map so
+// legacy product tags and navigation references resolve without recreating the
+// retired collections.
+export const RETIRED_COLLECTION_HANDLE_MAP = Object.freeze({
+  "caregiver-essentials": "health-wellness",
+  "mobility-support": "health-wellness",
+  "posture-support": "health-wellness",
+  "camping-gear": "travel-outdoor",
+  "holiday-gifts": "gifts",
+  "viral-tiktok-products": "trending-finds",
+});
 
 const PRICE_COLLECTIONS = [
   { handle: "under-25", title: "Under $25", maximumExclusive: 25 },
@@ -42,6 +54,7 @@ function spec(handle, title, match = {}, legacyHandles = []) {
 }
 
 const EXTRA_SEMANTIC_SPECS = [
+  spec("classification-review", "Classification Review", { dynamic: "classification-review" }),
   spec("best-sellers", "Best Sellers", { dynamic: "best-sellers" }, ["appplaza-best-sellers"]),
   spec("artificial-aquarium-decor-plants", "Artificial Aquarium Decor Plants", { subcategories: ["aquarium-supplies"], textAny: ["artificial aquarium plant", "aquarium decor plant"] }),
   spec("back-to-school", "Back to School", { categories: ["office-school-supplies"], targets: ["back-to-school"] }),
@@ -61,12 +74,11 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("dog-supplies", "Dog Supplies", { subcategories: ["dog-supplies"], textAll: ["dog"] }),
   spec("dramatic-lashes", "Dramatic Lashes", { textAny: ["false eyelash", "eyelashes", "lash extension", "lash cluster"] }),
   spec("earbuds-and-cases", "Earbuds & Cases", { subcategories: ["earbuds-earphones", "earbuds-cases"] }),
-  spec("electronic-accessories", "Electronic Accessories", { departments: ["electronic-accessories"] }),
   spec("eye-beauty-collection", "Eye Beauty Collection", { subcategories: ["eye-makeup"], targets: ["eye-beauty-collection"] }),
   spec("face-creams-moisturizers", "Face Creams & Moisturizers", { textAny: ["face cream", "moisturizer", "moisturiser", "facial cream"], targets: ["face-creams-moisturizers"] }),
   spec("garden-tools", "Garden & Tools", { subcategories: ["garden-tools", "tools-hardware", "home-repair-tools"], targets: ["garden-tools"] }),
   spec("general-merchandise", "General Merchandise", { departments: ["general"] }),
-  spec("gifts", "Gifts Collection", { departments: ["gifts"], targets: ["gifts"], textAny: ["gift box", "gift set", "birthday gift", "christmas gift", "housewarming gift"] }),
+  spec("gifts", "Gifts Collection", { dynamic: "gifts", departments: ["gifts"], targets: ["gifts"], textAny: ["gift box", "gift set", "birthday gift", "christmas gift", "housewarming gift"] }),
   spec("gifts-for-dad", "Gifts for Dad", { dynamic: "gifts-for-dad" }),
   spec("gifts-for-mom", "Gifts for Mom", { dynamic: "gifts-for-mom" }),
   spec("gifts-for-seniors", "Gifts for Seniors", { dynamic: "gifts-for-seniors" }),
@@ -112,6 +124,11 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("wall-lights", "Wall Lights", { textAny: ["wall light", "wall lamp", "wall sconce"], targets: ["wall-lights"] }),
 ];
 
+const MERGED_COLLECTION_TAGS = Object.freeze({
+  gifts: Object.freeze(["gifts", "holiday-gifts"]),
+  "trending-finds": Object.freeze(["trending-finds", "viral-tiktok-products"]),
+});
+
 function buildPlanSpecs() {
   return CATALOG_COLLECTION_PLAN.map((entry) => spec(
     entry.handle,
@@ -125,6 +142,7 @@ function buildPlanSpecs() {
 
 const semanticByHandle = new Map();
 for (const entry of [...buildPlanSpecs(), ...EXTRA_SEMANTIC_SPECS]) {
+  if (RETIRED_COLLECTION_HANDLE_MAP[entry.handle]) continue;
   semanticByHandle.set(entry.handle, entry);
 }
 
@@ -142,14 +160,24 @@ export function normalizeCollectionHandle(value) {
   return normalizeCatalogText(value).replace(/\s+/g, "-");
 }
 
+export function canonicalCollectionHandle(value) {
+  const normalized = normalizeCollectionHandle(value);
+  return RETIRED_COLLECTION_HANDLE_MAP[normalized] || normalized;
+}
+
 export function collectionTagForHandle(handle) {
-  const normalized = normalizeCollectionHandle(handle);
+  const normalized = canonicalCollectionHandle(handle);
   if (!normalized) throw new Error("Collection handle is required for a controlled tag.");
-  return `${COLLECTION_TAG_PREFIX}${normalized}`;
+  return normalized;
 }
 
 export function isManagedCollectionTag(tag) {
-  return normalizeCatalogText(tag).startsWith(COLLECTION_TAG_PREFIX);
+  const normalized = normalizeCollectionHandle(tag);
+  return SEMANTIC_COLLECTION_POLICIES.some((policy) => normalizeCollectionHandle(policy.tag) === normalized);
+}
+
+export function semanticCollectionRuleTags(policy) {
+  return [...(MERGED_COLLECTION_TAGS[policy?.handle] || [policy?.tag]).filter(Boolean)];
 }
 
 function normalizeSet(values) {
@@ -193,9 +221,11 @@ export function productMatchesSemanticCollection(policy, product, knowledge, dyn
   const proposedTags = normalizeSet(knowledge?.proposedTags);
   if ((match.taxonomyTags || []).some((tag) => proposedTags.has(normalizeCatalogText(tag)))) return true;
 
-  const targets = normalizeSet(knowledge?.collectionTargets);
+  const targets = new Set(
+    [...normalizeSet(knowledge?.collectionTargets)].map(canonicalCollectionHandle),
+  );
   if ([policy.handle, ...policy.legacyHandles, ...(match.targets || [])]
-    .map(normalizeCollectionHandle)
+    .map(canonicalCollectionHandle)
     .some((handle) => targets.has(handle))) return true;
 
   if ((match.departments || []).map(normalizeCatalogText).includes(normalizeCatalogText(knowledge?.departmentId))) return true;
@@ -237,7 +267,7 @@ export function productMatchesPricePolicy(product, policy) {
 }
 
 export function resolveCollectionPolicyByLiveHandle(handle) {
-  const normalized = normalizeCollectionHandle(handle);
+  const normalized = canonicalCollectionHandle(handle);
   return COLLECTION_GOVERNANCE_POLICIES.find((policy) =>
     policy.handle === normalized || policy.legacyHandles?.includes(normalized),
   ) || null;
@@ -281,15 +311,16 @@ export function buildPriceCollectionSource(policy) {
 }
 
 export function buildSemanticCollectionSource(policy) {
+  const ruleTags = semanticCollectionRuleTags(policy);
   return {
     title: `SALT collection policy ${COLLECTION_GOVERNANCE_VERSION}`,
     description: `Controlled exact membership for ${policy.title}; source tag ${policy.tag}.`,
     targetType: "PRODUCTS",
     inclusion: {
-      matchType: "ALL",
-      conditions: [{
-        productTag: { relation: "TAGGED_WITH", values: [policy.tag], matchType: "ANY" },
-      }],
+      matchType: ruleTags.length > 1 ? "ANY" : "ALL",
+      conditions: ruleTags.map((tag) => ({
+        productTag: { relation: "TAGGED_WITH", values: [tag], matchType: "ANY" },
+      })),
     },
   };
 }

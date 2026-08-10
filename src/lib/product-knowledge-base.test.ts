@@ -64,17 +64,17 @@ describe("product knowledge base", () => {
       }),
     ]);
     expect(lunchBox.proposedTags).toEqual(expect.arrayContaining([
-      "salt:department:home-decor",
-      "salt:category:kitchen-cookware",
-      "salt:department:camping-travel",
-      "salt:category:camping-essentials",
+      "home-decor",
+      "kitchen-cookware",
+      "camping-travel",
+      "camping-essentials",
     ]));
     expect(lunchBox.searchTerms).toContain("camping");
 
     expect(fitnessShaker.canonicalType).toBe("Fitness Shaker Bottle");
     expect(fitnessShaker.proposedTags).toEqual(expect.arrayContaining([
-      "salt:category:kitchen-cookware",
-      "salt:category:fitness-equipment",
+      "kitchen-cookware",
+      "fitness-equipment",
     ]));
   });
 
@@ -163,7 +163,7 @@ describe("product knowledge base", () => {
     expect(phoneCase.subcategoryId).toBe("phone-cases");
     expect(phoneHolder.subcategoryId).toBe("phone-holders-mounts");
     expect(penDrive.subcategoryId).toBe("usb-flash-drives");
-    expect(penDrive.proposedTags).toContain("salt:compatibility:type-c");
+    expect(penDrive.proposedTags).toContain("type-c");
   });
 
   it("trusts explicit product language over conflicting supplier tags", () => {
@@ -205,12 +205,12 @@ describe("product knowledge base", () => {
     });
 
     expect(wiredMouse.attributes.features || []).not.toEqual(expect.arrayContaining(["wireless", "bluetooth"]));
-    expect(wiredMouse.proposedTags).not.toContain("salt:feature:wireless");
-    expect(wiredMouse.proposedTags).not.toContain("salt:feature:bluetooth");
+    expect(wiredMouse.proposedTags).not.toContain("wireless");
+    expect(wiredMouse.proposedTags).not.toContain("bluetooth");
     expect(wirelessMouse.attributes.features).toEqual(expect.arrayContaining(["wireless", "bluetooth"]));
     expect(wirelessMouse.proposedTags).toEqual(expect.arrayContaining([
-      "salt:feature:wireless",
-      "salt:feature:bluetooth",
+      "wireless",
+      "bluetooth",
     ]));
   });
 

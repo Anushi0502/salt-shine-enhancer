@@ -1887,6 +1887,8 @@ async function main() {
     diaperTypeOptions: diaperDiscovery.options,
     disclosureOptions: disclosureDiscovery.options,
     enforceProductSpecificity: true,
+    // Shopify constrains its discovery-owned definition to an internal owner
+    // subtype; keep the source-owned fallback authoritative instead.
     allowShopifySearchBoostWrite: false,
     allowShopifyComplementaryWrite: false,
   });

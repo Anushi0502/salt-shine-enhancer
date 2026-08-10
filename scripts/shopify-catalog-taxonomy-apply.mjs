@@ -18,6 +18,7 @@ import {
   classifyCatalogTaxonomyByRuleId,
 } from "../src/lib/catalog-taxonomy.js";
 import { buildProductKnowledgeFromTaxonomy } from "../src/lib/product-knowledge-base.js";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -738,6 +739,9 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
   }
 
   const retryInfo = [];
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const [catalog, liveProducts] = await Promise.all([
     readProductCatalogPayload(inputDir),
     fetchActiveProducts(retryInfo),
@@ -771,11 +775,12 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
       source: `catalog-integrity-${frozen.source || "verified"}`,
       reason: "Frozen full-catalog collection-integrity classification",
     });
-    return [handle, buildProductKnowledgeFromTaxonomy(product, taxonomy)];
+    return [handle, buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel })];
   }));
   const plan = buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
     mutateTags: false,
     knowledgeByHandle,
+    knowledgeModel,
   });
   const manifest = createManifest({ mode, plan, output });
   manifest.taxonomyVersion = CATALOG_TAXONOMY_VERSION;

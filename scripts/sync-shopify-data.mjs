@@ -39,12 +39,14 @@ const blogHandles = Array.from(
 );
 const outDir = resolve(process.cwd(), "public", "data");
 const requestSpacingMs = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS ?? 250);
+const requestTimeoutMs = Number(process.env.SALT_SHOPIFY_REQUEST_TIMEOUT_MS ?? 45_000);
 const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS ?? 8);
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const storefrontBoundaryMode = String(process.env.SALT_SHOPIFY_STOREFRONT_BOUNDARY || "live").trim().toLowerCase();
 const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
+const syncActiveCatalog = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SYNC_ACTIVE_CATALOG || "");
 const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
@@ -110,7 +112,25 @@ async function runSerializedRequest(task) {
 }
 
 async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
-  const response = await runSerializedRequest(() => fetch(url));
+  let response;
+  try {
+    response = await runSerializedRequest(() => fetch(url, {
+      signal: AbortSignal.timeout(requestTimeoutMs),
+    }));
+  } catch (error) {
+    if (attempt < maxAttempts - 1) {
+      const backoffDelay = Math.min(
+        maxRetryDelayMs,
+        publicRetryBaseDelayMs * 2 ** attempt + Math.floor(Math.random() * 500),
+      );
+      process.stdout.write(
+        `Network failure on ${url}; retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(backoffDelay);
+      return fetchJsonUrl(url, { attempt: attempt + 1, maxAttempts });
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt < maxAttempts - 1) {
@@ -197,15 +217,32 @@ async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxReq
   }
 
   const url = buildAdminUrl(pathOrUrl);
-  const response = await runSerializedRequest(() =>
-    fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": adminAccessToken,
-      },
-    }),
-  );
+  let response;
+  try {
+    response = await runSerializedRequest(() =>
+      fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": adminAccessToken,
+        },
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      }),
+    );
+  } catch (error) {
+    if (attempt < maxAttempts - 1) {
+      const delayMs = Math.min(
+        maxRetryDelayMs,
+        adminRetryBaseDelayMs * 2 ** attempt + Math.floor(Math.random() * 500),
+      );
+      process.stdout.write(
+        `Admin network failure on ${url}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+      return fetchAdminResponse(pathOrUrl, { attempt: attempt + 1, maxAttempts });
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     if (response.status === 429 && attempt < maxAttempts - 1) {
@@ -214,7 +251,7 @@ async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxReq
         `Rate limited on ${url}; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
       );
       await sleep(delayMs);
-      return fetchAdminJson(pathOrUrl, { attempt: attempt + 1, maxAttempts });
+      return fetchAdminResponse(pathOrUrl, { attempt: attempt + 1, maxAttempts });
     }
 
     throw new Error(`Admin request failed (${response.status}) for ${url}`);
@@ -233,17 +270,34 @@ async function fetchAdminGraphQL(query, variables = {}, { attempt = 0, maxAttemp
     throw new Error("Shopify Admin API token not configured");
   }
 
-  const response = await runSerializedRequest(() =>
-    fetch(adminGraphqlUrl, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": adminAccessToken,
-      },
-      body: JSON.stringify({ query, variables }),
-    }),
-  );
+  let response;
+  try {
+    response = await runSerializedRequest(() =>
+      fetch(adminGraphqlUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": adminAccessToken,
+        },
+        body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      }),
+    );
+  } catch (error) {
+    if (attempt < maxAttempts - 1) {
+      const delayMs = Math.min(
+        maxRetryDelayMs,
+        adminRetryBaseDelayMs * 2 ** attempt + Math.floor(Math.random() * 500),
+      );
+      process.stdout.write(
+        `Admin GraphQL network failure; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${maxAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+      return fetchAdminGraphQL(query, variables, { attempt: attempt + 1, maxAttempts });
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     if ((response.status === 429 || (response.status >= 500 && response.status < 600)) && attempt < maxAttempts - 1) {
@@ -313,6 +367,7 @@ async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = 
     await execFileAsync("shopify", args, {
       env: getShopifyCliEnv(),
       maxBuffer: 10 * 1024 * 1024,
+      timeout: requestTimeoutMs,
     });
 
     const rawOutput = await readFile(outputFile, "utf8");
@@ -1639,6 +1694,94 @@ async function fetchPublishedStorefrontProducts() {
   return publishedProducts;
 }
 
+const ACTIVE_CATALOG_PRODUCTS_QUERY = /* GraphQL */ `
+  query ActiveCatalogProducts($first: Int!, $after: String) {
+    products(first: $first, after: $after, query: "status:active") {
+      nodes {
+        id
+        legacyResourceId
+        handle
+        title
+        descriptionHtml
+        vendor
+        productType
+        status
+        tags
+        createdAt
+        updatedAt
+        publishedAt
+        variants(first: 250) {
+          nodes {
+            id
+            legacyResourceId
+            title
+            sku
+            price
+            compareAtPrice
+            inventoryQuantity
+          }
+        }
+        resourcePublications(first: 100) {
+          nodes { isPublished channel { name } }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+function normalizeActiveCatalogProduct(node) {
+  const variants = Array.isArray(node?.variants?.nodes) ? node.variants.nodes : [];
+  return {
+    id: Number(node?.legacyResourceId) || node?.id || 0,
+    legacyResourceId: String(node?.legacyResourceId || ""),
+    handle: node?.handle || "",
+    title: node?.title || "",
+    body_html: node?.descriptionHtml || "",
+    descriptionHtml: node?.descriptionHtml || "",
+    vendor: node?.vendor || "",
+    product_type: node?.productType || "",
+    productType: node?.productType || "",
+    status: node?.status || "ACTIVE",
+    tags: Array.isArray(node?.tags) ? node.tags : [],
+    created_at: node?.createdAt || "",
+    updated_at: node?.updatedAt || "",
+    published_at: node?.publishedAt || null,
+    resourcePublications: node?.resourcePublications || { nodes: [] },
+    variants: variants.map((variant) => ({
+      id: Number(variant?.legacyResourceId) || variant?.id || 0,
+      legacyResourceId: String(variant?.legacyResourceId || ""),
+      title: variant?.title || "",
+      sku: variant?.sku || "",
+      price: variant?.price || "",
+      compare_at_price: variant?.compareAtPrice || null,
+      inventory_quantity: variant?.inventoryQuantity ?? null,
+    })),
+  };
+}
+
+async function fetchActiveCatalogProducts() {
+  const products = [];
+  let after = null;
+  let page = 0;
+  while (true) {
+    const payload = adminAccessToken
+      ? await fetchAdminGraphQL(ACTIVE_CATALOG_PRODUCTS_QUERY, { first: limit, after })
+      : await runShopifyStoreGraphQL(ACTIVE_CATALOG_PRODUCTS_QUERY, { first: limit, after });
+    const connection = payload?.products;
+    if (!connection) throw new Error("Active catalog GraphQL query returned no products connection");
+    const nodes = Array.isArray(connection.nodes) ? connection.nodes : [];
+    products.push(...nodes.map(normalizeActiveCatalogProduct));
+    page += 1;
+    process.stdout.write(`Fetched active catalog page ${page}: ${nodes.length} products\n`);
+    if (!connection.pageInfo?.hasNextPage) break;
+    if (!connection.pageInfo?.endCursor) throw new Error("Active catalog page hasNextPage without an end cursor");
+    after = connection.pageInfo.endCursor;
+  }
+  process.stdout.write(`Using full active catalog boundary with ${products.length} products\n`);
+  return products;
+}
+
 async function fetchCollectionsFromCachedFile() {
   const raw = await readFile(collectionsPath, "utf8");
   const payload = JSON.parse(raw);
@@ -1691,24 +1834,26 @@ async function fetchBlogPostsFromCachedFile() {
 
 async function fetchProductsForSync() {
   try {
-    let products = adminAccessToken
-      ? await fetchAdminPaged("products", "/products.json?status=active&published_status=published")
-      : await fetchPaged("products", "/products.json");
+    let products = syncActiveCatalog
+      ? await fetchActiveCatalogProducts()
+      : adminAccessToken
+        ? await fetchAdminPaged("products", "/products.json?status=active&published_status=published")
+        : await fetchPaged("products", "/products.json");
 
     if (products.length) {
       const publishedProducts = filterOnlineStoreProducts(products);
-      if (!publishedProducts.length) {
+      if (!syncActiveCatalog && !publishedProducts.length) {
         throw new Error("Shopify product feed returned no active products published to Online Store");
       }
 
-      if (publishedProducts.length !== products.length) {
+      if (!syncActiveCatalog && publishedProducts.length !== products.length) {
         process.stdout.write(
           `Filtered ${products.length - publishedProducts.length} products excluded from Online Store\n`,
         );
         products = publishedProducts;
       }
 
-      if (adminAccessToken) {
+      if (adminAccessToken && !syncActiveCatalog) {
         products = await mergeAdminProductsWithStorefrontFeed(products);
       }
 

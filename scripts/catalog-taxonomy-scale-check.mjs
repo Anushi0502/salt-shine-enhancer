@@ -6,8 +6,8 @@ import {
 } from "../src/lib/catalog-taxonomy.js";
 import { buildProductKnowledgeFromTaxonomy } from "../src/lib/product-knowledge-base.js";
 
-const requestedTotal = Number.parseInt(process.env.SALT_TAXONOMY_SCALE_PRODUCTS || "2000000", 10);
-const total = Number.isFinite(requestedTotal) && requestedTotal > 0 ? requestedTotal : 2_000_000;
+const requestedTotal = Number.parseInt(process.env.SALT_TAXONOMY_SCALE_PRODUCTS || "128000000", 10);
+const total = Number.isFinite(requestedTotal) && requestedTotal > 0 ? requestedTotal : 128_000_000;
 const startedAt = performance.now();
 
 function representativeFor(definition) {

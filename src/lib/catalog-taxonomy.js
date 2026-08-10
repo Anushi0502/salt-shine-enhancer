@@ -1,4 +1,5 @@
 import { getCatalogTaxonomyOverride } from "./catalog-taxonomy-overrides.js";
+import { simpleCatalogTag } from "./catalog-simple-tags.js";
 
 export const CATALOG_TAXONOMY_VERSION = "2026-08-06.1";
 export const CATALOG_TAG_PREFIX = "salt";
@@ -1541,17 +1542,19 @@ const TAXONOMY_RULES = Object.freeze([
     canonicalType: "Hat",
     terms: ["hat", "hats", "cap", "caps", "beanie", "visor", "bucket hat", "baseball cap"],
     aliases: ["cap", "beanie", "sun hat"],
-    collectionTargets: [],
+    collectionTargets: ["hats"],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories > Hats",
   }),
   rule("scarves", {
-    priority: 82,
+    priority: 92,
     familyId: "jewelry-accessories",
     audienceCategory: "accessories",
     subcategoryId: "scarves-wraps",
     subcategoryLabel: "Scarves & Wraps",
     canonicalType: "Scarf",
     terms: ["scarf", "scarves", "shawl", "wrap", "hijab", "headscarf"],
+    primaryTerms: ["scarf", "shawl", "wrap", "hijab", "headscarf"],
+    excludes: ["corset", "lingerie", "underwear", "bra", "skirt", "garter"],
     aliases: ["shawl", "head scarf", "fashion scarf"],
     collectionTargets: [],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories > Scarves",
@@ -1647,7 +1650,7 @@ const TAXONOMY_RULES = Object.freeze([
     shopifyCategory: "Apparel & Accessories > Clothing > Shirts & Tops",
   }),
   rule("dresses", {
-    priority: 86,
+    priority: 90,
     familyId: "apparel",
     audienceCategory: "fashion",
     subcategoryId: "dresses",
@@ -1797,6 +1800,7 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryLabel: "Face Makeup",
     canonicalType: "Face Makeup",
     terms: ["foundation", "concealer", "blush", "highlighter", "face powder", "setting powder", "makeup palette", "contour"],
+    excludes: ["dress", "dresses", "gown", "evening wear", "party wear"],
     aliases: ["foundation", "concealer", "blush", "face powder"],
     collectionTargets: ["blush-glow", "beauty-makeup-essentials"],
     shopifyCategory: "Health & Beauty > Personal Care > Cosmetics > Face Makeup",
@@ -2035,7 +2039,7 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryLabel: "Ties & Formal Accessories",
     canonicalType: "Tie",
     terms: ["necktie", "neckties", "bow tie", "bowtie", "tie clip", "tie clips", "skinny tie", "silk tie", "formal tie", "mens tie", "men tie", "pilot tie", "zipper tie", "clip tie", "tie", "ties"],
-    excludes: ["tie dye", "tie dyed", "cable tie", "zip tie", "twist tie", "tie waist jeans", "flare jeans", "bell bottom jeans"],
+    excludes: ["tie dye", "tie dyed", "cable tie", "zip tie", "twist tie", "tie waist", "tie waist jeans", "flare jeans", "bell bottom jeans"],
     aliases: ["formal necktie", "bow tie", "tie accessory"],
     collectionTargets: [],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories",
@@ -2962,8 +2966,8 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryId: "travel-organizers",
     subcategoryLabel: "Travel Organizers",
     canonicalType: "Travel Organizer",
-    terms: ["travel organizer", "packing organizer", "packing cube", "luggage organizer", "travel pouch", "toiletry bag"],
-    aliases: ["packing cube", "travel pouch", "luggage organizer"],
+    terms: ["travel organizer", "packing organizer", "packing cube", "luggage organizer", "travel pouch", "toiletry bag", "luggage tag", "luggage label", "baggage tag", "suitcase tag", "luggage cover", "suitcase cover", "luggage strap", "luggage buckle", "buckle strap", "trolley strap", "luggage buckle strap", "anti loss luggage strap", "strap tag"],
+    aliases: ["packing cube", "travel pouch", "luggage organizer", "luggage tag holder", "suitcase cover", "luggage strap", "trolley buckle strap"],
     collectionTargets: ["travel-organizers"],
     shopifyCategory: "Luggage & Bags > Luggage Accessories",
   }),
@@ -4210,7 +4214,7 @@ const TAXONOMY_RULES = Object.freeze([
     canonicalType: "Flat Cap",
     terms: ["flat cap", "flat caps", "fishing flat cap", "camping fishing cap", "casquette gorras"],
     aliases: ["retro flat cap", "summer fishing hat", "breathable flat cap"],
-    collectionTargets: [],
+    collectionTargets: ["hats"],
     relatedCategories: [{
       departmentId: "camping-travel",
       departmentLabel: "Camping & Travel Essentials",
@@ -4293,6 +4297,85 @@ const TAXONOMY_RULES = Object.freeze([
     collectionTargets: ["car-accessories"],
     shopifyCategory: "Vehicles & Parts > Vehicle Parts & Accessories",
   }),
+  rule("table-linens", {
+    priority: 101,
+    familyId: "home-storage-decor",
+    departmentId: "home-decor",
+    categoryId: "bedsheets-handlooms-towels",
+    categoryLabel: "Bedsheets, Handlooms & Towels",
+    subcategoryId: "table-linens",
+    subcategoryLabel: "Table Linens",
+    canonicalType: "Table Linen",
+    terms: ["tablecloth", "table cloth", "table cover", "table runner", "dining table cover", "dining tablecloth"],
+    excludes: ["food cover", "dish cover", "car table cover", "table cover for car", "party table cover", "birthday table cover", "wedding table cover", "wedding tablecloth", "event table cover"],
+    aliases: ["table cloth", "dining table linen", "table runner", "table cover"],
+    collectionTargets: ["bedsheets-handlooms-towels", "dining-essentials"],
+    shopifyCategory: "Home & Garden > Linens & Bedding > Table Linens",
+  }),
+  rule("food-covers", {
+    priority: 103,
+    familyId: "home-storage-decor",
+    departmentId: "home-decor",
+    categoryId: "kitchen-cookware",
+    categoryLabel: "Kitchen & Cookware",
+    subcategoryId: "food-storage-containers",
+    subcategoryLabel: "Food Storage Containers",
+    canonicalType: "Food Cover",
+    terms: ["food cover", "food covers", "dish cover", "dish covers", "fly cover", "mesh food cover", "food net cover", "table food cover"],
+    requires: [["food", "dish", "flies", "fly"], ["cover", "covers", "net", "mesh"]],
+    aliases: ["mesh dish cover", "food protection cover", "fly-proof food cover"],
+    collectionTargets: ["dining-essentials", "cookware"],
+    shopifyCategory: "Home & Garden > Kitchen & Dining > Food Storage",
+  }),
+  rule("creator-photography-backdrops", {
+    priority: 104,
+    familyId: "electronics",
+    departmentId: "electronic-accessories",
+    categoryId: "camera-content-accessories",
+    categoryLabel: "Camera & Content Accessories",
+    subcategoryId: "photography-accessories",
+    subcategoryLabel: "Photography Accessories",
+    canonicalType: "Photography Backdrop",
+    terms: ["green screen", "chromakey", "chroma key", "photo studio backdrop", "photography backdrop", "photography background", "photo backdrop", "backdrop board", "photo background", "studio background"],
+    requires: [["green screen", "chromakey", "chroma key", "photo studio", "photography", "photo backdrop", "photo background", "studio background", "backdrop board"], ["backdrop", "background", "screen", "board"]],
+    excludes: ["party", "birthday", "wedding", "baby shower", "bridal shower", "photo booth", "event", "christmas", "graduation", "carnival", "baby"],
+    aliases: ["green screen backdrop", "photo studio background", "chromakey backdrop"],
+    collectionTargets: ["creator-essentials"],
+    shopifyCategory: "Electronics > Camera & Optics > Camera Accessories",
+  }),
+  rule("school-photography-backdrops", {
+    priority: 108,
+    familyId: "stationery-office",
+    departmentId: "office-school",
+    categoryId: "office-school-supplies",
+    categoryLabel: "Office & School Supplies",
+    subcategoryId: "school-supplies",
+    subcategoryLabel: "School Supplies",
+    canonicalType: "School Photography Backdrop",
+    terms: ["back to school backdrop", "school photography backdrop", "classroom backdrop", "first day of school backdrop"],
+    requires: [["back to school", "school", "classroom"], ["backdrop", "background", "banner"]],
+    aliases: ["back to school photo backdrop", "classroom photo background"],
+    collectionTargets: ["office-school-supplies", "back-to-school"],
+    shopifyCategory: "Office Supplies > General Office Supplies > Presentation Supplies",
+  }),
+  rule("party-backdrops", {
+    priority: 105,
+    familyId: "home-storage-decor",
+    departmentId: "gifts",
+    categoryId: "gift-packaging",
+    categoryLabel: "Gift Packaging & Party Supplies",
+    subcategoryId: "party-decorations",
+    subcategoryLabel: "Party Decorations",
+    canonicalType: "Party Backdrop",
+    terms: ["party backdrop", "birthday backdrop", "wedding backdrop", "baby shower backdrop", "photo booth backdrop", "event backdrop", "backdrop cover", "backdrop curtain", "arch backdrop", "backdrop banner", "party banner", "sequin backdrop", "shimmer wall backdrop"],
+    requires: [
+      ["party", "birthday", "wedding", "baby shower", "bridal shower", "banquet", "event", "graduation", "farm", "cowboy", "christmas", "carnival", "photo booth", "photo zone", "back to school"],
+      ["backdrop", "background", "banner", "curtain", "arch cover", "streamer", "shimmer wall"],
+    ],
+    aliases: ["event backdrop", "birthday photo backdrop", "party decoration background"],
+    collectionTargets: ["gifts"],
+    shopifyCategory: "Arts & Entertainment > Party & Celebration > Party Supplies",
+  }),
   rule("party-table-covers", {
     priority: 96,
     familyId: "home-storage-decor",
@@ -4302,7 +4385,11 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryId: "party-decorations",
     subcategoryLabel: "Party Decorations",
     canonicalType: "Party Table Cover",
-    terms: ["dinosaur table cover", "birthday table cover", "cartoon tablecloth birthday", "party table cover", "birthday tablecloth"],
+    terms: ["dinosaur table cover", "birthday table cover", "cartoon tablecloth birthday", "party table cover", "birthday tablecloth", "wedding table cover", "wedding tablecloth", "event table cover", "party tablecloth"],
+    requires: [
+      ["party", "birthday", "wedding", "baby shower", "banquet", "event", "graduation", "farm", "cowboy", "christmas"],
+      ["tablecloth", "table cloth", "table cover", "table runner"],
+    ],
     aliases: ["kids birthday tablecloth", "party table decoration", "dinosaur birthday supplies"],
     collectionTargets: ["gifts"],
     shopifyCategory: "Arts & Entertainment > Party & Celebration > Party Supplies",
@@ -7794,25 +7881,25 @@ export function extractCatalogAttributes(product, existingEvidence = null) {
 
 function buildTaxonomyTags(classification) {
   const tags = [
-    `${CATALOG_TAG_PREFIX}:department:${classification.departmentId}`,
-    `${CATALOG_TAG_PREFIX}:category:${classification.categoryId}`,
-    `${CATALOG_TAG_PREFIX}:type:${classification.canonicalTypeId}`,
+    simpleCatalogTag("department", classification.departmentId),
+    simpleCatalogTag("category", classification.categoryId),
+    simpleCatalogTag("type", classification.canonicalTypeId),
   ];
   for (const related of classification.relatedCategories || []) {
-    tags.push(`${CATALOG_TAG_PREFIX}:department:${related.departmentId}`);
-    tags.push(`${CATALOG_TAG_PREFIX}:category:${related.categoryId}`);
+    tags.push(simpleCatalogTag("department", related.departmentId));
+    tags.push(simpleCatalogTag("category", related.categoryId));
   }
   if (["women", "men", "kids", "baby", "pets"].includes(classification.audience.id)) {
-    tags.push(`${CATALOG_TAG_PREFIX}:audience:${classification.audience.id}`);
+    tags.push(simpleCatalogTag("audience", classification.audience.id));
   }
   for (const feature of classification.attributes.features || []) {
     if (["wireless", "rechargeable", "portable", "waterproof", "foldable", "adjustable", "led", "smart", "bluetooth", "insulated"].includes(feature)) {
-      tags.push(`${CATALOG_TAG_PREFIX}:feature:${feature.replace(/\s+/g, "-")}`);
+      tags.push(simpleCatalogTag("feature", feature));
     }
   }
   for (const compatibility of classification.attributes.compatibility || []) {
     if (["iphone", "android", "airpods", "ipad", "laptop", "macbook", "samsung", "usb c", "type c"].includes(compatibility)) {
-      tags.push(`${CATALOG_TAG_PREFIX}:compatibility:${compatibility.replace(/\s+/g, "-")}`);
+      tags.push(simpleCatalogTag("compatibility", compatibility));
     }
   }
   return unique(tags).slice(0, 10);
@@ -8054,6 +8141,8 @@ export function getCatalogTaxonomyDefinitions() {
     terms: entry.terms,
     requires: entry.requires,
     excludes: entry.excludes,
+    primaryTerms: entry.primaryTerms,
+    priority: entry.priority,
     aliases: entry.aliases,
     collectionTargets: entry.collectionTargets,
     relatedCategories: entry.relatedCategories,

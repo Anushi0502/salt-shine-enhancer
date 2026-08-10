@@ -45,9 +45,9 @@ function buildSearchVariant(variants) {
   ];
 }
 
-function buildSearchProduct(product) {
+function buildSearchProduct(product, knowledgeModel = null) {
   const firstImage = buildSearchImage(product?.image || product?.images?.[0]);
-  const knowledge = classifyProductKnowledge(product);
+  const knowledge = classifyProductKnowledge(product, { knowledgeModel });
   const searchBoosts = Array.isArray(product?.customData?.searchProductBoosts)
     ? product.customData.searchProductBoosts.map((entry) => plainText(entry, 120)).filter(Boolean).slice(0, 20)
     : [];
@@ -73,16 +73,23 @@ function buildSearchProduct(product) {
   };
 }
 
-export function buildProductSearchPayload(productsPayload) {
+export function buildProductSearchPayload(productsPayload, { knowledgeModel = null } = {}) {
   const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
   const searchProducts = products
-    .map(buildSearchProduct)
+    .map((product) => buildSearchProduct(product, knowledgeModel))
     .filter((product) => product.id && product.handle && product.title);
 
   return {
     generatedAt: productsPayload?.generatedAt || new Date().toISOString(),
     source: productsPayload?.source || "/data/products.json",
     total: searchProducts.length,
+    knowledgeModel: knowledgeModel
+      ? {
+          modelVersion: knowledgeModel.modelVersion,
+          trainingRecords: knowledgeModel.trainingRecords,
+          algorithm: knowledgeModel.algorithm,
+        }
+      : null,
     products: searchProducts,
   };
 }

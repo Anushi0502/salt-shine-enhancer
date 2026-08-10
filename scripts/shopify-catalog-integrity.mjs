@@ -8,18 +8,26 @@ import { promisify } from "node:util";
 import {
   ALL_PRODUCTS_COLLECTION_POLICY,
   COLLECTION_GOVERNANCE_VERSION,
-  COLLECTION_TAG_PREFIX,
   PRICE_COLLECTION_POLICIES,
+  RETIRED_COLLECTION_HANDLE_MAP,
   SEMANTIC_COLLECTION_POLICIES,
   assertCompleteCollectionGovernance,
   buildPriceCollectionSource,
   buildProductCollectionTags,
+  canonicalCollectionHandle,
   buildSemanticCollectionSource,
   collectionTagForHandle,
   normalizeCollectionHandle,
   productMatchesPricePolicy,
   resolveCollectionPolicyByLiveHandle,
+  isManagedCollectionTag,
+  semanticCollectionRuleTags,
 } from "../src/lib/catalog-collection-governance.js";
+import {
+  isLegacySaltTag,
+  isSimpleClassificationTag,
+  simpleCatalogTag,
+} from "../src/lib/catalog-simple-tags.js";
 import {
   classifyCatalogTaxonomyByRuleId,
   classifyCatalogTaxonomyWithoutOverrides,
@@ -44,6 +52,7 @@ import {
   normalizeText,
 } from "./shopify-admin-graphql-client.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const execFileAsync = promisify(execFile);
@@ -61,17 +70,7 @@ const classificationConcurrency = Math.max(
 );
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "catalog-integrity" });
 
-const MANAGED_TAG_PREFIXES = Object.freeze([
-  "salt:department:",
-  "salt:category:",
-  "salt:type:",
-  "salt:audience:",
-  "salt:feature:",
-  "salt:compatibility:",
-  COLLECTION_TAG_PREFIX,
-  "salt:classification-rule:",
-  "salt:classification-source:",
-]);
+const MANAGED_TAG_PREFIXES = Object.freeze(["salt:"]);
 
 const PRODUCTS_QUERY = /* GraphQL */ `
   query CatalogIntegrityProducts($first: Int!, $after: String, $query: String!) {
@@ -287,6 +286,7 @@ function parseArgs(argv) {
     skipVision: false,
     useLiveCheckpoint: false,
     reclassify: false,
+    deterministicOnly: false,
     batchSize: defaultCatalogBatchSize,
   };
   for (let index = 2; index < argv.length; index += 1) {
@@ -298,6 +298,7 @@ function parseArgs(argv) {
     else if (token === "--skip-vision") args.skipVision = true;
     else if (token === "--use-live-checkpoint") args.useLiveCheckpoint = true;
     else if (token === "--reclassify") args.reclassify = true;
+    else if (token === "--deterministic-only") args.deterministicOnly = true;
     else if (token === "--batch-size") {
       const batchSize = Number(next);
       if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1000) {
@@ -343,9 +344,13 @@ function uniqueTags(values) {
   return [...byNormalized.values()];
 }
 
-function isManagedTag(tag) {
+function isManagedTag(tag, managedTagUniverse = new Set()) {
   const normalized = normalizeTag(tag);
-  return MANAGED_TAG_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  return MANAGED_TAG_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    isLegacySaltTag(normalized) ||
+    isSimpleClassificationTag(normalized) ||
+    isManagedCollectionTag(normalized) ||
+    managedTagUniverse.has(normalized);
 }
 
 function isOnlineStorePublished(collection) {
@@ -411,10 +416,10 @@ async function verifyCollectionApproval() {
   if (approval?.scope?.managedCollections !== "create or repair only canonical collections in the checked-in full-catalog governance registry") {
     throw new Error("Collection approval does not restrict writes to the checked-in governance registry.");
   }
-  if (approval?.scope?.controlledRuleTags !== "exactly one salt:collection:<handle> tag condition per semantic collection") {
+  if (approval?.scope?.controlledRuleTags !== "exactly one canonical simple collection tag condition per semantic collection, except approved union rules for gifts and trending-finds") {
     throw new Error("Collection approval does not require exact semantic collection tag conditions.");
   }
-  if (approval?.scope?.existingTags !== "preserve unmanaged tags exactly; exact-replace checked-in salt managed namespaces") {
+  if (approval?.scope?.existingTags !== "preserve unmanaged tags exactly; exact-replace checked-in canonical managed tags") {
     throw new Error("Collection approval does not preserve unmanaged product tags.");
   }
   if (approval?.scope?.legacyMergesOrArchives !== "not approved") throw new Error("Collection merges or archives are not forbidden by approval.");
@@ -703,8 +708,8 @@ async function mapWithConcurrency(items, concurrency, mapper, progressLabel = "P
   return results;
 }
 
-function resolveDeterministicKnowledge(product) {
-  const regularKnowledge = classifyProductKnowledge(product);
+function resolveDeterministicKnowledge(product, knowledgeModel = null) {
+  const regularKnowledge = classifyProductKnowledge(product, { knowledgeModel });
   if (!regularKnowledge.reviewRequired) {
     return {
       knowledge: regularKnowledge,
@@ -714,12 +719,14 @@ function resolveDeterministicKnowledge(product) {
   return null;
 }
 
-function resolveExistingVisionKnowledge(product) {
+function resolveExistingVisionKnowledge(product, knowledgeModel = null) {
   const tags = asArray(product?.tags).map((tag) => normalizeTag(tag));
-  const source = tags.find((tag) => tag.startsWith("salt:classification-source:"));
-  if (source !== "salt:classification-source:vision") return null;
-  const ruleTag = tags.find((tag) => tag.startsWith("salt:classification-rule:"));
-  const ruleId = ruleTag?.slice("salt:classification-rule:".length) || "";
+  const source = tags.find((tag) => tag === "classification-source-vision" || tag === "salt:classification-source:vision");
+  if (!source) return null;
+  const ruleTag = tags.find((tag) => tag.startsWith("classification-rule-") || tag.startsWith("salt:classification-rule:"));
+  const ruleId = ruleTag?.startsWith("classification-rule-")
+    ? ruleTag.slice("classification-rule-".length)
+    : ruleTag?.slice("salt:classification-rule:".length) || "";
   if (!ruleId || !TAXONOMY_DEFINITIONS.some((definition) => definition.id === ruleId)) return null;
 
   // A handful of legacy listings contain only an anime franchise name in the
@@ -731,19 +738,27 @@ function resolveExistingVisionKnowledge(product) {
     reason: "Preserved an existing verified vision classification because the current title and handle contain no physical product noun.",
   });
   return {
-    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
+    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
     source: "existing-vision",
     existingVision: true,
   };
 }
 
-async function resolveKnowledge(product, { skipVision }) {
+async function resolveKnowledge(product, { skipVision, deterministicOnly, knowledgeModel = null }) {
   const directTaxonomy = classifyCatalogTaxonomyWithoutOverrides(product);
-  const deterministic = resolveDeterministicKnowledge(product);
+  const deterministic = resolveDeterministicKnowledge(product, knowledgeModel);
   if (deterministic) return deterministic;
 
-  const existingVision = resolveExistingVisionKnowledge(product);
+  const existingVision = resolveExistingVisionKnowledge(product, knowledgeModel);
   if (existingVision) return existingVision;
+
+  if (deterministicOnly) {
+    return {
+      knowledge: classifyProductKnowledge(product, { knowledgeModel }),
+      source: "review",
+      reviewReasons: ["Deterministic taxonomy did not reach a safe classification."],
+    };
+  }
 
   let vision = null;
   if (!skipVision) {
@@ -759,7 +774,7 @@ async function resolveKnowledge(product, { skipVision }) {
     reason: "Highest-scoring taxonomy rule published only because unresolved classification would otherwise block the release.",
   });
   return {
-    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
+    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
     source: "guess",
     guessedRuleId: bestRule,
     imageUrl: vision?.imageUrl || null,
@@ -799,18 +814,21 @@ async function buildDynamicAssignments(products) {
     if (staffHandles.has(handle)) set.add("staff-picks");
     if (new Date(product.created_at || 0).getTime() >= newCutoff) set.add("new-arrivals");
     if (bestSellerHandles.has(handle) || staffHandles.has(handle) || newestHandles.has(handle) || textIncludesAny(product, ["viral", "trending", "tiktok"])) set.add("trending-finds");
+    const normalizedTags = new Set(asArray(product.tags).map((tag) => normalizeCollectionHandle(tag)));
+    if (normalizedTags.has("holiday-gifts")) set.add("gifts");
+    if (normalizedTags.has("viral-tiktok-products")) set.add("trending-finds");
     if (textIncludesAny(product, ["gift for dad", "fathers day", "father gift"])) set.add("gifts-for-dad");
     if (textIncludesAny(product, ["gift for mom", "mothers day", "mother gift"])) set.add("gifts-for-mom");
     if (textIncludesAny(product, ["gift for senior", "elderly gift", "senior gift"])) set.add("gifts-for-seniors");
     if (textIncludesAny(product, ["housewarming gift", "new home gift"])) set.add("housewarming-gifts");
-    if (textIncludesAny(product, ["holiday gift", "christmas gift", "festive gift"])) set.add("holiday-gifts");
+    if (textIncludesAny(product, ["holiday gift", "christmas gift", "festive gift"])) set.add("gifts");
   }
   return assignments;
 }
 
-function exactTagTask(liveProduct, desiredManagedTags) {
+function exactTagTask(liveProduct, desiredManagedTags, managedTagUniverse = new Set()) {
   const existing = uniqueTags(asArray(liveProduct.tags));
-  const unmanaged = existing.filter((tag) => !isManagedTag(tag));
+  const unmanaged = existing.filter((tag) => !isManagedTag(tag, managedTagUniverse));
   const desired = uniqueTags([...unmanaged, ...desiredManagedTags]);
   const existingSet = new Set(existing.map(normalizeTag));
   const desiredSet = new Set(desired.map(normalizeTag));
@@ -930,6 +948,7 @@ async function applyExactTags(tasks, retryInfo, output, manifest) {
 async function verifyExactTags(tasks, retryInfo) {
   const failures = [];
   const taskById = new Map(tasks.map((task) => [task.productId, task]));
+  const managedTagUniverse = new Set(tasks.flatMap((task) => task.desiredManagedTags).map(normalizeTag));
   const seen = new Set();
   let after = null;
   while (true) {
@@ -946,7 +965,7 @@ async function verifyExactTags(tasks, retryInfo) {
         continue;
       }
       seen.add(product.id);
-      const actual = new Set(asArray(product.tags).map(normalizeTag).filter((tag) => MANAGED_TAG_PREFIXES.some((prefix) => tag.startsWith(prefix))));
+      const actual = new Set(asArray(product.tags).map(normalizeTag).filter((tag) => isManagedTag(tag, managedTagUniverse)));
       const desired = new Set(task.desiredManagedTags.map(normalizeTag));
       const missing = [...desired].filter((tag) => !actual.has(tag));
       const extra = [...actual].filter((tag) => !desired.has(tag));
@@ -977,14 +996,18 @@ function sourceConditionSummary(source) {
 
 function collectionSourceMatches(policy, collection) {
   const source = asArray(collection?.sources).length === 1 ? collection.sources[0] : null;
-  if (!source || source.__typename !== "CollectionConditionsSource" || source.targetType !== "PRODUCTS" || source.inclusion?.matchType !== "ALL") return false;
+  if (!source || source.__typename !== "CollectionConditionsSource" || source.targetType !== "PRODUCTS") return false;
   const summary = sourceConditionSummary(source);
   if (policy.kind === "semantic") {
-    return summary.conditions.length === 1 && summary.conditions[0].type === "tag" &&
-      summary.conditions[0].relation === "TAGGED_WITH" && summary.conditions[0].matchType === "ANY" &&
-      summary.conditions[0].values.length === 1 && summary.conditions[0].values[0] === normalizeTag(policy.tag);
+    const expectedTags = new Set(semanticCollectionRuleTags(policy).map(normalizeTag));
+    const actualTags = new Set(summary.conditions
+      .filter((condition) => condition.type === "tag" && condition.relation === "TAGGED_WITH" && condition.matchType === "ANY")
+      .flatMap((condition) => condition.values));
+    return summary.matchType === (expectedTags.size > 1 ? "ANY" : "ALL") &&
+      actualTags.size === expectedTags.size && [...expectedTags].every((tag) => actualTags.has(tag));
   }
   if (policy.kind === "price") {
+    if (summary.matchType !== "ALL") return false;
     const desired = [];
     if (Number.isFinite(policy.maximumExclusive)) desired.push({ relation: "LESS_THAN", amount: policy.maximumExclusive });
     if (Number.isFinite(policy.minimumExclusive)) desired.push({ relation: "GREATER_THAN", amount: policy.minimumExclusive });
@@ -1056,8 +1079,26 @@ function buildCollectionUpdateInput(target) {
     input.redirectNewHandle = true;
   }
   if (target.sourceNeedsUpdate) {
-    input.sourcesToDelete = asArray(target.existing.sources).map((existingSource) => existingSource.id).filter(Boolean);
-    input.sourcesToCreate = [{ source }];
+    const existingSources = asArray(target.existing.sources);
+    const existingSource = existingSources.length === 1 ? existingSources[0] : null;
+    const existingConditions = asArray(existingSource?.inclusion?.conditions);
+    if (existingSource?.__typename === "CollectionConditionsSource" && existingSource.id) {
+      input.sourcesToUpdate = [{
+        condition: {
+          id: existingSource.id,
+          title: source.title,
+          description: source.description,
+          inclusion: {
+            matchType: source.inclusion.matchType,
+            conditionsToDelete: existingConditions.map((condition) => condition.id).filter(Boolean),
+            conditionsToCreate: asArray(source.inclusion.conditions),
+          },
+        },
+      }];
+    } else {
+      input.sourcesToDelete = existingSources.map((existingSource) => existingSource.id).filter(Boolean);
+      input.sourcesToCreate = [{ source }];
+    }
   }
   return input;
 }
@@ -1182,9 +1223,7 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
     const task = taskByProductId.get(product.id);
     for (const tag of task?.desiredManagedTags || []) {
       expectedByTag.get(normalizeTag(tag))?.add(product.id);
-      const handle = normalizeTag(tag).startsWith(COLLECTION_TAG_PREFIX)
-        ? normalizeCollectionHandle(tag.slice(COLLECTION_TAG_PREFIX.length))
-        : "";
+      const handle = isManagedCollectionTag(tag) ? canonicalCollectionHandle(tag) : "";
       if (handle) expectedCollectionsByProduct.get(product.id)?.add(handle);
     }
     for (const target of targets) {
@@ -1228,7 +1267,9 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
     ALL_PRODUCTS_COLLECTION_POLICY.handle,
     ...targets.map((target) => target.policy.handle),
   ]);
-  const unexpectedLiveCollections = [...byHandle.keys()].filter((handle) => !expectedLiveHandles.has(handle));
+  const unexpectedLiveCollections = [...byHandle.keys()].filter(
+    (handle) => !expectedLiveHandles.has(handle) && !Object.prototype.hasOwnProperty.call(RETIRED_COLLECTION_HANDLE_MAP, handle),
+  );
   if (unexpectedLiveCollections.length) {
     failures.push(`live collections outside canonical governance: ${unexpectedLiveCollections.join(", ")}`);
   }
@@ -1263,6 +1304,9 @@ async function run(args) {
   const retryInfo = [];
   const priorManifestPath = args.output === defaultOutputPath ? args.output : defaultOutputPath;
   const priorManifest = await readJson(priorManifestPath);
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
   const priorSnapshot = buildPriorIntegritySnapshot(priorManifest);
   const catalog = await readProductCatalogPayload(resolve(rootDir, "public", "data"));
   let liveProducts;
@@ -1294,6 +1338,7 @@ async function run(args) {
   const products = liveProducts.map((liveProduct) => mergeProduct(localByHandle.get(normalizeCollectionHandle(liveProduct.handle)) || {}, liveProduct));
   const dynamicAssignments = await buildDynamicAssignments(products);
   const tagTasks = [];
+  const resolvedTagPlans = [];
   const classifications = [];
   const resolvedProducts = new Array(products.length);
   const unresolvedProducts = [];
@@ -1304,20 +1349,23 @@ async function run(args) {
       const product = products[index];
       const prior = args.reclassify ? null : priorSnapshot?.byHandle.get(normalizeCollectionHandle(product.handle));
       let deterministic = null;
-      if (prior) {
+      const priorRuleId = prior?.classification?.ruleId || "";
+      const canReusePriorClassification = Boolean(
+        prior && TAXONOMY_DEFINITIONS.some((definition) => definition.id === priorRuleId),
+      );
+      if (canReusePriorClassification) {
         const taxonomy = classifyCatalogTaxonomyByRuleId(product, prior.classification.ruleId, {
           source: `prior-catalog-integrity-${prior.classification.source || "verified"}`,
           reason: "Reused the last completed collection-integrity classification for an unchanged handle.",
         });
         deterministic = {
-          knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
+          knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
           source: prior.classification.source,
-          frozenDesiredManagedTags: prior.tagTask.desiredManagedTags,
           priorClassification: prior.classification,
           reused: true,
         };
       } else {
-        deterministic = resolveDeterministicKnowledge(product);
+        deterministic = resolveDeterministicKnowledge(product, knowledgeModel);
       }
       if (deterministic) resolvedProducts[index] = deterministic;
       else unresolvedProducts.push({ index, product });
@@ -1327,15 +1375,15 @@ async function run(args) {
       process.stdout.write(`Taxonomy batches checked ${batchNumber}/${taxonomyBatchCount} (${batchEnd}/${products.length} products).\n`);
     }
   }
-  process.stdout.write(`${unresolvedProducts.length} products require visual enrichment or release-boundary fallback.\n`);
+  process.stdout.write(`${unresolvedProducts.length} products require review${args.deterministicOnly ? "; deterministic-only mode will use the fallback collection" : " or release-boundary fallback"}.\n`);
   const resolutionBatchCount = Math.ceil(unresolvedProducts.length / args.batchSize);
   for (let batchStart = 0; batchStart < unresolvedProducts.length; batchStart += args.batchSize) {
     const batch = unresolvedProducts.slice(batchStart, batchStart + args.batchSize);
     const resolutions = await mapWithConcurrency(
       batch,
       classificationConcurrency,
-      (entry) => resolveKnowledge(entry.product, args),
-      "Visual resolution processed",
+      (entry) => resolveKnowledge(entry.product, { ...args, knowledgeModel }),
+      args.deterministicOnly ? "Review resolution processed" : "Visual resolution processed",
     );
     for (const [index, entry] of batch.entries()) {
       resolvedProducts[entry.index] = resolutions[index];
@@ -1348,32 +1396,37 @@ async function run(args) {
 
   for (const [index, product] of products.entries()) {
     const resolved = resolvedProducts[index];
-    const collectionTags = buildProductCollectionTags(
-      product,
-      resolved.knowledge,
-      dynamicAssignments.get(normalizeCollectionHandle(product.handle)) || new Set(),
-    );
+    const collectionTags = resolved.source === "review"
+      ? [collectionTagForHandle("classification-review")]
+      : buildProductCollectionTags(
+        product,
+        resolved.knowledge,
+        dynamicAssignments.get(normalizeCollectionHandle(product.handle)) || new Set(),
+      );
     if (!collectionTags.length) {
       throw new Error(`${product.handle} has no semantic collection assignment after classification ${resolved.knowledge.classificationRule}.`);
     }
     const classificationTags = ["vision", "guess", "existing-vision"].includes(resolved.source)
-      ? [`salt:classification-rule:${resolved.knowledge.classificationRule}`, `salt:classification-source:${resolved.source === "existing-vision" ? "vision" : resolved.source}`]
+      ? [
+        simpleCatalogTag("classification-rule", resolved.knowledge.classificationRule),
+        simpleCatalogTag("classification-source", resolved.source === "existing-vision" ? "vision" : resolved.source),
+      ]
       : [];
-    const desiredManagedTags = Array.isArray(resolved.frozenDesiredManagedTags)
-      ? uniqueTags(resolved.frozenDesiredManagedTags)
+    const desiredManagedTags = resolved.source === "review"
+      ? collectionTags
       : uniqueTags([
         ...asArray(resolved.knowledge.proposedTags),
         ...collectionTags,
         ...classificationTags,
       ]);
-    tagTasks.push(exactTagTask(liveProducts[index], desiredManagedTags));
+    resolvedTagPlans.push({ liveProduct: liveProducts[index], desiredManagedTags });
     classifications.push({
       productId: product.shopifyId,
       handle: product.handle,
       ruleId: resolved.knowledge.classificationRule,
       source: resolved.source,
       confidence: resolved.knowledge.confidence,
-      collectionHandles: collectionTags.map((tag) => tag.slice(COLLECTION_TAG_PREFIX.length)),
+      collectionHandles: collectionTags.map((tag) => normalizeCollectionHandle(tag)),
       reused: Boolean(resolved.reused),
       imageUrl: resolved.imageUrl || resolved.priorClassification?.imageUrl || null,
       visualEvidence: resolved.visualEvidence || resolved.priorClassification?.visualEvidence || null,
@@ -1381,6 +1434,11 @@ async function run(args) {
       guessedRuleId: resolved.guessedRuleId || resolved.priorClassification?.guessedRuleId || null,
       visionError: resolved.visionError || resolved.priorClassification?.visionError || null,
     });
+  }
+
+  const managedTagUniverse = new Set(resolvedTagPlans.flatMap((entry) => entry.desiredManagedTags).map(normalizeTag));
+  for (const entry of resolvedTagPlans) {
+    tagTasks.push(exactTagTask(entry.liveProduct, entry.desiredManagedTags, managedTagUniverse));
   }
 
   const specialCollectionCounts = Object.fromEntries(
@@ -1406,11 +1464,13 @@ async function run(args) {
       scope: "all active Shopify products and every live collection",
       managedTags: "exact-set replacement for taxonomy, collection, and classification namespaces",
       unmanagedTags: "preserved exactly",
-      uncertainProducts: "local image enrichment first; auditable highest-scoring guess only at the release boundary",
-      semanticCollectionRule: "one salt:collection:<handle> tag condition per collection",
+      uncertainProducts: args.deterministicOnly
+        ? "deterministic-only; explicit classification-review fallback collection; no image classification or guesses"
+        : "local image enrichment first; auditable highest-scoring guess only at the release boundary",
+      semanticCollectionRule: "one canonical simple collection tag condition per collection",
       priceCollections: "exact variant-price source plus exact live membership verification",
       collectionlessProducts: "forbidden",
-      stableClassification: "reuse the last completed same-version rule and exact managed tag set for unchanged handles",
+      stableClassification: "reuse the last completed valid classification rule for unchanged handles and recompute managed tags from current governance",
       auditBatchSize: args.batchSize,
     },
     summary: {

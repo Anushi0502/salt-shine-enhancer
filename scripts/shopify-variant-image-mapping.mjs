@@ -23,6 +23,7 @@ const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxBatchProducts = Math.max(1, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_BATCH_SIZE || 25)));
 const applyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_APPLY_CONCURRENCY || 2));
+const fetchConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_FETCH_CONCURRENCY || 2));
 // Serial readback avoids false failures when Shopify throttles a large verification fan-out.
 const verifyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VERIFY_CONCURRENCY || 1));
 const interBatchDelayMs = Math.max(0, Number(process.env.SALT_VARIANT_IMAGE_INTER_BATCH_DELAY_MS || 500));
@@ -435,17 +436,18 @@ async function fetchLiveProducts() {
 }
 
 async function fetchLiveProductsByIds(ids) {
-  const products = [];
   const uniqueIds = [...new Set(ids.filter(Boolean))];
-  for (let index = 0; index < uniqueIds.length; index += 20) {
-    const batch = uniqueIds.slice(index, index + 20);
+  const batchCount = Math.ceil(uniqueIds.length / 20);
+  const tasks = Array.from({ length: batchCount }, (_, batchIndex) => async () => {
+    const batch = uniqueIds.slice(batchIndex * 20, (batchIndex + 1) * 20);
     const data = await executeGraphQl(
       LIVE_PRODUCTS_BY_ID_QUERY,
       { ids: batch, variantFirst: liveVariantPageSize, mediaFirst: liveMediaPageSize },
-      { operation: `scoped product batch ${Math.floor(index / 20) + 1}/${Math.ceil(uniqueIds.length / 20)}` },
+      { operation: `scoped product batch ${batchIndex + 1}/${batchCount}` },
     );
-    products.push(...(data.nodes || []).filter((product) => product?.id));
-  }
+    return (data.nodes || []).filter((product) => product?.id);
+  });
+  const products = (await concurrentExecutor(tasks, fetchConcurrency)).flat();
   process.stdout.write(`Fetched ${products.length} scoped Shopify products by ID\n`);
   return products;
 }
@@ -654,11 +656,14 @@ async function main() {
         .filter((product) => scopeHandles.has(normalizeHandleValue(product?.handle)))
         .map(productIdForGraphql)
         .filter(Boolean)
-    : [];
+    : (snapshot.products || []).map(productIdForGraphql).filter(Boolean);
   if (scopeHandles && !scopedProductIds.length) {
     throw new Error("New-products scope handles did not resolve to any local product IDs");
   }
-  const liveProducts = scopeHandles ? await fetchLiveProductsByIds(scopedProductIds) : await fetchLiveProducts();
+  if (!scopedProductIds.length) {
+    throw new Error("All-products scope did not resolve to any local product IDs");
+  }
+  const liveProducts = await fetchLiveProductsByIds(scopedProductIds);
 
   const { plannedProducts, summary } = buildPlan(snapshot.products || [], liveProducts, scopeHandles);
   const manifest = {

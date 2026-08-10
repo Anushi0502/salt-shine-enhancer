@@ -123,7 +123,70 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps compact search pricing authoritative over stale Liquid snapshots", async () => {
+  it("preserves cached collection membership when live Shopify returns an empty list", async () => {
+    installInlineCollection({ complete: false });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/collections/under-25/products.json")) {
+        return jsonResponse({ products: [] });
+      }
+
+      if (url.includes("/data/collection-products.json")) {
+        return jsonResponse({
+          generatedAt: "2026-07-18T00:00:00Z",
+          source: "/data/collection-products.json",
+          totalCollections: 1,
+          collections: {
+            "under-25": { title: "Under $25", productIds: [601, 602] },
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const payload = await loadCollectionProductIds("under-25");
+
+    expect(payload.source).toContain("cache:");
+    expect(payload.productIds).toEqual([601, 602]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/data/collection-products.json"),
+      expect.objectContaining({ cache: "force-cache" }),
+    );
+  });
+
+  it("prefers a non-empty live manual order over cached collection membership", async () => {
+    installInlineCollection({ complete: false });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/collections/under-25/products.json")) {
+        return jsonResponse({ products: [{ id: 602 }, { id: 601 }] });
+      }
+
+      if (url.includes("/data/collection-products.json")) {
+        return jsonResponse({
+          generatedAt: "2026-07-18T00:00:00Z",
+          source: "/data/collection-products.json",
+          totalCollections: 1,
+          collections: {
+            "under-25": { title: "Under $25", productIds: [601, 602] },
+          },
+        });
+      }
+
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const payload = await loadCollectionProductIds("under-25");
+
+    expect(payload.source).not.toContain("cache:");
+    expect(payload.productIds).toEqual([602, 601]);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/data/collection-products.json"))).toBe(false);
+  });
+
+  it("keeps the current Liquid pricing authoritative over a stale compact snapshot", async () => {
     installInlineCollection({
       productIds: [101, 102],
       products: [liveProduct(), liveProduct({ id: 102, handle: "newly-added", title: "Newly Added" })],
@@ -173,8 +236,8 @@ describe("Shopify Liquid collection bootstrap", () => {
     const refreshed = payload.products.find((product) => product.id === 101);
 
     expect(refreshed?.title).toBe("Live Shopify Product");
-    expect(refreshed?.variants[0]?.price).toBe("84.99");
-    expect(refreshed?.variants[0]?.compare_at_price).toBe("109.99");
+    expect(refreshed?.variants[0]?.price).toBe("19.99");
+    expect(refreshed?.variants[0]?.compare_at_price).toBe("24.99");
     expect(refreshed?.customData?.subtitle).toBe("Curated subtitle");
     expect(payload.products.some((product) => product.handle === "newly-added")).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);

@@ -3,8 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import SiteShell from "@/components/layout/SiteShell";
-import MetaPixelTracker from "@/components/integrations/MetaPixelTracker";
-import NotificationBootstrap from "@/components/integrations/NotificationBootstrap";
+import DeferredAppIntegrations from "@/components/integrations/DeferredAppIntegrations";
 import ProductRoutePreloader from "@/components/storefront/ProductRoutePreloader";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { CartProvider } from "@/lib/cart";
@@ -103,10 +102,9 @@ const AppShell = () => (
     <AppErrorBoundary>
       <WishlistProvider>
         <CartProvider>
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true }}>
             <ScrollToTop />
-            <MetaPixelTracker />
-            <NotificationBootstrap />
+            <DeferredAppIntegrations />
             <ProductRoutePreloader />
             <Routes>
               <Route element={<SiteShell />}>

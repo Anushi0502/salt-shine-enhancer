@@ -1,4 +1,5 @@
-import { CATALOG_TAG_PREFIX, CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
+import { CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
+import { legacyCatalogTagToSimple } from "./catalog-simple-tags.js";
 import { classifyProductKnowledge } from "./product-knowledge-base.js";
 
 export const TAXONOMY_METAFIELD_NAMESPACE = "salt_taxonomy";
@@ -48,12 +49,17 @@ export function isActiveShopifyProduct(product) {
 }
 
 export function buildManagedTagAdditions(existingTags, proposedTags) {
-  const current = new Set(asArray(existingTags).map(normalizeTaxonomyTag).filter(Boolean));
+  const current = new Set(asArray(existingTags).flatMap((tag) => {
+    const normalized = normalizeTaxonomyTag(tag);
+    const canonical = legacyCatalogTagToSimple(tag);
+    return [normalized, canonical ? normalizeTaxonomyTag(canonical) : ""].filter(Boolean);
+  }));
   const additions = [];
 
-  for (const tag of asArray(proposedTags).map(normalizeText).filter(Boolean)) {
-    if (!tag.startsWith(`${CATALOG_TAG_PREFIX}:`)) {
-      throw new Error(`Managed taxonomy tag is outside the ${CATALOG_TAG_PREFIX}: namespace: ${tag}`);
+  for (const rawTag of asArray(proposedTags).map(normalizeText).filter(Boolean)) {
+    const tag = legacyCatalogTagToSimple(rawTag) || rawTag;
+    if (!tag || tag.includes(":")) {
+      throw new Error(`Managed taxonomy tag is not canonical simple syntax: ${rawTag}`);
     }
 
     const normalized = normalizeTaxonomyTag(tag);
@@ -68,31 +74,33 @@ export function buildManagedTagAdditions(existingTags, proposedTags) {
   return additions;
 }
 
-export function buildTaxonomyMetafieldValue(product, knowledge = classifyProductKnowledge(product)) {
+export function buildTaxonomyMetafieldValue(product, knowledge = null, { knowledgeModel = null } = {}) {
+  const resolvedKnowledge = knowledge || classifyProductKnowledge(product, { knowledgeModel });
   return JSON.stringify({
     version: CATALOG_TAXONOMY_VERSION,
-    productKnowledgeId: knowledge.productKnowledgeId,
-    specificTypeKey: knowledge.specificTypeKey,
-    specificType: knowledge.specificType,
-    classificationRule: knowledge.classificationRule,
-    confidence: knowledge.confidence,
-    reviewRequired: Boolean(knowledge.reviewRequired),
-    reviewReasons: asArray(knowledge.reviewReasons),
-    tagApplication: knowledge.reviewRequired ? "withheld-pending-review" : "controlled-tags-approved",
-    audience: knowledge.audience?.id || "",
+    productKnowledgeId: resolvedKnowledge.productKnowledgeId,
+    specificTypeKey: resolvedKnowledge.specificTypeKey,
+    specificType: resolvedKnowledge.specificType,
+    classificationRule: resolvedKnowledge.classificationRule,
+    confidence: resolvedKnowledge.confidence,
+    reviewRequired: Boolean(resolvedKnowledge.reviewRequired),
+    reviewReasons: asArray(resolvedKnowledge.reviewReasons),
+    tagApplication: resolvedKnowledge.reviewRequired ? "withheld-pending-review" : "controlled-tags-approved",
+    modelEvidence: resolvedKnowledge.modelEvidence || null,
+    audience: resolvedKnowledge.audience?.id || "",
     department: {
-      id: knowledge.departmentId,
-      label: knowledge.departmentLabel,
+      id: resolvedKnowledge.departmentId,
+      label: resolvedKnowledge.departmentLabel,
     },
     category: {
-      id: knowledge.categoryId,
-      label: knowledge.categoryLabel,
+      id: resolvedKnowledge.categoryId,
+      label: resolvedKnowledge.categoryLabel,
     },
     subcategory: {
-      id: knowledge.subcategoryId,
-      label: knowledge.subcategoryLabel,
+      id: resolvedKnowledge.subcategoryId,
+      label: resolvedKnowledge.subcategoryLabel,
     },
-    relatedCategories: asArray(knowledge.relatedCategories).map((category) => ({
+    relatedCategories: asArray(resolvedKnowledge.relatedCategories).map((category) => ({
       department: {
         id: category.departmentId,
         label: category.departmentLabel,
@@ -109,20 +117,21 @@ export function buildTaxonomyMetafieldValue(product, knowledge = classifyProduct
       tagging: "additive-controlled-tag",
     })),
     canonicalType: {
-      id: knowledge.canonicalTypeId,
-      label: knowledge.canonicalType,
+      id: resolvedKnowledge.canonicalTypeId,
+      label: resolvedKnowledge.canonicalType,
     },
-    shopifyCategory: knowledge.shopifyCategory || "",
+    shopifyCategory: resolvedKnowledge.shopifyCategory || "",
   });
 }
 
-export function buildTaxonomyMetafieldInput(ownerId, product, knowledge = classifyProductKnowledge(product)) {
+export function buildTaxonomyMetafieldInput(ownerId, product, knowledge = null, { knowledgeModel = null } = {}) {
+  const resolvedKnowledge = knowledge || classifyProductKnowledge(product, { knowledgeModel });
   return {
     ownerId,
     namespace: TAXONOMY_METAFIELD_NAMESPACE,
     key: TAXONOMY_METAFIELD_KEY,
     type: TAXONOMY_METAFIELD_TYPE,
-    value: buildTaxonomyMetafieldValue(product, knowledge),
+    value: buildTaxonomyMetafieldValue(product, resolvedKnowledge, { knowledgeModel }),
   };
 }
 
@@ -144,6 +153,7 @@ export function taxonomyMetafieldMatches(product, expectedMetafield) {
 export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
   mutateTags = true,
   knowledgeByHandle = new Map(),
+  knowledgeModel = null,
 } = {}) {
   const liveByHandle = new Map(
     asArray(liveProducts)
@@ -175,11 +185,11 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
     const suppliedKnowledge = knowledgeByHandle instanceof Map
       ? knowledgeByHandle.get(handle)
       : knowledgeByHandle?.[handle];
-    const knowledge = suppliedKnowledge || classifyProductKnowledge(product);
+    const knowledge = suppliedKnowledge || classifyProductKnowledge(product, { knowledgeModel });
     const tagsToAdd = mutateTags
       ? buildManagedTagAdditions(liveProduct.tags, knowledge.proposedTags)
       : [];
-    const taxonomyMetafield = buildTaxonomyMetafieldInput(liveProduct.id, product, knowledge);
+    const taxonomyMetafield = buildTaxonomyMetafieldInput(liveProduct.id, product, knowledge, { knowledgeModel });
     tasks.push({
       productId: liveProduct.id,
       localProductId: product?.id || null,
@@ -211,12 +221,12 @@ export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {
     policy: {
       existingTags: "preserve-exactly",
       managedTags: mutateTags
-        ? `add-only ${CATALOG_TAG_PREFIX}: namespace`
+        ? "add-only canonical simple tags"
         : "unchanged; exact collection integrity is authoritative",
       lowConfidenceTaxonomy: "classification metafield only; controlled category tags withheld pending review",
       productScope: "all active Shopify products",
       categoryMembership: mutateTags
-        ? "controlled add-only salt:department and salt:category tags; no Shopify product category mutation"
+        ? "controlled add-only canonical taxonomy tags; no Shopify product category mutation"
         : "no tag mutation; exact collection integrity is authoritative",
       publicationMutation: "none",
       priceMutation: "none",

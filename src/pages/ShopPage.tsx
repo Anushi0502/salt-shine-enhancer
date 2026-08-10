@@ -26,13 +26,12 @@ import { buildSearchIntelligence } from "@/lib/search-intelligence";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
-  getMergedCollectionHandles,
   getSubcollectionByHandle,
   resolveCollectionFeedHandle,
   resolveCollectionShopifyHandle,
+  SITE_COLLECTIONS,
 } from "@/lib/site-navigation";
-import { isBestSellerCollectionHandle, selectBestSellerProducts } from "@/lib/homepage-merchandising";
-import { useCollectionProductsMap, useCollections, useCollectionProductIds, useProductSearchIndex } from "@/lib/shopify-data";
+import { useCollections, useCollectionProductIds, useProductSearchIndex } from "@/lib/shopify-data";
 import {
   buildBreadcrumbStructuredData,
   buildCollectionStructuredData,
@@ -60,23 +59,6 @@ const priceRangeOptions = [
 const PAGE_SIZE = 36;
 const DEFAULT_COLLECTION_HANDLE = "all-products";
 
-function getCachedCollectionProductIds(
-  collections: Record<string, { productIds: number[] }> | undefined,
-  handle: string | null,
-): number[] | null {
-  if (!collections || !handle) {
-    return null;
-  }
-
-  const ids = new Set<number>();
-  for (const expectedHandle of getMergedCollectionHandles(handle)) {
-    const entry = Object.entries(collections).find(([entryHandle]) => normalizeHandle(entryHandle) === expectedHandle)?.[1];
-    entry?.productIds.forEach((id) => ids.add(id));
-  }
-
-  return ids.size ? Array.from(ids) : null;
-}
-
 function asPositiveInt(input: string | null, fallback: number): number {
   const parsed = Number(input);
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -101,6 +83,35 @@ function asNumberOrNull(input: string | null): number | null {
 
 function normalizeHandle(value: string | null | undefined): string {
   return String(value || "").trim().toLowerCase();
+}
+
+function findVirtualPriceSubcollection(handle: string | null | undefined) {
+  const normalizedHandle = normalizeHandle(handle);
+  if (!normalizedHandle) {
+    return null;
+  }
+
+  for (const collection of SITE_COLLECTIONS) {
+    const subcollection = collection.subcollections.find(
+      (candidate) =>
+        normalizeHandle(candidate.handle) === normalizedHandle ||
+        normalizeHandle(candidate.shopifyHandle) === normalizedHandle,
+    );
+
+    if (subcollection?.priceFilter) {
+      return { collection, subcollection };
+    }
+  }
+
+  return null;
+}
+
+function getUsableProductIds(productIds: number[] | null | undefined): number[] | null {
+  const usableProductIds = Array.isArray(productIds)
+    ? productIds.filter((productId) => Number.isFinite(productId) && productId > 0)
+    : [];
+
+  return usableProductIds.length ? usableProductIds : null;
 }
 
 function normalizeCollectionFilter(value: string | null | undefined): string {
@@ -216,20 +227,44 @@ const ShopPage = () => {
     : "";
   const explicitCollectionHandle = activeCollectionParam || routeFeedHandle || routeCollectionAlias;
   const shouldDefaultToAllProducts = !explicitCollectionHandle && !hasSearchQuery;
-  const collectionHandle = resolveCollectionShopifyHandle(
-    explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : ""),
-  );
-  const isAllProductsCollection = collectionHandle === DEFAULT_COLLECTION_HANDLE;
-  const isBestSellerCollection = isBestSellerCollectionHandle(collectionHandle);
-  const curatedCollection = getCollectionByHandle(routeCollectionAlias || activeCollectionParam || routeFeedHandle);
-  const curatedSubcollection = routeCollectionAlias
+  const routeCuratedCollection = getCollectionByHandle(routeCollectionAlias || activeCollectionParam || routeFeedHandle);
+  const routeCuratedSubcollection = routeCollectionAlias
     ? getSubcollectionByHandle(routeCollectionAlias, routeSubcollectionAlias || activeCollectionParam)
     : null;
+  const routeVirtualPriceMatch =
+    routeCuratedCollection && routeCuratedSubcollection?.priceFilter
+      ? { collection: routeCuratedCollection, subcollection: routeCuratedSubcollection }
+      : null;
+  const virtualPriceMatch =
+    routeVirtualPriceMatch ||
+    findVirtualPriceSubcollection(routeSubcollectionAlias || activeCollectionParam || routeCollectionAlias);
+  // Under $50 is a real Shopify collection with live manual ordering. Keep
+  // Under $25 as a price-constrained view, but let Under $50 use Shopify's
+  // current collection membership, count, and ordering directly.
+  const isLiveShopifyPriceCollection =
+    normalizeHandle(virtualPriceMatch?.subcollection.shopifyHandle) === "under-50";
+  const priceFilterMatch = isLiveShopifyPriceCollection ? null : virtualPriceMatch;
+  const isVirtualPriceSubcollection = Boolean(priceFilterMatch);
+  const curatedCollection = virtualPriceMatch?.collection || routeCuratedCollection;
+  const curatedSubcollection = virtualPriceMatch?.subcollection || routeCuratedSubcollection;
+  const resolvedCollectionSelectionHandle = priceFilterMatch
+    ? routeFeedHandle || priceFilterMatch.subcollection.shopifyHandle || priceFilterMatch.subcollection.handle
+    : explicitCollectionHandle || (shouldDefaultToAllProducts ? DEFAULT_COLLECTION_HANDLE : "");
+  const collectionHandle = resolveCollectionShopifyHandle(
+    resolvedCollectionSelectionHandle,
+  );
+  const isAllProductsCollection = collectionHandle === DEFAULT_COLLECTION_HANDLE;
   const typeFilter = searchParams.get("type") || "";
   const sort = searchParams.get("sort") || "featured";
   const page = asPositiveInt(searchParams.get("page"), 1);
   const minFilter = asNumberOrNull(searchParams.get("min"));
   const maxFilter = asNumberOrNull(searchParams.get("max"));
+  const virtualPriceMin = priceFilterMatch?.subcollection.priceFilter?.min ?? null;
+  const virtualPriceMax = priceFilterMatch?.subcollection.priceFilter?.max ?? null;
+  const effectiveMinFilter =
+    minFilter == null ? virtualPriceMin : virtualPriceMin == null ? minFilter : Math.max(minFilter, virtualPriceMin);
+  const effectiveMaxFilter =
+    maxFilter == null ? virtualPriceMax : virtualPriceMax == null ? maxFilter : Math.min(maxFilter, virtualPriceMax);
 
   const [customMinInput, setCustomMinInput] = useState(minFilter == null ? "" : String(minFilter));
   const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
@@ -243,7 +278,7 @@ const ShopPage = () => {
   }, [minFilter, maxFilter]);
 
   useEffect(() => {
-    if (!routeCollectionAlias) {
+    if (!routeCollectionAlias || isVirtualPriceSubcollection) {
       return;
     }
 
@@ -263,7 +298,7 @@ const ShopPage = () => {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [routeCollectionAlias, routeFeedHandle, searchParams, setSearchParams]);
+  }, [isVirtualPriceSubcollection, routeCollectionAlias, routeFeedHandle, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isDefaultSearchCollection) {
@@ -280,7 +315,16 @@ const ShopPage = () => {
 
   // The compact catalog carries every search/filter/sort field this grid needs
   // at a fraction of the full product-detail snapshot's transfer size.
-  const { data: productsPayload, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProductSearchIndex();
+  const {
+    data: productsPayload,
+    collectionPageProductIds,
+    collectionPageTotal,
+    collectionPageLoading,
+    collectionPageError,
+    isLoading: productsLoading,
+    error: productsError,
+    refetch: refetchProducts,
+  } = useProductSearchIndex();
   const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
@@ -289,10 +333,7 @@ const ShopPage = () => {
     refetch: refetchCollectionProductIds,
   } = useCollectionProductIds(
     collectionHandle,
-    Boolean(collectionHandle) && !isBestSellerCollection && !isAllProductsCollection,
-  );
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap(
-    Boolean(collectionHandle) && !isBestSellerCollection,
+    Boolean(collectionHandle) && !isAllProductsCollection,
   );
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
@@ -302,25 +343,28 @@ const ShopPage = () => {
     [collections, deferredQuery, hasSearchQuery, products],
   );
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
-  const bestSellerProductIds = useMemo(
-    () => selectBestSellerProducts(products, 12).map((product) => product.id),
-    [products],
+  const liveCollectionProductIds = useMemo(
+    () => getUsableProductIds(collectionProductIdsPayload?.productIds),
+    [collectionProductIdsPayload?.productIds],
   );
-  const cachedCollectionProductIds = useMemo(
-    () => getCachedCollectionProductIds(collectionProductsMapPayload?.collections, collectionHandle),
-    [collectionHandle, collectionProductsMapPayload?.collections],
+  const liveCollectionPageProductIds = useMemo(
+    () => getUsableProductIds(collectionPageProductIds),
+    [collectionPageProductIds],
   );
   const catalogProductIds = useMemo(
     () => (isAllProductsCollection ? products.map((product) => product.id) : null),
     [isAllProductsCollection, products],
   );
   const selectedCollectionProductIds = useMemo(() => {
-    if (isBestSellerCollection) {
-      return bestSellerProductIds;
+    if (isAllProductsCollection) {
+      return catalogProductIds;
     }
 
-    return collectionProductIdsPayload?.productIds ?? cachedCollectionProductIds ?? catalogProductIds;
-  }, [bestSellerProductIds, cachedCollectionProductIds, catalogProductIds, collectionProductIdsPayload, isBestSellerCollection]);
+    // Before the full live membership crawl completes, only current-page
+    // Shopify IDs are eligible. This prevents old static cards from leaking
+    // into a realtime collection view.
+    return liveCollectionPageProductIds ?? liveCollectionProductIds;
+  }, [catalogProductIds, isAllProductsCollection, liveCollectionPageProductIds, liveCollectionProductIds]);
   const selectedCollectionOrder = useMemo(() => {
     if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
       return null;
@@ -350,17 +394,17 @@ const ShopPage = () => {
     () =>
       collectionFilteredProducts.filter((product) => {
         const price = minPrice(product);
-        if (minFilter != null && price < minFilter) {
+        if (effectiveMinFilter != null && price < effectiveMinFilter) {
           return false;
         }
 
-        if (maxFilter != null && price > maxFilter) {
+        if (effectiveMaxFilter != null && price > effectiveMaxFilter) {
           return false;
         }
 
         return true;
       }),
-    [collectionFilteredProducts, minFilter, maxFilter],
+    [collectionFilteredProducts, effectiveMaxFilter, effectiveMinFilter],
   );
 
   const sortedProducts = useMemo(() => {
@@ -470,12 +514,24 @@ const ShopPage = () => {
         selectedCollection?.title ||
         "Collection preview";
 
-  const totalResults = sortedProducts.length;
+  const canUseLiveCollectionTotal = Boolean(
+    liveCollectionPageProductIds?.length &&
+      (collectionPageTotal || collectionProductIdsPayload?.total) &&
+      !hasSearchQuery &&
+      !typeFilter &&
+      minFilter == null &&
+      maxFilter == null &&
+      !isVirtualPriceSubcollection,
+  );
+  const liveCollectionTotal = collectionPageTotal || collectionProductIdsPayload?.total || 0;
+  const totalResults = canUseLiveCollectionTotal ? liveCollectionTotal : sortedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
-  const visibleProducts = sortedProducts.slice(startIndex, endIndex);
+  const visibleProducts = liveCollectionPageProductIds?.length
+    ? sortedProducts
+    : sortedProducts.slice(startIndex, endIndex);
   const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
   const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
   const predictiveCategorySuggestions = searchIntelligence?.categorySuggestions ?? [];
@@ -506,13 +562,19 @@ const ShopPage = () => {
   const seoDescription = query.trim()
     ? `Search ${query.trim()} across ${totalResults.toLocaleString()} products with smarter ranking, filters, and merchandising signals.`
     : collectionHeroSummary;
-  // Use the bundled collection membership for the first render. The live
-  // request remains active and replaces it as soon as Shopify returns the
-  // current manual ordering.
+  const hasCollectionMembershipFallback = Boolean(
+    isAllProductsCollection || liveCollectionPageProductIds?.length || liveCollectionProductIds?.length,
+  );
   const waitingForCollectionIds =
-    Boolean(collectionHandle) && !isAllProductsCollection && collectionProductIdsLoading && !cachedCollectionProductIds;
+    Boolean(collectionHandle) &&
+    !isAllProductsCollection &&
+    !hasCollectionMembershipFallback &&
+    (collectionProductIdsLoading || collectionPageLoading);
   const hasBlockingCollectionError =
-    Boolean(collectionHandle) && !isAllProductsCollection && Boolean(collectionProductIdsError) && !cachedCollectionProductIds;
+    Boolean(collectionHandle) &&
+    !isAllProductsCollection &&
+    Boolean(collectionProductIdsError || collectionPageError) &&
+    !hasCollectionMembershipFallback;
 
   useEffect(() => {
     if (productsLoading || waitingForCollectionIds) {

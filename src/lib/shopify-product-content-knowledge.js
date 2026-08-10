@@ -61,6 +61,9 @@ const UNSAFE_CLAIM_PATTERNS = Object.freeze([
 
 const HANDLE_FAMILY_OVERRIDES = new Map([
   ["young beautiful and wrinkle free", "makeup"],
+  ["candy candy anime", "apparel"],
+  ["nana anime", "apparel"],
+  ["nana anime 1", "apparel"],
 ]);
 
 const family = ({

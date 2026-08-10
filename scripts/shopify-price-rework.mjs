@@ -168,7 +168,7 @@ function normalizeMoney(value) {
   return Number.isFinite(amount) ? amount.toFixed(2) : null;
 }
 
-async function loadPriorLedger(outputPath) {
+async function loadPriorLedger(outputPath, threshold = defaultThreshold) {
   try {
     const parsed = JSON.parse(await readFile(outputPath, "utf8"));
     if (parsed?.strategyId !== PRICE_REWORK_STRATEGY_ID) return new Map();
@@ -182,7 +182,11 @@ async function loadPriorLedger(outputPath) {
         const variantId = String(variant?.variantId || "").trim();
         const plannedPrice = normalizeMoney(variant?.plannedPrice);
         const plannedCompareAtPrice = normalizeMoney(variant?.plannedCompareAtPrice);
-        if (variantId && plannedPrice) ledger.set(variantId, { price: plannedPrice, compareAtPrice: plannedCompareAtPrice });
+        // Keep below-floor prior plans available so a previously reworked value
+        // can be lifted to the floor without applying the multiplier twice.
+        if (variantId && plannedPrice) {
+          ledger.set(variantId, { price: plannedPrice, compareAtPrice: plannedCompareAtPrice });
+        }
       }
     }
     return ledger;
@@ -273,19 +277,33 @@ function buildPlan(products, args, priorLedger) {
       const plannedPrice = scalePrice(currentPrice, multiplier);
       const plannedCompareAtPrice = compareAtPrice ? scalePrice(compareAtPrice, multiplier) : null;
       const prior = priorLedger.get(String(variant?.id || ""));
-      if (prior?.price === currentPrice && (prior?.compareAtPrice || null) === (compareAtPrice || null)) {
+      const priorMatchesCurrent = prior?.price === currentPrice &&
+        (prior?.compareAtPrice || null) === (compareAtPrice || null);
+      if (priorMatchesCurrent && Number(currentPrice) >= args.threshold) {
         summary.variantsAlreadyReworked += 1;
         continue;
       }
+      const floorOnlyRepair = priorMatchesCurrent && Number(currentPrice) < args.threshold;
+      const targetPrice = floorOnlyRepair
+        ? args.threshold.toFixed(2)
+        : Number(plannedPrice) < args.threshold
+          ? args.threshold.toFixed(2)
+          : plannedPrice;
+      const targetCompareAtPrice = compareAtPrice
+        ? floorOnlyRepair
+          ? Math.max(Number(targetPrice), Number(scalePrice(targetPrice, Number(compareAtPrice) / Number(currentPrice)))).toFixed(2)
+          : Math.max(Number(targetPrice), Number(plannedCompareAtPrice || targetPrice)).toFixed(2)
+        : null;
       plannedVariants.push({
         variantId: String(variant?.id || ""),
         title: normalizeText(variant?.title),
         sku: normalizeText(variant?.sku),
         currentPrice,
-        multiplier: Number(multiplier.toFixed(6)),
-        plannedPrice,
+        multiplier: floorOnlyRepair ? 1 : Number(multiplier.toFixed(6)),
+        plannedPrice: targetPrice,
         currentCompareAtPrice: compareAtPrice,
-        plannedCompareAtPrice,
+        plannedCompareAtPrice: targetCompareAtPrice,
+        pricingAdjustment: floorOnlyRepair || Number(plannedPrice) < args.threshold ? "floor-enforced" : "tiered-multiplier",
         status: "pending",
         actualPrice: "",
         actualCompareAtPrice: "",
@@ -513,13 +531,12 @@ async function loadVerificationTargets(manifestPath) {
     });
   }
 
-  if (!products.length) {
-    throw new Error(`Price rework verification manifest ${manifestPath} contains no planned variants.`);
-  }
+  // A clean, idempotent apply legitimately produces an empty target list. The
+  // live catalog floor pass in verifyTargets remains authoritative in that case.
   return products;
 }
 
-async function verifyTargets(products, manifestPath, outputPath) {
+async function verifyTargets(products, manifestPath, outputPath, threshold = defaultThreshold) {
   const expectedProducts = await loadVerificationTargets(manifestPath);
   const liveProductsById = new Map(products.map((product) => [String(product?.id || ""), product]));
   const verificationProducts = [];
@@ -535,6 +552,9 @@ async function verifyTargets(products, manifestPath, outputPath) {
     failedVariants: 0,
     missingProducts: 0,
     mismatchProducts: 0,
+    catalogUnderFloorVariants: 0,
+    catalogInvalidPriceVariants: 0,
+    catalogFloorThreshold: threshold,
   };
 
   for (const expectedProduct of expectedProducts) {
@@ -599,6 +619,37 @@ async function verifyTargets(products, manifestPath, outputPath) {
     });
   }
 
+  // The target manifest proves repaired variants retained their exact planned
+  // values; this separate pass proves no other live variant remains below the
+  // approved floor and prevents stale manifests from masking defects.
+  for (const product of products) {
+    for (const variant of asArray(product?.variants?.nodes)) {
+      const actualPrice = normalizeMoney(variant?.price);
+      if (!actualPrice) {
+        summary.catalogInvalidPriceVariants += 1;
+        if (failures.length < 100) {
+          failures.push({
+            productId: String(product?.id || ""),
+            variantId: String(variant?.id || ""),
+            handle: normalizeText(product?.handle),
+            failure: "variant price is missing or invalid",
+          });
+        }
+      } else if (Number(actualPrice) < threshold) {
+        summary.catalogUnderFloorVariants += 1;
+        if (failures.length < 100) {
+          failures.push({
+            productId: String(product?.id || ""),
+            variantId: String(variant?.id || ""),
+            handle: normalizeText(product?.handle),
+            actualPrice,
+            failure: `variant price ${actualPrice} is below floor ${threshold.toFixed(2)}`,
+          });
+        }
+      }
+    }
+  }
+
   const manifest = {
     schemaVersion: 1,
     startedAt: new Date().toISOString(),
@@ -613,7 +664,7 @@ async function verifyTargets(products, manifestPath, outputPath) {
       targetManifest: manifestPath,
     },
     policy: {
-      verification: "every planned variant must match both its planned price and planned compare-at price",
+      verification: "every planned variant must match both its planned price and planned compare-at price; every live variant must have a valid price at or above the approved floor",
       salesChannelState: "not changed by verification",
     },
     summary,
@@ -630,13 +681,14 @@ async function main() {
   const retryInfo = [];
   const [products, priorLedger] = await Promise.all([
     fetchProducts(retryInfo),
-    loadPriorLedger(args.output),
+    loadPriorLedger(args.output, args.threshold),
   ]);
 
   if (args.mode === "verify") {
-    const manifest = await verifyTargets(products, args.verifyManifest, args.output);
-    if (manifest.summary.failedProducts) {
-      throw new Error(`Price rework verification failed for ${manifest.summary.failedVariants} variant(s); see ${args.output}.`);
+    const manifest = await verifyTargets(products, args.verifyManifest, args.output, args.threshold);
+    const catalogFloorFailures = manifest.summary.catalogUnderFloorVariants + manifest.summary.catalogInvalidPriceVariants;
+    if (manifest.summary.failedProducts || catalogFloorFailures) {
+      throw new Error(`Price rework verification failed for ${manifest.summary.failedVariants} planned variant(s) and ${catalogFloorFailures} catalog floor violation(s); see ${args.output}.`);
     }
     process.stdout.write(`Price rework verification complete: ${manifest.summary.verifiedVariants} variant target(s) verified across ${manifest.summary.verifiedProducts} product(s).\n`);
     return;

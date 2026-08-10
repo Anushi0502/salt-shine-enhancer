@@ -23,11 +23,15 @@ import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
 import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { CollectionHoverMenu } from "@/components/layout/CollectionHoverMenu";
 import { Sheet, SheetClose, SheetContent } from "@/components/ui/sheet";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE, WEEKEND_SALE_ROUTE } from "@/lib/promo-banners";
 
 const HeaderSearchResults = lazy(() => import("@/components/layout/HeaderSearchResults"));
+const CollectionHoverMenu = lazy(() =>
+  import("@/components/layout/CollectionHoverMenu").then(({ CollectionHoverMenu: menu }) => ({
+    default: menu,
+  })),
+);
 
 const searchScopeOptions = [
   {
@@ -84,13 +88,13 @@ const headerShortcutLinks: SiteHeaderCollectionLink[] = [
     label: "Under $25",
     routeHandle: "unique-products",
     activeCollectionHandles: ["under-25"],
-    to: buildCollectionRoute("under-25"),
+    to: buildSubcollectionRoute("unique-products", "under-25"),
   },
   {
     label: "Trending Now",
     routeHandle: "unique-products",
     activeCollectionHandles: [
-      "viral-tiktok-products",
+      "trending-finds",
       "best-sellers",
       "appplaza-best-sellers",
       "new-arrivals",
@@ -404,11 +408,13 @@ function HeaderMenuDrawer({
 
               {/* Collection hover menu - visible on desktop */}
               <div className="mt-2 hidden min-h-0 flex-1 lg:flex">
-                <CollectionHoverMenu
-                  className="min-h-0 flex-1"
-                  collections={SITE_COLLECTIONS}
-                  onLinkClick={() => setMenuOpen(false)}
-                />
+                <Suspense fallback={<div className="min-h-0 flex-1" aria-hidden="true" />}>
+                  <CollectionHoverMenu
+                    className="min-h-0 flex-1"
+                    collections={SITE_COLLECTIONS}
+                    onLinkClick={() => onOpenChange(false)}
+                  />
+                </Suspense>
               </div>
             </section>
 
@@ -863,10 +869,7 @@ const MainHeader = () => {
           </nav>
         </div>
       </header>
-      <HeaderMenuDrawer
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-      />
+      {menuOpen ? <HeaderMenuDrawer open onOpenChange={setMenuOpen} /> : null}
     </>
   );
 };

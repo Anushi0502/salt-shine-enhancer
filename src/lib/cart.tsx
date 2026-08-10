@@ -7,7 +7,6 @@ import {
   useState,
 } from "react";
 import { getBrowserStorage } from "@/lib/browser-storage";
-import { trackMetaPixelAddToCart } from "@/lib/meta-pixel";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { getRuntimeContext } from "@/lib/theme-assets";
 
@@ -310,10 +309,14 @@ export function CartProvider({ children }: PropsWithChildren) {
           ];
         });
 
-        trackMetaPixelAddToCart({
-          ...newItem,
-          quantity: safeQuantity,
-        });
+        void import("@/lib/meta-pixel")
+          .then(({ trackMetaPixelAddToCart }) => {
+            trackMetaPixelAddToCart({
+              ...newItem,
+              quantity: safeQuantity,
+            });
+          })
+          .catch(() => undefined);
 
         if (options?.openDrawer !== false) {
           setDrawerOpen(true);

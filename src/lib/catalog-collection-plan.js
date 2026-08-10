@@ -1,13 +1,15 @@
-import { CATALOG_TAG_PREFIX, CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
+import { CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
+import { legacyCatalogTagToSimple } from "./catalog-simple-tags.js";
 
-export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.2`;
+export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.3`;
 export const CATALOG_COLLECTION_SOURCE_TITLE = `SALT taxonomy ${CATALOG_TAXONOMY_VERSION}`;
 
 function collection(handle, title, ruleTag, description, legacyHandles = []) {
+  const canonicalRuleTag = legacyCatalogTagToSimple(ruleTag) || ruleTag;
   return Object.freeze({
     handle,
     title,
-    ruleTag,
+    ruleTag: canonicalRuleTag,
     description,
     legacyHandles: Object.freeze([...legacyHandles]),
   });
@@ -23,6 +25,7 @@ export const CATALOG_COLLECTION_PLAN = Object.freeze([
   collection("mens-fashion", "Men's Fashion", "salt:category:men-fashion", "Shop men's shirts, pants, jeans, footwear, and casual fashion essentials."),
   collection("mens-bags-wallets", "Men's Bags & Wallets", "salt:category:men-bags-wallets", "Shop men's bags, wallets, briefcases, organizers, and travel carry accessories."),
   collection("mens-accessories", "Men's Accessories", "salt:category:men-accessories", "Shop men's watches, belts, hats, jewelry, sunglasses, and style accessories."),
+  collection("hats", "Hats", "salt:category:hats", "Shop hats, caps, beanies, visors, bucket hats, and other headwear accessories."),
   collection("mens-beauty-skincare", "Men's Beauty & Skincare", "salt:category:men-beauty-skincare", "Shop men's grooming, skincare, haircare, fragrance, and personal care essentials."),
   collection("kids", "Kids", "salt:department:kids", "Shop kids' wear, toys, games, baby care, and children's accessories."),
   collection("kids-wear", "Kids Wear", "salt:category:kids-wear", "Shop clothing, footwear, and everyday wear for babies, kids, and teens."),
@@ -32,7 +35,7 @@ export const CATALOG_COLLECTION_PLAN = Object.freeze([
   collection("smart-lighting", "Lighting & Decor", "salt:category:lighting-decor", "Shop lamps, smart lighting, wall lights, decorative lighting, and home accents."),
   collection("bedsheets-handlooms-towels", "Bedsheets, Handlooms & Towels", "salt:category:bedsheets-handlooms-towels", "Shop bedsheets, handlooms, towels, linens, and soft home textiles."),
   collection("car-accessories", "Home & Car Accessories", "salt:category:home-car-accessories", "Shop practical home, vehicle, travel, and everyday utility accessories."),
-  collection("portable-gadgets", "Electronic Accessories", "salt:department:electronic-accessories", "Shop chargers, cables, portable gadgets, phone accessories, and everyday electronics."),
+  collection("portable-gadgets", "Electronic Accessories", "salt:department:electronic-accessories", "Shop chargers, cables, portable gadgets, phone accessories, and everyday electronics.", ["electronic-accessories"]),
   collection("covers-cases", "Covers & Cases", "salt:category:covers-cases", "Shop protective covers, cases, shells, sleeves, and device protection accessories."),
   collection("mouse-keyboard", "Mouse & Keyboard", "salt:category:mouse-keyboard", "Shop wired and wireless mice, keyboards, keycaps, and computer input accessories."),
   collection("audio", "Audio & Earbuds", "salt:category:audio", "Shop earbuds, headphones, speakers, microphones, and personal audio accessories."),
@@ -58,8 +61,8 @@ export function normalizeCollectionPlanTag(value) {
 }
 
 export function buildCollectionSource(entry) {
-  if (!entry?.ruleTag?.startsWith(`${CATALOG_TAG_PREFIX}:`)) {
-    throw new Error(`Collection rule must use the ${CATALOG_TAG_PREFIX}: namespace.`);
+  if (!entry?.ruleTag || entry.ruleTag.includes(":")) {
+    throw new Error("Collection rule must use a canonical simple tag.");
   }
 
   return {
