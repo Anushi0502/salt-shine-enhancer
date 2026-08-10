@@ -1412,6 +1412,25 @@ function recurringMultiplier(interval: string, days: number): number {
   return interval.toLowerCase() === "annual" ? days / 365 : days / 30;
 }
 
+const DEFAULT_MANUAL_SUBSCRIPTIONS = [
+  {
+    name: "Shopify Grow",
+    category: "Store platform",
+    amount: 19.99,
+    currency: "USD",
+    interval: "monthly",
+    source: "merchant-provided recurring charge",
+  },
+  {
+    name: "DSers Advanced",
+    category: "Dropshipping software",
+    amount: 19.90,
+    currency: "USD",
+    interval: "monthly",
+    source: "public DSers plan reference; verify merchant invoice",
+  },
+];
+
 async function loadShopifySubscriptions(start: string, end: string): Promise<SubscriptionSource> {
   if (!shopifyHeaders()["X-Shopify-Access-Token"]) {
     return { subscriptions: [], connected: false, message: "Shopify Admin credentials are not configured" };
@@ -1446,10 +1465,10 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
 
 function parseManualCosts(start: string, end: string): { subscriptions: FinanceSubscription[]; state: FinanceSourceState; message?: string } {
   const raw = String(process.env.FINANCE_SUBSCRIPTIONS_JSON || "").trim();
-  if (!raw) return { subscriptions: [], state: "missing" };
+  const usingDefaults = !raw;
 
   try {
-    const entries = JSON.parse(raw) as Array<Record<string, unknown>>;
+    const entries = usingDefaults ? DEFAULT_MANUAL_SUBSCRIPTIONS : JSON.parse(raw) as Array<Record<string, unknown>>;
     const days = periodDays(start, end);
     const subscriptions = entries.flatMap((entry) => {
       if (entry.active === false) return [];
@@ -1467,7 +1486,11 @@ function parseManualCosts(start: string, end: string): { subscriptions: FinanceS
         active: entry.active !== false,
       } satisfies FinanceSubscription];
     });
-    return { subscriptions, state: subscriptions.length ? "manual" : "missing" };
+    return {
+      subscriptions,
+      state: subscriptions.length ? "manual" : "missing",
+      message: usingDefaults ? "Using the merchant-provided Shopify Grow charge and the DSers Advanced public-plan reference; replace FINANCE_SUBSCRIPTIONS_JSON with billing exports when available." : undefined,
+    };
   } catch {
     return { subscriptions: [], state: "unavailable", message: "FINANCE_SUBSCRIPTIONS_JSON is not valid JSON." };
   }
