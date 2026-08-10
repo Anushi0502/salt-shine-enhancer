@@ -118,6 +118,15 @@ function SourceBadge({ label, state }: { label: string; state: FinanceSourceStat
   );
 }
 
+function ReconciliationMetric({ label, cents, currency }: { label: string; cents: number; currency: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/45 p-3">
+      <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-base font-bold text-foreground">{formatMoney(cents, currency)}</p>
+    </div>
+  );
+}
+
 function ExceptionRow({ item }: { item: FinanceException }) {
   return (
     <div className="flex gap-3 rounded-2xl border border-amber-200/75 bg-amber-50/55 p-3">
@@ -363,7 +372,27 @@ const FinancePage = () => {
                 <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">P&L statement</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Where the money went.</h2></div><span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">{summary.period.start} to {summary.period.end}</span></div>
                 <div className="mt-5">{summary.pnlRows.map((row) => <PnlRow key={row.label} row={row} currency={currency} />)}</div>
               </article>
-              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers cost coverage" state={summary.sources.dsers} /><SourceBadge label="Campaign spend" state={summary.sources.campaigns} /><SourceBadge label="Subscriptions" state={summary.sources.subscriptions} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
+              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers cost coverage" state={summary.sources.dsers} /><SourceBadge label="Campaign spend" state={summary.sources.campaigns} /><SourceBadge label="Subscriptions" state={summary.sources.subscriptions} /><SourceBadge label="Workbook bridge" state={summary.sources.reconciliation} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
+            </section>
+
+            <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Cash reconciliation</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Keep cash and accrual honest.</h2></div><span className={`rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] ${sourceTone(summary.reconciliation.state)}`}>{sourceLabel(summary.reconciliation.state)}</span></div>
+              <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground">This bridge is kept separate from the Shopify accrual P&amp;L above. It explains the workbook result without treating payout cash, cancelled-order refunds, or campaign spend as the same ledger.</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ReconciliationMetric label="Pending payout" cents={summary.reconciliation.totals.pendingPayoutCents} currency={currency} />
+                <ReconciliationMetric label="Payout paid" cents={summary.reconciliation.totals.payoutPaidCents} currency={currency} />
+                <ReconciliationMetric label="Order cost" cents={-summary.reconciliation.totals.orderCostCents} currency={currency} />
+                <ReconciliationMetric label="Bill cost" cents={-summary.reconciliation.totals.billCostCents} currency={currency} />
+                <ReconciliationMetric label="Campaign cost in bridge" cents={-summary.reconciliation.totals.campaignCostCents} currency={currency} />
+                <ReconciliationMetric label="Fees in bridge" cents={-summary.reconciliation.totals.feeCents} currency={currency} />
+                <ReconciliationMetric label="Workbook profit" cents={summary.reconciliation.totals.profitCents} currency={currency} />
+                <ReconciliationMetric label="Accrual P&L minus bridge" cents={(kpis?.operatingProfitCents || 0) - summary.reconciliation.totals.profitCents} currency={currency} />
+                <ReconciliationMetric label="Refunds in Shopify period" cents={-(kpis?.periodRefundsCents || 0)} currency={currency} />
+              </div>
+              <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">
+                <p>{summary.reconciliation.message || "No workbook reconciliation source is configured."}</p>
+                {(kpis?.cancelledOrderRefundsCents || 0) > 0 ? <p className="mt-2">{formatMoney(kpis?.cancelledOrderRefundsCents || 0, currency)} of the period refund events belong to cancelled orders and are shown here for review, but excluded from the accrual P&amp;L to avoid double counting cancelled revenue.</p> : null}
+              </div>
             </section>
 
             <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Reconciliation desk</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Exceptions before surprises.</h2></div><span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${summary.exceptions.length ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{summary.exceptions.length ? `${summary.exceptions.length} needs review` : "All clear"}</span></div><div className="mt-5 grid gap-3 md:grid-cols-2">{summary.exceptions.length ? summary.exceptions.map((item) => <ExceptionRow key={`${item.kind}-${item.message}`} item={item} />) : <div className="rounded-2xl border border-emerald-200/75 bg-emerald-50/55 p-4 text-sm text-emerald-900">No reconciliation exceptions were reported for this period.</div>}</div></section>

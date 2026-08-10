@@ -4,6 +4,9 @@ import type {
   FinanceCampaignSpend,
   FinanceOrderRow,
   FinancePayout,
+  FinanceReconciliationRow,
+  FinanceReconciliationSummary,
+  FinanceReconciliationTotals,
   FinanceSourceState,
   FinanceSubscription,
   FinanceSummary,
@@ -140,6 +143,12 @@ type CampaignSpendSource = {
 type DisputeSource = {
   byOrderId: Map<string, ShopifyDispute[]>;
   disputes: ShopifyDispute[];
+  state: FinanceSourceState;
+  message?: string;
+};
+
+type ReconciliationSource = {
+  summary: FinanceReconciliationSummary;
   state: FinanceSourceState;
   message?: string;
 };
@@ -537,6 +546,10 @@ function moneyCurrency(input?: ShopifyMoneySet | null): string {
   return String(input?.shopMoney?.currencyCode || input?.presentmentMoney?.currencyCode || DEFAULT_CURRENCY);
 }
 
+function formatMoneyText(amountCents: number, currency = DEFAULT_CURRENCY): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(amountCents / 100);
+}
+
 function percent(value: number, denominator: number): number | null {
   return denominator ? Math.round((value / denominator) * 1000) / 10 : null;
 }
@@ -920,6 +933,139 @@ function isDateInPeriod(value: string | undefined, start: string, end: string): 
   return timestamp >= new Date(`${start}T00:00:00Z`).getTime() && timestamp <= new Date(`${end}T23:59:59Z`).getTime();
 }
 
+function orderPeriodRefundCents(order: ShopifyOrder, start: string, end: string): number {
+  return (Array.isArray(order.refunds) ? order.refunds : [])
+    .filter((refund) => isDateInPeriod(refund.createdAt, start, end))
+    .reduce((sum, refund) => sum + moneyCents(refund.totalRefundedSet), 0);
+}
+
+function reconciliationAmountCents(value: Record<string, unknown>, centsKey: string, ...dollarKeys: string[]): number {
+  const explicit = value[centsKey];
+  if (explicit != null) {
+    const numeric = Number(explicit);
+    return Number.isFinite(numeric) ? Math.round(numeric) : 0;
+  }
+  const dollarValue = dollarKeys.map((key) => value[key]).find((entry) => entry != null);
+  return cents(dollarValue ?? 0);
+}
+
+function emptyReconciliationTotals(): FinanceReconciliationTotals {
+  return {
+    pendingPayoutCents: 0,
+    payoutPaidCents: 0,
+    orderCostCents: 0,
+    billCostCents: 0,
+    campaignCostCents: 0,
+    feeCents: 0,
+    profitCents: 0,
+    rowCount: 0,
+    paidCount: 0,
+    pendingCount: 0,
+  };
+}
+
+function parseManualReconciliation(start: string, end: string): ReconciliationSource {
+  const raw = String(process.env.FINANCE_RECONCILIATION_JSON || "").trim();
+  if (!raw) {
+    return {
+      state: "missing",
+      summary: { state: "missing", message: "Workbook reconciliation is not configured for this workspace.", totals: emptyReconciliationTotals(), rows: [] },
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    const root = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    const rawRows = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(root.rows)
+        ? root.rows
+        : Array.isArray(root.reconciliation)
+          ? root.reconciliation
+          : [];
+    const rows: FinanceReconciliationRow[] = rawRows.flatMap((entry, index) => {
+      if (!entry || typeof entry !== "object") return [];
+      const value = entry as Record<string, unknown>;
+      const rowStart = String(value.start || value.from || "").slice(0, 10);
+      const rowEnd = String(value.end || value.to || "").slice(0, 10);
+      if ((rowStart && rowEnd) && (end < rowStart || start > rowEnd)) return [];
+
+      const pendingPayoutCents = reconciliationAmountCents(value, "pendingPayoutCents", "pendingPayout", "pending_payout");
+      const payoutPaidCents = reconciliationAmountCents(value, "payoutPaidCents", "payoutPaid", "payout_paid");
+      const orderCostCents = reconciliationAmountCents(value, "orderCostCents", "orderCost", "order_cost");
+      const billCostCents = reconciliationAmountCents(value, "billCostCents", "billCost", "bill_cost");
+      const campaignCostCents = reconciliationAmountCents(value, "campaignCostCents", "campaignCost", "campaign_cost");
+      const feeCents = reconciliationAmountCents(value, "feeCents", "fee");
+      const explicitProfit = value.profitCents != null || value.profit != null;
+      const profitCents = explicitProfit
+        ? reconciliationAmountCents(value, "profitCents", "profit")
+        : pendingPayoutCents + payoutPaidCents - orderCostCents - billCostCents - campaignCostCents - feeCents;
+      const status = String(value.status || "reconciled").trim().toLowerCase();
+
+      return [{
+        id: String(value.id || value.key || `reconciliation-${index + 1}`),
+        serialNo: Number.isFinite(Number(value.serialNo ?? value.serial_no)) ? Number(value.serialNo ?? value.serial_no) : index + 1,
+        month: String(value.month || value.period || ""),
+        shopifyOrderNumber: String(value.shopifyOrderNumber || value.orderNumber || value.order || ""),
+        aliExpressOrderId: String(value.aliExpressOrderId || value.aliexpressOrderId || value.aliExpress || ""),
+        amountCents: reconciliationAmountCents(value, "amountCents", "amount"),
+        invoice: String(value.invoice || ""),
+        feeThreshold: String(value.feeThreshold || value.fee_threshold || ""),
+        status,
+        pendingPayoutCents,
+        payoutPaidCents,
+        orderCostCents,
+        billCostCents,
+        campaignCostCents,
+        feeCents,
+        profitCents,
+        currency: String(value.currency || DEFAULT_CURRENCY),
+        source: String(value.source || root.source || "manual reconciliation"),
+      } satisfies FinanceReconciliationRow];
+    });
+
+    const totals = rows.reduce<FinanceReconciliationTotals>((accumulator, row) => ({
+      pendingPayoutCents: accumulator.pendingPayoutCents + row.pendingPayoutCents,
+      payoutPaidCents: accumulator.payoutPaidCents + row.payoutPaidCents,
+      orderCostCents: accumulator.orderCostCents + row.orderCostCents,
+      billCostCents: accumulator.billCostCents + row.billCostCents,
+      campaignCostCents: accumulator.campaignCostCents + row.campaignCostCents,
+      feeCents: accumulator.feeCents + row.feeCents,
+      profitCents: accumulator.profitCents + row.profitCents,
+      rowCount: accumulator.rowCount + 1,
+      paidCount: accumulator.paidCount + (/(paid|reconciled|complete|settled)/.test(row.status) ? 1 : 0),
+      pendingCount: accumulator.pendingCount + (/(pending|unpaid|open)/.test(row.status) ? 1 : 0),
+    }), emptyReconciliationTotals());
+
+    const suppliedTotals = root.totals && typeof root.totals === "object" ? root.totals as Record<string, unknown> : null;
+    if (!rows.length && suppliedTotals) {
+      totals.pendingPayoutCents = reconciliationAmountCents(suppliedTotals, "pendingPayoutCents", "pendingPayout", "pending_payout");
+      totals.payoutPaidCents = reconciliationAmountCents(suppliedTotals, "payoutPaidCents", "payoutPaid", "payout_paid");
+      totals.orderCostCents = reconciliationAmountCents(suppliedTotals, "orderCostCents", "orderCost", "order_cost");
+      totals.billCostCents = reconciliationAmountCents(suppliedTotals, "billCostCents", "billCost", "bill_cost");
+      totals.campaignCostCents = reconciliationAmountCents(suppliedTotals, "campaignCostCents", "campaignCost", "campaign_cost");
+      totals.feeCents = reconciliationAmountCents(suppliedTotals, "feeCents", "fee");
+      totals.profitCents = suppliedTotals.profitCents != null || suppliedTotals.profit != null
+        ? reconciliationAmountCents(suppliedTotals, "profitCents", "profit")
+        : totals.pendingPayoutCents + totals.payoutPaidCents - totals.orderCostCents - totals.billCostCents - totals.campaignCostCents - totals.feeCents;
+      totals.rowCount = Number.isFinite(Number(suppliedTotals.rowCount)) ? Number(suppliedTotals.rowCount) : 0;
+      totals.paidCount = Number.isFinite(Number(suppliedTotals.paidCount)) ? Number(suppliedTotals.paidCount) : 0;
+      totals.pendingCount = Number.isFinite(Number(suppliedTotals.pendingCount)) ? Number(suppliedTotals.pendingCount) : 0;
+    }
+
+    if (!rows.length && !suppliedTotals) {
+      throw new Error("expected reconciliation rows or totals");
+    }
+
+    const source = String(root.source || rows[0]?.source || "manual reconciliation");
+    const message = String(root.message || `Manual reconciliation loaded from ${source}. Workbook profit is a cash bridge and does not silently include Shopify campaign spend.`);
+    return { state: "manual", message, summary: { state: "manual", message, totals, rows } };
+  } catch (error) {
+    const message = `FINANCE_RECONCILIATION_JSON is invalid: ${error instanceof Error ? error.message : "expected reconciliation rows or totals"}`;
+    return { state: "unavailable", message, summary: { state: "unavailable", message, totals: emptyReconciliationTotals(), rows: [] } };
+  }
+}
+
 function payoutDateQuery(start: string, end: string): string {
   return `issued_at:>=${start}T00:00:00Z issued_at:<=${end}T23:59:59Z`;
 }
@@ -1127,7 +1273,15 @@ function normalizeOrders(
   disputesByOrderId: Map<string, ShopifyDispute[]>,
   start: string,
   end: string,
-): { rows: NormalizedOrder[]; currency: string; missingCostCount: number; coveredBySupplierCount: number; multiCurrency: boolean } {
+): {
+  rows: NormalizedOrder[];
+  currency: string;
+  missingCostCount: number;
+  coveredBySupplierCount: number;
+  periodRefundsCents: number;
+  cancelledOrderRefundsCents: number;
+  multiCurrency: boolean;
+} {
   const currencies = new Set<string>();
   let missingCostCount = 0;
   let coveredBySupplierCount = 0;
@@ -1138,10 +1292,7 @@ function normalizeOrders(
       currencies.add(currency);
       const subtotalCents = moneyCents(order.subtotalPriceSet);
       const discountsCents = moneyCents(order.totalDiscountsSet);
-      const refundRows = Array.isArray(order.refunds)
-        ? order.refunds.filter((refund) => isDateInPeriod(refund.createdAt, start, end))
-        : [];
-      const refundsCents = refundRows.reduce((sum, refund) => sum + moneyCents(refund.totalRefundedSet), 0);
+      const refundsCents = orderPeriodRefundCents(order, start, end);
       const grossSalesCents = subtotalCents + discountsCents;
       const netRevenueCents = Math.max(subtotalCents - refundsCents, 0) + moneyCents(order.totalShippingPriceSet);
       const lineItems = order.lineItems?.nodes || [];
@@ -1208,6 +1359,8 @@ function normalizeOrders(
     currency: currencies.values().next().value || DEFAULT_CURRENCY,
     missingCostCount,
     coveredBySupplierCount,
+    periodRefundsCents: orders.reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
+    cancelledOrderRefundsCents: orders.filter((order) => Boolean(order.cancelledAt)).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
     multiCurrency: currencies.size > 1,
   };
 }
@@ -1300,6 +1453,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   ]);
   const supplierCosts = parseSupplierCosts();
   const manualCosts = parseManualCosts(start, end);
+  const reconciliationData = parseManualReconciliation(start, end);
   const exceptions: FinanceException[] = [];
   const orders = ordersResult.status === "fulfilled" ? ordersResult.value : [];
   const payoutData = payoutsResult.status === "fulfilled" ? payoutsResult.value : { payouts: [], state: "unavailable" as FinanceSourceState, message: "Shopify payouts unavailable" };
@@ -1323,6 +1477,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   if (campaignData.message && campaignData.state !== "manual" && campaignData.state !== "connected") {
     exceptions.push(exception("campaign-costs", campaignData.message, 1, campaignData.state === "unavailable" ? "high" : "medium"));
   }
+  if (reconciliationData.message && reconciliationData.state === "unavailable") {
+    exceptions.push(exception("reconciliation", reconciliationData.message, 1, "high"));
+  }
 
   const normalized = normalizeOrders(orders, supplierCosts, disputeData.byOrderId, start, end);
   if (normalized.missingCostCount) {
@@ -1342,7 +1499,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const taxCollectedCents = normalized.rows.reduce((sum, row) => sum + row.taxCollectedCents, 0);
   const cogsCents = normalized.rows.reduce((sum, row) => sum + row.cogsCents, 0);
   const paymentFeesCents = payoutData.payouts.reduce((sum, payout) => sum + payout.feeCents, 0);
-  const chargebacksCents = normalized.rows.reduce((sum, row) => sum + row.chargebackCents, 0);
+  const chargebacksCents = disputeData.disputes.reduce((sum, dispute) => sum + (isChargebackLoss(dispute) ? simpleMoneyCents(dispute.amount) : 0), 0);
   const campaignCostsCents = campaignData.campaigns.reduce((sum, campaign) => sum + campaign.allocatedCents, 0);
   const subscriptionCostsCents = subscriptions.reduce((sum, subscription) => sum + subscription.allocatedCents, 0);
   const payoutsReceivedCents = payoutData.payouts.reduce((sum, payout) => sum + payout.netCents, 0);
@@ -1352,7 +1509,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const coveredItems = normalized.rows.reduce((sum, row) => sum + row.coveredItemCount, 0);
   const feeRatio = netSalesCents + shippingIncomeCents ? paymentFeesCents / (netSalesCents + shippingIncomeCents) : 0;
   const cancelledOrdersCount = orders.filter((order) => Boolean(order.cancelledAt)).length;
-  const disputedOrdersCount = normalized.rows.reduce((sum, row) => sum + (row.disputeCount ? 1 : 0), 0);
+  const disputedOrdersCount = new Set(
+    disputeData.disputes.map((dispute) => String(dispute.order?.id || dispute.order?.name || dispute.id || "unknown")),
+  ).size;
 
   const orderRows: FinanceOrderRow[] = normalized.rows.slice(-200).reverse().map((row) => {
     const allocatedFeesCents = Math.round(row.netRevenueCents * feeRatio);
@@ -1401,7 +1560,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       dsers: dsersState,
       subscriptions: subscriptionState,
       campaigns: campaignData.state,
-      reconciliation: "missing",
+      reconciliation: reconciliationData.state,
       messages: [
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
@@ -1417,6 +1576,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
             ? `${disputeData.disputes.length} Shopify dispute${disputeData.disputes.length === 1 ? " was" : "s were"} reviewed; only lost, accepted, or expired chargebacks reduce profit.`
             : "No Shopify disputes were initiated in the selected period."
           : "Shopify dispute data is unavailable, so chargeback deductions cannot be fully verified.",
+        normalized.periodRefundsCents
+          ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in refund events created during the selected period.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to cancelled orders and is excluded from the accrual P&L to avoid counting cancelled revenue twice.` : ""}`
+          : "No Shopify refund events were created during the selected period.",
         campaignData.state === "connected"
           ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to attributed orders.`
           : campaignData.state === "manual"
@@ -1424,12 +1586,15 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
             : campaignData.state === "partial"
               ? "Shopify marketing campaign spend was only partially matched to attributed orders."
               : "Shopify marketing campaign spend requires read_marketing_events access or a FINANCE_CAMPAIGN_COSTS_JSON override.",
+        reconciliationData.message || "Workbook reconciliation is not configured for this workspace.",
       ],
     },
     kpis: {
       grossSalesCents,
       discountsCents,
       refundsCents,
+      periodRefundsCents: normalized.periodRefundsCents,
+      cancelledOrderRefundsCents: normalized.cancelledOrderRefundsCents,
       netSalesCents,
       shippingIncomeCents,
       taxCollectedCents,
@@ -1450,7 +1615,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     pnlRows: [
       { label: "Gross sales", cents: grossSalesCents, tone: "positive", detail: "Product revenue before discounts" },
       { label: "Discounts", cents: -discountsCents, tone: "negative", detail: "Promotions and order discounts" },
-      { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Refund event records created in the selected period" },
+      { label: "Refunds and returns", cents: -refundsCents, tone: "negative", detail: "Refund events created in the period and applied to non-cancelled order P&L" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
       { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
@@ -1460,23 +1625,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Shopify app billing plus configured external recurring costs" },
       { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, and subscriptions" },
     ],
-    reconciliation: {
-      state: "missing",
-      message: "Reconciliation data is not configured for this workspace.",
-      totals: {
-        pendingPayoutCents: 0,
-        payoutPaidCents: 0,
-        orderCostCents: 0,
-        billCostCents: 0,
-        campaignCostCents: 0,
-        feeCents: 0,
-        profitCents: 0,
-        rowCount: 0,
-        paidCount: 0,
-        pendingCount: 0,
-      },
-      rows: [],
-    },
+    reconciliation: reconciliationData.summary,
     payouts: payoutData.payouts,
     subscriptions,
     campaignCosts: campaignData.campaigns,

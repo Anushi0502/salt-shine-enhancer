@@ -192,6 +192,7 @@ Configure these deployment-only variables before publishing it:
 - `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`.
 - `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
 - `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
+- `FINANCE_RECONCILIATION_JSON`: optional workbook/cash bridge. It accepts `{ "source": "Store -2026.xlsx", "rows": [{ "month": "July 2026", "pendingPayout": 1187.29, "payoutPaid": 3448.38, "orderCost": 1662.81, "billCost": 1633.67, "profit": 1339.19 }] }`; each row can be period-scoped with `start`/`end`. This is displayed as a manual cash reconciliation and is kept separate from Shopify accrual profit. `profit` is preserved when supplied; otherwise it is calculated as payout plus pending cash less order cost, bills, campaign cost, and fees.
 
 The backend tries Shopify Payments GraphQL first and REST second. It never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
 

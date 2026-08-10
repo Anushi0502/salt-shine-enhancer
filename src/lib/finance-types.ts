@@ -14,6 +14,8 @@ export type FinanceKpis = {
   grossSalesCents: number;
   discountsCents: number;
   refundsCents: number;
+  periodRefundsCents: number;
+  cancelledOrderRefundsCents: number;
   netSalesCents: number;
   shippingIncomeCents: number;
   taxCollectedCents: number;
