@@ -133,7 +133,7 @@ function ExceptionRow({ item }: { item: FinanceException }) {
       <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${item.severity === "high" ? "text-rose-600" : "text-amber-600"}`} />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">{item.message}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{item.count} record{item.count === 1 ? "" : "s"} flagged | {item.kind}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{item.count} {item.kind === "missing-cost" ? `item${item.count === 1 ? "" : "s"}` : `record${item.count === 1 ? "" : "s"}`} flagged | {item.kind}</p>
       </div>
     </div>
   );
@@ -316,6 +316,7 @@ const FinancePage = () => {
   const feeGapCents = (reconciliationTotals?.feeCents || 0) - (kpis?.paymentFeesCents || 0);
   const chargebackGapCents = -(kpis?.chargebacksCents || 0);
   const bridgeGapCents = (kpis?.operatingProfitCents || 0) - (reconciliationTotals?.profitCents || 0);
+  const missingCostException = summary?.exceptions.find((item) => item.kind === "missing-cost");
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,hsl(var(--primary)/0.12),transparent_28%),radial-gradient(circle_at_92%_8%,hsl(var(--salt-gold)/0.13),transparent_24%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--salt-warm-bg)/0.84))] px-3 py-4 text-foreground sm:px-6 sm:py-6 lg:px-10 lg:py-8">
@@ -369,10 +370,10 @@ const FinancePage = () => {
             ) : null}
 
             <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              <StatCard label="Operating profit" value={formatMoney(kpis?.operatingProfitCents || 0, currency)} detail={`${kpis?.marginPercent == null ? "n/a" : `${kpis.marginPercent}%`} operating margin`} accent={kpis?.operatingProfitCents && kpis.operatingProfitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
-              <StatCard label="Net sales" value={formatMoney(kpis?.netSalesCents || 0, currency)} detail={`${kpis?.orderCount || 0} orders in period`} icon={<ArrowUpRight className="h-5 w-5" />} />
-              <StatCard label="Payouts received" value={formatMoney(kpis?.payoutsReceivedCents || 0, currency)} detail="Cash movement, not profit" accent="navy" icon={<WalletCards className="h-5 w-5" />} />
-              <StatCard label="Supplier cost" value={formatMoney(kpis?.cogsCents || 0, currency)} detail={`${kpis?.costCoveragePercent == null ? "n/a" : `${kpis.costCoveragePercent}%`} cost coverage`} accent="gold" icon={<ArrowDownRight className="h-5 w-5" />} />
+              <StatCard label="Operating profit" value={formatMoney(kpis?.operatingProfitCents || 0, currency)} detail={`${kpis?.marginPercent == null ? "n/a" : `${kpis.marginPercent}%`} accrual margin | campaign + recurring costs included`} accent={kpis?.operatingProfitCents && kpis.operatingProfitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
+              <StatCard label="Net sales" value={formatMoney(kpis?.netSalesCents || 0, currency)} detail={`${kpis?.orderCount || 0} orders | ${formatMoney(kpis?.returnDeductionsCents || 0, currency)} product returns removed`} icon={<ArrowUpRight className="h-5 w-5" />} />
+              <StatCard label="Payouts received" value={formatMoney(kpis?.payoutsReceivedCents || 0, currency)} detail="Cash movement, not profit | bridge below" accent="navy" icon={<WalletCards className="h-5 w-5" />} />
+              <StatCard label="Supplier cost" value={formatMoney(kpis?.cogsCents || 0, currency)} detail={`${kpis?.costCoveragePercent == null ? "n/a" : `${kpis.costCoveragePercent}%`} cost coverage${missingCostException ? ` | ${missingCostException.count} item${missingCostException.count === 1 ? "" : "s"} missing` : ""}`} accent="gold" icon={<ArrowDownRight className="h-5 w-5" />} />
               <StatCard label="Subscriptions" value={formatMoney(kpis?.subscriptionCostsCents || 0, currency)} detail="Configured operating costs" accent="navy" icon={<FileText className="h-5 w-5" />} />
             </section>
 

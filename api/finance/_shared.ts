@@ -1313,6 +1313,7 @@ function normalizeOrders(
   currency: string;
   missingCostCount: number;
   coveredBySupplierCount: number;
+  missingCostLabels: string[];
   periodRefundsCents: number;
   cancelledOrderRefundsCents: number;
   multiCurrency: boolean;
@@ -1320,6 +1321,7 @@ function normalizeOrders(
   const currencies = new Set<string>();
   let missingCostCount = 0;
   let coveredBySupplierCount = 0;
+  const missingCostLabels = new Set<string>();
   const rows = orders
     .filter((order) => !order.cancelledAt)
     .map((order) => {
@@ -1360,6 +1362,7 @@ function normalizeOrders(
         } else {
           hasMissingCost = true;
           missingCostCount += quantity;
+          missingCostLabels.add(`${String(order.name || order.id || "Order")}: ${String(line.title || line.variant?.title || "Untitled product")} x${quantity}`);
         }
       }
 
@@ -1396,6 +1399,7 @@ function normalizeOrders(
     currency: currencies.values().next().value || DEFAULT_CURRENCY,
     missingCostCount,
     coveredBySupplierCount,
+    missingCostLabels: [...missingCostLabels],
     periodRefundsCents: orders.reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
     cancelledOrderRefundsCents: orders.filter((order) => Boolean(order.cancelledAt)).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
     multiCurrency: currencies.size > 1,
@@ -1546,7 +1550,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
     const message = supplierCosts.configured
       ? "Some line items still do not have a Shopify or DSers supplier cost after applying the configured DSers cost map."
       : "Some line items do not have a Shopify/DSers cost-per-item value. Add FINANCE_DSER_COSTS_JSON or populate Shopify cost per item.";
-    exceptions.push(exception("missing-cost", message, normalized.missingCostCount, "high"));
+    const affected = normalized.missingCostLabels.slice(0, 6).join("; ");
+    const more = normalized.missingCostLabels.length > 6 ? `; +${normalized.missingCostLabels.length - 6} more` : "";
+    exceptions.push(exception("missing-cost", `${message} Affected: ${affected}${more}`, normalized.missingCostCount, "high"));
   }
   if (normalized.multiCurrency) exceptions.push(exception("currency", "The selected period contains multiple currencies. Totals are not converted.", 1, "high"));
 
@@ -1625,7 +1631,9 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       messages: [
         normalized.coveredBySupplierCount
           ? `DSers cost map covered ${normalized.coveredBySupplierCount} ordered item${normalized.coveredBySupplierCount === 1 ? "" : "s"}.`
-          : "DSers costs use Shopify variant cost-per-item values. External supplier costs can be supplied through FINANCE_DSER_COSTS_JSON.",
+          : normalized.missingCostCount
+            ? `Shopify cost coverage is partial: ${normalized.missingCostCount} ordered item${normalized.missingCostCount === 1 ? "" : "s"} still need a cost source.`
+            : "DSers costs use Shopify variant cost-per-item values. External supplier costs can be supplied through FINANCE_DSER_COSTS_JSON.",
         payoutData.state === "connected"
           ? "Shopify payouts are live and payment fees are allocated to order rows by net revenue."
           : "Shopify payouts require merchant-approved payments access; FINANCE_PAYOUTS_JSON is supported for reconciled exports until access is granted.",
@@ -1680,7 +1688,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "Refunds and returns", cents: -returnDeductionsCents, tone: "negative", detail: "Product return deductions; cash refund events remain visible in reconciliation" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
-      { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: "Shopify inventory cost plus matched DSers supplier cost map" },
+      { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: normalized.missingCostCount ? `Shopify inventory cost plus matched DSers cost map; ${normalized.missingCostCount} item costs remain unresolved` : "Shopify inventory cost plus matched DSers supplier cost map" },
       { label: "Payment fees", cents: -paymentFeesCents, tone: "negative", detail: "Fees reported through Shopify payouts" },
       { label: "Chargebacks", cents: -chargebacksCents, tone: "negative", detail: "Lost, accepted, or expired Shopify chargebacks only" },
       { label: "Campaign spend", cents: -campaignCostsCents, tone: "negative", detail: "Shopify marketing activity ad spend allocated to attributed orders" },
