@@ -1465,7 +1465,7 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
 
 function parseManualCosts(start: string, end: string): { subscriptions: FinanceSubscription[]; state: FinanceSourceState; message?: string } {
   const raw = String(process.env.FINANCE_SUBSCRIPTIONS_JSON || "").trim();
-  const usingDefaults = !raw;
+  const usingDefaults = !raw || raw === "[]";
 
   try {
     const entries = usingDefaults ? DEFAULT_MANUAL_SUBSCRIPTIONS : JSON.parse(raw) as Array<Record<string, unknown>>;

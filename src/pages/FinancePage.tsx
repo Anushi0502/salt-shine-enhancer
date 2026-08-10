@@ -307,6 +307,15 @@ const FinancePage = () => {
       : summary?.sources.payouts === "unavailable"
         ? "Shopify payouts are not connected yet. Merchant approval or a reconciled payout export is required."
         : "";
+  const reconciliationTotals = summary?.reconciliation.totals;
+  const payoutCashCents = (reconciliationTotals?.pendingPayoutCents || 0) + (reconciliationTotals?.payoutPaidCents || 0);
+  const revenueToCashGapCents = (kpis?.netSalesCents || 0) + (kpis?.shippingIncomeCents || 0) - payoutCashCents;
+  const orderCostGapCents = (reconciliationTotals?.orderCostCents || 0) - (kpis?.cogsCents || 0);
+  const campaignGapCents = (reconciliationTotals?.campaignCostCents || 0) - (kpis?.campaignCostsCents || 0);
+  const subscriptionGapCents = -(kpis?.subscriptionCostsCents || 0);
+  const feeGapCents = (reconciliationTotals?.feeCents || 0) - (kpis?.paymentFeesCents || 0);
+  const chargebackGapCents = -(kpis?.chargebacksCents || 0);
+  const bridgeGapCents = (kpis?.operatingProfitCents || 0) - (reconciliationTotals?.profitCents || 0);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_8%_0%,hsl(var(--primary)/0.12),transparent_28%),radial-gradient(circle_at_92%_8%,hsl(var(--salt-gold)/0.13),transparent_24%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--salt-warm-bg)/0.84))] px-3 py-4 text-foreground sm:px-6 sm:py-6 lg:px-10 lg:py-8">
@@ -388,7 +397,9 @@ const FinancePage = () => {
                 <ReconciliationMetric label="Workbook profit" cents={summary.reconciliation.totals.profitCents} currency={currency} />
                 <ReconciliationMetric label="Accrual P&L minus bridge" cents={(kpis?.operatingProfitCents || 0) - summary.reconciliation.totals.profitCents} currency={currency} />
                 <ReconciliationMetric label="Refunds in Shopify period" cents={-(kpis?.periodRefundsCents || 0)} currency={currency} />
+                <ReconciliationMetric label="Cancelled refund cash" cents={-(kpis?.cancelledOrderRefundsCents || 0)} currency={currency} />
               </div>
+              {summary.reconciliation.state === "manual" ? <div className="mt-5"><p className="salt-kicker">Gap drivers</p><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><ReconciliationMetric label="Revenue vs payout cash" cents={revenueToCashGapCents} currency={currency} /><ReconciliationMetric label="Order-cost source gap" cents={orderCostGapCents} currency={currency} /><ReconciliationMetric label="Bills outside accrual" cents={reconciliationTotals?.billCostCents || 0} currency={currency} /><ReconciliationMetric label="Campaign not in workbook" cents={campaignGapCents} currency={currency} /><ReconciliationMetric label="Subscriptions not in workbook" cents={subscriptionGapCents} currency={currency} /><ReconciliationMetric label="Fees / chargebacks gap" cents={feeGapCents + chargebackGapCents} currency={currency} /><ReconciliationMetric label="Total explained gap" cents={bridgeGapCents} currency={currency} /></div><p className="mt-3 text-xs leading-5 text-muted-foreground">The total equals accrual operating profit minus workbook cash profit. Negative values are deductions present in Shopify but absent from the workbook bridge.</p></div> : null}
               <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">
                 <p>{summary.reconciliation.message || "No workbook reconciliation source is configured."}</p>
                 {(kpis?.cancelledOrderRefundsCents || 0) > 0 ? <p className="mt-2">{formatMoney(kpis?.cancelledOrderRefundsCents || 0, currency)} of the period refund events belong to cancelled orders and are shown here for review, but excluded from the accrual P&amp;L to avoid double counting cancelled revenue.</p> : null}
