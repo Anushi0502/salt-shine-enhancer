@@ -925,6 +925,39 @@ function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): Product
   });
 }
 
+function getHeadPreloadedCollectionPagePayload(
+  handle: string,
+  page: number,
+): CollectionPageProductsPayload | undefined {
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const inlineCollection = getHeadPreloadedCollection();
+  const inlineHandle = String(inlineCollection?.handle || "").trim().toLowerCase();
+  const inlinePage = Number(inlineCollection?.currentPage || 1);
+
+  if (
+    !normalizedHandle ||
+    inlineHandle !== normalizedHandle ||
+    inlinePage !== Math.max(1, Math.floor(page))
+  ) {
+    return undefined;
+  }
+
+  const products = getNormalizedHeadPreloadedCollectionProducts();
+  if (!products.length) {
+    return undefined;
+  }
+
+  return {
+    generatedAt: inlineCollection?.generatedAt || new Date().toISOString(),
+    source: `shopify-liquid-partial:${normalizedHandle}`,
+    handle: normalizedHandle,
+    page: inlinePage,
+    total: Number(inlineCollection?.total) > 0 ? Number(inlineCollection.total) : products.length,
+    productIds: products.map((product) => product.id),
+    products,
+  };
+}
+
 function mergeCollectionRecords(primary: ShopifyCollection, overlay?: ShopifyCollection | null): ShopifyCollection {
   return normalizeCollectionRecord({
     ...(overlay || {}),
@@ -2007,6 +2040,9 @@ export function useProductSearchIndex(enabled = true, hydrateCollectionPage = tr
   });
 
   const collectionPage = getCurrentCollectionPageContext();
+  const inlineCollectionPage = collectionPage
+    ? getHeadPreloadedCollectionPagePayload(collectionPage.handle, collectionPage.page)
+    : undefined;
   const collectionPageQuery = useQuery({
     queryKey: [
       "collection-page-products",
@@ -2016,8 +2052,13 @@ export function useProductSearchIndex(enabled = true, hydrateCollectionPage = tr
     ],
     queryFn: () => loadCollectionPageProducts(collectionPage?.handle || "", collectionPage?.page || 1),
     enabled: enabled && hydrateCollectionPage && Boolean(collectionPage),
+    initialData: inlineCollectionPage,
+    initialDataUpdatedAt: inlineCollectionPage ? 0 : undefined,
     staleTime: COLLECTION_PAGE_HYDRATION_STALE_TIME_MS,
-    refetchOnMount: false,
+    // Paint the request-time Shopify collection immediately, then refresh the
+    // visible page in the background so prices, availability, and manual order
+    // stay current without making the catalog wait on a network round-trip.
+    refetchOnMount: inlineCollectionPage ? "always" : false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,
@@ -2025,19 +2066,31 @@ export function useProductSearchIndex(enabled = true, hydrateCollectionPage = tr
     retryDelay: liveQueryRetryDelay,
   });
 
+  const collectionPageProducts = collectionPageQuery.data?.products || [];
+  const data = catalogQuery.data && collectionPageProducts.length
+    ? mergeCollectionPageProducts(catalogQuery.data, collectionPageProducts)
+    : catalogQuery.data || (collectionPageProducts.length
+      ? normalizeProductsPayload({
+          generatedAt: collectionPageQuery.data?.generatedAt || new Date().toISOString(),
+          source: collectionPageQuery.data?.source || "shopify-liquid-partial",
+          total: collectionPageProducts.length,
+          products: collectionPageProducts,
+        })
+      : undefined);
+
   return {
     ...catalogQuery,
     // The static search shard remains the initial result. Live collection
     // hydration is deliberately a second query so a slow Shopify endpoint
     // cannot block the catalog grid or its filters.
-    data:
-      catalogQuery.data && collectionPageQuery.data?.products.length
-        ? mergeCollectionPageProducts(catalogQuery.data, collectionPageQuery.data.products)
-        : catalogQuery.data,
+    data,
     collectionPageProductIds: collectionPageQuery.data?.productIds || [],
     collectionPageTotal: collectionPageQuery.data?.total || 0,
     collectionPageLoading: collectionPageQuery.isLoading,
     collectionPageError: collectionPageQuery.error,
+    // A Shopify Liquid page seed is enough to render the first visible cards.
+    // Keep the full search index loading in the background for filters/search.
+    isLoading: catalogQuery.isLoading && !collectionPageProducts.length,
     isFetching: catalogQuery.isFetching || collectionPageQuery.isFetching,
   };
 }
