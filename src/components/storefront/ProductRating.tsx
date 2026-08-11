@@ -24,15 +24,19 @@ const ProductRating = ({ summary, className, compact = false }: ProductRatingPro
       aria-label={hasReviews ? `${rating.toFixed(1)} out of 5 stars from ${reviewCount.toLocaleString()} reviews` : "No reviews yet"}
     >
       <span className="inline-flex items-center gap-0.5 text-amber-500" aria-hidden="true">
-        {Array.from({ length: 5 }, (_, index) => (
-          <Star
-            key={index}
-            className={cn(
-              compact ? "h-3 w-3" : "h-3.5 w-3.5",
-              index + 1 <= roundedRating ? "fill-current" : "text-amber-300",
-            )}
-          />
-        ))}
+        {compact ? (
+          <Star className="h-3 w-3 fill-current" />
+        ) : (
+          Array.from({ length: 5 }, (_, index) => (
+            <Star
+              key={index}
+              className={cn(
+                "h-3.5 w-3.5",
+                index + 1 <= roundedRating ? "fill-current" : "text-amber-300",
+              )}
+            />
+          ))
+        )}
       </span>
       <span className="whitespace-nowrap text-foreground">
         {hasReviews ? rating.toFixed(1) : "New"}

@@ -84,6 +84,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   const isShop = variant === "shop";
   const min = minPrice(product);
   const compare = compareAt(product);
+  const discountPercent = compare > min ? Math.round(((compare - min) / compare) * 100) : 0;
   const image = productImage(product);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
   const minimumQuantity = getMinimumProductQuantity(
@@ -108,7 +109,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return (
       <article
         ref={cardRef}
-        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.45rem] border border-border/70 bg-background/92 shadow-[0_18px_38px_-30px_rgba(15,23,42,0.22)] transition duration-500 hover:-translate-y-1 hover:border-primary/20 hover:shadow-[0_24px_46px_-32px_rgba(15,23,42,0.16)] ${className}`.trim()}
+        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.55rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.94))] shadow-[0_18px_38px_-30px_rgba(15,23,42,0.16)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_46px_-32px_rgba(15,23,42,0.18)] ${className}`.trim()}
       >
         <button
           type="button"
@@ -122,7 +123,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
+          className="absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
@@ -133,7 +134,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         >
           <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
             {image ? (
-              <div className="aspect-[0.98/1.03] overflow-hidden">
+              <div className="aspect-square overflow-hidden">
                 <img
                   src={image}
                   alt={product.title}
@@ -143,7 +144,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 />
               </div>
             ) : (
-              <div className={`grid aspect-[0.98/1.03] w-full place-items-center px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
+              <div className={`grid aspect-square w-full place-items-center px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
                 nativeApp
                   ? "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] text-muted-foreground"
                   : "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-primary"
@@ -151,11 +152,15 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 Image unavailable
               </div>
             )}
-
+            {discountPercent > 0 ? (
+              <span className="absolute right-3 top-3 rounded-full border border-white/70 bg-[#314979] px-4 py-2 text-xs font-semibold tracking-[0.18em] text-white shadow-[0_8px_18px_-12px_rgba(15,23,42,0.6)]">
+                {discountPercent}% OFF
+              </span>
+            ) : null}
           </div>
 
-          <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-            <h3 className={`line-clamp-2 font-display text-[1rem] leading-[1.08] tracking-[-0.03em] ${
+          <div className="flex min-h-[10.25rem] flex-1 flex-col p-4 sm:p-5">
+            <h3 className={`line-clamp-2 font-display text-[1.08rem] leading-[1.08] tracking-[-0.03em] ${
               nativeApp ? "text-foreground" : "text-foreground"
             }`}>
               {title}
@@ -173,13 +178,13 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </div>
             ) : null}
 
-            <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+            <div className="mt-auto flex items-end justify-between gap-2 pt-5">
               <div className="min-w-0">
-                <p className="font-display text-[1.3rem] leading-none text-foreground">
+                <p className="font-display text-[1.25rem] leading-none tracking-[0.12em] text-primary">
                   {formatMoney(min)}
                 </p>
                 {compare > min ? (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="sr-only">
                     <s>{formatMoney(compare)}</s>
                   </p>
                 ) : null}
@@ -201,10 +206,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   return (
     <article
       ref={cardRef}
-      className={`group relative flex h-full flex-col overflow-hidden rounded-[1.1rem] p-2 shadow-[0_16px_38px_-30px_rgba(22,77,160,0.28)] transition duration-500 hover:-translate-y-0.5 sm:p-2 ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-[1.55rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.94))] shadow-[0_16px_38px_-30px_rgba(22,77,160,0.18)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 ${
         nativeApp
           ? "border border-border/70 bg-background/96 hover:border-primary/20 hover:shadow-[0_22px_48px_-32px_rgba(15,23,42,0.16)]"
-          : "border border-border/70 bg-background/92 hover:border-primary/20 hover:shadow-[0_22px_48px_-32px_rgba(15,23,42,0.18)]"
+        : "hover:shadow-[0_22px_48px_-32px_rgba(15,23,42,0.18)]"
       } ${className}`.trim()}
     >
       <button
@@ -219,7 +224,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         aria-pressed={wishlisted ? "true" : "false"}
         aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-        className={`absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
+        className={`absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
           nativeApp
             ? "border-border/70 bg-background/96 text-foreground hover:border-primary/20 hover:text-primary"
             : "border-white/40 bg-white/90 text-primary hover:border-primary/30 hover:text-primary/80"
@@ -230,12 +235,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
       <Link
         to={`/products/${product.handle}`}
-        className={`relative isolate block overflow-hidden rounded-[0.9rem] bg-muted ${
-          nativeApp ? "border border-border/70" : "border border-border/70"
-        }`}
+        className="relative isolate block overflow-hidden rounded-t-[1.55rem] border-b border-border/70 bg-muted"
       >
         {image ? (
-          <div className="aspect-square w-full overflow-hidden">
+          <div className="relative aspect-square w-full overflow-hidden">
             <div className="salt-category-scroll-track h-full w-full">
               <img
                 src={image}
@@ -245,6 +248,11 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 className="h-[112%] w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
               />
             </div>
+            {discountPercent > 0 ? (
+              <span className="absolute right-3 top-3 rounded-full border border-white/70 bg-[#314979] px-4 py-2 text-xs font-semibold tracking-[0.18em] text-white shadow-[0_8px_18px_-12px_rgba(15,23,42,0.6)]">
+                {discountPercent}% OFF
+              </span>
+            ) : null}
           </div>
         ) : (
           <div className="grid aspect-square w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -254,7 +262,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
       </Link>
 
-      <div className="mt-2 flex flex-1 flex-col">
+      <div className="flex min-h-[10.25rem] flex-1 flex-col p-4 sm:p-5">
         <p className={`line-clamp-2 font-display text-[clamp(0.98rem,2vw,1.1rem)] leading-[1.12] ${nativeApp ? "text-foreground" : "text-foreground"}`}>
           {title}
         </p>
@@ -275,7 +283,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <div className="min-w-0">
             <p className={`font-display text-[1.2rem] leading-none ${nativeApp ? "text-foreground" : "text-primary"}`}>{formatMoney(min)}</p>
             {compare > min ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="sr-only">
                 <s>{formatMoney(compare)}</s>
               </p>
             ) : null}
@@ -283,7 +291,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <ProductRating summary={displaySummary} compact />
         </div>
 
-        <div className="mt-2 flex justify-end gap-1.5">
+        <div className="sr-only">
           <button
             type="button"
             onClick={() => {
