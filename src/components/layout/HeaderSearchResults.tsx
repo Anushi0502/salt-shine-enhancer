@@ -1,10 +1,10 @@
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
-import { buildSearchIntelligence } from "@/lib/search-intelligence";
 import { useProductSearchIndex } from "@/lib/shopify-data";
+import type { ShopifyProduct } from "@/types/shopify";
 
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
 
@@ -20,6 +20,43 @@ function normalizeSearchPhrase(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function scoreQuickSearchProduct(
+  product: ShopifyProduct,
+  normalizedQuery: string,
+  queryTokens: string[],
+): number {
+  const title = normalizeSearchPhrase(product.title);
+  const type = normalizeSearchPhrase(product.product_type || "");
+  const tags = Array.isArray(product.tags)
+    ? normalizeSearchPhrase(product.tags.join(" "))
+    : normalizeSearchPhrase(String(product.tags || ""));
+  const haystack = `${title} ${type} ${tags}`;
+
+  if (!queryTokens.length || !haystack) {
+    return 0;
+  }
+
+  const matchedTokens = queryTokens.filter((token) => haystack.includes(token)).length;
+  if (matchedTokens !== queryTokens.length) {
+    return 0;
+  }
+
+  let score = matchedTokens * 10;
+  if (title === normalizedQuery) {
+    score += 100;
+  } else if (title.startsWith(normalizedQuery)) {
+    score += 60;
+  } else if (title.includes(normalizedQuery)) {
+    score += 35;
+  }
+
+  if (type.includes(normalizedQuery)) {
+    score += 15;
+  }
+
+  return score;
+}
+
 const HeaderSearchResults = ({
   query,
   recentSearches,
@@ -27,16 +64,41 @@ const HeaderSearchResults = ({
   onSearchAll,
   onQuickSearch,
 }: HeaderSearchResultsProps) => {
-  const deferredQuery = useDeferredValue(query).trim();
+  const deferredQuery = query.trim();
   const { data: productsData } = useProductSearchIndex();
   const { data: collectionsData } = useCollections();
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
   const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const hasSearchQuery = Boolean(query.trim());
-  const searchIntelligence = useMemo(
-    () => (hasSearchQuery ? buildSearchIntelligence(allProducts, allCollections, deferredQuery) : null),
-    [allProducts, allCollections, deferredQuery, hasSearchQuery],
+  const normalizedQuery = useMemo(() => normalizeSearchPhrase(deferredQuery), [deferredQuery]);
+  const queryTokens = useMemo(() => normalizedQuery.split(/\s+/).filter(Boolean), [normalizedQuery]);
+  const quickSearchRecords = useMemo(
+    () =>
+      allProducts.map((product) => ({
+        product,
+        title: normalizeSearchPhrase(product.title),
+        type: normalizeSearchPhrase(product.product_type || ""),
+        tags: Array.isArray(product.tags)
+          ? normalizeSearchPhrase(product.tags.join(" "))
+          : normalizeSearchPhrase(String(product.tags || "")),
+      })),
+    [allProducts],
   );
+  const typeSuggestions = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    allProducts.forEach((product) => {
+      const label = String(product.product_type || "").trim();
+      if (label) {
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }
+    });
+
+    return [...counts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 24)
+      .map(([label]) => ({ label }));
+  }, [allProducts]);
 
   const dropdownProducts = useMemo(() => {
     if (!allProducts.length) {
@@ -47,23 +109,27 @@ const HeaderSearchResults = ({
       return allProducts.slice(0, 4);
     }
 
-    return searchIntelligence?.predictedProducts ?? [];
-  }, [allProducts, hasSearchQuery, searchIntelligence]);
+    return quickSearchRecords
+      .map(({ product, title, type, tags }) => {
+        const haystack = `${title} ${type} ${tags}`;
+        const matchedTokens = queryTokens.filter((token) => haystack.includes(token)).length;
+        if (matchedTokens !== queryTokens.length) {
+          return null;
+        }
 
-  const productSectionLabel = hasSearchQuery
-    ? searchIntelligence?.resultMode === "catalog-intent"
-      ? "Catalog-understood matches"
-      : searchIntelligence?.exactProducts.length
-        ? "Product matches"
-        : "Closest predicted products"
-    : "Product matches";
-  const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
-  const searchIntent = searchIntelligence?.intent ?? null;
-  const searchRefinements = searchIntelligence?.refinements ?? [];
-  const matchExplanations = useMemo(
-    () => new Map((searchIntelligence?.matchExplanations ?? []).map((entry) => [entry.productId, entry.reasons])),
-    [searchIntelligence?.matchExplanations],
-  );
+        return {
+          product,
+          score: scoreQuickSearchProduct(product, normalizedQuery, queryTokens),
+        };
+      })
+      .filter((entry): entry is { product: (typeof allProducts)[number]; score: number } => Boolean(entry?.score))
+      .sort((left, right) => right.score - left.score)
+      .slice(0, 6)
+      .map(({ product }) => product);
+  }, [allProducts, hasSearchQuery, normalizedQuery, queryTokens, quickSearchRecords]);
+
+  const productSectionLabel = hasSearchQuery ? "Product matches" : "Product matches";
+  const predictiveQuerySuggestions: Array<{ query: string; label: string }> = [];
 
   const trendingSearches = useMemo(() => {
     if (!allProducts.length) {
@@ -92,7 +158,6 @@ const HeaderSearchResults = ({
   }, [allProducts]);
 
   const categorySuggestions = useMemo(() => {
-    const normalizedQuery = normalizeSearchPhrase(deferredQuery);
     const suggestions: Array<{ label: string; to: string }> = [];
     const seen = new Set<string>();
 
@@ -119,54 +184,24 @@ const HeaderSearchResults = ({
       suggestions.push({ label, to: `/collections/${handle}` });
     });
 
-    const typeCounts = new Map<string, number>();
-    allProducts.forEach((product) => {
-      const label = String(product.product_type || "").trim();
-      if (!label) {
+    typeSuggestions.forEach(({ label }) => {
+      if (normalizedQuery && !normalizeSearchPhrase(label).includes(normalizedQuery)) {
         return;
       }
-      typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
+
+      const key = `type:${label.toLowerCase()}`;
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      suggestions.push({ label, to: `/shop?type=${encodeURIComponent(label)}` });
     });
 
-    [...typeCounts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .forEach(([label]) => {
-        if (normalizedQuery && !normalizeSearchPhrase(label).includes(normalizedQuery)) {
-          return;
-        }
-
-        const key = `type:${label.toLowerCase()}`;
-        if (seen.has(key)) {
-          return;
-        }
-
-        seen.add(key);
-        suggestions.push({ label, to: `/shop?type=${encodeURIComponent(label)}` });
-      });
-
     return suggestions.slice(0, 8);
-  }, [allCollections, allProducts, deferredQuery]);
+  }, [allCollections, normalizedQuery, typeSuggestions]);
 
-  const predictiveCategorySuggestions = useMemo(() => {
-    if (!hasSearchQuery) {
-      return categorySuggestions;
-    }
-
-    const merged = [...categorySuggestions, ...(searchIntelligence?.categorySuggestions ?? [])];
-    const seen = new Set<string>();
-
-    return merged
-      .filter((entry) => {
-        const key = `${entry.label.toLowerCase()}::${entry.to}`;
-        if (seen.has(key)) {
-          return false;
-        }
-
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 6);
-  }, [categorySuggestions, hasSearchQuery, searchIntelligence]);
+  const predictiveCategorySuggestions = categorySuggestions;
 
   const bestSellerCollection = useMemo(
     () =>
@@ -262,11 +297,6 @@ const HeaderSearchResults = ({
                     <p className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
                       {conciseTitle(product.title, 44)}
                     </p>
-                    {matchExplanations.get(product.id)?.[0] ? (
-                      <p className="mt-1 line-clamp-1 text-[0.58rem] font-medium leading-4 text-primary/80">
-                        {matchExplanations.get(product.id)?.[0]}
-                      </p>
-                    ) : null}
                   </div>
 
                   <div className="flex min-h-full flex-col items-end gap-1.5 text-right">
@@ -299,46 +329,6 @@ const HeaderSearchResults = ({
         <section className="rounded-[0.95rem] border border-border/70 bg-background/95 p-2">
           {hasSearchQuery ? (
             <div className="rounded-[0.85rem] border border-border/70 bg-background/92 p-2.5">
-              {searchIntent ? (
-                <div className="rounded-[0.75rem] border border-primary/15 bg-primary/[0.04] p-2">
-                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-primary">Understood as</p>
-                  <p className="mt-1 text-sm font-semibold leading-tight text-foreground">{searchIntent.label}</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {[searchIntent.familyLabel, searchIntent.priceLabel, searchIntent.availabilityLabel]
-                      .filter(Boolean)
-                      .map((label) => (
-                        <span
-                          key={label}
-                          className="rounded-full border border-primary/15 bg-background/80 px-2 py-1 text-[0.54rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {searchRefinements.length ? (
-                <div className={searchIntent ? "mt-2.5" : ""}>
-                  <p className="text-[0.52rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Refine in one tap
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {searchRefinements.slice(0, 4).map((refinement) => (
-                      <button
-                        key={refinement.query}
-                        type="button"
-                        onClick={() => onQuickSearch(refinement.query)}
-                        title={refinement.reason}
-                        className="rounded-full border border-primary/20 bg-primary/[0.06] px-2 py-1 text-[0.56rem] font-bold uppercase tracking-[0.08em] text-primary transition hover:border-primary/35 hover:bg-primary/[0.1]"
-                      >
-                        {refinement.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
               <div className="flex items-center justify-between gap-2">
                 <p className="mt-2.5 text-[0.64rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   Predictive paths
