@@ -23,7 +23,6 @@ import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
-import { buildSearchIntelligence } from "@/lib/search-intelligence";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
@@ -38,6 +37,8 @@ import {
   buildCollectionStructuredData,
   rankProductsForShopChannel,
 } from "@/lib/sales-optimization";
+import type { SearchIntelligence } from "@/lib/search-intelligence";
+import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const sortOptions = [
   { value: "title-asc", label: "A to Z" },
@@ -173,6 +174,12 @@ type ShopHeroAction = {
   onClick?: () => void;
 };
 
+type SearchIntelligenceBuilder = (
+  products: ShopifyProduct[],
+  collections: ShopifyCollection[],
+  query: string,
+) => SearchIntelligence;
+
 function renderHeroAction(action: ShopHeroAction) {
   const actionClass = action.primary
     ? "inline-flex h-11 items-center justify-center rounded-full border border-transparent bg-primary px-5 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-white transition hover:-translate-y-[1px] hover:shadow-[0_18px_30px_-24px_rgba(37,99,235,0.5)]"
@@ -216,10 +223,35 @@ const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const deferredQuery = useDeferredValue(query);
+  const [searchIntelligenceBuilder, setSearchIntelligenceBuilder] = useState<SearchIntelligenceBuilder | null>(null);
   const currentCollectionParam = normalizeCollectionFilter(searchParams.get("collection"));
   const routeCollectionAlias = normalizeCollectionFilter(routeCollectionHandle);
   const routeSubcollectionAlias = normalizeCollectionFilter(routeSubcollectionHandle);
   const hasSearchQuery = Boolean(query.trim());
+
+  useEffect(() => {
+    let active = true;
+
+    if (!hasSearchQuery) {
+      setSearchIntelligenceBuilder(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    // Keep the large catalog-intelligence engine off collection/PDP first paint.
+    // Search results already have the lightweight catalog filter immediately;
+    // this enhancement loads only after a submitted query needs it.
+    void import("@/lib/search-intelligence").then(({ buildSearchIntelligence }) => {
+      if (active) {
+        setSearchIntelligenceBuilder(() => buildSearchIntelligence);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [hasSearchQuery]);
   const isDefaultSearchCollection =
     hasSearchQuery && currentCollectionParam === DEFAULT_COLLECTION_HANDLE && !routeCollectionAlias && !routeSubcollectionAlias;
   const activeCollectionParam = isDefaultSearchCollection ? "" : currentCollectionParam;
@@ -344,8 +376,11 @@ const ShopPage = () => {
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
   const searchIntelligence = useMemo(
-    () => (hasSearchQuery ? buildSearchIntelligence(products, collections, deferredQuery) : null),
-    [collections, deferredQuery, hasSearchQuery, products],
+    () =>
+      hasSearchQuery && searchIntelligenceBuilder
+        ? searchIntelligenceBuilder(products, collections, deferredQuery)
+        : null,
+    [collections, deferredQuery, hasSearchQuery, products, searchIntelligenceBuilder],
   );
   const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
   const liveCollectionProductIds = useMemo(
