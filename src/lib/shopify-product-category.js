@@ -1,6 +1,8 @@
 import { normalizePlainText } from "./shopify-seo-batch.js";
+import { classifyCatalogTaxonomy } from "./catalog-taxonomy.js";
 
 const CATEGORY_RULES = [
+  [/out-of-stock-placeholder-listing|out-of-stock(?:-out-of-stock){2,}/i, "pa", "Product Add-Ons"],
   [/(?:order|price)\s+(?:price\s+)?difference|order adjustment/i, "pa", "Product Add-Ons"],
   [/(?:wireless|bluetooth|open[ -]?ear|in[ -]?ear).{0,35}(?:earbuds?|earphones?|headphones?)|(?:earbuds?|earphones?|headphones?).{0,35}(?:wireless|bluetooth|case|cover)/i, "el", "Electronics"],
   [/(?:earbuds?|earphones?|headsets?|airpods?|eartips?|ear tips?|galaxy buds|realme buds)/i, "el", "Electronics"],
@@ -69,8 +71,11 @@ const CATEGORY_RULES = [
   [/\bshirts?\b/i, "aa-1-13-7", "Shirts"],
   [/(?:athletic shoes|sneakers|sports shoes|running shoes)/i, "aa-8-1", "Athletic Shoes"],
   [/\b(?:shoes|sandals|slippers|boots)\b/i, "aa-8", "Shoes"],
+  [/(?:\b(?:hat|hats|cap|caps|beanie|visor|fedora)\b|bucket hat|sun hat)/i, "aa-2-17", "Hats"],
   [/\btoys?\b/i, "tg-5", "Toys"],
 ];
+
+const richCategoryCache = new WeakMap();
 
 function buildProductEvidenceText(product) {
   const tags = Array.isArray(product?.tags) ? product.tags.join(" ") : product?.tags || "";
@@ -100,6 +105,33 @@ export function inferShopifyTaxonomyCategory(product) {
   }
 
   return null;
+}
+
+// The checked-in rule table supplies stable IDs for the narrow, legacy rules.
+// The full taxonomy supplies deterministic category paths; the backfill script
+// resolves those paths against Shopify before writing a category ID.
+export function inferDeterministicShopifyTaxonomyCategory(product) {
+  const explicit = inferShopifyTaxonomyCategory(product);
+  if (explicit) return explicit;
+  if (!product || typeof product !== "object") return null;
+
+  const cached = richCategoryCache.get(product);
+  if (cached !== undefined) return cached;
+
+  const classification = classifyCatalogTaxonomy(product);
+  const fullName = normalizePlainText(classification?.shopifyCategory || "");
+  const result = classification?.reviewRequired || !fullName
+    ? null
+    : {
+        id: "",
+        name: fullName.split(/\s*>\s*/).at(-1) || fullName,
+        fullName,
+        confidence: classification.confidence >= 90 ? "high" : "medium",
+        reason: `Deterministic taxonomy rule ${classification.ruleId} resolved to ${fullName}`,
+        ruleId: classification.ruleId,
+      };
+  richCategoryCache.set(product, result);
+  return result;
 }
 
 const DISCLOSURE_PATTERNS = [

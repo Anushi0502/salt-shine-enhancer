@@ -7,7 +7,9 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 import { normalizeHandleValue, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
-import { inferShopifyTaxonomyCategory } from "../src/lib/shopify-product-category.js";
+import {
+  inferDeterministicShopifyTaxonomyCategory,
+} from "../src/lib/shopify-product-category.js";
 import { mergeProductCustomData, normalizeProductCustomData, normalizeShopCustomData } from "../src/lib/product-custom-data.js";
 import {
   buildMarketingBackfillPlan,
@@ -94,6 +96,16 @@ const BULK_OPERATION_STATUS_QUERY = /* GraphQL */ `
   }
 `;
 
+const SHOPIFY_TAXONOMY_SEARCH_QUERY = /* GraphQL */ `
+  query BackfillShopifyTaxonomySearch($search: String!, $first: Int!) {
+    taxonomy {
+      categories(first: $first, search: $search) {
+        nodes { id name fullName }
+      }
+    }
+  }
+`;
+
 const BULK_METAFIELDS_SET_MUTATION = /* GraphQL */ `
   mutation BackfillBulkMetafields($metafields: [MetafieldsSetInput!]!) {
     metafieldsSet(metafields: $metafields) {
@@ -169,6 +181,7 @@ function parseArgs(argv) {
     productHandlesFile: "",
     onlyFields: [],
     productOnly: false,
+    allActive: false,
     skipLiveReviews: false,
   };
 
@@ -258,6 +271,11 @@ function parseArgs(argv) {
 
     if (token === "--product-only") {
       args.productOnly = true;
+      continue;
+    }
+
+    if (token === "--all-active") {
+      args.allActive = true;
       continue;
     }
 
@@ -1479,21 +1497,76 @@ async function discoverDisclosureOptions() {
   return { discovered: options.length > 0, options };
 }
 
-function buildCategoryPlans(products) {
-  return (Array.isArray(products) ? products : [])
+async function buildCategoryPlans(products) {
+  const candidates = (Array.isArray(products) ? products : [])
     .filter((product) => !product?.shopifyCategory?.id)
-    .map((product) => ({ product, category: inferShopifyTaxonomyCategory(product) }))
-    .filter((entry) => entry.category)
-    .map(({ product, category }) => ({
+    .map((product) => ({
+      product,
+      category: inferDeterministicShopifyTaxonomyCategory(product),
+    }))
+    .filter((entry) => entry.category);
+
+  const paths = [...new Set(
+    candidates
+      .map(({ category }) => String(category.fullName || "").trim())
+      .filter(Boolean),
+  )];
+  const resolvedByPath = new Map();
+  let nextPath = 0;
+  const worker = async () => {
+    while (nextPath < paths.length) {
+      const path = paths[nextPath++];
+      const payload = await runShopifyStoreGraphQL(SHOPIFY_TAXONOMY_SEARCH_QUERY, {
+        search: path,
+        first: 20,
+      });
+      const categories = Array.isArray(payload?.taxonomy?.categories?.nodes)
+        ? payload.taxonomy.categories.nodes
+        : [];
+      const exact = categories.find((entry) =>
+        String(entry?.fullName || "").trim().toLowerCase() === path.toLowerCase(),
+      );
+      if (exact?.id) {
+        resolvedByPath.set(path, {
+          id: String(exact.id),
+          name: String(exact.name || "").trim(),
+          fullName: String(exact.fullName || path).trim(),
+        });
+      }
+      process.stdout.write(`Resolved Shopify taxonomy path ${resolvedByPath.size}/${paths.length}\n`);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, Math.max(1, paths.length)) }, () => worker()));
+
+  const plans = candidates
+    .map(({ product, category }) => {
+      const resolved = category.id
+        ? { id: category.id, name: category.name, fullName: category.fullName || category.name }
+        : resolvedByPath.get(category.fullName);
+      if (!resolved?.id) return null;
+      return {
       productId: Number(product.id),
       productGid: toShopifyGid("Product", product.id),
       handle: normalizeHandleValue(product.handle || ""),
       title: String(product.title || ""),
-      categoryId: category.id,
-      categoryName: category.name,
+      categoryId: resolved.id,
+      categoryName: resolved.name || category.name,
+      categoryFullName: resolved.fullName || category.fullName || "",
       confidence: category.confidence,
       reason: category.reason,
-    }));
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    plans,
+    summary: {
+      candidates: candidates.length,
+      paths: paths.length,
+      resolved: plans.length,
+      unresolved: candidates.length - plans.length,
+    },
+  };
 }
 
 async function applyCategoryPlans(plans) {
@@ -1846,6 +1919,9 @@ async function main() {
 
   const localProducts = Array.isArray(productsPayload.products) ? productsPayload.products : [];
   const hasExplicitSelection = Boolean(args.productIds.length || args.productHandles.length || args.productHandlesFile);
+  if (args.allActive && (hasExplicitSelection || args.limitProducts > 0)) {
+    throw new Error("--all-active cannot be combined with a limited product selection");
+  }
   const liveCatalogProducts = hasExplicitSelection
     ? releaseCatalogPayload?.products
     : await fetchLiveProductCatalog();
@@ -1853,6 +1929,9 @@ async function main() {
   const requestedProducts = filterProducts(allProducts, args);
   if (!requestedProducts.length) {
     throw new Error("No products matched the backfill selection");
+  }
+  if (args.allActive) {
+    process.stdout.write(`Using explicit all-active scope: ${requestedProducts.length} product(s)\n`);
   }
 
   const liveCustomDataMap = await fetchLiveProductCustomDataMap(requestedProducts);
@@ -1928,7 +2007,10 @@ async function main() {
   const productBatches = buildMetafieldSetBatches(productPlans, 25);
   const marketingBatches = buildMarketingMetafieldSetBatches(marketingPlans, 25);
   const batches = [...productBatches, ...marketingBatches];
-  const categoryPlans = args.productOnly || onlyFields.size ? [] : buildCategoryPlans(hydratedProducts);
+  const categoryPlanResult = args.productOnly || onlyFields.size
+    ? { plans: [], summary: { candidates: 0, paths: 0, resolved: 0, unresolved: 0 } }
+    : await buildCategoryPlans(hydratedProducts);
+  const categoryPlans = categoryPlanResult.plans;
   const scopedWritesByField = {};
   for (const plan of productPlans) {
     for (const write of plan.writes || []) {
@@ -1998,10 +2080,12 @@ async function main() {
       productBatchesPlanned: productBatches.length,
       marketingBatchesPlanned: marketingBatches.length,
       categoryUpdatesPlanned: categoryPlans.length,
+      categoryResolution: categoryPlanResult.summary,
     },
     products: productPlans,
     marketing: marketingPlans,
     categories: categoryPlans,
+    categoryResolution: categoryPlanResult.summary,
     batches: batches.map((batch, index) => ({
       batch: index + 1,
       owners: batch.ownerDescriptors || batch.productIds || [],

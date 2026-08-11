@@ -118,6 +118,14 @@ const GENERIC_TITLE_PHRASES = [
 ];
 
 const HANDLE_TITLE_OVERRIDES = new Map([
+  [
+    "out-of-stock-out-of-stock-out-of-stock-out-of-stock-out-of-stockout-of-stock-out-of-stock-out-of-stock",
+    "Out of Stock Placeholder Listing",
+  ],
+  [
+    "link-for-price-difference-link-for-price-difference",
+    "Order Price Difference Adjustment Link",
+  ],
   ["men-formal-shoes", "Men's Formal Shoes for Work and Occasions"],
   ["t-shirt-t-shirt-t-shirt", "Everyday T-Shirt for Casual Clothing"],
   ["candy-candy-anime", "Candy Candy Anime Graphic T-Shirt Top"],
@@ -2067,7 +2075,8 @@ function buildProductProfile(signals) {
   const confidence = computeConfidence(signals);
   const knowledge = resolveProductKnowledge(signals.handle);
   const classificationHeld = Boolean(
-    signals.productKnowledge?.reviewRequired || signals.productKnowledge?.seoEligible === false,
+    (signals.productKnowledge?.reviewRequired || signals.productKnowledge?.seoEligible === false) &&
+      !HANDLE_TITLE_OVERRIDES.has(signals.handle),
   );
   const explicitTitle = HANDLE_TITLE_OVERRIDES.get(signals.handle) || "";
   const recognizedHandleFamily = /^(iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Lip Balm|Hair Oil)$/i.test(normalizePlainText(signals.handlePhrase));

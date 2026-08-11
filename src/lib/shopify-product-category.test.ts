@@ -6,6 +6,9 @@ import {
 
 describe("Shopify product taxonomy classifier", () => {
   it("classifies explicit product families with Shopify taxonomy ids", () => {
+    expect(inferShopifyTaxonomyCategory({ handle: "womens-sunshade-hat" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/aa-2-17",
+    );
     expect(inferShopifyTaxonomyCategory({ handle: "portable-usb-flash-drive-128gb" })?.id).toBe(
       "gid://shopify/TaxonomyCategory/el-7-9-14-8",
     );

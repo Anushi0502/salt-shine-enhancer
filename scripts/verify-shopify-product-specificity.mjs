@@ -282,6 +282,9 @@ export function auditProductSpecificityCatalog(products) {
   const productIssues = normalizedProducts.map((product) => {
     const issues = [];
     const fields = {};
+    if (!product.category?.id && !product.category?.name && !product.category?.fullName) {
+      issues.push("category:missing");
+    }
     for (const field of AUDIT_FIELDS) {
       const value = field.value(product);
       const assessment = assessProductContentSpecificity(value, product, {

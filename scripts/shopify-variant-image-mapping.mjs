@@ -347,7 +347,7 @@ async function executeGraphQl(query, variables = {}, { mutation = false, operati
       return payload.data || payload;
     } catch (error) {
       const message = String(error?.stderr || error?.stdout || error?.message || error);
-      const transient = /429|throttl|rate limit|timeout|5\d\d|network|socket|temporar|aborted|MAX_COST_EXCEEDED|Query cost/i.test(message);
+      const transient = /429|throttl|rate limit|timeout|5\d\d|network|socket|temporar|aborted|MAX_COST_EXCEEDED|Query cost|ENOTFOUND|EAI_AGAIN|getaddrinfo|ECONNRESET|ECONNREFUSED|fetch failed|DNS/i.test(message);
       if (!transient || attempt === maxAttempts - 1) {
         throw new Error(`${operation} failed: ${message.trim()}`);
       }

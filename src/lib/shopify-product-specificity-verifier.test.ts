@@ -57,6 +57,15 @@ describe("Shopify product specificity verifier", () => {
     ]));
   });
 
+  it("fails products without an assigned Shopify category", () => {
+    const manifest = auditProductSpecificityCatalog([
+      makeSpecificProduct({ category: null }),
+    ]);
+
+    expect(manifest.summary.failedProducts).toBe(1);
+    expect(manifest.products[0].issues).toContain("category:missing");
+  });
+
   it("fails exact content collisions across distinct products", () => {
     const first = makeSpecificProduct();
     const second = makeSpecificProduct({

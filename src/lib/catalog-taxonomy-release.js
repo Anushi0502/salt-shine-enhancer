@@ -14,6 +14,30 @@ function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function sortJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(sortJsonValue);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, sortJsonValue(entry)]),
+    );
+  }
+
+  return value;
+}
+
+function normalizeJsonText(value) {
+  try {
+    return JSON.stringify(sortJsonValue(JSON.parse(String(value || ""))));
+  } catch {
+    return normalizeText(value);
+  }
+}
+
 export function normalizeTaxonomyTag(value) {
   return normalizeText(value).toLowerCase();
 }
@@ -147,7 +171,13 @@ function getTaxonomyMetafield(product) {
 }
 
 export function taxonomyMetafieldMatches(product, expectedMetafield) {
-  return normalizeText(getTaxonomyMetafield(product)?.value) === normalizeText(expectedMetafield?.value);
+  const actual = getTaxonomyMetafield(product);
+  const expected = expectedMetafield || {};
+  if (normalizeText(actual?.type || expected.type).toLowerCase() === "json") {
+    return normalizeJsonText(actual?.value) === normalizeJsonText(expected.value);
+  }
+
+  return normalizeText(actual?.value) === normalizeText(expected.value);
 }
 
 export function buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {

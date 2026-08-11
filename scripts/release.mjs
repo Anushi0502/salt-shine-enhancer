@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -13,6 +13,8 @@ const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const nodeBin = process.execPath;
 const require = createRequire(import.meta.url);
 const catalogBatchSize = Math.max(1, Math.min(1000, Number(process.env.SALT_CATALOG_BATCH_SIZE || 50)));
+const releaseRunStatePath = resolve(rootDir, "output", "release-run-state.json");
+const releaseHeartbeatMs = Math.max(10_000, Number(process.env.SALT_RELEASE_HEARTBEAT_MS || 30_000));
 
 const catalogIntegrityArgs = [
   "--skip-vision",
@@ -24,6 +26,25 @@ const catalogIntegrityArgs = [
 
 function formatCommand(command, args) {
   return [command, ...args].join(" ");
+}
+
+let releaseRunState = {};
+
+async function writeReleaseRunState(patch = {}) {
+  releaseRunState = {
+    ...releaseRunState,
+    ...patch,
+    heartbeatAt: new Date().toISOString(),
+  };
+
+  try {
+    await mkdir(resolve(rootDir, "output"), { recursive: true });
+    const tempPath = `${releaseRunStatePath}.tmp-${process.pid}`;
+    await writeFile(tempPath, `${JSON.stringify(releaseRunState, null, 2)}\n`, "utf8");
+    await rename(tempPath, releaseRunStatePath);
+  } catch {
+    // Run-state telemetry must never turn a valid release into a failed release.
+  }
 }
 
 function runStage({ label, command, args, cwd, index, total }) {
@@ -205,9 +226,9 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
-      label: "Apply Shopify merchandising metafield backfill after catalog boundary changes",
+      label: "Apply all-active-catalog product categories and merchandising metafields",
       command: npmBin,
-      args: ["run", "shopify:product-metafields:backfill:apply"],
+      args: ["run", "shopify:product-metafields:backfill:all-active"],
       cwd: releaseRootDir,
     },
     {
@@ -393,6 +414,7 @@ export function buildReleaseSteps({
 function parseArgs(argv) {
   const args = {
     profile: process.env.SALT_RELEASE_PROFILE || "catalog",
+    resume: process.env.SALT_RELEASE_RESUME === "1",
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -415,6 +437,11 @@ function parseArgs(argv) {
 
     if (token === "--catalog-release") {
       args.profile = "catalog";
+      continue;
+    }
+
+    if (token === "--resume") {
+      args.resume = true;
     }
   }
 
@@ -426,46 +453,119 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv);
-  const packageJson = JSON.parse(await readFile(resolve(rootDir, "package.json"), "utf8"));
-  const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
-  const viteVersion = require("vite/package.json").version;
-  const capacitorCliVersion = require("@capacitor/cli/package.json").version;
-  const npmVersion = execFileSync(npmBin, ["--version"], { encoding: "utf8" }).trim();
-  await ensurePathExists(shopifyThemeDir, "Shopify theme folder");
-
-  process.stdout.write("SALT release workflow\n");
-  process.stdout.write(`  app: ${packageJson.version}\n`);
-  process.stdout.write(`  node: ${process.version}\n`);
-  process.stdout.write(`  npm: ${npmVersion}\n`);
-  process.stdout.write(`  vite: ${viteVersion}\n`);
-  process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
-  process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
-  process.stdout.write(`  mobile-sync: ${process.env.SALT_RELEASE_SKIP_MOBILE === "1" ? "skipped" : "included"}\n`);
-  process.stdout.write(`  profile: ${args.profile}\n`);
-
-  if (args.profile === "products") {
-    const { productCohortCatalog, productCohortHandles } = getReleasePaths(rootDir);
-    await ensurePathExists(productCohortCatalog, "new-product cohort catalog");
-    await ensurePathExists(productCohortHandles, "new-product cohort handles");
-    process.stdout.write(`  product-cohort: ${productCohortHandles}\n`);
-  }
-
-  const steps = buildReleaseSteps({ rootDir, profile: args.profile });
-
-  for (const [index, step] of steps.entries()) {
-    await runStage({
-      ...step,
-      index: index + 1,
-      total: steps.length,
-    });
-
-    if (step.label === "Build web app") {
-      await ensurePathExists(resolve(rootDir, "dist", "index.html"), "Vite build output");
+  let args = { profile: process.env.SALT_RELEASE_PROFILE || "catalog" };
+  let heartbeatTimer;
+  try {
+    args = parseArgs(process.argv);
+    let previousRunState = null;
+    if (args.resume) {
+      try {
+        previousRunState = JSON.parse(await readFile(releaseRunStatePath, "utf8"));
+      } catch {
+        throw new Error(`Cannot resume release: no readable run state at ${releaseRunStatePath}`);
+      }
+      if (!previousRunState || !["failed", "running"].includes(previousRunState.status)) {
+        throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed or interrupted`);
+      }
+      if (previousRunState.profile && previousRunState.profile !== args.profile) {
+        throw new Error(`Cannot resume ${args.profile} release from ${previousRunState.profile} run state`);
+      }
+      const previousPid = Number(previousRunState.pid || 0);
+      if (previousRunState.status === "running" && previousPid > 0 && previousPid !== process.pid) {
+        try {
+          process.kill(previousPid, 0);
+          throw new Error(`Cannot resume while release process ${previousPid} is still running`);
+        } catch (error) {
+          if (error?.message?.includes("still running")) throw error;
+        }
+      }
     }
-  }
+    const resumeFromStep = args.resume
+      ? Math.max(1, Number(previousRunState?.stepIndex || previousRunState?.completedStepIndex || 1))
+      : 1;
+    releaseRunState = {
+      status: "running",
+      pid: process.pid,
+      profile: args.profile,
+      startedAt: new Date().toISOString(),
+      stepIndex: resumeFromStep - (args.resume ? 0 : 1),
+      totalSteps: 0,
+      stepLabel: "initializing",
+      heartbeatAt: new Date().toISOString(),
+      resumed: args.resume,
+      resumedFromStep: args.resume ? resumeFromStep : null,
+    };
+    await writeReleaseRunState();
+    heartbeatTimer = setInterval(() => {
+      void writeReleaseRunState().catch(() => {});
+    }, releaseHeartbeatMs);
+    heartbeatTimer.unref?.();
 
-  process.stdout.write("\nRelease complete.\n");
+    const packageJson = JSON.parse(await readFile(resolve(rootDir, "package.json"), "utf8"));
+    const shopifyThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
+    const viteVersion = require("vite/package.json").version;
+    const capacitorCliVersion = require("@capacitor/cli/package.json").version;
+    const npmVersion = execFileSync(npmBin, ["--version"], { encoding: "utf8" }).trim();
+    await ensurePathExists(shopifyThemeDir, "Shopify theme folder");
+
+    process.stdout.write("SALT release workflow\n");
+    process.stdout.write(`  app: ${packageJson.version}\n`);
+    process.stdout.write(`  node: ${process.version}\n`);
+    process.stdout.write(`  npm: ${npmVersion}\n`);
+    process.stdout.write(`  vite: ${viteVersion}\n`);
+    process.stdout.write(`  capacitor-cli: ${capacitorCliVersion}\n`);
+    process.stdout.write(`  shopify-theme: ${shopifyThemeDir}\n`);
+    process.stdout.write(`  mobile-sync: ${process.env.SALT_RELEASE_SKIP_MOBILE === "1" ? "skipped" : "included"}\n`);
+    process.stdout.write(`  profile: ${args.profile}\n`);
+    process.stdout.write(`  execution: ${args.resume ? `resume from step ${resumeFromStep}` : "full run"}\n`);
+
+    if (args.profile === "products") {
+      const { productCohortCatalog, productCohortHandles } = getReleasePaths(rootDir);
+      await ensurePathExists(productCohortCatalog, "new-product cohort catalog");
+      await ensurePathExists(productCohortHandles, "new-product cohort handles");
+      process.stdout.write(`  product-cohort: ${productCohortHandles}\n`);
+    }
+
+    const steps = buildReleaseSteps({ rootDir, profile: args.profile });
+    if (resumeFromStep > steps.length) {
+      throw new Error(`Cannot resume from step ${resumeFromStep}; release has ${steps.length} steps`);
+    }
+    await writeReleaseRunState({ totalSteps: steps.length });
+
+    for (const [index, step] of steps.entries()) {
+      if (index + 1 < resumeFromStep) continue;
+      await writeReleaseRunState({
+        stepIndex: index + 1,
+        stepLabel: step.label,
+      });
+      await runStage({
+        ...step,
+        index: index + 1,
+        total: steps.length,
+      });
+
+      if (step.label === "Build web app") {
+        await ensurePathExists(resolve(rootDir, "dist", "index.html"), "Vite build output");
+      }
+      await writeReleaseRunState({ completedStepIndex: index + 1 });
+    }
+
+    await writeReleaseRunState({
+      status: "completed",
+      completedAt: new Date().toISOString(),
+      stepLabel: "complete",
+    });
+    process.stdout.write("\nRelease complete.\n");
+  } catch (error) {
+    await writeReleaseRunState({
+      status: "failed",
+      failedAt: new Date().toISOString(),
+      error: error?.message || String(error),
+    });
+    throw error;
+  } finally {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+  }
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

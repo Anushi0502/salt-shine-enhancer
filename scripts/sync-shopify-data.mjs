@@ -1710,6 +1710,12 @@ const ACTIVE_CATALOG_PRODUCTS_QUERY = /* GraphQL */ `
         createdAt
         updatedAt
         publishedAt
+        media(first: 100) {
+          nodes {
+            __typename
+            ... on MediaImage { id alt image { url } }
+          }
+        }
         variants(first: 250) {
           nodes {
             id
@@ -1731,6 +1737,13 @@ const ACTIVE_CATALOG_PRODUCTS_QUERY = /* GraphQL */ `
 `;
 
 function normalizeActiveCatalogProduct(node) {
+  const images = (Array.isArray(node?.media?.nodes) ? node.media.nodes : [])
+    .filter((media) => media?.__typename === "MediaImage" && media?.image?.url)
+    .map((media) => ({
+      id: Number(String(media.id || "").match(/(\d+)$/)?.[1]) || media.id || 0,
+      src: media.image.url,
+      alt: media.alt || "",
+    }));
   const variants = Array.isArray(node?.variants?.nodes) ? node.variants.nodes : [];
   return {
     id: Number(node?.legacyResourceId) || node?.id || 0,
@@ -1747,6 +1760,8 @@ function normalizeActiveCatalogProduct(node) {
     created_at: node?.createdAt || "",
     updated_at: node?.updatedAt || "",
     published_at: node?.publishedAt || null,
+    images,
+    image: images[0] || null,
     resourcePublications: node?.resourcePublications || { nodes: [] },
     variants: variants.map((variant) => ({
       id: Number(variant?.legacyResourceId) || variant?.id || 0,

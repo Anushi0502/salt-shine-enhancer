@@ -210,7 +210,9 @@ export function buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledge
     searchTerms,
     negativeTerms: taxonomy.negativeTerms,
     attributes: taxonomy.attributes,
-    proposedTags: taxonomy.proposedTags,
+    // A reliable model conflict is review-only; do not expose the checked-in
+    // taxonomy tags until the product is explicitly resolved.
+    proposedTags: modelConflict ? [] : taxonomy.proposedTags,
     collectionTargets: taxonomy.collectionTargets,
     shopifyCategory: taxonomy.shopifyCategory,
     confidence: taxonomy.confidence,

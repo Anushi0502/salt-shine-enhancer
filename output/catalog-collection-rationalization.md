@@ -25,44 +25,45 @@ The six approved source collections were merged without forcing unrelated produc
 | --- | ---: | ---: | --- | --- | --- |
 | Men's Fashion > T-Shirts | 688 | 0 | `men-collection` | - | map-to-existing-collection |
 | Men's Fashion > Trousers & Pants | 488 | 0 | `men-collection` | - | map-to-existing-collection |
-| Kids Wear > Kids Clothing | 457 | 0 | `kids-wear` | - | map-to-existing-collection |
+| Kids Wear > Kids Clothing | 458 | 2 | `kids-wear` | - | map-to-existing-collection |
 | Beauty & Skincare > Eye Makeup | 437 | 0 | `eye-beauty-collection`, `beauty-makeup-essentials` | - | map-to-existing-collection |
-| Office & School Supplies > Notebooks & Planners | 401 | 0 | - | - | request-new-collection |
+| Office & School Supplies > Notebooks & Planners | 400 | 1 | - | - | request-new-collection |
 | Covers & Cases > Phone Cases | 399 | 0 | `covers-cases`, `portable-gadgets` | - | map-to-existing-collection |
 | Office & School Supplies > Pen & Pencil Cases | 385 | 0 | `office-school-supplies` | - | map-to-existing-collection |
-| Kitchen & Cookware > Drinkware | 347 | 0 | `dining-essentials` | - | map-to-existing-collection |
+| Kitchen & Cookware > Drinkware | 346 | 1 | `dining-essentials` | - | map-to-existing-collection |
 | Beauty & Skincare > Face Makeup | 340 | 0 | `blush-glow`, `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Beauty & Skincare > Lip Care & Makeup | 340 | 0 | `lips-and-care`, `beauty-makeup-essentials` | - | map-to-existing-collection |
-| Kids Wear > Shoes & Footwear | 285 | 0 | - | - | request-new-collection |
-| Men's Fashion > Shoes & Footwear | 267 | 0 | - | - | request-new-collection |
-| Women's Fashion > Shirts & Blouses | 243 | 0 | - | - | request-new-collection |
+| Men's Accessories > Hats & Caps | 313 | 0 | `hats` | - | map-to-existing-collection |
+| Kids Wear > Shoes & Footwear | 283 | 2 | - | - | request-new-collection |
+| Women's Fashion > Shirts & Blouses | 273 | 0 | - | - | request-new-collection |
+| Men's Fashion > Shoes & Footwear | 265 | 2 | - | - | request-new-collection |
 | Watches > Fashion Watches | 242 | 0 | - | - | request-new-collection |
 | Beauty & Skincare > Hair Care | 240 | 0 | `beauty-makeup-essentials`, `hair-nourishment` | - | map-to-existing-collection |
 | Kitchen & Cookware > Kitchen Gadgets | 222 | 0 | `kitchen-gadgets`, `dining-essentials` | - | map-to-existing-collection |
 | Kitchen & Cookware > Food Storage Containers | 218 | 0 | `dining-essentials`, `cookware` | - | map-to-existing-collection |
-| Kitchen & Cookware > Dining & Serveware | 213 | 0 | `dining-essentials` | - | map-to-existing-collection |
+| Kitchen & Cookware > Dining & Serveware | 212 | 0 | `dining-essentials` | - | map-to-existing-collection |
 | Lighting & Decor > Lamps & Lighting | 212 | 0 | `wall-lights`, `smart-lighting` | `decorative-lamps` | map-to-existing-collection |
+| Women's Accessories > Hats & Caps | 211 | 0 | `hats` | - | map-to-existing-collection |
 | Travel Essentials > Backpacks | 193 | 0 | - | `travel-organizers`, `shopping-bags-jute-bags` | request-new-collection |
-| Beauty & Skincare > Skincare | 191 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
+| Beauty & Skincare > Skincare | 192 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Men's Bags & Wallets > Wallets & Card Holders | 179 | 0 | - | - | request-new-collection |
 | Vehicle Accessories > Vehicle Battery Chargers | 174 | 0 | `car-accessories` | - | map-to-existing-collection |
 | Audio > Microphones | 162 | 0 | `audio`, `portable-gadgets` | - | map-to-existing-collection |
 | Travel Essentials > Travel Bags & Luggage | 159 | 0 | - | `travel-organizers` | request-new-collection |
 | Men's Fashion > Jeans | 142 | 0 | `men-collection` | - | map-to-existing-collection |
-| Office & School Supplies > Writing Supplies | 140 | 0 | - | - | request-new-collection |
+| Office & School Supplies > Writing Supplies | 138 | 2 | - | - | request-new-collection |
 | Audio > Earbuds & Earphones | 138 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Computer Accessories > Laptop Accessories | 138 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Kids Wear > Kids Sports Footwear | 133 | 0 | `kids-wear` | - | map-to-existing-collection |
-| Lighting & Decor > Home Decor | 133 | 0 | `home-decor`, `decorative-accessories`, `wall-art` | - | map-to-existing-collection |
+| Lighting & Decor > Home Decor | 131 | 0 | `home-decor`, `decorative-accessories`, `wall-art` | - | map-to-existing-collection |
 | Fitness Equipment > Fitness & Training | 122 | 0 | - | - | request-new-collection |
 | Watches > Smart Watches | 113 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Men's Beauty & Skincare > Grooming Tools | 110 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Mouse & Keyboard > Computer Mice | 106 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Men's Beauty & Skincare > Fragrance | 102 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Fitness Equipment > Sports Protection | 101 | 0 | - | - | request-new-collection |
-| Lighting & Decor > Planters & Garden Decor | 98 | 0 | `home-decor`, `decorative-accessories`, `garden-tools` | - | map-to-existing-collection |
+| Lighting & Decor > Planters & Garden Decor | 98 | 0 | `home-decor`, `garden-tools`, `decorative-accessories` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Fragrance | 94 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
-| Men's Accessories > Hats & Caps | 89 | 0 | - | - | request-new-collection |
 | Beauty & Skincare > Body Care | 88 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Kids Toys & Games > Educational Toys | 88 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Women's Fashion > Trousers & Pants | 88 | 0 | - | - | request-new-collection |
@@ -76,15 +77,16 @@ The six approved source collections were merged without forcing unrelated produc
 | Women's Bags & Wallets > Handbags | 72 | 0 | `women-bags-and-wallets` | - | map-to-existing-collection |
 | Women's Fashion > Jackets & Coats | 72 | 0 | - | - | request-new-collection |
 | Kitchen & Cookware > Cookware | 71 | 0 | `cookware` | - | map-to-existing-collection |
-| Men's Accessories > Belts | 68 | 0 | - | - | request-new-collection |
+| Men's Accessories > Belts | 70 | 0 | - | - | request-new-collection |
 | Mouse & Keyboard > Keyboards | 68 | 0 | `portable-gadgets` | - | map-to-existing-collection |
-| Men's Bags & Wallets > Handbags | 65 | 0 | - | - | request-new-collection |
+| Fashion Accessories > Hats & Caps | 67 | 0 | `hats` | - | map-to-existing-collection |
+| Men's Bags & Wallets > Handbags | 63 | 2 | - | - | request-new-collection |
 | Health & Wellness > Aromatherapy & Essential Oils | 64 | 0 | `health-wellness` | - | map-to-existing-collection |
-| Office & School Supplies > Binders & Folders | 60 | 0 | `office-school-supplies`, `stationery`, `back-to-school` | - | map-to-existing-collection |
+| Men's Fashion > Shorts | 61 | 0 | `men-collection` | - | map-to-existing-collection |
+| Office & School Supplies > Binders & Folders | 61 | 0 | `office-school-supplies`, `stationery`, `back-to-school` | - | map-to-existing-collection |
+| Women's Accessories > Hair Accessories | 61 | 0 | - | - | request-new-collection |
 | Storage Devices > Pen Drives & USB Flash Drives | 60 | 0 | `portable-gadgets` | - | map-to-existing-collection |
-| Women's Accessories > Hair Accessories | 60 | 0 | - | - | request-new-collection |
 | Kids Toys & Games > Games & Puzzles | 59 | 0 | `kids-toys-games` | - | map-to-existing-collection |
-| Men's Fashion > Shorts | 59 | 0 | `men-collection` | - | map-to-existing-collection |
 | Beauty & Skincare > Beauty Tools | 58 | 0 | `beauty-makeup-essentials`, `eye-beauty-collection` | - | map-to-existing-collection |
 | Beauty & Skincare > Nail Tools | 58 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Eye Makeup | 58 | 0 | `eye-beauty-collection`, `beauty-makeup-essentials` | - | map-to-existing-collection |
@@ -99,54 +101,53 @@ The six approved source collections were merged without forcing unrelated produc
 | Kids Toys & Games > Bath Toys | 47 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Bags & Wallets > Bags | 45 | 0 | - | `shopping-bags-jute-bags` | keep-as-search-filter-only |
 | Home Storage & Organization > Storage & Organization | 45 | 0 | `storage-organization` | - | map-to-existing-collection |
-| Fashion Accessories > Hats & Caps | 43 | 0 | - | - | keep-as-search-filter-only |
+| Women's Fashion > Dresses | 44 | 0 | - | - | keep-as-search-filter-only |
 | Women's Bags & Wallets > Bags | 43 | 0 | `women-bags-and-wallets` | `shopping-bags-jute-bags` | map-to-existing-collection |
-| Women's Fashion > Dresses | 43 | 0 | - | - | keep-as-search-filter-only |
 | Bedsheets, Handlooms & Towels > Bedding & Linens | 42 | 0 | - | - | keep-as-search-filter-only |
 | Health & Wellness > Massage & Recovery | 42 | 0 | `massage-tools`, `health-wellness` | `posture-support` | map-to-existing-collection |
 | Men's Fashion > Suits & Formalwear | 42 | 0 | `men-collection` | - | map-to-existing-collection |
+| Women's Accessories > Scarves & Wraps | 42 | 0 | - | - | keep-as-search-filter-only |
 | Men's Fashion > Socks | 41 | 0 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Craft & DIY Supplies | 41 | 0 | - | - | keep-as-search-filter-only |
 | Travel Essentials > Rain & Sun Umbrellas | 41 | 0 | `travel-outdoor` | - | map-to-existing-collection |
 | Travel Essentials > Travel Pillows | 40 | 0 | `travel-outdoor` | `travel-organizers` | map-to-existing-collection |
+| Women's Beauty & Skincare > Skincare | 39 | 1 | `womens-beauty-essentials`, `beauty-makeup-essentials`, `face-creams-moisturizers` | - | map-to-existing-collection |
 | Fashion > T-Shirts | 39 | 0 | - | - | keep-as-search-filter-only |
-| Office & School Supplies > ID Card Lanyards & Badge Holders | 39 | 0 | `office-school-supplies` | - | map-to-existing-collection |
+| Office & School Supplies > ID Card Lanyards & Badge Holders | 33 | 6 | `office-school-supplies` | - | map-to-existing-collection |
 | Phone & Tablet Accessories > Phone Holders & Mounts | 39 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Women's Bags & Wallets > Wallets & Card Holders | 39 | 0 | `women-bags-and-wallets` | - | map-to-existing-collection |
-| Women's Beauty & Skincare > Hair Care | 39 | 0 | `beauty-makeup-essentials`, `womens-beauty-essentials` | - | map-to-existing-collection |
-| Women's Beauty & Skincare > Skincare | 39 | 0 | `womens-beauty-essentials`, `beauty-makeup-essentials`, `face-creams-moisturizers` | - | map-to-existing-collection |
-| Women's Accessories > Scarves & Wraps | 38 | 0 | - | - | keep-as-search-filter-only |
+| Women's Beauty & Skincare > Hair Care | 38 | 1 | `beauty-makeup-essentials`, `womens-beauty-essentials` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Lip Care & Makeup | 38 | 0 | `lips-and-care`, `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Beauty & Skincare > Fragrance | 37 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Chargers > Power Banks | 37 | 0 | `portable-gadgets` | - | map-to-existing-collection |
+| Kids Accessories > Hats & Caps | 37 | 0 | `hats` | - | map-to-existing-collection |
 | Kids Toys & Games > Anime Figures & Standees | 37 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Office & School Supplies > Photocard Holders & Keychains | 37 | 0 | `office-school-supplies` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Nail Tools | 37 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Camera & Content Accessories > Video Capture Cards | 36 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Fashion Accessories > Keychains & Key Rings | 36 | 0 | - | - | keep-as-search-filter-only |
+| Home Decor > Anime Wall Art | 36 | 0 | `home-decor` | - | map-to-existing-collection |
 | Men's Accessories > Handkerchiefs & Pocket Squares | 36 | 0 | - | - | keep-as-search-filter-only |
 | Bags & Wallets > Bag Straps & Accessories | 35 | 0 | - | - | keep-as-search-filter-only |
 | Women's Accessories > Sunglasses | 35 | 0 | - | - | keep-as-search-filter-only |
-| Home Decor > Anime Wall Art | 34 | 0 | `home-decor` | - | map-to-existing-collection |
 | Office & School Supplies > Card & Collecting Accessories | 34 | 0 | - | - | keep-as-search-filter-only |
 | Men's Beauty & Skincare > Skincare | 31 | 0 | `beauty-makeup-essentials`, `men-collection` | - | map-to-existing-collection |
 | Home & Car Accessories > Home Air Appliances | 28 | 0 | `home-decor` | - | map-to-existing-collection |
 | Men's Bags & Wallets > Bag Straps & Accessories | 28 | 0 | - | - | keep-as-search-filter-only |
 | Women's Beauty & Skincare > Face Makeup | 28 | 0 | `blush-glow`, `beauty-makeup-essentials` | - | map-to-existing-collection |
-| Kids Accessories > Hats & Caps | 27 | 0 | - | - | keep-as-search-filter-only |
 | Men's Beauty & Skincare > Face Masks | 26 | 0 | - | - | keep-as-search-filter-only |
 | Fashion > Jackets & Coats | 25 | 0 | - | - | keep-as-search-filter-only |
+| Men's Fashion > Dresses | 25 | 0 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Anime Stickers | 25 | 0 | `office-school-supplies`, `stationery` | - | map-to-existing-collection |
-| Men's Fashion > Dresses | 24 | 0 | - | - | keep-as-search-filter-only |
 | Women's Bags & Wallets > Bag Straps & Accessories | 24 | 0 | `women-bags-and-wallets` | - | map-to-existing-collection |
 | Bags & Wallets > Handbags | 23 | 0 | - | - | keep-as-search-filter-only |
-| Bedsheets, Handlooms & Towels > Table Linens | 23 | 0 | `bedsheets-handlooms-towels`, `dining-essentials` | - | map-to-existing-collection |
+| Bedsheets, Handlooms & Towels > Table Linens | 22 | 1 | `bedsheets-handlooms-towels`, `dining-essentials` | - | map-to-existing-collection |
 | Gift Packaging & Party Supplies > Gift Bags & Packaging | 23 | 0 | `gifts` | - | map-to-existing-collection |
+| Men's Accessories > Ties & Formal Accessories | 23 | 0 | - | - | keep-as-search-filter-only |
 | Women's Bags & Wallets > Shopping Bags | 23 | 0 | - | `shopping-bags-jute-bags` | keep-as-search-filter-only |
 | Women's Fashion > Jeans | 23 | 0 | - | - | keep-as-search-filter-only |
 | Baby Care > Diaper Bags & Organizers | 22 | 0 | `kids` | - | map-to-existing-collection |
 | Kids Wear > Socks | 22 | 0 | - | - | keep-as-search-filter-only |
-| Men's Accessories > Ties & Formal Accessories | 22 | 0 | - | - | keep-as-search-filter-only |
 | Camping Essentials > Camping Gear | 21 | 0 | `travel-outdoor` | `camping-gear` | map-to-existing-collection |
 | Kids Toys & Games > Anime Trading Cards | 21 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Women's Fashion > Socks | 21 | 0 | - | - | keep-as-search-filter-only |
@@ -158,38 +159,37 @@ The six approved source collections were merged without forcing unrelated produc
 | Camera & Content Accessories > Photography Accessories | 17 | 0 | `creator-essentials` | - | map-to-existing-collection |
 | Bags & Wallets > Shopping Bags | 16 | 0 | - | `shopping-bags-jute-bags` | keep-as-search-filter-only |
 | Office & School Supplies > Reading Accessories | 16 | 0 | - | - | keep-as-search-filter-only |
-| Women's Accessories > Hats & Caps | 16 | 0 | - | - | keep-as-search-filter-only |
 | Chargers > Watch Chargers | 15 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Body Care | 15 | 0 | `womens-beauty-essentials`, `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Camera & Content Accessories > Teleprompters | 14 | 0 | `portable-gadgets` | - | map-to-existing-collection |
 | Covers & Cases > Earbuds Cases | 14 | 0 | `covers-cases`, `portable-gadgets` | - | map-to-existing-collection |
 | Fashion > Socks | 14 | 0 | `travel-outdoor` | - | map-to-existing-collection |
 | Fashion > Trousers & Pants | 14 | 0 | - | - | keep-as-search-filter-only |
+| Health & Wellness > Medicine & Pill Organizers | 14 | 0 | - | - | keep-as-search-filter-only |
 | Jewelry > Anime Pins & Badges | 14 | 0 | - | - | keep-as-search-filter-only |
-| Health & Wellness > Medicine & Pill Organizers | 13 | 0 | - | - | keep-as-search-filter-only |
 | Home & Car Accessories > Tools & Hardware | 13 | 0 | `garden-tools` | - | map-to-existing-collection |
 | Kids Toys & Games > Anime Cosplay Props | 13 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Kids Toys & Games > Pretend Play Toys | 13 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Men's Beauty & Skincare > Eye Makeup | 13 | 0 | `eye-beauty-collection`, `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Men's Beauty & Skincare > Lip Care & Makeup | 13 | 0 | `lips-and-care`, `beauty-makeup-essentials` | - | map-to-existing-collection |
-| Health & Wellness > Mobility & Support | 12 | 0 | `daily-living-aids`, `health-wellness` | `mobility-support` | map-to-existing-collection |
+| Health & Wellness > Mobility & Recovery Support | 12 | 0 | `health-wellness`, `daily-living-aids` | `mobility-support` | map-to-existing-collection |
 | Office & School Supplies > School Supplies | 12 | 0 | `office-school-supplies`, `back-to-school` | - | map-to-existing-collection |
 | Pet Care > Cat Supplies | 12 | 0 | `cat-supplies` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Grooming Tools | 12 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Kids Wear > Water Shoes & Aqua Socks | 11 | 0 | `travel-outdoor` | - | map-to-existing-collection |
 | Lighting & Decor > Candles & Home Fragrance | 11 | 0 | `candles` | - | map-to-existing-collection |
 | Travel Essentials > Travel Organizers | 11 | 0 | - | `travel-organizers` | keep-as-search-filter-only |
-| Women's Fashion > T-Shirts | 11 | 0 | - | - | keep-as-search-filter-only |
+| Women's Fashion > Anime Graphic T-Shirts | 11 | 0 | - | - | keep-as-search-filter-only |
 | Fashion Accessories > Handkerchiefs & Pocket Squares | 10 | 0 | - | - | keep-as-search-filter-only |
 | Health & Wellness > Heat Therapy & Warmers | 10 | 0 | `health-wellness` | - | map-to-existing-collection |
 | Lighting & Decor > Furniture | 10 | 0 | `home-decor` | - | map-to-existing-collection |
+| Women's Accessories > Belts | 10 | 0 | - | - | keep-as-search-filter-only |
 | Women's Fashion > Lingerie & Underwear | 10 | 0 | - | - | keep-as-search-filter-only |
 | Audio > Microphone Accessories | 9 | 0 | `audio`, `portable-gadgets` | - | map-to-existing-collection |
 | Office & School Supplies > Labels & Stickers | 9 | 0 | - | - | keep-as-search-filter-only |
 | Vehicle Accessories > Car Seat Cushions & Neck Pillows | 9 | 0 | `car-accessories`, `travel-outdoor` | - | map-to-existing-collection |
-| Women's Accessories > Belts | 9 | 0 | - | - | keep-as-search-filter-only |
 | Kids Accessories > Newborn Photography Props | 8 | 0 | - | `kids-accessories` | keep-as-search-filter-only |
-| Kids Wear > T-Shirts | 8 | 0 | - | - | keep-as-search-filter-only |
+| Kids Wear > Anime Graphic T-Shirts | 8 | 0 | - | - | keep-as-search-filter-only |
 | Men's Beauty & Skincare > Body Care | 8 | 0 | `beauty-makeup-essentials` | - | map-to-existing-collection |
 | Men's Fashion > Hoodies & Sweaters | 8 | 0 | `men-collection` | - | map-to-existing-collection |
 | Women's Accessories > Handkerchiefs & Pocket Squares | 8 | 0 | - | - | keep-as-search-filter-only |
@@ -198,7 +198,7 @@ The six approved source collections were merged without forcing unrelated produc
 | Home & Car Accessories > Bathroom Accessories | 7 | 0 | `home-decor` | - | map-to-existing-collection |
 | Home & Car Accessories > Beekeeping Supplies | 7 | 0 | - | - | keep-as-search-filter-only |
 | Kids Toys & Games > Prank & Novelty Toys | 7 | 0 | `kids-toys-games` | - | map-to-existing-collection |
-| Kids Wear > Trousers & Pants | 7 | 0 | - | - | keep-as-search-filter-only |
+| Kids Wear > Trousers & Pants | 6 | 1 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Desk & Office Accessories | 7 | 0 | `storage-organization` | - | map-to-existing-collection |
 | Vehicle Accessories > Tire Inflators & Pumps | 7 | 0 | `car-accessories` | - | map-to-existing-collection |
 | Women's Beauty & Skincare > Face Masks | 7 | 0 | `womens-beauty-essentials` | - | map-to-existing-collection |
@@ -207,13 +207,13 @@ The six approved source collections were merged without forcing unrelated produc
 | Fashion Accessories > Ties & Formal Accessories | 6 | 0 | - | - | keep-as-search-filter-only |
 | Fashion > Dresses | 6 | 0 | - | - | keep-as-search-filter-only |
 | Fashion > Hoodies & Sweaters | 6 | 0 | - | - | keep-as-search-filter-only |
-| Fashion > Shorts | 6 | 0 | - | - | keep-as-search-filter-only |
+| Fashion > Anime Shorts | 6 | 0 | - | - | keep-as-search-filter-only |
 | Kids Toys & Games > Action & Skill Games | 6 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Kids Toys & Games > Dollhouse Miniatures | 6 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Kids Toys & Games > Target & Throwing Games | 6 | 0 | `kids-toys-games` | - | map-to-existing-collection |
-| Kids Wear > Kids Sleepwear | 6 | 0 | `kids-wear` | - | map-to-existing-collection |
+| Kids Wear > Kids Sleepwear | 5 | 1 | `kids-wear` | - | map-to-existing-collection |
 | Men's Accessories > Sunglasses | 6 | 0 | - | - | keep-as-search-filter-only |
-| Soft Toys > Plush & Soft Toys | 6 | 0 | - | `soft-toys` | keep-as-search-filter-only |
+| Soft Toys > Anime Plush Dolls | 6 | 0 | - | `soft-toys` | keep-as-search-filter-only |
 | Women's Fashion > Suits & Formalwear | 6 | 0 | - | - | keep-as-search-filter-only |
 | Baby Care > Baby Bibs | 5 | 0 | `kids` | - | map-to-existing-collection |
 | Chargers > Wireless Chargers | 5 | 0 | `portable-gadgets` | - | map-to-existing-collection |
@@ -279,12 +279,13 @@ The six approved source collections were merged without forcing unrelated produc
 | Kids Toys & Games > Spinning Top Toys | 2 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Kids Toys & Games > Toy Figures | 2 | 0 | `kids-toys-games` | - | map-to-existing-collection |
 | Kids Wear > Hoodies & Sweaters | 2 | 0 | - | - | keep-as-search-filter-only |
-| Kitchen & Cookware > Baking Tools | 2 | 0 | `kitchen-gadgets` | - | map-to-existing-collection |
+| Kitchen & Cookware > Cookie Cutters & Molds | 2 | 0 | `kitchen-gadgets` | - | map-to-existing-collection |
 | Kitchen & Cookware > Kitchen Textiles | 2 | 0 | `kitchen-gadgets` | - | map-to-existing-collection |
 | Lighting & Decor > Clocks | 2 | 0 | `home-decor`, `decorative-accessories` | - | map-to-existing-collection |
 | Lighting & Decor > Decorative Lamps | 2 | 0 | `home-decor`, `decorative-accessories` | - | map-to-existing-collection |
 | Men's Accessories > Footwear Accessories | 2 | 0 | `men-collection` | - | map-to-existing-collection |
 | Men's Accessories > Keychains & Key Rings | 2 | 0 | - | - | keep-as-search-filter-only |
+| Men's Fashion > Anime Cosplay Costumes | 2 | 0 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Anime Books & Media | 2 | 0 | `office-school-supplies` | - | map-to-existing-collection |
 | Office & School Supplies > Science & Lab Supplies | 2 | 0 | - | - | keep-as-search-filter-only |
 | Pet Care > Aquarium Supplies | 2 | 0 | - | `pet-assocerries` | keep-as-search-filter-only |
@@ -349,7 +350,6 @@ The six approved source collections were merged without forcing unrelated produc
 | Lighting & Decor > Wall Decor | 1 | 0 | `home-decor`, `wall-art` | - | map-to-existing-collection |
 | Men's Beauty & Skincare > Face Makeup | 1 | 0 | `men-collection` | - | map-to-existing-collection |
 | Men's Fashion > Activewear Sets | 1 | 0 | `men-collection` | - | map-to-existing-collection |
-| Men's Fashion > Anime Cosplay Costumes | 1 | 0 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Collectible Card Accessories | 1 | 0 | - | - | keep-as-search-filter-only |
 | Office & School Supplies > Display & Signage | 1 | 0 | `office-school-supplies` | - | map-to-existing-collection |
 | Office & School Supplies > Music Learning Supplies | 1 | 0 | - | - | keep-as-search-filter-only |
@@ -377,27 +377,26 @@ Only categories with 50 or more matching products and no existing target are lis
 
 | Candidate collection | Products | Why it is needed |
 | --- | ---: | --- |
-| Notebooks & Planners | 401 | No existing collection maps to Office & School Supplies > Notebooks & Planners. |
-| Shoes & Footwear | 285 | No existing collection maps to Kids Wear > Shoes & Footwear. |
-| Shoes & Footwear | 267 | No existing collection maps to Men's Fashion > Shoes & Footwear. |
-| Shirts & Blouses | 243 | No existing collection maps to Women's Fashion > Shirts & Blouses. |
+| Notebooks & Planners | 400 | No existing collection maps to Office & School Supplies > Notebooks & Planners. |
+| Shoes & Footwear | 283 | No existing collection maps to Kids Wear > Shoes & Footwear. |
+| Shirts & Blouses | 273 | No existing collection maps to Women's Fashion > Shirts & Blouses. |
+| Shoes & Footwear | 265 | No existing collection maps to Men's Fashion > Shoes & Footwear. |
 | Fashion Watches | 242 | No existing collection maps to Watches > Fashion Watches. |
 | Backpacks | 193 | No existing collection maps to Travel Essentials > Backpacks. |
 | Wallets & Card Holders | 179 | No existing collection maps to Men's Bags & Wallets > Wallets & Card Holders. |
 | Travel Bags & Luggage | 159 | No existing collection maps to Travel Essentials > Travel Bags & Luggage. |
-| Writing Supplies | 140 | No existing collection maps to Office & School Supplies > Writing Supplies. |
+| Writing Supplies | 138 | No existing collection maps to Office & School Supplies > Writing Supplies. |
 | Fitness & Training | 122 | No existing collection maps to Fitness Equipment > Fitness & Training. |
 | Sports Protection | 101 | No existing collection maps to Fitness Equipment > Sports Protection. |
-| Hats & Caps | 89 | No existing collection maps to Men's Accessories > Hats & Caps. |
 | Trousers & Pants | 88 | No existing collection maps to Women's Fashion > Trousers & Pants. |
 | Wallets & Card Holders | 79 | No existing collection maps to Bags & Wallets > Wallets & Card Holders. |
 | Bags | 79 | No existing collection maps to Men's Bags & Wallets > Bags. |
 | Towels | 76 | No existing collection maps to Bedsheets, Handlooms & Towels > Towels. |
 | Shoes & Footwear | 75 | No existing collection maps to Women's Fashion > Shoes & Footwear. |
 | Jackets & Coats | 72 | No existing collection maps to Women's Fashion > Jackets & Coats. |
-| Belts | 68 | No existing collection maps to Men's Accessories > Belts. |
-| Handbags | 65 | No existing collection maps to Men's Bags & Wallets > Handbags. |
-| Hair Accessories | 60 | No existing collection maps to Women's Accessories > Hair Accessories. |
+| Belts | 70 | No existing collection maps to Men's Accessories > Belts. |
+| Handbags | 63 | No existing collection maps to Men's Bags & Wallets > Handbags. |
+| Hair Accessories | 61 | No existing collection maps to Women's Accessories > Hair Accessories. |
 | Baby Care Essentials | 50 | No existing collection maps to Baby Care > Baby Care Essentials. |
 
 ## Existing Collections Under 50 Products
@@ -406,13 +405,11 @@ Current Shopify snapshot contains 97 collections. The rows below meet the under-
 
 | Current collection | Products | Suggested action | Suggested target |
 | --- | ---: | --- | --- |
-| Classification Review (`classification-review`) | 0 | archive-or-rebuild-after-approval | Needs taxonomy review |
 | Gifts for Seniors (`gifts-for-seniors`) | 0 | archive-or-rebuild-after-approval | Needs taxonomy review |
 | Under $25 (`under-25`) | 0 | archive-or-rebuild-after-approval | Needs taxonomy review |
 | Under $35 (`under-35`) | 0 | archive-or-rebuild-after-approval | Needs taxonomy review |
 | Housewarming Gifts (`housewarming-gifts`) | 1 | manual-merge-target-required | Needs taxonomy review |
 | Artificial Aquarium Decor Plants (`artificial-aquarium-decor-plants`) | 2 | merge-after-approval | `home-decor` |
-| Best Sellers (`best-sellers`) | 4 | merge-after-approval | `appplaza-best-sellers` |
 | Seasonal Decor (`seasonal-decor`) | 4 | manual-merge-target-required | Needs taxonomy review |
 | Pet Grooming (`pet-grooming`) | 5 | merge-after-approval | `pet-assocerries` |
 | Sleep Essentials (`sleep-essentials`) | 5 | merge-after-approval | `health-wellness` |
@@ -420,16 +417,14 @@ Current Shopify snapshot contains 97 collections. The rows below meet the under-
 | Gifts for Dad (`gifts-for-dad`) | 8 | manual-merge-target-required | Needs taxonomy review |
 | Gifts for Mom (`gifts-for-mom`) | 8 | manual-merge-target-required | Needs taxonomy review |
 | Candles (`candles`) | 11 | merge-after-approval | `home-decor` |
-| Staff Picks (`staff-picks`) | 12 | merge-after-approval | `unique-products` |
+| Staff Picks (`staff-picks`) | 11 | merge-after-approval | `unique-products` |
 | Pet Toys (`pet-toys`) | 14 | merge-after-approval | `pet-assocerries` |
 | Repair & Shine Serums (`repair-shine-serums`) | 15 | manual-merge-target-required | Needs taxonomy review |
-| Senior Living Solutions (`senior-living-solutions`) | 16 | manual-merge-target-required | Needs taxonomy review |
 | Pet Travel (`pet-travel`) | 17 | merge-after-approval | `pet-assocerries` |
-| Wall Lights (`wall-lights`) | 23 | merge-after-approval | `home-decor` |
-| Daily Living Aids (`daily-living-aids`) | 26 | manual-merge-target-required | Needs taxonomy review |
-| Medical Accessories (`medical-accessories`) | 28 | manual-merge-target-required | Needs taxonomy review |
+| Senior Living Solutions (`senior-living-solutions`) | 17 | manual-merge-target-required | Needs taxonomy review |
+| Daily Living Aids (`daily-living-aids`) | 27 | manual-merge-target-required | Needs taxonomy review |
+| Medical Accessories (`medical-accessories`) | 29 | manual-merge-target-required | Needs taxonomy review |
 | Massage Tools (`massage-tools`) | 42 | merge-after-approval | `health-wellness` |
 | Pet Essentials (`pet-essentials`) | 42 | manual-merge-target-required | Needs taxonomy review |
-| Wall Art (`wall-art`) | 42 | manual-merge-target-required | Needs taxonomy review |
-| Dog Supplies (`dog-supplies`) | 45 | merge-after-approval | `pet-assocerries` |
-| MagSafe Gadgets (`magsafe-gadgets`) | 46 | manual-merge-target-required | Needs taxonomy review |
+| MagSafe Gadgets (`magsafe-gadgets`) | 45 | manual-merge-target-required | Needs taxonomy review |
+| Dog Supplies (`dog-supplies`) | 46 | merge-after-approval | `pet-assocerries` |
