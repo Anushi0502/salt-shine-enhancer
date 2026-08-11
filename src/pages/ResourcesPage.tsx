@@ -24,6 +24,7 @@ type ResourceAction = {
 };
 
 type ResourceProductView = {
+  product: ShopifyProduct;
   productId: number;
   handle: string;
   title: string;
@@ -101,6 +102,7 @@ function buildFeaturedProductViews(pageTitle: string, productsByHandle: Map<stri
 
     return [
       {
+        product,
         productId: product.id,
         handle: entry.handle,
         title: conciseTitle(product.title, 56),
@@ -366,12 +368,7 @@ const ResourcesPage = () => {
             {featuredProducts.map((product) => (
               <ResourceProductCard
                 key={product.handle}
-                title={product.title}
-                reason={product.reason}
-                image={product.image}
-                price={product.price}
-                label={product.label}
-                to={product.to}
+                product={product.product}
                 reviewSummary={featuredRatingsById[product.productId] ?? null}
               />
             ))}

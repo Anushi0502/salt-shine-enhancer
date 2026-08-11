@@ -183,11 +183,14 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 <p className="font-display text-[1.25rem] leading-none tracking-[0.12em] text-primary">
                   {formatMoney(min)}
                 </p>
-                {compare > min ? (
-                  <p className="sr-only">
-                    <s>{formatMoney(compare)}</s>
-                  </p>
-                ) : null}
+                <p
+                  className={`mt-0.5 min-h-[0.85rem] text-xs leading-none ${
+                    compare > min ? "text-muted-foreground" : "text-transparent"
+                  }`}
+                  aria-hidden={compare <= min ? "true" : undefined}
+                >
+                  {compare > min ? <s>{formatMoney(compare)}</s> : "\u00a0"}
+                </p>
               </div>
               <ProductRating summary={displaySummary} compact />
             </div>
@@ -279,14 +282,17 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           </div>
         ) : null}
 
-        <div className="mt-2 flex items-end justify-between gap-2">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-5">
           <div className="min-w-0">
             <p className={`font-display text-[1.2rem] leading-none ${nativeApp ? "text-foreground" : "text-primary"}`}>{formatMoney(min)}</p>
-            {compare > min ? (
-              <p className="sr-only">
-                <s>{formatMoney(compare)}</s>
-              </p>
-            ) : null}
+            <p
+              className={`mt-0.5 min-h-[0.85rem] text-xs leading-none ${
+                compare > min ? "text-muted-foreground" : "text-transparent"
+              }`}
+              aria-hidden={compare <= min ? "true" : undefined}
+            >
+              {compare > min ? <s>{formatMoney(compare)}</s> : "\u00a0"}
+            </p>
           </div>
           <ProductRating summary={displaySummary} compact />
         </div>
