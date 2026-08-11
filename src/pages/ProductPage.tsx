@@ -2,18 +2,18 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   BadgeCheck,
-  CheckCircle2,
   History,
   Heart,
   Minus,
   PackageCheck,
   Plus,
+  Share2,
   ShieldCheck,
   ShoppingBag,
   Star,
-  ToggleLeft,
-  ToggleRight,
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -77,7 +77,7 @@ import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
 // reuses a pre-runtime-fix module after a theme upload.
-const PRODUCT_PAGE_RUNTIME_VERSION = "2026-07-28.1";
+const PRODUCT_PAGE_RUNTIME_VERSION = "2026-08-11.1";
 const ShopifyProductReviews = lazy(() => import("@/components/storefront/ShopifyProductReviews"));
 
 function displayVariantTitle(title?: string): string {
@@ -89,18 +89,20 @@ function displayVariantTitle(title?: string): string {
   return normalized;
 }
 
-function variantOptionTokens(title?: string): string[] {
-  const normalized = displayVariantTitle(title);
-  const parts = normalized
+function variantOptionParts(title?: string): string[] {
+  return displayVariantTitle(title)
     .split(/\s*\/\s*|\s-\s/)
     .map((part) => part.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 3);
+}
 
-  if (parts.length <= 1) {
-    return [];
+function optionGroupLabel(index: number, groupCount: number): string {
+  if (groupCount === 2) {
+    return index === 0 ? "Color" : "Size";
   }
 
-  return parts.slice(0, 3);
+  return groupCount === 1 ? "Option" : `Option ${index + 1}`;
 }
 
 function isVariantAvailable(variant?: ShopifyProduct["variants"][number] | null): boolean {
@@ -410,9 +412,12 @@ const ProductPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
-  const [showAvailableOnly, setShowAvailableOnly] = useState(true);
+  const [showAvailableOnly] = useState(true);
   const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
-  const reviewSummary = productMetafieldReviewSummary;
+  const currentRatingsQuery = useJudgeMeRatings(product ? [product.id] : []);
+  const reviewSummary = product
+    ? currentRatingsQuery.data?.[product.id] || productMetafieldReviewSummary
+    : productMetafieldReviewSummary;
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
@@ -676,14 +681,29 @@ const ProductPage = () => {
       />
     );
   }
-  const displayedVariants = showAvailableOnly ? variants.filter((variant) => isVariantAvailable(variant)) : variants;
+  const variantOptionGroupCount = Math.max(1, ...variants.map((variant) => variantOptionParts(variant.title).length));
+  const selectedVariantParts = variantOptionParts(selectedVariant?.title);
+  const variantOptionGroups = Array.from({ length: variantOptionGroupCount }, (_, groupIndex) => {
+    const values = Array.from(
+      new Set(
+        variants
+          .map((variant) => variantOptionParts(variant.title)[groupIndex])
+          .filter(Boolean),
+      ),
+    );
+
+    return {
+      label: optionGroupLabel(groupIndex, variantOptionGroupCount),
+      values,
+    };
+  });
   const price = Number(selectedVariant?.price || 0);
-  const lowestVariantPrice = Number(variants[0]?.price || 0);
   const availableVariantsCount = variants.filter((variant) => isVariantAvailable(variant)).length;
   const comparePriceCandidate = Number(selectedVariant?.compare_at_price || 0) || compareAt(product);
   const comparePrice = isPlausibleComparePrice(price, comparePriceCandidate) ? comparePriceCandidate : 0;
   const isAvailable = isVariantAvailable(selectedVariant);
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
+  const discountPercent = comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
 
   const selectedQuantity = Math.max(quantityFloor, Math.floor(quantity || 1));
   const directCheckoutUrl = selectedVariant
@@ -733,6 +753,7 @@ const ProductPage = () => {
   const wishlisted = isWishlisted(product.handle);
   const brandLabel = product.vendor?.trim() || "SALT";
   const heroThumbnailSources = imageSources.slice(0, 8);
+  const activeImageIndex = Math.max(0, imageSources.indexOf(displayedImage));
   const reviewBadgeLabel = reviewSummary && reviewSummary.reviewCount > 0
     ? `${reviewSummary.rating.toFixed(1)} · ${reviewSummary.reviewCount.toLocaleString()} reviews`
     : "";
@@ -808,6 +829,42 @@ const ProductPage = () => {
     });
   };
 
+  const selectVariantOption = (groupIndex: number, value: string) => {
+    const matchingVariant = variants.find((variant) => {
+      const parts = variantOptionParts(variant.title);
+      return (
+        parts[groupIndex] === value &&
+        parts.every((part, index) => index === groupIndex || !selectedVariantParts[index] || part === selectedVariantParts[index]) &&
+        isVariantAvailable(variant)
+      );
+    }) || variants.find((variant) => variantOptionParts(variant.title)[groupIndex] === value && isVariantAvailable(variant));
+
+    if (matchingVariant) {
+      setSelectedVariantId(matchingVariant.id);
+    }
+  };
+
+  const moveGallery = (offset: number) => {
+    if (imageSources.length < 2) {
+      return;
+    }
+
+    const nextIndex = (activeImageIndex + offset + imageSources.length) % imageSources.length;
+    setActiveImage(imageSources[nextIndex] || "");
+  };
+
+  const shareProduct = async () => {
+    const shareData = { title: product.title, url: window.location.href };
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      await navigator.share(shareData).catch(() => undefined);
+      return;
+    }
+
+    await navigator.clipboard?.writeText(window.location.href);
+    toast.success("Product link copied");
+  };
+
   return (
     <section
       data-salt-product-runtime={PRODUCT_PAGE_RUNTIME_VERSION}
@@ -838,10 +895,10 @@ const ProductPage = () => {
         </Link>
       </Reveal>
 
-      <div className="mt-3 overflow-hidden rounded-[2.1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.93))] p-2.5 shadow-[0_30px_70px_-56px_rgba(15,23,42,0.18)] sm:mt-4 sm:p-3.5 lg:p-4">
+      <div className="mt-3 overflow-hidden rounded-[2rem] border border-border/70 bg-background shadow-[0_28px_70px_-52px_rgba(15,23,42,0.24)] sm:mt-4">
         <div className="grid gap-3 sm:gap-3.5 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:items-start lg:gap-4">
           <Reveal className="salt-reveal-instant lg:self-start">
-            <div className="salt-panel-shell rounded-[1.65rem] p-3 sm:p-3.5 lg:p-4">
+            <div className="bg-background p-3 sm:p-4 lg:p-5">
               <div className="grid gap-3 lg:grid-cols-[92px_minmax(0,1fr)] lg:items-start">
                 <div className="hidden max-h-[50rem] flex-col gap-2.5 lg:flex">
                   {heroThumbnailSources.map((source, index) => {
@@ -871,8 +928,8 @@ const ProductPage = () => {
                   })}
                 </div>
 
-                <div className="relative overflow-hidden rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.92))] p-2 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.22)] sm:p-2.5">
-                  <div className="overflow-hidden rounded-[1.2rem] bg-muted">
+                <div className="relative overflow-hidden rounded-[1.45rem] border border-border/70 bg-background p-2 shadow-[0_22px_44px_-34px_rgba(15,23,42,0.22)] sm:p-2.5">
+                  <div className="overflow-hidden rounded-[1.2rem] bg-background">
                     {activeImage || primaryImage ? (
                       <img
                         ref={heroImageRef}
@@ -880,7 +937,7 @@ const ProductPage = () => {
                         srcSet={productImageSrcSet(displayedImage)}
                         sizes="(min-width: 1024px) 56vw, 100vw"
                         alt={product.title}
-                        className="aspect-square w-full object-cover"
+                        className="aspect-square w-full object-contain"
                         decoding="async"
                         onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
                         onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
@@ -893,6 +950,26 @@ const ProductPage = () => {
                       </div>
                     )}
                   </div>
+                  {imageSources.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => moveGallery(-1)}
+                        className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background/95 text-foreground shadow-[0_12px_24px_-16px_rgba(15,23,42,0.3)] transition hover:scale-105"
+                        aria-label="Previous product image"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveGallery(1)}
+                        className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background/95 text-foreground shadow-[0_12px_24px_-16px_rgba(15,23,42,0.3)] transition hover:scale-105"
+                        aria-label="Next product image"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </>
+                  ) : null}
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(15,23,42,0.08))]" />
                   <div className="absolute left-4 top-4 inline-flex items-center rounded-full border border-border/70 bg-background/88 px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-foreground shadow-[0_12px_24px_-20px_rgba(15,23,42,0.28)] backdrop-blur">
                     {imageSources.length} photos
@@ -922,7 +999,7 @@ const ProductPage = () => {
                   </button>
                 ))}
               </div>
-              <div className="mt-3 hidden gap-3 lg:grid">
+              <div className="mt-3 hidden gap-3">
                 <div className="salt-section-shell rounded-[1.45rem] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -987,7 +1064,7 @@ const ProductPage = () => {
 
         <Reveal className="salt-reveal-instant lg:self-start">
           <aside
-            className="salt-panel-shell rounded-[1.65rem] p-4 sm:p-5 lg:sticky lg:top-24"
+            className="bg-background p-4 sm:p-5 lg:sticky lg:top-24 lg:border-l lg:border-border/70"
             data-salt-minimum-quantity={quantityFloor}
           >
             <div className="flex items-start justify-between gap-4">
@@ -997,25 +1074,28 @@ const ProductPage = () => {
                     SALT
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">
-                      {product.product_type || "Featured"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{brandLabel}</p>
+                    <p className="text-sm font-semibold text-foreground">{brandLabel}</p>
+                    {reviewSummary ? (
+                      <p className="mt-0.5 text-xs font-semibold text-foreground">
+                        {reviewSummary.rating.toFixed(1)} ({reviewSummary.reviewCount.toLocaleString()})
+                      </p>
+                    ) : null}
                   </div>
                 </div>
-                <h1 className="mt-3 font-display text-[clamp(1.95rem,3vw,3.15rem)] leading-[0.94] text-foreground">
+                <h1 className="mt-4 font-display text-[clamp(1.95rem,3vw,3.15rem)] leading-[0.98] text-foreground">
                   {product.title}
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground">{subtitle}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {reviewBadgeLabel ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-xs font-semibold text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.22)]">
-                      <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                      {reviewBadgeLabel}
-                    </span>
-                  ) : null}
+                  <div className="flex items-center gap-0.5" aria-label={reviewSummary ? `${reviewSummary.rating.toFixed(1)} out of 5 stars` : "No ratings yet"}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star key={index} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {reviewSummary ? `${reviewSummary.reviewCount.toLocaleString()} ${reviewSummary.reviewCount === 1 ? "rating" : "ratings"}` : "No ratings yet"}
+                  </span>
                   {purchasedLastMonth > 0 ? (
-                    <span className="inline-flex items-center rounded-full border border-border/70 bg-background/88 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground shadow-[0_12px_24px_-22px_rgba(15,23,42,0.2)]">
+                    <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
                       {purchasedLastMonth.toLocaleString()} bought last month
                     </span>
                   ) : null}
@@ -1027,17 +1107,30 @@ const ProductPage = () => {
                 </div>
               ) : null}
             </div>
-            <div className="mt-4 flex flex-wrap items-baseline gap-2">
-              <strong className="font-display text-[clamp(2rem,4vw,3.25rem)] text-primary">{formatMoney(price)}</strong>
-              {comparePrice > price ? <s className="text-sm text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
-              {savingsAmount > 0 ? (
-                <span className="rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[0.64rem] font-bold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300">
-                  Save {formatMoney(savingsAmount)}
+            <div className="mt-5 flex flex-wrap items-baseline gap-2">
+              <strong className="font-display text-[clamp(2rem,4vw,3.25rem)] text-foreground">{formatMoney(price)}</strong>
+              {comparePrice > price ? <s className="text-base font-medium text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
+              {discountPercent > 0 ? (
+                <span className="rounded-full bg-foreground px-3 py-1 text-xs font-bold text-background">
+                  {discountPercent}% off
                 </span>
               ) : null}
+              {savingsAmount > 0 ? (
+                <span className="sr-only">Save {formatMoney(savingsAmount)}</span>
+              ) : null}
+            </div>
+            <p className="mt-2 text-sm font-medium text-foreground">
+              {isAvailable ? "Free shipping on eligible US orders" : "Currently unavailable"}
+            </p>
+            <div className="mt-4 flex items-center gap-3 rounded-[1.2rem] border border-border/70 bg-background px-4 py-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-lg">%</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Live Shopify offer</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Savings shown above are calculated from the current variant price.</p>
+              </div>
             </div>
             {reviewSummary ? (
-              <div className="mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
+              <div className="hidden mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Shopper confidence</p>
@@ -1074,7 +1167,7 @@ const ProductPage = () => {
             ) : null}
 
             {!nativeApp ? (
-              <div className="mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
+              <div className="hidden mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Key details</p>
@@ -1111,7 +1204,7 @@ const ProductPage = () => {
             ) : null}
 
             {nativeApp ? (
-              <div className="mt-4 space-y-3">
+              <div className="hidden mt-4 space-y-3">
                 <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.35)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -1180,122 +1273,48 @@ const ProductPage = () => {
             ) : null}
 
             {variants.length > 0 ? (
-              <div className="mt-3 sm:mt-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">Choose option</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowAvailableOnly((value) => !value)}
-                      className="salt-outline-chip h-8 px-2.5 py-0 text-[0.6rem]"
-                      aria-pressed={showAvailableOnly ? "true" : "false"}
-                    >
-                      {showAvailableOnly ? <ToggleRight className="mr-1 h-3.5 w-3.5" /> : <ToggleLeft className="mr-1 h-3.5 w-3.5" />}
-                      {showAvailableOnly ? "Available only" : "All options"}
-                    </button>
-                    <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                      {availableVariantsCount} of {variants.length} available
-                    </span>
-                  </div>
-                </div>
+              <div className="mt-5 space-y-5 border-t border-border/70 pt-5">
+                {variantOptionGroups.map((group, groupIndex) => (
+                  <section key={group.label} aria-label={`${group.label} options`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-foreground">
+                        {group.label} <span className="font-normal text-muted-foreground">{selectedVariantParts[groupIndex] || "Choose"}</span>
+                      </p>
+                      {groupIndex === 0 && availableVariantsCount < variants.length ? (
+                        <span className="text-[0.68rem] font-medium text-muted-foreground">
+                          {availableVariantsCount} of {variants.length} available
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {group.values.map((value) => {
+                        const valueAvailable = variants.some(
+                          (variant) => variantOptionParts(variant.title)[groupIndex] === value && isVariantAvailable(variant),
+                        );
+                        const valueSelected = selectedVariantParts[groupIndex] === value;
 
-                {selectedVariant ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl border border-border/50 bg-background/60 px-3 py-2 text-xs shadow-[0_10px_20px_-18px_rgba(15,23,42,0.18)]">
-                    <span className="inline-flex items-center gap-1 font-semibold text-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                      {displayVariantTitle(selectedVariant.title)}
-                    </span>
-                    <span className="rounded-full border border-border/60 bg-background/90 px-2 py-0.5 font-semibold text-primary">
-                      {formatMoney(price)}
-                    </span>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 ${
-                        isAvailable
-                          ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          : "border-destructive/40 bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {isAvailable ? "Ready to ship" : "Unavailable"}
-                    </span>
-                  </div>
-                ) : null}
-
-                <div className="salt-quiet-scroll mt-3 grid max-h-64 gap-2 overflow-auto pr-1 sm:grid-cols-2">
-                  {displayedVariants.map((variant) => {
-                    const variantPrice = Number(variant.price || 0);
-                    const variantComparePrice = Number(variant.compare_at_price || 0);
-                    const variantAvailable = isVariantAvailable(variant);
-                    const isVariantSelected = variant.id === selectedVariant?.id;
-                    const variantTitle = displayVariantTitle(variant.title);
-                    const optionTokens = variantOptionTokens(variant.title);
-                    const variantPriceDelta = variantPrice - lowestVariantPrice;
-                    const hasVariantSavings = isPlausibleComparePrice(variantPrice, variantComparePrice);
-
-                    return (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        onClick={() => setSelectedVariantId(variant.id)}
-                        disabled={!variantAvailable}
-                        aria-pressed={isVariantSelected ? "true" : "false"}
-                        className={`group relative overflow-hidden rounded-[1.15rem] border px-3 py-2.5 text-left transition ${
-                          isVariantSelected
-                            ? "border-primary/55 bg-primary/10 shadow-[0_12px_24px_-20px_hsl(var(--primary)/0.9)]"
-                            : "border-border/55 bg-background/72 hover:border-primary/35 hover:bg-background/92"
-                        } ${variantAvailable ? "" : "cursor-not-allowed opacity-50"}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold leading-tight text-foreground">
-                            {variantTitle}
-                          </p>
-                          {isVariantSelected ? (
-                            <span className="rounded-full border border-primary/40 bg-primary/14 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.08em] text-primary">
-                              Selected
-                            </span>
-                          ) : null}
-                        </div>
-
-                        {optionTokens.length > 0 ? (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {optionTokens.map((token) => (
-                              <span
-                                key={`${variant.id}-${token}`}
-                                className="rounded-full border border-border/55 bg-background/90 px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.08em] text-muted-foreground"
-                              >
-                                {token}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-
-                        <div className="mt-2 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-primary">{formatMoney(variantPrice)}</span>
-                            {hasVariantSavings ? (
-                              <s className="text-[0.68rem] text-muted-foreground">
-                                {formatMoney(variantComparePrice)}
-                              </s>
-                            ) : null}
-                          </div>
-                          <span className={variantAvailable ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"}>
-                            {variantAvailable ? "Available" : "Unavailable"}
-                          </span>
-                        </div>
-
-                        <p className="mt-1 text-[0.68rem] text-muted-foreground">
-                          {variantPriceDelta <= 0
-                            ? "Base price option"
-                            : `${formatMoney(variantPriceDelta)} above base`}
-                        </p>
-                      </button>
-                    );
-                  })}
-                  {displayedVariants.length === 0 ? (
-                    <p className="col-span-full rounded-[1.2rem] border border-border/75 bg-background px-3 py-2 text-xs text-muted-foreground">
-                      No available options right now. Turn off "Available only" to view all variants.
-                    </p>
-                  ) : null}
-                </div>
+                        return (
+                          <button
+                            key={`${group.label}-${value}`}
+                            type="button"
+                            onClick={() => selectVariantOption(groupIndex, value)}
+                            disabled={!valueAvailable}
+                            aria-pressed={valueSelected ? "true" : "false"}
+                            className={`min-h-11 rounded-full border px-4 text-sm font-semibold transition ${
+                              valueSelected
+                                ? "border-foreground bg-background text-foreground shadow-[0_0_0_1px_hsl(var(--foreground))]"
+                                : valueAvailable
+                                  ? "border-border bg-background text-foreground hover:border-foreground"
+                                  : "cursor-not-allowed border-border/60 bg-muted/80 text-muted-foreground/70"
+                            }`}
+                          >
+                            <span className={!valueAvailable ? "line-through" : ""}>{value}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             ) : null}
 
@@ -1328,36 +1347,44 @@ const ProductPage = () => {
               ) : null}
             </div>
 
-            <a
-              href={checkoutTargetUrl}
-              onClick={handleBuyNowClick}
-              aria-disabled={isAvailable ? "false" : "true"}
-              className={`salt-primary-cta mt-5 inline-flex h-12 w-full items-center justify-center rounded-full px-5 text-base font-semibold transition ${
-                isAvailable
-                  ? "hover:-translate-y-[1px] hover:brightness-[1.03]"
-                  : "pointer-events-none opacity-60"
-              }`}
-            >
-              Buy now
-            </a>
             <button
               type="button"
               onClick={addToCart}
               disabled={!isAvailable}
-              className="mt-2 salt-button-shine salt-yellow-cta h-12 w-full gap-2 rounded-full px-5 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-50"
+              className="salt-primary-cta mt-5 h-12 w-full gap-2 rounded-full px-5 text-base font-semibold transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShoppingBag className="h-4 w-4" />
-              {isAvailable ? `Add to cart - ${formatMoney(price * quantity)}` : "Unavailable"}
+              {isAvailable ? "Add to cart" : "Unavailable"}
             </button>
+
+            <a
+              href={checkoutTargetUrl}
+              onClick={handleBuyNowClick}
+              aria-disabled={isAvailable ? "false" : "true"}
+              className={`mt-2 inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground px-5 text-base font-semibold text-background transition hover:-translate-y-[1px] hover:opacity-90 ${
+                isAvailable ? "" : "pointer-events-none opacity-60"
+              }`}
+            >
+              Buy now
+            </a>
 
             <button
               type="button"
               onClick={toggleWishlistState}
               aria-pressed={wishlisted ? "true" : "false"}
-              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-sm font-bold uppercase tracking-[0.08em] text-foreground transition hover:border-primary/40 hover:text-primary"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <Heart className={`h-4 w-4 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
               {wishlisted ? "Saved to wishlist" : "Save to wishlist"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void shareProduct()}
+              className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:text-primary"
+            >
+              <Share2 className="h-4 w-4" />
+              Share
             </button>
 
 
