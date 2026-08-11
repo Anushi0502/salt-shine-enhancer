@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
-import ResilientImage from "@/components/storefront/ResilientImage";
+import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero from "@/components/storefront/HomeHero";
 import GiftBanner from "@/components/salt/GiftBanner";
-import { formatMoney, polishPlainText } from "@/lib/formatters";
+import { polishPlainText } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
-import { useJudgeMeTestimonials } from "@/lib/judgeme";
+import { useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroEverydayEssentials from "@/assets/hero-everyday-essentials-square.png";
@@ -20,17 +20,6 @@ import heroWomensBeauty from "@/assets/hero-womens-beauty-square.png";
 import heroMain from "@/assets/hero-main.jpg";
 import type { HomeHeroSlide } from "@/components/storefront/HomeHero";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
-
-type ImageTile = {
-  title: string;
-  image: string;
-  to: string;
-  alt?: string;
-};
-
-type ProductTile = ImageTile & {
-  price: string;
-};
 
 type ReviewTile = {
   key: string;
@@ -42,7 +31,7 @@ type ReviewTile = {
 };
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
-const REVIEW_DISPLAY_LIMIT = 500;
+const REVIEW_DISPLAY_LIMIT = 24;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -117,88 +106,6 @@ function SectionTitle({ title, to }: { title: string; to?: string }) {
   );
 }
 
-function OverlayProductCard({
-  title,
-  image,
-  to,
-  price,
-  fallbackImage,
-  className = "",
-  imageAlt,
-  compact = false,
-  tight = false,
-}: {
-  title: string;
-  image: string;
-  to: string;
-  price: string;
-  fallbackImage: string;
-  className?: string;
-  imageAlt?: string;
-  compact?: boolean;
-  tight?: boolean;
-}) {
-  const imageSrc = normalizeShopifyAssetUrl(image) || image || fallbackImage;
-  const fallbackSrc = normalizeShopifyAssetUrl(fallbackImage) || fallbackImage;
-  const resolvedAlt = imageAlt || `${title} product image from SALT Online Store`;
-  const shellClass = tight
-    ? "rounded-[1.15rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)]"
-    : compact
-      ? "rounded-[1.35rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] shadow-[0_18px_36px_-30px_rgba(15,23,42,0.16)]"
-      : "rounded-[1.55rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] shadow-[0_20px_44px_-32px_rgba(15,23,42,0.18)]";
-  const mediaClass = tight
-    ? "aspect-[1/1.02] overflow-hidden bg-muted/20"
-    : compact
-      ? "aspect-[1/1.04] overflow-hidden bg-muted/20"
-      : "aspect-[1/0.96] overflow-hidden bg-muted/20";
-  const titleClass = tight
-    ? "line-clamp-2 font-display text-[0.88rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[0.96rem]"
-    : compact
-      ? "line-clamp-2 font-display text-[0.96rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[1.05rem]"
-      : "line-clamp-2 font-display text-[1.04rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-[1.16rem]";
-  const priceClass = tight
-    ? "text-[0.9rem] font-black leading-none tracking-[0.01em] text-foreground sm:text-[0.96rem]"
-    : compact
-      ? "text-[1rem] font-black leading-none tracking-[0.01em] text-foreground sm:text-[1.08rem]"
-      : "text-[1.16rem] font-black leading-none tracking-[0.01em] text-foreground sm:text-[1.26rem]";
-  const bodyClass = tight ? "px-2.5 py-2.5" : compact ? "px-3 py-3" : "px-3.5 py-3.5";
-  const imageClass = "h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]";
-
-  return (
-    <Link
-      to={to}
-      className={`group flex h-full flex-col overflow-hidden ${shellClass} ${className}`.trim()}
-    >
-      <div className={mediaClass}>
-        <ResilientImage
-          src={imageSrc}
-          alt={resolvedAlt}
-          loading="lazy"
-          decoding="async"
-          deferUntilNearViewport
-          className={imageClass}
-          fallback={
-            <img
-              src={fallbackSrc}
-              alt={resolvedAlt}
-              loading="lazy"
-              decoding="async"
-              className={imageClass}
-            />
-          }
-        />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.04)_52%,hsl(var(--foreground)/0.12))]" />
-      </div>
-      <div className={`flex flex-1 flex-col ${bodyClass}`}>
-        <p className={titleClass}>{title}</p>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <span className={priceClass}>{price}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 function normalizeText(value: string | null | undefined): string {
   return String(value || "")
     .trim()
@@ -223,10 +130,42 @@ function productSearchText(product: ShopifyProduct): string {
   return normalizeText(`${product.title} ${product.product_type} ${tags}`);
 }
 
-function buildProductImageAltText(title: string, contextLabel: string): string {
-  const normalizedTitle = polishPlainText(title) || "Product";
-  const normalizedContext = polishPlainText(contextLabel).toLowerCase();
-  return `${normalizedTitle} product photo featured in SALT ${normalizedContext}.`;
+type HomeCardSource = {
+  id: number;
+  title: string;
+  handle: string;
+  image: string;
+  price: number;
+  compareAtPrice: number | null;
+};
+
+function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
+  const compareAtPrice = Number(source.compareAtPrice || 0);
+  const image = source.image ? { id: source.id, src: source.image, alt: source.title } : null;
+
+  return {
+    id: source.id,
+    title: source.title,
+    handle: source.handle,
+    body_html: null,
+    vendor: "SALT",
+    product_type: "",
+    tags: [],
+    created_at: "",
+    published_at: null,
+    updated_at: "",
+    variants: [
+      {
+        id: source.id,
+        title: "Default",
+        price: source.price.toFixed(2),
+        compare_at_price: compareAtPrice > source.price ? compareAtPrice.toFixed(2) : null,
+        available: true,
+      },
+    ],
+    images: image ? [image] : [],
+    image,
+  };
 }
 
 const HomePage = () => {
@@ -241,20 +180,26 @@ const HomePage = () => {
     () => findBestSellerCollection(collections),
     [collections],
   );
-  const bestSellerTiles = useMemo<ProductTile[]>(() => {
-    return (homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, 15).map((product) => ({
-      title: product.title,
-      price: formatMoney(product.price),
-      image: product.image,
-      to: `/products/${product.handle}`,
-    }));
-  }, [homeFeaturedProductsPayload?.bestSellerProducts]);
+  const homeCardSources = useMemo<HomeCardSource[]>(() => {
+    const collectionProducts = homeCollectionProductsPayload
+      ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) => section.products)
+      : [];
+
+    return [
+      ...(homeFeaturedProductsPayload?.bestSellerProducts || []),
+      ...collectionProducts,
+    ];
+  }, [homeCollectionProductsPayload, homeFeaturedProductsPayload?.bestSellerProducts]);
+  const homeRatingsQuery = useJudgeMeRatings(homeCardSources.map((product) => product.id));
+  const homeRatingsById = homeRatingsQuery.data || {};
+  const bestSellerTiles = useMemo(
+    () => (homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, 15).map(toProductCardProduct),
+    [homeFeaturedProductsPayload?.bestSellerProducts],
+  );
   const bestSellerDisplayTiles = useMemo(
     () => bestSellerTiles.slice(0, 12),
     [bestSellerTiles],
   );
-  const bestSellerHeroImage =
-    normalizeShopifyAssetUrl(bestSellerCollection?.image?.src) || normalizedHeroMain;
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
     const sections = homeCollectionProductsPayload?.sections;
     if (!sections) {
@@ -306,12 +251,7 @@ const HomePage = () => {
           ].map((section) => ({
             title: section.title,
             to: `/collections/${section.handle}`,
-            tiles: section.products.slice(0, 12).map((product) => ({
-              title: product.title,
-              price: formatMoney(product.price),
-              image: product.image,
-              to: `/products/${product.handle}`,
-            })),
+            products: section.products.slice(0, 12).map(toProductCardProduct),
           }))
       : [],
     [homeCollectionProductsPayload],
@@ -483,16 +423,12 @@ const HomePage = () => {
           <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
             <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
-              {bestSellerDisplayTiles.map((tile, index) => (
-                <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={120 + index * 50}>
-                  <OverlayProductCard
-                    title={tile.title}
-                    image={tile.image}
-                    to={tile.to}
-                    price={tile.price}
-                    fallbackImage={bestSellerHeroImage}
-                    imageAlt={buildProductImageAltText(tile.title, "best sellers")}
-                    compact
+              {bestSellerDisplayTiles.map((product, index) => (
+                <Reveal key={`${product.handle}-${index}`} delayMs={120 + index * 50}>
+                  <ProductCard
+                    product={product}
+                    variant="shop"
+                    reviewSummary={homeRatingsById[product.id] ?? null}
                     className="w-full max-w-[11rem] justify-self-center"
                   />
                 </Reveal>
@@ -502,21 +438,17 @@ const HomePage = () => {
         </Reveal> : null}
 
         {homeCollectionSections.map((section, sectionIndex) =>
-          section.tiles.length > 0 ? (
+          section.products.length > 0 ? (
             <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
               <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                 <SectionTitle title={section.title} to={section.to} />
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
-                  {section.tiles.map((tile, index) => (
-                    <Reveal key={`${tile.to}-${tile.title}-${index}`} delayMs={120 + index * 50}>
-                      <OverlayProductCard
-                        title={tile.title}
-                        image={tile.image}
-                        to={tile.to}
-                        price={tile.price}
-                        fallbackImage={bestSellerHeroImage}
-                        imageAlt={buildProductImageAltText(tile.title, section.title)}
-                        compact
+                  {section.products.map((product, index) => (
+                    <Reveal key={`${product.handle}-${index}`} delayMs={120 + index * 50}>
+                      <ProductCard
+                        product={product}
+                        variant="shop"
+                        reviewSummary={homeRatingsById[product.id] ?? null}
                         className="w-full max-w-[11rem] justify-self-center"
                       />
                     </Reveal>

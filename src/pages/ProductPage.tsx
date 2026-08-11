@@ -45,6 +45,7 @@ import {
 } from "@/lib/formatters";
 import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import {
   getStoreCurrencyCode,
@@ -605,6 +606,12 @@ const ProductPage = () => {
         : [],
     [product, products, recentHandles],
   );
+  const relatedCardRatingIds = useMemo(
+    () => Array.from(new Set([...relatedProducts, ...complementaryProducts, ...recentlyViewedProducts].map((entry) => entry.id))),
+    [complementaryProducts, recentlyViewedProducts, relatedProducts],
+  );
+  const relatedCardRatingsQuery = useJudgeMeRatings(relatedCardRatingIds);
+  const relatedCardRatingsById = relatedCardRatingsQuery.data || {};
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const seoStructuredData = useMemo(() => {
     if (!origin || !product) {
@@ -1443,7 +1450,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={related}
                     variant="shop"
-                    reviewSummary={null}
+                    reviewSummary={relatedCardRatingsById[related.id] ?? null}
                   />
                 </Reveal>
               ))}
@@ -1469,7 +1476,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={null}
+                    reviewSummary={relatedCardRatingsById[entry.id] ?? null}
                   />
                 </Reveal>
               ))}
@@ -1497,7 +1504,7 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={null}
+                    reviewSummary={relatedCardRatingsById[entry.id] ?? null}
                   />
                 </Reveal>
               ))}

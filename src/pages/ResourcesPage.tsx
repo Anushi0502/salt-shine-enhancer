@@ -12,6 +12,7 @@ import { buildResourceReason } from "@/lib/editorial-pages";
 import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useEditorialPage, useProductSearchIndex } from "@/lib/shopify-data";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { buildResourceRoute, SITE_RESOURCE_GUIDES, getCollectionByHandle } from "@/lib/site-navigation";
 import type { ShopifyProduct } from "@/types/shopify";
 
@@ -23,6 +24,7 @@ type ResourceAction = {
 };
 
 type ResourceProductView = {
+  productId: number;
   handle: string;
   title: string;
   reason: string;
@@ -99,6 +101,7 @@ function buildFeaturedProductViews(pageTitle: string, productsByHandle: Map<stri
 
     return [
       {
+        productId: product.id,
         handle: entry.handle,
         title: conciseTitle(product.title, 56),
         reason: buildResourceReason(product.title, pageTitle),
@@ -130,6 +133,8 @@ const ResourcesPage = () => {
     () => buildFeaturedProductViews(page?.title || "Resource Hub", productsByHandle).slice(0, 3),
     [page?.title, productsByHandle],
   );
+  const featuredRatingsQuery = useJudgeMeRatings(featuredProducts.map((product) => product.productId));
+  const featuredRatingsById = featuredRatingsQuery.data || {};
 
   if (isLoading) {
     return <LoadingState title="Loading Resource Hub" subtitle="Building the AEO/GEO resource hub." />;
@@ -367,6 +372,7 @@ const ResourcesPage = () => {
                 price={product.price}
                 label={product.label}
                 to={product.to}
+                reviewSummary={featuredRatingsById[product.productId] ?? null}
               />
             ))}
           </div>

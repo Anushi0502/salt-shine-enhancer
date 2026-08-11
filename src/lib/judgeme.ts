@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
+import { getRuntimeContext } from "@/lib/theme-assets";
 import { polishPlainText } from "@/lib/formatters";
 import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
@@ -31,10 +31,6 @@ type JudgeMePreviewResponse = {
   badge?: string;
 };
 
-type JudgeMeProductReviewResponse = {
-  widget?: string;
-};
-
 type JudgeMeAllReviewsPageResponse = {
   all_reviews?: string;
 };
@@ -48,10 +44,14 @@ type JudgeMeReviewType = "product-reviews" | "shop-reviews";
 
 const JUDGEME_STALE_TIME_MS = 0;
 const JUDGEME_AUTO_REFRESH_MS = 90 * 1000;
+const JUDGEME_SUMMARY_CACHE_MS = 90 * 1000;
+const JUDGEME_RATING_CONCURRENCY = 6;
 const JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE = 6;
 const JUDGEME_ALL_REVIEWS_PAGE_SIZE = 25;
 const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
 const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
+
+const judgeMeSummaryCache = new Map<string, { summary: JudgeMeReviewSummary | null; expiresAt: number }>();
 
 function normalizeDomain(value: string): string {
   const raw = String(value || "").trim();
@@ -95,15 +95,11 @@ function getJudgeMePublicToken(): string {
 
 function getJudgeMeShopDomains(): string[] {
   const runtimeContext = getRuntimeContext();
-  const baseOrigin = getShopBaseOrigin();
 
   const candidates = [
     normalizeDomain(runtimeContext.judgeMeShopDomain || ""),
     normalizeDomain(runtimeContext.shopDomain || ""),
-    normalizeDomain(baseOrigin),
     normalizeDomain(import.meta.env.VITE_JUDGEME_SHOP_DOMAIN || ""),
-    normalizeDomain(import.meta.env.VITE_SALT_SHOP_URL || ""),
-    normalizeDomain(import.meta.env.VITE_SHOPIFY_STOREFRONT_URL || ""),
     normalizeDomain(DEFAULT_JUDGEME_SHOP_DOMAIN),
   ].filter(Boolean);
 
@@ -151,44 +147,6 @@ function parseJudgeMeBadge(html: string): JudgeMeRawSummary | null {
     parseBadgeNumber(html, /\b([0-9][0-9,]*)\s+(?:reviews?|ratings?)\b/i);
 
   if (!rating && !reviewCount) {
-    return null;
-  }
-
-  return {
-    rating: Math.min(5, Math.max(0, rating || 0)),
-    reviewCount: Math.max(0, reviewCount || 0),
-  };
-}
-
-function parseJudgeMeWidgetSummary(html: string): JudgeMeRawSummary | null {
-  if (!html || typeof DOMParser === "undefined") {
-    return null;
-  }
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const widgetRoot = doc.querySelector(".jdgm-rev-widg");
-  const rootCount = Number(widgetRoot?.getAttribute("data-number-of-reviews") || 0);
-  const rootAverage = Number(widgetRoot?.getAttribute("data-average-rating") || 0);
-
-  const reviewNodes = Array.from(doc.querySelectorAll(".jdgm-rev"));
-  const reviewCountFromNodes = reviewNodes.length;
-  const averageFromNodes =
-    reviewCountFromNodes > 0
-      ? reviewNodes.reduce((sum, node) => {
-          const score = Number(node.querySelector(".jdgm-rev__rating")?.getAttribute("data-score") || 0);
-          return sum + (Number.isFinite(score) ? score : 0);
-        }, 0) / reviewCountFromNodes
-      : 0;
-
-  const reviewCount = Math.max(rootCount, reviewCountFromNodes);
-  const rating =
-    reviewCountFromNodes >= rootCount && averageFromNodes > 0
-      ? averageFromNodes
-      : rootAverage > 0
-        ? rootAverage
-        : averageFromNodes;
-
-  if (!reviewCount && !rating) {
     return null;
   }
 
@@ -296,20 +254,14 @@ function parseJudgeMeAllReviewsTestimonials(reviewType: JudgeMeReviewType, html:
     .filter((review) => review.body || review.title);
 }
 
-function buildSummary(productId: number, badge: JudgeMeRawSummary | null, widget: JudgeMeRawSummary | null): JudgeMeReviewSummary | null {
-  if (!badge && !widget) {
+function buildSummary(productId: number, badge: JudgeMeRawSummary | null): JudgeMeReviewSummary | null {
+  if (!badge) {
     return null;
   }
 
   const badgeCount = badge?.reviewCount || 0;
-  const widgetCount = widget?.reviewCount || 0;
-  const finalReviewCount = Math.max(badgeCount, widgetCount);
-  const finalRating =
-    widgetCount >= badgeCount && (widget?.rating || 0) > 0
-      ? Number(widget?.rating || 0)
-      : (badge?.rating || 0) > 0
-        ? Number(badge?.rating || 0)
-        : Number(widget?.rating || 0);
+  const finalReviewCount = badgeCount;
+  const finalRating = Number(badge.rating || 0);
 
   return {
     productId,
@@ -324,47 +276,32 @@ async function requestJudgeMeSummary(
   shopDomain: string,
   publicToken: string,
   productId: number,
-): Promise<JudgeMeReviewSummary | null> {
+): Promise<{ summary: JudgeMeReviewSummary | null; authFailed: boolean }> {
   const baseParams = new URLSearchParams({
-    public_token: publicToken,
     api_token: publicToken,
     shop_domain: shopDomain,
     external_id: String(productId),
     t: String(Date.now()),
   });
   const previewEndpoint = buildJudgeMeProxyUrl("widgets/preview_badge", baseParams);
-  const widgetEndpoint = buildJudgeMeProxyUrl(
-    "widgets/product_review",
-    new URLSearchParams({
-      ...Object.fromEntries(baseParams.entries()),
-      page: "1",
-      per_page: "100",
-    }),
-  );
+  const previewResponse = await fetch(previewEndpoint, { credentials: "omit" });
 
-  const [previewResponse, widgetResponse] = await Promise.all([
-    fetch(previewEndpoint, { credentials: "omit" }),
-    fetch(widgetEndpoint, { credentials: "omit" }),
-  ]);
-
-  if (!previewResponse.ok && !widgetResponse.ok) {
-    return null;
+  if (previewResponse.status === 401 || previewResponse.status === 403) {
+    return { summary: null, authFailed: true };
   }
 
-  const previewPayload = previewResponse.ok
-    ? ((await previewResponse.json()) as JudgeMePreviewResponse)
-    : {};
-  const widgetPayload = widgetResponse.ok
-    ? ((await widgetResponse.json()) as JudgeMeProductReviewResponse)
-    : {};
+  if (!previewResponse.ok) {
+    return { summary: null, authFailed: false };
+  }
+
+  const previewPayload = (await previewResponse.json()) as JudgeMePreviewResponse;
   const externalId = Number(previewPayload.product_external_id || productId);
   if (!Number.isFinite(externalId)) {
-    return null;
+    return { summary: null, authFailed: false };
   }
 
   const badgeSummary = parseJudgeMeBadge(normalizeJudgeMeHtml(String(previewPayload.badge || "")));
-  const widgetSummary = parseJudgeMeWidgetSummary(normalizeJudgeMeHtml(String(widgetPayload.widget || "")));
-  return buildSummary(externalId, badgeSummary, widgetSummary);
+  return { summary: buildSummary(externalId, badgeSummary), authFailed: false };
 }
 
 async function requestJudgeMeReviewCount(
@@ -373,7 +310,6 @@ async function requestJudgeMeReviewCount(
   endpoint: "all_reviews_count" | "shop_reviews_count",
 ): Promise<number | null> {
   const params = new URLSearchParams({
-    public_token: publicToken,
     api_token: publicToken,
     shop_domain: shopDomain,
     t: String(Date.now()),
@@ -395,7 +331,6 @@ async function requestJudgeMeAllReviewsPage(
   page: number,
 ): Promise<JudgeMeTestimonial[]> {
   const params = new URLSearchParams({
-    public_token: publicToken,
     api_token: publicToken,
     shop_domain: shopDomain,
     page: String(page),
@@ -434,27 +369,57 @@ export async function fetchJudgeMeRatings(productIds: number[]): Promise<Record<
   const ratings: Record<number, JudgeMeReviewSummary> = {};
 
   for (const domain of domains) {
-    const unresolvedIds = normalizedIds.filter((productId) => !ratings[productId]);
+    const unresolvedIds = normalizedIds.filter((productId) => {
+      if (ratings[productId]) {
+        return false;
+      }
+
+      const cached = judgeMeSummaryCache.get(`${domain}:${productId}`);
+      if (!cached || cached.expiresAt <= Date.now()) {
+        return true;
+      }
+
+      if (cached.summary) {
+        ratings[productId] = cached.summary;
+      }
+      return false;
+    });
     if (!unresolvedIds.length) {
       break;
     }
 
-    const entries = await Promise.all(
-      unresolvedIds.map(async (productId) => {
-        try {
-          const summary = await requestJudgeMeSummary(domain, publicToken, productId);
-          return summary ? ([productId, summary] as const) : null;
-        } catch {
-          return null;
-        }
-      }),
-    );
+    let authFailed = false;
+    for (let index = 0; index < unresolvedIds.length; index += JUDGEME_RATING_CONCURRENCY) {
+      const batch = unresolvedIds.slice(index, index + JUDGEME_RATING_CONCURRENCY);
+      const entries = await Promise.all(
+        batch.map(async (productId) => {
+          try {
+            const result = await requestJudgeMeSummary(domain, publicToken, productId);
+            if (!result.authFailed) {
+              judgeMeSummaryCache.set(`${domain}:${productId}`, {
+                summary: result.summary,
+                expiresAt: Date.now() + JUDGEME_SUMMARY_CACHE_MS,
+              });
+            }
+            return { productId, ...result };
+          } catch {
+            return { productId, summary: null, authFailed: false };
+          }
+        }),
+      );
 
-    entries
-      .filter((entry): entry is readonly [number, JudgeMeReviewSummary] => Boolean(entry))
-      .forEach(([productId, summary]) => {
-        ratings[productId] = summary;
-      });
+      entries
+        .filter((entry): entry is typeof entry & { summary: JudgeMeReviewSummary } => Boolean(entry.summary))
+        .forEach(({ productId, summary }) => {
+          ratings[productId] = summary;
+        });
+
+      authFailed = entries.some((entry) => entry.authFailed);
+
+      if (authFailed) {
+        break;
+      }
+    }
   }
 
   return ratings;

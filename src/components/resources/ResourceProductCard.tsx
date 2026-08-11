@@ -1,5 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import ProductRating from "@/components/storefront/ProductRating";
+import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { cn } from "@/lib/utils";
 
 type ResourceProductCardProps = {
@@ -9,13 +11,14 @@ type ResourceProductCardProps = {
   price: string;
   label: string;
   to: string;
+  reviewSummary?: JudgeMeReviewSummary | null;
   className?: string;
 };
 
 const baseClass =
   "group flex h-full flex-col overflow-hidden rounded-[1.55rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] shadow-[0_18px_38px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_22px_42px_-32px_rgba(15,23,42,0.2)]";
 
-const ResourceProductCard = ({ title, reason, image, price, label, to, className }: ResourceProductCardProps) => {
+const ResourceProductCard = ({ title, reason, image, price, label, to, reviewSummary, className }: ResourceProductCardProps) => {
   return (
     <Link to={to} className={cn(baseClass, className)}>
       <div className="relative overflow-hidden bg-muted/10">
@@ -41,9 +44,6 @@ const ResourceProductCard = ({ title, reason, image, price, label, to, className
           </span>
         </div>
 
-        <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-background/96 px-3 py-1.5 text-[0.64rem] font-bold uppercase tracking-[0.1em] text-primary shadow-[0_10px_22px_-18px_rgba(15,23,42,0.28)]">
-          {price}
-        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
@@ -51,11 +51,15 @@ const ResourceProductCard = ({ title, reason, image, price, label, to, className
         <h3 className="mt-2 line-clamp-2 font-display text-[1.02rem] leading-[1.06] text-foreground">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">{reason}</p>
 
-        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-          <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            View product
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+          <div className="min-w-0">
+            <p className="font-display text-[1.25rem] leading-none text-foreground">{price}</p>
+            <span className="mt-2 inline-flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              View product
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 transition group-hover:translate-x-0.5 group-hover:text-primary" />
+            </span>
+          </div>
+          <ProductRating summary={reviewSummary} compact />
         </div>
       </div>
     </Link>

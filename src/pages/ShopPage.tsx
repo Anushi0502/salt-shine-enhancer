@@ -20,6 +20,7 @@ import TrustStrip from "@/components/storefront/TrustStrip";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
+import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import { buildSearchIntelligence } from "@/lib/search-intelligence";
@@ -539,6 +540,12 @@ const ShopPage = () => {
     ? sortedProducts
     : sortedProducts.slice(startIndex, endIndex);
   const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
+  const productRatingIds = useMemo(
+    () => Array.from(new Set([...visibleProducts, ...predictiveProducts].map((product) => product.id))),
+    [predictiveProducts, visibleProducts],
+  );
+  const productRatingsQuery = useJudgeMeRatings(productRatingIds);
+  const productRatingsById = productRatingsQuery.data || {};
   const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
   const predictiveCategorySuggestions = searchIntelligence?.categorySuggestions ?? [];
   const predictiveRefinements = searchIntelligence?.refinements ?? [];
@@ -1337,7 +1344,12 @@ const ShopPage = () => {
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
                       {predictiveProducts.slice(0, 4).map((product) => (
-                        <ProductCard key={product.id} product={product} variant="shop" reviewSummary={null} />
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          variant="shop"
+                          reviewSummary={productRatingsById[product.id] ?? null}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1357,7 +1369,7 @@ const ShopPage = () => {
                       <ProductCard
                         product={product}
                         variant="shop"
-                        reviewSummary={null}
+                        reviewSummary={productRatingsById[product.id] ?? null}
                       />
                     </Reveal>
                   ))}
