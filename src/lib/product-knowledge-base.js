@@ -138,14 +138,14 @@ function buildFallbackSearchTerms(product, leafType) {
     .slice(0, 40);
 }
 
-export function classifyProductKnowledge(product, { knowledgeModel = null } = {}) {
+export function classifyProductKnowledge(product, { knowledgeModel = null, modelEvidence = undefined } = {}) {
   if (product && typeof product === "object") {
     const cached = PRODUCT_KNOWLEDGE_CACHE.get(product);
     if (cached && !knowledgeModel) return cached;
   }
 
   const taxonomy = classifyCatalogTaxonomy(product);
-  const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel });
+  const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel, modelEvidence });
 
   if (product && typeof product === "object" && !knowledgeModel) {
     PRODUCT_KNOWLEDGE_CACHE.set(product, knowledge);
@@ -154,7 +154,11 @@ export function classifyProductKnowledge(product, { knowledgeModel = null } = {}
   return knowledge;
 }
 
-export function buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel = null } = {}) {
+export function buildProductKnowledgeFromTaxonomy(
+  product,
+  taxonomy,
+  { knowledgeModel = null, modelEvidence = undefined } = {},
+) {
   if (!taxonomy?.ruleId) throw new Error("A taxonomy classification is required to build product knowledge.");
   const leafType = canonicalLeafType(product, taxonomy);
   const specificType = specificProductType(product, taxonomy);
@@ -166,18 +170,18 @@ export function buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledge
   const searchTerms = taxonomy.ruleId === "unclassified"
     ? buildFallbackSearchTerms(product, leafType)
     : buildSearchTerms(product, taxonomy, leafType, aliases);
-  const modelEvidence = scoreCatalogKnowledgeModel(knowledgeModel, product);
+  const resolvedModelEvidence = scoreCatalogKnowledgeModel(knowledgeModel, product, { modelEvidence });
   const modelConflict = Boolean(
-    modelEvidence &&
-    modelEvidence.topRuleId &&
-    modelEvidence.topRuleId !== taxonomy.ruleId &&
-    modelEvidence.reliable === true &&
-    modelEvidence.margin >= Number(knowledgeModel?.conflictMargin || 0),
+    resolvedModelEvidence &&
+    resolvedModelEvidence.topRuleId &&
+    resolvedModelEvidence.topRuleId !== taxonomy.ruleId &&
+    resolvedModelEvidence.reliable === true &&
+    resolvedModelEvidence.margin >= Number(knowledgeModel?.conflictMargin || 0),
   );
   const reviewReasons = unique([
     ...(taxonomy.reviewReasons || []),
     ...(modelConflict
-      ? [`Trained knowledge model disagrees with checked-in taxonomy: ${modelEvidence.topRuleId}.`]
+      ? [`Trained knowledge model disagrees with checked-in taxonomy: ${resolvedModelEvidence.topRuleId}.`]
       : []),
   ]);
   return {
@@ -220,7 +224,7 @@ export function buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledge
     reviewReasons,
     seoEligible: taxonomy.seoEligible !== false && !modelConflict,
     evidence: taxonomy.evidence,
-    modelEvidence,
+    modelEvidence: resolvedModelEvidence,
   };
 }
 
@@ -258,7 +262,7 @@ export function compactProductKnowledge(productKnowledge) {
   };
 }
 
-export function buildProductKnowledgePayload(productsPayload, { knowledgeModel = null } = {}) {
+export function buildProductKnowledgePayload(productsPayload, { knowledgeModel = null, modelEvidenceByKey = null } = {}) {
   const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
   const typeMap = new Map();
   const familyMap = new Map();
@@ -266,7 +270,8 @@ export function buildProductKnowledgePayload(productsPayload, { knowledgeModel =
   const categoryMap = new Map();
   const records = products
     .map((product) => {
-      const knowledge = classifyProductKnowledge(product, { knowledgeModel });
+      const modelEvidence = modelEvidenceByKey?.get(String(product?.id || product?.handle || ""));
+      const knowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
       if (!typeMap.has(knowledge.typeKey)) {
         typeMap.set(knowledge.typeKey, {
           typeKey: knowledge.typeKey,

@@ -45,9 +45,12 @@ function buildSearchVariant(variants) {
   ];
 }
 
-function buildSearchProduct(product, knowledgeModel = null) {
+function buildSearchProduct(product, knowledgeModel = null, modelEvidenceByKey = null, precomputedKnowledgeByKey = null) {
   const firstImage = buildSearchImage(product?.image || product?.images?.[0]);
-  const knowledge = classifyProductKnowledge(product, { knowledgeModel });
+  const productKey = String(product?.id || product?.handle || "");
+  const modelEvidence = modelEvidenceByKey?.get(productKey);
+  const precomputedKnowledge = precomputedKnowledgeByKey?.get(productKey);
+  const knowledge = precomputedKnowledge || classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
   const searchBoosts = Array.isArray(product?.customData?.searchProductBoosts)
     ? product.customData.searchProductBoosts.map((entry) => plainText(entry, 120)).filter(Boolean).slice(0, 20)
     : [];
@@ -68,15 +71,18 @@ function buildSearchProduct(product, knowledgeModel = null) {
     variants: buildSearchVariant(product?.variants),
     images: firstImage ? [firstImage] : [],
     image: firstImage,
-    knowledge: compactProductKnowledge(knowledge),
+    knowledge: precomputedKnowledge || compactProductKnowledge(knowledge),
     customData: searchBoosts.length ? { searchProductBoosts: searchBoosts } : null,
   };
 }
 
-export function buildProductSearchPayload(productsPayload, { knowledgeModel = null } = {}) {
+export function buildProductSearchPayload(
+  productsPayload,
+  { knowledgeModel = null, modelEvidenceByKey = null, precomputedKnowledgeByKey = null } = {},
+) {
   const products = Array.isArray(productsPayload?.products) ? productsPayload.products : [];
   const searchProducts = products
-    .map((product) => buildSearchProduct(product, knowledgeModel))
+    .map((product) => buildSearchProduct(product, knowledgeModel, modelEvidenceByKey, precomputedKnowledgeByKey))
     .filter((product) => product.id && product.handle && product.title);
 
   return {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
@@ -64,7 +64,10 @@ const HeaderSearchResults = ({
   onSearchAll,
   onQuickSearch,
 }: HeaderSearchResultsProps) => {
-  const deferredQuery = query.trim();
+  // Keep the controlled header input on the urgent lane. Matching the full
+  // catalog is intentionally deferred so typing never waits for 14k records
+  // to be scanned and sorted on the main thread.
+  const deferredQuery = useDeferredValue(query).trim();
   const { data: productsData } = useProductSearchIndex();
   const { data: collectionsData } = useCollections();
   const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);

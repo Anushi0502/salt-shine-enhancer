@@ -152,6 +152,7 @@ type SaltPreloadWindow = Window & {
 
 let normalizedHeadCollectionSource: HeadPreloadedCollection | null = null;
 let normalizedHeadCollectionProducts: ShopifyProduct[] = [];
+const themeJsonRequests = new Map<string, Promise<unknown>>();
 
 function normalizeBaseUrl(input: string | undefined | null): string | null {
   const raw = String(input || "").trim();
@@ -449,7 +450,19 @@ async function fetchJson<T>(url: string, cache: RequestCache = "no-store"): Prom
 function fetchThemeJson<T>(path: string): Promise<T> {
   // Shopify asset URLs already carry a version query. Let the browser reuse
   // that immutable response instead of bypassing its cache on every query.
-  return fetchJson<T>(path, "force-cache");
+  const resolvedPath = resolveThemeAsset(path);
+  const existing = themeJsonRequests.get(resolvedPath);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const request = fetchJson<T>(resolvedPath, "force-cache").finally(() => {
+    if (themeJsonRequests.get(resolvedPath) === request) {
+      themeJsonRequests.delete(resolvedPath);
+    }
+  });
+  themeJsonRequests.set(resolvedPath, request);
+  return request;
 }
 
 async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {

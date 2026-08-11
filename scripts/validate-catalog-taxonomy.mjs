@@ -11,6 +11,7 @@ import { isImageReviewedCatalogTaxonomyOverride } from "../src/lib/catalog-taxon
 import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
+import { scoreCatalogKnowledgeModelBatch } from "./catalog-knowledge-model-accelerator.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -133,6 +134,10 @@ async function main() {
   const knowledgeModel = await readCatalogKnowledgeModel({
     required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
   });
+  const modelEvidenceByKey = await scoreCatalogKnowledgeModelBatch(knowledgeModel, products);
+  if (modelEvidenceByKey) {
+    process.stdout.write(`MLX/Metal knowledge scoring completed for ${modelEvidenceByKey.size}/${products.length} products.\n`);
+  }
   const errors = [];
   const knowledgeIds = new Set();
   const specificTypeKeys = new Set();
@@ -144,7 +149,8 @@ async function main() {
   validateFalseFriendFixtures(errors);
 
   for (const product of products) {
-    const knowledge = classifyProductKnowledge(product, { knowledgeModel });
+    const modelEvidence = modelEvidenceByKey?.get(String(product?.id || product?.handle || ""));
+    const knowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
     const label = String(product?.handle || product?.id || "unknown-product");
     const tags = Array.isArray(knowledge.proposedTags) ? knowledge.proposedTags : [];
 

@@ -27,6 +27,8 @@ const MODEL_PHRASE_WEIGHTS = Object.freeze({
   required: 4,
 });
 
+const MODEL_SCORING_CACHE = new WeakMap();
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -56,8 +58,7 @@ function phraseTokens(value) {
   return tokenizeCatalogText(value);
 }
 
-function includesPhrase(tokens, phrase) {
-  const expected = phraseTokens(phrase);
+function includesPhrase(tokens, expected) {
   if (!expected.length || expected.length > tokens.length) return false;
   for (let offset = 0; offset <= tokens.length - expected.length; offset += 1) {
     if (expected.every((token, index) => tokens[offset + index] === token)) return true;
@@ -82,13 +83,46 @@ function modelFields(product) {
   };
 }
 
+export function buildCatalogKnowledgeModelFields(product) {
+  return modelFields(product);
+}
+
 function phraseHits(fields, phrases) {
-  return normalizePhrases(phrases).flatMap((phrase) => {
+  return asArray(phrases).flatMap((phrase) => {
+    const expected = typeof phrase === "string" ? phraseTokens(phrase) : asArray(phrase?.tokens);
+    const value = typeof phrase === "string" ? phrase : phrase?.value || "";
     const fieldsMatched = Object.entries(fields)
-      .filter(([, tokens]) => includesPhrase(tokens, phrase))
+      .filter(([, tokens]) => includesPhrase(tokens, expected))
       .map(([field]) => field);
-    return fieldsMatched.length ? [{ phrase, fields: fieldsMatched }] : [];
+    return fieldsMatched.length ? [{ phrase: value, fields: fieldsMatched, tokenLength: expected.length }] : [];
   });
+}
+
+function preparePhraseList(values) {
+  return asArray(values)
+    .map((value) => {
+      const phrase = normalizeCatalogText(typeof value === "string" ? value : value?.value);
+      return phrase ? { value: phrase, tokens: phraseTokens(phrase) } : null;
+    })
+    .filter((entry) => entry?.tokens.length);
+}
+
+function preparedScoringProfiles(model) {
+  const cached = MODEL_SCORING_CACHE.get(model);
+  if (cached) return cached;
+
+  const prepared = asArray(model?.ruleProfiles).map((profile) => ({
+    profile,
+    vocabularySize: Math.max(1, Object.keys(profile.tokenCounts || {}).length),
+    totalTokenCount: Number(profile.totalTokenCount || 0),
+    documentCount: Number(profile.documentCount || 0),
+    positivePhrases: preparePhraseList(profile.positivePhrases),
+    primaryPhrases: preparePhraseList(profile.primaryPhrases),
+    requiredGroups: asArray(profile.requiredGroups).map(preparePhraseList),
+    negativePhrases: preparePhraseList(profile.negativePhrases),
+  }));
+  MODEL_SCORING_CACHE.set(model, prepared);
+  return prepared;
 }
 
 export function taxonomyTrainingFingerprint(definitions = getCatalogTaxonomyDefinitions()) {
@@ -323,19 +357,26 @@ export function summarizeCatalogKnowledgeModel(model) {
   };
 }
 
-export function scoreCatalogKnowledgeModel(model, product) {
+export function scoreCatalogKnowledgeModel(model, product, { modelEvidence = undefined } = {}) {
+  if (modelEvidence !== undefined) return modelEvidence;
   if (!model?.trained || !Array.isArray(model.ruleProfiles) || !model.ruleProfiles.length) return null;
   const fields = modelFields(product);
   const tokens = unique(Object.values(fields).flat());
   if (!tokens.length) return null;
 
-  const labelCount = model.ruleProfiles.length;
+  const preparedProfiles = preparedScoringProfiles(model);
+  const labelCount = preparedProfiles.length;
   const totalRecords = Number(model.trainingRecords || 0);
-  const scores = model.ruleProfiles.map((profile) => {
-    const vocabulary = Object.keys(profile.tokenCounts || {});
-    const vocabularySize = Math.max(1, vocabulary.length);
-    const totalTokenCount = Number(profile.totalTokenCount || 0);
-    const documentCount = Number(profile.documentCount || 0);
+  const scores = preparedProfiles.map(({
+    profile,
+    vocabularySize,
+    totalTokenCount,
+    documentCount,
+    positivePhrases,
+    primaryPhrases,
+    requiredGroups,
+    negativePhrases,
+  }) => {
     let score = Math.log((documentCount + 1) / Math.max(1, totalRecords + labelCount));
     for (const [field, fieldTokens] of Object.entries(fields)) {
       const fieldWeight = MODEL_FIELD_WEIGHTS[field] || 1;
@@ -345,16 +386,16 @@ export function scoreCatalogKnowledgeModel(model, product) {
       }
     }
 
-    const positiveMatches = phraseHits(fields, profile.positivePhrases);
-    const primaryMatches = phraseHits(fields, profile.primaryPhrases);
-    const requiredGroupHits = asArray(profile.requiredGroups)
+    const positiveMatches = phraseHits(fields, positivePhrases);
+    const primaryMatches = phraseHits(fields, primaryPhrases);
+    const requiredGroupHits = requiredGroups
       .filter((group) => phraseHits(fields, group).length).length;
-    const exclusionMatches = phraseHits(fields, profile.negativePhrases);
+    const exclusionMatches = phraseHits(fields, negativePhrases);
     const directFieldCount = ["title", "handle", "productType"].filter((field) => fields[field].length).length;
     for (const match of positiveMatches) {
       const fieldMultiplier = Math.max(...match.fields.map((field) => MODEL_FIELD_WEIGHTS[field] || 1), 1);
       const metadata = profile.phraseCounts?.[match.phrase];
-      score += Number(metadata?.weight || 1) * fieldMultiplier * Math.min(4, phraseTokens(match.phrase).length);
+      score += Number(metadata?.weight || 1) * fieldMultiplier * Math.min(4, match.tokenLength);
     }
     score += primaryMatches.length * 6 + requiredGroupHits * 5;
     score += Number(profile.priority || 0) / 20;
