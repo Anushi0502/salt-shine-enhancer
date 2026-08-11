@@ -1122,13 +1122,6 @@ const ProductPage = () => {
             <p className="mt-2 text-sm font-medium text-foreground">
               {isAvailable ? "Free shipping on eligible US orders" : "Currently unavailable"}
             </p>
-            <div className="mt-4 flex items-center gap-3 rounded-[1.2rem] border border-border/70 bg-background px-4 py-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-lg">%</span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Live Shopify offer</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Savings shown above are calculated from the current variant price.</p>
-              </div>
-            </div>
             {reviewSummary ? (
               <div className="hidden mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
                 <div className="flex items-center justify-between gap-2">

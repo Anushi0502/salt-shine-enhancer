@@ -17,7 +17,7 @@ const ProductRating = ({ summary, className, compact = false }: ProductRatingPro
   return (
     <div
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 text-[0.62rem] font-semibold text-foreground",
+        "inline-flex min-w-max shrink-0 items-center gap-1.5 whitespace-nowrap text-[0.62rem] font-semibold text-foreground",
         compact && "gap-1 text-[0.58rem]",
         className,
       )}
