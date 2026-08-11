@@ -15,9 +15,9 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 
 ## Existing Shopify Tags Are Not The Controlled Vocabulary
 
-- 694 existing Shopify tags with 106,010 current product assignments are documented separately in `output/catalog-existing-tag-inventory.md`.
-- The 555 tags below are proposed canonical simple tags, not a replacement for unrelated merchant tags.
-- Inventory source: verified live Shopify Admin tag read at 2026-08-11T02:02:31.400Z.
+- 694 existing Shopify tags with 106,028 current product assignments are documented separately in `output/catalog-existing-tag-inventory.md`.
+- The 556 tags below are proposed canonical simple tags, not a replacement for unrelated merchant tags.
+- Inventory source: verified live Shopify Admin tag read at 2026-08-11T07:12:01.138Z.
 - Existing tags stay available for raw shopper discovery and low-priority evidence. They never override title, handle, or product-type evidence, and they are never used alone as collection rules.
 - Any future apply must add canonical simple tags before removing their mapped legacy SALT tags and must verify every unrelated merchant tag remains present.
 
@@ -25,30 +25,30 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 
 | Proposed tag | Products |
 | --- | ---: |
-| `men` | 3,501 |
+| `men` | 3,500 |
 | `portable` | 2,433 |
 | `general` | 2,337 |
-| `kids` | 2,285 |
-| `women` | 2,003 |
+| `kids` | 2,287 |
+| `women` | 2,005 |
 | `home-decor` | 1,937 |
 | `men-fashion` | 1,865 |
 | `beauty-skincare` | 1,853 |
 | `electronic-accessories` | 1,404 |
-| `office-school` | 1,290 |
-| `office-school-supplies` | 1,290 |
+| `office-school` | 1,292 |
+| `office-school-supplies` | 1,292 |
 | `waterproof` | 1,129 |
 | `kitchen-cookware` | 1,079 |
-| `kids-wear` | 941 |
+| `kids-wear` | 943 |
 | `smart` | 737 |
 | `camping-travel` | 688 |
 | `men-s-graphic-t-shirt` | 648 |
 | `shoes` | 641 |
-| `women-fashion` | 636 |
-| `hat` | 625 |
+| `women-fashion` | 635 |
+| `hat` | 626 |
 | `pants` | 596 |
 | `eye-makeup` | 486 |
 | `lighting-decor` | 467 |
-| `men-accessories` | 460 |
+| `men-accessories` | 459 |
 | `kids-clothing` | 458 |
 | `travel-essentials` | 447 |
 | `covers-cases` | 413 |
@@ -58,10 +58,10 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `pen-pencil-case` | 385 |
 | `laptop` | 383 |
 | `kids-toys-games` | 382 |
-| `notebook-planner` | 379 |
+| `notebook-planner` | 380 |
+| `women-accessories` | 374 |
 | `led` | 372 |
 | `women-beauty-skincare` | 372 |
-| `women-accessories` | 371 |
 | `lip-product` | 367 |
 | `watches` | 360 |
 | `men-beauty-skincare` | 356 |
@@ -79,9 +79,9 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `fragrance` | 233 |
 | `watch` | 229 |
 | `water-bottle` | 224 |
+| `baby` | 223 |
 | `automotive` | 222 |
 | `vehicle-accessories` | 222 |
-| `baby` | 221 |
 | `hair-care` | 212 |
 | `food-storage-container` | 208 |
 | `bags-wallets` | 206 |
@@ -95,9 +95,9 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `home-car-accessories` | 169 |
 | `bag` | 167 |
 | `microphone` | 162 |
+| `pets` | 159 |
 | `travel-bag` | 159 |
 | `handbag` | 158 |
-| `pets` | 158 |
 | `health-wellness` | 154 |
 | `dining-accessory` | 153 |
 | `jacket-coat` | 149 |
@@ -122,8 +122,8 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `planter` | 96 |
 | `camera-content-accessories` | 91 |
 | `nail-care` | 91 |
+| `writing-supply` | 91 |
 | `lamp-lighting` | 90 |
-| `writing-supply` | 90 |
 | `bag-strap` | 87 |
 | `belt` | 83 |
 | `socks` | 80 |
@@ -131,12 +131,12 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `insulated` | 79 |
 | `mouse-pad` | 77 |
 | `towel` | 76 |
-| `dress` | 75 |
+| `dress` | 74 |
 | `book` | 71 |
 | `cookware` | 71 |
 | `jewelry` | 71 |
-| `kids-accessories` | 69 |
 | `keyboard` | 68 |
+| `kids-accessories` | 68 |
 | `android` | 67 |
 | `hair-accessory` | 67 |
 | `chargers` | 65 |
@@ -331,6 +331,7 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `artificial-vine-light` | 2 |
 | `automotive-product` | 2 |
 | `baby-feeding-bottle` | 2 |
+| `baby-romper-clothing` | 2 |
 | `baby-support-pillow` | 2 |
 | `battle-spinning-top` | 2 |
 | `beach-sand-toy` | 2 |
