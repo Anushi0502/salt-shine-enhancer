@@ -690,6 +690,25 @@ ${buildThemeAssetMapEntries()}
   await writeFile(resolve(themeDir, "templates", "article.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "search.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "404.json"), templateJson());
+  await writeFile(
+    resolve(themeDir, "templates", "robots.txt.liquid"),
+    `{% for group in robots.default_groups %}
+{{- group.user_agent_name -}}
+{% for rule in group.rules %}
+{{- rule -}}
+{% endfor %}
+{%- if group.sitemap != blank -%}
+{{ group.sitemap }}
+{%- endif -%}
+{% endfor %}
+
+# Private SALT operations routes
+User-agent: *
+Disallow: /pages/finance
+Disallow: /apps:finance
+Disallow: /apps/finance
+`,
+  );
 
   await writeFile(
     resolve(themeDir, "config", "settings_schema.json"),
