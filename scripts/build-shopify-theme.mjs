@@ -137,17 +137,18 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
     {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
-    {% assign salt_request_url = salt_content_for_header | split: '"pageurl":"' | last | split: '"' | first | replace: '\/', '/' %}
+    {% assign salt_pageurl_marker = 'pageurl":"' | append: request.host | append: '\/' %}
+    {% assign salt_request_fragment = salt_content_for_header | split: salt_pageurl_marker | last | split: '"' | first %}
 
     {% if salt_route == '/' %}
       {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
       {% assign salt_seo_description = 'Shop practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/' %}
       {% assign salt_custom_canonical = true %}
-      {% if salt_request_url contains '?' %}
+      {% if salt_request_fragment contains '?' %}
         {% assign salt_seo_robots = 'noindex,follow' %}
       {% endif %}
-    {% elsif salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' or salt_request_url contains 'finance=1' %}
+    {% elsif salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' or salt_request_fragment contains 'finance=1' %}
       {% assign salt_seo_title = 'SALT Finance | Private Operations' %}
       {% assign salt_seo_description = 'Private SALT operations workspace.' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
@@ -156,12 +157,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       {% assign salt_seo_description = 'Browse the live SALT catalog of cookware, gifts, apparel, beauty, gadgets, and everyday essentials.' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/shop' %}
       {% assign salt_custom_canonical = true %}
-      {% if salt_request_url contains 'resource=hub' %}
+      {% if salt_request_fragment contains 'resource=hub' %}
         {% assign salt_seo_title = 'Resource Hub | SALT Online Store' %}
         {% assign salt_seo_description = 'Practical guides that help shoppers discover the right SALT products, collections, and everyday solutions.' %}
         {% assign salt_seo_robots = 'noindex,follow' %}
         {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/resources' %}
-      {% elsif salt_request_url contains '?' %}
+      {% elsif salt_request_fragment contains '?' %}
         {% assign salt_seo_robots = 'noindex,follow' %}
       {% endif %}
     {% elsif salt_route == '/search' %}
