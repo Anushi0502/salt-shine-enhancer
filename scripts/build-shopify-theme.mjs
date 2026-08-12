@@ -136,6 +136,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
+    {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
 
     {% if salt_route == '/' %}
       {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
