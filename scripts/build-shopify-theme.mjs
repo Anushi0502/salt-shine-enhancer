@@ -136,8 +136,18 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
+    {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
+    {% assign salt_request_url = salt_content_for_header | split: '"pageurl":"' | last | split: '"' | first | replace: '\/', '/' %}
 
-    {% if salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' or request.query_string contains 'finance=1' %}
+    {% if salt_route == '/' %}
+      {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
+      {% assign salt_seo_description = 'Shop practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/' %}
+      {% assign salt_custom_canonical = true %}
+      {% if salt_request_url contains '?' %}
+        {% assign salt_seo_robots = 'noindex,follow' %}
+      {% endif %}
+    {% elsif salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' or salt_request_url contains 'finance=1' %}
       {% assign salt_seo_title = 'SALT Finance | Private Operations' %}
       {% assign salt_seo_description = 'Private SALT operations workspace.' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
@@ -146,12 +156,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       {% assign salt_seo_description = 'Browse the live SALT catalog of cookware, gifts, apparel, beauty, gadgets, and everyday essentials.' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/shop' %}
       {% assign salt_custom_canonical = true %}
-      {% if request.query_string contains 'resource=hub' %}
+      {% if salt_request_url contains 'resource=hub' %}
         {% assign salt_seo_title = 'Resource Hub | SALT Online Store' %}
         {% assign salt_seo_description = 'Practical guides that help shoppers discover the right SALT products, collections, and everyday solutions.' %}
         {% assign salt_seo_robots = 'noindex,follow' %}
         {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/resources' %}
-      {% elsif request.query_string != blank %}
+      {% elsif salt_request_url contains '?' %}
         {% assign salt_seo_robots = 'noindex,follow' %}
       {% endif %}
     {% elsif salt_route == '/search' %}
@@ -498,7 +508,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
         }
       })();
     </script>
-    {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
     {% if salt_custom_canonical %}
       {% assign salt_native_canonical_tag = '<link rel="canonical" href="' | append: canonical_url | append: '">' %}
       {{ salt_content_for_header | remove: salt_native_canonical_tag }}
