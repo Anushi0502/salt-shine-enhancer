@@ -417,6 +417,7 @@ const HomePage = () => {
           featured={homeFeaturedProductsPayload?.bestSellerProducts?.slice(0, 4) || []}
           leadCollection={bestSellerCollection}
           slides={homeHeroSlides}
+          reviewSummaries={homeRatingsById}
         />
 
         {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>

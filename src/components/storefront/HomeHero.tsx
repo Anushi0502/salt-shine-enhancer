@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import heroMain from "@/assets/hero-main.jpg";
 import Reveal from "@/components/storefront/Reveal";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { formatMoney } from "@/lib/formatters";
+import ProductCard from "@/components/storefront/ProductCard";
 import { buildCollectionRoute } from "@/lib/site-navigation";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import type { HomeCollectionProduct } from "@/lib/home-collection-products";
 import type { HomeFeaturedProduct } from "@/lib/home-featured-products";
-import type { ShopifyCollection } from "@/types/shopify";
+import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 export type HomeHeroSlide = {
   key: string;
@@ -25,6 +26,7 @@ type HomeHeroProps = {
   featured: HomeFeaturedProduct[];
   leadCollection?: ShopifyCollection | null;
   slides?: HomeHeroSlide[];
+  reviewSummaries?: Record<number, JudgeMeReviewSummary | null>;
 };
 
 const heroStats = [
@@ -33,7 +35,36 @@ const heroStats = [
   { label: "Fast U.S. dispatch", detail: "Tracked shipping", icon: Truck },
 ];
 
-const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
+function toHeroProductCardProduct(source: HomeCollectionProduct | HomeFeaturedProduct): ShopifyProduct {
+  const compareAtPrice = Number(source.compareAtPrice || 0);
+  const image = source.image ? { id: source.id, src: source.image, alt: source.title } : null;
+
+  return {
+    id: source.id,
+    title: source.title,
+    handle: source.handle,
+    body_html: null,
+    vendor: "SALT",
+    product_type: "",
+    tags: [],
+    created_at: "",
+    published_at: null,
+    updated_at: "",
+    variants: [
+      {
+        id: source.id,
+        title: "Default",
+        price: Number(source.price || 0).toFixed(2),
+        compare_at_price: compareAtPrice > Number(source.price || 0) ? compareAtPrice.toFixed(2) : null,
+        available: true,
+      },
+    ],
+    images: image ? [image] : [],
+    image,
+  };
+}
+
+const HomeHero = ({ featured, leadCollection, slides = [], reviewSummaries = {} }: HomeHeroProps) => {
   const fallbackHeroImage = normalizeShopifyAssetUrl(heroMain) || heroMain;
   const heroImage = normalizeShopifyAssetUrl(leadCollection?.image?.src) || fallbackHeroImage;
   const spotlightProducts = (featured ?? []).slice(0, 4);
@@ -101,55 +132,14 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {slideProducts.map((product, index) => {
-                  const image = normalizeShopifyAssetUrl(product.image) || product.image || fallbackHeroImage;
-                  const currentPrice = Number(product.price || 0);
-                  const compareAtPrice = Number(product.compareAtPrice || 0);
-                  const savings =
-                    currentPrice > 0 && compareAtPrice > currentPrice
-                      ? Math.round(((compareAtPrice - currentPrice) / compareAtPrice) * 100)
-                      : 0;
                   return (
                     <Reveal key={product.id} delayMs={120 + index * 120} className="salt-reveal-instant h-full">
-                      <Link
-                        to={`/products/${product.handle}`}
-                        className="group flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-border/70 bg-background shadow-[0_18px_36px_-30px_rgba(15,23,42,0.16)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_26px_46px_-32px_rgba(15,23,42,0.22)]"
-                      >
-                        <div className="relative aspect-[1.02/0.88] overflow-hidden bg-muted/20">
-                          {image ? (
-                            <img
-                              src={image}
-                              alt={product.title}
-                              className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                            />
-                          ) : (
-                            <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] px-6 text-center">
-                              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                Product image unavailable
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.03)_52%,hsl(var(--foreground)/0.12))]" />
-
-                          {savings > 0 ? (
-                            <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
-                              {savings}% off
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-                          <h3 className="line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
-                            {product.title}
-                          </h3>
-
-                          <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
-                            <span className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                              {formatMoney(currentPrice)}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
+                      <ProductCard
+                        product={toHeroProductCardProduct(product)}
+                        variant="shop"
+                        reviewSummary={reviewSummaries[product.id] ?? null}
+                        className="min-w-0"
+                      />
                     </Reveal>
                   );
                 })}
@@ -239,55 +229,14 @@ const HomeHero = ({ featured, leadCollection, slides = [] }: HomeHeroProps) => {
 
             <div className="grid gap-3 sm:grid-cols-2">
               {spotlightProducts.map((product, index) => {
-                const image = normalizeShopifyAssetUrl(product.image) || product.image || fallbackHeroImage;
-                const currentPrice = Number(product.price || 0);
-                const compareAtPrice = Number(product.compareAtPrice || 0);
-                const savings =
-                  currentPrice > 0 && compareAtPrice > currentPrice
-                    ? Math.round(((compareAtPrice - currentPrice) / compareAtPrice) * 100)
-                    : 0;
                 return (
                   <Reveal key={product.id} delayMs={120 + index * 120} className="salt-reveal-instant h-full">
-                    <Link
-                      to={`/products/${product.handle}`}
-                      className="group flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-border/70 bg-background shadow-[0_18px_36px_-30px_rgba(15,23,42,0.16)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_26px_46px_-32px_rgba(15,23,42,0.22)]"
-                    >
-                      <div className="relative aspect-[1.02/0.88] overflow-hidden bg-muted/20">
-                        {image ? (
-                          <img
-                            src={image}
-                            alt={product.title}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                          />
-                        ) : (
-                          <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] px-6 text-center">
-                            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                              Product image unavailable
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.03)_52%,hsl(var(--foreground)/0.12))]" />
-
-                        {savings > 0 ? (
-                          <div className="absolute right-3 top-3 rounded-full border border-border/70 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.88),hsl(var(--foreground)/0.72))] px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-background shadow-[0_16px_36px_-24px_rgba(15,23,42,0.56)] backdrop-blur-md sm:right-4 sm:top-4 sm:px-3 sm:text-[0.62rem]">
-                            {savings}% off
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-                        <h3 className="line-clamp-2 max-w-[25ch] font-display text-[1rem] leading-[1.12] tracking-[-0.035em] text-foreground sm:text-[1.18rem]">
-                          {product.title}
-                        </h3>
-
-                        <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
-                          <span className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                            {formatMoney(currentPrice)}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
+                    <ProductCard
+                      product={toHeroProductCardProduct(product)}
+                      variant="shop"
+                      reviewSummary={reviewSummaries[product.id] ?? null}
+                      className="min-w-0"
+                    />
                   </Reveal>
                 );
               })}
