@@ -123,7 +123,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/96 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
+          className="absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
@@ -229,8 +229,8 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
         className={`absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
           nativeApp
-            ? "border-border/70 bg-background/96 text-foreground hover:border-primary/20 hover:text-primary"
-            : "border-white/40 bg-white/90 text-primary hover:border-primary/30 hover:text-primary/80"
+            ? "border-border/70 bg-background text-foreground hover:border-primary/20 hover:text-primary"
+            : "border-border/70 bg-background text-primary hover:border-primary/30 hover:text-primary/80"
         }`}
       >
         <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
