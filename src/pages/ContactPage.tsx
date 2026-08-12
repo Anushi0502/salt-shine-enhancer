@@ -106,6 +106,7 @@ const ContactPage = () => {
   useDocumentMetadata(
     page?.seoTitle || "Contact Support | SALT Online Store",
     page?.metaDescription || page?.summary || "Reach the SALT support team for delivery questions, product advice, returns, or order help.",
+    { canonicalPath: "/pages/contact-us" },
   );
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {

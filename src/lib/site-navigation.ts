@@ -849,24 +849,24 @@ export const SITE_HEADER_COLLECTION_LINKS: SiteHeaderCollectionLink[] = SITE_COL
 export const SITE_RESOURCE_GUIDES: SiteResourceGuide[] = RESOURCE_HUB_GUIDES;
 
 export const SITE_FOOTER_COMPANY_LINKS: SiteFooterLink[] = [
-  { label: "About SALT", to: "/about" },
-  { label: "Contact Us", to: "/contact" },
+  { label: "About SALT", to: "/pages/about-us" },
+  { label: "Contact Us", to: "/pages/contact-us" },
   { label: "Track Order", href: TRACK_ORDER_URL },
-  { label: "FAQ", to: "/faq" },
+  { label: "FAQ", to: "/pages/faq" },
 ];
 
 export const SITE_FOOTER_RESOURCE_LINKS: SiteFooterLink[] = [
-  { label: "Resource Hub", to: "/shop?resource=hub" },
-  { label: "Blog", to: "/blog" },
-  { label: "Wholesale Inquiries", to: "/wholesale-inquiries" },
-  { label: "Affiliate Program", to: "/affiliate-program" },
+  { label: "Resource Hub", to: "/pages/resources" },
+  { label: "Blog", to: "/pages/blog" },
+  { label: "Wholesale Inquiries", to: "/pages/wholesale-inquiries" },
+  { label: "Affiliate Program", to: "/pages/affiliate-program" },
 ];
 
 export const SITE_FOOTER_POLICY_LINKS: SiteFooterLink[] = [
-  { label: "Shipping Policy", to: "/shipping-policy" },
-  { label: "Return Policy", to: "/refund-policy" },
-  { label: "Privacy Policy", to: "/privacy-policy" },
-  { label: "Terms & Conditions", to: "/terms-conditions" },
+  { label: "Shipping Policy", to: "/policies/shipping-policy" },
+  { label: "Return Policy", to: "/policies/refund-policy" },
+  { label: "Privacy Policy", to: "/policies/privacy-policy" },
+  { label: "Terms & Conditions", to: "/pages/terms-conditions" },
 ];
 
 function findCollectionMatch(handle: string): SiteCollection | null {
@@ -1056,13 +1056,13 @@ export function buildSubcollectionRoute(collectionHandle: string, subcollectionH
 export function buildResourceRoute(handle: string): string {
   const normalized = String(handle || "").trim().toLowerCase().replace(/^\/+|\/+$/g, "");
   if (!normalized) {
-    return "/shop?resource=hub";
+    return "/pages/resources";
   }
 
   const withoutPrefix = normalized.startsWith("resources/") ? normalized.slice("resources/".length) : normalized;
   return withoutPrefix
     ? `/shop?resource=guide&handle=${encodeURIComponent(withoutPrefix)}`
-    : "/shop?resource=hub";
+    : "/pages/resources";
 }
 
 export function buildResourceTopicRoute(resourceHandle: string, topicHandle: string): string {

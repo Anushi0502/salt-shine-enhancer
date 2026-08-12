@@ -1023,6 +1023,7 @@ const ShopPage = () => {
         description={seoDescription}
         canonicalPath={location.pathname}
         image={selectedCollectionImage || undefined}
+        noIndex={hasSearchQuery}
         structuredData={seoStructuredData}
       />
       <Reveal>

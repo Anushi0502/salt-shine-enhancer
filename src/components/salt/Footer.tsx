@@ -10,7 +10,7 @@ const Footer = () => {
     <footer className="salt-container mt-10 mb-5 border-t border-salt-line pt-4 flex flex-wrap gap-3 justify-between text-muted-foreground text-sm">
       <span>© 2026 SALT Online Store. Enhanced UI layer with existing backend compatibility.</span>
       <div className="flex gap-4">
-        <a href="/contact" className="hover:text-foreground transition-colors">Contact</a>
+        <a href="/pages/contact-us" className="hover:text-foreground transition-colors">Contact</a>
         <a href={privacyPolicyHref} className="hover:text-foreground transition-colors">Privacy</a>
         <a href={returnsPolicyHref} className="hover:text-foreground transition-colors">Returns</a>
         <a href={shippingPolicyHref} className="hover:text-foreground transition-colors">Shipping</a>
