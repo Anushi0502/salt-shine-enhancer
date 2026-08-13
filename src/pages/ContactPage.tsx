@@ -32,7 +32,7 @@ const contactRoutes = [
     description: "Short answers for ordering, shipping, and returns.",
     badge: "Fast answers",
     icon: LifeBuoy,
-    to: "/faq",
+    to: "/pages/faq",
   },
   {
     title: "Track order",
@@ -571,7 +571,7 @@ const ContactPage = () => {
                   <ChevronRight className="h-4 w-4 shrink-0" />
                 </a>
                 <Link
-                  to="/faq"
+                  to="/pages/faq"
                   className="flex items-center justify-between rounded-[0.95rem] border border-border/65 bg-background px-3 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/20 hover:text-primary"
                 >
                   <span>Browse FAQ</span>

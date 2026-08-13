@@ -87,6 +87,29 @@ const HeaderSearchResults = ({
       })),
     [allProducts],
   );
+  const quickSearchBuckets = useMemo(() => {
+    const buckets = new Map<string, typeof quickSearchRecords>();
+
+    quickSearchRecords.forEach((record) => {
+      const searchableText = [record.title, record.type, record.tags].join(" ");
+      const prefixes = new Set<string>();
+
+      for (let index = 0; index < searchableText.length - 1; index += 1) {
+        prefixes.add(searchableText.slice(index, index + 2));
+      }
+
+      prefixes.forEach((prefix) => {
+        const bucket = buckets.get(prefix);
+        if (bucket) {
+          bucket.push(record);
+        } else {
+          buckets.set(prefix, [record]);
+        }
+      });
+    });
+
+    return buckets;
+  }, [quickSearchRecords]);
   const typeSuggestions = useMemo(() => {
     const counts = new Map<string, number>();
 
@@ -112,7 +135,15 @@ const HeaderSearchResults = ({
       return allProducts.slice(0, 4);
     }
 
-    return quickSearchRecords
+    if (queryTokens.some((token) => token.length < 2)) {
+      return [];
+    }
+
+    const candidateRecords = Array.from(
+      new Set(queryTokens.flatMap((token) => quickSearchBuckets.get(token.slice(0, 2)) ?? [])),
+    );
+
+    return candidateRecords
       .map(({ product, title, type, tags }) => {
         const haystack = `${title} ${type} ${tags}`;
         const matchedTokens = queryTokens.filter((token) => haystack.includes(token)).length;
@@ -129,7 +160,7 @@ const HeaderSearchResults = ({
       .sort((left, right) => right.score - left.score)
       .slice(0, 6)
       .map(({ product }) => product);
-  }, [allProducts, hasSearchQuery, normalizedQuery, queryTokens, quickSearchRecords]);
+  }, [allProducts, hasSearchQuery, normalizedQuery, queryTokens, quickSearchBuckets]);
 
   const productSectionLabel = hasSearchQuery ? "Product matches" : "Product matches";
   const predictiveQuerySuggestions: Array<{ query: string; label: string }> = [];

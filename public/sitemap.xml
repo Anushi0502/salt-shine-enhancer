@@ -21,12 +21,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saltonlinestore.com/about</loc>
+    <loc>https://saltonlinestore.com/pages/about-us</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://saltonlinestore.com/contact</loc>
+    <loc>https://saltonlinestore.com/pages/contact-us</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -105,7 +105,7 @@ const HomeHero = ({ featured, leadCollection, slides = [], reviewSummaries = {} 
               <Link
                 to={activeSlide.ctaHref}
                 aria-label={activeSlide.title}
-                className="group relative flex h-full min-h-[24rem] overflow-hidden rounded-[1.65rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.96))] shadow-[0_26px_56px_-40px_rgba(15,23,42,0.2)] sm:min-h-[28rem] lg:min-h-[38rem]"
+                className="group relative flex h-full min-h-[20rem] overflow-hidden rounded-[1.65rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.96))] shadow-[0_26px_56px_-40px_rgba(15,23,42,0.2)] sm:min-h-[28rem] lg:min-h-[38rem]"
               >
                 <div className="relative h-full w-full overflow-hidden">
                   <img
@@ -166,7 +166,7 @@ const HomeHero = ({ featured, leadCollection, slides = [], reviewSummaries = {} 
               <div className="absolute inset-0 bg-[linear-gradient(90deg,hsl(var(--background)/0.98)_0%,hsl(var(--background)/0.92)_30%,hsl(var(--background)/0.62)_56%,hsl(var(--background)/0.16)_76%,hsl(var(--background)/0.04)_100%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_16%,hsl(var(--background)/0.42),transparent_26%),radial-gradient(circle_at_80%_18%,hsl(var(--primary)/0.14),transparent_24%),linear-gradient(165deg,hsl(var(--background)/0.08),hsl(var(--background)/0.02))]" />
 
-              <div className="relative z-10 flex min-h-[30rem] flex-col justify-between p-5 sm:min-h-[40rem] sm:p-8 lg:p-10">
+              <div className="relative z-10 flex min-h-[24rem] flex-col justify-between p-5 sm:min-h-[40rem] sm:p-8 lg:p-10">
                 <div className="max-w-[34rem]">
                   <BrandLogo
                     size="sm"

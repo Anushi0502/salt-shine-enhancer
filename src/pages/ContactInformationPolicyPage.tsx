@@ -33,15 +33,15 @@ const ContactInformationPolicyPage = () => (
     <OpenContentPageShell
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Support", to: "/contact" },
+        { label: "Support", to: "/pages/contact-us" },
         { label: "Contact information" },
       ]}
       kicker="SALT support"
       title="Contact information"
       summary="Reach the SALT team for help with orders, products, and store support."
       actions={[
-        { to: "/contact", label: "Contact form", primary: true },
-        { to: "/faq", label: "Browse FAQ" },
+        { to: "/pages/contact-us", label: "Contact form", primary: true },
+        { to: "/pages/faq", label: "Browse FAQ" },
       ]}
       aside={
         <div>

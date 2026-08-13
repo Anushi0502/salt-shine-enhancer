@@ -1,9 +1,6 @@
-import { useState } from "react";
 import ScrollReveal from "./ScrollReveal";
 
 const Newsletter = () => {
-  const [email, setEmail] = useState("");
-
   return (
     <ScrollReveal className="salt-container my-12">
       <div className="rounded-xl border border-salt-line bg-[linear-gradient(125deg,rgba(197,154,69,0.13),rgba(205,90,50,0.11)),hsl(var(--salt-paper))] p-6 grid grid-cols-[1.05fr_0.95fr] gap-4 items-center max-lg:grid-cols-1">
@@ -13,12 +10,21 @@ const Newsletter = () => {
             Collect emails through your existing marketing flow and announce new releases, discounts, and limited collections with stronger conversion intent.
           </p>
         </div>
-        <form className="flex gap-2.5 flex-wrap justify-end max-lg:justify-start" onSubmit={(e) => e.preventDefault()}>
+        <form
+          action="/contact#contact_form"
+          method="post"
+          acceptCharset="UTF-8"
+          className="flex gap-2.5 flex-wrap justify-end max-lg:justify-start"
+        >
+          <input type="hidden" name="form_type" value="customer" />
+          <input type="hidden" name="utf8" value="✓" />
+          <input type="hidden" name="contact[tags]" value="newsletter" />
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="contact[email]"
             placeholder="your@email.com"
+            autoComplete="email"
+            required
             className="border border-salt-line bg-card rounded-full px-4 py-3 min-w-[240px] max-sm:min-w-full font-sans text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button

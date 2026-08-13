@@ -23,9 +23,9 @@ const ProductRating = ({ summary, className, compact = false }: ProductRatingPro
       )}
       aria-label={hasReviews ? `${rating.toFixed(1)} out of 5 stars from ${reviewCount.toLocaleString()} reviews` : "No reviews yet"}
     >
-      <span className="inline-flex items-center gap-0.5 text-amber-500" aria-hidden="true">
+      <span className={cn("inline-flex items-center gap-0.5 text-amber-500", !hasReviews && "text-amber-300")} aria-hidden="true">
         {compact ? (
-          <Star className="h-3 w-3 fill-current" />
+          <Star className={cn("h-3 w-3", hasReviews && "fill-current")} />
         ) : (
           Array.from({ length: 5 }, (_, index) => (
             <Star

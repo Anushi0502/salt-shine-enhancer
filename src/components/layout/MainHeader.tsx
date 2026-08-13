@@ -137,7 +137,7 @@ const utilityNavItems: HeaderNavItem[] = [
   },
   {
     label: "Support",
-    to: "/contact",
+    to: "/pages/contact-us",
     kind: "link",
     isActive: (pathname) => pathname === "/contact" || pathname.startsWith("/pages/contact"),
   },
@@ -860,7 +860,7 @@ const MainHeader = () => {
             </Link>
 
             <Link
-              to="/contact"
+              to="/pages/contact-us"
               className={utilityNavItemClass(isActiveNavItem(supportNavItem, location.pathname, location.search))}
               aria-current={isActiveNavItem(supportNavItem, location.pathname, location.search) ? "page" : undefined}
             >

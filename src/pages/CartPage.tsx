@@ -525,7 +525,7 @@ const CartPage = () => {
           ) : null}
 
           <Link
-            to="/contact"
+            to="/pages/contact-us"
             className="salt-outline-chip mt-2 h-10 w-full justify-center px-5 text-xs font-bold uppercase tracking-[0.08em]"
           >
             Need checkout help?

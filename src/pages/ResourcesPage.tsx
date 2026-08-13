@@ -177,7 +177,7 @@ const ResourcesPage = () => {
     : [
         { label: "Browse the guides", href: "#resource-guides", primary: true },
         { label: "Shop the catalog", to: "/shop" },
-        { label: "Contact us", to: "/contact" },
+        { label: "Contact us", to: "/pages/contact-us" },
       ]) as ResourceAction[];
 
   return (
@@ -296,8 +296,8 @@ const ResourcesPage = () => {
 
           <div className="grid w-full gap-3 sm:grid-cols-3 xl:max-w-3xl xl:flex-1">
             {[
-              { label: "Browse FAQ", to: "/faq" },
-              { label: "Contact support", to: "/contact" },
+              { label: "Browse FAQ", to: "/pages/faq" },
+              { label: "Contact support", to: "/pages/contact-us" },
               { label: "Track order", to: "/track-order" },
             ].map((action) => (
               <Link

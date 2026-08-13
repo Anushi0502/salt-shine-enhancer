@@ -161,7 +161,7 @@ const BlogPostPage = () => {
               Browse collections
             </Link>
             <Link
-              to="/contact"
+              to="/pages/contact-us"
               className="salt-outline-chip h-10 w-full px-4 py-0 text-[0.72rem] sm:w-auto"
             >
               Contact support

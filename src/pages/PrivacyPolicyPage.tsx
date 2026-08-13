@@ -5,7 +5,7 @@ const PrivacyPolicyPage = () => {
     <PolicyPageView
       policyKey="privacy"
       actions={[
-        { to: "/contact", label: "Contact support", primary: true },
+        { to: "/pages/contact-us", label: "Contact support", primary: true },
         { to: "/policies/refund-policy", label: "Returns policy" },
         { to: "/policies/shipping-policy", label: "Shipping policy" },
       ]}
