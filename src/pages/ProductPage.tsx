@@ -773,7 +773,8 @@ const ProductPage = () => {
       return;
     }
 
-    trackMetaPixelInitiateCheckout([
+    trackMetaP
+    ixelInitiateCheckout([
       {
         id: selectedVariant.id,
         shopifyVariantId: selectedVariant.id,
