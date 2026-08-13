@@ -194,9 +194,25 @@ const FinancePage = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
+    const existingRobots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const previousRobots = existingRobots?.getAttribute("content");
+    let robotsTag = existingRobots;
+    let createdRobots = false;
+    if (!robotsTag) {
+      robotsTag = document.createElement("meta");
+      robotsTag.setAttribute("name", "robots");
+      document.head.appendChild(robotsTag);
+      createdRobots = true;
+    }
     document.title = "SALT Finance | Private Operations";
+    robotsTag.setAttribute("content", "noindex,follow");
     return () => {
       document.title = previousTitle;
+      if (createdRobots) {
+        robotsTag?.remove();
+      } else if (robotsTag && previousRobots) {
+        robotsTag.setAttribute("content", previousRobots);
+      }
     };
   }, []);
 

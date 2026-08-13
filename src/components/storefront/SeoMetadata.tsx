@@ -75,7 +75,9 @@ function updateMetaTag(
   scope: string,
 ): Cleanup {
   const selector = `meta[${attr}="${escapeSelectorValue(value)}"][data-seo-scope="${escapeSelectorValue(scope)}"]`;
-  const existing = document.head.querySelector<HTMLMetaElement>(selector);
+  const existing =
+    document.head.querySelector<HTMLMetaElement>(selector) ||
+    document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${escapeSelectorValue(value)}"]`);
 
   if (existing) {
     const previousContent = existing.getAttribute("content");
@@ -108,7 +110,9 @@ function updateLinkTag(
   scope: string,
 ): Cleanup {
   const selector = `link[rel="${escapeSelectorValue(rel)}"][data-seo-scope="${escapeSelectorValue(scope)}"]`;
-  const existing = document.head.querySelector<HTMLLinkElement>(selector);
+  const existing =
+    document.head.querySelector<HTMLLinkElement>(selector) ||
+    document.head.querySelector<HTMLLinkElement>(`link[rel="${escapeSelectorValue(rel)}"]`);
 
   if (existing) {
     const previousHref = existing.getAttribute("href");

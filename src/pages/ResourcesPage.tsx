@@ -124,6 +124,7 @@ const ResourcesPage = () => {
   useDocumentMetadata(
     page?.seoTitle || "Resource Hub | SALT Online Store",
     page?.metaDescription || page?.summary || "A calm resource hub that points shoppers to the right guide, topic, and product.",
+    { canonicalPath: "/pages/resources" },
   );
 
   const productsByHandle = useMemo(() => {

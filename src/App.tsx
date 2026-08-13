@@ -121,7 +121,9 @@ const AppShell = () => (
                 <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/pages/wishlist" element={<WishlistPage />} />
                 <Route path="/recently-viewed" element={<RecentlyViewedPage />} />
+                <Route path="/pages/recently-viewed" element={<RecentlyViewedPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/pages/about-us" element={<AboutPage />} />
                 <Route path="/mission-vision" element={<MissionVisionPage />} />
@@ -178,6 +180,7 @@ const AppShell = () => (
                 <Route path="/track-order" element={<TrackOrderPage />} />
                 <Route path="/pages/track-order" element={<TrackOrderPage />} />
                 <Route path="/blog" element={<BlogPage />} />
+                <Route path="/pages/blog" element={<BlogPage />} />
                 <Route path="/blog/:handle" element={<BlogPostPage />} />
                 <Route path="/blogs/:blogHandle" element={<BlogPage />} />
                 <Route path="/blogs/:blogHandle/:handle" element={<BlogPostPage />} />
@@ -188,6 +191,7 @@ const AppShell = () => (
                 />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/pages/contact" element={<ContactPage />} />
+                <Route path="/pages/contact-us" element={<ContactPage />} />
                 <Route path="/customer-access" element={<Navigate to="/" replace />} />
                 <Route path="/login" element={<Navigate to="/" replace />} />
                 <Route path="/signup" element={<Navigate to="/" replace />} />

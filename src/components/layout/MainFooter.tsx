@@ -435,10 +435,10 @@ const MainFooter = () => {
             <span>
               &copy; {new Date().getFullYear()} {shopName.toUpperCase()}
             </span>
-            <Link to="/about" className={footerLinkClass}>
+            <Link to="/pages/about-us" className={footerLinkClass}>
               About SALT
             </Link>
-            <Link to="/contact" className={footerLinkClass}>
+            <Link to="/pages/contact-us" className={footerLinkClass}>
               Contact Us
             </Link>
             <a href={TRACK_ORDER_URL} className={footerLinkClass}>

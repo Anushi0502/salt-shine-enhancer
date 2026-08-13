@@ -128,9 +128,157 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
 <html lang="{{ request.locale.iso_code }}">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=768,initial-scale=1,viewport-fit=cover">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#1e3a6e">
-    <title>{{ page_title }}</title>
+    {% assign salt_route = request.path %}
+    {% assign salt_seo_title = page_title | default: shop.name %}
+    {% assign salt_seo_description = page_description | default: shop.description | default: 'Shop curated cookware, gifts, apparel, and everyday essentials from SALT Online Store.' %}
+    {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
+    {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
+    {% assign salt_custom_canonical = false %}
+    {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
+
+    {% if salt_route == '/' %}
+      {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
+      {% assign salt_seo_description = 'Shop practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' %}
+      {% assign salt_seo_title = 'SALT Finance | Private Operations' %}
+      {% assign salt_seo_description = 'Private SALT operations workspace.' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif salt_route == '/shop' %}
+      {% assign salt_seo_title = 'Shop All Products | SALT Online Store' %}
+      {% assign salt_seo_description = 'Browse the live SALT catalog of cookware, gifts, apparel, beauty, gadgets, and everyday essentials.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/shop' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/search' %}
+      {% assign salt_seo_title = 'Search SALT Online Store' %}
+      {% assign salt_seo_description = 'Search the live SALT catalog for products, collections, and everyday essentials.' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/search' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route contains '/collections/' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: salt_route %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/cart' or salt_route == '/wishlist' or salt_route == '/recently-viewed' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif salt_route == '/pages/wishlist' %}
+      {% assign salt_seo_title = 'Wishlist | SALT Online Store' %}
+      {% assign salt_seo_description = 'Save SALT products for later and keep track of items you love.' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif salt_route == '/pages/resources' %}
+      {% assign salt_seo_title = 'Resource Hub | SALT Online Store' %}
+      {% assign salt_seo_description = 'Practical guides that help shoppers discover the right SALT products, collections, and everyday solutions.' %}
+    {% elsif salt_route == '/pages/faq' %}
+      {% assign salt_seo_title = 'FAQ | SALT Online Store' %}
+      {% assign salt_seo_description = 'Quick answers about SALT ordering, shipping, returns, and product support.' %}
+    {% elsif salt_route == '/pages/contact-us' %}
+      {% assign salt_seo_title = 'Contact Support | SALT Online Store' %}
+      {% assign salt_seo_description = 'Reach the SALT support team for delivery questions, product advice, returns, or order help.' %}
+    {% elsif salt_route == '/pages/about-us' %}
+      {% assign salt_seo_title = 'About SALT Online Store' %}
+      {% assign salt_seo_description = 'Learn how SALT makes practical products easy to discover, save, and buy.' %}
+    {% elsif salt_route == '/pages/blog' %}
+      {% assign salt_seo_title = 'SALT Journal | SALT Online Store' %}
+      {% assign salt_seo_description = 'Fresh stories, product education, and practical ideas from SALT.' %}
+    {% elsif salt_route == '/pages/affiliate-program' %}
+      {% assign salt_seo_title = 'Affiliate Program | SALT Online Store' %}
+      {% assign salt_seo_description = 'Learn how to partner with SALT and share useful products with your audience.' %}
+    {% elsif salt_route == '/pages/mission-vision' %}
+      {% assign salt_seo_title = 'Mission & Vision | SALT Online Store' %}
+      {% assign salt_seo_description = 'Learn what SALT is building and how we make everyday shopping easier.' %}
+    {% elsif salt_route == '/pages/wholesale-inquiries' %}
+      {% assign salt_seo_title = 'Wholesale Inquiries | SALT Online Store' %}
+      {% assign salt_seo_description = 'Contact SALT about wholesale, gifting, and business purchasing opportunities.' %}
+    {% elsif salt_route == '/pages/terms-conditions' %}
+      {% assign salt_seo_title = 'Terms & Conditions | SALT Online Store' %}
+      {% assign salt_seo_description = 'Review the terms that apply when using the SALT Online Store.' %}
+    {% elsif salt_route == '/pages/track-order' %}
+      {% assign salt_seo_title = 'Track Order | SALT Online Store' %}
+      {% assign salt_seo_description = 'Use the secure order portal to review your order status and delivery details.' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif salt_route == '/pages/recently-viewed' %}
+      {% assign salt_seo_title = 'Recently Viewed | SALT Online Store' %}
+      {% assign salt_seo_description = 'Pick up where you left off with products viewed on this device.' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif request.page_type == '404' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
+
+    <title>{{ salt_seo_title | escape }}</title>
+    {% if salt_seo_description != blank %}
+      <meta name="description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+    {% endif %}
+    <meta name="robots" content="{{ salt_seo_robots }}">
+    <meta name="googlebot" content="{{ salt_seo_robots }}">
+    <meta property="og:title" content="{{ salt_seo_title | escape }}">
+    <meta property="og:description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ shop.name | escape }}">
+    {% if salt_custom_canonical %}
+      <link rel="canonical" href="{{ salt_seo_canonical | escape }}">
+    {% endif %}
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        var query = window.location.search;
+        var hasQuery = query.length > 1;
+        var isFinance = path === '/pages/finance' || path === '/apps:finance' || path === '/apps/finance' || (path === '/' && /(?:^|&)finance=1(?:&|$)/.test(query.slice(1)));
+        var isQuerySurface = path === '/' || path === '/shop' || path === '/search';
+        if (!isFinance && !(hasQuery && isQuerySurface)) return;
+
+        function ensureMeta(name, content) {
+          var tag = document.querySelector('meta[name="' + name + '"]');
+          if (!tag) {
+            tag = document.createElement('meta');
+            tag.setAttribute('name', name);
+            document.head.appendChild(tag);
+          }
+          tag.setAttribute('content', content);
+        }
+
+        ensureMeta('robots', 'noindex,follow');
+        ensureMeta('googlebot', 'noindex,follow');
+
+        var canonicalPath = path;
+        if (path === '/shop' && /(?:^|&)resource=hub(?:&|$)/.test(query.slice(1))) {
+          canonicalPath = '/pages/resources';
+        } else if (path !== '/pages/finance' && path !== '/apps:finance' && path !== '/apps/finance') {
+          canonicalPath = path || '/';
+        }
+
+        var canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) {
+          canonical = document.createElement('link');
+          canonical.setAttribute('rel', 'canonical');
+          document.head.appendChild(canonical);
+        }
+        canonical.setAttribute('href', window.location.origin + canonicalPath);
+      })();
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": {{ shop.name | json }},
+        "url": "https://{{ request.host }}/",
+        "logo": {{ 'brand-salt-logo.png' | asset_url | json }}
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": {{ shop.name | json }},
+        "url": "https://{{ request.host }}/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://{{ request.host }}/shop?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
     <link rel="icon" href="{{ 'favicon.ico' | asset_url }}" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ 'favicon-32x32.png' | asset_url }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ 'favicon-16x16.png' | asset_url }}">
@@ -386,7 +534,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
         }
       })();
     </script>
-    {{ content_for_header }}
+    {% if salt_custom_canonical %}
+      {% assign salt_native_canonical_tag = '<link rel="canonical" href="' | append: canonical_url | append: '">' %}
+      {{ salt_content_for_header | remove: salt_native_canonical_tag }}
+    {% else %}
+      {{ salt_content_for_header }}
+    {% endif %}
     {% if request.page_type == 'product' %}
       <script>
         (function () {
@@ -537,6 +690,25 @@ ${buildThemeAssetMapEntries()}
   await writeFile(resolve(themeDir, "templates", "article.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "search.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "404.json"), templateJson());
+  await writeFile(
+    resolve(themeDir, "templates", "robots.txt.liquid"),
+    `{% for group in robots.default_groups %}
+{{- group.user_agent_name -}}
+{% for rule in group.rules %}
+{{- rule -}}
+{% endfor %}
+{%- if group.sitemap != blank -%}
+{{ group.sitemap }}
+{%- endif -%}
+{% endfor %}
+
+# Private SALT operations routes
+User-agent: *
+Disallow: /pages/finance
+Disallow: /apps:finance
+Disallow: /apps/finance
+`,
+  );
 
   await writeFile(
     resolve(themeDir, "config", "settings_schema.json"),

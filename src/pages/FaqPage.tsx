@@ -82,6 +82,7 @@ const FaqPage = () => {
   useDocumentMetadata(
     page?.seoTitle || "FAQ | SALT Online Store",
     page?.metaDescription || page?.summary || "Quick answers to the most common store and shipping questions.",
+    { canonicalPath: "/pages/faq" },
   );
 
   if (isLoading) {
