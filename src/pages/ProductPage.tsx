@@ -861,7 +861,6 @@ const ProductPage = () => {
       await navigator.share(shareData).catch(() => undefined);
       return;
     }
-
     await navigator.clipboard?.writeText(window.location.href);
     toast.success("Product link copied");
   };
