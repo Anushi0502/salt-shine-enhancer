@@ -1457,7 +1457,7 @@ tune itni kharab photo li h meri
               </div>
             </div>
           </Reveal>
-          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {relatedProducts.map((related, index) => (
                 <Reveal key={related.id} delayMs={index * 70} className="h-full">
@@ -1483,7 +1483,7 @@ tune itni kharab photo li h meri
               </div>
             </div>
           </Reveal>
-          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {complementaryProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 70} className="h-full">
@@ -1511,7 +1511,7 @@ tune itni kharab photo li h meri
               </div>
             </div>
           </Reveal>
-          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5">
+          <div className="salt-panel-shell rounded-[1.7rem] p-4 sm:p-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6 xl:grid-cols-5">
               {recentlyViewedProducts.map((entry, index) => (
                 <Reveal key={entry.id} delayMs={index * 55} className="h-full">

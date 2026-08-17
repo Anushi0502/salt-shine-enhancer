@@ -180,14 +180,14 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
+          className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary sm:h-11 sm:w-11"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
 
         <div className="flex flex-1 flex-col">
           <Link to={`/products/${product.handle}`} className="block">
-          <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
+            <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
             {image ? (
               <div className="aspect-square overflow-hidden">
                 <img
@@ -215,10 +215,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           </div>
           </Link>
 
-          <div className="flex min-h-[10.25rem] flex-1 flex-col p-4 sm:p-5">
+          <div className="flex min-h-[8.75rem] flex-1 flex-col p-3 sm:min-h-[10.25rem] sm:p-5">
             <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.08rem] leading-[1.08] tracking-[-0.03em] ${
               nativeApp ? "text-foreground" : "text-foreground"
-            }`}>
+            } sm:text-[1.08rem]`}>
               {title}
             </Link>
             {highlights.length > 0 ? (
@@ -234,9 +234,9 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </div>
             ) : null}
 
-            <div className="mt-auto flex items-end justify-between gap-2 pt-5">
+            <div className="mt-auto flex items-end justify-between gap-2 pt-3.5 sm:pt-5">
               <div className="min-w-0">
-                <p className="font-display text-[1.25rem] leading-none tracking-[0.12em] text-primary">
+                <p className="font-display text-[1.08rem] leading-none tracking-[0.12em] text-primary sm:text-[1.25rem]">
                   {formatMoney(min)}
                 </p>
                 <p
@@ -252,7 +252,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
             </div>
 
             {minimumQuantity > 1 ? (
-              <p className="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              <p className="mt-1.5 text-[0.58rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground sm:mt-2 sm:text-[0.62rem]">
                 Minimum quantity: {minimumQuantity}
               </p>
             ) : null}

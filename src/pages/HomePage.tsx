@@ -32,6 +32,8 @@ type ReviewTile = {
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
+const MOBILE_SECTION_CONTENT_VISIBILITY_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_1200px]";
+const MOBILE_REVIEW_CONTENT_VISIBILITY_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_1500px]";
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -282,19 +284,7 @@ const HomePage = () => {
   }, [judgeMeTestimonials, judgeMeTestimonialsFetching]);
   const reviewSectionLoading = judgeMeTestimonialsFetching && judgeMeTestimonials.length === 0;
   const reviewLoopCopies = useMemo(() => {
-    if (reviewTiles.length >= 120) {
-      return 1;
-    }
-
-    if (reviewTiles.length >= 48) {
-      return 2;
-    }
-
-    if (reviewTiles.length >= 16) {
-      return 3;
-    }
-
-    return 4;
+    return reviewTiles.length > 0 ? 2 : 0;
   }, [reviewTiles.length]);
   const reviewAverage = useMemo(() => {
     const ratingSource = judgeMeTestimonials.length > 0 ? judgeMeTestimonials : reviewTiles;
@@ -330,7 +320,8 @@ const HomePage = () => {
     }
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (motionQuery.matches) {
+    const compactViewportQuery = window.matchMedia("(max-width: 767px)");
+    if (motionQuery.matches || compactViewportQuery.matches) {
       return;
     }
 
@@ -421,7 +412,7 @@ const HomePage = () => {
         />
 
         {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>
-          <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <section className={`salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
             <SectionTitle title="Best Sellers" />
             <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
               {bestSellerDisplayTiles.map((product, index) => (
@@ -441,7 +432,7 @@ const HomePage = () => {
         {homeCollectionSections.map((section, sectionIndex) =>
           section.products.length > 0 ? (
             <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
-              <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+              <section className={`salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
                 <SectionTitle title={section.title} to={section.to} />
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
                   {section.products.map((product, index) => (
@@ -461,13 +452,13 @@ const HomePage = () => {
         )}
 
         <Reveal delayMs={110}>
-          <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+          <section className={`salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
             <GiftBanner />
           </section>
         </Reveal>
 
         <Reveal delayMs={280}>
-          <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+          <section className={`salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 ${MOBILE_REVIEW_CONTENT_VISIBILITY_CLASS}`}>
             <div className="mx-auto max-w-5xl text-center">
               <h2 className="font-display text-[clamp(1.7rem,4vw,3rem)] leading-[0.94] tracking-[-0.05em] text-foreground sm:text-[clamp(1.85rem,3.3vw,3.25rem)]">
                 What Our Customers Are Saying
@@ -506,7 +497,7 @@ const HomePage = () => {
                     {Array.from({ length: 4 }, (_, index) => (
                       <article
                         key={`review-skeleton-${index}`}
-                        className="flex h-[23rem] flex-col rounded-[1.25rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-4 text-foreground shadow-[0_18px_42px_-34px_rgba(22,77,160,0.16)] sm:h-[24rem] lg:h-[26rem]"
+                        className="flex h-[18rem] flex-col rounded-[1.25rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-4 text-foreground shadow-[0_18px_42px_-34px_rgba(22,77,160,0.16)] sm:h-[21rem] lg:h-[24rem]"
                       >
                         <div className="flex flex-1 flex-col animate-pulse">
                           <div className="flex-1" />
@@ -550,11 +541,11 @@ const HomePage = () => {
                           <article
                             key={`${tile.key}-${index}`}
                             data-review-card
-                            className="flex h-[23rem] w-[15.25rem] shrink-0 snap-start flex-col rounded-[1.25rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-4 text-foreground shadow-[0_18px_42px_-34px_rgba(22,77,160,0.16)] sm:h-[24rem] sm:w-[16rem] lg:h-[26rem] lg:w-[17rem]"
+                            className="flex h-[18rem] w-[13.75rem] shrink-0 snap-start flex-col rounded-[1.25rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.94))] p-3.5 text-foreground shadow-[0_18px_42px_-34px_rgba(22,77,160,0.16)] sm:h-[21rem] sm:w-[15rem] sm:p-4 lg:h-[24rem] lg:w-[17rem] lg:p-4"
                           >
                             <div className="flex flex-1 flex-col">
                               <div className="flex-1" />
-                              <p className="mx-auto max-w-[12rem] text-center text-[1rem] leading-7 tracking-[-0.01em] text-foreground/92 sm:text-[1.06rem]">
+                              <p className="mx-auto max-w-[11rem] text-center text-[0.92rem] leading-6 tracking-[-0.01em] text-foreground/92 sm:max-w-[12rem] sm:text-[1.06rem] sm:leading-7">
                                 {tile.quote}
                               </p>
                               <div className="flex-1" />
