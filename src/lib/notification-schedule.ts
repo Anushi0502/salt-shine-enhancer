@@ -1,4 +1,5 @@
-import { getISOWeek, getISOWeekYear } from "date-fns";
+import getISOWeek from "date-fns/getISOWeek";
+import getISOWeekYear from "date-fns/getISOWeekYear";
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 

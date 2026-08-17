@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { classifyCatalogTaxonomyWithoutOverrides } from "../src/lib/catalog-taxonomy.js";
@@ -11,6 +11,7 @@ import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
 const defaultOutputPath = resolve(rootDir, "output", "catalog-image-review-coverage.json");
+const fallbackQueuePath = resolve(rootDir, "output", "catalog-image-review", "classification-review-fallback.json");
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -46,6 +47,24 @@ function parseArgs(argv) {
 async function writeReport(filePath, report) {
   await mkdir(dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+async function readFallbackQueue() {
+  try {
+    const parsed = JSON.parse(await readFile(fallbackQueuePath, "utf8"));
+    return Array.isArray(parsed?.products) ? parsed.products : null;
+  } catch {
+    return null;
+  }
+}
+
+function compareHandles(expected, actual) {
+  const expectedSet = new Set(expected.map((entry) => normalizeText(entry?.handle).toLowerCase()).filter(Boolean));
+  const actualSet = new Set(actual.map((entry) => normalizeText(entry?.handle).toLowerCase()).filter(Boolean));
+  return {
+    missing: [...expectedSet].filter((handle) => !actualSet.has(handle)).sort(),
+    unexpected: [...actualSet].filter((handle) => !expectedSet.has(handle)).sort(),
+  };
 }
 
 async function main() {
@@ -121,14 +140,60 @@ async function main() {
     invalidVisualOverrides,
     unresolved,
     zeroImageProducts,
+    fallbackQueue: {
+      path: fallbackQueuePath,
+      products: null,
+      missing: [],
+      unexpected: [],
+    },
   };
+  const fallbackQueue = await readFallbackQueue();
+  if (!fallbackQueue) {
+    report.fallbackQueue.missing = unresolved.map((entry) => normalizeText(entry?.handle)).filter(Boolean).sort();
+    invalidVisualOverrides.push({ reason: "classification-review-fallback-queue-missing", path: fallbackQueuePath });
+  } else {
+    const mismatch = compareHandles(unresolved, fallbackQueue);
+    report.fallbackQueue.products = fallbackQueue.length;
+    report.fallbackQueue.missing = mismatch.missing;
+    report.fallbackQueue.unexpected = mismatch.unexpected;
+    if (mismatch.missing.length || mismatch.unexpected.length) {
+      invalidVisualOverrides.push({
+        reason: "classification-review-fallback-queue-mismatch",
+        missing: mismatch.missing,
+        unexpected: mismatch.unexpected,
+      });
+    }
+    if (fallbackQueue.some((entry) => entry?.collectionHandle !== "classification-review"
+      || entry?.managedTag !== "classification-review"
+      || entry?.semanticAssignmentAllowed !== false)) {
+      invalidVisualOverrides.push({ reason: "classification-review-fallback-policy-invalid" });
+    }
+  }
+  report.summary.invalidVisualOverrides = invalidVisualOverrides.length;
+  report.summary.fallbackQueueProducts = report.fallbackQueue.products;
   await writeReport(args.output, report);
 
-  if (invalidVisualOverrides.length || unresolved.length) {
+  const supervisedPending = process.env.SALT_CATALOG_VISION_SUPERVISED === "1";
+  const deterministicFallbackAllowed = process.env.SALT_CATALOG_DETERMINISTIC_FALLBACK_ALLOWED === "1";
+  if (invalidVisualOverrides.length || (!supervisedPending && !deterministicFallbackAllowed && unresolved.length)) {
     process.stderr.write(
       `Image review gate blocked: ${unresolved.length} ambiguous products still need visual decisions and ${invalidVisualOverrides.length} review records are stale or incomplete.\n`,
     );
     process.exitCode = 1;
+    return;
+  }
+
+  if (supervisedPending && unresolved.length) {
+    process.stdout.write(
+      `Supervised image evidence gate passed: ${unresolved.length} image-backed candidates will be processed by the guarded vision classifier; unresolved or low-confidence results remain in classification-review.\n`,
+    );
+    return;
+  }
+
+  if (deterministicFallbackAllowed && unresolved.length) {
+    process.stdout.write(
+      `Deterministic image evidence gate passed with fallback: ${unresolved.length} ambiguous products are explicitly held in classification-review; no semantic image guesses will be published.\n`,
+    );
     return;
   }
 

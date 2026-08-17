@@ -2,7 +2,7 @@ import { normalizePlainText } from "./shopify-seo-batch.js";
 import { classifyCatalogTaxonomy } from "./catalog-taxonomy.js";
 
 const CATEGORY_RULES = [
-  [/out-of-stock-placeholder-listing|out-of-stock(?:-out-of-stock){2,}/i, "pa", "Product Add-Ons"],
+  [/out[-\s]of[-\s]stock[-\s]placeholder[-\s]listing|out[-\s]of[-\s]stock(?:[-\s]out[-\s]of[-\s]stock){2,}/i, "pa", "Product Add-Ons"],
   [/(?:order|price)\s+(?:price\s+)?difference|order adjustment/i, "pa", "Product Add-Ons"],
   [/(?:wireless|bluetooth|open[ -]?ear|in[ -]?ear).{0,35}(?:earbuds?|earphones?|headphones?)|(?:earbuds?|earphones?|headphones?).{0,35}(?:wireless|bluetooth|case|cover)/i, "el", "Electronics"],
   [/(?:earbuds?|earphones?|headsets?|airpods?|eartips?|ear tips?|galaxy buds|realme buds)/i, "el", "Electronics"],

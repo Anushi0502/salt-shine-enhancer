@@ -206,6 +206,22 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       {% assign salt_seo_robots = 'noindex,follow' %}
     {% endif %}
 
+    {% if request.page_type == 'product' and product %}
+      {%- comment -%}
+        Shopify's native SEO fields belong to the product, but the selected
+        variant is available during Liquid rendering. Include its identity in
+        the request-time metadata so a backpack/bottle/lunch-box variant does
+        not inherit an unrelated product-only title or description.
+      {%- endcomment -%}
+      {% assign salt_selected_variant = product.selected_or_first_available_variant %}
+      {% assign salt_variant_label = salt_selected_variant.title | default: '' | strip %}
+      {% unless salt_variant_label == blank or salt_variant_label == 'Default Title' %}
+        {% assign salt_seo_title = product.title | append: ' - ' | append: salt_variant_label | append: ' | SALT Online Store' %}
+        {% assign salt_variant_description = product.description | strip_html | strip_newlines | truncate: 115 %}
+        {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
+      {% endunless %}
+    {% endif %}
+
     <title>{{ salt_seo_title | escape }}</title>
     {% if salt_seo_description != blank %}
       <meta name="description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
@@ -214,6 +230,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     <meta name="googlebot" content="{{ salt_seo_robots }}">
     <meta property="og:title" content="{{ salt_seo_title | escape }}">
     <meta property="og:description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+    {% if request.page_type == 'product' and salt_selected_variant and salt_selected_variant.featured_image %}
+      <meta property="og:image" content="{{ salt_selected_variant.featured_image | image_url: width: 1200 | escape }}">
+    {% endif %}
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ shop.name | escape }}">
     {% if salt_custom_canonical %}

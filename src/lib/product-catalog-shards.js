@@ -34,7 +34,11 @@ export function splitProductCatalogPayload(payload, maxBytes = DEFAULT_PRODUCT_S
   );
   const productGroups = [];
   let currentGroup = [];
-  const emptyShard = serializeShard(payload, []);
+  // Reserve the largest possible shard-index/count metadata while packing.
+  // The final shard count is unknown until grouping is complete, so using the
+  // default one-item metadata can put a boundary shard over the byte limit.
+  const metadataUpperBound = products.length + 1;
+  const emptyShard = serializeShard(payload, [], metadataUpperBound, metadataUpperBound);
   const shardBaseBytes = byteLength(emptyShard) - byteLength("[]");
   let currentBytes = shardBaseBytes;
 

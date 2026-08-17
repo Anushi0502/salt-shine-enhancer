@@ -20,6 +20,7 @@ import {
   tokenizeSpecificityText,
 } from "./product-content-specificity.js";
 import { buildVariantPriceRepairPlan } from "./shopify-variant-pricing.js";
+import { buildVariantSeoProfiles } from "./shopify-variant-seo.js";
 
 const PRODUCT_FIELDS = ["title", "descriptionHtml", "productType"];
 const SEO_FIELDS = ["title", "description"];
@@ -502,6 +503,9 @@ export async function buildShopifySeoReleasePlan(
   { forceExplicitSeo = false, repairVariantPricing = false, knowledgeModel = null } = {},
 ) {
   const rows = buildCatalogRowsFromSnapshot(snapshot);
+  const sourceProductsByHandle = new Map(
+    getProductList(snapshot).map((product) => [normalizeHandleValue(product?.handle), product]),
+  );
   const catalogContext = createSeoCatalogContext({
     products: getProductList(snapshot),
     collections: getCollectionList(snapshot),
@@ -565,6 +569,10 @@ export async function buildShopifySeoReleasePlan(
       desiredVariantUpdates,
       desiredVariantPriceUpdates,
       currentVariantUpdates,
+      variantSeoProfiles: buildVariantSeoProfiles(sourceProductsByHandle.get(productPlan.handle) || {
+        title: productPlan.title,
+        variants: currentVariantUpdates,
+      }),
       desiredMediaTargets: buildReleaseDesiredMediaTargets(productPlan),
       desiredQuantityTag: productPlan?.intelligence?.knowledge?.family === "order-adjustment"
         ? ""
@@ -583,6 +591,7 @@ export async function buildShopifySeoReleasePlan(
       sourceProducts: getProductList(snapshot).length,
       releaseProducts: products.length,
       desiredVariantCount: products.reduce((count, entry) => count + entry.desiredVariantUpdates.length, 0),
+      variantSeoProfiles: products.reduce((count, entry) => count + (entry.variantSeoProfiles?.length || 0), 0),
       desiredMediaCount: products.reduce((count, entry) => count + entry.desiredMediaTargets.length, 0),
       variantPriceRepair: variantPriceRepair.summary,
       variantPriceRepairHeld: variantPriceRepair.held,

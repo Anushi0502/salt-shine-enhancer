@@ -17,11 +17,18 @@ const releaseRunStatePath = resolve(rootDir, "output", "release-run-state.json")
 const releaseHeartbeatMs = Math.max(10_000, Number(process.env.SALT_RELEASE_HEARTBEAT_MS || 30_000));
 
 const catalogIntegrityArgs = [
-  "--skip-vision",
   "--reclassify",
-  "--deterministic-only",
   "--batch-size",
   String(catalogBatchSize),
+];
+const deterministicCatalogIntegrityArgs = [
+  ...catalogIntegrityArgs,
+  "--skip-vision",
+  "--deterministic-only",
+];
+const supervisedVisionCatalogIntegrityArgs = [
+  ...catalogIntegrityArgs,
+  "--supervised-vision",
 ];
 
 function formatCommand(command, args) {
@@ -107,8 +114,18 @@ function getReleasePaths(releaseRootDir) {
 function buildCatalogReleaseSteps({
   releaseRootDir = rootDir,
   includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
+  supervisedVision = false,
 } = {}) {
   const { iosDir, androidDir, capacitorCliBin, shopifyThemeDir } = getReleasePaths(releaseRootDir);
+  const integrityArgs = supervisedVision
+    ? supervisedVisionCatalogIntegrityArgs
+    : deterministicCatalogIntegrityArgs;
+  const verificationIntegrityArgs = process.env.SALT_RELEASE_REUSE_VERIFIED_PLAN === "1"
+    ? [...integrityArgs, "--reuse-prior-manifest"]
+    : integrityArgs;
+  // The final gate runs after tag/collection repairs, so it must fetch the
+  // current Shopify catalog instead of reusing the pre-repair checkpoint.
+  const finalIntegrityArgs = [...integrityArgs];
 
   return [
     {
@@ -162,13 +179,13 @@ function buildCatalogReleaseSteps({
     {
       label: "Dry-run exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:dry-run", "--", ...catalogIntegrityArgs],
+      args: ["run", "shopify:catalog-integrity:dry-run", "--", ...integrityArgs],
       cwd: releaseRootDir,
     },
     {
       label: "Apply exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:apply", "--", ...catalogIntegrityArgs],
+      args: ["run", "shopify:catalog-integrity:apply", "--", ...integrityArgs],
       cwd: releaseRootDir,
     },
     {
@@ -199,6 +216,24 @@ function buildCatalogReleaseSteps({
       label: "Verify live full-catalog variant price floor before base SEO",
       command: npmBin,
       args: ["run", "shopify:price-rework:verify"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Dry-run same-product variant cost-price alignment",
+      command: npmBin,
+      args: ["run", "shopify:variant-cost-price:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply same-product variant cost-price alignment",
+      command: npmBin,
+      args: ["run", "shopify:variant-cost-price:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify same-product variant cost-price alignment",
+      command: npmBin,
+      args: ["run", "shopify:variant-cost-price:verify"],
       cwd: releaseRootDir,
     },
     {
@@ -246,7 +281,7 @@ function buildCatalogReleaseSteps({
     {
       label: "Verify exact collection membership and price rules",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:verify", "--", ...catalogIntegrityArgs],
+      args: ["run", "shopify:catalog-integrity:verify", "--", ...verificationIntegrityArgs],
       cwd: releaseRootDir,
     },
     {
@@ -264,13 +299,13 @@ function buildCatalogReleaseSteps({
     {
       label: "Build web app",
       command: npmBin,
-      args: ["run", "build:web"],
+      args: ["run", "build:web:release"],
       cwd: releaseRootDir,
     },
     {
       label: "Generate Shopify theme bundle",
       command: npmBin,
-      args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
+      args: ["run", "theme:bundle:release", "--", "--out", shopifyThemeDir],
       cwd: releaseRootDir,
     },
     {
@@ -304,23 +339,47 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
+      label: "Verify variant-aware SEO profiles for every active variant",
+      command: npmBin,
+      args: ["run", "shopify:variant-seo:verify"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Dry-run daily manual collection shuffle",
+      command: npmBin,
+      args: ["run", "shopify:collections:shuffle:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply daily manual collection shuffle with live readback",
+      command: npmBin,
+      args: ["run", "shopify:collections:shuffle:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify daily manual collection shuffle",
+      command: npmBin,
+      args: ["run", "shopify:collections:shuffle:verify"],
+      cwd: releaseRootDir,
+    },
+    {
       label: "Final live-readback gate after tag cleanup and collection merges",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:verify", "--", ...catalogIntegrityArgs],
+      args: ["run", "shopify:catalog-integrity:verify", "--", ...finalIntegrityArgs],
       cwd: releaseRootDir,
     },
     ...(includeMobile ? [
       {
         label: "Sync iOS Capacitor shell",
         command: nodeBin,
-        args: [capacitorCliBin, "sync", "ios"],
-        cwd: iosDir,
+        args: [resolve(releaseRootDir, "scripts", "sync-capacitor-local.mjs"), "ios"],
+        cwd: releaseRootDir,
       },
       {
         label: "Sync Android Capacitor shell",
         command: nodeBin,
-        args: [capacitorCliBin, "sync", "android"],
-        cwd: androidDir,
+        args: [resolve(releaseRootDir, "scripts", "sync-capacitor-local.mjs"), "android"],
+        cwd: releaseRootDir,
       },
     ] : []),
   ];
@@ -369,13 +428,13 @@ function buildProductReleaseSteps({
     {
       label: "Build web app",
       command: npmBin,
-      args: ["run", "build:web"],
+      args: ["run", "build:web:release"],
       cwd: releaseRootDir,
     },
     {
       label: "Generate Shopify theme bundle",
       command: npmBin,
-      args: ["run", "theme:bundle", "--", "--out", shopifyThemeDir],
+      args: ["run", "theme:bundle:release", "--", "--out", shopifyThemeDir],
       cwd: releaseRootDir,
     },
     ...(includeMobile ? [
@@ -408,7 +467,11 @@ export function buildReleaseSteps({
     throw new Error(`Invalid release profile ${profile}; expected catalog, daily, or products`);
   }
 
-  return buildCatalogReleaseSteps({ releaseRootDir, includeMobile });
+  return buildCatalogReleaseSteps({
+    releaseRootDir,
+    includeMobile,
+    supervisedVision: profile === "catalog" && process.env.SALT_CATALOG_VISION_SUPERVISED === "1",
+  });
 }
 
 function parseArgs(argv) {
@@ -457,6 +520,9 @@ async function main() {
   let heartbeatTimer;
   try {
     args = parseArgs(process.argv);
+    if (args.resume) {
+      process.env.SALT_VARIANT_IMAGE_RESUME = "1";
+    }
     let previousRunState = null;
     if (args.resume) {
       try {

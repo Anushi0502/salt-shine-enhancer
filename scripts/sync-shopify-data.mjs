@@ -51,6 +51,7 @@ const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_C
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const collectionMergeManifestPath = resolve(process.cwd(), "output", "catalog-collection-merge-manifest.json");
+const productCustomDataBulkPath = resolve(process.cwd(), "output", ".shopify-metafield-custom-data-bulk.jsonl");
 const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
 const shopPath = resolve(outDir, "shop.json");
@@ -986,6 +987,110 @@ async function fetchProductCustomDataMap(products) {
 
       records.set(String(node.legacyResourceId), customData);
     }
+  }
+
+  return records;
+}
+
+function parseBulkReferenceIds(field) {
+  const raw = field?.jsonValue ?? field?.value ?? [];
+  let values = raw;
+
+  if (typeof values === "string") {
+    try {
+      values = JSON.parse(values);
+    } catch {
+      values = [];
+    }
+  }
+
+  if (!Array.isArray(values)) {
+    values = values ? [values] : [];
+  }
+
+  return values
+    .map((value) => (typeof value === "string" ? value : String(value?.id || "")))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function buildBulkReferenceNodes(field, productsByGid) {
+  return parseBulkReferenceIds(field).map((id) => {
+    const referencedProduct = productsByGid.get(id);
+    if (!referencedProduct) {
+      return { id, legacyResourceId: Number(extractNumericId(id)) || null, title: id };
+    }
+
+    return {
+      id: referencedProduct.id,
+      legacyResourceId: referencedProduct.legacyResourceId,
+      handle: referencedProduct.handle,
+      title: referencedProduct.title,
+      productType: referencedProduct.productType,
+      vendor: referencedProduct.vendor,
+    };
+  });
+}
+
+function attachBulkCustomDataReferences(node, productsByGid) {
+  const result = { ...node };
+  for (const key of [
+    "relatedProducts",
+    "complementaryProducts",
+    "complementaryProductsFallback",
+    "diaperType",
+  ]) {
+    if (!node?.[key]) {
+      continue;
+    }
+
+    result[key] = {
+      ...node[key],
+      references: { nodes: buildBulkReferenceNodes(node[key], productsByGid) },
+    };
+  }
+
+  return result;
+}
+
+async function loadProductCustomDataBulkCache(products) {
+  const raw = await readFile(productCustomDataBulkPath, "utf8");
+  const selectedIds = new Set(
+    products
+      .map((product) => product.admin_graphql_api_id || toShopifyGid("Product", product.id))
+      .filter(Boolean),
+  );
+  const productNodes = new Map();
+
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue;
+    }
+
+    const node = JSON.parse(line);
+    if (!node?.__parentId && selectedIds.has(node.id)) {
+      productNodes.set(node.id, node);
+    }
+  }
+
+  if (productNodes.size !== selectedIds.size) {
+    throw new Error(
+      `completed Shopify metafield bulk cache is incomplete (${productNodes.size}/${selectedIds.size} products)`,
+    );
+  }
+
+  const records = new Map();
+  for (const node of productNodes.values()) {
+    const customData = normalizeCustomDataNode(attachBulkCustomDataReferences(node, productNodes));
+    if (customData) {
+      records.set(String(node.legacyResourceId), customData);
+    }
+  }
+
+  if (records.size !== products.length) {
+    throw new Error(
+      `completed Shopify metafield bulk cache normalized ${records.size}/${products.length} products`,
+    );
   }
 
   return records;
@@ -1954,13 +2059,28 @@ async function fetchProductsForSync() {
         return enrichedProducts;
       } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
-        process.stdout.write(
-          `${adminAccessToken ? "Admin" : "CLI"} product metafield fetch failed; returning product feed without custom data (${message})\n`,
-        );
-        process.stdout.write(
-          `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products\n`,
-        );
-        return products;
+        try {
+          const cachedCustomDataMap = await loadProductCustomDataBulkCache(products);
+          const recoveredProducts = products.map((product) => ({
+            ...product,
+            customData: cachedCustomDataMap.get(String(product.id)) || null,
+          }));
+
+          process.stdout.write(
+            `${adminAccessToken ? "Admin" : "CLI"} product metafield fetch failed; recovered complete custom data from Shopify bulk cache (${message})\n`,
+          );
+          process.stdout.write(
+            `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${recoveredProducts.length} products and ${cachedCustomDataMap.size} recovered metafield payloads\n`,
+          );
+          return recoveredProducts;
+        } catch (cacheError) {
+          const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown bulk cache error";
+          const enrichmentError = new Error(
+            `product merchandising enrichment failed and no complete recovery cache is available: ${message}; ${cacheMessage}`,
+          );
+          enrichmentError.code = "PRODUCT_ENRICHMENT_INCOMPLETE";
+          throw enrichmentError;
+        }
       }
     }
 
@@ -1968,6 +2088,10 @@ async function fetchProductsForSync() {
       `${adminAccessToken ? "Admin API" : "Storefront"} product feed returned 0 products; falling back to storefront JSON\n`,
     );
   } catch (error) {
+    if (error?.code === "PRODUCT_ENRICHMENT_INCOMPLETE") {
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message : "unknown error";
     process.stdout.write(
       `${adminAccessToken ? "Admin" : "CLI"} product feed failed; falling back to cached/storefront JSON (${message})\n`,

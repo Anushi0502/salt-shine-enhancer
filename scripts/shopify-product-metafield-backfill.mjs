@@ -6,7 +6,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
-import { normalizeHandleValue, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
+import { normalizeHandleValue, normalizePlainText, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
 import {
   inferDeterministicShopifyTaxonomyCategory,
 } from "../src/lib/shopify-product-category.js";
@@ -1497,6 +1497,168 @@ async function discoverDisclosureOptions() {
   return { discovered: options.length > 0, options };
 }
 
+function normalizeTaxonomySegment(value) {
+  return normalizePlainText(value)
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(ies)\b/g, "y")
+    .replace(/\b(s)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function taxonomyTokens(value) {
+  return new Set(normalizeTaxonomySegment(value).split(" ").filter(Boolean));
+}
+
+function taxonomyPathSegments(value) {
+  return normalizePlainText(value)
+    .split(/\s*>\s*/)
+    .map((segment) => normalizePlainText(segment))
+    .filter(Boolean);
+}
+
+const TAXONOMY_ROOT_ALIASES = new Map([
+  ["luggage and bags", new Set(["luggage and bags", "apparel and accessories"])],
+  ["toys and games", new Set(["toys and games", "arts and entertainment"])],
+  ["baby and toddler", new Set(["baby and toddler"])],
+]);
+
+const ROOT_TAXONOMY_CATEGORIES = new Map([
+  ["animals and pet supplies", ["ap", "Animals & Pet Supplies"]],
+  ["apparel and accessories", ["aa", "Apparel & Accessories"]],
+  ["arts and entertainment", ["ae", "Arts & Entertainment"]],
+  ["baby and toddler", ["bt", "Baby & Toddler"]],
+  ["business and industrial", ["bi", "Business & Industrial"]],
+  ["cameras and optics", ["co", "Cameras & Optics"]],
+  ["electronics", ["el", "Electronics"]],
+  ["food beverages and tobacco", ["fb", "Food, Beverages & Tobacco"]],
+  ["furniture", ["fr", "Furniture"]],
+  ["hardware", ["ha", "Hardware"]],
+  ["health and beauty", ["hb", "Health & Beauty"]],
+  ["home and garden", ["hg", "Home & Garden"]],
+  ["luggage and bags", ["lb", "Luggage & Bags"]],
+  ["media", ["me", "Media"]],
+  ["office supplies", ["os", "Office Supplies"]],
+  ["services", ["se", "Services"]],
+  ["software", ["sw", "Software"]],
+  ["sporting goods", ["sg", "Sporting Goods"]],
+  ["toys and games", ["tg", "Toys & Games"]],
+  ["vehicles and parts", ["vp", "Vehicles & Parts"]],
+]);
+
+function pathRootMatches(requestedRoot, candidateRoot) {
+  const requested = normalizeTaxonomySegment(requestedRoot);
+  const candidate = normalizeTaxonomySegment(candidateRoot);
+  if (requested === candidate) return true;
+  return TAXONOMY_ROOT_ALIASES.get(requested)?.has(candidate) || false;
+}
+
+function tokenOverlap(left, right) {
+  const a = taxonomyTokens(left);
+  const b = taxonomyTokens(right);
+  if (!a.size || !b.size) return 0;
+  let matches = 0;
+  for (const token of a) {
+    if (b.has(token)) matches += 1;
+  }
+  return matches / Math.max(a.size, b.size);
+}
+
+function categoryPathScore(requestedPath, candidate) {
+  const requestedSegments = taxonomyPathSegments(requestedPath);
+  const candidateSegments = taxonomyPathSegments(candidate?.fullName || "");
+  if (!requestedSegments.length || !candidateSegments.length) return Number.NEGATIVE_INFINITY;
+
+  const requestedLeaf = requestedSegments.at(-1);
+  const candidateLeaf = candidateSegments.at(-1);
+  const requestedLeafNormalized = normalizeTaxonomySegment(requestedLeaf);
+  const candidateLeafNormalized = normalizeTaxonomySegment(candidateLeaf);
+  const leafOverlap = tokenOverlap(requestedLeaf, candidateLeaf);
+  const leafExact = requestedLeafNormalized === candidateLeafNormalized;
+  const leafContained = requestedLeafNormalized && candidateLeafNormalized && (
+    candidateLeafNormalized.includes(requestedLeafNormalized) ||
+    requestedLeafNormalized.includes(candidateLeafNormalized)
+  );
+
+  if (!leafExact && !leafContained && leafOverlap < 0.5) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  let score = leafExact ? 100 : leafContained ? 82 : 65 + leafOverlap * 15;
+  if (pathRootMatches(requestedSegments[0], candidateSegments[0])) {
+    score += 45;
+  }
+
+  const requestedAncestors = requestedSegments.slice(0, -1);
+  const candidateAncestors = candidateSegments.slice(0, -1);
+  const requestedAncestorTokens = new Set(requestedAncestors.flatMap((segment) => [...taxonomyTokens(segment)]));
+  const candidateAncestorTokens = new Set(candidateAncestors.flatMap((segment) => [...taxonomyTokens(segment)]));
+  let ancestorMatches = 0;
+  for (const token of requestedAncestorTokens) {
+    if (candidateAncestorTokens.has(token)) ancestorMatches += 1;
+  }
+  score += Math.min(30, ancestorMatches * 6);
+
+  if (candidateSegments.length >= requestedSegments.length) {
+    score += 3;
+  }
+  return score;
+}
+
+async function fetchShopifyTaxonomyCategories(paths) {
+  const categoriesById = new Map();
+  let nextPath = 0;
+  const worker = async () => {
+    while (nextPath < paths.length) {
+      const path = paths[nextPath++];
+      const segments = taxonomyPathSegments(path);
+      const searchTerms = [...new Set([path, segments.at(-1), segments.at(-2)].filter(Boolean))];
+      for (const search of searchTerms) {
+        const payload = await runShopifyStoreGraphQL(SHOPIFY_TAXONOMY_SEARCH_QUERY, {
+          search,
+          first: 250,
+        });
+        for (const category of payload?.taxonomy?.categories?.nodes || []) {
+          if (category?.id && category?.fullName) categoriesById.set(category.id, category);
+        }
+      }
+      process.stdout.write(`Loaded Shopify taxonomy evidence ${nextPath}/${paths.length} (${categoriesById.size} categories)\n`);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, Math.max(1, paths.length)) }, () => worker()));
+  return [...categoriesById.values()];
+}
+
+function resolveTaxonomyPath(path, categories) {
+  const normalizedPath = normalizeTaxonomySegment(path);
+  const exact = categories.filter((category) => normalizeTaxonomySegment(category.fullName) === normalizedPath);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return null;
+
+  const scored = categories
+    .map((category) => ({ category, score: categoryPathScore(path, category) }))
+    .filter((entry) => Number.isFinite(entry.score))
+    .sort((left, right) => right.score - left.score);
+  const best = scored[0];
+  const second = scored[1];
+  if (best && best.score >= 90 && (!second || best.score - second.score >= 10)) return best.category;
+
+  const root = normalizeTaxonomySegment(taxonomyPathSegments(path)[0]);
+  const [rootId, rootName] = ROOT_TAXONOMY_CATEGORIES.get(root) || [];
+  if (rootId) {
+    return {
+      id: `gid://shopify/TaxonomyCategory/${rootId}`,
+      name: rootName,
+      fullName: rootName,
+      resolutionMethod: "deterministic-root-fallback",
+    };
+  }
+  return null;
+}
+
 async function buildCategoryPlans(products) {
   const candidates = (Array.isArray(products) ? products : [])
     .filter((product) => !product?.shopifyCategory?.id)
@@ -1512,31 +1674,18 @@ async function buildCategoryPlans(products) {
       .filter(Boolean),
   )];
   const resolvedByPath = new Map();
-  let nextPath = 0;
-  const worker = async () => {
-    while (nextPath < paths.length) {
-      const path = paths[nextPath++];
-      const payload = await runShopifyStoreGraphQL(SHOPIFY_TAXONOMY_SEARCH_QUERY, {
-        search: path,
-        first: 20,
+  const taxonomyCategories = await fetchShopifyTaxonomyCategories(paths);
+  for (const path of paths) {
+    const resolved = resolveTaxonomyPath(path, taxonomyCategories);
+    if (resolved?.id) {
+      resolvedByPath.set(path, {
+        id: String(resolved.id),
+        name: String(resolved.name || "").trim(),
+        fullName: String(resolved.fullName || path).trim(),
       });
-      const categories = Array.isArray(payload?.taxonomy?.categories?.nodes)
-        ? payload.taxonomy.categories.nodes
-        : [];
-      const exact = categories.find((entry) =>
-        String(entry?.fullName || "").trim().toLowerCase() === path.toLowerCase(),
-      );
-      if (exact?.id) {
-        resolvedByPath.set(path, {
-          id: String(exact.id),
-          name: String(exact.name || "").trim(),
-          fullName: String(exact.fullName || path).trim(),
-        });
-      }
-      process.stdout.write(`Resolved Shopify taxonomy path ${resolvedByPath.size}/${paths.length}\n`);
     }
-  };
-  await Promise.all(Array.from({ length: Math.min(4, Math.max(1, paths.length)) }, () => worker()));
+    process.stdout.write(`Resolved Shopify taxonomy path ${resolvedByPath.size}/${paths.length}\n`);
+  }
 
   const plans = candidates
     .map(({ product, category }) => {
@@ -1570,11 +1719,11 @@ async function buildCategoryPlans(products) {
 }
 
 async function applyCategoryPlans(plans) {
-  const results = [];
   const batches = chunkArray(plans, 15);
+  const results = Array.from({ length: batches.length }, () => []);
+  let nextBatchIndex = 0;
 
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-    const batch = batches[batchIndex];
+  const applyBatch = async (batch, batchIndex) => {
     const declarations = batch.map((_, index) => `$p${index}: ProductUpdateInput!`).join(", ");
     const fields = batch
       .map(
@@ -1603,7 +1752,7 @@ async function applyCategoryPlans(plans) {
       if (response.product?.category?.id !== plan.categoryId) {
         throw new Error(`${plan.handle}: category readback mismatch`);
       }
-      results.push({
+      results[batchIndex].push({
         ...plan,
         verifiedCategoryId: response.product.category.id,
         verifiedAt: new Date().toISOString(),
@@ -1611,9 +1760,21 @@ async function applyCategoryPlans(plans) {
     }
 
     process.stdout.write(`Category batch ${batchIndex + 1}/${batches.length} verified (${batch.length} products)\n`);
-  }
+  };
 
-  return results;
+  const worker = async () => {
+    while (nextBatchIndex < batches.length) {
+      const batchIndex = nextBatchIndex;
+      nextBatchIndex += 1;
+      await applyBatch(batches[batchIndex], batchIndex);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(BACKFILL_APPLY_CONCURRENCY, batches.length) }, () => worker()),
+  );
+
+  return results.flat();
 }
 
 async function writeManifest(filePath, manifest) {

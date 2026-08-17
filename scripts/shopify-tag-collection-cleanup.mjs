@@ -3,9 +3,9 @@
 import { execFile } from "node:child_process";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
-import { CATALOG_COLLECTION_PLAN } from "../src/lib/catalog-collection-plan.js";
 import { createShopifyAdminGraphQLClient, asArray, normalizeText } from "./shopify-admin-graphql-client.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
@@ -13,6 +13,8 @@ const outputDir = resolve(rootDir, "output");
 const snapshotPath = resolve(outputDir, "shopify-tag-collection-cleanup-snapshot.json");
 const beforeSnapshotPath = resolve(outputDir, "shopify-tag-collection-cleanup-before.json");
 const planPath = resolve(outputDir, "shopify-tag-collection-cleanup-plan.json");
+const localSnapshotPath = resolve(tmpdir(), "salt-shopify-tag-collection-cleanup-latest.json");
+const localPlanPath = resolve(tmpdir(), "salt-shopify-tag-collection-cleanup-plan-latest.json");
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "tag-collection-cleanup" });
 const execFileAsync = promisify(execFile);
 const pageSize = 250;
@@ -186,6 +188,18 @@ const APPROVED_SOURCE_UNIONS = Object.freeze([
   ["camping-gear", "travel-outdoor"],
   ["holiday-gifts", "gifts"],
   ["viral-tiktok-products", "unique-products"],
+]);
+
+// Keep duplicate detection independent of the large OneDrive-backed taxonomy
+// module. This is the checked-in canonical handle set used by cleanup safety.
+const CANONICAL_COLLECTION_HANDLES = Object.freeze([
+  "women", "womens-fashion", "womens-beauty-essentials", "womens-accessories",
+  "women-bags-and-wallets", "men-collection", "mens-fashion", "mens-bags-wallets",
+  "mens-accessories", "hats", "mens-beauty-skincare", "kids", "kids-wear",
+  "kids-toys-games", "home-decor", "cookware", "smart-lighting",
+  "bedsheets-handlooms-towels", "car-accessories", "portable-gadgets", "covers-cases",
+  "mouse-keyboard", "audio", "office-school-supplies", "travel-outdoor", "watches",
+  "fitness-equipment", "health-wellness", "creator-essentials", "anime-collectables",
 ]);
 
 function normalizeHandle(value) {
@@ -390,10 +404,11 @@ function detectDuplicateCollections(collections) {
     groups.get(key).push({ id: collection.id, handle: collection.handle, title: collection.title, count: collection.productsCount?.count ?? null });
   }
   const approved = new Map(APPROVED_SOURCE_UNIONS);
+  const canonicalHandles = new Set(CANONICAL_COLLECTION_HANDLES);
   const candidates = [];
   for (const members of groups.values()) {
     if (members.length < 2) continue;
-    const canonical = members.find((entry) => CATALOG_COLLECTION_PLAN.some((plan) => plan.handle === entry.handle));
+    const canonical = members.find((entry) => canonicalHandles.has(entry.handle));
     candidates.push({ members, canonical: canonical || null, status: canonical ? "explicit-canonical-candidate" : "held-for-review", approvedSource: approved.get(members[0].handle) || null });
   }
   return candidates;
@@ -675,6 +690,7 @@ async function snapshot({ writeBefore = false, overwriteBefore = false } = {}) {
     if (overwriteBefore || !beforeExists) await writeFile(beforeSnapshotPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
   }
   await writeFile(snapshotPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+  await writeFile(localSnapshotPath, `${JSON.stringify(result)}\n`, "utf8");
   process.stdout.write(`Cleanup snapshot written: ${products.length} products, ${collections.length} collections, ${publications.length} publications.\n`);
   return result;
 }
@@ -912,14 +928,35 @@ async function main() {
     ? await snapshot({ writeBefore: true, overwriteBefore: true })
     : mode === "apply"
       ? await snapshot({ writeBefore: true })
-      : JSON.parse(await readFile(snapshotPath, "utf8"));
+      : JSON.parse(await readFile(
+        process.env.SALT_CLEANUP_LOCAL_SNAPSHOT || localSnapshotPath,
+        "utf8",
+      ));
   if (mode === "snapshot") return;
   const plan = buildPlan(snapshotData);
   await mkdir(outputDir, { recursive: true });
-  await writeFile(planPath, `${JSON.stringify(plan, null, 2)}\n`, "utf8");
+  const serializedPlan = `${JSON.stringify(plan, null, 2)}\n`;
+  await writeFile(localPlanPath, serializedPlan, "utf8");
+  if (process.env.SALT_CLEANUP_LOCAL_ONLY !== "1") {
+    await writeFile(planPath, serializedPlan, "utf8");
+  }
   process.stdout.write(`Cleanup dry run: ${plan.summary.productsWithTagChanges} products, ${plan.summary.collectionRulesToUpdate} collection rules, ${plan.summary.productsHeldForReview} held products, ${plan.summary.tagCollisions} tag collisions.\n`);
   assertSafePlan(plan);
   if (mode !== "apply") return;
+
+  // A verified no-op still needs a fresh live readback, but does not need to
+  // repeat the full snapshot sequence used for a mutating migration.
+  const hasPlannedChanges = [
+    ...plan.productTasks,
+    ...plan.collectionTasks,
+    ...plan.duplicateCollectionMerges,
+  ].some((task) => task.status === "planned");
+  if (!hasPlannedChanges) {
+    await verifyLive(snapshotData, plan, snapshotData.membership);
+    process.stdout.write(`Simple tag migration completed: ${plan.summary.products} products, ${plan.summary.saltTags} mapped legacy tags, ${plan.summary.duplicateCollectionMerges} duplicate collection merge(s), zero-salt-tag and live-readback gates passed.\n`);
+    return;
+  }
+
   await addSimpleTags(plan.productTasks);
   for (const task of plan.productTasks) if (task.status === "planned") task.status = "simple-tags-added-pending";
   const afterAdd = await snapshot();

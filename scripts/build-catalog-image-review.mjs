@@ -115,10 +115,9 @@ function pageNavigation(pageNumber, totalPages) {
 }
 
 function renderProductCard(record) {
-  const image = record.imageUrls[0];
   const reasons = asArray(record.rawClassification.reviewReasons).join(", ") || "Visual confirmation required";
-  const imageMarkup = image
-    ? `<a href="${escapeHtml(image)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(image)}" alt="${escapeHtml(record.title)}" loading="eager"></a>`
+  const imageMarkup = record.imageUrls.length
+    ? `<div class="image-grid">${record.imageUrls.map((image, index) => `<figure><a href="${escapeHtml(image)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(image)}" alt="${escapeHtml(`${record.title} image ${index + 1}`)}" loading="lazy"></a><figcaption>Image ${index + 1}</figcaption></figure>`).join("")}</div>`
     : "<div class=\"image-missing\">No image in refreshed catalog</div>";
 
   return `<article class="product-card">
@@ -133,7 +132,7 @@ function renderProductCard(record) {
         <div><dt>Confidence</dt><dd>${escapeHtml(record.rawClassification.confidence)}</dd></div>
         <div><dt>Why it needs visual review</dt><dd>${escapeHtml(reasons)}</dd></div>
       </dl>
-      <p class="image-link">${image ? `<a href="${escapeHtml(image)}" target="_blank" rel="noreferrer">Open source image</a>` : "Image refresh or deletion decision required"}</p>
+      <p class="image-link">${record.imageUrls.length ? `${record.imageUrls.length} source images shown above` : "Image refresh or deletion decision required"}</p>
     </div>
   </article>`;
 }
@@ -156,7 +155,10 @@ function renderPage({ pageNumber, totalPages, records, summary }) {
     main { max-width: 1260px; margin: 0 auto; display: grid; gap: 18px; }
     .product-card { display: grid; grid-template-columns: minmax(180px, 300px) 1fr; overflow: hidden; border: 1px solid #d8c8ab; background: #fffdf9; box-shadow: 0 10px 28px rgba(48, 36, 18, .07); }
     .image-wrap { min-height: 240px; background: #eee5d7; display: grid; place-items: center; }
-    img { display: block; width: 100%; height: 100%; min-height: 240px; max-height: 400px; object-fit: contain; background: white; }
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; padding: 10px; align-content: start; background: #eee5d7; }
+    figure { margin: 0; min-width: 0; background: white; border: 1px solid #d8c8ab; }
+    img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: white; }
+    figcaption { padding: 4px 6px; color: #725b2b; font: 700 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .details { padding: 20px; }
     .eyebrow { margin: 0 0 6px; color: #a74827; font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: .14em; }
     h2 { margin: 0 0 15px; font-size: clamp(20px, 2.3vw, 30px); line-height: 1.05; }
@@ -239,6 +241,7 @@ async function main() {
     pending: pending.length,
     blockedNoImage: records.filter((record) => record.status === "blocked-no-image").length,
   };
+  summary.fallbackReviewProducts = summary.pending + summary.blockedNoImage;
   const pages = Array.from({ length: Math.ceil(pending.length / args.pageSize) }, (_, index) =>
     pending.slice(index * args.pageSize, (index + 1) * args.pageSize),
   );
@@ -246,6 +249,26 @@ async function main() {
   await rm(args.outputDir, { recursive: true, force: true });
   await mkdir(args.outputDir, { recursive: true });
   await writeFile(resolve(args.outputDir, "review-manifest.json"), `${JSON.stringify({ summary, records }, null, 2)}\n`, "utf8");
+  const fallbackRecords = records
+    .filter((record) => record.status === "pending" || record.status === "blocked-no-image")
+    .map((record) => ({
+      productId: record.productId,
+      handle: record.handle,
+      title: record.title,
+      reason: record.status === "blocked-no-image" ? "no-image" : "visual-decision-required",
+      collectionHandle: "classification-review",
+      managedTag: "classification-review",
+      semanticAssignmentAllowed: false,
+    }));
+  await writeFile(
+    resolve(args.outputDir, "classification-review-fallback.json"),
+    `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      policy: "unresolved visual taxonomy products are held in classification-review and receive no semantic collection assignment",
+      products: fallbackRecords,
+    }, null, 2)}\n`,
+    "utf8",
+  );
   await writeFile(resolve(args.outputDir, "index.html"), renderIndex({ pageRecords: pages, summary }), "utf8");
   await Promise.all(
     pages.map((records, index) =>
@@ -258,7 +281,7 @@ async function main() {
   );
 
   process.stdout.write(
-    `Catalog image review queue generated: ${summary.pending} pending, ${summary.reviewed} reviewed, ${summary.blockedNoImage} no-image blockers.\n`,
+    `Catalog image review queue generated: ${summary.pending} pending, ${summary.reviewed} reviewed, ${summary.blockedNoImage} no-image blockers; ${summary.fallbackReviewProducts} explicit classification-review fallback products.\n`,
   );
 }
 

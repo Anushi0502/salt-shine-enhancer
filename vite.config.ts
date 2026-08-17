@@ -1,7 +1,49 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import { readFileSync } from "node:fs";
 import path from "path";
 import { fileURLToPath } from "url";
+
+function createLucideDirectImportPlugin(workspaceRoot: string) {
+  const barrelPath = path.resolve(workspaceRoot, "node_modules/lucide-react/dist/esm/lucide-react.js");
+  const barrel = readFileSync(barrelPath, "utf8");
+  const iconFiles = new Map<string, string>();
+
+  for (const match of barrel.matchAll(/export \{ default as (\w+)[^}]*\} from ['"]\.\/icons\/([^'"]+)['"]/g)) {
+    iconFiles.set(match[1], match[2]);
+  }
+
+  return {
+    name: "salt-lucide-direct-imports",
+    enforce: "pre" as const,
+    transform(source: string, id: string) {
+      if (!/\.[cm]?[jt]sx?$/.test(id) || !source.includes('from "lucide-react"')) {
+        return null;
+      }
+
+      return source.replace(
+        /import\s+\{([\s\S]*?)\}\s+from\s+["']lucide-react["'];?/g,
+        (_statement, imports: string) => {
+          const directImports = imports
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+            .map((entry) => {
+              const [imported, local = imported] = entry.split(/\s+as\s+/).map((part) => part.trim());
+              const file = iconFiles.get(imported);
+              if (!file) {
+                return null;
+              }
+
+              return `import ${local} from "lucide-react/dist/esm/icons/${file}";`;
+            });
+
+          return directImports.every(Boolean) ? directImports.join("\n") : _statement;
+        },
+      );
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -57,6 +99,9 @@ export default defineConfig(({ mode }) => {
         input: path.resolve(workspaceRoot, "index.html"),
       },
     },
+    publicDir: process.env.SALT_BUILD_SKIP_PUBLIC_COPY
+      ? false
+      : path.resolve(workspaceRoot, "public"),
     optimizeDeps: {
       include: [
         "react",
@@ -87,7 +132,7 @@ export default defineConfig(({ mode }) => {
     preview: {
       proxy: shopifyProxy,
     },
-    plugins: [react()],
+    plugins: [createLucideDirectImportPlugin(workspaceRoot), react()],
     resolve: {
       alias: [
         {

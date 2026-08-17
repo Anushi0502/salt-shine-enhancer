@@ -45,30 +45,63 @@ import {
   SPECIAL_COLLECTION_MINIMUMS,
   assertSpecialCollectionMinimums,
   buildSpecialCollectionAssignments,
-} from "./build-new-product-special-collection-tags.mjs";
+} from "./build-new-product-special-collection-tags-local.mjs";
 import {
   asArray,
   createShopifyAdminGraphQLClient,
   normalizeText,
 } from "./shopify-admin-graphql-client.mjs";
-import { readProductCatalogPayload } from "./product-catalog-files.mjs";
-import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
+import { readProductCatalogPayload } from "./product-catalog-files-local.mjs";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-local.mjs";
+import { scoreCatalogKnowledgeModelBatch } from "./catalog-knowledge-model-accelerator-local.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const execFileAsync = promisify(execFile);
 const defaultOutputPath = resolve(rootDir, "output", "shopify-catalog-integrity-manifest.json");
-const liveInputCheckpointPath = resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
+const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT ||
+  resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
 const collectionApprovalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
 const membershipPollAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_ATTEMPTS || 12));
 const membershipPollDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_DELAY_MS || 10_000));
 const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
+const visionImageAttempts = Math.max(1, Math.min(8, Number(process.env.SALT_CATALOG_VISION_IMAGE_ATTEMPTS || 4)));
+const visionImageTimeoutMs = Math.max(5_000, Number(process.env.SALT_CATALOG_VISION_IMAGE_TIMEOUT_MS || 30_000));
+const visionImageRetryDelayMs = Math.max(100, Number(process.env.SALT_CATALOG_VISION_IMAGE_RETRY_DELAY_MS || 750));
+const visionOutputTokens = Math.max(160, Math.min(512, Number(process.env.SALT_CATALOG_VISION_OUTPUT_TOKENS || 256)));
+const visionImageLimit = Math.max(1, Math.min(4, Number(process.env.SALT_CATALOG_VISION_IMAGE_LIMIT || 4)));
+const visionRequestTimeoutMs = Math.max(30_000, Number(process.env.SALT_CATALOG_VISION_REQUEST_TIMEOUT_MS || 120_000));
+const visionRequestAttempts = Math.max(1, Math.min(3, Number(process.env.SALT_CATALOG_VISION_REQUEST_ATTEMPTS || 2)));
 const classificationConcurrency = Math.max(
   1,
   Math.min(8, Number(process.env.SALT_CATALOG_CLASSIFICATION_CONCURRENCY || 3)),
 );
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "catalog-integrity" });
+
+async function readCurrentKnowledgeEvidence(products) {
+  const evidencePath = process.env.SALT_CATALOG_KNOWLEDGE_EVIDENCE_PATH;
+  if (!evidencePath) return null;
+  const payload = JSON.parse(await readFile(evidencePath, "utf8"));
+  const evidence = payload?.evidence;
+  if (!evidence || typeof evidence !== "object") throw new Error(`Knowledge evidence cache has no evidence map: ${evidencePath}`);
+  const byKey = new Map();
+  let matched = 0;
+  for (const product of products) {
+    const id = String(product?.id || "");
+    const numericId = id.split("/").pop();
+    const value = evidence[id] || evidence[numericId];
+    if (value) {
+      matched += 1;
+      byKey.set(id, value);
+      if (product?.handle) byKey.set(String(product.handle), value);
+    }
+  }
+  if (matched < products.length) {
+    throw new Error(`Knowledge evidence cache covers ${matched}/${products.length} live products.`);
+  }
+  return byKey;
+}
 
 const MANAGED_TAG_PREFIXES = Object.freeze(["salt:"]);
 
@@ -287,6 +320,9 @@ function parseArgs(argv) {
     useLiveCheckpoint: false,
     reclassify: false,
     deterministicOnly: false,
+    supervisedVision: false,
+    reviewOnly: false,
+    reusePriorManifest: false,
     batchSize: defaultCatalogBatchSize,
   };
   for (let index = 2; index < argv.length; index += 1) {
@@ -299,6 +335,9 @@ function parseArgs(argv) {
     else if (token === "--use-live-checkpoint") args.useLiveCheckpoint = true;
     else if (token === "--reclassify") args.reclassify = true;
     else if (token === "--deterministic-only") args.deterministicOnly = true;
+    else if (token === "--supervised-vision") args.supervisedVision = true;
+    else if (token === "--review-only") args.reviewOnly = true;
+    else if (token === "--reuse-prior-manifest") args.reusePriorManifest = true;
     else if (token === "--batch-size") {
       const batchSize = Number(next);
       if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 1000) {
@@ -313,8 +352,8 @@ function parseArgs(argv) {
       index += 1;
     } else throw new Error(`Unknown argument: ${token}`);
   }
-  if (args.useLiveCheckpoint && args.mode !== "dry-run") {
-    throw new Error("--use-live-checkpoint is allowed only for non-mutating dry runs");
+  if (args.useLiveCheckpoint && !["dry-run", "verify"].includes(args.mode)) {
+    throw new Error("--use-live-checkpoint is allowed only for non-mutating dry runs and verifies");
   }
   return args;
 }
@@ -531,13 +570,18 @@ function mergeProduct(localProduct, liveProduct) {
     id: numericId(liveProduct.id),
     shopifyId: liveProduct.id,
     handle: liveProduct.handle,
-    title: liveProduct.title,
-    body_html: liveProduct.descriptionHtml || localProduct?.body_html || "",
-    product_type: liveProduct.productType || localProduct?.product_type || "",
-    vendor: liveProduct.vendor || localProduct?.vendor || "",
+    title: localProduct?.title || liveProduct.title,
+    body_html: localProduct?.body_html || liveProduct.descriptionHtml || "",
+    product_type: localProduct?.product_type || liveProduct.productType || "",
+    vendor: localProduct?.vendor || liveProduct.vendor || "",
     status: liveProduct.status,
-    tags: asArray(liveProduct.tags),
-    created_at: liveProduct.createdAt,
+    // Managed canonical tags are outputs, not evidence. Excluding them avoids
+    // a prior wrong collection tag forcing a model conflict on the next run;
+    // unmanaged merchant tags remain available as supporting evidence.
+    tags: uniqueTags([...asArray(localProduct?.tags), ...asArray(liveProduct.tags)])
+      .filter((tag) => !isManagedTaxonomyEvidenceTag(tag)),
+    liveTags: asArray(liveProduct.tags),
+    created_at: localProduct?.created_at || liveProduct.createdAt,
     updated_at: liveProduct.updatedAt,
     images: images.length ? images : asArray(localProduct?.images),
     variants: asArray(liveProduct?.variants?.nodes),
@@ -557,6 +601,54 @@ const TAXONOMY_TOKEN_INDEX = TAXONOMY_DEFINITIONS.map((definition) => ({
   definition,
   tokens: taxonomyTokens(definition),
 }));
+
+// Canonical taxonomy tags are outputs, not evidence. Keep the full governed
+// universe here so a stale type/category tag such as `toy` cannot force a
+// product back into an obsolete classification on the next reconciliation.
+const CANONICAL_TAXONOMY_TAGS = new Set();
+function addCanonicalTaxonomyTag(namespace, value) {
+  if (!value) return;
+  try {
+    CANONICAL_TAXONOMY_TAGS.add(normalizeTag(simpleCatalogTag(namespace, value)));
+  } catch {
+    // Ignore malformed optional taxonomy metadata; the checked-in taxonomy
+    // remains the source of truth for valid managed tags.
+  }
+}
+for (const definition of TAXONOMY_DEFINITIONS) {
+  addCanonicalTaxonomyTag("department", definition.departmentId);
+  addCanonicalTaxonomyTag("category", definition.categoryId);
+  addCanonicalTaxonomyTag("type", definition.canonicalType);
+  for (const related of asArray(definition.relatedCategories)) {
+    addCanonicalTaxonomyTag("department", related?.departmentId);
+    addCanonicalTaxonomyTag("category", related?.categoryId);
+  }
+  addCanonicalTaxonomyTag("classification-rule", definition.id);
+}
+for (const audience of ["women", "men", "kids", "baby", "pets"]) {
+  addCanonicalTaxonomyTag("audience", audience);
+}
+for (const feature of ["wireless", "rechargeable", "portable", "waterproof", "foldable", "adjustable", "led", "smart", "bluetooth", "insulated"]) {
+  addCanonicalTaxonomyTag("feature", feature);
+}
+for (const compatibility of ["iphone", "android", "airpods", "ipad", "laptop", "macbook", "samsung", "usb c", "type c"]) {
+  addCanonicalTaxonomyTag("compatibility", compatibility);
+}
+for (const policy of [...PRICE_COLLECTION_POLICIES, ...SEMANTIC_COLLECTION_POLICIES]) {
+  CANONICAL_TAXONOMY_TAGS.add(normalizeTag(policy.tag));
+}
+for (const handle of [
+  "best-sellers", "staff-picks", "new-arrivals", "trending-finds", "gifts",
+  "gifts-for-dad", "gifts-for-mom", "gifts-for-seniors", "housewarming-gifts",
+  ...Object.keys(SPECIAL_COLLECTION_MINIMUMS),
+]) {
+  CANONICAL_TAXONOMY_TAGS.add(normalizeTag(handle));
+}
+
+function isManagedTaxonomyEvidenceTag(tag) {
+  const normalized = normalizeTag(tag);
+  return isManagedTag(normalized) || CANONICAL_TAXONOMY_TAGS.has(normalized);
+}
 
 function lexicalBestRule(product, visualText = "") {
   const direct = normalizeCatalogText([
@@ -581,6 +673,13 @@ function firstImageUrl(product) {
   return asArray(product?.images).map((image) => image?.src || image?.url || "").find(Boolean) || "";
 }
 
+function productImageUrls(product) {
+  return [...new Set(asArray(product?.images)
+    .map((image) => typeof image === "string" ? image : image?.src || image?.url || "")
+    .map(normalizeText)
+    .filter(Boolean))];
+}
+
 function resizeImageUrl(url) {
   try {
     const parsed = new URL(url);
@@ -594,23 +693,126 @@ function resizeImageUrl(url) {
   return url;
 }
 
+function visionImageCandidates(url) {
+  const resized = resizeImageUrl(url);
+  return [...new Set([resized, url].filter(Boolean))];
+}
+
+function parseVisionJson(rawContent) {
+  const raw = String(rawContent || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(raw.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+}
+
 async function imageAsBase64(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!response.ok) throw new Error(`image HTTP ${response.status}`);
-  return Buffer.from(await response.arrayBuffer()).toString("base64");
+  let lastError = null;
+  for (let attempt = 1; attempt <= visionImageAttempts; attempt += 1) {
+    for (const candidate of visionImageCandidates(url)) {
+      try {
+        const response = await fetch(candidate, {
+          headers: {
+            Accept: "image/avif,image/webp,image/jpeg,image/png,*/*",
+            "User-Agent": "SALT-catalog-supervised-vision/1.0",
+          },
+          signal: AbortSignal.timeout(visionImageTimeoutMs),
+        });
+        if (!response.ok) throw new Error(`image HTTP ${response.status}`);
+        const bytes = await response.arrayBuffer();
+        if (!bytes.byteLength) throw new Error("image response was empty");
+        return Buffer.from(bytes).toString("base64");
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (attempt < visionImageAttempts) await sleep(visionImageRetryDelayMs * attempt);
+  }
+  throw lastError || new Error("image fetch failed");
+}
+
+function classifyVisionEvidence(product, content, imageUrl = null, imageUrls = []) {
+  const evidenceConfidence = Number(content?.evidenceConfidence);
+  const imageAgreement = Number(content?.imageAgreement);
+  const ambiguity = normalizeText(content?.ambiguity);
+  const hasAmbiguity = ambiguity && !/^(none|no ambiguity|no apparent ambiguity|not applicable|n\/a|low(?:\s|[-:])|minimal(?:\s|[-:])|minor(?:\s|[-:])|negligible(?:\s|[-:]))/i.test(ambiguity);
+  const visualText = [content?.productName, content?.productCategory, ...asArray(content?.visibleAttributes)]
+    .map(normalizeText).filter(Boolean).join(" ");
+  if (!visualText || !Number.isFinite(evidenceConfidence) || !Number.isFinite(imageAgreement)) {
+    return { error: "Supervised vision returned incomplete confidence evidence.", imageUrl, imageUrls, visualEvidence: content };
+  }
+  if (evidenceConfidence < 78 || imageAgreement < 78 || hasAmbiguity) {
+    return {
+      error: `Supervised vision evidence held for review (confidence ${evidenceConfidence}, agreement ${imageAgreement}, ambiguity ${ambiguity || "none reported"}).`,
+      imageUrl,
+      imageUrls,
+      visualEvidence: content,
+    };
+  }
+  const visualProduct = {
+    ...product,
+    title: visualText,
+    handle: "",
+    body_html: "",
+    product_type: content?.productCategory || "",
+    tags: [],
+  };
+  const visualClassification = classifyCatalogTaxonomyWithoutOverrides(visualProduct);
+  if (visualClassification.ruleId === "unclassified") {
+    return {
+      error: "Visual evidence did not satisfy a checked-in taxonomy rule (unclassified)",
+      imageUrl,
+      imageUrls,
+      visualEvidence: content,
+      suggestedRuleId: lexicalBestRule(product, visualText).ruleId,
+    };
+  }
+  const bestRule = visualClassification.ruleId;
+  const visionAlignment = assessVisionTaxonomyAlignment(product, bestRule);
+  if (!visionAlignment.accepted) {
+    process.stdout.write(`Vision enrichment rejected for ${product.handle}: ${visionAlignment.reason}\n`);
+    return {
+      error: visionAlignment.reason,
+      imageUrl,
+      imageUrls,
+      visualEvidence: content,
+      visionAlignment,
+      rejectedRuleId: bestRule,
+      suggestedRuleId: lexicalBestRule(product).ruleId,
+    };
+  }
+  const taxonomy = classifyCatalogTaxonomyByRuleId(product, bestRule, {
+    source: "local-vision",
+    reason: `Local ${visionModel} image evidence: ${normalizeText(content?.rationale)}`,
+  });
+  process.stdout.write(`Supervised vision enrichment completed for ${product.handle}: ${bestRule}.\n`);
+  return {
+    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
+    source: "vision",
+    imageUrl,
+    imageUrls,
+    visualEvidence: { ...content, evidenceConfidence, imageAgreement },
+    visionAlignment,
+  };
 }
 
 async function classifyWithVision(product) {
-  const imageUrl = firstImageUrl(product);
-  if (!imageUrl) return null;
+  const imageUrls = productImageUrls(product).slice(0, visionImageLimit);
+  const imageUrl = imageUrls[0] || "";
+  if (!imageUrls.length) return null;
   try {
-    process.stdout.write(`Vision enrichment started for ${product.handle}.\n`);
-    const image = await imageAsBase64(resizeImageUrl(imageUrl));
-    const response = await fetch(`${ollamaUrl}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(75_000),
-      body: JSON.stringify({
+    process.stdout.write(`Supervised vision enrichment started for ${product.handle} (${imageUrls.length} image(s)).\n`);
+    const images = await Promise.all(imageUrls.map((url) => imageAsBase64(resizeImageUrl(url))));
+    const requestBody = JSON.stringify({
         model: visionModel,
         stream: false,
         format: {
@@ -620,69 +822,44 @@ async function classifyWithVision(product) {
             productCategory: { type: "string" },
             visibleAttributes: { type: "array", items: { type: "string" } },
             rationale: { type: "string" },
+            evidenceConfidence: { type: "integer", minimum: 0, maximum: 100 },
+            imageAgreement: { type: "integer", minimum: 0, maximum: 100 },
+            ambiguity: { type: "string" },
           },
-          required: ["productName", "productCategory", "visibleAttributes", "rationale"],
+          required: ["productName", "productCategory", "visibleAttributes", "rationale", "evidenceConfidence", "imageAgreement", "ambiguity"],
         },
         messages: [{
           role: "user",
-          content: `Identify the exact retail product shown. Use only visible evidence. Supplier title: ${product.title}. Return a concrete product noun, retail category, up to four visible attributes, and one short rationale.`,
-          images: [image],
+          content: `Identify the exact retail product shown across all supplied images. Use only visible evidence and do not infer hidden properties. Supplier title: ${product.title}. Return a concrete product noun, retail category, up to four visible attributes, a short rationale, an evidence confidence from 0 to 100, an image-agreement score from 0 to 100, and a short ambiguity description.`,
+          images,
         }],
-        options: { temperature: 0, num_predict: 140 },
+        options: { temperature: 0, num_predict: visionOutputTokens },
         keep_alive: "10m",
-      }),
-    });
-    if (!response.ok) throw new Error(`Ollama HTTP ${response.status}`);
+      });
+    let response = null;
+    let requestError = null;
+    for (let attempt = 1; attempt <= visionRequestAttempts; attempt += 1) {
+      try {
+        response = await fetch(`${ollamaUrl}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(visionRequestTimeoutMs),
+          body: requestBody,
+        });
+        if (response.ok) break;
+        requestError = new Error(`Ollama HTTP ${response.status}`);
+      } catch (error) {
+        requestError = error;
+      }
+      if (attempt < visionRequestAttempts) await sleep(visionImageRetryDelayMs * attempt);
+    }
+    if (!response?.ok) throw requestError || new Error("Ollama vision request failed");
     const payload = await response.json();
-    const content = JSON.parse(payload?.message?.content || "{}");
-    const visualText = [content.productName, content.productCategory, ...asArray(content.visibleAttributes)]
-      .map(normalizeText).filter(Boolean).join(" ");
-    if (!visualText) return null;
-    const visualProduct = {
-      ...product,
-      title: visualText,
-      handle: "",
-      body_html: "",
-      product_type: content.productCategory || "",
-      tags: [],
-    };
-    const visualClassification = classifyCatalogTaxonomyWithoutOverrides(visualProduct);
-    if (visualClassification.ruleId === "unclassified" || visualClassification.reviewRequired) {
-      return {
-        error: `Visual evidence did not satisfy a checked-in taxonomy rule (${visualClassification.reviewReasons.join(", ") || "unclassified"})`,
-        imageUrl,
-        visualEvidence: content,
-        suggestedRuleId: lexicalBestRule(product, visualText).ruleId,
-      };
-    }
-    const bestRule = visualClassification.ruleId;
-    const visionAlignment = assessVisionTaxonomyAlignment(product, bestRule);
-    if (!visionAlignment.accepted) {
-      process.stdout.write(`Vision enrichment rejected for ${product.handle}: ${visionAlignment.reason}\n`);
-      return {
-        error: visionAlignment.reason,
-        imageUrl,
-        visualEvidence: content,
-        visionAlignment,
-        rejectedRuleId: bestRule,
-        suggestedRuleId: lexicalBestRule(product).ruleId,
-      };
-    }
-    const taxonomy = classifyCatalogTaxonomyByRuleId(product, bestRule, {
-      source: "local-vision",
-      reason: `Local ${visionModel} image evidence: ${normalizeText(content.rationale)}`,
-    });
-    process.stdout.write(`Vision enrichment completed for ${product.handle}: ${bestRule}.\n`);
-    return {
-      knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
-      source: "vision",
-      imageUrl,
-      visualEvidence: content,
-      visionAlignment,
-    };
+    const content = parseVisionJson(payload?.message?.content) || {};
+    return classifyVisionEvidence(product, content, imageUrl, imageUrls);
   } catch (error) {
     process.stdout.write(`Vision enrichment failed for ${product.handle}: ${normalizeText(error?.message || error)}.\n`);
-    return { error: normalizeText(error?.message || error), imageUrl };
+    return { error: normalizeText(error?.message || error), imageUrl, imageUrls };
   }
 }
 
@@ -708,8 +885,8 @@ async function mapWithConcurrency(items, concurrency, mapper, progressLabel = "P
   return results;
 }
 
-function resolveDeterministicKnowledge(product, knowledgeModel = null) {
-  const regularKnowledge = classifyProductKnowledge(product, { knowledgeModel });
+function resolveDeterministicKnowledge(product, knowledgeModel = null, modelEvidence = undefined) {
+  const regularKnowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
   if (!regularKnowledge.reviewRequired) {
     return {
       knowledge: regularKnowledge,
@@ -744,26 +921,40 @@ function resolveExistingVisionKnowledge(product, knowledgeModel = null) {
   };
 }
 
-async function resolveKnowledge(product, { skipVision, deterministicOnly, knowledgeModel = null }) {
+async function resolveKnowledge(product, { skipVision, deterministicOnly, supervisedVision, knowledgeModel = null, modelEvidence = undefined, priorVisualEvidence = null }) {
   const directTaxonomy = classifyCatalogTaxonomyWithoutOverrides(product);
-  const deterministic = resolveDeterministicKnowledge(product, knowledgeModel);
+  const deterministic = resolveDeterministicKnowledge(product, knowledgeModel, modelEvidence);
   if (deterministic) return deterministic;
 
   const existingVision = resolveExistingVisionKnowledge(product, knowledgeModel);
   if (existingVision) return existingVision;
 
-  if (deterministicOnly) {
+  if (deterministicOnly && !supervisedVision) {
     return {
-      knowledge: classifyProductKnowledge(product, { knowledgeModel }),
+      knowledge: classifyProductKnowledge(product, { knowledgeModel, modelEvidence }),
       source: "review",
       reviewReasons: ["Deterministic taxonomy did not reach a safe classification."],
     };
   }
 
   let vision = null;
-  if (!skipVision) {
-    vision = await classifyWithVision(product);
+  if (supervisedVision && (priorVisualEvidence || !skipVision)) {
+    vision = priorVisualEvidence
+      ? classifyVisionEvidence(product, priorVisualEvidence.visualEvidence, priorVisualEvidence.imageUrl, priorVisualEvidence.imageUrls)
+      : await classifyWithVision(product);
     if (vision?.knowledge) return vision;
+  }
+
+  if (supervisedVision) {
+    return {
+      knowledge: classifyProductKnowledge(product, { knowledgeModel, modelEvidence }),
+      source: "review",
+      reviewReasons: [vision?.error || "Supervised vision did not meet the confidence and alignment gates."],
+      imageUrl: vision?.imageUrl || null,
+      imageUrls: vision?.imageUrls || [],
+      visualEvidence: vision?.visualEvidence || null,
+      visionAlignment: vision?.visionAlignment || null,
+    };
   }
 
   const bestRule = directTaxonomy.ruleId !== "unclassified"
@@ -774,7 +965,7 @@ async function resolveKnowledge(product, { skipVision, deterministicOnly, knowle
     reason: "Highest-scoring taxonomy rule published only because unresolved classification would otherwise block the release.",
   });
   return {
-    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
+    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel, modelEvidence }),
     source: "guess",
     guessedRuleId: bestRule,
     imageUrl: vision?.imageUrl || null,
@@ -791,7 +982,13 @@ function textIncludesAny(product, phrases) {
 
 async function buildDynamicAssignments(products) {
   const assignments = new Map(products.map((product) => [normalizeCollectionHandle(product.handle), new Set()]));
-  for (const assignment of buildSpecialCollectionAssignments(products)) {
+  const merchandisingProducts = products.map((product) => ({
+    ...product,
+    // Special/dynamic collections may intentionally use current canonical
+    // tags; taxonomy evidence must not. Keep that concern isolated here.
+    tags: product.liveTags || product.tags,
+  }));
+  for (const assignment of buildSpecialCollectionAssignments(merchandisingProducts)) {
     const set = assignments.get(normalizeCollectionHandle(assignment.handle));
     for (const handle of assignment.matchedCollections) set?.add(handle);
   }
@@ -814,7 +1011,7 @@ async function buildDynamicAssignments(products) {
     if (staffHandles.has(handle)) set.add("staff-picks");
     if (new Date(product.created_at || 0).getTime() >= newCutoff) set.add("new-arrivals");
     if (bestSellerHandles.has(handle) || staffHandles.has(handle) || newestHandles.has(handle) || textIncludesAny(product, ["viral", "trending", "tiktok"])) set.add("trending-finds");
-    const normalizedTags = new Set(asArray(product.tags).map((tag) => normalizeCollectionHandle(tag)));
+    const normalizedTags = new Set(asArray(product.liveTags || product.tags).map((tag) => normalizeCollectionHandle(tag)));
     if (normalizedTags.has("holiday-gifts")) set.add("gifts");
     if (normalizedTags.has("viral-tiktok-products")) set.add("trending-finds");
     if (textIncludesAny(product, ["gift for dad", "fathers day", "father gift"])) set.add("gifts-for-dad");
@@ -1020,12 +1217,16 @@ function collectionSourceMatches(policy, collection) {
 
 function resolveCollectionTargets(collections) {
   const byHandle = new Map(collections.map((collection) => [normalizeCollectionHandle(collection.handle), collection]));
+  const forcePriceCollectionRefresh = process.env.SALT_CATALOG_FORCE_PRICE_COLLECTION_REFRESH === "1";
   return [...PRICE_COLLECTION_POLICIES, ...SEMANTIC_COLLECTION_POLICIES].map((policy) => {
     const canonical = byHandle.get(policy.handle);
     const legacy = canonical ? null : policy.legacyHandles.map((handle) => byHandle.get(handle)).find(Boolean) || null;
     const existing = canonical || legacy;
     const metadataNeedsUpdate = Boolean(existing && (normalizeCollectionHandle(existing.handle) !== policy.handle || normalizeText(existing.title) !== policy.title));
-    const sourceNeedsUpdate = Boolean(existing && !collectionSourceMatches(policy, existing));
+    const sourceNeedsUpdate = Boolean(existing && (
+      !collectionSourceMatches(policy, existing) ||
+      (forcePriceCollectionRefresh && policy.kind === "price")
+    ));
     return {
       policy,
       existing,
@@ -1083,18 +1284,24 @@ function buildCollectionUpdateInput(target) {
     const existingSource = existingSources.length === 1 ? existingSources[0] : null;
     const existingConditions = asArray(existingSource?.inclusion?.conditions);
     if (existingSource?.__typename === "CollectionConditionsSource" && existingSource.id) {
-      input.sourcesToUpdate = [{
-        condition: {
-          id: existingSource.id,
-          title: source.title,
-          description: source.description,
-          inclusion: {
-            matchType: source.inclusion.matchType,
-            conditionsToDelete: existingConditions.map((condition) => condition.id).filter(Boolean),
-            conditionsToCreate: asArray(source.inclusion.conditions),
+      if (existingSource.shareable === false) {
+        // Non-shareable sources can retain stale automated memberships when updated in place.
+        input.sourcesToDelete = [existingSource.id];
+        input.sourcesToCreate = [{ source }];
+      } else {
+        input.sourcesToUpdate = [{
+          condition: {
+            id: existingSource.id,
+            title: source.title,
+            description: source.description,
+            inclusion: {
+              matchType: source.inclusion.matchType,
+              conditionsToDelete: existingConditions.map((condition) => condition.id).filter(Boolean),
+              conditionsToCreate: asArray(source.inclusion.conditions),
+            },
           },
-        },
-      }];
+        }];
+      }
     } else {
       input.sourcesToDelete = existingSources.map((existingSource) => existingSource.id).filter(Boolean);
       input.sourcesToCreate = [{ source }];
@@ -1300,19 +1507,26 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
 }
 
 async function run(args) {
+  if (args.supervisedVision && process.env.SALT_CATALOG_VISION_SUPERVISED !== "1") {
+    throw new Error("--supervised-vision requires SALT_CATALOG_VISION_SUPERVISED=1; image evidence must be explicitly enabled by the release command.");
+  }
   if (args.mode === "apply") await verifyCollectionApproval();
   const retryInfo = [];
   const priorManifestPath = args.output === defaultOutputPath ? args.output : defaultOutputPath;
   const priorManifest = await readJson(priorManifestPath);
+  process.stdout.write("Catalog integrity: prior manifest loaded.\n");
   const knowledgeModel = await readCatalogKnowledgeModel({
     required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
   });
+  process.stdout.write("Catalog integrity: knowledge model/evidence loaded.\n");
   const priorSnapshot = buildPriorIntegritySnapshot(priorManifest);
   const catalog = await readProductCatalogPayload(resolve(rootDir, "public", "data"));
+  process.stdout.write("Catalog integrity: local catalog loaded.\n");
   let liveProducts;
   let collections;
   let publications;
   if (args.useLiveCheckpoint) {
+    process.stdout.write(`Catalog integrity: loading live checkpoint from ${liveInputCheckpointPath}.\n`);
     const checkpoint = await readJson(liveInputCheckpointPath);
     if (!checkpoint?.complete || !Array.isArray(checkpoint.liveProducts) || !Array.isArray(checkpoint.collections)) {
       throw new Error(`No complete catalog-integrity live checkpoint exists at ${liveInputCheckpointPath}`);
@@ -1336,6 +1550,48 @@ async function run(args) {
   assertCompleteCollectionGovernance(collections);
   const localByHandle = localProductByHandle(catalog);
   const products = liveProducts.map((liveProduct) => mergeProduct(localByHandle.get(normalizeCollectionHandle(liveProduct.handle)) || {}, liveProduct));
+  const reviewHandles = new Set(
+    priorSnapshot
+      ? [...priorSnapshot.byHandle.entries()]
+        .filter(([, entry]) => entry.classification?.source === "review")
+        .map(([handle]) => handle)
+      : [],
+  );
+  if (args.reviewOnly && !reviewHandles.size) {
+    throw new Error("--review-only requires a completed prior manifest with review-held products.");
+  }
+  if (args.reviewOnly) {
+    process.stdout.write(`Review-only retry cohort: ${reviewHandles.size} prior fallback products.\n`);
+  }
+  const visualEvidenceManifest = process.env.SALT_CATALOG_REUSE_VISUAL_EVIDENCE_MANIFEST
+    ? await readJson(resolve(rootDir, process.env.SALT_CATALOG_REUSE_VISUAL_EVIDENCE_MANIFEST), null)
+    : null;
+  const visualEvidenceByHandle = new Map(
+    asArray(visualEvidenceManifest?.classifications)
+      .filter((entry) => entry?.handle && entry?.visualEvidence)
+      .map((entry) => [normalizeCollectionHandle(entry.handle), entry]),
+  );
+  if (visualEvidenceByHandle.size) {
+    process.stdout.write(`Reusing supervised visual evidence for ${visualEvidenceByHandle.size} products.\n`);
+  }
+  const canReusePriorManifest = args.mode === "verify" && Boolean(priorSnapshot) &&
+    (!args.reclassify || args.reusePriorManifest);
+  if (args.reusePriorManifest && (!args.reclassify || args.mode !== "verify")) {
+    throw new Error("--reuse-prior-manifest is only allowed for a reclassifying verification.");
+  }
+  let modelEvidenceByKey = null;
+  if (!canReusePriorManifest) {
+    try {
+      modelEvidenceByKey = await scoreCatalogKnowledgeModelBatch(knowledgeModel, products);
+    } catch (error) {
+      modelEvidenceByKey = await readCurrentKnowledgeEvidence(products);
+      if (!modelEvidenceByKey) throw error;
+      process.stdout.write(`Using current-catalog knowledge evidence cache after model artifact read failure: ${error.message}\n`);
+    }
+  }
+  if (modelEvidenceByKey) {
+    process.stdout.write(`MLX/Metal knowledge scoring completed for ${modelEvidenceByKey.size}/${products.length} products.\n`);
+  }
   const dynamicAssignments = await buildDynamicAssignments(products);
   const tagTasks = [];
   const resolvedTagPlans = [];
@@ -1347,7 +1603,50 @@ async function run(args) {
     const batchEnd = Math.min(batchStart + args.batchSize, products.length);
     for (let index = batchStart; index < batchEnd; index += 1) {
       const product = products[index];
-      const prior = args.reclassify ? null : priorSnapshot?.byHandle.get(normalizeCollectionHandle(product.handle));
+      const modelEvidence = modelEvidenceByKey?.get(String(product?.id || product?.handle || ""));
+      const handle = normalizeCollectionHandle(product.handle);
+      const prior = args.reviewOnly && !reviewHandles.has(handle)
+        ? priorSnapshot?.byHandle.get(handle)
+        : args.reclassify && !args.reusePriorManifest
+        ? null
+        : priorSnapshot?.byHandle.get(normalizeCollectionHandle(product.handle));
+      if (args.reviewOnly && !reviewHandles.has(handle)) {
+        if (!prior?.tagTask || !prior.classification?.ruleId) {
+          throw new Error(`Review-only retry cannot preserve ${product.handle}: prior classification is missing.`);
+        }
+        resolvedProducts[index] = {
+          knowledge: null,
+          source: prior.classification.source,
+          priorClassification: prior.classification,
+          // Review-only mode must not reconcile products outside the retry cohort.
+          // Carry every current tag through so the exact-tag planner is a true no-op.
+          priorManagedTags: uniqueTags(asArray(product.tags)),
+          priorCollectionTags: uniqueTags(
+            prior.classification.collectionHandles.map((collectionHandle) => collectionTagForHandle(collectionHandle)),
+          ),
+          reused: true,
+        };
+        continue;
+      }
+      const canReusePriorTagPlan = Boolean(
+        canReusePriorManifest &&
+        prior?.tagTask &&
+        Array.isArray(prior.tagTask.desiredManagedTags) &&
+        Array.isArray(prior.classification?.collectionHandles),
+      );
+      if (canReusePriorTagPlan) {
+        resolvedProducts[index] = {
+          knowledge: null,
+          source: prior.classification.source,
+          priorClassification: prior.classification,
+          priorManagedTags: uniqueTags(prior.tagTask.desiredManagedTags),
+          priorCollectionTags: uniqueTags(
+            prior.classification.collectionHandles.map((handle) => collectionTagForHandle(handle)),
+          ),
+          reused: true,
+        };
+        continue;
+      }
       let deterministic = null;
       const priorRuleId = prior?.classification?.ruleId || "";
       const canReusePriorClassification = Boolean(
@@ -1359,13 +1658,15 @@ async function run(args) {
           reason: "Reused the last completed collection-integrity classification for an unchanged handle.",
         });
         deterministic = {
-          knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
+          // A non-reclassifying verification must compare against the last
+          // applied classification, not reopen model conflicts on readback.
+          knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy),
           source: prior.classification.source,
           priorClassification: prior.classification,
           reused: true,
         };
       } else {
-        deterministic = resolveDeterministicKnowledge(product, knowledgeModel);
+        deterministic = resolveDeterministicKnowledge(product, knowledgeModel, modelEvidence);
       }
       if (deterministic) resolvedProducts[index] = deterministic;
       else unresolvedProducts.push({ index, product });
@@ -1379,10 +1680,15 @@ async function run(args) {
   const resolutionBatchCount = Math.ceil(unresolvedProducts.length / args.batchSize);
   for (let batchStart = 0; batchStart < unresolvedProducts.length; batchStart += args.batchSize) {
     const batch = unresolvedProducts.slice(batchStart, batchStart + args.batchSize);
-    const resolutions = await mapWithConcurrency(
+      const resolutions = await mapWithConcurrency(
       batch,
       classificationConcurrency,
-      (entry) => resolveKnowledge(entry.product, { ...args, knowledgeModel }),
+      (entry) => resolveKnowledge(entry.product, {
+        ...args,
+        knowledgeModel,
+        modelEvidence: modelEvidenceByKey?.get(String(entry.product?.id || entry.product?.handle || "")),
+        priorVisualEvidence: visualEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)),
+      }),
       args.deterministicOnly ? "Review resolution processed" : "Visual resolution processed",
     );
     for (const [index, entry] of batch.entries()) {
@@ -1396,39 +1702,40 @@ async function run(args) {
 
   for (const [index, product] of products.entries()) {
     const resolved = resolvedProducts[index];
-    const collectionTags = resolved.source === "review"
-      ? [collectionTagForHandle("classification-review")]
-      : buildProductCollectionTags(
-        product,
-        resolved.knowledge,
-        dynamicAssignments.get(normalizeCollectionHandle(product.handle)) || new Set(),
-      );
+    const dynamicHandles = dynamicAssignments.get(normalizeCollectionHandle(product.handle)) || new Set();
+    const approvedSpecialTags = [...dynamicHandles]
+      .filter((handle) => Object.prototype.hasOwnProperty.call(SPECIAL_COLLECTION_MINIMUMS, handle))
+      .map((handle) => collectionTagForHandle(handle));
+    const collectionTags = resolved.priorCollectionTags || (resolved.source === "review"
+      ? uniqueTags([collectionTagForHandle("classification-review"), ...approvedSpecialTags])
+      : buildProductCollectionTags(product, resolved.knowledge, dynamicHandles));
     if (!collectionTags.length) {
-      throw new Error(`${product.handle} has no semantic collection assignment after classification ${resolved.knowledge.classificationRule}.`);
+      throw new Error(`${product.handle} has no semantic collection assignment after classification ${resolved.knowledge?.classificationRule || resolved.priorClassification?.ruleId || "unknown"}.`);
     }
-    const classificationTags = ["vision", "guess", "existing-vision"].includes(resolved.source)
+    const classificationTags = resolved.priorManagedTags ? [] : ["vision", "guess", "existing-vision"].includes(resolved.source)
       ? [
         simpleCatalogTag("classification-rule", resolved.knowledge.classificationRule),
         simpleCatalogTag("classification-source", resolved.source === "existing-vision" ? "vision" : resolved.source),
       ]
       : [];
-    const desiredManagedTags = resolved.source === "review"
+    const desiredManagedTags = resolved.priorManagedTags || (resolved.source === "review"
       ? collectionTags
       : uniqueTags([
         ...asArray(resolved.knowledge.proposedTags),
         ...collectionTags,
         ...classificationTags,
-      ]);
+      ]));
     resolvedTagPlans.push({ liveProduct: liveProducts[index], desiredManagedTags });
     classifications.push({
       productId: product.shopifyId,
       handle: product.handle,
-      ruleId: resolved.knowledge.classificationRule,
+      ruleId: resolved.knowledge?.classificationRule || resolved.priorClassification?.ruleId || "unclassified",
       source: resolved.source,
-      confidence: resolved.knowledge.confidence,
+      confidence: resolved.knowledge?.confidence ?? resolved.priorClassification?.confidence ?? 0,
       collectionHandles: collectionTags.map((tag) => normalizeCollectionHandle(tag)),
       reused: Boolean(resolved.reused),
       imageUrl: resolved.imageUrl || resolved.priorClassification?.imageUrl || null,
+      imageUrls: resolved.imageUrls || resolved.priorClassification?.imageUrls || [],
       visualEvidence: resolved.visualEvidence || resolved.priorClassification?.visualEvidence || null,
       visionAlignment: resolved.visionAlignment || resolved.priorClassification?.visionAlignment || null,
       guessedRuleId: resolved.guessedRuleId || resolved.priorClassification?.guessedRuleId || null,
@@ -1464,9 +1771,11 @@ async function run(args) {
       scope: "all active Shopify products and every live collection",
       managedTags: "exact-set replacement for taxonomy, collection, and classification namespaces",
       unmanagedTags: "preserved exactly",
-      uncertainProducts: args.deterministicOnly
-        ? "deterministic-only; explicit classification-review fallback collection; no image classification or guesses"
-        : "local image enrichment first; auditable highest-scoring guess only at the release boundary",
+      uncertainProducts: args.supervisedVision
+        ? "supervised multi-image evidence only; confidence, agreement, taxonomy, and alignment gates; explicit classification-review fallback; no guesses"
+        : args.deterministicOnly
+          ? "deterministic-only; explicit classification-review fallback collection; no image classification or guesses"
+          : "legacy local image enrichment path; full release guesses remain disabled",
       semanticCollectionRule: "one canonical simple collection tag condition per collection",
       priceCollections: "exact variant-price source plus exact live membership verification",
       collectionlessProducts: "forbidden",
@@ -1485,6 +1794,7 @@ async function run(args) {
       taxonomyClassified: classifications.filter((entry) => entry.source === "taxonomy").length,
       approvedOverrides: classifications.filter((entry) => entry.source === "approved-override").length,
       visionClassified: classifications.filter((entry) => entry.source === "vision").length,
+      supervisedVision: Boolean(args.supervisedVision),
       guessedAssignments: classifications.filter((entry) => entry.source === "guess").length,
       reusedClassifications: classifications.filter((entry) => entry.reused).length,
       collectionlessProducts: null,

@@ -25,7 +25,15 @@ const GENERIC_PRODUCT_TYPES = new Set([
   "shopify product", "unclassified product",
 ]);
 
+// Cache only within one process. The key includes model/evidence identity so
+// a model-backed result can never be reused for a different scoring context.
 const PRODUCT_KNOWLEDGE_CACHE = new WeakMap();
+
+function knowledgeCacheKey(knowledgeModel, modelEvidence) {
+  const modelVersion = String(knowledgeModel?.modelVersion || "taxonomy-only");
+  if (modelEvidence === undefined) return modelVersion;
+  return `${modelVersion}:${JSON.stringify(modelEvidence)}`;
+}
 
 function asText(value) {
   if (Array.isArray(value)) return value.filter(Boolean).join(" ");
@@ -140,15 +148,19 @@ function buildFallbackSearchTerms(product, leafType) {
 
 export function classifyProductKnowledge(product, { knowledgeModel = null, modelEvidence = undefined } = {}) {
   if (product && typeof product === "object") {
-    const cached = PRODUCT_KNOWLEDGE_CACHE.get(product);
-    if (cached && !knowledgeModel) return cached;
+    const cacheKey = knowledgeCacheKey(knowledgeModel, modelEvidence);
+    const cached = PRODUCT_KNOWLEDGE_CACHE.get(product)?.get(cacheKey);
+    if (cached) return cached;
   }
 
   const taxonomy = classifyCatalogTaxonomy(product);
   const knowledge = buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel, modelEvidence });
 
-  if (product && typeof product === "object" && !knowledgeModel) {
-    PRODUCT_KNOWLEDGE_CACHE.set(product, knowledge);
+  if (product && typeof product === "object") {
+    const cacheKey = knowledgeCacheKey(knowledgeModel, modelEvidence);
+    const productCache = PRODUCT_KNOWLEDGE_CACHE.get(product) || new Map();
+    productCache.set(cacheKey, knowledge);
+    PRODUCT_KNOWLEDGE_CACHE.set(product, productCache);
   }
 
   return knowledge;

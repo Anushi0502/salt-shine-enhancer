@@ -69,6 +69,7 @@ import {
   pickComplementaryProducts,
   pickRelatedProducts,
 } from "@/lib/sales-optimization";
+import { buildVariantSeoProfile } from "@/lib/shopify-variant-seo";
 import type { ShopifyProduct, ShopifyProductReference } from "@/types/shopify";
 
 // Keep the deployed PDP chunk independently versioned so Shopify's CDN never
@@ -622,9 +623,14 @@ const ProductPage = () => {
         { name: "Shop", url: `${origin}/shop` },
         { name: product.title, url: `${origin}/products/${product.handle}` },
       ]),
-      buildProductStructuredData(product, origin, reviewSummary, getStoreCurrencyCode()),
+      buildProductStructuredData(product, origin, reviewSummary, getStoreCurrencyCode(), selectedVariant),
     ].filter(Boolean);
-  }, [origin, product, reviewSummary]);
+  }, [origin, product, reviewSummary, selectedVariant]);
+
+  const variantSeoProfile = useMemo(
+    () => buildVariantSeoProfile(product, selectedVariant, { currency: getStoreCurrencyCode() }),
+    [product, selectedVariant],
+  );
 
   // Keep the blocking state limited to the short live Shopify detail request;
   // the page never substitutes an older catalog record for the canonical PDP.
@@ -862,8 +868,8 @@ const ProductPage = () => {
       className="mx-auto mt-4 w-[min(1280px,calc(100%_-_20px))] overflow-x-clip pb-[calc(6rem+env(safe-area-inset-bottom))] sm:mt-5 sm:w-[min(1280px,calc(100%_-_20px))] md:pb-8"
     >
       <SeoMetadata
-        title={`${product.title} | SALT Online Store`}
-        description={`${productSummary}${subtitle ? ` ${subtitle}.` : ""}`}
+        title={variantSeoProfile.title}
+        description={variantSeoProfile.description || `${productSummary}${subtitle ? ` ${subtitle}.` : ""}`}
         canonicalPath={`/products/${product.handle}`}
         image={primaryImage || undefined}
         ogType="product"

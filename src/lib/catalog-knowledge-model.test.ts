@@ -26,4 +26,5 @@ describe("catalog knowledge model", () => {
     expect(evidence?.topRuleId).toBeTruthy();
     expect(evidence?.featureCount).toBeGreaterThan(0);
   });
+
 });

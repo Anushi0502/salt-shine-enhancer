@@ -39,7 +39,7 @@ function parseGraphQlPayload(raw) {
 }
 
 function isRetryable(error) {
-  return /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
+  return error?.code === "ETIMEDOUT" || error?.killed || /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
     String(error?.message || error),
   );
 }
@@ -52,6 +52,7 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
   const graphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
   const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
   const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
+  const requestTimeoutMs = Math.max(10_000, Number(process.env.SALT_SHOPIFY_REQUEST_TIMEOUT_MS || 180_000));
   const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
   const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
   const cliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || `n:salt-shine-enhancer|v:1|p:${agentName}`;
@@ -76,6 +77,7 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
               "X-Shopify-Access-Token": accessToken,
             },
             body: JSON.stringify({ query, variables }),
+            signal: AbortSignal.timeout(requestTimeoutMs),
           });
           const raw = await response.text();
           if (!response.ok) {
@@ -114,10 +116,14 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
             cwd: rootDir,
             env: {
               ...process.env,
+              CI: "1",
+              SHOPIFY_CLI_DISABLE_ANALYTICS: "1",
               SHOPIFY_CLI_AGENT_INFO: cliAgentInfo,
               SHOPIFY_CLI_AGENT_IDS: cliAgentIds,
             },
             maxBuffer: 20 * 1024 * 1024,
+            timeout: requestTimeoutMs,
+            killSignal: "SIGTERM",
           });
           let raw = result.stdout || "";
           try {

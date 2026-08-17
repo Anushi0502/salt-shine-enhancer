@@ -578,14 +578,19 @@ export function buildProductStructuredData(
   origin: string,
   ratingSummary?: RatingSummaryLike | null,
   currencyCode = "USD",
+  selectedVariant?: ShopifyProduct["variants"][number] | null,
 ): StructuredData {
   const rating = ratingSummary?.rating ?? getProductRating(product);
   const reviewCount = ratingSummary?.reviewCount ?? getProductReviewCount(product);
   const availability = product.variants.some((variant) => variant.available) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
-  const currentPrice = minPrice(product);
-  const comparePrice = compareAt(product);
-  const image = productImage(product);
+  const currentPrice = selectedVariant ? Number(selectedVariant.price || 0) : minPrice(product);
+  const comparePrice = selectedVariant ? Number(selectedVariant.compare_at_price || 0) || compareAt(product) : compareAt(product);
+  const image = selectedVariant?.featured_image?.src || productImage(product);
   const description = stripHtml(product.body_html).slice(0, 500);
+  const variantLabel = selectedVariant && !/^default\s+title$/i.test(String(selectedVariant.title || ""))
+    ? String(selectedVariant.title).trim()
+    : "";
+  const productName = variantLabel ? `${product.title} - ${variantLabel}` : product.title;
   const normalizedCurrency = /^[A-Z]{3}$/.test(currencyCode.trim().toUpperCase())
     ? currencyCode.trim().toUpperCase()
     : "USD";
@@ -593,21 +598,21 @@ export function buildProductStructuredData(
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.title,
+    name: productName,
     description,
     image: image ? [image] : undefined,
     brand: {
       "@type": "Brand",
       name: product.vendor || "SALT",
     },
-    sku: String(product.variants[0]?.sku || product.handle || product.id),
-    url: `${origin}/products/${product.handle}`,
+    sku: String(selectedVariant?.sku || product.variants[0]?.sku || product.handle || product.id),
+    url: `${origin}/products/${product.handle}${selectedVariant?.id ? `?variant=${selectedVariant.id}` : ""}`,
     offers: {
       "@type": "Offer",
       priceCurrency: normalizedCurrency,
       price: asNumber(currentPrice),
       availability,
-      url: `${origin}/products/${product.handle}`,
+      url: `${origin}/products/${product.handle}${selectedVariant?.id ? `?variant=${selectedVariant.id}` : ""}`,
       itemCondition: "https://schema.org/NewCondition",
       ...(comparePrice > currentPrice
         ? {

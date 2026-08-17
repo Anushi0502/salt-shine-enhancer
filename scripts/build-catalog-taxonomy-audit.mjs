@@ -12,6 +12,7 @@ import { CATALOG_COLLECTION_PLAN } from "../src/lib/catalog-collection-plan.js";
 import { buildProductKnowledgePayload, classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
+import { scoreCatalogKnowledgeModelBatch } from "./catalog-knowledge-model-accelerator.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -249,8 +250,8 @@ function renderCsv(records) {
   return `${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
 }
 
-function toProductRecord(product, knowledgeModel = null) {
-  const knowledge = classifyProductKnowledge(product, { knowledgeModel });
+function toProductRecord(product, knowledgeModel = null, modelEvidence = undefined) {
+  const knowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
   const variants = asArray(product?.variants);
   return {
     id: Number(product?.id) || 0,
@@ -528,7 +529,17 @@ async function main() {
   const knowledgeModel = await readCatalogKnowledgeModel({
     required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
   });
-  const records = products.map((product) => toProductRecord(product, knowledgeModel)).filter((record) => record.id && record.handle);
+  const modelEvidenceByKey = await scoreCatalogKnowledgeModelBatch(knowledgeModel, products);
+  if (modelEvidenceByKey) {
+    process.stdout.write(`MLX/Metal knowledge scoring completed for ${modelEvidenceByKey.size}/${products.length} products.\n`);
+  }
+  const records = products
+    .map((product) => toProductRecord(
+      product,
+      knowledgeModel,
+      modelEvidenceByKey?.get(String(product?.id || product?.handle || "")),
+    ))
+    .filter((record) => record.id && record.handle);
   const reviewQueue = records.filter((record) => record.reviewRequired);
   const safeForApproval = records.filter((record) => record.seoEligible && !record.reviewRequired);
   const tagCounts = countTags(safeForApproval);
@@ -547,7 +558,10 @@ async function main() {
   };
   variants.variantsWithoutFeaturedImage = variants.totalVariants - variants.variantsWithFeaturedImage;
 
-  const knowledgePayload = buildProductKnowledgePayload(productsPayload, { knowledgeModel });
+  const knowledgePayload = buildProductKnowledgePayload(productsPayload, {
+    knowledgeModel,
+    modelEvidenceByKey,
+  });
   const manifest = {
     version: CATALOG_TAXONOMY_VERSION,
     generatedAt: new Date().toISOString(),

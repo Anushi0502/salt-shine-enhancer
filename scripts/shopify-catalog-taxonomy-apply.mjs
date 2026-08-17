@@ -213,7 +213,7 @@ function parseGraphQlPayload(raw) {
 }
 
 function isRetryable(error) {
-  return /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
+  return /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|und_err_socket|econnreset|econnrefused|fetch failed|invalid response body|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
     String(error?.message || error),
   );
 }

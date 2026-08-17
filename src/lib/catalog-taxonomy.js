@@ -7649,7 +7649,11 @@ function scoreRule(entry, evidence) {
   const consensusScore = score +
     directPhraseMatches.length * 10 +
     Math.max(0, directFields.length - 1) * 5 +
-    (requiredGroupCount >= 2 ? 8 : 0);
+    (requiredGroupCount >= 2 ? 8 : 0) +
+    // Independent direct fields are stronger than repeated supplier metadata.
+    // This bonus lets a title + handle/product-type consensus beat a single
+    // incidental high-frequency token without making tags authoritative.
+    (directFields.length >= 2 || requiredGroupCount >= 2 || directPhraseMatches.length >= 2 ? 12 : 0);
 
   return {
     entry,
@@ -7661,6 +7665,7 @@ function scoreRule(entry, evidence) {
     directFields,
     directPhraseCount: directPhraseMatches.length,
     requiredGroupCount,
+    independentEvidence: directFields.length >= 2 || requiredGroupCount >= 2 || directPhraseMatches.length >= 2,
     titleOrHandle,
     primaryEvidence,
     directEvidenceRank: directEvidenceRank(fields),
@@ -8077,6 +8082,10 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
   if (best.directFields.length >= 2) confidence += 4;
   if (best.directPhraseCount) confidence += 4;
   if (best.entry.generic) confidence -= weakGenericMatch ? 18 : 4;
+  if (!best.independentEvidence && best.terms.length < 2) {
+    confidence -= 10;
+    reviewReasons.push("single-evidence-lane");
+  }
   const crossFamilyConflict = runnerUp && runnerUp.entry.familyId !== best.entry.familyId;
   const hasStrongDirectPhrase = best.directPhraseCount > 0 && best.directEvidenceRank >= 2;
   if (scoreGap < 8 && crossFamilyConflict) {
@@ -8121,6 +8130,7 @@ export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}
       directFields: best.directFields,
       directPhraseCount: best.directPhraseCount,
       requiredGroupCount: best.requiredGroupCount,
+      independentEvidence: best.independentEvidence,
     },
   };
   classification.seoEligible = best.entry.seoEligible !== false && !classification.reviewRequired;

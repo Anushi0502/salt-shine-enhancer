@@ -1235,6 +1235,15 @@ function buildSeoDescription(title, signals, searchPhrases) {
   }
   if (factClauses.length) {
     sentences.push(`Product details include ${factClauses.slice(0, 2).join(" and ")}.`);
+  } else if (signals.productKnowledge?.reviewRequired) {
+    // Review-held products still receive factual SEO, but never inherit a
+    // semantic family's benefit copy before taxonomy review is complete.
+    const handleFacts = uniqueValues([
+      normalizePlainText(signals.handlePhrase),
+      normalizePlainText(signals.sourceProductType),
+      normalizePlainText(signals.catalogProductType),
+    ]).filter(Boolean);
+    sentences.push(`Product details are based on the listed ${handleFacts.join(", ") || "product"} information.`);
   } else {
     sentences.push(`${knowledge.copy.benefit}`);
   }
@@ -2081,7 +2090,7 @@ function buildProductProfile(signals) {
   const explicitTitle = HANDLE_TITLE_OVERRIDES.get(signals.handle) || "";
   const recognizedHandleFamily = /^(iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Lip Balm|Hair Oil)$/i.test(normalizePlainText(signals.handlePhrase));
   const rewriteLevel = classificationHeld
-    ? "low"
+    ? "medium"
     : explicitTitle || recognizedHandleFamily
       ? "high"
       : confidence >= 70

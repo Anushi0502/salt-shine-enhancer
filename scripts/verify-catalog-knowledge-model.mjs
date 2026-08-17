@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 
-import { describeCatalogKnowledgeModel, readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
+import {
+  assertCatalogKnowledgeModel,
+  summarizeCatalogKnowledgeModel,
+} from "../src/lib/catalog-knowledge-model.js";
+import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 
 async function main() {
   const model = await readCatalogKnowledgeModel({ required: true });
+  assertCatalogKnowledgeModel(model);
   process.stdout.write(`${JSON.stringify({
     status: "verified",
-    ...describeCatalogKnowledgeModel(model),
+    ...summarizeCatalogKnowledgeModel(model),
     validation: model.validation,
   }, null, 2)}\n`);
 }

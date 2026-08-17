@@ -8,10 +8,7 @@ import {
   isActiveShopifyProduct,
   isOnlineStorePublishedLiveProduct,
 } from "../src/lib/catalog-taxonomy-release.js";
-import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
-import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
-import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -387,18 +384,14 @@ async function readPreviousManifest() {
 
 async function main() {
   const approval = await readApproval();
-  const knowledgeModel = await readCatalogKnowledgeModel({
-    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
-  });
-  const [catalog, collections, publications] = await Promise.all([
-    readProductCatalogPayload(dataDir),
-    fetchCollections(),
-    fetchPublications(),
-  ]);
+  const previousManifest = await readPreviousManifest();
+  // Shopify CLI's stored device-auth session is process-safe but not
+  // reliably request-safe when two child invocations start together.
+  const collections = await fetchCollections();
+  const publications = await fetchPublications();
   const byHandle = new Map(collections.map((collection) => [collection.handle, collection]));
   const onlineStorePublication = publications.find((publication) => normalize(publication.name) === "online store");
   if (!onlineStorePublication) throw new Error("Online Store publication was not found.");
-  const previousManifest = await readPreviousManifest();
   const priorMergeRows = new Map(
     asArray(previousManifest?.sourceCollections).map((row) => [row.sourceHandle, row]),
   );
@@ -435,6 +428,13 @@ async function main() {
     process.stdout.write(`${dryRun ? "Dry run" : "Apply"}: six collection merges already verified; no duplicate collection changes pending.\n`);
     return;
   }
+  const { classifyProductKnowledge } = await import("../src/lib/product-knowledge-base.js");
+  const { readCatalogKnowledgeModel } = await import("./catalog-knowledge-model-files.mjs");
+  const { readProductCatalogPayload } = await import("./product-catalog-files.mjs");
+  const knowledgeModel = await readCatalogKnowledgeModel({
+    required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
+  });
+  const catalog = await readProductCatalogPayload(dataDir);
   const localById = new Map(asArray(catalog.products).map((product) => [Number(product.id), product]));
   const productCache = new Map();
   const targetProductsCache = new Map();
@@ -445,7 +445,36 @@ async function main() {
   for (const plan of MERGE_PLAN) {
     const source = byHandle.get(plan.sourceHandle);
     const target = byHandle.get(plan.targetHandle);
-    if (!source || !target) throw new Error(`Missing merge collection ${plan.sourceHandle} or ${plan.targetHandle}.`);
+    if (!target) throw new Error(`Missing canonical merge target ${plan.targetHandle} for ${plan.sourceHandle}.`);
+    if (!source) {
+      if (target.sources?.length !== 1 || target.sources[0]?.__typename !== "CollectionConditionsSource") {
+        throw new Error(`Missing source ${plan.sourceHandle} cannot be treated as retired because target ${plan.targetHandle} has no single conditions source.`);
+      }
+      if (!targetProductsCache.has(plan.targetHandle)) {
+        targetProductsCache.set(plan.targetHandle, await fetchCollectionProducts(plan.targetHandle));
+      }
+      const targetProducts = targetProductsCache.get(plan.targetHandle);
+      rows.push({
+        sourceHandle: plan.sourceHandle,
+        targetHandle: plan.targetHandle,
+        mode: plan.mode,
+        status: "source-missing-no-op",
+        sourceProductCount: 0,
+        onlineSourceProducts: 0,
+        targetProductCountBefore: targetProducts.length,
+        sourceProductsAlreadyInTarget: 0,
+        eligibleForTarget: 0,
+        targetRuleTag: plan.targetRuleTag || null,
+        sourcePublishedToOnlineStore: false,
+        expectedTargetProductIds: [],
+        sourceId: null,
+        targetId: target.id,
+        sourceTitle: null,
+        targetTitle: target.title,
+        sourceMissing: true,
+      });
+      continue;
+    }
     const sourceProducts = await fetchCollectionProducts(plan.sourceHandle);
     if (!targetProductsCache.has(plan.targetHandle)) {
       targetProductsCache.set(plan.targetHandle, await fetchCollectionProducts(plan.targetHandle));
@@ -563,6 +592,14 @@ async function main() {
     const target = afterByHandle.get(row.targetHandle);
     const targetProducts = await fetchCollectionProducts(row.targetHandle);
     const targetIds = new Set(targetProducts.map((product) => product.id));
+    if (row.sourceMissing) {
+      if (!target?.sources?.length || target.sources.length !== 1 || target.sources[0]?.__typename !== "CollectionConditionsSource") {
+        throw new Error(`${row.sourceHandle}: retired-source no-op target readback failed; canonical target source is missing.`);
+      }
+      row.targetProductCountAfter = targetProducts.length;
+      row.targetRuleVerified = true;
+      continue;
+    }
     const missing = row.expectedTargetProductIds.filter((id) => !targetIds.has(id));
     const sourceRule = target?.sources?.length === 1 ? target.sources[0] : null;
     const unionAction = unionActions.find((action) => action.plan.sourceHandle === row.sourceHandle);
