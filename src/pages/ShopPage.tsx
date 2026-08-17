@@ -1360,7 +1360,7 @@ const ShopPage = () => {
 
               {hasSearchQuery && predictiveProducts.length ? (
                 <Reveal delayMs={120} className="mt-5">
-                  <div className="salt-section-shell rounded-[1.35rem] p-3 sm:p-4 lg:p-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
+                  <div className="salt-section-shell rounded-[1.35rem] p-3 sm:p-4 lg:p-5">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                       <div>
                         <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">
@@ -1390,13 +1390,13 @@ const ShopPage = () => {
             </>
           ) : (
             <>
-              <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5 [content-visibility:auto] [contain-intrinsic-size:auto_2400px]">
+              <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-7 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-5 xl:gap-x-7 xl:gap-y-10">
                   {visibleProducts.map((product, index) => (
                     <Reveal
                       key={product.id}
-                      delayMs={index * 35}
-                      className="mx-auto h-full w-full max-w-[11.4rem] sm:max-w-[11.8rem] lg:max-w-[12.1rem] xl:max-w-[12.35rem]"
+                      delayMs={0}
+                      className="salt-reveal-instant mx-auto h-full w-full max-w-[11.4rem] sm:max-w-[11.8rem] lg:max-w-[12.1rem] xl:max-w-[12.35rem]"
                     >
                       <ProductCard
                         product={product}

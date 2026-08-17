@@ -32,8 +32,6 @@ type ReviewTile = {
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
-const MOBILE_SECTION_CONTENT_VISIBILITY_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_1200px]";
-const MOBILE_REVIEW_CONTENT_VISIBILITY_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_1500px]";
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -412,11 +410,11 @@ const HomePage = () => {
         />
 
         {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>
-          <section className={`salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
+          <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
             <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
               {bestSellerDisplayTiles.map((product, index) => (
-                <Reveal key={`${product.handle}-${index}`} delayMs={120 + index * 50}>
+                <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
                   <ProductCard
                     product={product}
                     variant="shop"
@@ -432,11 +430,11 @@ const HomePage = () => {
         {homeCollectionSections.map((section, sectionIndex) =>
           section.products.length > 0 ? (
             <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
-              <section className={`salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
+              <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                 <SectionTitle title={section.title} to={section.to} />
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
                   {section.products.map((product, index) => (
-                    <Reveal key={`${product.handle}-${index}`} delayMs={120 + index * 50}>
+                    <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
                       <ProductCard
                         product={product}
                         variant="shop"
@@ -452,13 +450,13 @@ const HomePage = () => {
         )}
 
         <Reveal delayMs={110}>
-          <section className={`salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 ${MOBILE_SECTION_CONTENT_VISIBILITY_CLASS}`}>
+          <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <GiftBanner />
           </section>
         </Reveal>
 
         <Reveal delayMs={280}>
-          <section className={`salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 ${MOBILE_REVIEW_CONTENT_VISIBILITY_CLASS}`}>
+          <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <div className="mx-auto max-w-5xl text-center">
               <h2 className="font-display text-[clamp(1.7rem,4vw,3rem)] leading-[0.94] tracking-[-0.05em] text-foreground sm:text-[clamp(1.85rem,3.3vw,3.25rem)]">
                 What Our Customers Are Saying
