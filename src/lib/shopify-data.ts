@@ -28,6 +28,7 @@ import {
   resolveCollectionShopifyHandle,
 } from "@/lib/site-navigation";
 import {
+  getShopifyStorefrontToken,
   getRuntimeContext,
   getShopBaseOrigin,
   normalizeShopifyAssetUrl,
@@ -215,6 +216,8 @@ const SHOP_API_BASE = (() => {
 })();
 
 const SHOP_BASE = SHOP_API_BASE || SHOP_BASE_ORIGIN;
+const STOREFRONT_API_VERSION = String(import.meta.env.VITE_SHOPIFY_STOREFRONT_API_VERSION || "2026-07").trim();
+const STOREFRONT_TOKEN = getShopifyStorefrontToken();
 
 function requireShopBase(): string {
   if (!SHOP_BASE) {
@@ -465,6 +468,190 @@ function fetchThemeJson<T>(path: string): Promise<T> {
   return request;
 }
 
+type StorefrontImageNode = {
+  id?: string | null;
+  url?: string | null;
+  altText?: string | null;
+  width?: number | null;
+  height?: number | null;
+};
+
+type StorefrontVariantNode = {
+  id?: string | null;
+  title?: string | null;
+  sku?: string | null;
+  price?: { amount?: string | null } | null;
+  compareAtPrice?: { amount?: string | null } | null;
+  availableForSale?: boolean | null;
+  requiresShipping?: boolean | null;
+  image?: StorefrontImageNode | null;
+};
+
+type StorefrontProductNode = {
+  id?: string | null;
+  handle?: string | null;
+  title?: string | null;
+  descriptionHtml?: string | null;
+  vendor?: string | null;
+  productType?: string | null;
+  tags?: string[] | null;
+  createdAt?: string | null;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+  featuredImage?: StorefrontImageNode | null;
+  images?: { nodes?: StorefrontImageNode[] | null } | null;
+  variants?: { nodes?: StorefrontVariantNode[] | null } | null;
+};
+
+type StorefrontGraphqlPayload<T> = {
+  data?: T;
+  errors?: Array<{ message?: string | null }>;
+};
+
+function storefrontNumericId(value: unknown, fallback: number): number {
+  const raw = String(value || "").trim();
+  const candidate = raw.includes("/") ? raw.slice(raw.lastIndexOf("/") + 1) : raw;
+  const numeric = Number(candidate);
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function storefrontImageRecord(image: StorefrontImageNode | null | undefined, index: number): ShopifyImage | null {
+  const src = String(image?.url || "").trim();
+  if (!src) {
+    return null;
+  }
+
+  return {
+    id: storefrontNumericId(image?.id, -(index + 1)),
+    src,
+    alt: image?.altText || null,
+    width: image?.width || undefined,
+    height: image?.height || undefined,
+  };
+}
+
+function storefrontMoneyAmount(value: { amount?: string | null } | null | undefined): string {
+  const amount = Number(value?.amount);
+  return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
+}
+
+function normalizeStorefrontGraphqlProduct(node: StorefrontProductNode): ShopifyProduct {
+  const imageNodes = Array.isArray(node.images?.nodes) ? node.images.nodes : [];
+  const images = imageNodes
+    .map((image, index) => storefrontImageRecord(image, index))
+    .filter((image): image is ShopifyImage => Boolean(image));
+  const featuredImage = storefrontImageRecord(node.featuredImage, 0);
+  const normalizedImages = featuredImage && !images.some((image) => image.src === featuredImage.src)
+    ? [featuredImage, ...images]
+    : images;
+  const variants = (Array.isArray(node.variants?.nodes) ? node.variants.nodes : []).map((variant, index) => ({
+    id: storefrontNumericId(variant.id, -(index + 1)),
+    title: String(variant.title || "Default Title"),
+    price: storefrontMoneyAmount(variant.price),
+    compare_at_price: variant.compareAtPrice ? storefrontMoneyAmount(variant.compareAtPrice) : null,
+    available: variant.availableForSale !== false,
+    sku: variant.sku || undefined,
+    requires_shipping: variant.requiresShipping !== false,
+    featured_image: storefrontImageRecord(variant.image, index),
+  }));
+
+  return {
+    id: storefrontNumericId(node.id, 0),
+    title: String(node.title || ""),
+    handle: String(node.handle || ""),
+    body_html: node.descriptionHtml || "",
+    vendor: String(node.vendor || ""),
+    product_type: String(node.productType || ""),
+    tags: Array.isArray(node.tags) ? node.tags : [],
+    created_at: node.createdAt || "",
+    published_at: node.publishedAt || null,
+    updated_at: node.updatedAt || "",
+    variants,
+    images: normalizedImages,
+    image: normalizedImages[0] || null,
+  };
+}
+
+const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
+  query SaltProductByHandle($handle: String!) {
+    productByHandle(handle: $handle) {
+      id
+      handle
+      title
+      descriptionHtml
+      vendor
+      productType
+      tags
+      createdAt
+      publishedAt
+      updatedAt
+      featuredImage { id url altText width height }
+      images(first: 100) {
+        nodes { id url altText width height }
+      }
+      variants(first: 250) {
+        nodes {
+          id
+          title
+          sku
+          price { amount }
+          compareAtPrice { amount }
+          availableForSale
+          requiresShipping
+          image { id url altText width height }
+        }
+      }
+    }
+  }
+`;
+
+async function fetchStorefrontGraphql<T>(base: string, query: string, variables: Record<string, unknown>): Promise<T> {
+  if (!STOREFRONT_TOKEN) {
+    throw new Error("Shopify Storefront token is unavailable");
+  }
+
+  const response = await fetch(`${base}/api/${STOREFRONT_API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN,
+    },
+    body: JSON.stringify({ query, variables }),
+    cache: "no-store",
+    credentials: "omit",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Storefront API request failed (${response.status})`);
+  }
+
+  const payload = (await response.json()) as StorefrontGraphqlPayload<T>;
+  if (payload.errors?.length) {
+    throw new Error(payload.errors.map((error) => error.message || "GraphQL error").join("; "));
+  }
+
+  if (!payload.data) {
+    throw new Error("Storefront API returned no data");
+  }
+
+  return payload.data;
+}
+
+async function fetchProductByHandleFromStorefront(base: string, handle: string): Promise<ShopifyProduct> {
+  const payload = await fetchStorefrontGraphql<{ productByHandle?: StorefrontProductNode | null }>(
+    base,
+    PRODUCT_BY_HANDLE_QUERY,
+    { handle },
+  );
+  const product = payload.productByHandle;
+  if (!product?.id || !product.handle) {
+    throw new Error(`Storefront product not found for "${handle}"`);
+  }
+
+  return normalizeStorefrontGraphqlProduct(product);
+}
+
 async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {
   const allProducts: ShopifyProduct[] = [];
   let page = 1;
@@ -544,6 +731,15 @@ async function fetchProductByHandleFromLive(base: string, handle: string): Promi
   const normalizedHandle = String(handle || "").trim();
   if (!normalizedHandle) {
     throw new Error("Product handle is required");
+  }
+
+  if (STOREFRONT_TOKEN) {
+    try {
+      return await fetchProductByHandleFromStorefront(base, normalizedHandle);
+    } catch {
+      // Keep the public JSON endpoint as a fast compatibility fallback when a
+      // store has not enabled the requested Storefront API field/version.
+    }
   }
 
   // The JSON endpoint is the reliable public Shopify fallback. Do not reuse
@@ -1607,7 +1803,16 @@ async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct>
 
   for (const base of getLiveCatalogBases()) {
     try {
-      return normalizeProductRecord(await fetchProductByHandleFromLive(base, normalizedHandle));
+      const liveProduct = normalizeProductRecord(await fetchProductByHandleFromLive(base, normalizedHandle));
+      try {
+        const cached = await fetchProductsFromCache();
+        const cachedProduct = cached.products.find(
+          (product) => String(product.handle || "").trim().toLowerCase() === normalizedHandle,
+        );
+        return cachedProduct ? mergeProductRecords(liveProduct, cachedProduct) : liveProduct;
+      } catch {
+        return liveProduct;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);

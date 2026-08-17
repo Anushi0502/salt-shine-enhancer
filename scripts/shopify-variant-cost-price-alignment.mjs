@@ -3,7 +3,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { buildVariantCostPriceAlignmentPlan } from "../src/lib/shopify-variant-cost-pricing.js";
+import {
+  buildVariantCostPriceAlignmentPlan,
+  costProtectedMinimumPrice,
+} from "../src/lib/shopify-variant-cost-pricing.js";
 import { normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
@@ -233,6 +236,31 @@ function readbackFailures(product, updates) {
   });
 }
 
+function costProtectionFailures(product) {
+  return variantArray(product).flatMap((variant) => {
+    const cost = Number(
+      variant?.cost_per_item ??
+        variant?.cost ??
+        variant?.inventoryItem?.unitCost?.amount ??
+        variant?.inventory_item?.cost,
+    );
+    const price = Number(variant?.price);
+    const minimum = costProtectedMinimumPrice(cost, {
+      campaignCostPerOrder,
+      minContributionMargin,
+      priceFloor,
+    });
+    if (!minimum || !Number.isFinite(price) || price + 0.005 >= Number(minimum)) return [];
+    return [{
+      variantId: String(variant?.id || ""),
+      reason: "cost-campaign-target-violation",
+      costPerItem: normalizeMoney(cost),
+      expectedMinimumPrice: minimum,
+      actualPrice: normalizeMoney(price),
+    }];
+  });
+}
+
 function sleep(ms) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
@@ -360,9 +388,23 @@ async function main() {
         };
       }
     }
+    for (const product of products) {
+      failures.push(...costProtectionFailures(product).map((failure) => ({
+        handle: normalizePlainText(product?.handle),
+        ...failure,
+      })));
+    }
     manifest.mode = "verify";
     manifest.products = priorProducts.length ? priorProducts : [];
     manifest.failures = failures;
+    manifest.verification = {
+      source: "full-live cost and price invariant audit",
+      productsInspected: products.length,
+      variantsInspected: plan.summary.variantsInspected,
+      campaignCostPerOrder,
+      minContributionMargin,
+      priceFloor,
+    };
     await writeManifest(args.output, manifest);
     if (failures.length) throw new Error(`Variant cost-price verification failed for ${failures.length} variant(s)`);
     process.stdout.write(`Variant cost-price verification passed: ${prior.products.length} product group(s), zero mismatches.\n`);

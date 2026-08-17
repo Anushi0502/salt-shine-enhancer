@@ -3,6 +3,7 @@ declare global {
     SALT_THEME_ASSET_BASE?: string;
     SALT_THEME_ASSETS?: Record<string, string>;
     SALT_FINANCE_API_ORIGIN?: string;
+    SALT_SHOPIFY_STOREFRONT_TOKEN?: string;
     SALT_RUNTIME_CONTEXT?: Partial<SaltRuntimeContext>;
   }
 }
@@ -36,6 +37,7 @@ export type SaltRuntimeContext = {
   accountAddressesUrl?: string;
   accountOrderHistoryUrl?: string;
   storefrontLoginUrl?: string;
+  storefrontToken?: string;
 };
 
 const LOCAL_ASSET_PREFIXES = ["/assets/", "/src/assets/", "/favicon", "/vite.svg"];
@@ -125,6 +127,7 @@ function readRuntimeContextFromRootElement(): Partial<SaltRuntimeContext> {
     accountAddressesUrl: root.getAttribute("data-account-addresses-url") || undefined,
     accountOrderHistoryUrl: root.getAttribute("data-account-order-history-url") || undefined,
     storefrontLoginUrl: root.getAttribute("data-storefront-login-url") || undefined,
+    storefrontToken: root.getAttribute("data-storefront-token") || undefined,
   };
 }
 
@@ -147,7 +150,14 @@ function readRuntimeContextFromJsonScript(): Partial<SaltRuntimeContext> {
 }
 
 function readRuntimeContext(): SaltRuntimeContext {
-  const fromWindow = typeof window !== "undefined" ? window.SALT_RUNTIME_CONTEXT || {} : {};
+  const fromWindow =
+    typeof window !== "undefined"
+      ? {
+          ...(window.SALT_RUNTIME_CONTEXT || {}),
+          storefrontToken:
+            window.SALT_SHOPIFY_STOREFRONT_TOKEN || window.SALT_RUNTIME_CONTEXT?.storefrontToken || undefined,
+        }
+      : {};
   const fromScript = readRuntimeContextFromJsonScript();
   const fromRoot = readRuntimeContextFromRootElement();
 
@@ -216,6 +226,10 @@ export function getRuntimeContext(): SaltRuntimeContext {
 
 export function getShopBaseOrigin(): string {
   return SHOP_BASE_ORIGIN;
+}
+
+export function getShopifyStorefrontToken(): string {
+  return String(RUNTIME_CONTEXT.storefrontToken || import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN || "").trim();
 }
 
 function normalizeThemeAssetBase(input: string | null | undefined): string | null {

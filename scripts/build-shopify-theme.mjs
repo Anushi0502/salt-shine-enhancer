@@ -13,6 +13,9 @@ const financeApiOrigin = (process.env.VITE_FINANCE_API_ORIGIN || "https://salt-o
   .trim()
   .replace(/\/+$/, "");
 const shopifyAppKey = (process.env.VITE_SHOPIFY_APP_KEY || "8b71b8f5e5349a4352259e3bc6522c14").trim();
+const shopifyStorefrontToken = (
+  process.env.VITE_SHOPIFY_STOREFRONT_TOKEN || process.env.SHOPIFY_STOREFRONT_TOKEN || ""
+).trim();
 
 function resolveThemeDir() {
   const outIndex = process.argv.indexOf("--out");
@@ -682,6 +685,7 @@ const sectionLiquid = `<div
   window.SALT_THEME_BUILD = ${JSON.stringify(themeBuildStamp)};
   window.SALT_FINANCE_API_ORIGIN = ${JSON.stringify(financeApiOrigin)};
   window.SALT_SHOPIFY_APP_KEY = ${JSON.stringify(shopifyAppKey)};
+  window.SALT_SHOPIFY_STOREFRONT_TOKEN = ${JSON.stringify(shopifyStorefrontToken)};
   window.SALT_THEME_ASSET_BASE = {{ 'salt-app.js' | asset_url | split: 'salt-app.js' | first | json }};
   window.SALT_THEME_ASSETS = {
     "/brand/salt-logo.png": {{ 'brand-salt-logo.png' | asset_url | json }},
