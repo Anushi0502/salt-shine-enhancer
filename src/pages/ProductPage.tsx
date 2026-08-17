@@ -1558,5 +1558,4 @@ tune itni kharab photo li h meri
     </section>
   );
 };
-but i dont 
 export default ProductPage;
