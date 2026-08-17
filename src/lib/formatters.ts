@@ -229,6 +229,41 @@ export function productImage(product: ShopifyProduct): string | null {
   return normalizeShopifyAssetUrl(product.image?.src || product.images[0]?.src);
 }
 
+export function responsiveShopifyImageUrl(source: string | null | undefined, width: number): string {
+  const normalized = normalizeShopifyAssetUrl(source) || "";
+  if (!normalized || !Number.isFinite(width) || width <= 0) {
+    return normalized;
+  }
+
+  try {
+    const url = new URL(normalized);
+    const isShopifyImage = /cdn\.shopify\.com$/i.test(url.hostname) || url.pathname.startsWith("/cdn/shop/");
+    if (!isShopifyImage) {
+      return normalized;
+    }
+
+    url.searchParams.set("width", String(Math.round(width)));
+    return url.toString();
+  } catch {
+    return normalized;
+  }
+}
+
+export function responsiveShopifyImageSrcSet(
+  source: string | null | undefined,
+  widths: readonly number[] = [320, 480, 720],
+): string | undefined {
+  const normalized = normalizeShopifyAssetUrl(source) || "";
+  if (!normalized || !/cdn\.shopify\.com/i.test(normalized)) {
+    return undefined;
+  }
+
+  return widths
+    .filter((width) => Number.isFinite(width) && width > 0)
+    .map((width) => `${responsiveShopifyImageUrl(normalized, width)} ${Math.round(width)}w`)
+    .join(", ");
+}
+
 export function productTagList(product: ShopifyProduct): string[] {
   if (Array.isArray(product.tags)) {
     return product.tags
@@ -260,7 +295,7 @@ function trimText(input: string, maxChars: number): string {
 }
 
 function stripContentLabel(input: string): string {
-  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:\-]?\s*/i, "").trim();
+  return input.replace(/^(description|specifications?|details?|features?|notes?)\s*[:-]?\s*/i, "").trim();
 }
 
 function primaryTitleSegment(input: string): string {

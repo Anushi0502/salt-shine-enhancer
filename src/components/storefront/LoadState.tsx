@@ -60,15 +60,16 @@ const StateShell = ({ title, subtitle, action, tone, icon, showSkeleton = false 
   </section>
 );
 
-export const LoadingState = ({ title, subtitle, action }: LoadStateProps) => (
-  <StateShell
-    title={title}
-    subtitle={subtitle}
-    action={action}
-    tone="loading"
-    icon={<Loader2 className="h-5 w-5 animate-spin" />}
-    showSkeleton
-  />
+export const LoadingState = ({ title, subtitle }: LoadStateProps) => (
+  <div
+    role="status"
+    aria-live="polite"
+    aria-label={[title, subtitle].filter(Boolean).join(". ")}
+    className="mx-auto flex min-h-24 items-center justify-center px-4 py-8"
+  >
+    <Loader2 className="h-5 w-5 animate-spin text-primary/70" aria-hidden="true" />
+    <span className="sr-only">{title}{subtitle ? `. ${subtitle}` : ""}</span>
+  </div>
 );
 
 export const ErrorState = ({ title, subtitle, action }: LoadStateProps) => (

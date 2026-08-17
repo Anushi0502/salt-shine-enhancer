@@ -112,6 +112,8 @@ const HomeHero = ({ featured, leadCollection, slides = [], reviewSummaries = {} 
                     src={normalizeShopifyAssetUrl(activeSlide.image) || fallbackHeroImage}
                     alt={activeSlide.alt}
                     loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                     className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.01]"
                   />
                 </div>
@@ -161,6 +163,8 @@ const HomeHero = ({ featured, leadCollection, slides = [], reviewSummaries = {} 
                 src={heroImage}
                 alt={leadCollection?.title || "Featured collection"}
                 loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center"
               />
               <div className="absolute inset-0 bg-[linear-gradient(90deg,hsl(var(--background)/0.98)_0%,hsl(var(--background)/0.92)_30%,hsl(var(--background)/0.62)_56%,hsl(var(--background)/0.16)_76%,hsl(var(--background)/0.04)_100%)]" />

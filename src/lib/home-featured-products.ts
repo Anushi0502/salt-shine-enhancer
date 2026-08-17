@@ -91,7 +91,9 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
   try {
     const url = resolveThemeAsset(HOME_FEATURED_PRODUCTS_PATH);
-    const response = await fetch(url, { cache: "no-store" });
+    // Revalidate every visit for fresh merchandising while allowing Shopify's
+    // CDN/browser cache to satisfy unchanged snapshots with a 304 response.
+    const response = await fetch(url, { cache: "no-cache" });
 
     if (!response.ok || !/json/i.test(response.headers.get("content-type") || "")) {
       throw new Error("Catalog-backed home products are unavailable");

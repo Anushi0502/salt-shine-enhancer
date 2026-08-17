@@ -47,7 +47,9 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
   try {
     const response = await fetch(resolveThemeAsset("/data/home-collection-products.json"), {
-      cache: "no-store",
+      // Keep homepage merchandising realtime, but let unchanged Shopify assets
+      // use conditional requests instead of downloading the same JSON again.
+      cache: "no-cache",
     });
     if (!response.ok) throw new Error("Homepage collection products are unavailable");
     return (await response.json()) as HomeCollectionProductsPayload;

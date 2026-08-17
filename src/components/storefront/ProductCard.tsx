@@ -9,6 +9,8 @@ import {
   formatMoney,
   minPrice,
   productImage,
+  responsiveShopifyImageSrcSet,
+  responsiveShopifyImageUrl,
 } from "@/lib/formatters";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
@@ -83,6 +85,8 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   const compare = compareAt(product);
   const discountPercent = compare > min ? Math.round(((compare - min) / compare) * 100) : 0;
   const image = productImage(product);
+  const cardImage = responsiveShopifyImageUrl(image, 720);
+  const cardImageSrcSet = responsiveShopifyImageSrcSet(image);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
   const minimumQuantity = getMinimumProductQuantity(
     product.handle,
@@ -131,7 +135,9 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
             {image ? (
               <div className="aspect-square overflow-hidden">
                 <img
-                  src={image}
+                  src={cardImage}
+                  srcSet={cardImageSrcSet}
+                  sizes="(min-width: 1280px) 17rem, (min-width: 768px) 30vw, 50vw"
                   alt={product.title}
                   loading="lazy"
                   decoding="async"
@@ -240,7 +246,9 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <div className="relative aspect-square w-full overflow-hidden">
             <div className="salt-category-scroll-track h-full w-full">
               <img
-                src={image}
+                src={cardImage}
+                srcSet={cardImageSrcSet}
+                sizes="(min-width: 1280px) 17rem, (min-width: 768px) 30vw, 50vw"
                 alt={product.title}
                 loading="lazy"
                 decoding="async"
