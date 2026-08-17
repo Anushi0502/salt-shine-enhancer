@@ -132,7 +132,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   };
 
   const renderCardActions = () => (
-    <div className="mt-4 grid grid-cols-2 gap-2">
+    <div className={`mt-4 grid gap-2 ${canQuickAdd ? "grid-cols-2" : "grid-cols-1"}`}>
       {canQuickAdd ? (
         <button
           type="button"
@@ -140,18 +140,11 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           disabled={isAddingToCart || quickAddVariant?.available === false}
           aria-busy={isAddingToCart ? "true" : "false"}
           className="salt-primary-cta inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-white transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50"
-        >
+          >
           <ShoppingBag className="h-3.5 w-3.5" />
           {isAddingToCart ? "Adding…" : quickAddVariant?.available === false ? "Unavailable" : "Add to cart"}
         </button>
-      ) : (
-        <Link
-          to={`/products/${product.handle}`}
-          className="salt-primary-cta inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-white transition hover:-translate-y-[1px]"
-        >
-          Choose options
-        </Link>
-      )}
+      ) : null}
       <Link
         to={`/products/${product.handle}`}
         className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border/70 bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-primary transition hover:-translate-y-[1px] hover:border-primary/30"
