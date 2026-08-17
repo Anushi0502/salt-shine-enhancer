@@ -1,10 +1,11 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "url";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const workspaceRoot = process.cwd();
+  const workspaceRoot = path.dirname(fileURLToPath(import.meta.url));
   const env = loadEnv(mode, workspaceRoot, "");
   const fallbackShopBase = "https://0309d3-72.myshopify.com";
   const rawShopBase = env.VITE_SALT_SHOP_URL || env.VITE_SHOPIFY_STOREFRONT_URL || fallbackShopBase;
@@ -48,7 +49,14 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
+    root: workspaceRoot,
     cacheDir: path.resolve(workspaceRoot, ".vite"),
+    build: {
+      outDir: path.resolve(workspaceRoot, "dist"),
+      rollupOptions: {
+        input: path.resolve(workspaceRoot, "index.html"),
+      },
+    },
     optimizeDeps: {
       include: [
         "react",

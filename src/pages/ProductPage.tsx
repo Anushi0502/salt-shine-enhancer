@@ -1232,7 +1232,7 @@ const ProductPage = () => {
                     </ul>
                   ) : null}
                 </section>
-
+tune itni kharab photo li h meri
                 <section className="rounded-[1.45rem] border border-border/80 bg-background/92 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
