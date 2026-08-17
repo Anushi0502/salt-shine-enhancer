@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { isNativeApp } from "@/lib/mobile";
 import {
   compareAt,
@@ -16,11 +17,17 @@ import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
-import { useProductByHandle } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 import ProductRating from "@/components/storefront/ProductRating";
 
 export type ProductCardVariant = "default" | "dense" | "shop";
+
+let shopifyDataModule: Promise<typeof import("@/lib/shopify-data")> | null = null;
+
+function loadLiveProduct(handle: string): Promise<ShopifyProduct> {
+  shopifyDataModule ??= import("@/lib/shopify-data");
+  return shopifyDataModule.then(({ loadProductByHandle }) => loadProductByHandle(handle));
+}
 
 type ProductCardProps = {
   product: ShopifyProduct;
@@ -56,7 +63,17 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return () => observer.disconnect();
   }, []);
 
-  const { data: liveProduct } = useProductByHandle(snapshotProduct.handle, shouldRefreshLive, true);
+  const normalizedHandle = String(snapshotProduct.handle || "").trim().toLowerCase();
+  const { data: liveProduct } = useQuery({
+    queryKey: ["product-card-live", normalizedHandle],
+    queryFn: () => loadLiveProduct(normalizedHandle),
+    enabled: shouldRefreshLive && Boolean(normalizedHandle),
+    staleTime: 15_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
+  });
   const product = useMemo<ShopifyProduct>(() => {
     if (!liveProduct) {
       return snapshotProduct;

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { warmProductByHandle } from "@/lib/shopify-data";
 
 let productPageModule: Promise<unknown> | null = null;
+let shopifyDataModule: Promise<typeof import("@/lib/shopify-data")> | null = null;
 
 function productHandleFromEvent(event: Event): string {
   const target = event.target;
@@ -29,7 +29,10 @@ function warmProductRoute(event: Event) {
   }
 
   productPageModule ??= import("@/pages/ProductPage");
-  warmProductByHandle(handle);
+  shopifyDataModule ??= import("@/lib/shopify-data");
+  void shopifyDataModule.then(({ warmProductByHandle }) => {
+    warmProductByHandle(handle);
+  });
 }
 
 // One delegated listener accelerates every current and future product card.
