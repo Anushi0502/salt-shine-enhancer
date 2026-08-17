@@ -12,6 +12,11 @@ const defaultOutputPath = resolve(rootDir, "output", "shopify-variant-cost-price
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "variant-cost-price-alignment" });
 const tolerance = Math.max(0, Number(process.env.SALT_VARIANT_COST_TOLERANCE || 2));
 const priceFloor = Math.max(0, Number(process.env.SALT_CATALOG_PRICE_FLOOR || 35));
+const campaignCostPerOrder = Math.max(0, Number(process.env.SALT_VARIANT_COST_CAMPAIGN_COST_PER_ORDER || 16));
+const minContributionMargin = Math.min(
+  0.99,
+  Math.max(0, Number(process.env.SALT_VARIANT_COST_MIN_CONTRIBUTION_MARGIN || 0.3)),
+);
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_VARIANT_COST_PAGE_SIZE || 100)));
 const readbackAttempts = Math.max(1, Number(process.env.SALT_VARIANT_COST_READBACK_ATTEMPTS || 5));
 const applyConcurrency = Math.max(1, Math.min(4, Number(process.env.SALT_VARIANT_COST_APPLY_CONCURRENCY || 2)));
@@ -172,10 +177,13 @@ function manifestForPlan(plan, mode) {
       priceFloor,
       readbackAttempts,
       applyConcurrency,
-      targetPrice: "highest current variant price in each same-product cost group to avoid lowering any price",
+      targetPrice: "highest current variant price in each same-product cost group, or the cost-plus-campaign contribution target, whichever is higher; prices are never lowered",
       quantityTiers: "held outside automatic alignment",
       compareAt: "preserve if above target; clear if it would become invalid after the price increase",
       sourceOfTruth: "live Shopify variant inventoryItem.unitCost and price",
+      campaignCostPerOrder,
+      minContributionMargin,
+      contributionFormula: "max(price floor, ceil((cost per item + campaign cost per order) / (1 - minimum contribution margin), cents))",
     },
     summary: plan.summary,
     products,
@@ -311,7 +319,12 @@ async function readPriorApplyManifest(path) {
 async function main() {
   const args = parseArgs(process.argv);
   const products = await fetchActiveProducts();
-  const plan = buildVariantCostPriceAlignmentPlan(products, { tolerance, priceFloor });
+  const plan = buildVariantCostPriceAlignmentPlan(products, {
+    tolerance,
+    priceFloor,
+    campaignCostPerOrder,
+    minContributionMargin,
+  });
   plan.products = products;
   const manifest = manifestForPlan(plan, args.mode);
   if (args.mode === "apply") {

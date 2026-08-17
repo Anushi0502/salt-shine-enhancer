@@ -15,7 +15,10 @@ function run(label, command, args) {
     stdio: "inherit",
   });
   if (result.status !== 0) {
-    throw new Error(`${label} failed; Shopify SEO apply was not started.`);
+    const detail = result.signal
+      ? `signal ${result.signal}`
+      : `exit code ${result.status ?? "unknown"}`;
+    throw new Error(`${label} failed with ${detail}; Shopify SEO apply was not started.`);
   }
 }
 

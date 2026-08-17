@@ -23,7 +23,6 @@ import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
-import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE } from "@/lib/promo-banners";
 import {
   getCollectionByHandle,
   getSubcollectionByHandle,
@@ -545,16 +544,13 @@ const ShopPage = () => {
       }),
     [collections, selectedCollection, typeFilter, routeCollectionAlias, routeSubcollectionAlias, activeCollectionParam],
   );
-  const isWeekendSaleBanner = searchParams.get("promo") === "weekend-sale";
-  const selectedCollectionImage = isWeekendSaleBanner ? WEEKEND_SALE_BANNER_IMAGE : bannerImageSelection.image;
+  const selectedCollectionImage = bannerImageSelection.image;
   const selectedCollectionImageAlt =
-    isWeekendSaleBanner
-      ? WEEKEND_SALE_BANNER_ALT
-      : bannerImageSelection.collection?.title ||
-        curatedSubcollection?.title ||
-        curatedCollection?.title ||
-        selectedCollection?.title ||
-        "Collection preview";
+    bannerImageSelection.collection?.title ||
+    curatedSubcollection?.title ||
+    curatedCollection?.title ||
+    selectedCollection?.title ||
+    "Collection preview";
 
   const canUseLiveCollectionTotal = Boolean(
     liveCollectionPageProductIds?.length &&

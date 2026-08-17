@@ -1,8 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Heart, ShoppingBag } from "lucide-react";
-import { useCart } from "@/lib/cart";
+import { Heart } from "lucide-react";
 import { isNativeApp } from "@/lib/mobile";
 import {
   compareAt,
@@ -74,8 +73,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
       variants: liveProduct.variants.length ? liveProduct.variants : snapshotProduct.variants,
     };
   }, [liveProduct, snapshotProduct]);
-  const { addItem } = useCart();
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { isWishlisted, toggleItem } = useWishlist();
   const reviewSummaryProvided = reviewSummary !== undefined;
   const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
@@ -104,56 +101,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         }
       : null;
   const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
-  const quickAddVariant = product.variants.length === 1 ? product.variants[0] : undefined;
-  const canQuickAdd = Boolean(quickAddVariant?.id);
-
-  const handleQuickAdd = () => {
-    if (!quickAddVariant?.id || isAddingToCart) {
-      return;
-    }
-
-    setIsAddingToCart(true);
-    addItem(
-      {
-        id: product.id,
-        handle: product.handle,
-        title: product.title,
-        image: image || "",
-        unitPrice: min,
-        shopifyVariantId: quickAddVariant.id,
-        productType: product.product_type,
-        minimumQuantity,
-      },
-      1,
-      { openDrawer: true },
-    );
-    toast.success("Added to cart", { description: title });
-    window.setTimeout(() => setIsAddingToCart(false), 350);
-  };
-
-  const renderCardActions = () => (
-    <div className={`mt-4 grid gap-2 ${canQuickAdd ? "grid-cols-2" : "grid-cols-1"}`}>
-      {canQuickAdd ? (
-        <button
-          type="button"
-          onClick={handleQuickAdd}
-          disabled={isAddingToCart || quickAddVariant?.available === false}
-          aria-busy={isAddingToCart ? "true" : "false"}
-          className="salt-primary-cta inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-white transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-          <ShoppingBag className="h-3.5 w-3.5" />
-          {isAddingToCart ? "Adding…" : quickAddVariant?.available === false ? "Unavailable" : "Add to cart"}
-        </button>
-      ) : null}
-      <Link
-        to={`/products/${product.handle}`}
-        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border/70 bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-primary transition hover:-translate-y-[1px] hover:border-primary/30"
-      >
-        <ArrowUpRight className="h-3.5 w-3.5" />
-        View details
-      </Link>
-    </div>
-  );
 
   if (isShop) {
     return (
@@ -249,7 +196,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 Minimum quantity: {minimumQuantity}
               </p>
             ) : null}
-            {renderCardActions()}
           </div>
         </div>
       </article>
@@ -347,7 +293,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <ProductRating summary={displaySummary} compact />
         </div>
 
-        {renderCardActions()}
       </div>
     </article>
   );

@@ -1667,15 +1667,6 @@ async function verifyProducts(plannedProducts) {
       if (!actual || actualMediaId !== update.mediaId) {
         productFailures.push({ handle: product.handle, variantId: update.id, expected: update.mediaId, actual: actualMediaId });
       }
-      if (actual && update.expectedPrice && String(actual.price || "") !== update.expectedPrice) {
-        productFailures.push({
-          handle: product.handle,
-          variantId: update.id,
-          reason: "price-readback-mismatch",
-          expectedPrice: update.expectedPrice,
-          actualPrice: String(actual.price || ""),
-        });
-      }
     }
     return productFailures;
   });
@@ -1729,7 +1720,7 @@ async function main() {
       supervisedVisionEnabled: args.vision,
       forcedGuessesEnabled: args.forceGuesses,
       visualVerificationModel: args.vision ? visionModel : null,
-      priceReadback: "compare every changed variant against the frozen catalog price",
+      priceReadback: "price floor only; exact variant prices and compare-at values are verified by the independent cost-price alignment gate",
       deterministicEvidencePrecedesVision: true,
       currentShopifyVariantMediaUsedAsHintOnly: true,
       planFingerprint: fingerprint,

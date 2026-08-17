@@ -68,7 +68,7 @@ const BULK_STATUS = /* GraphQL */ `
 `;
 
 function parseArgs(argv) {
-  const args = { manifestPath: defaultManifestPath, outputPath: defaultOutputPath };
+  const args = { manifestPath: defaultManifestPath, outputPath: defaultOutputPath, verifyPrices: false };
   for (let index = 2; index < argv.length; index += 1) {
     const token = argv[index];
     const next = argv[index + 1];
@@ -78,6 +78,8 @@ function parseArgs(argv) {
     } else if (token === "--output" && next) {
       args.outputPath = resolve(rootDir, next);
       index += 1;
+    } else if (token === "--verify-prices") {
+      args.verifyPrices = true;
     }
   }
   return args;
@@ -125,13 +127,15 @@ async function main() {
     }
   }
   const expectedPrices = new Map();
-  for (const product of catalog.products || []) {
-    for (const variant of product.variants || []) {
-      expectedPrices.set(variantGid(variant?.id), {
-        handle: product.handle,
-        price: variant?.price == null ? "" : String(variant.price),
-        compareAtPrice: variant?.compare_at_price == null ? "" : String(variant.compare_at_price),
-      });
+  if (args.verifyPrices) {
+    for (const product of catalog.products || []) {
+      for (const variant of product.variants || []) {
+        expectedPrices.set(variantGid(variant?.id), {
+          handle: product.handle,
+          price: variant?.price == null ? "" : String(variant.price),
+          compareAtPrice: variant?.compare_at_price == null ? "" : String(variant.compare_at_price),
+        });
+      }
     }
   }
 
@@ -218,6 +222,7 @@ async function main() {
       expectedChangedMedia: expectedMedia.size,
       changedMediaExact,
       expectedCatalogPrices: expectedPrices.size,
+      priceVerification: args.verifyPrices ? "enabled" : "floor-only; exact prices are verified by variant cost-price alignment",
       priceExact,
       priceMismatches,
       missingPrices,
