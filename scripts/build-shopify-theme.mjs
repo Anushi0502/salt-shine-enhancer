@@ -295,16 +295,11 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
     {% endif %}
     {% if request.page_type == 'product' %}
-      {% if product.featured_image %}
-        <link
-          rel="preload"
-          as="image"
-          href="{{ product.featured_image | image_url: width: 960 }}"
-          imagesrcset="{{ product.featured_image | image_url: width: 640 }} 640w, {{ product.featured_image | image_url: width: 960 }} 960w, {{ product.featured_image | image_url: width: 1280 }} 1280w"
-          imagesizes="(min-width: 1024px) 52vw, 100vw"
-          fetchpriority="high"
-        >
-      {% endif %}
+      {%- comment -%}
+        The React PDP selects the live featured image and its responsive URL after
+        the product payload arrives. Preloading product.featured_image here can
+        fetch a different CDN variant and creates a wasted-preload warning.
+      {%- endcomment -%}
       <link rel="preconnect" href="https://magecomp.us" crossorigin>
       <link rel="dns-prefetch" href="//magecomp.us">
       <script>

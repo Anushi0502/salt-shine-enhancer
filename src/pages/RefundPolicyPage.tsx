@@ -5,7 +5,7 @@ const RefundPolicyPage = () => {
     <PolicyPageView
       policyKey="refund"
       actions={[
-        { to: "/contact", label: "Start return request", primary: true },
+        { to: "/pages/contact-us", label: "Start return request", primary: true },
         { to: "/policies/shipping-policy", label: "Shipping policy" },
         { to: "/policies/privacy-policy", label: "Privacy policy" },
       ]}

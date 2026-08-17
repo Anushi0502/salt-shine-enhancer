@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Facebook, Instagram, Loader2, Youtube } from "lucide-react";
+import { Facebook, Instagram, Youtube } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import {
   SITE_FOOTER_COMPANY_LINKS,
@@ -190,9 +190,6 @@ const MainFooter = () => {
   const { data: shopPayload, isFetching, dataUpdatedAt } = useShop();
   const shopName = shopPayload?.shop?.name || "SALT";
   const [emailValue, setEmailValue] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-  const [subscribing, setSubscribing] = useState(false);
-  const emailInputRef = useRef<HTMLInputElement>(null);
 
   const syncSecondsAgo = dataUpdatedAt ? Math.floor((Date.now() - dataUpdatedAt) / 1000) : null;
   const isLiveStale = syncSecondsAgo !== null && syncSecondsAgo > 120;
@@ -201,21 +198,6 @@ const MainFooter = () => {
     : isLiveStale
       ? `${syncSecondsAgo}s ago`
       : "Live";
-
-  const handleSubscribe = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      const email = emailValue.trim();
-      if (!email) return;
-
-      setSubscribing(true);
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setSubscribed(true);
-      setSubscribing(false);
-      setEmailValue("");
-    },
-    [emailValue],
-  );
 
   return (
     <footer className="mt-6 border-t border-white/10 bg-[linear-gradient(180deg,hsl(var(--foreground)/0.98),hsl(var(--salt-ink)/0.95))] text-white sm:mt-8">
@@ -348,36 +330,29 @@ const MainFooter = () => {
                 <p className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-white/65">
                   Newsletter
                 </p>
-                {subscribed ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-green-400">
-                    <Check className="h-3.5 w-3.5" />
-                    Thanks for subscribing!
-                  </p>
-                ) : (
-                  <form onSubmit={handleSubscribe} className="mt-2 flex gap-2">
+                <form action="/contact#contact_form" method="post" acceptCharset="UTF-8" className="mt-2 flex gap-2">
+                  <input type="hidden" name="form_type" value="customer" />
+                  <input type="hidden" name="utf8" value="✓" />
+                  <input type="hidden" name="contact[tags]" value="newsletter" />
                     <input
-                      ref={emailInputRef}
                       type="email"
+                      name="contact[email]"
                       value={emailValue}
                       onChange={(e) => setEmailValue(e.target.value)}
                       placeholder="your@email.com"
+                      autoComplete="email"
                       required
                       aria-label="Email for newsletter"
                       className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/15"
                     />
                     <button
                       type="submit"
-                      disabled={subscribing || !emailValue.trim()}
+                      disabled={!emailValue.trim()}
                       className="inline-flex shrink-0 items-center justify-center rounded-lg bg-white/10 px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {subscribing ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        "Subscribe"
-                      )}
+                      Subscribe
                     </button>
                   </form>
-                )}
               </div>
             </div>
           </div>

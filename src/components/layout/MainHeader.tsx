@@ -8,6 +8,7 @@ import {
   Menu,
   Search,
   ShoppingCart,
+  X,
 } from "lucide-react";
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
@@ -23,7 +24,7 @@ import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
 import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
-import { Sheet, SheetClose, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { WEEKEND_SALE_BANNER_ALT, WEEKEND_SALE_BANNER_IMAGE, WEEKEND_SALE_ROUTE } from "@/lib/promo-banners";
 
 const HeaderSearchResults = lazy(() => import("@/components/layout/HeaderSearchResults"));
@@ -137,7 +138,7 @@ const utilityNavItems: HeaderNavItem[] = [
   },
   {
     label: "Support",
-    to: "/contact",
+    to: "/pages/contact-us",
     kind: "link",
     isActive: (pathname) => pathname === "/contact" || pathname.startsWith("/pages/contact"),
   },
@@ -219,27 +220,42 @@ function HeaderMenuDrawer({
   }, [open]);
 
   return (
-    <Sheet modal={false} open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      {open ? (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() => onOpenChange(false)}
+          className="fixed inset-0 z-[55] bg-foreground/15 backdrop-blur-[1px]"
+        />
+      ) : null}
       <SheetContent
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="h-[100dvh] max-h-[100dvh] w-[min(16.5rem,calc(100vw-0.75rem))] max-w-[min(16.5rem,calc(100vw-0.75rem))] overscroll-contain overflow-y-auto border-r border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.99),hsl(var(--card)/0.95))] p-0 text-foreground shadow-[0_28px_52px_-36px_rgba(15,23,42,0.2)] lg:w-[min(17.5rem,calc(100vw-1rem))] lg:max-w-[min(17.5rem,calc(100vw-1rem))] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary/30 [&::-webkit-scrollbar-track]:bg-transparent"
+        className="isolate z-[60] flex h-[100dvh] max-h-[100dvh] w-[min(19rem,calc(100vw-0.75rem))] max-w-[min(19rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.99),hsl(var(--card)/0.95))] p-0 pt-[env(safe-area-inset-top)] text-foreground shadow-[0_28px_52px_-36px_rgba(15,23,42,0.28)] [&>button:last-child]:right-3 [&>button:last-child]:top-[calc(env(safe-area-inset-top)+0.7rem)] [&>button:last-child]:z-30 [&>button:last-child]:inline-flex [&>button:last-child]:h-11 [&>button:last-child]:w-11 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:border [&>button:last-child]:border-white/20 [&>button:last-child]:bg-white/10 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:backdrop-blur [&>button:last-child]:hover:bg-white/20 lg:w-[min(17.5rem,calc(100vw-1rem))] lg:max-w-[min(17.5rem,calc(100vw-1rem))]"
       >
-        <div className="flex h-full min-h-0 flex-col">
+        <SheetTitle className="sr-only">Browse SALT</SheetTitle>
+        <SheetDescription className="sr-only">
+          Browse collections, account tools, and support links.
+        </SheetDescription>
+        <div className="flex min-h-0 flex-1 flex-col">
           {/* Account Section - Enhanced gradient with gold/blue accents */}
-          <div className="relative overflow-hidden border-b border-border/70 bg-[linear-gradient(135deg,hsl(var(--salt-navy)/0.97),hsl(225deg_42%_18%/0.95))] px-2.5 py-2 sm:px-3 sm:py-2.5">
+          <div className="relative shrink-0 overflow-hidden border-b border-border/70 bg-[linear-gradient(135deg,hsl(var(--salt-navy)/0.97),hsl(225deg_42%_18%/0.95))] px-2.5 pb-3 pt-3 sm:px-3 sm:pb-3.5">
             {/* Subtle accent glow */}
             <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[radial-gradient(circle,hsl(var(--salt-gold)/0.12),transparent_70%)]" />
             <div className="pointer-events-none absolute -bottom-6 -left-6 h-16 w-16 rounded-full bg-[radial-gradient(circle,hsl(var(--salt-blue)/0.1),transparent_70%)]" />
+            <p className="relative mb-2 text-[0.58rem] font-bold uppercase tracking-[0.2em] text-white/60">
+              Browse SALT
+            </p>
             <SheetClose asChild>
               <a
                 href={accountHref}
-                className="relative flex min-w-0 items-center gap-2.5 rounded-lg pr-6 text-left transition hover:opacity-90"
+                className="relative flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl pr-14 text-left transition hover:opacity-90"
                 aria-label={accountRoutes.isLoggedIn && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/18 bg-[linear-gradient(135deg,hsl(var(--salt-paper)/0.95),hsl(var(--salt-paper)/0.85))] text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_hsl(0_0%_100%/0.5)]">
-                  <CircleUserRound className="h-4 w-4" />
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/18 bg-[linear-gradient(135deg,hsl(var(--salt-paper)/0.95),hsl(var(--salt-paper)/0.85))] text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_hsl(0_0%_100%/0.5)]">
+                  <CircleUserRound className="h-4.5 w-4.5" />
                 </span>
                 <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.24)]">
                   {accountLabel}
@@ -249,7 +265,7 @@ function HeaderMenuDrawer({
           </div>
 
           {/* Sale Banner - Subtle inner shadow for depth */}
-          <div className="px-2.5 pt-2.5 sm:px-3">
+          <div className="shrink-0 px-2.5 pt-2.5 sm:px-3">
             <SheetClose asChild>
               <Link
                 to={WEEKEND_SALE_ROUTE}
@@ -276,8 +292,8 @@ function HeaderMenuDrawer({
           </div>
 
           {/* Collections Section */}
-          <div className="grid min-h-0 flex-1 gap-2 px-2.5 py-2.5 sm:px-3">
-            <section className="flex min-h-0 flex-1 flex-col border-b border-border/70 pb-2">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-2.5 sm:px-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary/30 [&::-webkit-scrollbar-track]:bg-transparent">
+            <section className="flex flex-col border-b border-border/70 pb-2">
               {/* Section header with decorative elements */}
               <div className="relative flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -297,7 +313,7 @@ function HeaderMenuDrawer({
               </div>
 
               {/* Collection items - visible on mobile/tablet */}
-              <div className="mt-2.5 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto pb-4 pr-1 lg:hidden">
+              <div className="mt-2.5 grid content-start gap-1.5 pb-4 pr-1 lg:hidden">
                 {SITE_COLLECTIONS.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
                   const activeSubcollection = collection.subcollections.find((subcollection) =>
@@ -321,7 +337,7 @@ function HeaderMenuDrawer({
                             current === collection.handle ? null : collection.handle,
                           );
                         }}
-                        className="group flex w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
+                        className="group flex min-h-11 w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
                         aria-expanded={isExpanded}
                         aria-controls={`salt-menu-subcollections-${collection.handle}`}
                       >
@@ -345,7 +361,7 @@ function HeaderMenuDrawer({
                       <div
                         id={`salt-menu-subcollections-${collection.handle}`}
                         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                          isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                          isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
                         }`}
                       >
                         <div className="px-2.5 pb-2.5">
@@ -418,7 +434,7 @@ function HeaderMenuDrawer({
               </div>
             </section>
 
-            <div className="mt-auto rounded-[1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--card)/0.92))] p-2.5 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.18)]">
+            <div className="mt-2 rounded-[1rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.98))] p-2.5 pb-[calc(0.65rem+env(safe-area-inset-bottom))] shadow-[0_-16px_30px_-26px_rgba(15,23,42,0.3)]">
               <div className="flex items-center justify-between gap-2 px-0.5 pb-2">
                 <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   Quick links
@@ -435,7 +451,7 @@ function HeaderMenuDrawer({
                     <SheetClose asChild key={label}>
                       <Link
                         to={to}
-                        className={`flex items-center justify-between rounded-[0.95rem] border px-3 py-2.5 text-left transition ${
+                        className={`flex min-h-11 items-center justify-between rounded-[0.95rem] border px-3 py-2.5 text-left transition ${
                           active
                             ? "border-primary/25 bg-primary/8 text-foreground shadow-[0_12px_20px_-18px_rgba(15,23,42,0.18)]"
                             : "border-border/70 bg-background/92 text-foreground/92 hover:border-primary/20 hover:bg-background"
@@ -561,6 +577,15 @@ const MainHeader = () => {
     setMenuOpen(true);
   };
 
+  const toggleMenu = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+
+    openMenu();
+  };
+
   const rememberSearchQuery = (query: string) => {
     const storage = getBrowserStorage();
     if (!query || !storage) {
@@ -635,12 +660,17 @@ const MainHeader = () => {
           <div className="ml-auto flex items-center gap-2 md:hidden">
             <button
               type="button"
-              onClick={openMenu}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/92 text-foreground shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition hover:bg-background"
-              aria-label="Open menu"
+              onClick={toggleMenu}
+              className={`touch-manipulation inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_10px_20px_-16px_rgba(15,23,42,0.16)] transition ${
+                menuOpen
+                  ? "border-primary/30 bg-primary text-primary-foreground"
+                  : "border-border/70 bg-background/92 text-foreground hover:bg-background"
+              }`}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
+              aria-controls="salt-header-menu"
             >
-              <Menu className="h-4.5 w-4.5" />
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
             <Link
@@ -860,7 +890,7 @@ const MainHeader = () => {
             </Link>
 
             <Link
-              to="/contact"
+              to="/pages/contact-us"
               className={utilityNavItemClass(isActiveNavItem(supportNavItem, location.pathname, location.search))}
               aria-current={isActiveNavItem(supportNavItem, location.pathname, location.search) ? "page" : undefined}
             >
@@ -869,7 +899,7 @@ const MainHeader = () => {
           </nav>
         </div>
       </header>
-      {menuOpen ? <HeaderMenuDrawer open onOpenChange={setMenuOpen} /> : null}
+      <HeaderMenuDrawer open={menuOpen} onOpenChange={setMenuOpen} />
     </>
   );
 };

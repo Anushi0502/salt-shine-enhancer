@@ -8,6 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useDocumentMetadata } from "@/components/support/useDocumentMetadata";
 import { useEditorialPage } from "@/lib/shopify-data";
 import { getRuntimeContext } from "@/lib/theme-assets";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
+import { buildFaqStructuredData } from "@/lib/structured-data";
 
 const runtimeContext = getRuntimeContext();
 const supportEmail = runtimeContext.supportEmail || "support@saltonlinestore.com";
@@ -40,7 +42,7 @@ const faqRoutes = [
     description: "Send a message when the answer needs a person.",
     badge: "Help",
     icon: PhoneCall,
-    to: "/contact",
+    to: "/pages/contact-us",
   },
 ] as const;
 
@@ -115,9 +117,14 @@ const FaqPage = () => {
   const stats = page.stats || [];
   const chips = page.chips || [];
   const faqCountLabel = `${page.faqs?.length || 0} answers`;
+  const faqStructuredData = buildFaqStructuredData(
+    page.faqs,
+    typeof window === "undefined" ? "" : window.location.origin,
+  );
 
   return (
     <section className="mx-auto w-[min(1240px,calc(100%_-_20px))] pb-16 pt-4 sm:pb-18 sm:pt-5">
+      <SeoMetadata structuredData={[faqStructuredData]} scope="faq-page" />
       <InnerBreadcrumbs items={breadcrumbs} />
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(19rem,0.88fr)]">
@@ -315,7 +322,7 @@ const FaqPage = () => {
           </div>
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Contact us", to: "/contact", primary: true },
+              { label: "Contact us", to: "/pages/contact-us", primary: true },
               { label: "Track order", to: "/track-order" },
               { label: "Resource Hub", to: "/shop?resource=hub" },
             ].map(renderAction)}

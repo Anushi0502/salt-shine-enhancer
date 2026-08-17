@@ -224,7 +224,7 @@ function buildCollectionsIndexPageContent(): EditorialPageContent {
     actions: [
       { label: "Resource Hub", to: "/shop?resource=hub", primary: true },
       { label: "Search the catalog", to: "/shop" },
-      { label: "Contact support", to: "/contact" },
+      { label: "Contact support", to: "/pages/contact-us" },
     ],
   };
 }
@@ -361,7 +361,7 @@ function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): 
     return [
       { label: "Browse the guides", to: "/shop?resource=hub", primary: true },
       { label: "Shop the catalog", to: "/shop" },
-      { label: "Contact us", to: "/contact" },
+      { label: "Contact us", to: "/pages/contact-us" },
     ];
   }
 
@@ -369,7 +369,7 @@ function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): 
   return [
     { label: `Shop ${collectionTitle || "collection"}`, to: collectionRoute, primary: true },
     { label: "Resource Hub", to: "/shop?resource=hub" },
-    { label: "Contact us", to: "/contact" },
+    { label: "Contact us", to: "/pages/contact-us" },
   ];
 }
 
@@ -614,7 +614,7 @@ function buildFaqPageContent(): EditorialPageContent {
       },
     ],
     actions: [
-      { label: "Contact Us", to: "/contact", primary: true },
+      { label: "Contact Us", to: "/pages/contact-us", primary: true },
       { label: "Track order", href: TRACK_ORDER_URL },
       { label: "Shipping policy", to: "/shipping-policy" },
     ],
@@ -646,7 +646,7 @@ function buildContactPageContent(): EditorialPageContent {
     cardsTitle: "Fast routes",
     cardsDescription: "Use these shortcuts when the answer lives on a policy or order page.",
     cards: [
-      { title: "FAQ", detail: "Short answers for ordering and shipping.", to: "/faq" },
+      { title: "FAQ", detail: "Short answers for ordering and shipping.", to: "/pages/faq" },
       { title: "Track order", detail: "Open the secure order portal.", to: "/track-order" },
       { title: "Shipping policy", detail: "Review delivery timing and fulfillment notes.", to: "/shipping-policy" },
       { title: "Refund policy", detail: "See returns and refund terms.", to: "/refund-policy" },
@@ -657,7 +657,7 @@ function buildContactPageContent(): EditorialPageContent {
     actions: [
       { label: "Message us", href: "#support-message", primary: true },
       { label: "Track order", href: TRACK_ORDER_URL },
-      { label: "FAQ", to: "/faq" },
+      { label: "FAQ", to: "/pages/faq" },
     ],
   };
 }
@@ -709,7 +709,7 @@ function buildWholesalePageContent(): EditorialPageContent {
     chipsDescription: "Typical reasons people contact wholesale support.",
     chips: ["Bulk orders", "Retail partnerships", "Product sourcing", "Store rollouts", "Seasonal buys"],
     actions: [
-      { label: "Contact Us", to: "/contact", primary: true },
+      { label: "Contact Us", to: "/pages/contact-us", primary: true },
       { label: "Browse collections", to: "/collections" },
       { label: "Resource Hub", to: "/shop?resource=hub" },
     ],
@@ -750,8 +750,8 @@ function buildTermsConditionsPageContent(): EditorialPageContent {
     chipsDescription: "The legal topics covered by the page.",
     chips: ["Orders", "Checkout", "Store use", "Customer support", "Policy reference"],
     actions: [
-      { label: "Contact Us", to: "/contact", primary: true },
-      { label: "FAQ", to: "/faq" },
+      { label: "Contact Us", to: "/pages/contact-us", primary: true },
+      { label: "FAQ", to: "/pages/faq" },
       { label: "Track order", href: TRACK_ORDER_URL },
     ],
   };
@@ -782,8 +782,8 @@ function buildTrackOrderPageContent(): EditorialPageContent {
     cardsTitle: "Useful next steps",
     cardsDescription: "If tracking is not enough, keep the support flow moving.",
     cards: [
-      { title: "FAQ", detail: "Common order and store questions.", to: "/faq" },
-      { title: "Contact Us", detail: "Send the support team a message.", to: "/contact" },
+      { title: "FAQ", detail: "Common order and store questions.", to: "/pages/faq" },
+      { title: "Contact Us", detail: "Send the support team a message.", to: "/pages/contact-us" },
       { title: "Shipping policy", detail: "Review shipping timing and terms.", to: "/shipping-policy" },
     ],
     chipsTitle: "What you can review",
@@ -791,7 +791,7 @@ function buildTrackOrderPageContent(): EditorialPageContent {
     chips: ["Order status", "Shipping updates", "History", "Account access"],
     actions: [
       { label: "Open Shopify orders", href: TRACK_ORDER_URL, primary: true },
-      { label: "Contact Us", to: "/contact" },
+      { label: "Contact Us", to: "/pages/contact-us" },
     ],
   };
 }
@@ -921,8 +921,8 @@ const editorialPages: Record<string, EditorialPageContent> = {
     chipsDescription: "The brand stays rooted in people, not clutter.",
     chips: ["Compassion", "Integrity", "Service", "Education", "Family", "Community"],
     actions: [
-      { label: "About SALT", to: "/about", primary: true },
-      { label: "Contact support", to: "/contact" },
+      { label: "About SALT", to: "/pages/about-us", primary: true },
+      { label: "Contact support", to: "/pages/contact-us" },
       { label: "Shop the catalog", to: "/shop" },
     ],
   },
@@ -1018,8 +1018,8 @@ const editorialPages: Record<string, EditorialPageContent> = {
       },
     ],
     actions: [
-      { label: "Contact the team", to: "/contact", primary: true },
-      { label: "About SALT", to: "/about" },
+      { label: "Contact the team", to: "/pages/contact-us", primary: true },
+      { label: "About SALT", to: "/pages/about-us" },
       { label: "Mission & Vision", to: "/pages/mission-vision" },
     ],
   },

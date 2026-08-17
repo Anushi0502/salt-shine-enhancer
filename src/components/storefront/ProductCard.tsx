@@ -104,6 +104,63 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         }
       : null;
   const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
+  const quickAddVariant = product.variants.length === 1 ? product.variants[0] : undefined;
+  const canQuickAdd = Boolean(quickAddVariant?.id);
+
+  const handleQuickAdd = () => {
+    if (!quickAddVariant?.id || isAddingToCart) {
+      return;
+    }
+
+    setIsAddingToCart(true);
+    addItem(
+      {
+        id: product.id,
+        handle: product.handle,
+        title: product.title,
+        image: image || "",
+        unitPrice: min,
+        shopifyVariantId: quickAddVariant.id,
+        productType: product.product_type,
+        minimumQuantity,
+      },
+      1,
+      { openDrawer: true },
+    );
+    toast.success("Added to cart", { description: title });
+    window.setTimeout(() => setIsAddingToCart(false), 350);
+  };
+
+  const renderCardActions = () => (
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      {canQuickAdd ? (
+        <button
+          type="button"
+          onClick={handleQuickAdd}
+          disabled={isAddingToCart || quickAddVariant?.available === false}
+          aria-busy={isAddingToCart ? "true" : "false"}
+          className="salt-primary-cta inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-white transition hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ShoppingBag className="h-3.5 w-3.5" />
+          {isAddingToCart ? "Adding…" : quickAddVariant?.available === false ? "Unavailable" : "Add to cart"}
+        </button>
+      ) : (
+        <Link
+          to={`/products/${product.handle}`}
+          className="salt-primary-cta inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-white transition hover:-translate-y-[1px]"
+        >
+          Choose options
+        </Link>
+      )}
+      <Link
+        to={`/products/${product.handle}`}
+        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border/70 bg-background px-3 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-primary transition hover:-translate-y-[1px] hover:border-primary/30"
+      >
+        <ArrowUpRight className="h-3.5 w-3.5" />
+        View details
+      </Link>
+    </div>
+  );
 
   if (isShop) {
     return (
@@ -123,15 +180,13 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
+          className="absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
 
-        <Link
-          to={`/products/${product.handle}`}
-          className="flex h-full flex-col"
-        >
+        <div className="flex flex-1 flex-col">
+          <Link to={`/products/${product.handle}`} className="block">
           <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
             {image ? (
               <div className="aspect-square overflow-hidden">
@@ -158,13 +213,14 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </span>
             ) : null}
           </div>
+          </Link>
 
           <div className="flex min-h-[10.25rem] flex-1 flex-col p-4 sm:p-5">
-            <h3 className={`line-clamp-2 font-display text-[1.08rem] leading-[1.08] tracking-[-0.03em] ${
+            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.08rem] leading-[1.08] tracking-[-0.03em] ${
               nativeApp ? "text-foreground" : "text-foreground"
             }`}>
               {title}
-            </h3>
+            </Link>
             {highlights.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {highlights.map((highlight) => (
@@ -197,11 +253,12 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
             {minimumQuantity > 1 ? (
               <p className="mt-2 text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
-                Buy {minimumQuantity}
+                Minimum quantity: {minimumQuantity}
               </p>
             ) : null}
+            {renderCardActions()}
           </div>
-        </Link>
+        </div>
       </article>
     );
   }
@@ -227,10 +284,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         aria-pressed={wishlisted ? "true" : "false"}
         aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
         title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-        className={`absolute left-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
+        className={`absolute left-3 top-3 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border bg-background/95 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] transition ${
           nativeApp
-            ? "border-border/70 bg-background text-foreground hover:border-primary/20 hover:text-primary"
-            : "border-border/70 bg-background text-primary hover:border-primary/30 hover:text-primary/80"
+            ? "border-border/70 text-foreground hover:border-primary/20 hover:text-primary"
+            : "border-border/70 text-primary hover:border-primary/30 hover:text-primary/80"
         }`}
       >
         <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
@@ -297,42 +354,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <ProductRating summary={displaySummary} compact />
         </div>
 
-        <div className="sr-only">
-          <button
-            type="button"
-            onClick={() => {
-              setIsAddingToCart(true);
-              addItem(
-                {
-                  id: product.id,
-                  handle: product.handle,
-                  title: product.title,
-                  image: image || "",
-                  unitPrice: min,
-                  shopifyVariantId: product.variants[0]?.id,
-                  productType: product.product_type,
-                  minimumQuantity,
-                },
-                1,
-                { openDrawer: true },
-              );
-              setIsAddingToCart(false);
-              toast.success("Added to cart", { description: title });
-            }}
-            className="salt-primary-cta h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition disabled:pointer-events-none disabled:opacity-50"
-            disabled={isAddingToCart}
-            aria-label={`Add ${title} to cart`}
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-          </button>
-          <Link
-            to={`/products/${product.handle}`}
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/96 text-primary transition hover:border-primary/20 hover:text-primary/80"
-            aria-label="View item details"
-          >
-            <ArrowUpRight className="h-3 w-3" />
-          </Link>
-        </div>
+        {renderCardActions()}
       </div>
     </article>
   );

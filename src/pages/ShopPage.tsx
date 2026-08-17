@@ -813,7 +813,7 @@ const ShopPage = () => {
   const heroActions: ShopHeroAction[] = [
     { label: "Browse collections", to: "/collections", primary: true },
     { label: "Resource Hub", to: "/shop?resource=hub" },
-    hasActiveFilters ? { label: "Clear filters", onClick: clearFilters } : { label: "Ask support", to: "/contact" },
+    hasActiveFilters ? { label: "Clear filters", onClick: clearFilters } : { label: "Ask support", to: "/pages/contact-us" },
   ];
   const desktopToolbarChips = filterChips.slice(0, 3);
   const hiddenDesktopChipCount = Math.max(0, filterChips.length - desktopToolbarChips.length);
@@ -1471,7 +1471,7 @@ const ShopPage = () => {
                       >
                         Sort newest
                       </button>
-                      <Link to="/contact" className="salt-outline-chip h-9 px-3.5 py-0 text-[0.62rem]">
+                      <Link to="/pages/contact-us" className="salt-outline-chip h-9 px-3.5 py-0 text-[0.62rem]">
                         Ask support
                       </Link>
                     </div>

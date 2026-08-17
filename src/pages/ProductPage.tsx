@@ -54,11 +54,7 @@ import {
   trackMetaPixelViewContent,
 } from "@/lib/meta-pixel";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
-import {
-  getProductPurchasesLast30Days,
-  recordDeviceOrderHistory,
-  useDeviceOrderHistory,
-} from "@/lib/order-history";
+import { recordDeviceOrderHistory } from "@/lib/order-history";
 import {
   useCollectionProductsMap,
   useProductByHandle,
@@ -158,7 +154,6 @@ type ProductSpecPair = {
 type ProductReviewSummary = {
   rating: number;
   reviewCount: number;
-  purchasedLastMonth: number;
 };
 
 function extractNumericId(input?: string | number | null): string {
@@ -232,7 +227,6 @@ function buildReviewSummaryFallback(product: ShopifyProduct | null | undefined):
   return {
     rating,
     reviewCount,
-    purchasedLastMonth: 0,
   };
 }
 
@@ -366,7 +360,6 @@ const ProductPage = () => {
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadMerchandisingData);
   const { data: productSearchPayload } = useProductSearchIndex(shouldLoadMerchandisingData);
   const products = useMemo(() => productSearchPayload?.products ?? [], [productSearchPayload]);
-  const { entries: deviceOrderEntries } = useDeviceOrderHistory();
   const nativeApp = isNativeApp();
   const primaryProductImage = product ? productImage(product) || "" : "";
   const heroImageRef = useRef<HTMLImageElement | null>(null);
@@ -711,31 +704,6 @@ const ProductPage = () => {
     : buildShopifyCartUrl();
   const checkoutHandoffUrl = directCheckoutUrl;
   const checkoutTargetUrl = checkoutHandoffUrl;
-  const devicePurchasesLast30Days = getProductPurchasesLast30Days(
-    deviceOrderEntries,
-    product.handle,
-  );
-  const purchasedLastMonth = Math.max(
-    devicePurchasesLast30Days,
-    reviewSummary?.purchasedLastMonth || 0,
-  );
-  const reviewConfidenceScore = reviewSummary
-    ? Math.min(
-        99,
-        Math.round(
-          (Math.max(0, Math.min(reviewSummary.rating, 5)) / 5) * 70 +
-            (Math.min(reviewSummary.reviewCount, 250) / 250) * 30,
-        ),
-      )
-    : 0;
-  const reviewConfidenceLabel = reviewConfidenceScore >= 90
-    ? "Very high trust signal"
-    : reviewConfidenceScore >= 75
-      ? "Strong trust signal"
-      : reviewConfidenceScore > 0
-        ? "Emerging trust signal"
-        : "";
-
   const primaryImage = primaryProductImage;
   const displayedImage = activeImage || primaryImage;
   const productImages = Array.isArray(product.images) ? product.images : [];
@@ -756,7 +724,30 @@ const ProductPage = () => {
   const activeImageIndex = Math.max(0, imageSources.indexOf(displayedImage));
   const reviewBadgeLabel = reviewSummary && reviewSummary.reviewCount > 0
     ? `${reviewSummary.rating.toFixed(1)} · ${reviewSummary.reviewCount.toLocaleString()} reviews`
-    : "";
+    : "No ratings yet";
+  const productEvidence = [
+    product.title,
+    product.product_type,
+    Array.isArray(product.tags) ? product.tags.join(" ") : product.tags,
+    product.knowledge?.familyId,
+    product.knowledge?.typeKey,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const isApparelOrFootwear = /\b(apparel|clothing|fashion|wear|shirt|top|dress|pant|trouser|jean|short|skirt|hoodie|jacket|coat|underwear|bra|sock|shoe|sandal|slipper|boot|sneaker|footwear)\b/.test(productEvidence);
+  const isFootwear = /\b(shoe|sandal|slipper|boot|sneaker|footwear)\b/.test(productEvidence);
+  const hasSizeLikeOption = variantOptionGroups.some((group) =>
+    group.values.some((value) => /^(xxs|xs|s|m|l|xl|xxl|xxxl|xxxxl|\d{1,3}(?:\.\d)?(?:\s*[-/]\s*\d{1,3}(?:\.\d)?)?)$/i.test(value.trim())),
+  );
+  const fitGuidance = isApparelOrFootwear && hasSizeLikeOption
+    ? {
+        title: isFootwear ? "Size & fit" : "Size guidance",
+        copy: isFootwear
+          ? "Choose from the live size options below and compare the listed size with your usual footwear size before ordering."
+          : "Choose from the live size options below and compare the listed label with your usual size before ordering.",
+      }
+    : null;
 
   const toggleWishlistState = () => {
     const nextSaved = !wishlisted;
@@ -773,8 +764,7 @@ const ProductPage = () => {
       return;
     }
 
-    trackMetaP
-    ixelInitiateCheckout([
+    trackMetaPixelInitiateCheckout([
       {
         id: selectedVariant.id,
         shopifyVariantId: selectedVariant.id,
@@ -861,6 +851,7 @@ const ProductPage = () => {
       await navigator.share(shareData).catch(() => undefined);
       return;
     }
+
     await navigator.clipboard?.writeText(window.location.href);
     toast.success("Product link copied");
   };
@@ -868,7 +859,7 @@ const ProductPage = () => {
   return (
     <section
       data-salt-product-runtime={PRODUCT_PAGE_RUNTIME_VERSION}
-      className="mx-auto mt-4 w-[min(1280px,calc(100%_-_20px))] pb-20 sm:mt-5 sm:w-[min(1280px,calc(100%_-_20px))] md:pb-8"
+      className="mx-auto mt-4 w-[min(1280px,calc(100%_-_20px))] overflow-x-clip pb-[calc(6rem+env(safe-area-inset-bottom))] sm:mt-5 sm:w-[min(1280px,calc(100%_-_20px))] md:pb-8"
     >
       <SeoMetadata
         title={`${product.title} | SALT Online Store`}
@@ -938,6 +929,8 @@ const ProductPage = () => {
                         sizes="(min-width: 1024px) 56vw, 100vw"
                         alt={product.title}
                         className="aspect-square w-full object-contain"
+                        loading="eager"
+                        fetchPriority="high"
                         decoding="async"
                         onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
                         onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
@@ -999,7 +992,7 @@ const ProductPage = () => {
                   </button>
                 ))}
               </div>
-              <div className="mt-3 hidden gap-3">
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <div className="salt-section-shell rounded-[1.45rem] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -1007,17 +1000,13 @@ const ProductPage = () => {
                       <h2 className="mt-1 text-sm font-semibold text-foreground">Why shoppers trust it</h2>
                     </div>
                     <span className="shrink-0 rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                      Desktop
+                      Live
                     </span>
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     {[
                       { label: "Rating", value: reviewBadgeLabel },
                       { label: "Availability", value: isAvailable ? "Ready to ship" : "Unavailable" },
-                      {
-                        label: "Demand",
-                        value: purchasedLastMonth > 0 ? `${purchasedLastMonth.toLocaleString()} bought last month` : "Fresh stock",
-                      },
                       {
                         label: "Value",
                         value: savingsAmount > 0 ? `${formatMoney(savingsAmount)} saved` : "Everyday value",
@@ -1086,19 +1075,17 @@ const ProductPage = () => {
                   {product.title}
                 </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-0.5" aria-label={reviewSummary ? `${reviewSummary.rating.toFixed(1)} out of 5 stars` : "No ratings yet"}>
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <Star key={index} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <span className="text-sm font-medium text-foreground">
-                    {reviewSummary ? `${reviewSummary.reviewCount.toLocaleString()} ${reviewSummary.reviewCount === 1 ? "rating" : "ratings"}` : "No ratings yet"}
-                  </span>
-                  {purchasedLastMonth > 0 ? (
-                    <span className="inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-foreground">
-                      {purchasedLastMonth.toLocaleString()} bought last month
-                    </span>
-                  ) : null}
+                <div className="flex items-center gap-0.5" aria-label={reviewSummary && reviewSummary.reviewCount > 0 ? `${reviewSummary.rating.toFixed(1)} out of 5 stars` : "No ratings yet"}>
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <Star
+                      key={index}
+                      className={`h-4 w-4 ${reviewSummary && reviewSummary.reviewCount > 0 && index < Math.round(reviewSummary.rating) ? "fill-amber-400 text-amber-400" : "text-amber-300"}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {reviewSummary && reviewSummary.reviewCount > 0 ? `${reviewSummary.reviewCount.toLocaleString()} ${reviewSummary.reviewCount === 1 ? "rating" : "ratings"}` : "No ratings yet"}
+                </span>
                 </div>
               </div>
               {badgeText ? (
@@ -1122,29 +1109,21 @@ const ProductPage = () => {
             <p className="mt-2 text-sm font-medium text-foreground">
               {isAvailable ? "Free shipping on eligible US orders" : "Currently unavailable"}
             </p>
-            {reviewSummary ? (
-              <div className="hidden mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
+            {reviewSummary && reviewSummary.reviewCount > 0 ? (
+              <div className="mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Shopper confidence</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">Verified ratings and history</p>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Shopper reviews</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">Live rating summary</p>
                   </div>
-                  <p className="text-[0.68rem] font-bold text-foreground">{reviewConfidenceScore}%</p>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-3 py-1.5 font-semibold text-foreground">
-                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-foreground">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                     {reviewSummary.rating.toFixed(1)}
                   </span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="font-medium text-foreground/90">{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <span
-                    className="block h-full rounded-full bg-primary transition-[width] duration-500"
-                    style={{ width: `${reviewConfidenceScore}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-[0.65rem] text-muted-foreground">{reviewConfidenceLabel}</p>
               </div>
             ) : null}
 
@@ -1155,12 +1134,12 @@ const ProductPage = () => {
             </div>
             {quantityFloor > 1 ? (
               <p className="mt-2 text-xs font-medium text-muted-foreground">
-                Shop floor: buy {quantityFloor}.
+                Minimum quantity: {quantityFloor}.
               </p>
             ) : null}
 
             {!nativeApp ? (
-              <div className="hidden mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
+              <div className="mt-4 rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.18)]">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Key details</p>
@@ -1197,7 +1176,7 @@ const ProductPage = () => {
             ) : null}
 
             {nativeApp ? (
-              <div className="hidden mt-4 space-y-3">
+              <div className="mt-4 space-y-3">
                 <section className="rounded-[1.2rem] border border-border/80 bg-background/92 p-4 shadow-[0_10px_28px_-22px_rgba(0,0,0,0.35)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -1267,6 +1246,12 @@ tune itni kharab photo li h meri
 
             {variants.length > 0 ? (
               <div className="mt-5 space-y-5 border-t border-border/70 pt-5">
+                {fitGuidance ? (
+                  <div className="rounded-[1.1rem] border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">{fitGuidance.title}</p>
+                    <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{fitGuidance.copy}</p>
+                  </div>
+                ) : null}
                 {variantOptionGroups.map((group, groupIndex) => (
                   <section key={group.label} aria-label={`${group.label} options`}>
                     <div className="flex items-center justify-between gap-3">
@@ -1389,7 +1374,7 @@ tune itni kharab photo li h meri
                 Similar products
               </Link>
               <Link
-                to="/contact"
+                to="/pages/contact-us"
                 className="salt-outline-chip h-10 justify-center rounded-full px-3 py-0 text-[0.68rem]"
               >
                 Ask support
@@ -1413,7 +1398,15 @@ tune itni kharab photo li h meri
                   Shipping and returns
                 </AccordionTrigger>
                 <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
-                  Shipping and taxes are calculated at Shopify checkout. Eligible items can be returned within the policy window.
+                  Shipping and taxes are calculated at Shopify checkout. Review the current{" "}
+                  <Link to="/policies/shipping-policy" className="font-semibold text-primary underline underline-offset-2">
+                    shipping policy
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/policies/refund-policy" className="font-semibold text-primary underline underline-offset-2">
+                    returns policy
+                  </Link>{" "}
+                  for eligibility and timing.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="service" className="border-none">
@@ -1435,11 +1428,6 @@ tune itni kharab photo li h meri
                   { icon: BadgeCheck, label: "Secure payment" },
                 ]}
               />
-              {purchasedLastMonth > 0 ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {purchasedLastMonth.toLocaleString()} shoppers bought this in the last month.
-                </p>
-              ) : null}
             </div>
           </aside>
         </Reveal>
@@ -1533,7 +1521,7 @@ tune itni kharab photo li h meri
         </section>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/96 px-3 pb-[calc(0.7rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/96 px-3 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
         <div className="mx-auto flex w-[min(1280px,100%)] items-center gap-3">
           <div className="min-w-0 shrink-0">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">

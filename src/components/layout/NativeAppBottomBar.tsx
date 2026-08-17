@@ -42,7 +42,7 @@ const navItems: NavItem[] = [
   },
   {
     label: "Support",
-    to: "/contact",
+    to: "/pages/contact-us",
     icon: Headphones,
     isActive: (pathname) => pathname === "/contact" || pathname.startsWith("/pages/contact"),
   },

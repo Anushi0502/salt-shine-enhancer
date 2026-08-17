@@ -1314,6 +1314,42 @@
     text-underline-offset: 2px;
   }
 
+  @media (max-width: 767px) {
+    html,
+    body {
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: clip;
+    }
+
+    body {
+      overscroll-behavior-x: none;
+    }
+
+    button,
+    a,
+    [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+
+    .salt-product-description {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .salt-product-description table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+  }
+
   .salt-primary-cta {
     @apply inline-flex items-center justify-center rounded-full text-white transition;
     background:
