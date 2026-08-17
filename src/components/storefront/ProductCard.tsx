@@ -38,11 +38,13 @@ type ProductCardProps = {
 
 const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSummary, className = "" }: ProductCardProps) => {
   const cardRef = useRef<HTMLElement | null>(null);
+  const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
   const [shouldRefreshLive, setShouldRefreshLive] = useState(false);
 
   useEffect(() => {
     const node = cardRef.current;
     if (!node || typeof IntersectionObserver === "undefined") {
+      setHasEnteredViewport(true);
       setShouldRefreshLive(true);
       return;
     }
@@ -53,6 +55,10 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           return;
         }
 
+        // Keep a card's media eager after its first viewport entry. The card
+        // remains mounted while scrolling, so Safari/Chrome do not discard a
+        // product that has already been painted to save lazy-image memory.
+        setHasEnteredViewport(true);
         setShouldRefreshLive(true);
         observer.disconnect();
       },
@@ -102,6 +108,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   const compare = compareAt(product);
   const discountPercent = compare > min ? Math.round(((compare - min) / compare) * 100) : 0;
   const image = productImage(product);
+  const imageLoading = hasEnteredViewport ? "eager" : "lazy";
   const cardImage = responsiveShopifyImageUrl(image, 720);
   const cardImageSrcSet = responsiveShopifyImageSrcSet(image);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
@@ -156,7 +163,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   srcSet={cardImageSrcSet}
                   sizes="(min-width: 1280px) 17rem, (min-width: 768px) 30vw, 50vw"
                   alt={product.title}
-                  loading="lazy"
+                  loading={imageLoading}
                   decoding="async"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 />
@@ -267,7 +274,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 srcSet={cardImageSrcSet}
                 sizes="(min-width: 1280px) 17rem, (min-width: 768px) 30vw, 50vw"
                 alt={product.title}
-                loading="lazy"
+                loading={imageLoading}
                 decoding="async"
                 className="h-[112%] w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
               />

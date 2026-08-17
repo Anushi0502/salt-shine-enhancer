@@ -232,7 +232,7 @@ function HeaderMenuDrawer({
         id="salt-header-menu"
         side="left"
         hideOverlay
-        className="isolate z-[60] flex h-[100dvh] max-h-[100dvh] w-[min(19rem,calc(100vw-0.75rem))] max-w-[min(19rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.99),hsl(var(--card)/0.95))] p-0 pt-[env(safe-area-inset-top)] text-foreground shadow-[0_28px_52px_-36px_rgba(15,23,42,0.28)] [&>button:last-child]:right-3 [&>button:last-child]:top-[calc(env(safe-area-inset-top)+0.7rem)] [&>button:last-child]:z-30 [&>button:last-child]:inline-flex [&>button:last-child]:h-11 [&>button:last-child]:w-11 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:border [&>button:last-child]:border-white/20 [&>button:last-child]:bg-white/10 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:backdrop-blur [&>button:last-child]:hover:bg-white/20 lg:w-[min(17.5rem,calc(100vw-1rem))] lg:max-w-[min(17.5rem,calc(100vw-1rem))]"
+        className="isolate z-[60] flex h-[100dvh] max-h-[100dvh] w-[min(19rem,calc(100vw-0.75rem))] max-w-[min(19rem,calc(100vw-0.75rem))] flex-col overflow-hidden border-r border-border/70 bg-background p-0 pt-[env(safe-area-inset-top)] text-foreground shadow-[0_28px_52px_-36px_rgba(15,23,42,0.28)] [&>button:last-child]:right-3 [&>button:last-child]:top-[calc(env(safe-area-inset-top)+0.7rem)] [&>button:last-child]:z-30 [&>button:last-child]:inline-flex [&>button:last-child]:h-11 [&>button:last-child]:w-11 [&>button:last-child]:items-center [&>button:last-child]:justify-center [&>button:last-child]:rounded-full [&>button:last-child]:border [&>button:last-child]:border-white/20 [&>button:last-child]:bg-white/10 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:backdrop-blur [&>button:last-child]:hover:bg-white/20 lg:w-[min(17.5rem,calc(100vw-1rem))] lg:max-w-[min(17.5rem,calc(100vw-1rem))]"
       >
         <SheetTitle className="sr-only">Browse SALT</SheetTitle>
         <SheetDescription className="sr-only">
@@ -300,7 +300,7 @@ function HeaderMenuDrawer({
                   return (
                     <div
                       key={collection.handle}
-                      className="overflow-hidden rounded-[1rem] border border-border/72 bg-[linear-gradient(160deg,hsl(var(--background)/0.99),hsl(var(--card)/0.93))] shadow-[0_10px_24px_-20px_rgba(15,23,42,0.14)] transition-shadow duration-200 hover:shadow-[0_14px_28px_-22px_rgba(15,23,42,0.18)]"
+                      className="overflow-hidden rounded-[1rem] border border-border/72 bg-background shadow-[0_10px_24px_-20px_rgba(15,23,42,0.14)] transition-shadow duration-200 hover:shadow-[0_14px_28px_-22px_rgba(15,23,42,0.18)]"
                     >
                       <button
                         type="button"
@@ -337,7 +337,7 @@ function HeaderMenuDrawer({
                         }`}
                       >
                         <div className="px-2.5 pb-2.5">
-                          <div className="rounded-[1rem] border border-border/65 bg-[linear-gradient(180deg,hsl(var(--background)/0.97),hsl(var(--card)/0.92))] px-2.5 py-2.5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.12)]">
+                          <div className="rounded-[1rem] border border-border/65 bg-background px-2.5 py-2.5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.12)]">
                             <div className="flex items-start justify-between gap-2 border-b border-border/65 pb-2.5">
                               <div className="min-w-0">
                                 <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">

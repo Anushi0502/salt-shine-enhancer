@@ -120,7 +120,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                   data-testid="collection-hover-submenu"
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
-                  className="z-50 w-[min(18rem,calc(100vw-1rem))] max-w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-[1.05rem] border border-border/75 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.98))] p-3 shadow-[0_24px_52px_-38px_rgba(15,23,42,0.24),inset_0_1px_0_hsl(0_0%_100%/0.72)] backdrop-blur-0"
+                  className="isolate z-50 w-[min(18rem,calc(100vw-1rem))] max-w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-[1.05rem] border border-border/75 bg-background p-3 opacity-100 shadow-[0_24px_52px_-38px_rgba(15,23,42,0.24),inset_0_1px_0_hsl(0_0%_100%/0.72)] backdrop-blur-none"
                 >
                   <div className="flex items-start justify-between gap-2 border-b border-border/70 pb-3">
                     <div className="min-w-0">
