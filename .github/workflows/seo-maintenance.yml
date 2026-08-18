@@ -1,11 +1,6 @@
 name: SALT SEO Maintenance
 
 on:
-  schedule:
-    # SEO mutations are intentionally slower than catalog delivery. Running a
-    # full SEO rewrite every five minutes would waste API budget and churn
-    # search metadata without improving discovery.
-    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
