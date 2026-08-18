@@ -1,7 +1,8 @@
-import { useEffect, useMemo, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
+import { scheduleAfterPaint } from "@/lib/after-paint";
 import {
   buildShopifyCheckoutUrl,
   buildShopifyProductUrl,
@@ -35,9 +36,10 @@ function normalizeTitleLookup(input: string): string {
 }
 
 const CartPage = () => {
-  const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear } = useCart();
-  const { data: productsPayload } = useProductSearchIndex();
-  const { data: collectionProductsMapPayload } = useCollectionProductsMap();
+  const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear, addItem } = useCart();
+  const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
+  const { data: productsPayload } = useProductSearchIndex(shouldLoadRecommendations);
+  const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
   const collectionIndex = useMemo(
     () => buildProductCollectionIndex(collectionProductsMapPayload),
     [collectionProductsMapPayload],
@@ -157,12 +159,6 @@ const CartPage = () => {
   );
 
   const checkoutHandoffUrl = buildShopifyCheckoutUrl(checkoutItems);
-  const freeShippingThreshold = 120;
-  const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
-  const freeShippingProgress = Math.min(
-    100,
-    Math.round((Math.min(subtotal, freeShippingThreshold) / freeShippingThreshold) * 100),
-  );
   const seoMetadata = (
     <SeoMetadata
       title="Cart | SALT Online Store"
@@ -171,6 +167,8 @@ const CartPage = () => {
       noIndex
     />
   );
+
+  useEffect(() => scheduleAfterPaint(() => setShouldLoadRecommendations(true)), []);
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -417,26 +415,6 @@ const CartPage = () => {
                 {formatMoney(subtotal)}
               </span>
             </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Express payment options appear inside secure Shopify checkout.
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-[1rem] border border-border/70 bg-background/92 p-4">
-            <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-              Free shipping progress
-            </p>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/50">
-              <span
-                className="block h-full rounded-full bg-primary transition-[width] duration-300"
-                style={{ width: `${freeShippingProgress}%` }}
-              />
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {freeShippingRemaining > 0
-                ? `${formatMoney(freeShippingRemaining)} away from free shipping.`
-                : "Free shipping unlocked for this order."}
-            </p>
           </div>
 
           {hasUnresolvedCheckoutItems ? (
@@ -493,31 +471,83 @@ const CartPage = () => {
               <div className="mt-3 space-y-3">
                 {recommendedProducts.slice(0, 3).map((product) => {
                   const image = productImage(product);
+                  const availableVariants = product.variants.filter((variant) => variant.available !== false);
+                  const defaultVariant = availableVariants[0] || product.variants[0];
+                  const variantLabels = new Set(
+                    availableVariants
+                      .map((variant) => String(variant.title || "Default Title").trim())
+                      .filter((title) => title && title.toLowerCase() !== "default title"),
+                  );
+                  const needsVariantChoice = variantLabels.size > 1;
 
                   return (
-                    <Link
-                    key={product.id}
-                    to={`/products/${product.handle}`}
-                    className="flex items-center gap-3 rounded-[0.95rem] border border-border/70 bg-background/92 p-2.5 transition hover:border-primary/20 hover:bg-background"
-                  >
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[0.8rem] border border-border/70 bg-muted/20">
-                      {image ? (
-                        <img src={image} alt={product.title} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="grid h-full w-full place-items-center text-[0.52rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                          No image
-                        </div>
-                      )}
-                      </div>
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-3 rounded-[0.95rem] border border-border/70 bg-background/92 p-2.5 transition hover:border-primary/20 hover:bg-background"
+                    >
+                      <Link
+                        to={`/products/${product.handle}`}
+                        className="h-16 w-16 shrink-0 overflow-hidden rounded-[0.8rem] border border-border/70 bg-muted/20"
+                      >
+                        {image ? (
+                          <img src={image} alt={product.title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                        ) : (
+                          <div className="grid h-full w-full place-items-center text-[0.52rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </Link>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
-                          {product.title}
-                        </p>
+                        <Link to={`/products/${product.handle}`} className="block">
+                          <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
+                            {product.title}
+                          </p>
+                        </Link>
+                        <strong className="mt-1 block text-sm text-primary">
+                          {formatMoney(Number(defaultVariant?.price || 0))}
+                        </strong>
                       </div>
-                      <strong className="shrink-0 text-sm text-primary">
-                        {formatMoney(Number(product.variants[0]?.price || 0))}
-                      </strong>
-                    </Link>
+                      {needsVariantChoice ? (
+                        <Link
+                          to={`/products/${product.handle}`}
+                          className="salt-outline-chip h-9 shrink-0 px-3 py-0 text-[0.62rem] font-bold uppercase tracking-[0.06em]"
+                        >
+                          Choose
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!defaultVariant) {
+                              return;
+                            }
+
+                            addItem(
+                              {
+                                id: defaultVariant.id,
+                                shopifyVariantId: defaultVariant.id,
+                                handle: product.handle,
+                                title: product.title,
+                                image: image || "",
+                                unitPrice: Number(defaultVariant.price || 0),
+                                productType: product.product_type,
+                                minimumQuantity: getMinimumProductQuantity(
+                                  product.handle,
+                                  Number(defaultVariant.price || 0),
+                                  product.customData?.shopChannelMinimumQuantity,
+                                ),
+                              },
+                              1,
+                              { openDrawer: false },
+                            );
+                          }}
+                          disabled={!defaultVariant}
+                          className="salt-primary-cta h-9 shrink-0 px-3 text-[0.62rem] font-bold uppercase tracking-[0.06em] disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -531,20 +561,6 @@ const CartPage = () => {
             Need checkout help?
           </Link>
 
-          <div className="mt-4 grid gap-2 rounded-[1rem] border border-border/70 bg-background/92 p-4 text-sm text-muted-foreground">
-            <p className="inline-flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              Secure Shopify checkout
-            </p>
-            <p className="inline-flex items-center gap-2">
-              <PackageCheck className="h-4 w-4 text-primary" />
-              Live variant validation
-            </p>
-            <p className="inline-flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              Tracking after dispatch
-            </p>
-          </div>
           </aside>
         </div>
 

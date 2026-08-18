@@ -82,6 +82,22 @@ const CartDrawer = () => {
     [recommendationPlan],
   );
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    if (isDrawerOpen) {
+      document.documentElement.dataset.saltCartDrawerOpen = "true";
+    } else {
+      delete document.documentElement.dataset.saltCartDrawerOpen;
+    }
+
+    return () => {
+      delete document.documentElement.dataset.saltCartDrawerOpen;
+    };
+  }, [isDrawerOpen]);
+
   const invalidItemCount = items.filter((item) => !isValidShopifyVariantId(item.shopifyVariantId)).length;
   const checkoutUrl = buildShopifyCheckoutUrl(items);
   const checkoutTargetUrl = checkoutUrl;
@@ -108,7 +124,8 @@ const CartDrawer = () => {
     <Sheet open={isDrawerOpen} onOpenChange={(open) => (open ? undefined : closeCartDrawer())}>
       <SheetContent
         side="right"
-        className="w-full !max-w-full overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0 sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem]"
+        data-salt-cart-drawer="true"
+        className="z-[140] w-full !max-w-full overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0 py-0 sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem]"
       >
         <div className="flex min-h-full flex-col">
           <SheetHeader className="border-b border-border/70 px-4 pb-4 pt-10 text-left sm:px-6 sm:pb-5 sm:pt-12">
@@ -131,7 +148,7 @@ const CartDrawer = () => {
 
           </SheetHeader>
 
-          <div className="flex-1 px-4 py-5 sm:px-6">
+          <div className="flex-1 px-4 py-5 pb-64 sm:px-6 sm:pb-56">
             {items.length === 0 ? (
               <div className="rounded-[1.4rem] border border-dashed border-border/80 bg-card/70 px-5 py-8 text-center sm:rounded-[1.7rem] sm:py-10">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border/70 bg-background text-primary">
@@ -340,7 +357,7 @@ const CartDrawer = () => {
             ) : null}
           </div>
 
-          <div className="sticky bottom-0 border-t border-border/70 bg-background/95 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+          <div className="sticky bottom-0 z-10 border-t border-border/70 bg-background px-4 py-4 shadow-[0_-18px_36px_-30px_rgba(15,23,42,0.28)] sm:px-6 sm:py-5">
             {invalidItemCount > 0 ? (
               <p className="mb-3 rounded-[1rem] border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-[0.78rem] leading-6 text-amber-900 dark:text-amber-100">
                 {invalidItemCount} item{invalidItemCount === 1 ? "" : "s"} need a quick review before checkout.

@@ -30,6 +30,10 @@ const DeferredCartDrawer = () => {
   );
 };
 
+const preloadCartDrawer = () => {
+  void import("@/components/storefront/CartDrawer");
+};
+
 const RouteLoadingState = ({ isHomePage }: { isHomePage: boolean }) => (
   <div className="mx-auto w-full max-w-[1360px] px-4 py-4 sm:px-6 lg:px-10">
     <LoadingState
@@ -56,7 +60,12 @@ const SiteShell = ({ children }: PropsWithChildren) => {
       return;
     }
 
-    return scheduleAfterPaint(() => setDeferredShellReady(true));
+    return scheduleAfterPaint(() => {
+      setDeferredShellReady(true);
+      // Keep first paint light, but make the cart action instant after the
+      // browser settles instead of waiting for a lazy chunk on click.
+      preloadCartDrawer();
+    });
   }, [isFinancePage]);
 
   useEffect(() => {

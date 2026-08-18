@@ -51,10 +51,9 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         setHasEnteredViewport(true);
         observer.disconnect();
       },
-      // Keep below-the-fold media lazy until it is genuinely near the
-      // viewport. A 240px margin made a long homepage wake too many images
-      // during the first scroll frame.
-      { rootMargin: "96px 0px" },
+      // Keep a generous warm-up window so rapid scrolling never exposes a
+      // blank card, while still avoiding eager requests for the whole grid.
+      { rootMargin: "480px 0px" },
     );
 
     observer.observe(node);

@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The cart sheet is modal. Keep third-party chat controls from sitting over
+   checkout actions or the final recommendation row while it is open. */
+html[data-salt-cart-drawer-open="true"] #chat-button-container,
+html[data-salt-cart-drawer-open="true"] iframe[title*="chat" i],
+html[data-salt-cart-drawer-open="true"] [id*="moosedesk" i],
+html[data-salt-cart-drawer-open="true"] [class*="moosedesk" i] {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --background: 214 95% 97%;

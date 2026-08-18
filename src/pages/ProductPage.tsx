@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { lazy, startTransition, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -390,10 +390,14 @@ const ProductPage = () => {
           return;
         }
 
-        setSecondaryContentProductId(productId);
+        // Let the current scroll/frame paint before starting the heavier
+        // recommendation and collection-map queries.
+        window.setTimeout(() => {
+          startTransition(() => setSecondaryContentProductId(productId));
+        }, 0);
         observer.disconnect();
       },
-      { rootMargin: "180px 0px" },
+      { rootMargin: "420px 0px" },
     );
 
     observer.observe(node);
@@ -705,7 +709,6 @@ const ProductPage = () => {
   const comparePrice = isPlausibleComparePrice(price, comparePriceCandidate) ? comparePriceCandidate : 0;
   const isAvailable = isVariantAvailable(selectedVariant);
   const savingsAmount = comparePrice > price ? comparePrice - price : 0;
-  const discountPercent = comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
 
   const selectedQuantity = Math.max(quantityFloor, Math.floor(quantity || 1));
   const directCheckoutUrl = selectedVariant
@@ -722,7 +725,6 @@ const ProductPage = () => {
   // Product type/subtitle metadata is intentionally omitted from the visual
   // product header so collection labels cannot be mistaken for product names.
   const subtitle = "";
-  const badgeText = product.customData?.badgeText?.trim() || "";
   const customHighlights = (product.customData?.highlights || []).map((entry) => entry.trim()).filter(Boolean);
   const productSummary = productBenefitText(product, 170);
   const detailBullets = extractProductBullets(product.body_html, productSummary);
@@ -1067,6 +1069,33 @@ const ProductPage = () => {
                   ]}
                 />
               </div>
+
+              <Accordion type="multiple" className="mt-4 rounded-[1.45rem] border border-border/80 bg-card/86">
+                <AccordionItem value="shipping" className="border-border/70">
+                  <AccordionTrigger className="py-4 text-left text-sm font-semibold text-foreground hover:no-underline">
+                    Shipping and returns
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
+                    Shipping and taxes are calculated at Shopify checkout. Review the current{" "}
+                    <Link to="/policies/shipping-policy" className="font-semibold text-primary underline underline-offset-2">
+                      shipping policy
+                    </Link>{" "}
+                    and{" "}
+                    <Link to="/policies/refund-policy" className="font-semibold text-primary underline underline-offset-2">
+                      returns policy
+                    </Link>{" "}
+                    for eligibility and timing.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="service" className="border-none">
+                  <AccordionTrigger className="py-4 text-left text-sm font-semibold text-foreground hover:no-underline">
+                    Why shoppers choose SALT
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
+                    Curated assortment, clearer variant selection, visible savings, and support that stays close.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </Reveal>
 
@@ -1107,27 +1136,14 @@ const ProductPage = () => {
                 </span>
                 </div>
               </div>
-              {badgeText ? (
-                <div className="shrink-0 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-primary">
-                  {badgeText}
-                </div>
-              ) : null}
             </div>
             <div className="mt-5 flex flex-wrap items-baseline gap-2">
               <strong className="font-display text-[clamp(2rem,4vw,3.25rem)] text-foreground">{formatMoney(price)}</strong>
               {comparePrice > price ? <s className="text-base font-medium text-muted-foreground">{formatMoney(comparePrice)}</s> : null}
-              {discountPercent > 0 ? (
-                <span className="rounded-full bg-foreground px-3 py-1 text-xs font-bold text-background">
-                  {discountPercent}% off
-                </span>
-              ) : null}
               {savingsAmount > 0 ? (
                 <span className="sr-only">Save {formatMoney(savingsAmount)}</span>
               ) : null}
             </div>
-            <p className="mt-2 text-sm font-medium text-foreground">
-              {isAvailable ? "Free shipping on eligible US orders" : "Currently unavailable"}
-            </p>
             {reviewSummary && reviewSummary.reviewCount > 0 ? (
               <div className="mt-2.5 rounded-[1.2rem] border border-border/75 bg-background/90 p-3 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.16)]">
                 <div className="flex items-center justify-between gap-2">
@@ -1144,17 +1160,6 @@ const ProductPage = () => {
                   <span className="font-medium text-foreground/90">{reviewSummary.reviewCount.toLocaleString()} total reviews</span>
                 </div>
               </div>
-            ) : null}
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <p className={`rounded-full border px-3 py-1 text-xs font-semibold ${isAvailable ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
-                {isAvailable ? "In stock" : "Out of stock"}
-              </p>
-            </div>
-            {quantityFloor > 1 ? (
-              <p className="mt-2 text-xs font-medium text-muted-foreground">
-                Minimum quantity: {quantityFloor}.
-              </p>
             ) : null}
 
             {!nativeApp ? (
@@ -1230,7 +1235,6 @@ const ProductPage = () => {
                     </ul>
                   ) : null}
                 </section>
-tune itni kharab photo li h meri
                 <section className="rounded-[1.45rem] border border-border/80 bg-background/92 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -1262,6 +1266,20 @@ tune itni kharab photo li h meri
                 </section>
               </div>
             ) : null}
+
+            <Accordion type="single" collapsible className="mt-4 rounded-[1.45rem] border border-border/80 bg-card/86">
+              <AccordionItem value="details" className="border-none">
+                <AccordionTrigger className="px-4 py-4 text-left text-sm font-semibold text-foreground hover:no-underline">
+                  Product details
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div
+                    className="salt-product-description px-4 pb-4 text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.body_html) }}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {variants.length > 0 ? (
               <div className="mt-5 space-y-5 border-t border-border/70 pt-5">
@@ -1337,11 +1355,6 @@ tune itni kharab photo li h meri
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-              {quantityFloor > 1 ? (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Shop floor: buy {quantityFloor}.
-                </p>
-              ) : null}
             </div>
 
             <button
@@ -1399,44 +1412,6 @@ tune itni kharab photo li h meri
                 Ask support
               </Link>
             </div>
-
-            <Accordion type="multiple" className="mt-4 rounded-[1.45rem] border border-border/80 bg-card/86 px-4">
-              <AccordionItem value="details" className="border-border/70">
-                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
-                  Product details
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div
-                    className="salt-product-description pb-4 text-sm text-muted-foreground"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.body_html) }}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="shipping" className="border-border/70">
-                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
-                  Shipping and returns
-                </AccordionTrigger>
-                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
-                  Shipping and taxes are calculated at Shopify checkout. Review the current{" "}
-                  <Link to="/policies/shipping-policy" className="font-semibold text-primary underline underline-offset-2">
-                    shipping policy
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="/policies/refund-policy" className="font-semibold text-primary underline underline-offset-2">
-                    returns policy
-                  </Link>{" "}
-                  for eligibility and timing.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="service" className="border-none">
-                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
-                  Why shoppers choose SALT
-                </AccordionTrigger>
-                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">
-                  Curated assortment, clearer variant selection, visible savings, and support that stays close.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
 
           </aside>
         </Reveal>
