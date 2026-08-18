@@ -7,11 +7,9 @@ import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero from "@/components/storefront/HomeHero";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { polishPlainText } from "@/lib/formatters";
-import { useCollections } from "@/lib/collections-data";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
-import { isBestSellerCollectionHandle } from "@/lib/homepage-merchandising";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroEverydayEssentials from "@/assets/hero-everyday-essentials-square.webp";
 import heroPortableGadgets from "@/assets/hero-portable-gadgets-square.webp";
@@ -19,7 +17,7 @@ import heroTravelOutdoor from "@/assets/hero-travel-outdoor-square.webp";
 import heroWomensBeauty from "@/assets/hero-womens-beauty-square.webp";
 import heroMain from "@/assets/hero-main.jpg";
 import type { HomeHeroSlide } from "@/components/storefront/HomeHero";
-import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
+import type { ShopifyProduct } from "@/types/shopify";
 
 type ReviewTile = {
   key: string;
@@ -113,18 +111,6 @@ function normalizeText(value: string | null | undefined): string {
     .replace(/[^a-z0-9]+/g, " ");
 }
 
-function findBestSellerCollection(collections: ShopifyCollection[]): ShopifyCollection | null {
-  const byHandle = collections.find((collection) =>
-    isBestSellerCollectionHandle(collection.handle),
-  );
-  if (byHandle) {
-    return byHandle;
-  }
-
-  const byTitle = collections.find((collection) => /best\s*[- ]?\s*sellers?/i.test(collection.title));
-  return byTitle || null;
-}
-
 function productSearchText(product: ShopifyProduct): string {
   const tags = Array.isArray(product.tags) ? product.tags.join(" ") : String(product.tags || "");
   return normalizeText(`${product.title} ${product.product_type} ${tags}`);
@@ -171,15 +157,10 @@ function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
 const HomePage = () => {
   // Do not download the full 6k-product catalog just to render curated homepage cards.
   // Full catalog loading remains on search, collection, and product routes.
-  const { data: collectionsPayload } = useCollections();
   const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
-  const { data: homeCollectionProductsPayload } = useHomeCollectionProducts();
+  const homeCollectionProductsQuery = useHomeCollectionProducts();
+  const { data: homeCollectionProductsPayload } = homeCollectionProductsQuery;
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
-  const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
-  const bestSellerCollection = useMemo(
-    () => findBestSellerCollection(collections),
-    [collections],
-  );
   const homeCardSources = useMemo<HomeCardSource[]>(() => {
     const collectionProducts = homeCollectionProductsPayload
       ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) => section.products)
@@ -403,10 +384,9 @@ const HomePage = () => {
       />
       <div className="space-y-4 sm:space-y-5">
         <HomeHero
-          featured={homeFeaturedProductsPayload?.bestSellerProducts?.slice(0, 4) || []}
-          leadCollection={bestSellerCollection}
           slides={homeHeroSlides}
           reviewSummaries={homeRatingsById}
+          loading={homeCollectionProductsQuery.isPending}
         />
 
         {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>

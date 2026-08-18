@@ -44,6 +44,67 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
   },
 };
 
+type SaltHomeCollectionPreloadWindow = Window & {
+  __SALT_HOME_COLLECTION_PREFETCH__?: Promise<unknown>;
+};
+
+function normalizeHomeCollectionPayload(input: unknown): HomeCollectionProductsPayload {
+  if (!input || typeof input !== "object") {
+    return EMPTY_PAYLOAD;
+  }
+
+  const payload = input as Partial<HomeCollectionProductsPayload>;
+  const sections = payload.sections;
+  if (!sections || typeof sections !== "object") {
+    return EMPTY_PAYLOAD;
+  }
+
+  const sectionEntries = Object.entries(EMPTY_PAYLOAD.sections).map(([key, fallback]) => {
+    const section = sections[key as keyof typeof sections];
+    if (!section || typeof section !== "object") {
+      return [key, fallback] as const;
+    }
+
+    const products = Array.isArray(section.products)
+      ? section.products.filter(
+          (product): product is HomeCollectionProduct =>
+            Boolean(
+              product &&
+                typeof product === "object" &&
+                Number(product.id) > 0 &&
+                String(product.title || "").trim() &&
+                String(product.handle || "").trim() &&
+                String(product.image || "").trim(),
+            ),
+        )
+      : [];
+
+    return [
+      key,
+      {
+        title: String(section.title || fallback.title),
+        handle: String(section.handle || fallback.handle),
+        products,
+      },
+    ] as const;
+  });
+
+  return {
+    generatedAt: String(payload.generatedAt || new Date().toISOString()),
+    source: String(payload.source || HOME_COLLECTION_PRODUCTS_PATH),
+    sections: Object.fromEntries(sectionEntries) as HomeCollectionProductsPayload["sections"],
+  };
+}
+
+function getHomeCollectionPrefetch(): Promise<HomeCollectionProductsPayload> | undefined {
+  if (typeof window === "undefined" || window.location.pathname !== "/") {
+    return undefined;
+  }
+
+  const preload = (window as SaltHomeCollectionPreloadWindow).__SALT_HOME_COLLECTION_PREFETCH__;
+  return preload?.then(normalizeHomeCollectionPayload).catch(() => loadHomeCollectionProducts());
+}
+
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
   try {
     const response = await fetch(resolveThemeAsset("/data/home-collection-products.json"), {
@@ -52,18 +113,22 @@ async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPaylo
       cache: "no-cache",
     });
     if (!response.ok) throw new Error("Homepage collection products are unavailable");
-    return (await response.json()) as HomeCollectionProductsPayload;
+    return normalizeHomeCollectionPayload(await response.json());
   } catch {
     return EMPTY_PAYLOAD;
   }
 }
 
 export function useHomeCollectionProducts() {
+  const prefetch = getHomeCollectionPrefetch();
+
   return useQuery({
     queryKey: ["home-collection-products", "catalog"],
-    queryFn: loadHomeCollectionProducts,
+    queryFn: () => prefetch || loadHomeCollectionProducts(),
     staleTime: 0,
-    refetchOnMount: "always",
+    // The theme starts the same no-cache request before React evaluates. Do
+    // not immediately issue a second request and delay the first usable hero.
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: false,
   });

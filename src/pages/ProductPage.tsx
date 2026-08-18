@@ -1054,6 +1054,16 @@ const ProductPage = () => {
                   )}
                 </div>
               </div>
+              <div className="mt-3 rounded-[1.45rem] border border-border/80 bg-background p-3">
+                <TrustStrip
+                  items={[
+                    { icon: Truck, label: "Free US shipping" },
+                    { icon: PackageCheck, label: "Tracked fulfillment" },
+                    { icon: ShieldCheck, label: "30-day returns" },
+                    { icon: BadgeCheck, label: "Secure payment" },
+                  ]}
+                />
+              </div>
             </div>
           </Reveal>
 
@@ -1425,16 +1435,6 @@ tune itni kharab photo li h meri
               </AccordionItem>
             </Accordion>
 
-            <div className="mt-4 rounded-[1.45rem] border border-border/80 bg-background p-3">
-              <TrustStrip
-                items={[
-                  { icon: Truck, label: "Free US shipping" },
-                  { icon: PackageCheck, label: "Tracked fulfillment" },
-                  { icon: ShieldCheck, label: "30-day returns" },
-                  { icon: BadgeCheck, label: "Secure payment" },
-                ]}
-              />
-            </div>
           </aside>
         </Reveal>
       </div>
