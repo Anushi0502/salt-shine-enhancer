@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
@@ -19,6 +19,8 @@ type HeaderSearchResultsProps = {
 function normalizeSearchPhrase(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
+
+const SEARCH_DEBOUNCE_MS = 180;
 
 function scoreQuickSearchProduct(
   product: ShopifyProduct,
@@ -64,31 +66,52 @@ const HeaderSearchResults = ({
   onSearchAll,
   onQuickSearch,
 }: HeaderSearchResultsProps) => {
-  // Keep the controlled header input on the urgent lane. Matching the full
-  // catalog is intentionally deferred so typing never waits for 14k records
-  // to be scanned and sorted on the main thread.
-  const deferredQuery = useDeferredValue(query).trim();
-  const { data: productsData } = useProductSearchIndex();
-  const { data: collectionsData } = useCollections();
-  const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
-  const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
+  // Keep the controlled header input responsive. The catalog matcher is
+  // intentionally debounced so typing does not rescan 14k records on every
+  // keypress; this mirrors the lightweight predictive-search path used by
+  // the faster Future Light Store experience.
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const deferredQuery = debouncedQuery.trim();
   const hasSearchQuery = Boolean(query.trim());
   const normalizedQuery = useMemo(() => normalizeSearchPhrase(deferredQuery), [deferredQuery]);
   const queryTokens = useMemo(() => normalizedQuery.split(/\s+/).filter(Boolean), [normalizedQuery]);
+  const canMatchProducts = normalizedQuery.length >= 2;
+  // Do not download the full catalog just because the search panel opened.
+  // The compact index is needed only after the shopper has entered a useful
+  // two-character query; empty-panel quick picks stay entirely local.
+  const { data: productsData } = useProductSearchIndex(canMatchProducts, false);
+  const { data: collectionsData } = useCollections(canMatchProducts);
+  const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
+  const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const quickSearchRecords = useMemo(
-    () =>
-      allProducts.map((product) => ({
+    () => {
+      if (!canMatchProducts) {
+        return [];
+      }
+
+      return allProducts.map((product) => ({
         product,
         title: normalizeSearchPhrase(product.title),
         type: normalizeSearchPhrase(product.product_type || ""),
         tags: Array.isArray(product.tags)
           ? normalizeSearchPhrase(product.tags.join(" "))
           : normalizeSearchPhrase(String(product.tags || "")),
-      })),
-    [allProducts],
+      }));
+    },
+    [allProducts, canMatchProducts],
   );
   const quickSearchBuckets = useMemo(() => {
     const buckets = new Map<string, typeof quickSearchRecords>();
+
+    if (!canMatchProducts) {
+      return buckets;
+    }
 
     quickSearchRecords.forEach((record) => {
       const searchableText = [record.title, record.type, record.tags].join(" ");
@@ -109,7 +132,7 @@ const HeaderSearchResults = ({
     });
 
     return buckets;
-  }, [quickSearchRecords]);
+  }, [canMatchProducts, quickSearchRecords]);
   const typeSuggestions = useMemo(() => {
     const counts = new Map<string, number>();
 
@@ -170,26 +193,13 @@ const HeaderSearchResults = ({
       return DEFAULT_TRENDING_SEARCHES;
     }
 
-    const counts = new Map<string, number>();
-
-    allProducts.forEach((product) => {
-      const label = String(product.product_type || "").trim();
-      if (!label) {
-        return;
-      }
-      counts.set(label, (counts.get(label) || 0) + 1);
-    });
-
-    const topFromCatalog = [...counts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .map(([label]) => label)
-      .slice(0, 5);
+    const topFromCatalog = typeSuggestions.slice(0, 5).map(({ label }) => label);
     const merged = [...topFromCatalog, ...DEFAULT_TRENDING_SEARCHES];
 
     return merged
       .filter((value, index) => merged.findIndex((entry) => entry.toLowerCase() === value.toLowerCase()) === index)
       .slice(0, 6);
-  }, [allProducts]);
+  }, [allProducts.length, typeSuggestions]);
 
   const categorySuggestions = useMemo(() => {
     const suggestions: Array<{ label: string; to: string }> = [];

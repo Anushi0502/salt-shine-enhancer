@@ -150,6 +150,29 @@ function updateStructuredData(
   );
   existingScripts.forEach((script) => script.remove());
 
+  const payloadTypes = new Set(
+    payloads.flatMap((payload) => {
+      const type = payload && typeof payload === "object" ? payload["@type"] : null;
+      return Array.isArray(type) ? type.map(String) : type ? [String(type)] : [];
+    }),
+  );
+  if (payloadTypes.size) {
+    Array.from(document.head.querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"]'))
+      .filter((script) => script.getAttribute("data-seo-scope") !== scope)
+      .forEach((script) => {
+        try {
+          const parsed = JSON.parse(script.textContent || "") as Record<string, unknown>;
+          const type = parsed["@type"];
+          const existingTypes = Array.isArray(type) ? type.map(String) : type ? [String(type)] : [];
+          if (existingTypes.some((entry) => payloadTypes.has(entry))) {
+            script.remove();
+          }
+        } catch {
+          // Leave third-party JSON-LD untouched when it is not valid JSON.
+        }
+      });
+  }
+
   const scripts = payloads.map((payload, index) => {
     const script = document.createElement("script");
     script.type = "application/ld+json";

@@ -30,7 +30,7 @@ type SaltHomePreloadWindow = Window & {
 
 const HOME_FEATURED_PRODUCTS_PATH = "/data/home-featured-products.json";
 const HOME_FEATURED_PRODUCTS_QUERY_KEY = ["home-featured-products", "catalog"] as const;
-const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 0;
+const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 5 * 60 * 1000;
 
 function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined): HomeFeaturedProduct | null {
   const id = Number(input?.id || 0);
@@ -91,9 +91,9 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
   try {
     const url = resolveThemeAsset(HOME_FEATURED_PRODUCTS_PATH);
-    // Revalidate every visit for fresh merchandising while allowing Shopify's
-    // CDN/browser cache to satisfy unchanged snapshots with a 304 response.
-    const response = await fetch(url, { cache: "no-cache" });
+    // Theme assets are versioned on publish. Reuse the browser/CDN response
+    // during a short browsing session instead of revalidating on every mount.
+    const response = await fetch(url, { cache: "force-cache" });
 
     if (!response.ok || !/json/i.test(response.headers.get("content-type") || "")) {
       throw new Error("Catalog-backed home products are unavailable");
@@ -134,7 +134,7 @@ export function useHomeFeaturedProducts(enabled = true) {
     enabled,
     initialData: inlineProducts,
     staleTime: HOME_FEATURED_PRODUCTS_STALE_TIME_MS,
-    refetchOnMount: "always",
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,

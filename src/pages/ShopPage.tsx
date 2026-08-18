@@ -16,6 +16,7 @@ import Reveal from "@/components/storefront/Reveal";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import TrustStrip from "@/components/storefront/TrustStrip";
+import EverydayCarryEssentials from "@/components/storefront/EverydayCarryEssentials";
 
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
@@ -37,6 +38,10 @@ import {
   rankProductsForShopChannel,
 } from "@/lib/sales-optimization";
 import type { SearchIntelligence } from "@/lib/search-intelligence";
+import {
+  EVERYDAY_CARRY_COLLECTION_HANDLES,
+  buildEverydayCarryFaqStructuredData,
+} from "@/lib/aeo-content";
 import type { ShopifyCollection, ShopifyProduct } from "@/types/shopify";
 
 const sortOptions = [
@@ -583,6 +588,8 @@ const ShopPage = () => {
   const understoodIntent = searchIntelligence?.intent ?? null;
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const aeoCollectionHandle = normalizeHandle(routeCollectionAlias || selectedCollection?.handle || collectionHandle);
+  const showEverydayCarryEssentials = !hasSearchQuery && EVERYDAY_CARRY_COLLECTION_HANDLES.has(aeoCollectionHandle);
   const seoStructuredData = useMemo(() => {
     if (!origin) {
       return [];
@@ -598,8 +605,11 @@ const ShopPage = () => {
         },
       ]),
       ...(selectedCollection ? buildCollectionStructuredData(selectedCollection, origin) : []),
+      ...(showEverydayCarryEssentials
+        ? [buildEverydayCarryFaqStructuredData(origin, location.pathname)]
+        : []),
     ].filter(Boolean);
-  }, [curatedCollection?.title, curatedSubcollection?.title, location.pathname, origin, selectedCollection]);
+  }, [curatedCollection?.title, curatedSubcollection?.title, location.pathname, origin, selectedCollection, showEverydayCarryEssentials]);
   const seoTitle = query.trim()
     ? `Search "${query.trim()}" | SALT Online Store`
     : `${curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Shop"} | SALT Online Store`;
@@ -820,7 +830,14 @@ const ShopPage = () => {
     { label: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Catalog" },
   ];
   const sidebarFilterPanelContent = (
-    <div className="mt-2 grid gap-2">
+    <form
+      aria-label="Product filters"
+      className="mt-2 grid gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        applyCustomPrice();
+      }}
+    >
       <div className="grid gap-1">
         <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collection</p>
         <select
@@ -890,7 +907,10 @@ const ShopPage = () => {
 
       <div className="grid gap-1.5 border-t border-border/70 pt-2.5">
         <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Custom price</p>
+        <label htmlFor="min_price" className="sr-only">Minimum price</label>
         <input
+          id="min_price"
+          name="min_price"
           type="number"
           min={0}
           inputMode="numeric"
@@ -900,7 +920,10 @@ const ShopPage = () => {
           className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
+        <label htmlFor="max_price" className="sr-only">Maximum price</label>
         <input
+          id="max_price"
+          name="max_price"
           type="number"
           min={0}
           inputMode="numeric"
@@ -911,21 +934,25 @@ const ShopPage = () => {
           aria-label="Maximum price"
         />
         <button
-          type="button"
-          onClick={() => {
-            applyCustomPrice();
-            setMobileFiltersOpen(false);
-          }}
+          type="submit"
           className="salt-primary-cta h-8.5 w-full justify-center text-[0.58rem] font-bold uppercase tracking-[0.08em]"
         >
           Apply price
         </button>
       </div>
-    </div>
+    </form>
   );
 
   const mobileFilterPanelContent = (
-    <div className="mt-2 grid gap-2">
+    <form
+      aria-label="Product filters"
+      className="mt-2 grid gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        applyCustomPrice();
+        setMobileFiltersOpen(false);
+      }}
+    >
       <div className="salt-filter-grid sm:grid-cols-2 lg:grid-cols-4">
         <select
           aria-label="Collection filter"
@@ -981,7 +1008,10 @@ const ShopPage = () => {
       </div>
 
       <div className="salt-filter-grid sm:grid-cols-[1fr_1fr_auto]">
+        <label htmlFor="min_price" className="sr-only">Minimum price</label>
         <input
+          id="min_price"
+          name="min_price"
           type="number"
           min={0}
           inputMode="numeric"
@@ -991,7 +1021,10 @@ const ShopPage = () => {
           className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
+        <label htmlFor="max_price" className="sr-only">Maximum price</label>
         <input
+          id="max_price"
+          name="max_price"
           type="number"
           min={0}
           inputMode="numeric"
@@ -1002,14 +1035,13 @@ const ShopPage = () => {
           aria-label="Maximum price"
         />
         <button
-          type="button"
-          onClick={applyCustomPrice}
+          type="submit"
           className="salt-primary-cta h-9 w-full px-3 text-[0.62rem] font-bold uppercase tracking-[0.08em] sm:w-auto"
         >
           Apply price
         </button>
       </div>
-    </div>
+    </form>
   );
 
   return (
@@ -1025,6 +1057,8 @@ const ShopPage = () => {
       <Reveal>
         <InnerBreadcrumbs items={breadcrumbItems} />
       </Reveal>
+
+      {showEverydayCarryEssentials ? <EverydayCarryEssentials /> : null}
 
       {hasSearchQuery ? (
         <Reveal delayMs={35}>

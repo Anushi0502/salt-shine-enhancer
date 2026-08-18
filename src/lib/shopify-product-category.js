@@ -120,8 +120,20 @@ export function inferDeterministicShopifyTaxonomyCategory(product) {
 
   const classification = classifyCatalogTaxonomy(product);
   const fullName = normalizePlainText(classification?.shopifyCategory || "");
-  const result = classification?.reviewRequired || !fullName
-    ? null
+  const evidence = buildProductEvidenceText(product);
+  const reviewSafeApparelFallback = classification?.reviewRequired &&
+    /\b(?:apparel|clothing|clothes|denim|dress|dresses|jumpsuit|jeans|pants|trousers|shirt|shirts|skirt|jacket|coat|hoodie|sweater|shorts|wear|fashion)\b/i.test(evidence)
+    ? {
+        id: "gid://shopify/TaxonomyCategory/aa",
+        name: "Apparel & Accessories",
+        fullName: "Apparel & Accessories",
+        confidence: "review-fallback",
+        reason: "Broad apparel category only; semantic taxonomy remains held for review",
+        ruleId: classification?.ruleId || "unclassified",
+      }
+    : null;
+  const result = reviewSafeApparelFallback || !fullName
+    ? reviewSafeApparelFallback
     : {
         id: "",
         name: fullName.split(/\s*>\s*/).at(-1) || fullName,

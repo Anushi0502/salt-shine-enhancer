@@ -30,6 +30,8 @@ type ReviewTile = {
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
+const HOME_PRODUCT_DISPLAY_LIMIT = 8;
+const HOME_RATING_PRODUCT_LIMIT = 4;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -163,24 +165,26 @@ const HomePage = () => {
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
   const homeCardSources = useMemo<HomeCardSource[]>(() => {
     const collectionProducts = homeCollectionProductsPayload
-      ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) => section.products)
+      ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) =>
+          section.products.slice(0, HOME_RATING_PRODUCT_LIMIT),
+        )
       : [];
 
     return [
-      ...(homeFeaturedProductsPayload?.bestSellerProducts || []),
+      ...(homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, HOME_PRODUCT_DISPLAY_LIMIT),
       ...collectionProducts,
     ];
   }, [homeCollectionProductsPayload, homeFeaturedProductsPayload?.bestSellerProducts]);
   const homeRatingsQuery = useJudgeMeRatings(homeCardSources.map((product) => product.id));
   const homeRatingsById = homeRatingsQuery.data || {};
   const bestSellerTiles = useMemo(
-    () => (homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, 15).map(toProductCardProduct),
+    () =>
+      (homeFeaturedProductsPayload?.bestSellerProducts || [])
+        .slice(0, HOME_PRODUCT_DISPLAY_LIMIT)
+        .map(toProductCardProduct),
     [homeFeaturedProductsPayload?.bestSellerProducts],
   );
-  const bestSellerDisplayTiles = useMemo(
-    () => bestSellerTiles.slice(0, 12),
-    [bestSellerTiles],
-  );
+  const bestSellerDisplayTiles = bestSellerTiles;
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
     const sections = homeCollectionProductsPayload?.sections;
     if (!sections) {
@@ -232,14 +236,17 @@ const HomePage = () => {
           ].map((section) => ({
             title: section.title,
             to: `/collections/${section.handle}`,
-            products: section.products.slice(0, 12).map(toProductCardProduct),
+            products: section.products.slice(0, HOME_PRODUCT_DISPLAY_LIMIT).map(toProductCardProduct),
           }))
       : [],
     [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   const reviewScrollPositionRef = useRef(0);
-  const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } = useJudgeMeTestimonials();
+  // The homepage displays at most REVIEW_DISPLAY_LIMIT testimonials. Do not
+  // crawl Judge.me's entire review archive just to populate that carousel.
+  const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } =
+    useJudgeMeTestimonials(REVIEW_DISPLAY_LIMIT);
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     if (judgeMeTestimonials.length > 0) {
       return judgeMeTestimonials

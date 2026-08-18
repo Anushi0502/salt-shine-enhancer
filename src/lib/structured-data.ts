@@ -14,6 +14,7 @@ export function buildOrganizationStructuredData(
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${origin}/#organization`,
     name: shop?.name || "SALT",
     url: origin,
   };
@@ -26,6 +27,7 @@ export function buildWebsiteStructuredData(
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${origin}/#website`,
     name: shop?.name || "SALT",
     url: origin,
     potentialAction: {

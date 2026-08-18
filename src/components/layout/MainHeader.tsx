@@ -21,7 +21,11 @@ import {
   type SiteHeaderCollectionLink,
 } from "@/lib/site-navigation";
 import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
-import { mapShopifyCustomerAccountSnapshot } from "@/lib/shopify-customer-account";
+import {
+  clearShopifyCustomerAccountSession,
+  getStoredShopifyCustomerAccountToken,
+  mapShopifyCustomerAccountSnapshot,
+} from "@/lib/shopify-customer-account";
 import { useWishlist } from "@/lib/wishlist";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -173,30 +177,83 @@ function isDrawerSubcollectionActive(
 }
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
+// Preserve the original Shop-backed Account & Orders destination.
 const SHOPIFY_CUSTOMER_ACCOUNT_URL = "https://shopify.com/58076594275/account";
+type HeaderAuthState = {
+  status: "loading" | "signed-out" | "signed-in" | "error";
+  routes: ReturnType<typeof getShopifyAccountRoutes> | null;
+  displayName: string;
+  email: string;
+  message?: string;
+};
+
+function createLoadingAuthState(): HeaderAuthState {
+  return { status: "loading", routes: null, displayName: "", email: "" };
+}
+
+function resolveHeaderAuthState(): HeaderAuthState {
+  try {
+    const routes = getShopifyAccountRoutes();
+    const runtime = getRuntimeContext();
+    const snapshot = mapShopifyCustomerAccountSnapshot(
+      runtime.customerAccountSnapshot as Parameters<typeof mapShopifyCustomerAccountSnapshot>[0],
+    );
+    const token = getStoredShopifyCustomerAccountToken();
+    const hasExpiredUnrefreshableToken = Boolean(
+      token && token.expiresAt <= Date.now() && !token.refreshToken,
+    );
+
+    if (hasExpiredUnrefreshableToken) {
+      clearShopifyCustomerAccountSession();
+      return {
+        status: "error",
+        routes,
+        displayName: "",
+        email: "",
+        message: "Your account session expired. Please sign in again.",
+      };
+    }
+
+    const displayName =
+      snapshot?.customer.displayName?.trim() || String(runtime.customerDisplayName || "").trim();
+    const email = snapshot?.customer.email?.trim() || String(runtime.customerEmail || "").trim();
+    const signedIn = routes.isLoggedIn || Boolean(snapshot) || Boolean(token) || Boolean(email);
+
+    return {
+      status: signedIn ? "signed-in" : "signed-out",
+      routes,
+      displayName,
+      email,
+    };
+  } catch {
+    return {
+      status: "error",
+      routes: null,
+      displayName: "",
+      email: "",
+      message: "Account status is temporarily unavailable. Please try signing in again.",
+    };
+  }
+}
 
 type HeaderMenuDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  auth: HeaderAuthState;
+  onSignOut: () => void;
 };
 
 function HeaderMenuDrawer({
   open,
   onOpenChange,
+  auth,
+  onSignOut,
 }: HeaderMenuDrawerProps) {
   const [expandedCollectionHandle, setExpandedCollectionHandle] = useState<string | null>(null);
   const location = useLocation();
-  const accountRoutes = useMemo(() => getShopifyAccountRoutes(), []);
-  const customerAccountSummary = useMemo(
-    () =>
-      mapShopifyCustomerAccountSnapshot(
-        getRuntimeContext().customerAccountSnapshot as Parameters<typeof mapShopifyCustomerAccountSnapshot>[0],
-      ),
-    [],
-  );
-  const accountDisplayName = customerAccountSummary?.customer.displayName?.trim() || "";
-  const accountHref = accountRoutes.isLoggedIn ? accountRoutes.account : accountRoutes.login;
-  const accountLabel = accountRoutes.isLoggedIn ? `Hello, ${accountDisplayName || "there"}` : "Hello, sign in";
+  const accountDisplayName = auth.displayName;
+  const accountHref = SHOPIFY_CUSTOMER_ACCOUNT_URL;
+  const accountLabel = auth.status === "signed-in" ? `Hello, ${accountDisplayName || "there"}` : "Hello, sign in";
   const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
   const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
   const quickLinks = [
@@ -247,20 +304,43 @@ function HeaderMenuDrawer({
             <p className="relative mb-2 text-[0.58rem] font-bold uppercase tracking-[0.2em] text-white/60">
               Browse SALT
             </p>
-            <SheetClose asChild>
-              <a
-                href={accountHref}
-                className="relative flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl pr-14 text-left transition hover:opacity-90"
-                aria-label={accountRoutes.isLoggedIn && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/18 bg-[linear-gradient(135deg,hsl(var(--salt-paper)/0.95),hsl(var(--salt-paper)/0.85))] text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_hsl(0_0%_100%/0.5)]">
-                  <CircleUserRound className="h-4.5 w-4.5" />
-                </span>
-                <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.24)]">
-                  {accountLabel}
-                </span>
-              </a>
-            </SheetClose>
+            {auth.status === "loading" ? (
+              <div role="status" aria-label="Checking account status" className="flex min-h-11 items-center gap-2.5">
+                <span className="h-9 w-9 animate-pulse rounded-full bg-white/15" />
+                <span className="h-3 w-28 animate-pulse rounded-full bg-white/15" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <SheetClose asChild>
+                  <a
+                    href={accountHref}
+                    className="relative flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl pr-2 text-left transition hover:opacity-90"
+                    aria-label={auth.status === "signed-in" && accountDisplayName ? `Open account for ${accountDisplayName}` : "Sign in to your account"}
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/18 bg-[linear-gradient(135deg,hsl(var(--salt-paper)/0.95),hsl(var(--salt-paper)/0.85))] text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_hsl(0_0%_100%/0.5)]">
+                      <CircleUserRound className="h-4.5 w-4.5" />
+                    </span>
+                    <span className="min-w-0 truncate font-semibold text-[0.9rem] leading-none tracking-[-0.01em] text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.24)]">
+                      {auth.status === "error" ? "Account unavailable" : accountLabel}
+                    </span>
+                  </a>
+                </SheetClose>
+                {auth.status === "signed-in" ? (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="shrink-0 rounded-lg border border-white/20 px-2 py-1.5 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-white/85 transition hover:bg-white/10"
+                  >
+                    Sign out
+                  </button>
+                ) : null}
+              </div>
+            )}
+            {auth.status === "error" ? (
+              <p role="alert" className="mt-2 max-w-[15rem] text-[0.68rem] leading-4 text-white/70">
+                {auth.message}
+              </p>
+            ) : null}
           </div>
 
           {/* Collections Section */}
@@ -458,6 +538,7 @@ const MainHeader = () => {
   const location = useLocation();
   const { itemCount: cartItemCount, openCartDrawer } = useCart();
   const { itemCount: wishlistItemCount } = useWishlist();
+  const [auth, setAuth] = useState<HeaderAuthState>(createLoadingAuthState);
   const headerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -468,6 +549,51 @@ const MainHeader = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
   const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
+
+  useEffect(() => {
+    let active = true;
+    const resolve = () => {
+      if (active) {
+        setAuth(resolveHeaderAuthState());
+      }
+    };
+
+    const timer = window.setTimeout(resolve, 0);
+    const onAccountChange = () => resolve();
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.startsWith("salt-shopify-customer-account")) {
+        resolve();
+      }
+    };
+
+    window.addEventListener("salt:customer-account-change", onAccountChange);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      window.removeEventListener("salt:customer-account-change", onAccountChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  const handleSignOut = () => {
+    // SALT Customer Account API sessions are local. Clear them and rerender
+    // immediately; only a legacy Shopify customer cookie needs a redirect.
+    const logoutHref = auth.routes?.isLoggedIn ? auth.routes.logout : "";
+    clearShopifyCustomerAccountSession();
+    setAuth({
+      status: "signed-out",
+      routes: auth.routes,
+      displayName: "",
+      email: "",
+    });
+    window.dispatchEvent(new Event("salt:customer-account-change"));
+
+    if (logoutHref) {
+      window.location.assign(logoutHref);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -781,18 +907,40 @@ const MainHeader = () => {
         </form>
 
         <div className="order-2 ml-auto hidden items-center gap-2 md:order-3 md:flex">
-          <a
-            href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
-            aria-label="Hello, sign in / Account and orders"
-            className="hidden min-w-0 flex-col rounded-[1rem] border border-border/70 bg-background/90 px-3.5 py-2 text-left shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:border-primary/18 hover:bg-background/96 lg:flex"
-          >
-            <span className="block text-[0.62rem] font-medium leading-none text-muted-foreground">
-              Hello, sign in
-            </span>
-            <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-foreground">
-              Account & Orders
-            </span>
-          </a>
+          {auth.status === "loading" ? (
+            <div role="status" aria-label="Checking account status" className="hidden h-11 w-36 animate-pulse rounded-[1rem] border border-border/70 bg-muted/45 lg:block" />
+          ) : (
+            <div className="hidden items-center gap-2 lg:flex">
+              <a
+                href={SHOPIFY_CUSTOMER_ACCOUNT_URL}
+                aria-label={
+                  auth.status === "signed-in"
+                    ? `Open account${auth.email ? ` for ${auth.email}` : ""}`
+                    : auth.status === "error"
+                      ? "Account unavailable; sign in again"
+                      : "Sign in to your account"
+                }
+                className="min-w-0 rounded-[1rem] border border-border/70 bg-background/90 px-3.5 py-2 text-left shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] transition hover:-translate-y-[1px] hover:border-primary/18 hover:bg-background/96"
+                data-salt-account-state={auth.status}
+              >
+                <span className="block text-[0.62rem] font-medium leading-none text-muted-foreground">
+                  {auth.status === "signed-in" ? `Hello, ${auth.displayName || auth.email || "there"}` : auth.status === "error" ? "Account unavailable" : "Hello, sign in"}
+                </span>
+                <span className="block whitespace-nowrap text-sm font-semibold leading-tight text-foreground">
+                  {auth.status === "signed-in" ? "Account & Orders" : "Sign in / Account"}
+                </span>
+              </a>
+              {auth.status === "signed-in" ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="rounded-full border border-border/70 px-2.5 py-2 text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground transition hover:border-primary/30 hover:text-foreground"
+                >
+                  Sign out
+                </button>
+              ) : null}
+            </div>
+          )}
 
           <Link
             to="/wishlist"
@@ -871,7 +1019,7 @@ const MainHeader = () => {
           </nav>
         </div>
       </header>
-      <HeaderMenuDrawer open={menuOpen} onOpenChange={setMenuOpen} />
+      <HeaderMenuDrawer open={menuOpen} onOpenChange={setMenuOpen} auth={auth} onSignOut={handleSignOut} />
     </>
   );
 };

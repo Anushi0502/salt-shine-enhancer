@@ -35,17 +35,16 @@ function warmProductRoute(event: Event) {
   });
 }
 
-// One delegated listener accelerates every current and future product card.
-// Desktop hover/focus normally finishes the request before click; pointerdown
-// gives touch users the same in-flight promise during route navigation.
+// Preload only on an intentional interaction. A document-level pointerover
+// listener made ordinary cursor movement across a product grid start the PDP
+// chunk and product-data request, which made the storefront feel heavy before
+// the shopper had selected anything.
 export default function ProductRoutePreloader() {
   useEffect(() => {
-    document.addEventListener("pointerover", warmProductRoute, { passive: true });
     document.addEventListener("focusin", warmProductRoute);
     document.addEventListener("pointerdown", warmProductRoute, { passive: true });
 
     return () => {
-      document.removeEventListener("pointerover", warmProductRoute);
       document.removeEventListener("focusin", warmProductRoute);
       document.removeEventListener("pointerdown", warmProductRoute);
     };

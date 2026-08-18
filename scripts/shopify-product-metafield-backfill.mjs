@@ -181,6 +181,7 @@ function parseArgs(argv) {
     productHandlesFile: "",
     onlyFields: [],
     productOnly: false,
+    categoriesOnly: false,
     allActive: false,
     skipLiveReviews: false,
   };
@@ -271,6 +272,11 @@ function parseArgs(argv) {
 
     if (token === "--product-only") {
       args.productOnly = true;
+      continue;
+    }
+
+    if (token === "--categories-only") {
+      args.categoriesOnly = true;
       continue;
     }
 
@@ -2163,12 +2169,12 @@ async function main() {
             writes: (plan.writes || []).filter((write) => onlyFields.has(write.fieldId)),
           }))
           .filter((plan) => plan.writes.length);
-  const productPlans = scopeWrites(backfillPlan.productPlans);
-  const marketingPlans = scopeWrites(marketingBackfillPlan.ownerPlans);
+  const productPlans = args.categoriesOnly ? [] : scopeWrites(backfillPlan.productPlans);
+  const marketingPlans = args.categoriesOnly ? [] : scopeWrites(marketingBackfillPlan.ownerPlans);
   const productBatches = buildMetafieldSetBatches(productPlans, 25);
   const marketingBatches = buildMarketingMetafieldSetBatches(marketingPlans, 25);
   const batches = [...productBatches, ...marketingBatches];
-  const categoryPlanResult = args.productOnly || onlyFields.size
+  const categoryPlanResult = args.productOnly || onlyFields.size || (args.categoriesOnly && args.productOnly)
     ? { plans: [], summary: { candidates: 0, paths: 0, resolved: 0, unresolved: 0 } }
     : await buildCategoryPlans(hydratedProducts);
   const categoryPlans = categoryPlanResult.plans;

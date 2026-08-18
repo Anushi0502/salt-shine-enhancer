@@ -274,9 +274,16 @@ export function resolveCollectionPolicyByLiveHandle(handle) {
 }
 
 export function assertCompleteCollectionGovernance(collections) {
+  const readOnlyHandles = new Set(
+    String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "")
+      .split(",")
+      .map(normalizeCollectionHandle)
+      .filter(Boolean),
+  );
   const unknown = (Array.isArray(collections) ? collections : [])
     .map((collection) => normalizeCollectionHandle(collection?.handle))
     .filter(Boolean)
+    .filter((handle) => !readOnlyHandles.has(handle))
     .filter((handle) => !resolveCollectionPolicyByLiveHandle(handle));
   if (unknown.length) {
     throw new Error(`Live collections missing checked-in governance: ${unknown.join(", ")}`);

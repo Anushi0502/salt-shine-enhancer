@@ -352,7 +352,10 @@ const ProductPage = () => {
   // Shopify's Liquid product prefetch or the in-flight route warmup is the
   // first-paint source. The direct Shopify product endpoint immediately
   // revalidates it; a stale catalog record is never painted as the PDP truth.
-  const { data: productData, isLoading, error, refetch } = useProductByHandle(handle, true, true);
+  // The Shopify document already contains the request-time product payload.
+  // Intentional link interaction warms live detail before navigation; avoid a
+  // second unconditional JSON request on every direct/refresh PDP load.
+  const { data: productData, isLoading, error, refetch } = useProductByHandle(handle, true, false);
   const secondaryContentAnchorRef = useRef<HTMLDivElement | null>(null);
   const [secondaryContentProductId, setSecondaryContentProductId] = useState<number | null>(null);
   const product = useMemo(() => productData, [productData]);

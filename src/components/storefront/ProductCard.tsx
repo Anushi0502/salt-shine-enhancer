@@ -1,8 +1,7 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { isNativeApp } from "@/lib/mobile";
 import {
   compareAt,
@@ -22,13 +21,6 @@ import ProductRating from "@/components/storefront/ProductRating";
 
 export type ProductCardVariant = "default" | "dense" | "shop";
 
-let shopifyDataModule: Promise<typeof import("@/lib/shopify-data")> | null = null;
-
-function loadLiveProduct(handle: string): Promise<ShopifyProduct> {
-  shopifyDataModule ??= import("@/lib/shopify-data");
-  return shopifyDataModule.then(({ loadProductByHandle }) => loadProductByHandle(handle));
-}
-
 type ProductCardProps = {
   product: ShopifyProduct;
   variant?: ProductCardVariant;
@@ -39,13 +31,11 @@ type ProductCardProps = {
 const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSummary, className = "" }: ProductCardProps) => {
   const cardRef = useRef<HTMLElement | null>(null);
   const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
-  const [shouldRefreshLive, setShouldRefreshLive] = useState(false);
 
   useEffect(() => {
     const node = cardRef.current;
     if (!node || typeof IntersectionObserver === "undefined") {
       setHasEnteredViewport(true);
-      setShouldRefreshLive(true);
       return;
     }
 
@@ -59,51 +49,29 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         // remains mounted while scrolling, so Safari/Chrome do not discard a
         // product that has already been painted to save lazy-image memory.
         setHasEnteredViewport(true);
-        setShouldRefreshLive(true);
         observer.disconnect();
       },
-      { rootMargin: "240px 0px" },
+      // Keep below-the-fold media lazy until it is genuinely near the
+      // viewport. A 240px margin made a long homepage wake too many images
+      // during the first scroll frame.
+      { rootMargin: "96px 0px" },
     );
 
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
 
-  const normalizedHandle = String(snapshotProduct.handle || "").trim().toLowerCase();
-  const { data: liveProduct } = useQuery({
-    queryKey: ["product-card-live", normalizedHandle],
-    queryFn: () => loadLiveProduct(normalizedHandle),
-    enabled: shouldRefreshLive && Boolean(normalizedHandle),
-    staleTime: 15_000,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: false,
-  });
-  const product = useMemo<ShopifyProduct>(() => {
-    if (!liveProduct) {
-      return snapshotProduct;
-    }
-
-    // Shopify owns operational fields in real time. Keep curated merchandising
-    // copy from the instant local snapshot when the public product endpoint
-    // does not expose those app-managed metafields.
-    return {
-      ...snapshotProduct,
-      ...liveProduct,
-      body_html: liveProduct.body_html || snapshotProduct.body_html,
-      product_type: liveProduct.product_type || snapshotProduct.product_type,
-      customData: snapshotProduct.customData,
-      images: liveProduct.images.length ? liveProduct.images : snapshotProduct.images,
-      variants: liveProduct.variants.length ? liveProduct.variants : snapshotProduct.variants,
-    };
-  }, [liveProduct, snapshotProduct]);
+  const isShop = variant === "shop";
+  // Cards are rendered from the synced catalog snapshot. A card only needs
+  // display data; refreshing every visible card from Shopify creates a burst
+  // of requests and makes collection/home navigation feel sluggish. The PDP
+  // still loads the authoritative product detail when the shopper opens it.
+  const product = snapshotProduct;
   const { isWishlisted, toggleItem } = useWishlist();
   const reviewSummaryProvided = reviewSummary !== undefined;
   const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
   const nativeApp = isNativeApp();
   const isDense = variant === "dense";
-  const isShop = variant === "shop";
   const min = minPrice(product);
   const compare = compareAt(product);
   const discountPercent = compare > min ? Math.round(((compare - min) / compare) * 100) : 0;

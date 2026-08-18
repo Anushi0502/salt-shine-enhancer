@@ -164,6 +164,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% elsif salt_route contains '/collections/' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: salt_route %}
       {% assign salt_custom_canonical = true %}
+    {% elsif request.page_type == 'product' and product %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
+      {% assign salt_custom_canonical = true %}
     {% elsif salt_route == '/cart' or salt_route == '/wishlist' or salt_route == '/recently-viewed' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
     {% elsif salt_route == '/pages/wishlist' %}
@@ -283,6 +286,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://{{ request.host }}/#organization",
         "name": {{ shop.name | json }},
         "url": "https://{{ request.host }}/",
         "logo": {{ 'brand-salt-logo.png' | asset_url | json }}
@@ -292,6 +296,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://{{ request.host }}/#website",
         "name": {{ shop.name | json }},
         "url": "https://{{ request.host }}/",
         "potentialAction": {
@@ -564,18 +569,14 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
           if (!match) return;
 
           var handle = decodeURIComponent(match[1]);
-          var url = '/products/' + encodeURIComponent(handle) + '.js';
           var inlineProduct = {{ product | json }};
           window.__SALT_PRODUCT_PREFETCH__ = {
             handle: handle.toLowerCase(),
             raw: inlineProduct && inlineProduct.id ? inlineProduct : null,
-            // Use the inline payload for the first paint, but always revalidate
-            // the direct product endpoint so storefront prices cannot remain
-            // stuck on an older document snapshot.
-            payload: fetch(url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (response) {
-              if (!response.ok) throw new Error('Product preload failed (' + response.status + ')');
-              return response.json();
-            }),
+            // The request-time Liquid payload is already available to React.
+            // Do not start a second unused .js request before the PDP mounts;
+            // intentional pointer/focus navigation can still warm the live
+            // product query when the shopper actually chooses a product.
           };
         })();
       </script>
@@ -677,6 +678,14 @@ const sectionLiquid = `<div
   data-shop-base-url="https://{{ request.host | escape }}"
   data-shop-domain="{{ shop.permanent_domain | escape }}"
   data-shop-name="{{ shop.name | escape }}"
+  data-customer-logged-in="{% if customer %}true{% else %}false{% endif %}"
+  data-customer-display-name="{% if customer %}{{ customer.name | default: customer.first_name | default: customer.email | escape }}{% endif %}"
+  data-customer-email="{% if customer %}{{ customer.email | escape }}{% endif %}"
+  data-account-url="{{ routes.account_url | escape }}"
+  data-account-login-url="{{ routes.account_login_url | escape }}"
+  data-account-register-url="{{ routes.account_register_url | escape }}"
+  data-account-logout-url="{{ routes.account_logout_url | escape }}"
+  data-account-addresses-url="{{ routes.account_addresses_url | escape }}"
   data-judgeme-shop-domain="{{ shop.permanent_domain | escape }}"
   data-judgeme-public-token="TQ0rk940ADN89zj_f83SKuTYIfY"
   data-currency="{{ cart.currency.iso_code | default: shop.currency | escape }}"

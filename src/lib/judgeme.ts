@@ -42,9 +42,9 @@ type JudgeMeReviewCountResponse = {
 
 type JudgeMeReviewType = "product-reviews" | "shop-reviews";
 
-const JUDGEME_STALE_TIME_MS = 0;
-const JUDGEME_AUTO_REFRESH_MS = 90 * 1000;
-const JUDGEME_SUMMARY_CACHE_MS = 90 * 1000;
+const JUDGEME_STALE_TIME_MS = 5 * 60 * 1000;
+const JUDGEME_AUTO_REFRESH_MS = false;
+const JUDGEME_SUMMARY_CACHE_MS = 5 * 60 * 1000;
 const JUDGEME_RATING_CONCURRENCY = 6;
 const JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE = 6;
 const JUDGEME_ALL_REVIEWS_PAGE_SIZE = 25;
@@ -543,8 +543,8 @@ export function useJudgeMeRatings(productIds: number[], enabled = true) {
     staleTime: JUDGEME_STALE_TIME_MS,
     refetchInterval: JUDGEME_AUTO_REFRESH_MS,
     refetchIntervalInBackground: true,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
@@ -560,8 +560,8 @@ export function useJudgeMeTestimonials(limit = Number.POSITIVE_INFINITY) {
     staleTime: JUDGEME_STALE_TIME_MS,
     refetchInterval: false,
     refetchIntervalInBackground: false,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }

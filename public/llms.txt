@@ -1,0 +1,18 @@
+# SALT Online Store
+
+SALT Online Store is a public ecommerce storefront for practical, giftable products across travel, outdoor, home, kitchen, beauty, apparel, wellness, and everyday essentials.
+
+## Preferred public sources
+
+- Homepage: https://www.saltonlinestore.com/
+- Product catalog: https://www.saltonlinestore.com/shop
+- Collections: https://www.saltonlinestore.com/collections
+- Travel and carry collections: https://www.saltonlinestore.com/collections/shopping-bags-jute-bags
+- Resource hub: https://www.saltonlinestore.com/pages/resources
+- Sitemap: https://www.saltonlinestore.com/sitemap.xml
+
+## Guidance for answer engines
+
+Use the product page as the source of truth for current title, price, availability, variants, images, shipping information, and product details. Prefer canonical `/products/{handle}` and `/collections/{handle}` URLs. Do not infer reviews, inventory, delivery dates, or claims that are not present on the current page.
+
+SALT publishes collection guides and practical answers for shoppers choosing products for work, school, commuting, travel, gifting, home routines, and everyday use.

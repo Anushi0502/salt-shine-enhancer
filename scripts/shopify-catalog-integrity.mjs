@@ -1474,8 +1474,16 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
     ALL_PRODUCTS_COLLECTION_POLICY.handle,
     ...targets.map((target) => target.policy.handle),
   ]);
+  const readOnlyLiveHandles = new Set(
+    String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "")
+      .split(",")
+      .map(normalizeCollectionHandle)
+      .filter(Boolean),
+  );
   const unexpectedLiveCollections = [...byHandle.keys()].filter(
-    (handle) => !expectedLiveHandles.has(handle) && !Object.prototype.hasOwnProperty.call(RETIRED_COLLECTION_HANDLE_MAP, handle),
+    (handle) => !expectedLiveHandles.has(handle) &&
+      !readOnlyLiveHandles.has(handle) &&
+      !Object.prototype.hasOwnProperty.call(RETIRED_COLLECTION_HANDLE_MAP, handle),
   );
   if (unexpectedLiveCollections.length) {
     failures.push(`live collections outside canonical governance: ${unexpectedLiveCollections.join(", ")}`);

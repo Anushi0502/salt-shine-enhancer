@@ -2229,10 +2229,11 @@ export function useProductByHandle(
     queryKey: ["product", normalizedHandle, DATA_MODE],
     queryFn: () => loadProductByHandle(normalizedHandle),
     enabled: enabled && Boolean(normalizedHandle),
-    // The compact search/catalog payload is safe to paint immediately. Mark
-    // it stale so the full Shopify detail still refreshes in the background.
+    // Shopify's request-time Liquid payload is already the current product
+    // document. Treat it as fresh for this page so a direct PDP load does not
+    // immediately duplicate the same product with another JSON request.
     initialData: initialProduct,
-    initialDataUpdatedAt: initialProduct ? 0 : undefined,
+    initialDataUpdatedAt: initialProduct ? Date.now() : undefined,
     staleTime: liveRefresh ? 15_000 : CATALOG_STALE_TIME_MS,
     refetchOnMount: liveRefresh ? "always" : false,
     refetchOnWindowFocus: false,

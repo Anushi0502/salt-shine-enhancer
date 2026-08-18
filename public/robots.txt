@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://saltonlinestore.com/sitemap.xml
+Sitemap: https://www.saltonlinestore.com/sitemap.xml

@@ -108,9 +108,9 @@ function getHomeCollectionPrefetch(): Promise<HomeCollectionProductsPayload> | u
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
   try {
     const response = await fetch(resolveThemeAsset("/data/home-collection-products.json"), {
-      // Keep homepage merchandising realtime, but let unchanged Shopify assets
-      // use conditional requests instead of downloading the same JSON again.
-      cache: "no-cache",
+      // Theme assets are versioned on publish. Reuse the browser/CDN response
+      // during a short browsing session instead of revalidating on every mount.
+      cache: "force-cache",
     });
     if (!response.ok) throw new Error("Homepage collection products are unavailable");
     return normalizeHomeCollectionPayload(await response.json());
@@ -125,9 +125,9 @@ export function useHomeCollectionProducts() {
   return useQuery({
     queryKey: ["home-collection-products", "catalog"],
     queryFn: () => prefetch || loadHomeCollectionProducts(),
-    staleTime: 0,
-    // The theme starts the same no-cache request before React evaluates. Do
-    // not immediately issue a second request and delay the first usable hero.
+    staleTime: 5 * 60 * 1000,
+    // The request is cached for the current browsing session, so navigation
+    // back to the homepage does not refetch the same merchandising payload.
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: false,

@@ -15,6 +15,7 @@ import {
 } from "../src/lib/catalog-taxonomy-release.js";
 import {
   CATALOG_TAXONOMY_VERSION,
+  classifyCatalogTaxonomy,
   classifyCatalogTaxonomyByRuleId,
 } from "../src/lib/catalog-taxonomy.js";
 import { buildProductKnowledgeFromTaxonomy } from "../src/lib/product-knowledge-base.js";
@@ -771,10 +772,15 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
   const knowledgeByHandle = new Map(localProducts.map((product) => {
     const handle = normalizeText(product?.handle).toLowerCase();
     const frozen = classificationByHandle.get(handle);
-    const taxonomy = classifyCatalogTaxonomyByRuleId(product, frozen.ruleId, {
-      source: `catalog-integrity-${frozen.source || "verified"}`,
-      reason: "Frozen full-catalog collection-integrity classification",
-    });
+    const taxonomy = frozen.ruleId === "unclassified"
+      ? classifyCatalogTaxonomy(product)
+      : classifyCatalogTaxonomyByRuleId(product, frozen.ruleId, {
+        source: `catalog-integrity-${frozen.source || "verified"}`,
+        reason: "Frozen full-catalog collection-integrity classification",
+      });
+    if (frozen.ruleId === "unclassified" && taxonomy.ruleId !== "unclassified") {
+      throw new Error(`${handle}: frozen review classification changed from unclassified to ${taxonomy.ruleId}.`);
+    }
     return [handle, buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel })];
   }));
   const plan = buildCatalogTaxonomyReleasePlan(localProducts, liveProducts, {

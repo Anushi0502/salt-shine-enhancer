@@ -350,6 +350,19 @@ function stripHtml(value) {
     .trim();
 }
 
+function descriptionNeedsRepair(value) {
+  const body = String(value || "");
+  if (!body.trim()) return false;
+  const tags = [...body.matchAll(/<\/?([a-z0-9]+)\b/gi)].map((match) => match[1].toLowerCase());
+  const allowedTags = new Set(["h2", "h3", "p", "ul", "li", "strong", "ol"]);
+  if (tags.some((tag) => !allowedTags.has(tag))) return true;
+  const plain = stripHtml(body).toLowerCase();
+  return !plain.includes("about ") ||
+    !plain.includes("key details") ||
+    !/use (?:&amp;|&) care/.test(plain) ||
+    !plain.includes("faqs");
+}
+
 function escapeHtml(value) {
   return normalizePlainText(value)
     .replace(/&/g, "&amp;")
@@ -2119,6 +2132,7 @@ function buildProductProfile(signals) {
   const seoTitle = buildCanonicalSeoTitle(canonicalTitle, signals);
   const seoDescription = buildSeoDescription(canonicalTitle, signals, searchPhrases);
   const descriptionHtml = buildDescriptionHtml(canonicalTitle, signals);
+  const repairBody = descriptionNeedsRepair(signals.sourceBodyHtml);
   const altText = buildCanonicalAltText(signals, canonicalTitle);
 
   const productType = normalizePlainText(firstNonEmpty(signals.sourceProductType, signals.catalogProductType));
@@ -2163,7 +2177,7 @@ function buildProductProfile(signals) {
 
   const desiredProductInput = {
     title: rewriteLevel === "high" ? canonicalTitle : "",
-    descriptionHtml: rewriteLevel === "high" ? descriptionHtml : "",
+    descriptionHtml: rewriteLevel === "high" || repairBody ? descriptionHtml : "",
     productType,
     seo: {
       title: rewriteLevel !== "low" ? seoTitle : "",
@@ -2193,7 +2207,12 @@ function buildProductProfile(signals) {
     }
   } else {
     skippedFields.push({ field: "title", reason: rewriteLevel === "high" ? "already aligned" : "confidence below high threshold" });
-    skippedFields.push({ field: "body", reason: rewriteLevel === "high" ? "already aligned" : "confidence below high threshold" });
+    if (repairBody && descriptionHtml && normalizeComparableText(stripHtml(descriptionHtml)) !== normalizeComparableText(stripHtml(signals.sourceBodyHtml))) {
+      productInput.descriptionHtml = descriptionHtml;
+      changedFields.push("body");
+    } else {
+      skippedFields.push({ field: "body", reason: rewriteLevel === "high" ? "already aligned" : "confidence below high threshold" });
+    }
     skippedFields.push({ field: "alt", reason: "confidence below high threshold" });
   }
 
@@ -2752,6 +2771,10 @@ export function buildSeoBatchExportRows(rows, plan) {
     } else if (isPrimaryRow && productPlan.rewriteLevel === "medium") {
       setPreferredField(nextRow, ["SEO Title"], exportSeoTitle);
       setPreferredField(nextRow, ["SEO Description"], productPlan.productInput?.seo?.description || "");
+    }
+
+    if (isPrimaryRow && productPlan.rewriteLevel !== "high" && productPlan.productInput?.descriptionHtml) {
+      setPreferredField(nextRow, ["Body (HTML)"], productPlan.productInput.descriptionHtml);
     }
 
     if (isPrimaryRow && Object.prototype.hasOwnProperty.call(nextRow, "Tags")) {
