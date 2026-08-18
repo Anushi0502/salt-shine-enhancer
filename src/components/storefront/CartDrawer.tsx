@@ -33,6 +33,8 @@ const CartDrawer = () => {
     addItem,
   } = useCart();
   const previousRouteRef = useRef(`${location.pathname}${location.search}`);
+  const drawerContentRef = useRef<HTMLDivElement | null>(null);
+  const recommendationsAnchorRef = useRef<HTMLDivElement | null>(null);
   const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
   const { data: productsPayload } = useProductSearchIndex(shouldLoadRecommendations);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
@@ -57,10 +59,52 @@ const CartDrawer = () => {
       return undefined;
     }
 
-    // Let the drawer paint before loading the recommendation data. This keeps
-    // an empty cart instant and avoids a catalog fetch until it can be useful.
-    const timer = window.setTimeout(() => setShouldLoadRecommendations(true), 1400);
-    return () => window.clearTimeout(timer);
+    const root = drawerContentRef.current;
+    const anchor = recommendationsAnchorRef.current;
+    if (!root || !anchor || typeof IntersectionObserver === "undefined") {
+      const timer = window.setTimeout(() => setShouldLoadRecommendations(true), 1600);
+      return () => window.clearTimeout(timer);
+    }
+
+    let cancelled = false;
+    let anchorInView = false;
+    let userScrolled = false;
+    let delayId: number | null = null;
+
+    const maybeLoadRecommendations = () => {
+      if (cancelled || !userScrolled || !anchorInView || delayId !== null) {
+        return;
+      }
+
+      delayId = window.setTimeout(() => {
+        if (!cancelled) {
+          setShouldLoadRecommendations(true);
+        }
+      }, 260);
+    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        anchorInView = Boolean(entry?.isIntersecting);
+        maybeLoadRecommendations();
+      },
+      { root, rootMargin: "80px 0px" },
+    );
+    const handleScroll = () => {
+      userScrolled = true;
+      maybeLoadRecommendations();
+    };
+
+    root.addEventListener("scroll", handleScroll, { passive: true });
+    observer.observe(anchor);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      root.removeEventListener("scroll", handleScroll);
+      if (delayId !== null) {
+        window.clearTimeout(delayId);
+      }
+    };
   }, [isDrawerOpen, items.length]);
 
   const handleOpenFullCart = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -133,6 +177,7 @@ const CartDrawer = () => {
       <SheetContent
         side="right"
         data-salt-cart-drawer="true"
+        ref={drawerContentRef}
         className="z-[140] w-full !max-w-full overflow-y-auto border-l border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)))] px-0 py-0 sm:!w-[38rem] sm:!max-w-[38rem] lg:!w-[42rem] lg:!max-w-[42rem]"
       >
         <div className="flex min-h-full flex-col">
@@ -272,6 +317,7 @@ const CartDrawer = () => {
               </div>
             )}
 
+            <div ref={recommendationsAnchorRef} aria-hidden="true" className="h-px" />
             {recommendedProducts.length > 0 ? (
               <section className="mt-6">
                 <div className="mb-3 flex items-end justify-between gap-3">

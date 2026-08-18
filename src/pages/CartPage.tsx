@@ -38,6 +38,7 @@ function normalizeTitleLookup(input: string): string {
 const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear, addItem } = useCart();
   const recommendationsAnchorRef = useRef<HTMLDivElement | null>(null);
+  const hasUserScrolledRef = useRef(false);
   const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
   const { data: productsPayload } = useProductSearchIndex(shouldLoadRecommendations);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
@@ -200,22 +201,34 @@ const CartPage = () => {
     } else if (typeof IntersectionObserver === "undefined") {
       cancelAfterPaint = scheduleAfterPaint(loadRecommendations);
     } else {
+      let anchorInView = false;
+      const maybeLoadRecommendations = () => {
+        if (!hasUserScrolledRef.current || !anchorInView) {
+          return;
+        }
+
+        observer.disconnect();
+        loadRecommendations();
+      };
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (!entry?.isIntersecting) {
-            return;
-          }
-
-          observer.disconnect();
-          loadRecommendations();
+          anchorInView = Boolean(entry?.isIntersecting);
+          maybeLoadRecommendations();
         },
-        { rootMargin: "220px 0px" },
+        { rootMargin: "0px" },
       );
+      const handleScroll = () => {
+        hasUserScrolledRef.current = true;
+        maybeLoadRecommendations();
+      };
+
+      window.addEventListener("scroll", handleScroll, { passive: true });
       observer.observe(node);
 
       return () => {
         cancelled = true;
         observer.disconnect();
+        window.removeEventListener("scroll", handleScroll);
         if (delayId !== null) {
           window.clearTimeout(delayId);
         }

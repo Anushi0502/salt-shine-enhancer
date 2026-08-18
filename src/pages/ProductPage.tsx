@@ -357,6 +357,7 @@ const ProductPage = () => {
   // second unconditional JSON request on every direct/refresh PDP load.
   const { data: productData, isLoading, error, refetch } = useProductByHandle(handle, true, false);
   const secondaryContentAnchorRef = useRef<HTMLDivElement | null>(null);
+  const hasUserScrolledRef = useRef(false);
   const [secondaryContentProductId, setSecondaryContentProductId] = useState<number | null>(null);
   const product = useMemo(() => productData, [productData]);
   const loadSecondaryContent = Boolean(product?.id && secondaryContentProductId === product.id);
@@ -375,6 +376,7 @@ const ProductPage = () => {
   useEffect(() => {
     const node = secondaryContentAnchorRef.current;
     const productId = Number(product?.id || 0);
+    hasUserScrolledRef.current = false;
     setSecondaryContentProductId(null);
 
     if (!node || !productId || typeof IntersectionObserver === "undefined") {
@@ -384,24 +386,44 @@ const ProductPage = () => {
       return;
     }
 
+    let anchorInView = false;
+    let loadTimer: number | null = null;
+    const maybeLoadSecondaryContent = () => {
+      if (!hasUserScrolledRef.current || !anchorInView || loadTimer !== null) {
+        return;
+      }
+
+      loadTimer = window.setTimeout(() => {
+        startTransition(() => setSecondaryContentProductId(productId));
+      }, 0);
+    };
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) {
-          return;
+        anchorInView = entries.some((entry) => entry.isIntersecting);
+        if (anchorInView && hasUserScrolledRef.current) {
+          observer.disconnect();
         }
-
-        // Let the current scroll/frame paint before starting the heavier
-        // recommendation and collection-map queries.
-        window.setTimeout(() => {
-          startTransition(() => setSecondaryContentProductId(productId));
-        }, 0);
-        observer.disconnect();
+        maybeLoadSecondaryContent();
       },
-      { rootMargin: "420px 0px" },
+      { rootMargin: "120px 0px" },
     );
+    const handleScroll = () => {
+      hasUserScrolledRef.current = true;
+      if (anchorInView) {
+        observer.disconnect();
+      }
+      maybeLoadSecondaryContent();
+    };
 
+    window.addEventListener("scroll", handleScroll, { passive: true });
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+      if (loadTimer !== null) {
+        window.clearTimeout(loadTimer);
+      }
+    };
   }, [handle, product?.id]);
 
   const variants = useMemo(() => (product ? sortVariantsByPrice(product.variants) : []), [product]);

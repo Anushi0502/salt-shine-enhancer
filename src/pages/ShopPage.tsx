@@ -311,7 +311,22 @@ const ShopPage = () => {
   const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(false);
+  const needsFullCatalog =
+    isAllProductsCollection ||
+    hasSearchQuery ||
+    Boolean(typeFilter) ||
+    sort !== "featured" ||
+    minFilter != null ||
+    maxFilter != null ||
+    isVirtualPriceSubcollection;
+  const [shouldLoadFullCatalog, setShouldLoadFullCatalog] = useState(needsFullCatalog);
   const lastTrackedSearchRef = useRef("");
+
+  useEffect(() => {
+    if (needsFullCatalog) {
+      setShouldLoadFullCatalog(true);
+    }
+  }, [needsFullCatalog]);
 
   useEffect(() => {
     setCustomMinInput(minFilter == null ? "" : String(minFilter));
@@ -365,7 +380,7 @@ const ShopPage = () => {
     isLoading: productsLoading,
     error: productsError,
     refetch: refetchProducts,
-  } = useProductSearchIndex(true, !isVirtualPriceSubcollection);
+  } = useProductSearchIndex(true, !isVirtualPriceSubcollection, shouldLoadFullCatalog);
   const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
   const {
     data: collectionProductIdsPayload,
@@ -695,6 +710,10 @@ const ShopPage = () => {
   }
 
   const updateParams = (updates: Record<string, string | null>, resetPage = false) => {
+    if (Object.keys(updates).some((key) => ["q", "type", "sort", "min", "max"].includes(key))) {
+      setShouldLoadFullCatalog(true);
+    }
+
     const next = new URLSearchParams(searchParams);
 
     Object.entries(updates).forEach(([key, value]) => {

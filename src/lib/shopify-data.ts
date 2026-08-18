@@ -1804,15 +1804,13 @@ async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct>
   for (const base of getLiveCatalogBases()) {
     try {
       const liveProduct = normalizeProductRecord(await fetchProductByHandleFromLive(base, normalizedHandle));
-      try {
-        const cached = await fetchProductsFromCache();
-        const cachedProduct = cached.products.find(
-          (product) => String(product.handle || "").trim().toLowerCase() === normalizedHandle,
-        );
-        return cachedProduct ? mergeProductRecords(liveProduct, cachedProduct) : liveProduct;
-      } catch {
-        return liveProduct;
-      }
+      // Keep the request-time Shopify product authoritative without loading the
+      // full catalog snapshot just to recover optional merchandising fields.
+      // Direct PDP requests already carry a Liquid product seed in the head;
+      // merge that small record when available and leave client-side navigations
+      // on the live response alone.
+      const headProduct = getHeadPreloadedProduct(normalizedHandle);
+      return headProduct ? mergeProductRecords(liveProduct, headProduct) : liveProduct;
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
@@ -2244,11 +2242,15 @@ export function useProductByHandle(
   });
 }
 
-export function useProductSearchIndex(enabled = true, hydrateCollectionPage = true) {
+export function useProductSearchIndex(
+  enabled = true,
+  hydrateCollectionPage = true,
+  loadFullCatalog = enabled,
+) {
   const catalogQuery = useQuery({
     queryKey: ["product-search", DATA_MODE],
     queryFn: loadProductSearchIndex,
-    enabled,
+    enabled: enabled && loadFullCatalog,
     staleTime: CATALOG_STALE_TIME_MS,
     refetchOnMount: false,
     refetchOnWindowFocus: false,

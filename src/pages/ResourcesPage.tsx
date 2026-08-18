@@ -7,13 +7,15 @@ import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import Reveal from "@/components/storefront/Reveal";
 import ResourceGuideCard from "@/components/resources/ResourceGuideCard";
 import ResourceProductCard from "@/components/resources/ResourceProductCard";
-import { useDocumentMetadata } from "@/components/support/useDocumentMetadata";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { buildResourceReason } from "@/lib/editorial-pages";
 import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
-import { useEditorialPage, useProductSearchIndex } from "@/lib/shopify-data";
+import { useEditorialPage, useProductByHandle } from "@/lib/shopify-data";
+import { useCollections } from "@/lib/collections-data";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { buildResourceRoute, SITE_RESOURCE_GUIDES, getCollectionByHandle } from "@/lib/site-navigation";
+import { buildFaqStructuredData } from "@/lib/structured-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 type ResourceAction = {
@@ -66,7 +68,10 @@ function renderAction(action: ResourceAction) {
   );
 }
 
-function getCollectionLabel(collectionRoute?: string | null) {
+function getCollectionLabel(
+  collectionRoute: string | null | undefined,
+  adminCollectionsByHandle: Map<string, { title: string }>,
+) {
   const rawHandle = String(collectionRoute || "")
     .trim()
     .replace(/^\/+|\/+$/g, "")
@@ -76,16 +81,22 @@ function getCollectionLabel(collectionRoute?: string | null) {
     return "";
   }
 
-  return getCollectionByHandle(rawHandle)?.title || rawHandle.replace(/-/g, " ");
+  const staticCollection = getCollectionByHandle(rawHandle);
+  const adminCollection = [rawHandle, staticCollection?.handle, staticCollection?.shopifyHandle]
+    .map((handle) => String(handle || "").trim().toLowerCase())
+    .map((handle) => adminCollectionsByHandle.get(handle))
+    .find(Boolean);
+
+  return adminCollection?.title || staticCollection?.title || rawHandle.replace(/-/g, " ");
 }
 
-function buildGuideViews() {
+function buildGuideViews(adminCollectionsByHandle: Map<string, { title: string }>) {
   return SITE_RESOURCE_GUIDES.map((guide, index) => {
     return {
       title: guide.title,
       summary: guide.summary,
       to: buildResourceRoute(guide.handle),
-      collectionLabel: getCollectionLabel(guide.collectionRoute) || "Collection route",
+      collectionLabel: getCollectionLabel(guide.collectionRoute, adminCollectionsByHandle) || "Collection route",
       topicCount: guide.topics.length,
       topicPreview: guide.topics.slice(0, 3).map((topic) => topic.title),
       featured: index === 0,
@@ -118,20 +129,40 @@ function buildFeaturedProductViews(pageTitle: string, productsByHandle: Map<stri
 
 const ResourcesPage = () => {
   const { data, isLoading, error, refetch } = useEditorialPage("resources");
-  const { data: productsData } = useProductSearchIndex();
+  const { data: collectionsData } = useCollections();
+  const featuredProduct0Query = useProductByHandle(RESOURCE_HUB_HUB_FEATURED_PRODUCTS[0]?.handle);
+  const featuredProduct1Query = useProductByHandle(RESOURCE_HUB_HUB_FEATURED_PRODUCTS[1]?.handle);
+  const featuredProduct2Query = useProductByHandle(RESOURCE_HUB_HUB_FEATURED_PRODUCTS[2]?.handle);
   const page = data?.page;
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
 
-  useDocumentMetadata(
-    page?.seoTitle || "Resource Hub | SALT Online Store",
-    page?.metaDescription || page?.summary || "A calm resource hub that points shoppers to the right guide, topic, and product.",
-    { canonicalPath: "/pages/resources" },
+  const adminCollectionsByHandle = useMemo(
+    () =>
+      new Map(
+        (collectionsData?.collections || []).map((collection) => [
+          String(collection.handle || "").trim().toLowerCase(),
+          { title: collection.title },
+        ]),
+      ),
+    [collectionsData?.collections],
   );
 
-  const productsByHandle = useMemo(() => {
-    return new Map((productsData?.products || []).map((product) => [product.handle, product]));
-  }, [productsData?.products]);
+  const resourceStructuredData = useMemo(
+    () => [buildFaqStructuredData(page?.faqs, origin)].filter(Boolean),
+    [origin, page?.faqs],
+  );
 
-  const guideViews = useMemo(() => buildGuideViews(), []);
+  const productsByHandle = useMemo(
+    () =>
+      new Map(
+        [featuredProduct0Query.data, featuredProduct1Query.data, featuredProduct2Query.data]
+      .filter((product): product is ShopifyProduct => Boolean(product))
+      .map((product) => [product.handle, product]),
+      ),
+    [featuredProduct0Query.data, featuredProduct1Query.data, featuredProduct2Query.data],
+  );
+
+  const guideViews = useMemo(() => buildGuideViews(adminCollectionsByHandle), [adminCollectionsByHandle]);
   const featuredProducts = useMemo(
     () => buildFeaturedProductViews(page?.title || "Resource Hub", productsByHandle).slice(0, 3),
     [page?.title, productsByHandle],
@@ -181,7 +212,15 @@ const ResourcesPage = () => {
       ]) as ResourceAction[];
 
   return (
-    <section className="mx-auto w-[min(1240px,calc(100%_-_20px))] pb-16 pt-4 sm:pb-18 sm:pt-5">
+    <>
+      <SeoMetadata
+        title={page.seoTitle || "Resource Hub | SALT Online Store"}
+        description={page.metaDescription || page.summary || "A calm resource hub that points shoppers to the right guide, topic, and product."}
+        canonicalPath="/pages/resources"
+        structuredData={resourceStructuredData}
+        scope="resources"
+      />
+      <section className="mx-auto w-[min(1240px,calc(100%_-_20px))] pb-16 pt-4 sm:pb-18 sm:pt-5">
       <InnerBreadcrumbs items={breadcrumbs} />
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(19rem,0.88fr)]">
@@ -419,7 +458,8 @@ const ResourcesPage = () => {
           </div>
         </section>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 };
 

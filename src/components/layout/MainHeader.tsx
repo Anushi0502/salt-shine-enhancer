@@ -19,7 +19,10 @@ import {
   buildSubcollectionRoute,
   isSiteHeaderCollectionLinkActive,
   type SiteHeaderCollectionLink,
+  type SiteCollection,
 } from "@/lib/site-navigation";
+import { useCollections } from "@/lib/collections-data";
+import type { ShopifyCollection } from "@/types/shopify";
 import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
 import {
   clearShopifyCustomerAccountSession,
@@ -241,13 +244,65 @@ type HeaderMenuDrawerProps = {
   onOpenChange: (open: boolean) => void;
   auth: HeaderAuthState;
   onSignOut: () => void;
+  collections: SiteCollection[];
 };
+
+const FIXED_ADMIN_COLLECTION_HANDLES = new Set(["best-sellers", "appplaza-best-sellers", "new-arrivals"]);
+
+function normalizedCollectionHandle(value: string | null | undefined): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function findAdminCollection(
+  collections: ShopifyCollection[] | undefined,
+  ...handles: Array<string | null | undefined>
+): ShopifyCollection | null {
+  const candidates = new Set(handles.map(normalizedCollectionHandle).filter(Boolean));
+  if (!candidates.size) {
+    return null;
+  }
+
+  return (
+    collections?.find((collection) => candidates.has(normalizedCollectionHandle(collection.handle))) || null
+  );
+}
+
+function syncHeaderCollections(collections: ShopifyCollection[] | undefined): SiteCollection[] {
+  return SITE_COLLECTIONS.map((collection) => {
+    const adminCollection = findAdminCollection(collections, collection.shopifyHandle, collection.handle);
+    const subcollections = collection.subcollections.map((subcollection) => {
+      const adminSubcollection = findAdminCollection(
+        collections,
+        subcollection.shopifyHandle,
+        subcollection.handle,
+      );
+      const adminHandle = normalizedCollectionHandle(adminSubcollection?.handle);
+      const keepFixedLabel = FIXED_ADMIN_COLLECTION_HANDLES.has(adminHandle) || FIXED_ADMIN_COLLECTION_HANDLES.has(subcollection.handle);
+
+      return {
+        ...subcollection,
+        title: keepFixedLabel ? subcollection.title : adminSubcollection?.title || subcollection.title,
+        summary: adminSubcollection?.description || subcollection.summary,
+        shopifyHandle: adminSubcollection?.handle || subcollection.shopifyHandle,
+      };
+    });
+
+    return {
+      ...collection,
+      title: adminCollection?.title || collection.title,
+      summary: adminCollection?.description || collection.summary,
+      shopifyHandle: adminCollection?.handle || collection.shopifyHandle,
+      subcollections,
+    };
+  });
+}
 
 function HeaderMenuDrawer({
   open,
   onOpenChange,
   auth,
   onSignOut,
+  collections,
 }: HeaderMenuDrawerProps) {
   const [expandedCollectionHandle, setExpandedCollectionHandle] = useState<string | null>(null);
   const location = useLocation();
@@ -366,7 +421,7 @@ function HeaderMenuDrawer({
 
               {/* Collection items - visible on mobile/tablet */}
               <div className="mt-2.5 grid content-start gap-1.5 pb-4 pr-1 lg:hidden">
-                {SITE_COLLECTIONS.map((collection) => {
+                {collections.map((collection) => {
                   const isExpanded = expandedCollectionHandle === collection.handle;
                   const activeSubcollection = collection.subcollections.find((subcollection) =>
                     isDrawerSubcollectionActive(
@@ -479,7 +534,7 @@ function HeaderMenuDrawer({
                 <Suspense fallback={<div className="min-h-0 flex-1" aria-hidden="true" />}>
                   <CollectionHoverMenu
                     className="min-h-0 flex-1"
-                    collections={SITE_COLLECTIONS}
+                    collections={collections}
                     onLinkClick={() => onOpenChange(false)}
                   />
                 </Suspense>
@@ -538,6 +593,7 @@ const MainHeader = () => {
   const location = useLocation();
   const { itemCount: cartItemCount, openCartDrawer } = useCart();
   const { itemCount: wishlistItemCount } = useWishlist();
+  const { data: adminCollectionsPayload } = useCollections();
   const [auth, setAuth] = useState<HeaderAuthState>(createLoadingAuthState);
   const headerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -549,6 +605,27 @@ const MainHeader = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
   const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
+  const headerCollections = useMemo(
+    () => syncHeaderCollections(adminCollectionsPayload?.collections),
+    [adminCollectionsPayload?.collections],
+  );
+  const syncedShortcutLinks = useMemo(() => {
+    const titleByHandle = new Map(
+      (adminCollectionsPayload?.collections || []).map((collection) => [
+        normalizedCollectionHandle(collection.handle),
+        collection.title,
+      ]),
+    );
+
+    return headerShortcutLinks.map((link) => {
+      if (link.label === "Best Sellers" || link.label === "New Arrivals" || link.label === "Under $25") {
+        return link;
+      }
+
+      const handle = link.label === "Under $50" ? "under-50" : "trending-finds";
+      return { ...link, label: titleByHandle.get(handle) || link.label };
+    });
+  }, [adminCollectionsPayload?.collections]);
 
   useEffect(() => {
     let active = true;
@@ -986,7 +1063,7 @@ const MainHeader = () => {
               <span>All</span>
             </button>
 
-            {headerShortcutLinks.map((link) => {
+            {syncedShortcutLinks.map((link) => {
               const isActive = isSiteHeaderCollectionLinkActive(location.pathname, location.search, link);
 
               return (
@@ -1019,7 +1096,13 @@ const MainHeader = () => {
           </nav>
         </div>
       </header>
-      <HeaderMenuDrawer open={menuOpen} onOpenChange={setMenuOpen} auth={auth} onSignOut={handleSignOut} />
+      <HeaderMenuDrawer
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        auth={auth}
+        onSignOut={handleSignOut}
+        collections={headerCollections}
+      />
     </>
   );
 };

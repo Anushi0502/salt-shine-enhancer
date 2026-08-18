@@ -17,6 +17,8 @@ export function buildOrganizationStructuredData(
     "@id": `${origin}/#organization`,
     name: shop?.name || "SALT",
     url: origin,
+    logo: `${origin}/brand/salt-logo.png`,
+    inLanguage: "en-US",
   };
 }
 
@@ -30,6 +32,7 @@ export function buildWebsiteStructuredData(
     "@id": `${origin}/#website`,
     name: shop?.name || "SALT",
     url: origin,
+    inLanguage: "en-US",
     potentialAction: {
       "@type": "SearchAction",
       target: `${origin}/shop?q={search_term_string}`,

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 
 type LoadStateProps = {
@@ -61,15 +61,37 @@ const StateShell = ({ title, subtitle, action, tone, icon, showSkeleton = false 
 );
 
 export const LoadingState = ({ title, subtitle }: LoadStateProps) => (
-  <div
+  <section
     role="status"
     aria-live="polite"
+    aria-busy="true"
     aria-label={[title, subtitle].filter(Boolean).join(". ")}
-    className="mx-auto flex min-h-24 items-center justify-center px-4 py-8"
+    data-loading-shell="true"
+    className="mx-auto w-[min(1240px,calc(100%_-_20px))] px-0 pb-12 pt-3 sm:pb-16 sm:pt-5"
   >
-    <Loader2 className="h-5 w-5 animate-spin text-primary/70" aria-hidden="true" />
     <span className="sr-only">{title}{subtitle ? `. ${subtitle}` : ""}</span>
-  </div>
+    <div className="salt-editorial-shell overflow-hidden rounded-[2rem] p-3 sm:p-4">
+      <div className="salt-panel-shell animate-pulse rounded-[1.7rem] p-4 sm:p-6 lg:p-8">
+        <div className="h-3 w-24 rounded-full bg-muted/75" />
+        <div className="mt-4 h-10 w-[min(30rem,78%)] rounded-xl bg-muted/70 sm:h-14" />
+        <div className="mt-3 h-4 w-[min(38rem,92%)] rounded-full bg-muted/55" />
+        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+          <div className="min-h-[15rem] rounded-[1.35rem] bg-muted/50 sm:min-h-[19rem] lg:min-h-[25rem]" />
+          <div className="space-y-3">
+            <div className="h-5 w-2/3 rounded-full bg-muted/60" />
+            <div className="h-12 w-full rounded-2xl bg-muted/45" />
+            <div className="h-12 w-full rounded-2xl bg-muted/45" />
+            <div className="h-12 w-4/5 rounded-2xl bg-muted/45" />
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="h-24 rounded-[1.1rem] bg-muted/42 sm:h-32" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
 );
 
 export const ErrorState = ({ title, subtitle, action }: LoadStateProps) => (

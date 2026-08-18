@@ -221,6 +221,7 @@ const SeoMetadata = ({
     if (absoluteCanonical) {
       cleanups.push(updateLinkTag(document, "canonical", absoluteCanonical, scope));
       cleanups.push(updateMetaTag(document, "property", "og:url", absoluteCanonical, scope));
+      cleanups.push(updateMetaTag(document, "name", "twitter:url", absoluteCanonical, scope));
     }
 
     if (title) {

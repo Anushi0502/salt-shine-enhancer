@@ -7,6 +7,7 @@ import ResilientImage from "@/components/storefront/ResilientImage";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { buildResourceReason } from "@/lib/editorial-pages";
+import { useCollections } from "@/lib/collections-data";
 import {
   SITE_RESOURCE_GUIDES,
   buildResourceRoute,
@@ -16,7 +17,7 @@ import {
   getResourceTopicByHandle,
 } from "@/lib/site-navigation";
 import type { SiteResourceGuide, SiteResourceTopic } from "@/lib/site-navigation";
-import { useEditorialPage, useProductSearchIndex } from "@/lib/shopify-data";
+import { useEditorialPage, useProductByHandle } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 type EditorialPageByHandleProps = {
@@ -115,7 +116,10 @@ function findResourceContext(handle: string): ResourcePageContext {
   return { guide: getResourceByHandle(normalizedHandle), topic: null };
 }
 
-function getCollectionTitleFromRoute(collectionRoute?: string | null): string {
+function getCollectionTitleFromRoute(
+  collectionRoute: string | null | undefined,
+  adminCollectionsByHandle: Map<string, { title: string }>,
+): string {
   const rawHandle = String(collectionRoute || "")
     .trim()
     .replace(/^\/+|\/+$/g, "")
@@ -125,7 +129,13 @@ function getCollectionTitleFromRoute(collectionRoute?: string | null): string {
     return "";
   }
 
-  return getCollectionByHandle(rawHandle)?.title || rawHandle.replace(/-/g, " ");
+  const staticCollection = getCollectionByHandle(rawHandle);
+  const adminCollection = [rawHandle, staticCollection?.handle, staticCollection?.shopifyHandle]
+    .map((handle) => String(handle || "").trim().toLowerCase())
+    .map((handle) => adminCollectionsByHandle.get(handle))
+    .find(Boolean);
+
+  return adminCollection?.title || staticCollection?.title || rawHandle.replace(/-/g, " ");
 }
 
 function buildRouteCues(...values: Array<string | null | undefined>): string[] {
@@ -138,10 +148,14 @@ function buildRouteCues(...values: Array<string | null | undefined>): string[] {
 function buildResourceGuideVisual(
   guide: SiteResourceGuide,
   productsByHandle: Map<string, ShopifyProduct>,
+  adminCollectionsByHandle: Map<string, { title: string }>,
 ): ResourceRouteVisual {
   const primaryHandle = guide.featuredProducts[0]?.handle;
   const primaryProduct = primaryHandle ? productsByHandle.get(primaryHandle) || null : null;
-  const collectionTitle = conciseTitle(getCollectionTitleFromRoute(guide.collectionRoute) || "Collection", 18);
+  const collectionTitle = conciseTitle(
+    getCollectionTitleFromRoute(guide.collectionRoute, adminCollectionsByHandle) || "Collection",
+    18,
+  );
 
   return {
     title: guide.title,
@@ -161,11 +175,15 @@ function buildResourceTopicVisual(
   guide: SiteResourceGuide,
   topic: SiteResourceTopic,
   productsByHandle: Map<string, ShopifyProduct>,
+  adminCollectionsByHandle: Map<string, { title: string }>,
   badge = "Topic",
 ): ResourceRouteVisual {
   const primaryHandle = topic.featuredProducts[0]?.handle;
   const primaryProduct = primaryHandle ? productsByHandle.get(primaryHandle) || null : null;
-  const collectionTitle = conciseTitle(getCollectionTitleFromRoute(topic.collectionRoute) || guide.title, 18);
+  const collectionTitle = conciseTitle(
+    getCollectionTitleFromRoute(topic.collectionRoute, adminCollectionsByHandle) || guide.title,
+    18,
+  );
   const supportHandle = topic.featuredProducts[1]?.handle || topic.featuredProducts[0]?.handle;
   const supportProduct = supportHandle ? productsByHandle.get(supportHandle) || null : null;
 
@@ -441,8 +459,10 @@ const EditorialPageByHandle = ({
 }: EditorialPageByHandleProps) => {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
   const { data, isLoading, error, refetch } = useEditorialPage(normalizedHandle);
-  const shouldLoadProducts = Boolean(data?.page?.featuredProducts?.length);
-  const { data: productsData } = useProductSearchIndex(shouldLoadProducts);
+  const { data: collectionsData } = useCollections();
+  const featuredProduct0Query = useProductByHandle(data?.page?.featuredProducts?.[0]?.handle);
+  const featuredProduct1Query = useProductByHandle(data?.page?.featuredProducts?.[1]?.handle);
+  const featuredProduct2Query = useProductByHandle(data?.page?.featuredProducts?.[2]?.handle);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -491,9 +511,26 @@ const EditorialPageByHandle = ({
     };
   }, [data?.page]);
 
-  const productsByHandle = useMemo(() => {
-    return new Map((productsData?.products || []).map((product) => [product.handle, product]));
-  }, [productsData?.products]);
+  const adminCollectionsByHandle = useMemo(
+    () =>
+      new Map(
+        (collectionsData?.collections || []).map((collection) => [
+          String(collection.handle || "").trim().toLowerCase(),
+          { title: collection.title },
+        ]),
+      ),
+    [collectionsData?.collections],
+  );
+
+  const productsByHandle = useMemo(
+    () =>
+      new Map(
+        [featuredProduct0Query.data, featuredProduct1Query.data, featuredProduct2Query.data]
+          .filter((product): product is ShopifyProduct => Boolean(product))
+          .map((product) => [product.handle, product]),
+      ),
+    [featuredProduct0Query.data, featuredProduct1Query.data, featuredProduct2Query.data],
+  );
 
   const resolvedFeaturedProducts = useMemo<ResolvedFeaturedProduct[]>(() => {
     const page = data?.page;
@@ -531,7 +568,9 @@ const EditorialPageByHandle = ({
   const resourceContext = useMemo(() => findResourceContext(normalizedHandle), [normalizedHandle]);
   const resourceRouteTiles = useMemo<ResourceRouteVisual[]>(() => {
     if (isResourceHubHandle) {
-      return SITE_RESOURCE_GUIDES.map((guide) => buildResourceGuideVisual(guide, productsByHandle));
+      return SITE_RESOURCE_GUIDES.map((guide) =>
+        buildResourceGuideVisual(guide, productsByHandle, adminCollectionsByHandle),
+      );
     }
 
     if (!resourceContext.guide) {
@@ -542,13 +581,28 @@ const EditorialPageByHandle = ({
       return resourceContext.guide.topics
         .filter((topic) => topic.handle !== resourceContext.topic?.handle)
         .slice(0, 4)
-        .map((topic) => buildResourceTopicVisual(resourceContext.guide, topic, productsByHandle, "Sibling topic"));
+        .map((topic) =>
+          buildResourceTopicVisual(
+            resourceContext.guide,
+            topic,
+            productsByHandle,
+            adminCollectionsByHandle,
+            "Sibling topic",
+          ),
+        );
     }
 
     return resourceContext.guide.topics
       .slice(0, 6)
-      .map((topic) => buildResourceTopicVisual(resourceContext.guide, topic, productsByHandle));
-  }, [isResourceHubHandle, productsByHandle, resourceContext.guide, resourceContext.topic]);
+      .map((topic) =>
+        buildResourceTopicVisual(
+          resourceContext.guide,
+          topic,
+          productsByHandle,
+          adminCollectionsByHandle,
+        ),
+      );
+  }, [adminCollectionsByHandle, isResourceHubHandle, productsByHandle, resourceContext.guide, resourceContext.topic]);
   const pageSectionClassName = "";
 
   if (isLoading) {
