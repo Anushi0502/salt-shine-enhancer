@@ -6,6 +6,16 @@ import {
 } from "@/lib/shopify-variant-cost-pricing.js";
 
 describe("variant cost-price alignment", () => {
+  it("uses a higher .99 retail target for clothing", () => {
+    expect(costProtectedMinimumPrice("10.00", {
+      campaignCostPerOrder: 18,
+      minContributionMargin: 0.3,
+      clothingMinContributionMargin: 0.43,
+      retailPriceEnding: true,
+      priceFloor: 35,
+    })).toBe("49.99");
+  });
+
   it("aligns different variant prices when costs are within two dollars", () => {
     const plan = buildVariantCostPriceAlignmentPlan([
       {
@@ -19,16 +29,16 @@ describe("variant cost-price alignment", () => {
     ]);
 
     expect(plan.summary.variantsToUpdate).toBe(2);
-    expect(plan.byHandle.get("mixed-bundle")?.map((entry) => entry.price)).toEqual(["49.99", "44.29"]);
+    expect(plan.byHandle.get("mixed-bundle")?.map((entry) => entry.price)).toEqual(["49.99", "47.15"]);
     expect(plan.held).toHaveLength(0);
   });
 
   it("protects contribution margin with campaign cost and the catalog floor", () => {
     expect(costProtectedMinimumPrice("15.00", {
-      campaignCostPerOrder: 16,
+      campaignCostPerOrder: 18,
       minContributionMargin: 0.3,
       priceFloor: 35,
-    })).toBe("44.29");
+    })).toBe("47.15");
 
     const plan = buildVariantCostPriceAlignmentPlan([
       {
@@ -41,7 +51,7 @@ describe("variant cost-price alignment", () => {
     expect(plan.byHandle.get("t-shirt")).toEqual([
       expect.objectContaining({
         currentPrice: "39.99",
-        price: "44.29",
+        price: "57.99",
         reason: "cost-and-campaign-contribution-protection",
       }),
     ]);
@@ -58,7 +68,7 @@ describe("variant cost-price alignment", () => {
       },
     ]);
 
-    expect(plan.summary.variantsToUpdate).toBe(0);
+    expect(plan.summary.variantsToUpdate).toBe(1);
     expect(plan.held).toHaveLength(0);
   });
 

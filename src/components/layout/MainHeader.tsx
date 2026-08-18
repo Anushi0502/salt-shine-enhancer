@@ -282,7 +282,7 @@ function HeaderMenuDrawer({
           type="button"
           aria-label="Close menu"
           onClick={() => onOpenChange(false)}
-          className="fixed inset-0 z-[55] bg-foreground/15 backdrop-blur-[1px]"
+          className="fixed inset-0 z-[55] bg-foreground/15 backdrop-blur-md"
         />
       ) : null}
       <SheetContent

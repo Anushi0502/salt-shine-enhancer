@@ -1218,6 +1218,7 @@ function collectionSourceMatches(policy, collection) {
 function resolveCollectionTargets(collections) {
   const byHandle = new Map(collections.map((collection) => [normalizeCollectionHandle(collection.handle), collection]));
   const forcePriceCollectionRefresh = process.env.SALT_CATALOG_FORCE_PRICE_COLLECTION_REFRESH === "1";
+  const forceCollectionSourceRefresh = process.env.SALT_CATALOG_FORCE_COLLECTION_SOURCE_REFRESH === "1";
   return [...PRICE_COLLECTION_POLICIES, ...SEMANTIC_COLLECTION_POLICIES].map((policy) => {
     const canonical = byHandle.get(policy.handle);
     const legacy = canonical ? null : policy.legacyHandles.map((handle) => byHandle.get(handle)).find(Boolean) || null;
@@ -1225,7 +1226,8 @@ function resolveCollectionTargets(collections) {
     const metadataNeedsUpdate = Boolean(existing && (normalizeCollectionHandle(existing.handle) !== policy.handle || normalizeText(existing.title) !== policy.title));
     const sourceNeedsUpdate = Boolean(existing && (
       !collectionSourceMatches(policy, existing) ||
-      (forcePriceCollectionRefresh && policy.kind === "price")
+      (forcePriceCollectionRefresh && policy.kind === "price") ||
+      (forceCollectionSourceRefresh && existing.sources?.[0]?.shareable === false)
     ));
     return {
       policy,

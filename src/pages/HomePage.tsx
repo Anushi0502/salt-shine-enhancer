@@ -30,7 +30,7 @@ type ReviewTile = {
 
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
-const HOME_PRODUCT_DISPLAY_LIMIT = 8;
+const HOME_PRODUCT_DISPLAY_LIMIT = 12;
 const HOME_RATING_PRODUCT_LIMIT = 4;
 
 const fallbackReviewTiles: ReviewTile[] = [
@@ -69,7 +69,6 @@ const fallbackReviewTiles: ReviewTile[] = [
 ];
 
 const stars = Array.from({ length: 5 }, (_, index) => index);
-const reviewCountFormatter = new Intl.NumberFormat("en-US");
 
 function formatReviewAverage(value: number): string {
   if (!Number.isFinite(value) || value <= 0) {
@@ -281,9 +280,6 @@ const HomePage = () => {
     return ratingSource.reduce((sum, review) => sum + review.rating, 0) / ratingSource.length;
   }, [judgeMeTestimonials, reviewTiles]);
   const reviewHeaderStarCount = Math.max(0, Math.min(5, Math.floor(reviewAverage)));
-  const reviewCountLabel = reviewCountFormatter.format(
-    judgeMeTestimonials.length > 0 ? judgeMeTestimonials.length : reviewTiles.length,
-  );
   const reviewRatingLabel = formatReviewAverage(reviewAverage);
   const reviewTrackTiles = useMemo<ReviewTile[]>(() => {
     if (!reviewTiles.length) {
@@ -463,7 +459,6 @@ const HomePage = () => {
                   <div className="flex items-center gap-1.5 font-medium text-foreground">
                     <span>{reviewRatingLabel}</span>
                     <Star className="h-4 w-4 fill-current" />
-                    <span className="text-muted-foreground">({reviewCountLabel} reviews)</span>
                   </div>
                   <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/92 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground shadow-[0_10px_24px_-20px_rgba(15,23,42,0.2)]">
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#4cc1ba] text-white shadow-sm">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import type { MouseEvent } from "react";
 import {
@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 
 const CartDrawer = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     items,
     itemCount,
@@ -58,9 +59,16 @@ const CartDrawer = () => {
 
     // Let the drawer paint before loading the recommendation data. This keeps
     // an empty cart instant and avoids a catalog fetch until it can be useful.
-    const timer = window.setTimeout(() => setShouldLoadRecommendations(true), 700);
+    const timer = window.setTimeout(() => setShouldLoadRecommendations(true), 1400);
     return () => window.clearTimeout(timer);
   }, [isDrawerOpen, items.length]);
+
+  const handleOpenFullCart = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    setShouldLoadRecommendations(false);
+    closeCartDrawer();
+    navigate("/cart");
+  };
 
   const recommendationPlan = useMemo(
     () =>
@@ -386,7 +394,7 @@ const CartDrawer = () => {
               <div className="grid gap-2 sm:grid-cols-2">
                 <Link
                   to="/cart"
-                  onClick={closeCartDrawer}
+                  onClick={handleOpenFullCart}
                   className="salt-outline-chip h-11 justify-center px-5 py-0 text-[0.72rem]"
                 >
                   Open full cart

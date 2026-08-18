@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
   buildVariantCostPriceAlignmentPlan,
   costProtectedMinimumPrice,
+  isClothingProduct,
 } from "../src/lib/shopify-variant-cost-pricing.js";
 import { normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
@@ -15,10 +16,14 @@ const defaultOutputPath = resolve(rootDir, "output", "shopify-variant-cost-price
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "variant-cost-price-alignment" });
 const tolerance = Math.max(0, Number(process.env.SALT_VARIANT_COST_TOLERANCE || 2));
 const priceFloor = Math.max(0, Number(process.env.SALT_CATALOG_PRICE_FLOOR || 35));
-const campaignCostPerOrder = Math.max(0, Number(process.env.SALT_VARIANT_COST_CAMPAIGN_COST_PER_ORDER || 16));
+const campaignCostPerOrder = Math.max(0, Number(process.env.SALT_VARIANT_COST_CAMPAIGN_COST_PER_ORDER || 18));
 const minContributionMargin = Math.min(
   0.99,
   Math.max(0, Number(process.env.SALT_VARIANT_COST_MIN_CONTRIBUTION_MARGIN || 0.3)),
+);
+const clothingMinContributionMargin = Math.min(
+  0.99,
+  Math.max(0, Number(process.env.SALT_VARIANT_COST_CLOTHING_MIN_CONTRIBUTION_MARGIN || 0.43)),
 );
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_VARIANT_COST_PAGE_SIZE || 100)));
 const readbackAttempts = Math.max(1, Number(process.env.SALT_VARIANT_COST_READBACK_ATTEMPTS || 5));
@@ -186,7 +191,9 @@ function manifestForPlan(plan, mode) {
       sourceOfTruth: "live Shopify variant inventoryItem.unitCost and price",
       campaignCostPerOrder,
       minContributionMargin,
+      clothingMinContributionMargin,
       contributionFormula: "max(price floor, ceil((cost per item + campaign cost per order) / (1 - minimum contribution margin), cents))",
+      clothingFormula: "clothing uses the higher contribution margin and rounds upward to the next .99 retail price",
     },
     summary: plan.summary,
     products,
@@ -198,6 +205,12 @@ function manifestForPlan(plan, mode) {
 
 async function writeManifest(path, payload) {
   await writeFile(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+async function writeApplyCheckpoint(path, payload) {
+  const temporaryPath = `${path}.tmp-${process.pid}`;
+  await writeFile(temporaryPath, `${JSON.stringify(payload)}\n`, "utf8");
+  await rename(temporaryPath, path);
 }
 
 function assertNoHeld(plan) {
@@ -248,6 +261,8 @@ function costProtectionFailures(product) {
     const minimum = costProtectedMinimumPrice(cost, {
       campaignCostPerOrder,
       minContributionMargin,
+      clothingMinContributionMargin,
+      retailPriceEnding: isClothingProduct(product),
       priceFloor,
     });
     if (!minimum || !Number.isFinite(price) || price + 0.005 >= Number(minimum)) return [];
@@ -283,12 +298,18 @@ async function applyPlan(plan, manifest, outputPath) {
   const productsByHandle = new Map(plan.products.map((product) => [normalizePlainText(product.handle), product]));
   const completed = new Set(asArray(manifest.appliedProducts));
   const entries = [...plan.byHandle.entries()].filter(([handle]) => !completed.has(handle));
+  const checkpointPath = `${outputPath}.checkpoint.json`;
   let cursor = 0;
   let stopped = false;
-  let writeQueue = Promise.resolve();
-  const persistManifest = () => {
-    writeQueue = writeQueue.then(() => writeManifest(outputPath, manifest));
-    return writeQueue;
+  let checkpointQueue = Promise.resolve();
+  const persistCheckpoint = () => {
+    checkpointQueue = checkpointQueue.then(() => writeApplyCheckpoint(checkpointPath, {
+      mode: "apply",
+      appliedProducts: manifest.appliedProducts || [],
+      failures: manifest.failures || [],
+      updatedAt: new Date().toISOString(),
+    }));
+    return checkpointQueue;
   };
 
   process.stdout.write(`Applying ${entries.length} product(s) with concurrency ${applyConcurrency}; resuming past ${completed.size} verified product(s).\n`);
@@ -306,11 +327,11 @@ async function applyPlan(plan, manifest, outputPath) {
     const { failures } = await readBackAlignedProduct(product, updates);
     if (failures.length) {
       manifest.failures.push({ handle, failures });
-      await persistManifest();
+      await persistCheckpoint();
       throw new Error(`${handle}: ${failures.length} variant price readback failure(s)`);
     }
     manifest.appliedProducts = [...new Set([...(manifest.appliedProducts || []), handle])];
-    await persistManifest();
+    await persistCheckpoint();
   };
 
   const worker = async () => {
@@ -328,20 +349,45 @@ async function applyPlan(plan, manifest, outputPath) {
 
   const workerCount = Math.min(applyConcurrency, Math.max(1, entries.length));
   const results = await Promise.allSettled(Array.from({ length: workerCount }, () => worker()));
-  await writeQueue;
+  await checkpointQueue;
   const rejected = results.find((result) => result.status === "rejected");
   if (rejected) throw rejected.reason;
   if (manifest.failures?.length) throw new Error(`Variant cost-price alignment failed for ${manifest.failures.length} product(s)`);
 }
 
 async function readPriorApplyManifest(path) {
+  let prior = null;
+  let checkpoint = null;
   try {
-    const prior = JSON.parse(await readFile(path, "utf8"));
-    if (prior?.mode === "apply" && Array.isArray(prior.appliedProducts)) return prior;
+    prior = JSON.parse(await readFile(path, "utf8"));
   } catch {
-    // No prior apply checkpoint is expected on the first run.
+    // The main manifest can be mid-write after an interrupted legacy run.
   }
-  return null;
+  try {
+    checkpoint = JSON.parse(await readFile(`${path}.checkpoint.json`, "utf8"));
+  } catch {
+    // No lightweight checkpoint is expected on the first run.
+  }
+  if (prior?.mode !== "apply" && checkpoint?.mode !== "apply") return null;
+  return {
+    ...(prior || {}),
+    appliedProducts: [...new Set([
+      ...asArray(prior?.appliedProducts),
+      ...asArray(checkpoint?.appliedProducts),
+    ])],
+    failures: [
+      ...asArray(prior?.failures),
+      ...asArray(checkpoint?.failures),
+    ],
+  };
+}
+
+async function removeApplyCheckpoint(path) {
+  try {
+    await unlink(`${path}.checkpoint.json`);
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
 }
 
 async function main() {
@@ -352,6 +398,7 @@ async function main() {
     priceFloor,
     campaignCostPerOrder,
     minContributionMargin,
+    clothingMinContributionMargin,
   });
   plan.products = products;
   const manifest = manifestForPlan(plan, args.mode);
@@ -403,6 +450,7 @@ async function main() {
       variantsInspected: plan.summary.variantsInspected,
       campaignCostPerOrder,
       minContributionMargin,
+      clothingMinContributionMargin,
       priceFloor,
     };
     await writeManifest(args.output, manifest);
@@ -421,6 +469,7 @@ async function main() {
   await applyPlan(plan, manifest, args.output);
   manifest.completedAt = new Date().toISOString();
   await writeManifest(args.output, manifest);
+  await removeApplyCheckpoint(args.output);
   process.stdout.write(`Variant cost-price alignment complete: ${manifest.appliedProducts?.length || 0} product(s) updated and read back.\n`);
 }
 

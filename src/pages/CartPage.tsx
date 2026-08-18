@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
@@ -37,6 +37,7 @@ function normalizeTitleLookup(input: string): string {
 
 const CartPage = () => {
   const { items, subtotal, itemCount, updateQuantity, removeItem, replaceItems, clear, addItem } = useCart();
+  const recommendationsAnchorRef = useRef<HTMLDivElement | null>(null);
   const [shouldLoadRecommendations, setShouldLoadRecommendations] = useState(false);
   const { data: productsPayload } = useProductSearchIndex(shouldLoadRecommendations);
   const { data: collectionProductsMapPayload } = useCollectionProductsMap(shouldLoadRecommendations);
@@ -144,6 +145,10 @@ const CartPage = () => {
     [unresolvedShopifyLinks],
   );
   const hasUnresolvedCheckoutItems = unresolvedCheckoutItems.length > 0;
+  const hasInvalidVariantIds = useMemo(
+    () => items.some((item) => !isValidShopifyVariantId(item.shopifyVariantId)),
+    [items],
+  );
   const recommendationPlan = useMemo(
     () =>
       buildCartRecommendations(items, productsPayload?.products || [], collectionIndex, {
@@ -168,7 +173,63 @@ const CartPage = () => {
     />
   );
 
-  useEffect(() => scheduleAfterPaint(() => setShouldLoadRecommendations(true)), []);
+  useEffect(() => {
+    const node = recommendationsAnchorRef.current;
+    if (!node) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let delayId: number | null = null;
+    let cancelAfterPaint: (() => void) | null = null;
+
+    const loadRecommendations = () => {
+      if (cancelled) {
+        return;
+      }
+
+      delayId = window.setTimeout(() => {
+        if (!cancelled) {
+          setShouldLoadRecommendations(true);
+        }
+      }, hasInvalidVariantIds ? 220 : 650);
+    };
+
+    if (hasInvalidVariantIds) {
+      cancelAfterPaint = scheduleAfterPaint(loadRecommendations);
+    } else if (typeof IntersectionObserver === "undefined") {
+      cancelAfterPaint = scheduleAfterPaint(loadRecommendations);
+    } else {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry?.isIntersecting) {
+            return;
+          }
+
+          observer.disconnect();
+          loadRecommendations();
+        },
+        { rootMargin: "220px 0px" },
+      );
+      observer.observe(node);
+
+      return () => {
+        cancelled = true;
+        observer.disconnect();
+        if (delayId !== null) {
+          window.clearTimeout(delayId);
+        }
+      };
+    }
+
+    return () => {
+      cancelled = true;
+      cancelAfterPaint?.();
+      if (delayId !== null) {
+        window.clearTimeout(delayId);
+      }
+    };
+  }, [hasInvalidVariantIds]);
 
   useEffect(() => {
     if (autoRecoveredCount <= 0) {
@@ -463,6 +524,7 @@ const CartPage = () => {
             Continue shopping
           </Link>
 
+          <div ref={recommendationsAnchorRef} aria-hidden="true" className="h-px" />
           {recommendedProducts.length > 0 ? (
             <div className="mt-5 rounded-[1rem] border border-border/70 bg-background/92 p-4">
               <p className="text-[0.66rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">

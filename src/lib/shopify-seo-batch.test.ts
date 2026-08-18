@@ -264,7 +264,7 @@ describe("shopify SEO batch intelligence", () => {
     const plan = await buildSeoBatchPlan(rows, { catalogContext: makeCatalogContext() });
     const [exported] = buildSeoBatchExportRows(rows, plan);
     expect(Number(exported["Variant Price"])).toBeGreaterThanOrEqual(10 + PER_ORDER_OVERHEAD);
-    expect(PER_ORDER_OVERHEAD).toBe(16);
+    expect(PER_ORDER_OVERHEAD).toBe(18);
   });
 
   it("builds a manifest with reasons, skipped fields, and write counts", async () => {

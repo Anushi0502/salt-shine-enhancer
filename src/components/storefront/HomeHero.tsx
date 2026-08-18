@@ -77,7 +77,7 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
   if (!activeSlide) {
     return (
       <section
-        className="mx-auto w-full max-w-[1360px] px-4 sm:px-6"
+        className="w-full px-2 sm:px-4 lg:px-6"
         aria-busy={loading}
         aria-label={loading ? "Loading the current storefront edit" : "Current storefront edit unavailable"}
       >
@@ -101,7 +101,7 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
   const slideProducts = (activeSlide.products ?? []).slice(0, 4);
 
   return (
-    <section className="mx-auto w-full max-w-[1360px] px-4 sm:px-6">
+    <section className="w-full px-2 sm:px-4 lg:px-6">
       <Reveal className="salt-reveal-instant min-w-0 overflow-hidden">
         <div className="salt-editorial-shell rounded-[2rem] p-3 sm:p-4 lg:p-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] lg:items-stretch">

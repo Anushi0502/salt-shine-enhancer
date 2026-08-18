@@ -25,7 +25,7 @@ import {
 } from "./shopify-seo-managed-tags.js";
 import { classifyProductKnowledge, PRODUCT_KNOWLEDGE_BASE_VERSION } from "./product-knowledge-base.js";
 
-export const PER_ORDER_OVERHEAD = 16;
+export const PER_ORDER_OVERHEAD = 18;
 const MAX_REASONABLE_RETAIL_PRICE = 14999.99;
 
 const GENERIC_TITLE_WORDS = new Set([

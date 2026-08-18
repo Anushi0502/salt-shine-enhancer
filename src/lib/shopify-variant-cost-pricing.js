@@ -2,8 +2,10 @@ import { formatMoneyValue, normalizePlainText, parseMoneyValue } from "./shopify
 import { extractVariantQuantity, variantLabel } from "./shopify-variant-pricing.js";
 
 const DEFAULT_COST_TOLERANCE = 2;
-const DEFAULT_CAMPAIGN_COST_PER_ORDER = 16;
+const DEFAULT_CAMPAIGN_COST_PER_ORDER = 18;
 const DEFAULT_MIN_CONTRIBUTION_MARGIN = 0.3;
+const DEFAULT_CLOTHING_MIN_CONTRIBUTION_MARGIN = 0.43;
+const CLOTHING_EVIDENCE_PATTERN = /\b(?:apparel|blazer|blouse|cardigan|clothing|coat|dress|dresses|denim|fashion|gown|hoodie|jacket|jean|jumpsuit|leggings|pants|shirt|shorts|skirt|sweater|t[- ]?shirt|trousers|wear)\b/i;
 
 function asVariantArray(product) {
   if (Array.isArray(product?.variants)) return product.variants;
@@ -36,17 +38,37 @@ function roundMoneyUp(value) {
   return Math.ceil((value - Number.EPSILON) * 100) / 100;
 }
 
+function roundMoneyUpToRetail99(value) {
+  const rounded = roundMoneyUp(value);
+  let target = Math.floor(rounded) + 0.99;
+  if (target + 0.000001 < rounded) target += 1;
+  return Number(target.toFixed(2));
+}
+
+export function isClothingProduct(product) {
+  const evidence = [
+    product?.handle,
+    product?.title,
+    product?.product_type,
+    product?.productType,
+    Array.isArray(product?.tags) ? product.tags.join(" ") : product?.tags,
+  ].filter(Boolean).join(" ");
+  return CLOTHING_EVIDENCE_PATTERN.test(evidence);
+}
+
 export function costProtectedMinimumPrice(
   costValue,
   {
     campaignCostPerOrder = DEFAULT_CAMPAIGN_COST_PER_ORDER,
     minContributionMargin = DEFAULT_MIN_CONTRIBUTION_MARGIN,
+    clothingMinContributionMargin = DEFAULT_CLOTHING_MIN_CONTRIBUTION_MARGIN,
+    retailPriceEnding = false,
     priceFloor = 35,
   } = {},
 ) {
   const cost = Number(costValue);
   const campaignCost = Number(campaignCostPerOrder);
-  const margin = Number(minContributionMargin);
+  const margin = Number(retailPriceEnding ? clothingMinContributionMargin : minContributionMargin);
   const floor = Number(priceFloor);
   if (!Number.isFinite(cost) || cost < 0) return null;
   if (!Number.isFinite(campaignCost) || campaignCost < 0) return null;
@@ -54,7 +76,8 @@ export function costProtectedMinimumPrice(
   if (!Number.isFinite(floor) || floor < 0) return null;
 
   const contributionProtectedPrice = (cost + campaignCost) / (1 - margin);
-  return roundMoneyUp(Math.max(floor, contributionProtectedPrice)).toFixed(2);
+  const target = Math.max(floor, contributionProtectedPrice);
+  return (retailPriceEnding ? roundMoneyUpToRetail99(target) : roundMoneyUp(target)).toFixed(2);
 }
 
 function groupByCost(variants, tolerance) {
@@ -78,6 +101,7 @@ export function buildVariantCostPriceAlignmentPlan(
     priceFloor = 35,
     campaignCostPerOrder = DEFAULT_CAMPAIGN_COST_PER_ORDER,
     minContributionMargin = DEFAULT_MIN_CONTRIBUTION_MARGIN,
+    clothingMinContributionMargin = DEFAULT_CLOTHING_MIN_CONTRIBUTION_MARGIN,
   } = {},
 ) {
   const byHandle = new Map();
@@ -91,6 +115,7 @@ export function buildVariantCostPriceAlignmentPlan(
   let variantsBelowProtectionTarget = 0;
 
   for (const product of Array.isArray(products) ? products : []) {
+    const clothingProduct = isClothingProduct(product);
     const variants = asVariantArray(product)
       .map((variant, index) => ({
         variant,
@@ -103,6 +128,8 @@ export function buildVariantCostPriceAlignmentPlan(
         protectionTarget: costProtectedMinimumPrice(variantCost(variant), {
           campaignCostPerOrder,
           minContributionMargin,
+          clothingMinContributionMargin,
+          retailPriceEnding: clothingProduct,
           priceFloor,
         }),
       }))
