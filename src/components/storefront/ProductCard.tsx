@@ -101,7 +101,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return (
       <article
         ref={cardRef}
-        className={`group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.94))] shadow-[0_22px_44px_-34px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_28px_54px_-34px_rgba(15,23,42,0.22)] ${className}`.trim()}
+        className={`group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.96))] shadow-[0_18px_42px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/28 hover:shadow-[0_28px_54px_-34px_rgba(15,23,42,0.22)] ${className}`.trim()}
       >
         <button
           type="button"
@@ -124,7 +124,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <Link to={`/products/${product.handle}`} className="block">
             <div className="relative overflow-hidden p-3 pb-0">
             {image ? (
-              <div className="relative aspect-[1.02/1] overflow-hidden rounded-[1.5rem] border border-white/55 bg-white/40 shadow-[0_20px_36px_-28px_rgba(15,23,42,0.25)]">
+              <div className="relative aspect-[1.02/1] overflow-hidden rounded-[1.45rem] border border-white/55 bg-white/40 shadow-[0_20px_36px_-28px_rgba(15,23,42,0.22)]">
                 <img
                   src={cardImage}
                   srcSet={cardImageSrcSet}
@@ -132,9 +132,9 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   alt={product.title}
                   loading={imageLoading}
                   decoding="async"
-                  className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.07]"
+                  className="h-full w-full object-cover object-center transition duration-700 ease-out group-hover:scale-[1.06]"
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_52%,hsl(var(--foreground)/0.16)_100%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,hsl(var(--foreground)/0.1)_100%)]" />
               </div>
             ) : (
               <div className={`grid aspect-[1.02/1] w-full place-items-center rounded-[1.5rem] border border-border/60 px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
@@ -160,8 +160,8 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           </div>
           </Link>
 
-          <div className="flex min-h-[11rem] flex-1 flex-col px-4 pb-4 pt-3 sm:min-h-[11.5rem] sm:px-5 sm:pb-5">
-            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.02rem] leading-[1.08] tracking-[-0.03em] ${
+          <div className="flex min-h-[10.5rem] flex-1 flex-col px-4 pb-4 pt-3 sm:min-h-[11rem] sm:px-5 sm:pb-5">
+            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.04rem] leading-[1.06] tracking-[-0.035em] ${
               nativeApp ? "text-foreground" : "text-foreground"
             } sm:text-[1.08rem]`}>
               {title}
@@ -171,7 +171,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 {highlights.slice(0, 2).map((highlight, index) => (
                   <span
                     key={`${highlight}-${index}`}
-                    className="salt-editorial-meta rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.09em]"
+                    className="rounded-full border border-border/65 bg-background/90 px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground shadow-[0_8px_18px_-18px_rgba(15,23,42,0.3)]"
                   >
                     {highlight}
                   </span>
@@ -179,32 +179,29 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </div>
             ) : null}
 
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="salt-editorial-meta rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.1em]">
-                Curated pick
-              </span>
-            </div>
-
-            <div className="mt-auto rounded-[1.15rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.96),hsl(var(--muted)/0.55))] p-3 shadow-[0_14px_24px_-24px_rgba(15,23,42,0.18)]">
-              <div className="flex items-end justify-between gap-3">
+            <div className="mt-auto pt-4">
+              <div className="flex items-end justify-between gap-3 rounded-[1.2rem] border border-border/65 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.48))] p-3 shadow-[0_14px_24px_-24px_rgba(15,23,42,0.18)]">
                 <div className="min-w-0">
-                  <p className="font-display text-[1.1rem] leading-none tracking-[0.12em] text-primary sm:text-[1.28rem]">
+                  <p className="font-display text-[1.18rem] leading-none tracking-[0.1em] text-primary sm:text-[1.34rem]">
                     {formatMoney(min)}
                   </p>
-                  <p
-                    className={`mt-0.5 min-h-[0.85rem] text-xs leading-none ${
-                      compare > min ? "text-muted-foreground" : "text-transparent"
-                    }`}
-                    aria-hidden={compare <= min ? "true" : undefined}
-                  >
-                    {compare > min ? <s>{formatMoney(compare)}</s> : "\u00a0"}
-                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-primary/16 bg-primary/6 px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-primary">
+                      Curated
+                    </span>
+                    {compare > min ? (
+                      <span className="text-[0.62rem] font-medium text-muted-foreground line-through decoration-muted-foreground/60">
+                        {formatMoney(compare)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <ProductRating summary={displaySummary} compact />
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                  Tap for details
+
+              <div className="mt-2 flex items-center justify-between gap-2 px-1">
+                <span className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  View product
                 </span>
                 {minimumQuantity > 1 ? (
                   <span className="text-[0.58rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
