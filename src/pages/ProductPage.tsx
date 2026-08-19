@@ -1643,14 +1643,16 @@ const ProductPage = () => {
             >
               Share on WhatsApp
             </a>
-            <button
-              type="button"
-              onClick={() => void shareFromDevice()}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-background transition hover:-translate-y-px hover:opacity-90"
-            >
-              <Share2 className="h-4 w-4" />
-              {canUseNativeShare ? "Share from device" : "Copy link"}
-            </button>
+            {canUseNativeShare ? (
+              <button
+                type="button"
+                onClick={() => void shareFromDevice()}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-background transition hover:-translate-y-px hover:opacity-90"
+              >
+                <Share2 className="h-4 w-4" />
+                Share from device
+              </button>
+            ) : null}
           </div>
 
           <DialogFooter className="sm:justify-start">

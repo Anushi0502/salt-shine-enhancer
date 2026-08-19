@@ -99,7 +99,7 @@ final result: passed
 
 - Wishlist reference: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-a7bdf494-77c0-4e24-b8e0-e19fd2f92dc3.png`
 - Share reference: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-33cd6ae2-4873-4584-91e0-547053455a3e.png`
-- Share popup evidence: `.playwright-cli/page-2026-08-19T15-58-08-685Z.png` and `.playwright-cli/page-2026-08-19T15-59-05-633Z.png`
+- Share popup evidence: `.playwright-cli/page-2026-08-19T15-58-08-685Z.png`, `.playwright-cli/page-2026-08-19T15-59-05-633Z.png`, and `.playwright-cli/page-2026-08-19T16-26-48-072Z.png`
 
 ### Tested state
 
@@ -110,7 +110,7 @@ final result: passed
 ### Results
 
 - Wishlist: passed. PDP save control changes to `aria-pressed="true"`, red border/background/text, and a filled red heart; the mobile sticky control reflects the same saved state.
-- Share menu: passed. Clicking Share opens an accessible modal with Copy product link, WhatsApp, Share from device/Copy link fallback, and Close actions.
+- Share menu: passed. Clicking Share opens an accessible modal with one Copy product link action above WhatsApp; Share from device appears only when native sharing is supported.
 - Copy action: passed. The modal stays open and the primary action changes to `Link copied` after clipboard success.
 - Responsive layout: passed. The modal remains contained and readable at the 390 px mobile viewport.
 - Browser console: changed-surface flow passed. The only runtime errors were pre-existing Judge.me API 401 responses for review widgets; no new React or share-flow errors were emitted.
