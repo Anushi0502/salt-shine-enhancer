@@ -101,7 +101,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return (
       <article
         ref={cardRef}
-        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.7rem] border border-border/55 bg-white shadow-[0_12px_30px_-22px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/22 hover:shadow-[0_22px_40px_-24px_rgba(15,23,42,0.18)] ${className}`.trim()}
+        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-border/55 bg-white shadow-[0_14px_34px_-24px_rgba(15,23,42,0.16)] transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_24px_44px_-26px_rgba(15,23,42,0.18)] ${className}`.trim()}
       >
         <button
           type="button"
@@ -115,16 +115,16 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/95 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.24)] transition hover:border-primary/20 hover:text-primary"
+          className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/96 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.22)] transition hover:-translate-y-[1px] hover:border-primary/20 hover:text-primary"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
 
         <div className="flex flex-1 flex-col">
           <Link to={`/products/${product.handle}`} className="block">
-            <div className="relative overflow-hidden bg-[#f7f7f4] p-2.5 pb-0">
+            <div className="relative overflow-hidden bg-[linear-gradient(180deg,#f7f7f4_0%,#fbfbf8_100%)] p-2.5 pb-0">
             {image ? (
-              <div className="relative aspect-[1/1] overflow-hidden rounded-[1.45rem] bg-white">
+              <div className="relative aspect-[1/1.05] overflow-hidden rounded-[1.45rem] bg-white">
                 <img
                   src={cardImage}
                   srcSet={cardImageSrcSet}
@@ -132,11 +132,12 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   alt={product.title}
                   loading={imageLoading}
                   decoding="async"
-                  className="h-full w-full object-contain object-center p-2 transition duration-700 ease-out group-hover:scale-[1.04]"
+                  className="h-full w-full object-contain object-center p-2.5 transition duration-700 ease-out group-hover:scale-[1.035]"
                 />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/5 to-transparent" />
               </div>
             ) : (
-              <div className={`grid aspect-[1/1] w-full place-items-center rounded-[1.45rem] border border-border/60 px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
+              <div className={`grid aspect-[1/1.05] w-full place-items-center rounded-[1.45rem] border border-border/60 px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
                 nativeApp
                   ? "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] text-muted-foreground"
                   : "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-primary"
@@ -146,7 +147,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
             )}
             <div className="absolute left-5 top-5 flex flex-wrap gap-1.5">
               {discountPercent > 0 ? (
-                <span className="rounded-full border border-white/70 bg-[#384d80] px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.16em] text-white shadow-[0_10px_22px_-14px_rgba(15,23,42,0.5)]">
+                <span className="rounded-full border border-white/70 bg-[#384d80] px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.16em] text-white shadow-[0_10px_18px_-14px_rgba(15,23,42,0.45)]">
                   {discountPercent}% OFF
                 </span>
               ) : null}
@@ -154,42 +155,44 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           </div>
           </Link>
 
-          <div className="flex min-h-[8.5rem] flex-1 flex-col px-3.5 pb-3.5 pt-3 sm:min-h-[9rem] sm:px-4 sm:pb-4">
-            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-sans text-[0.98rem] font-medium leading-[1.18] tracking-[-0.025em] text-foreground transition group-hover:text-primary sm:text-[1.02rem] ${
+          <div className="flex min-h-[8.6rem] flex-1 flex-col px-3.5 pb-3.5 pt-3 sm:min-h-[9.1rem] sm:px-4 sm:pb-4">
+            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-sans text-[1rem] font-medium leading-[1.16] tracking-[-0.03em] text-foreground transition group-hover:text-primary sm:text-[1.04rem] ${
               nativeApp ? "text-foreground" : "text-foreground"
             }`}>
               {title}
             </Link>
-            <div className="mt-auto pt-2.5">
+            {product.productType ? (
+              <p className="mt-1 text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {product.productType}
+              </p>
+            ) : null}
+
+            <div className="mt-auto pt-3">
               <div className="flex items-end justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[1.1rem] font-semibold leading-none tracking-[-0.03em] text-foreground sm:text-[1.18rem]">
+                  <p className="text-[1.12rem] font-semibold leading-none tracking-[-0.03em] text-foreground sm:text-[1.2rem]">
                     {formatMoney(min)}
                   </p>
-                  {compare > min ? (
-                    <p className="mt-1 text-[0.74rem] leading-none text-muted-foreground line-through decoration-muted-foreground/60">
-                      {formatMoney(compare)}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-[0.74rem] leading-none text-transparent">\u00a0</p>
-                  )}
+                  <div className="mt-1 flex items-center gap-2">
+                    {compare > min ? (
+                      <p className="text-[0.75rem] leading-none text-muted-foreground line-through decoration-muted-foreground/60">
+                        {formatMoney(compare)}
+                      </p>
+                    ) : null}
+                    {discountPercent > 0 ? (
+                      <span className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-primary">
+                        Save {discountPercent}%
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <ProductRating summary={displaySummary} compact />
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  {product.productType || "New"}
-                </span>
-                {minimumQuantity > 1 ? (
-                  <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Min {minimumQuantity}
-                  </span>
-                ) : (
-                  <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Wishlist
-                  </span>
-                )}
-              </div>
+              {minimumQuantity > 1 ? (
+                <p className="mt-2 text-[0.58rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Minimum order {minimumQuantity}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
