@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Copy,
   BadgeCheck,
   History,
   Heart,
@@ -29,6 +30,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
 import {
@@ -436,6 +446,8 @@ const ProductPage = () => {
   const [activeImage, setActiveImage] = useState("");
   const [recentHandles, setRecentHandles] = useState<string[]>([]);
   const [showAvailableOnly] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
   const currentRatingsQuery = useJudgeMeRatings(product ? [product.id] : []);
   const reviewSummary = product
@@ -781,6 +793,11 @@ const ProductPage = () => {
           : "Choose from the live size options below and compare the listed label with your usual size before ordering.",
       }
     : null;
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const canUseNativeShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    (nativeApp || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent));
 
   const toggleWishlistState = () => {
     const nextSaved = !wishlisted;
@@ -877,16 +894,54 @@ const ProductPage = () => {
     setActiveImage(imageSources[nextIndex] || "");
   };
 
-  const shareProduct = async () => {
-    const shareData = { title: product.title, url: window.location.href };
+  const shareProduct = () => {
+    setShareCopied(false);
+    setShareOpen(true);
+  };
 
-    if (typeof navigator !== "undefined" && navigator.share) {
-      await navigator.share(shareData).catch(() => undefined);
+  const copyProductLink = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = shareUrl;
+        input.setAttribute("readonly", "true");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand("copy");
+        input.remove();
+        if (!copied) {
+          throw new Error("Clipboard copy was not available");
+        }
+      }
+
+      setShareCopied(true);
+      toast.success("Product link copied");
+    } catch {
+      toast.error("Copy failed — please copy the product URL from the address bar");
+    }
+  };
+
+  const shareFromDevice = async () => {
+    if (!canUseNativeShare) {
+      await copyProductLink();
       return;
     }
 
-    await navigator.clipboard?.writeText(window.location.href);
-    toast.success("Product link copied");
+    try {
+      await navigator.share({ title: product.title, url: shareUrl });
+      setShareOpen(false);
+      toast.success("Product shared");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      toast.error("Unable to share this product");
+    }
   };
 
   return (
@@ -963,7 +1018,6 @@ const ProductPage = () => {
                         alt={product.title}
                         className="aspect-square w-full object-contain"
                         loading="eager"
-                        fetchPriority="high"
                         decoding="async"
                         onLoad={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
                         onError={() => window.dispatchEvent(new Event("salt:product-media-ready"))}
@@ -1404,9 +1458,13 @@ const ProductPage = () => {
               type="button"
               onClick={toggleWishlistState}
               aria-pressed={wishlisted ? "true" : "false"}
-              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:text-primary"
+              className={`mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
+                wishlisted
+                  ? "border-red-200 bg-red-50/60 text-red-500 hover:border-red-300 hover:text-red-600"
+                  : "border-border bg-background text-foreground hover:border-primary/40 hover:text-primary"
+              }`}
             >
-              <Heart className={`h-4 w-4 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
+              <Heart className={`h-4 w-4 ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />
               {wishlisted ? "Saved to wishlist" : "Save to wishlist"}
             </button>
 
@@ -1540,9 +1598,13 @@ const ProductPage = () => {
             onClick={toggleWishlistState}
             aria-pressed={wishlisted ? "true" : "false"}
             aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-            className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-foreground transition hover:border-primary/40 hover:text-primary"
+            className={`inline-flex h-12 w-12 items-center justify-center rounded-xl border transition ${
+              wishlisted
+                ? "border-red-200 bg-red-50/60 text-red-500 hover:border-red-300 hover:text-red-600"
+                : "border-border bg-background text-foreground hover:border-primary/40 hover:text-primary"
+            }`}
           >
-            <Heart className={`h-4.5 w-4.5 ${wishlisted ? "fill-primary/20 text-primary" : ""}`} />
+            <Heart className={`h-4 w-4 ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />
           </button>
           <button
             type="button"
@@ -1555,6 +1617,54 @@ const ProductPage = () => {
           </button>
         </div>
       </div>
+
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-[1.5rem] border-border/70 bg-background p-5 sm:p-6">
+          <DialogHeader className="pr-6 text-left">
+            <DialogTitle className="font-display text-2xl">Share this product</DialogTitle>
+            <DialogDescription>Send this product to someone or copy its link.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-2">
+            <button
+              type="button"
+              onClick={() => void copyProductLink()}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:text-primary"
+            >
+              <Copy className="h-4 w-4" />
+              {shareCopied ? "Link copied" : "Copy product link"}
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`${product.title} ${shareUrl}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setShareOpen(false)}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-background px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:text-primary"
+            >
+              Share on WhatsApp
+            </a>
+            <button
+              type="button"
+              onClick={() => void shareFromDevice()}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-background transition hover:-translate-y-px hover:opacity-90"
+            >
+              <Share2 className="h-4 w-4" />
+              {canUseNativeShare ? "Share from device" : "Copy link"}
+            </button>
+          </div>
+
+          <DialogFooter className="sm:justify-start">
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="h-10 rounded-full px-4 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                Close
+              </button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

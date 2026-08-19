@@ -11,10 +11,11 @@ import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
-import heroEverydayEssentials from "@/assets/hero-everyday-essentials-square.webp";
-import heroPortableGadgets from "@/assets/hero-portable-gadgets-square.webp";
-import heroTravelOutdoor from "@/assets/hero-travel-outdoor-square.webp";
-import heroWomensBeauty from "@/assets/hero-womens-beauty-square.webp";
+import heroAnimeCollectables from "@/assets/collection-banners/anime-collectables-square.webp";
+import heroCreatorEssentials from "@/assets/collection-banners/creator-essentials-square.webp";
+import heroLipCare from "@/assets/collection-banners/lip-care-square.webp";
+import heroWatches from "@/assets/collection-banners/watches-square.webp";
+import heroGlamEyePalettes from "@/assets/collection-banners/glam-eye-palettes-square.webp";
 import heroMain from "@/assets/hero-main.jpg";
 import type { HomeHeroSlide } from "@/components/storefront/HomeHero";
 import type { ShopifyProduct } from "@/types/shopify";
@@ -192,46 +193,56 @@ const HomePage = () => {
 
     return [
       {
-        key: sections.everydayEssentials.handle,
-        title: sections.everydayEssentials.title,
-        image: heroEverydayEssentials,
-        alt: "Everyday Essentials collection banner.",
-        ctaHref: `/collections/${sections.everydayEssentials.handle}`,
-        products: sections.everydayEssentials.products,
+        key: sections.animeCollectables.handle,
+        title: sections.animeCollectables.title,
+        image: heroAnimeCollectables,
+        alt: "Anime Collectables collection banner.",
+        ctaHref: `/collections/${sections.animeCollectables.handle}`,
+        products: sections.animeCollectables.products,
       },
       {
-        key: sections.womensBeautyEssentials.handle,
-        title: sections.womensBeautyEssentials.title,
-        image: heroWomensBeauty,
-        alt: "Women's Beauty Essentials collection banner.",
-        ctaHref: `/collections/${sections.womensBeautyEssentials.handle}`,
-        products: sections.womensBeautyEssentials.products,
+        key: sections.creatorEssentials.handle,
+        title: sections.creatorEssentials.title,
+        image: heroCreatorEssentials,
+        alt: "Creator Essentials collection banner.",
+        ctaHref: `/collections/${sections.creatorEssentials.handle}`,
+        products: sections.creatorEssentials.products,
       },
       {
-        key: sections.portableGadgets.handle,
-        title: sections.portableGadgets.title,
-        image: heroPortableGadgets,
-        alt: "Portable Gadgets collection banner.",
-        ctaHref: `/collections/${sections.portableGadgets.handle}`,
-        products: sections.portableGadgets.products,
+        key: sections.lipCare.handle,
+        title: sections.lipCare.title,
+        image: heroLipCare,
+        alt: "Lip Care collection banner.",
+        ctaHref: `/collections/${sections.lipCare.handle}`,
+        products: sections.lipCare.products,
       },
       {
-        key: sections.travelOutdoor.handle,
-        title: sections.travelOutdoor.title,
-        image: heroTravelOutdoor,
-        alt: "Travel & Outdoor collection banner.",
-        ctaHref: `/collections/${sections.travelOutdoor.handle}`,
-        products: sections.travelOutdoor.products,
+        key: sections.watches.handle,
+        title: sections.watches.title,
+        image: heroWatches,
+        alt: "Watches collection banner.",
+        ctaHref: `/collections/${sections.watches.handle}`,
+        products: sections.watches.products,
+      },
+      {
+        key: sections.glamEyePalettes.handle,
+        title: sections.glamEyePalettes.title,
+        image: heroGlamEyePalettes,
+        alt: "Glam Eye Palettes collection banner.",
+        ctaHref: `/collections/${sections.glamEyePalettes.handle}`,
+        products: sections.glamEyePalettes.products,
       },
     ];
   }, [homeCollectionProductsPayload]);
   const homeCollectionSections = useMemo(
     () =>
-      homeCollectionProductsPayload
+        homeCollectionProductsPayload
         ? [
-            homeCollectionProductsPayload.sections.womensBeautyEssentials,
-            homeCollectionProductsPayload.sections.portableGadgets,
-            homeCollectionProductsPayload.sections.travelOutdoor,
+            homeCollectionProductsPayload.sections.animeCollectables,
+            homeCollectionProductsPayload.sections.creatorEssentials,
+            homeCollectionProductsPayload.sections.lipCare,
+            homeCollectionProductsPayload.sections.watches,
+            homeCollectionProductsPayload.sections.glamEyePalettes,
           ].map((section) => ({
             title: section.title,
             to: `/collections/${section.handle}`,

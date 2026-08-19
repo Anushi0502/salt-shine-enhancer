@@ -5,6 +5,8 @@ const DEFAULT_COST_TOLERANCE = 2;
 const DEFAULT_CAMPAIGN_COST_PER_ORDER = 18;
 const DEFAULT_MIN_CONTRIBUTION_MARGIN = 0.3;
 const DEFAULT_CLOTHING_MIN_CONTRIBUTION_MARGIN = 0.43;
+const DEFAULT_PRICE_OUTLIER_RATIO = 2.5;
+const DEFAULT_PRICE_OUTLIER_MINIMUM_DELTA = 25;
 const CLOTHING_EVIDENCE_PATTERN = /\b(?:apparel|blazer|blouse|cardigan|clothing|coat|dress|dresses|denim|fashion|gown|hoodie|jacket|jean|jumpsuit|leggings|pants|shirt|shorts|skirt|sweater|t[- ]?shirt|trousers|wear)\b/i;
 
 function asVariantArray(product) {
@@ -102,6 +104,8 @@ export function buildVariantCostPriceAlignmentPlan(
     campaignCostPerOrder = DEFAULT_CAMPAIGN_COST_PER_ORDER,
     minContributionMargin = DEFAULT_MIN_CONTRIBUTION_MARGIN,
     clothingMinContributionMargin = DEFAULT_CLOTHING_MIN_CONTRIBUTION_MARGIN,
+    priceOutlierRatio = DEFAULT_PRICE_OUTLIER_RATIO,
+    priceOutlierMinimumDelta = DEFAULT_PRICE_OUTLIER_MINIMUM_DELTA,
   } = {},
 ) {
   const byHandle = new Map();
@@ -113,6 +117,8 @@ export function buildVariantCostPriceAlignmentPlan(
   let productsWithUpdates = 0;
   let variantsToUpdate = 0;
   let variantsBelowProtectionTarget = 0;
+  let priceOutlierGroups = 0;
+  let priceOutlierVariants = 0;
 
   for (const product of Array.isArray(products) ? products : []) {
     const clothingProduct = isClothingProduct(product);
@@ -163,12 +169,43 @@ export function buildVariantCostPriceAlignmentPlan(
     }
 
     const alignedGroups = groupByCost(candidates, tolerance).filter((group) => group.length >= 2);
+    const priceOutlierByVariant = new Map();
     for (const group of alignedGroups) {
-      const targetPrice = Math.max(
+      const prices = group.map((entry) => entry.price).sort((left, right) => left - right);
+      const minimumPrice = prices[0];
+      const maximumPrice = prices.at(-1);
+      const priceRatio = minimumPrice > 0 ? maximumPrice / minimumPrice : Infinity;
+      const priceRange = maximumPrice - minimumPrice;
+      const isWildPriceOutlier = priceRatio >= priceOutlierRatio &&
+        priceRange >= priceOutlierMinimumDelta;
+      const groupProtectionTarget = Math.max(
         priceFloor,
-        ...group.map((entry) => entry.price),
-        ...group.map((entry) => Number(targetByVariant.get(entry.id) || priceFloor)),
+        ...group.map((entry) => Number(entry.protectionTarget || priceFloor)),
       );
+      const normalTargetPrice = Math.max(
+        groupProtectionTarget,
+        ...prices,
+      );
+      const sortedMedian = prices.length % 2 === 1
+        ? prices[Math.floor(prices.length / 2)]
+        : (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2;
+      const outlierAnchorPrice = group.length === 2 ? minimumPrice : sortedMedian;
+      const targetPrice = isWildPriceOutlier
+        ? Math.max(groupProtectionTarget, outlierAnchorPrice)
+        : normalTargetPrice;
+
+      if (isWildPriceOutlier) {
+        priceOutlierGroups += 1;
+        for (const entry of group) {
+          priceOutlierByVariant.set(entry.id, {
+            ratio: Number(priceRatio.toFixed(4)),
+            range: Number(priceRange.toFixed(2)),
+            groupSize: group.length,
+            anchorPrice: Number(targetPrice.toFixed(2)),
+          });
+        }
+      }
+
       for (const entry of group) targetByVariant.set(entry.id, targetPrice);
     }
 
@@ -180,6 +217,10 @@ export function buildVariantCostPriceAlignmentPlan(
         targetPrice >= Number(entry.protectionTarget) &&
         entry.price + 0.005 < Number(entry.protectionTarget);
       const alignedWithCostGroup = alignedGroups.some((group) => group.some((groupEntry) => groupEntry.id === entry.id));
+      const priceOutlierEvidence = priceOutlierByVariant.get(entry.id);
+      if (priceOutlierEvidence && Math.abs(entry.price - targetPrice) >= 0.005) {
+        priceOutlierVariants += 1;
+      }
       const compareAt = parseMoneyValue(entry.variant?.compare_at_price ?? entry.variant?.compareAtPrice);
       if (Number.isFinite(compareAt) && compareAt > 0 && compareAt <= targetPrice) {
         held.push({
@@ -201,9 +242,11 @@ export function buildVariantCostPriceAlignmentPlan(
           ? { compareAtPrice: compareAt > targetPrice ? formatMoneyValue(compareAt) : null }
           : {}),
         ...(Number.isFinite(compareAt) && compareAt <= targetPrice ? { compareAtAction: "clear-invalid-compare-at" } : {}),
+        ...(priceOutlierEvidence ? { priceOutlierEvidence } : {}),
         reason: [
           alignedWithCostGroup ? "same-product-cost-within-tolerance" : "",
           protectionApplied ? "cost-and-campaign-contribution-protection" : "",
+          priceOutlierEvidence ? "same-product-wild-price-outlier" : "",
         ].filter(Boolean).join("+") || "approved-price-floor",
       });
     }
@@ -233,6 +276,10 @@ export function buildVariantCostPriceAlignmentPlan(
       minContributionMargin: Number(Number(minContributionMargin).toFixed(4)),
       variantsBelowProtectionTarget,
       productsBelowProtectionTarget: protectionProducts.size,
+      priceOutlierRatio: Number(Number(priceOutlierRatio).toFixed(4)),
+      priceOutlierMinimumDelta: Number(Number(priceOutlierMinimumDelta).toFixed(2)),
+      priceOutlierGroups,
+      priceOutlierVariants,
     },
   };
 }
@@ -241,4 +288,6 @@ export {
   DEFAULT_CAMPAIGN_COST_PER_ORDER,
   DEFAULT_COST_TOLERANCE,
   DEFAULT_MIN_CONTRIBUTION_MARGIN,
+  DEFAULT_PRICE_OUTLIER_RATIO,
+  DEFAULT_PRICE_OUTLIER_MINIMUM_DELTA,
 };

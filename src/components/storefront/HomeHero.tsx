@@ -101,54 +101,36 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
   const slideProducts = (activeSlide.products ?? []).slice(0, 4);
 
   return (
-    <section className="w-full px-2 sm:px-4 lg:px-6">
+    <section className="w-full px-0 sm:px-2 lg:px-4">
       <Reveal className="salt-reveal-instant min-w-0 overflow-hidden">
-        <div className="salt-editorial-shell rounded-[2rem] p-3 sm:p-4 lg:p-5">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] lg:items-stretch">
-              <Link
-                to={activeSlide.ctaHref}
-                aria-label={activeSlide.title}
-                className="group relative flex h-full min-h-[20rem] overflow-hidden rounded-[1.65rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--card)/0.96))] shadow-[0_26px_56px_-40px_rgba(15,23,42,0.2)] sm:min-h-[28rem] lg:min-h-[38rem]"
-              >
-                <div className="relative h-full w-full overflow-hidden">
-                  <img
-                    src={normalizeShopifyAssetUrl(activeSlide.image) || activeSlide.image}
-                    alt={activeSlide.alt}
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.01]"
+        <div className="salt-editorial-shell rounded-[1.5rem] p-2 sm:rounded-[1.75rem] sm:p-3 lg:p-4">
+          <div className="grid gap-2 sm:gap-3 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] lg:items-stretch">
+            <Link
+              to={activeSlide.ctaHref}
+              aria-label={`Shop ${activeSlide.title}`}
+              className="group relative aspect-square overflow-hidden rounded-[1.25rem] border border-border/70 bg-foreground shadow-[0_24px_50px_-34px_rgba(15,23,42,0.35)] sm:rounded-[1.5rem]"
+            >
+              <img
+                src={normalizeShopifyAssetUrl(activeSlide.image) || activeSlide.image}
+                alt={activeSlide.alt}
+                loading="eager"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
+              />
+            </Link>
+
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              {slideProducts.map((product, index) => (
+                <Reveal key={product.id} delayMs={80 + index * 80} className="salt-reveal-instant min-w-0">
+                  <ProductCard
+                    product={toHeroProductCardProduct(product)}
+                    variant="hero"
+                    reviewSummary={reviewSummaries[product.id] ?? null}
+                    className="min-w-0"
                   />
-                </div>
-
-                {slides.length > 1 ? (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-2">
-                    {slides.map((slide, index) => (
-                      <span
-                        key={`${slide.key}-dot-${index}`}
-                        className={`h-1.5 rounded-full transition-all ${
-                          index === activeSlideIndex ? "w-6 bg-white/95" : "w-2 bg-white/55"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </Link>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {slideProducts.map((product, index) => {
-                  return (
-                    <Reveal key={product.id} delayMs={120 + index * 120} className="salt-reveal-instant h-full">
-                      <ProductCard
-                        product={toHeroProductCardProduct(product)}
-                        variant="shop"
-                        reviewSummary={reviewSummaries[product.id] ?? null}
-                        className="min-w-0"
-                      />
-                    </Reveal>
-                  );
-                })}
-              </div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </Reveal>

@@ -72,6 +72,30 @@ describe("variant cost-price alignment", () => {
     expect(plan.held).toHaveLength(0);
   });
 
+  it("repairs a wild same-cost sibling price without touching quantity tiers", () => {
+    const plan = buildVariantCostPriceAlignmentPlan([
+      {
+        handle: "wild-price-product",
+        variants: [
+          { id: 1, title: "Backpack", cost_per_item: "10.00", price: "49.99" },
+          { id: 2, title: "Lunch box", cost_per_item: "11.00", price: "299.99" },
+          { id: 3, title: "2pcs", cost_per_item: "10.50", price: "79.99" },
+        ],
+      },
+    ]);
+
+    expect(plan.summary.priceOutlierGroups).toBe(1);
+    expect(plan.summary.priceOutlierVariants).toBe(1);
+    expect(plan.byHandle.get("wild-price-product")).toEqual([
+      expect.objectContaining({
+        variantId: "2",
+        currentPrice: "299.99",
+        price: "49.99",
+        reason: expect.stringContaining("same-product-wild-price-outlier"),
+      }),
+    ]);
+  });
+
   it("clears an invalid compare-at value when raising the variant price", () => {
     const plan = buildVariantCostPriceAlignmentPlan([
       {

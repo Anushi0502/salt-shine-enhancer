@@ -93,6 +93,98 @@
 
 final result: passed
 
+## Wishlist and share menu - 2026-08-19
+
+### Source of truth
+
+- Wishlist reference: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-a7bdf494-77c0-4e24-b8e0-e19fd2f92dc3.png`
+- Share reference: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-33cd6ae2-4873-4584-91e0-547053455a3e.png`
+- Share popup evidence: `.playwright-cli/page-2026-08-19T15-58-08-685Z.png` and `.playwright-cli/page-2026-08-19T15-59-05-633Z.png`
+
+### Tested state
+
+- Route: `/products/mens-watches-top-brand-luxury-quartz-watch-for-men-fashion-leather-men-wristwatches-clock-sports-chronograph-montre-homme`
+- Browser: Playwright WebKit
+- Viewports: 1280 x 720 desktop and 390 x 844 mobile
+
+### Results
+
+- Wishlist: passed. PDP save control changes to `aria-pressed="true"`, red border/background/text, and a filled red heart; the mobile sticky control reflects the same saved state.
+- Share menu: passed. Clicking Share opens an accessible modal with Copy product link, WhatsApp, Share from device/Copy link fallback, and Close actions.
+- Copy action: passed. The modal stays open and the primary action changes to `Link copied` after clipboard success.
+- Responsive layout: passed. The modal remains contained and readable at the 390 px mobile viewport.
+- Browser console: changed-surface flow passed. The only runtime errors were pre-existing Judge.me API 401 responses for review widgets; no new React or share-flow errors were emitted.
+- Build: passed. TypeScript, diff check, and the development Vite build completed.
+
+final result: passed
+
+## Homepage collection banners - 2026-08-19
+
+### Source of truth
+
+- Reference direction: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-f9a5cd95-d1da-46b9-9a68-f308fee0b5c9.png`
+- Generated banner assets: `src/assets/collection-banners/`
+- QA screenshots: `output/playwright/home-collections-desktop.png`, `output/playwright/home-collections-mobile.png`
+
+### Tested state
+
+- Route: `/`
+- Browser: Playwright WebKit
+- Viewports: 1440 x 1000 desktop and 390 x 844 mobile
+- Collections: Anime Collectables, Creator Essentials, Lip Care, Watches, Glam Eye Palettes
+
+### Results
+
+- Banner composition: passed. All five square assets contain their own collection heading, supporting copy, and blue CTA button; no duplicate HTML overlay is rendered.
+- Interaction: passed. The full banner is one collection link; clicking the Anime Collectables banner navigated to `/collections/anime-collectables`.
+- Products: passed. Each collection has 12 generated homepage product cards from the local catalog payload.
+- Responsive layout: passed. Mobile has no horizontal overflow (`379px` document width at a `390px` viewport), and the square banner remains readable above the 2 x 2 product grid.
+- Console: passed with zero browser errors; one pre-existing React Router future-flag warning remains.
+- Build: passed. TypeScript, diff check, and the development Vite build completed for this change.
+
+final result: passed
+
+## Product card polish - 2026-08-19
+
+### Source of truth
+
+- Attached product-card reference: `/var/folders/5v/j7kjz8x10gs92h69wc2ydc840000gn/T/codex-clipboard-fbfe0106-1d6e-4589-88c6-aa217336c50c.png`
+- Rendered implementation: `/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/.playwright-cli/element-2026-08-19T11-49-53-205Z.png`
+- Combined comparison input: `/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/design-qa/product-card-comparison-final.png`
+
+### Tested state
+
+- Route: `/shop`
+- Browser: Playwright WebKit
+- Full-page viewport: 800 x 900 CSS px
+- Focused card capture: 374 CSS px wide, 375 x 630 rendered pixels at CSS scale 1
+- Source reference: 374 x 734 pixels
+- State: discounted live catalog product, no published reviews, wishlist initially off
+- Full-page evidence: `/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/.playwright-cli/page-2026-08-19T11-40-47-659Z.png`
+
+### Comparison history
+
+#### Pass 1 - card redesign and semantic interaction fix
+
+- [P2] The wishlist control was initially nested inside the product link after the visual restructuring. Fixed by making the image link and wishlist button sibling controls; the refreshed snapshot shows separate link and button nodes.
+- [P2] Typography was under-scaled against the supplied card reference at the same 374 px card width. Fixed by increasing the shop-card title, sale label, curated-pill, price, and compare-at optical sizes while retaining responsive clamps.
+- Image and data state: the reference contains makeup brushes while the implementation uses a real live catalog product. This is an intentional content-state difference; the card framing and image treatment were compared separately.
+- Fonts and typography: passed. The existing SALT display family remains in use, with stronger title and price hierarchy, two-line clamping, and readable uppercase metadata.
+- Spacing and layout rhythm: passed. Rounded outer frame, image-to-content divider, overlapping controls, chip spacing, price alignment, and bottom rating anchor remain contained with no overflow.
+- Colors and visual tokens: passed. Navy promotion pill, pale blue border, white/frosted wishlist control, blue price, and amber rating star match the supplied palette direction while using existing theme tokens.
+- Image quality: passed. Real Shopify product media remains responsive, object-cover, lazy until viewport entry, and eager after first intersection; no placeholder art was introduced.
+- Copy and content: passed. Product title, discount, curated label, prices, and `New` rating state remain visible and accessible.
+- Interaction: passed. Wishlist toggled to `pressed` and back with the expected accessible label; the browser reported zero errors.
+- Console: zero errors; two pre-existing warnings remain for the React Router v7 future flag and an unused Shopify logo preload.
+
+### Residual notes
+
+- The reference's exact product image, title wrapping, and total card height are data-dependent and therefore differ from the live catalog capture.
+- The local `predev` catalog-artifact hook was bypassed for the focused browser run after it stalled; the direct Vite preview, TypeScript check, and production Vite build all completed for the changed UI.
+- No Shopify theme or GitHub publish was performed for this product-card iteration.
+
+final result: passed
+
 ## Pass 10 - Exact b987ec4 restoration
 
 - Selected source of truth: source commit `b987ec4` and the supplied Safari reference `codex-clipboard-46756d78-b661-4468-8fa2-e6e12715f2b4.png`.

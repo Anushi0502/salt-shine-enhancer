@@ -219,19 +219,19 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
-      label: "Dry-run same-product variant cost-price alignment",
+      label: "Dry-run same-product variant cost-price and wild-pricing alignment",
       command: npmBin,
       args: ["run", "shopify:variant-cost-price:dry-run"],
       cwd: releaseRootDir,
     },
     {
-      label: "Apply same-product variant cost-price alignment",
+      label: "Apply same-product variant cost-price and wild-pricing alignment",
       command: npmBin,
       args: ["run", "shopify:variant-cost-price:apply"],
       cwd: releaseRootDir,
     },
     {
-      label: "Verify same-product variant cost-price alignment",
+      label: "Verify same-product variant cost-price and wild-pricing alignment",
       command: npmBin,
       args: ["run", "shopify:variant-cost-price:verify"],
       cwd: releaseRootDir,

@@ -28,6 +28,8 @@ const clothingMinContributionMargin = Math.min(
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_VARIANT_COST_PAGE_SIZE || 100)));
 const readbackAttempts = Math.max(1, Number(process.env.SALT_VARIANT_COST_READBACK_ATTEMPTS || 5));
 const applyConcurrency = Math.max(1, Math.min(4, Number(process.env.SALT_VARIANT_COST_APPLY_CONCURRENCY || 2)));
+const priceOutlierRatio = Math.max(1, Number(process.env.SALT_VARIANT_PRICE_OUTLIER_RATIO || 2.5));
+const priceOutlierMinimumDelta = Math.max(0, Number(process.env.SALT_VARIANT_PRICE_OUTLIER_MINIMUM_DELTA || 25));
 
 const PRODUCTS_QUERY = /* GraphQL */ `
   query VariantCostPriceProducts($first: Int!, $after: String) {
@@ -185,7 +187,10 @@ function manifestForPlan(plan, mode) {
       priceFloor,
       readbackAttempts,
       applyConcurrency,
+      priceOutlierRatio,
+      priceOutlierMinimumDelta,
       targetPrice: "highest current variant price in each same-product cost group, or the cost-plus-campaign contribution target, whichever is higher; prices are never lowered",
+      wildPriceOutliers: "same-product non-quantity variants within the cost tolerance are normalized only when price ratio and absolute range both exceed the configured thresholds; every change is read back",
       quantityTiers: "held outside automatic alignment",
       compareAt: "preserve if above target; clear if it would become invalid after the price increase",
       sourceOfTruth: "live Shopify variant inventoryItem.unitCost and price",
@@ -399,6 +404,8 @@ async function main() {
     campaignCostPerOrder,
     minContributionMargin,
     clothingMinContributionMargin,
+    priceOutlierRatio,
+    priceOutlierMinimumDelta,
   });
   plan.products = products;
   const manifest = manifestForPlan(plan, args.mode);

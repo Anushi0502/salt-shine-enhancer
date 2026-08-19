@@ -1443,34 +1443,19 @@ const ShopPage = () => {
             </>
           ) : (
             <>
-              <div className="salt-section-shell mt-5 rounded-[1.45rem] p-3 sm:mt-6 sm:rounded-[1.7rem] sm:p-4 lg:p-5">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-8 xl:grid-cols-5 xl:gap-x-7 xl:gap-y-9">
-                  {visibleProducts.map((product, index) => {
-                    const cardSpan =
-                      index === 0
-                        ? "col-span-2 row-span-2 xl:col-span-2 xl:row-span-2"
-                        : index % 7 === 3
-                          ? "sm:col-span-2 lg:col-span-2"
-                          : index % 6 === 2
-                            ? "lg:row-span-2"
-                            : "";
-
-                    return (
-                      <Reveal
-                        key={product.id}
-                        delayMs={0}
-                        className={`salt-reveal-instant h-full w-full ${cardSpan}`.trim()}
-                      >
+                <div className="salt-section-shell mt-5 rounded-[1.45rem] p-3 sm:mt-6 sm:rounded-[1.7rem] sm:p-4 lg:p-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 xl:grid-cols-6 xl:gap-6">
+                    {visibleProducts.map((product) => (
+                      <Reveal key={product.id} delayMs={0} className="salt-reveal-instant h-full w-full">
                         <ProductCard
                           product={product}
                           variant="shop"
                           reviewSummary={productRatingsById[product.id] ?? null}
                         />
                       </Reveal>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
               <Reveal delayMs={180} className="mt-7">
                 <div className="salt-glass-rail rounded-[1rem] p-2.5 sm:p-3">

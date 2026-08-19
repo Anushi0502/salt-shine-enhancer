@@ -20,10 +20,11 @@ export type HomeCollectionProductsPayload = {
   generatedAt: string;
   source: string;
   sections: {
-    everydayEssentials: HomeCollectionSection;
-    womensBeautyEssentials: HomeCollectionSection;
-    portableGadgets: HomeCollectionSection;
-    travelOutdoor: HomeCollectionSection;
+    animeCollectables: HomeCollectionSection;
+    creatorEssentials: HomeCollectionSection;
+    lipCare: HomeCollectionSection;
+    watches: HomeCollectionSection;
+    glamEyePalettes: HomeCollectionSection;
   };
 };
 
@@ -37,10 +38,11 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
   generatedAt: "",
   source: "",
   sections: {
-    everydayEssentials: EMPTY_SECTION("Everyday Essentials", "everyday-essentials"),
-    womensBeautyEssentials: EMPTY_SECTION("Women's Beauty Essentials", "womens-beauty-essentials"),
-    portableGadgets: EMPTY_SECTION("Portable Gadgets", "portable-gadgets"),
-    travelOutdoor: EMPTY_SECTION("Travel & Outdoor", "travel-outdoor"),
+    animeCollectables: EMPTY_SECTION("Anime Collectables", "anime-collectables"),
+    creatorEssentials: EMPTY_SECTION("Creator Essentials", "creator-essentials"),
+    lipCare: EMPTY_SECTION("Lip Care", "lips-and-care"),
+    watches: EMPTY_SECTION("Watches", "watches"),
+    glamEyePalettes: EMPTY_SECTION("Glam Eye Palettes", "glam-eye-palettes"),
   },
 };
 
