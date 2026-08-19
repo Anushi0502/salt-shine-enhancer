@@ -101,7 +101,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return (
       <article
         ref={cardRef}
-        className={`group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.96))] shadow-[0_18px_42px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/28 hover:shadow-[0_28px_54px_-34px_rgba(15,23,42,0.22)] ${className}`.trim()}
+        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.7rem] border border-border/55 bg-white shadow-[0_12px_30px_-22px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/22 hover:shadow-[0_22px_40px_-24px_rgba(15,23,42,0.18)] ${className}`.trim()}
       >
         <button
           type="button"
@@ -115,16 +115,16 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           aria-pressed={wishlisted ? "true" : "false"}
           aria-label={wishlisted ? `Remove ${title} from wishlist` : `Save ${title} to wishlist`}
           title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
-          className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/95 text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.32)] transition hover:border-primary/20 hover:text-primary sm:h-11 sm:w-11"
+          className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white/95 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.24)] transition hover:border-primary/20 hover:text-primary"
         >
           <Heart className={`h-4 w-4 ${wishlisted ? (nativeApp ? "fill-primary/16 text-primary" : "fill-primary/20 text-primary") : ""}`} />
         </button>
 
         <div className="flex flex-1 flex-col">
           <Link to={`/products/${product.handle}`} className="block">
-            <div className="relative overflow-hidden p-3 pb-0">
+            <div className="relative overflow-hidden bg-[#f7f7f4] p-2.5 pb-0">
             {image ? (
-              <div className="relative aspect-[1.02/1] overflow-hidden rounded-[1.45rem] border border-white/55 bg-white/40 shadow-[0_20px_36px_-28px_rgba(15,23,42,0.22)]">
+              <div className="relative aspect-[1/1] overflow-hidden rounded-[1.45rem] bg-white">
                 <img
                   src={cardImage}
                   srcSet={cardImageSrcSet}
@@ -132,12 +132,11 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   alt={product.title}
                   loading={imageLoading}
                   decoding="async"
-                  className="h-full w-full object-cover object-center transition duration-700 ease-out group-hover:scale-[1.06]"
+                  className="h-full w-full object-contain object-center p-2 transition duration-700 ease-out group-hover:scale-[1.04]"
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,hsl(var(--foreground)/0.1)_100%)]" />
               </div>
             ) : (
-              <div className={`grid aspect-[1.02/1] w-full place-items-center rounded-[1.5rem] border border-border/60 px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
+              <div className={`grid aspect-[1/1] w-full place-items-center rounded-[1.45rem] border border-border/60 px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
                 nativeApp
                   ? "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.82))] text-muted-foreground"
                   : "bg-[linear-gradient(135deg,hsl(var(--background)/0.98),hsl(var(--card)/0.92))] text-primary"
@@ -145,69 +144,51 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 Image unavailable
               </div>
             )}
-            <div className="absolute left-6 top-6 flex flex-wrap gap-1.5">
+            <div className="absolute left-5 top-5 flex flex-wrap gap-1.5">
               {discountPercent > 0 ? (
-                <span className="rounded-full border border-white/70 bg-[#314979] px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.16em] text-white shadow-[0_10px_22px_-14px_rgba(15,23,42,0.6)]">
+                <span className="rounded-full border border-white/70 bg-[#384d80] px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.16em] text-white shadow-[0_10px_22px_-14px_rgba(15,23,42,0.5)]">
                   {discountPercent}% OFF
-                </span>
-              ) : null}
-              {minimumQuantity > 1 ? (
-                <span className="rounded-full border border-white/70 bg-white/88 px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-slate-700 shadow-[0_10px_22px_-14px_rgba(15,23,42,0.35)]">
-                  Pack x{minimumQuantity}
                 </span>
               ) : null}
             </div>
           </div>
           </Link>
 
-          <div className="flex min-h-[10.5rem] flex-1 flex-col px-4 pb-4 pt-3 sm:min-h-[11rem] sm:px-5 sm:pb-5">
-            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.04rem] leading-[1.06] tracking-[-0.035em] ${
+          <div className="flex min-h-[8.5rem] flex-1 flex-col px-3.5 pb-3.5 pt-3 sm:min-h-[9rem] sm:px-4 sm:pb-4">
+            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-sans text-[0.98rem] font-medium leading-[1.18] tracking-[-0.025em] text-foreground transition group-hover:text-primary sm:text-[1.02rem] ${
               nativeApp ? "text-foreground" : "text-foreground"
-            } sm:text-[1.08rem]`}>
+            }`}>
               {title}
             </Link>
-            {highlights.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {highlights.slice(0, 2).map((highlight, index) => (
-                  <span
-                    key={`${highlight}-${index}`}
-                    className="rounded-full border border-border/65 bg-background/90 px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground shadow-[0_8px_18px_-18px_rgba(15,23,42,0.3)]"
-                  >
-                    {highlight}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="mt-auto pt-4">
-              <div className="flex items-end justify-between gap-3 rounded-[1.2rem] border border-border/65 bg-[linear-gradient(180deg,hsl(var(--background)/0.98),hsl(var(--muted)/0.48))] p-3 shadow-[0_14px_24px_-24px_rgba(15,23,42,0.18)]">
+            <div className="mt-auto pt-2.5">
+              <div className="flex items-end justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-display text-[1.18rem] leading-none tracking-[0.1em] text-primary sm:text-[1.34rem]">
+                  <p className="text-[1.1rem] font-semibold leading-none tracking-[-0.03em] text-foreground sm:text-[1.18rem]">
                     {formatMoney(min)}
                   </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-primary/16 bg-primary/6 px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-primary">
-                      Curated
-                    </span>
-                    {compare > min ? (
-                      <span className="text-[0.62rem] font-medium text-muted-foreground line-through decoration-muted-foreground/60">
-                        {formatMoney(compare)}
-                      </span>
-                    ) : null}
-                  </div>
+                  {compare > min ? (
+                    <p className="mt-1 text-[0.74rem] leading-none text-muted-foreground line-through decoration-muted-foreground/60">
+                      {formatMoney(compare)}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[0.74rem] leading-none text-transparent">\u00a0</p>
+                  )}
                 </div>
                 <ProductRating summary={displaySummary} compact />
               </div>
-
-              <div className="mt-2 flex items-center justify-between gap-2 px-1">
-                <span className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  View product
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-[0.58rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  {product.productType || "New"}
                 </span>
                 {minimumQuantity > 1 ? (
-                  <span className="text-[0.58rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                    Min qty {minimumQuantity}
+                  <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Min {minimumQuantity}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="text-[0.58rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Wishlist
+                  </span>
+                )}
               </div>
             </div>
           </div>
