@@ -13,16 +13,14 @@ import {
 import { getBrowserStorage } from "@/lib/browser-storage";
 import { useCart } from "@/lib/cart";
 import {
-  SITE_COLLECTIONS,
-  buildCollectionRoute,
   buildResourceRoute,
-  buildSubcollectionRoute,
-  isSiteHeaderCollectionLinkActive,
   type SiteHeaderCollectionLink,
-  type SiteCollection,
 } from "@/lib/site-navigation";
-import { useCollections } from "@/lib/collections-data";
-import type { ShopifyCollection } from "@/types/shopify";
+import {
+  buildCollectionNavigation,
+  useShopifyNavigation,
+  type CollectionNavigationGroup,
+} from "@/lib/shopify-navigation";
 import { getRuntimeContext, getShopifyAccountRoutes } from "@/lib/theme-assets";
 import {
   clearShopifyCustomerAccountSession,
@@ -40,23 +38,7 @@ const CollectionHoverMenu = lazy(() =>
   })),
 );
 
-const searchScopeOptions = [
-  {
-    label: "All",
-    collection: "all-products",
-  },
-  { label: "Senior Living Solutions", collection: "books" },
-  { label: "Home & Kitchen", collection: "cookware" },
-  { label: "Home Decor & Lighting", collection: "home-decor" },
-  { label: "Pet Essentials", collection: "pet-assocerries" },
-  { label: "Health & Wellness", collection: "face-mask" },
-  { label: "Travel & Outdoor", collection: "shopping-bags-jute-bags" },
-  { label: "Gifts Collection", collection: "gifts" },
-  { label: "Trending Finds", collection: "unique-products" },
-  { label: "New Arrivals", collection: "new-arrivals" },
-] as const;
-
-type HeaderSearchScope = (typeof searchScopeOptions)[number]["collection"];
+type HeaderSearchScope = string;
 
 type HeaderNavItem = {
   label: string;
@@ -65,57 +47,18 @@ type HeaderNavItem = {
   isActive?: (pathname: string, search: string) => boolean;
 };
 
-function isCollectionRouteActive(pathname: string, search: string, collection: HeaderSearchScope): boolean {
-  const params = new URLSearchParams(search);
-  const currentCollection = params.get("collection");
-
-  return (
-    (pathname === "/shop" ||
-      pathname === "/search" ||
-      pathname.startsWith("/shop/") ||
-      pathname.startsWith("/search/")) &&
-    currentCollection === collection
-  );
-}
-
-const headerShortcutLinks: SiteHeaderCollectionLink[] = [
+const fixedHeaderLinks: SiteHeaderCollectionLink[] = [
   {
     label: "Best Sellers",
-    routeHandle: "unique-products",
+    routeHandle: "best-sellers",
     activeCollectionHandles: ["best-sellers", "appplaza-best-sellers"],
-    to: buildSubcollectionRoute("unique-products", "best-sellers"),
+    to: "/collections/best-sellers",
   },
   {
     label: "New Arrivals",
-    routeHandle: "unique-products",
+    routeHandle: "new-arrivals",
     activeCollectionHandles: ["new-arrivals"],
-    to: buildSubcollectionRoute("unique-products", "new-arrivals"),
-  },
-  {
-    label: "Under $25",
-    routeHandle: "unique-products",
-    activeCollectionHandles: ["under-25"],
-    to: buildSubcollectionRoute("unique-products", "under-25"),
-  },
-  {
-    label: "Trending Now",
-    routeHandle: "unique-products",
-    activeCollectionHandles: [
-      "trending-finds",
-      "best-sellers",
-      "appplaza-best-sellers",
-      "new-arrivals",
-      "staff-picks",
-      "under-25",
-      "under-50",
-    ],
-    to: buildCollectionRoute("unique-products"),
-  },
-  {
-    label: "Under $50",
-    routeHandle: "unique-products",
-    activeCollectionHandles: ["under-50"],
-    to: buildCollectionRoute("under-50"),
+    to: "/collections/new-arrivals",
   },
 ];
 
@@ -168,15 +111,17 @@ function utilityNavItemClass(active: boolean) {
   return `${utilityNavTabClass} ${active ? "is-active" : ""}`;
 }
 
-function isDrawerSubcollectionActive(
-  pathname: string,
-  search: string,
-  collectionHandle: string,
-  subcollectionHandle: string,
-): boolean {
-  const route = buildSubcollectionRoute(collectionHandle, subcollectionHandle);
-  const [routePath, routeSearch = ""] = route.split("?", 2);
-  return pathname === routePath && search === (routeSearch ? `?${routeSearch}` : "");
+function isNavigationLinkActive(pathname: string, search: string, href: string | null | undefined): boolean {
+  if (!href) {
+    return false;
+  }
+
+  const [routePath, routeSearch = ""] = href.split("?", 2);
+  if (pathname !== routePath) {
+    return false;
+  }
+
+  return routeSearch ? search === `?${routeSearch}` : !search;
 }
 
 const RECENT_SEARCHES_KEY = "salt-recent-searches";
@@ -244,58 +189,8 @@ type HeaderMenuDrawerProps = {
   onOpenChange: (open: boolean) => void;
   auth: HeaderAuthState;
   onSignOut: () => void;
-  collections: SiteCollection[];
+  collections: CollectionNavigationGroup[];
 };
-
-const FIXED_ADMIN_COLLECTION_HANDLES = new Set(["best-sellers", "appplaza-best-sellers", "new-arrivals"]);
-
-function normalizedCollectionHandle(value: string | null | undefined): string {
-  return String(value || "").trim().toLowerCase();
-}
-
-function findAdminCollection(
-  collections: ShopifyCollection[] | undefined,
-  ...handles: Array<string | null | undefined>
-): ShopifyCollection | null {
-  const candidates = new Set(handles.map(normalizedCollectionHandle).filter(Boolean));
-  if (!candidates.size) {
-    return null;
-  }
-
-  return (
-    collections?.find((collection) => candidates.has(normalizedCollectionHandle(collection.handle))) || null
-  );
-}
-
-function syncHeaderCollections(collections: ShopifyCollection[] | undefined): SiteCollection[] {
-  return SITE_COLLECTIONS.map((collection) => {
-    const adminCollection = findAdminCollection(collections, collection.shopifyHandle, collection.handle);
-    const subcollections = collection.subcollections.map((subcollection) => {
-      const adminSubcollection = findAdminCollection(
-        collections,
-        subcollection.shopifyHandle,
-        subcollection.handle,
-      );
-      const adminHandle = normalizedCollectionHandle(adminSubcollection?.handle);
-      const keepFixedLabel = FIXED_ADMIN_COLLECTION_HANDLES.has(adminHandle) || FIXED_ADMIN_COLLECTION_HANDLES.has(subcollection.handle);
-
-      return {
-        ...subcollection,
-        title: keepFixedLabel ? subcollection.title : adminSubcollection?.title || subcollection.title,
-        summary: adminSubcollection?.description || subcollection.summary,
-        shopifyHandle: adminSubcollection?.handle || subcollection.shopifyHandle,
-      };
-    });
-
-    return {
-      ...collection,
-      title: adminCollection?.title || collection.title,
-      summary: adminCollection?.description || collection.summary,
-      shopifyHandle: adminCollection?.handle || collection.shopifyHandle,
-      subcollections,
-    };
-  });
-}
 
 function HeaderMenuDrawer({
   open,
@@ -422,108 +317,116 @@ function HeaderMenuDrawer({
               {/* Collection items - visible on mobile/tablet */}
               <div className="mt-2.5 grid content-start gap-1.5 pb-4 pr-1 lg:hidden">
                 {collections.map((collection) => {
-                  const isExpanded = expandedCollectionHandle === collection.handle;
-                  const activeSubcollection = collection.subcollections.find((subcollection) =>
-                    isDrawerSubcollectionActive(
-                      location.pathname,
-                      location.search,
-                      collection.handle,
-                      subcollection.handle,
-                    ),
+                  const isExpanded = expandedCollectionHandle === collection.id;
+                  const activeSubcollection = collection.items.find((item) =>
+                    isNavigationLinkActive(location.pathname, location.search, item.href),
                   );
 
                   return (
                     <div
-                      key={collection.handle}
+                      key={collection.id}
                       className="overflow-hidden rounded-[1rem] border border-border/72 bg-background shadow-[0_10px_24px_-20px_rgba(15,23,42,0.14)] transition-shadow duration-200 hover:shadow-[0_14px_28px_-22px_rgba(15,23,42,0.18)]"
                     >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setExpandedCollectionHandle((current) =>
-                            current === collection.handle ? null : collection.handle,
-                          );
-                        }}
-                        className="group flex min-h-11 w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
-                        aria-expanded={isExpanded}
-                        aria-controls={`salt-menu-subcollections-${collection.handle}`}
-                      >
-                        <span className="min-w-0 flex-1 text-[0.84rem] font-semibold leading-5 text-foreground">
-                          {collection.title}
-                        </span>
-                        <span
-                          className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-[0_2px_6px_-4px_rgba(15,23,42,0.1)] transition-all duration-300 group-hover:border-primary/20 group-hover:text-primary ${
-                            isExpanded || activeSubcollection
-                              ? "border-primary/20 bg-primary/8 text-primary shadow-[0_2px_8px_-4px_hsl(var(--primary)/0.2)]"
-                              : ""
-                          }`}
+                      {collection.items.length === 0 && collection.href ? (
+                        <SheetClose asChild>
+                          <Link
+                            to={collection.href}
+                            className="group flex min-h-11 w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
+                          >
+                            <span className="min-w-0 flex-1 text-[0.84rem] font-semibold leading-5 text-foreground">
+                              {collection.title}
+                            </span>
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                          </Link>
+                        </SheetClose>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedCollectionHandle((current) =>
+                              current === collection.id ? null : collection.id,
+                            );
+                          }}
+                          className="group flex min-h-11 w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted/30"
+                          aria-expanded={isExpanded}
+                          aria-controls={`salt-menu-subcollections-${collection.id}`}
                         >
-                          <ChevronRight
-                            className={`h-3.5 w-3.5 transition-all duration-300 ${isExpanded ? "rotate-90" : ""}`}
-                          />
-                        </span>
-                      </button>
+                          <span className="min-w-0 flex-1 text-[0.84rem] font-semibold leading-5 text-foreground">
+                            {collection.title}
+                          </span>
+                          <span
+                            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-[0_2px_6px_-4px_rgba(15,23,42,0.1)] transition-all duration-300 group-hover:border-primary/20 group-hover:text-primary ${
+                              isExpanded || activeSubcollection
+                                ? "border-primary/20 bg-primary/8 text-primary shadow-[0_2px_8px_-4px_hsl(var(--primary)/0.2)]"
+                                : ""
+                            }`}
+                          >
+                            <ChevronRight
+                              className={`h-3.5 w-3.5 transition-all duration-300 ${isExpanded ? "rotate-90" : ""}`}
+                            />
+                          </span>
+                        </button>
+                      )}
 
                       {/* Subcollections - smooth expand/collapse */}
-                      <div
-                        id={`salt-menu-subcollections-${collection.handle}`}
-                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                          isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="px-2.5 pb-2.5">
-                          <div className="rounded-[1rem] border border-border/65 bg-background px-2.5 py-2.5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.12)]">
-                            <div className="flex items-start justify-between gap-2 border-b border-border/65 pb-2.5">
-                              <div className="min-w-0">
-                                <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                                  Subcategories
-                                </p>
-                              </div>
+                      {collection.items.length ? (
+                        <div
+                          id={`salt-menu-subcollections-${collection.id}`}
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <div className="px-2.5 pb-2.5">
+                            <div className="rounded-[1rem] border border-border/65 bg-background px-2.5 py-2.5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.12)]">
+                              <div className="flex items-start justify-between gap-2 border-b border-border/65 pb-2.5">
+                                <div className="min-w-0">
+                                  <p className="text-[0.56rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                    Subcollections
+                                  </p>
+                                </div>
 
-                              <SheetClose asChild>
-                                <Link
-                                  to={buildCollectionRoute(collection.handle)}
-                                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
-                                >
-                                  <span>View all</span>
-                                  <ChevronRight className="h-3 w-3" />
-                                </Link>
-                              </SheetClose>
-                            </div>
-
-                            <div className="mt-2 grid gap-1">
-                              {collection.subcollections.map((subcollection) => {
-                                const isActive = isDrawerSubcollectionActive(
-                                  location.pathname,
-                                  location.search,
-                                  collection.handle,
-                                  subcollection.handle,
-                                );
-
-                                return (
-                                  <SheetClose asChild key={subcollection.handle}>
+                                {collection.href && collection.handle ? (
+                                  <SheetClose asChild>
                                     <Link
-                                      to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
-                                      className={`group flex min-h-[2.75rem] items-center justify-between gap-2 rounded-[0.9rem] border px-2.5 py-2 text-left text-[0.76rem] font-semibold leading-5 transition ${
-                                        isActive
-                                          ? "border-primary/20 bg-primary/8 text-foreground shadow-[0_12px_20px_-18px_rgba(15,23,42,0.18)]"
-                                          : "border-transparent text-foreground/88 hover:border-primary/12 hover:bg-muted/40 hover:text-primary"
-                                      }`}
+                                      to={collection.href}
+                                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
                                     >
-                                      <span className="line-clamp-1">{subcollection.title}</span>
-                                      <ChevronRight
-                                        className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary ${
-                                          isActive ? "text-primary" : ""
-                                        }`}
-                                      />
+                                      <span>View all</span>
+                                      <ChevronRight className="h-3 w-3" />
                                     </Link>
                                   </SheetClose>
-                                );
-                              })}
+                                ) : null}
+                              </div>
+
+                              <div className="mt-2 grid gap-1">
+                                {collection.items.map((item) => {
+                                  const isActive = isNavigationLinkActive(location.pathname, location.search, item.href);
+
+                                  return (
+                                    <SheetClose asChild key={item.id}>
+                                      <Link
+                                        to={item.href}
+                                        className={`group flex min-h-[2.75rem] items-center justify-between gap-2 rounded-[0.9rem] border px-2.5 py-2 text-left text-[0.76rem] font-semibold leading-5 transition ${
+                                          isActive
+                                            ? "border-primary/20 bg-primary/8 text-foreground shadow-[0_12px_20px_-18px_rgba(15,23,42,0.18)]"
+                                            : "border-transparent text-foreground/88 hover:border-primary/12 hover:bg-muted/40 hover:text-primary"
+                                        }`}
+                                      >
+                                        <span className="line-clamp-1">{item.title}</span>
+                                        <ChevronRight
+                                          className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary ${
+                                            isActive ? "text-primary" : ""
+                                          }`}
+                                        />
+                                      </Link>
+                                    </SheetClose>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -593,7 +496,7 @@ const MainHeader = () => {
   const location = useLocation();
   const { itemCount: cartItemCount, openCartDrawer } = useCart();
   const { itemCount: wishlistItemCount } = useWishlist();
-  const { data: adminCollectionsPayload } = useCollections();
+  const { data: navigationPayload } = useShopifyNavigation();
   const [auth, setAuth] = useState<HeaderAuthState>(createLoadingAuthState);
   const headerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -606,26 +509,50 @@ const MainHeader = () => {
   const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
   const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
   const headerCollections = useMemo(
-    () => syncHeaderCollections(adminCollectionsPayload?.collections),
-    [adminCollectionsPayload?.collections],
+    () => buildCollectionNavigation(navigationPayload),
+    [navigationPayload],
   );
-  const syncedShortcutLinks = useMemo(() => {
-    const titleByHandle = new Map(
-      (adminCollectionsPayload?.collections || []).map((collection) => [
-        normalizedCollectionHandle(collection.handle),
-        collection.title,
-      ]),
-    );
+  const searchScopeOptions = useMemo(() => {
+    const options = [{ label: "All", collection: "all-products" }];
+    const seen = new Set(["all-products"]);
 
-    return headerShortcutLinks.map((link) => {
-      if (link.label === "Best Sellers" || link.label === "New Arrivals" || link.label === "Under $25") {
-        return link;
+    headerCollections.forEach((group) => {
+      const entries = [
+        group.handle ? { label: group.title, collection: group.handle } : null,
+        ...group.items.map((item) => ({ label: item.title, collection: item.handle })),
+      ].filter((entry): entry is { label: string; collection: string } => Boolean(entry));
+
+      entries.forEach((entry) => {
+        if (!entry.label || !entry.collection || seen.has(entry.collection)) {
+          return;
+        }
+
+        seen.add(entry.collection);
+        options.push(entry);
+      });
+    });
+
+    return options;
+  }, [headerCollections]);
+  const headerLinks = useMemo(() => {
+    const dynamicLinks = headerCollections.slice(fixedHeaderLinks.length).flatMap<SiteHeaderCollectionLink>((group) => {
+      const routeHandle = group.handle || group.items[0]?.handle;
+      if (!routeHandle || !group.href) {
+        return [];
       }
 
-      const handle = link.label === "Under $50" ? "under-50" : "trending-finds";
-      return { ...link, label: titleByHandle.get(handle) || link.label };
+      return [
+        {
+          label: group.title,
+          routeHandle,
+          activeCollectionHandles: [routeHandle, ...group.items.map((item) => item.handle)],
+          to: group.href,
+        },
+      ];
     });
-  }, [adminCollectionsPayload?.collections]);
+
+    return [...fixedHeaderLinks, ...dynamicLinks];
+  }, [headerCollections]);
 
   useEffect(() => {
     let active = true;
@@ -679,9 +606,7 @@ const MainHeader = () => {
 
     setSearchQuery(query);
     setSelectedScope(
-      collection && searchScopeOptions.some((option) => option.collection === collection)
-        ? (collection as HeaderSearchScope)
-        : "all-products",
+      collection && collection !== "all-products" ? collection : "all-products",
     );
   }, [location.pathname, location.search]);
 
@@ -1063,8 +988,8 @@ const MainHeader = () => {
               <span>All</span>
             </button>
 
-            {syncedShortcutLinks.map((link) => {
-              const isActive = isSiteHeaderCollectionLinkActive(location.pathname, location.search, link);
+            {headerLinks.map((link) => {
+              const isActive = isNavigationLinkActive(location.pathname, location.search, link.to);
 
               return (
                 <Link

@@ -3,24 +3,18 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
-import { buildCollectionRoute, buildSubcollectionRoute, type SiteCollection } from "@/lib/site-navigation";
+import type { CollectionNavigationGroup } from "@/lib/shopify-navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type CollectionHoverMenuProps = {
-  collections: SiteCollection[];
+  collections: CollectionNavigationGroup[];
   className?: string;
   onLinkClick?: () => void;
 };
 
-function normalizeHandle(value: string | null | undefined): string {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
 export function CollectionHoverMenu({ collections, className, onLinkClick }: CollectionHoverMenuProps) {
   const [activeCollectionHandle, setActiveCollectionHandle] = useState<string | null>(
-    () => normalizeHandle(collections[0]?.handle),
+    () => collections[0]?.id || null,
   );
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -45,7 +39,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
       return;
     }
 
-    const liveHandles = new Set(collections.map((collection) => normalizeHandle(collection.handle)));
+    const liveHandles = new Set(collections.map((collection) => collection.id));
     if (activeCollectionHandle && !liveHandles.has(activeCollectionHandle)) {
       setActiveCollectionHandle(null);
     }
@@ -73,7 +67,7 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
 
         <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-1.5 pr-1">
           {collections.map((collection) => {
-            const collectionHandle = normalizeHandle(collection.handle);
+            const collectionHandle = collection.id;
             const isActive = activeCollectionHandle === collectionHandle;
 
             return (
@@ -85,29 +79,40 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                 }}
               >
                 <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    onMouseEnter={() => {
-                      clearCloseTimer();
-                      setActiveCollectionHandle(collectionHandle);
-                    }}
-                    onMouseLeave={scheduleClose}
-                    className={cn(
-                      "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                      isActive
-                        ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_8px_20px_rgba(15,23,42,0.1)]"
-                        : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-muted/40",
-                    )}
-                    aria-expanded={isActive}
-                    aria-haspopup="dialog"
-                  >
-                    <span className="min-w-0 flex-1 leading-snug">{collection.title}</span>
-                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition group-hover:border-primary/20 group-hover:text-primary">
-                      <ChevronRight
-                        className={cn("h-3.5 w-3.5 transition", isActive ? "rotate-90 text-primary" : "")}
-                      />
-                    </span>
-                  </button>
+                  {collection.items.length === 0 && collection.href ? (
+                    <Link
+                      to={collection.href}
+                      onClick={() => onLinkClick?.()}
+                      className="group flex w-full items-center justify-between rounded-[0.85rem] border border-transparent px-2.5 py-2 text-left text-[0.8rem] font-medium text-muted-foreground transition hover:border-border/70 hover:bg-muted/40 hover:text-foreground"
+                    >
+                      <span className="min-w-0 flex-1 leading-snug">{collection.title}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onMouseEnter={() => {
+                        clearCloseTimer();
+                        setActiveCollectionHandle(collectionHandle);
+                      }}
+                      onMouseLeave={scheduleClose}
+                      className={cn(
+                        "group flex w-full items-center justify-between rounded-[0.85rem] border px-2.5 py-2 text-left text-[0.8rem] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        isActive
+                          ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_8px_20px_rgba(15,23,42,0.1)]"
+                          : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-muted/40",
+                      )}
+                      aria-expanded={isActive}
+                      aria-haspopup="dialog"
+                    >
+                      <span className="min-w-0 flex-1 leading-snug">{collection.title}</span>
+                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition group-hover:border-primary/20 group-hover:text-primary">
+                        <ChevronRight
+                          className={cn("h-3.5 w-3.5 transition", isActive ? "rotate-90 text-primary" : "")}
+                        />
+                      </span>
+                    </button>
+                  )}
                 </PopoverTrigger>
 
                 <PopoverContent
@@ -132,32 +137,34 @@ export function CollectionHoverMenu({ collections, className, onLinkClick }: Col
                       </h3>
                     </div>
 
-                    <Link
-                      to={buildCollectionRoute(collection.handle)}
-                      onClick={() => {
-                        onLinkClick?.();
-                        setActiveCollectionHandle(null);
-                      }}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
-                    >
-                      <span>View all</span>
-                      <ChevronRight className="h-3 w-3" />
-                    </Link>
+                    {collection.href && collection.handle ? (
+                      <Link
+                        to={collection.href}
+                        onClick={() => {
+                          onLinkClick?.();
+                          setActiveCollectionHandle(null);
+                        }}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-primary/20 hover:bg-muted/40"
+                      >
+                        <span>View all</span>
+                        <ChevronRight className="h-3 w-3" />
+                      </Link>
+                    ) : null}
                   </div>
 
                   <div className="mt-2.5 grid max-h-[min(24rem,calc(100vh-12rem))] gap-1 overflow-y-auto pr-0.5">
-                    {collection.subcollections.length ? (
-                      collection.subcollections.map((subcollection) => (
+                    {collection.items.length ? (
+                      collection.items.map((item) => (
                         <Link
-                          key={subcollection.handle}
-                          to={buildSubcollectionRoute(collection.handle, subcollection.handle)}
+                          key={item.id}
+                          to={item.href}
                           onClick={() => {
                             onLinkClick?.();
                             setActiveCollectionHandle(null);
                           }}
                           className="group flex items-center justify-between rounded-[0.85rem] border border-transparent px-3 py-2.5 text-[0.78rem] font-semibold leading-5 text-foreground transition hover:border-primary/12 hover:bg-muted/40 hover:text-primary"
                         >
-                          <span className="line-clamp-1">{subcollection.title}</span>
+                          <span className="line-clamp-1">{item.title}</span>
                           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                         </Link>
                       ))

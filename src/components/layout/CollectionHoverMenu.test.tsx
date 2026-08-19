@@ -4,30 +4,23 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 import { CollectionHoverMenu } from "@/components/layout/CollectionHoverMenu";
-import type { SiteCollection } from "@/lib/site-navigation";
+import type { CollectionNavigationGroup } from "@/lib/shopify-navigation";
 
 function makeCollection(
   title: string,
   handle: string,
   subcollections: Array<{ title: string; handle: string }> = [],
-): SiteCollection {
+): CollectionNavigationGroup {
   return {
+    id: `group-${handle}`,
     title,
     handle,
-    shopifyHandle: handle,
-    summary: `${title} summary`,
-    searchQuery: handle,
-    accent: {
-      label: `${title} label`,
-      title: `${title} accent`,
-      body: `${title} body`,
-      bullets: [`${title} bullet`],
-    },
-    subcollections: subcollections.map((subcollection) => ({
+    href: `/collections/${handle}`,
+    items: subcollections.map((subcollection) => ({
+      id: `${handle}-${subcollection.handle}`,
       title: subcollection.title,
       handle: subcollection.handle,
-      summary: `${subcollection.title} summary`,
-      searchQuery: subcollection.handle,
+      href: `/collections/${handle}?collection=${subcollection.handle}`,
     })),
   };
 }
