@@ -101,7 +101,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
     return (
       <article
         ref={cardRef}
-        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.55rem] border border-border/80 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.94))] shadow-[0_18px_38px_-30px_rgba(15,23,42,0.16)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_24px_46px_-32px_rgba(15,23,42,0.18)] ${className}`.trim()}
+        className={`group relative flex h-full flex-col overflow-hidden rounded-[1.85rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--card)/0.94))] shadow-[0_22px_44px_-34px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_28px_54px_-34px_rgba(15,23,42,0.22)] ${className}`.trim()}
       >
         <button
           type="button"
@@ -124,7 +124,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           <Link to={`/products/${product.handle}`} className="block">
             <div className={`relative overflow-hidden ${nativeApp ? "bg-muted/18" : "bg-muted/20"}`}>
             {image ? (
-              <div className="aspect-square overflow-hidden">
+              <div className="relative aspect-[1.02/1] overflow-hidden">
                 <img
                   src={cardImage}
                   srcSet={cardImageSrcSet}
@@ -134,6 +134,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                   decoding="async"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_58%,hsl(var(--foreground)/0.12)_100%)]" />
               </div>
             ) : (
               <div className={`grid aspect-square w-full place-items-center px-4 text-center text-[0.68rem] font-semibold uppercase tracking-[0.14em] ${
@@ -144,16 +145,23 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
                 Image unavailable
               </div>
             )}
-            {discountPercent > 0 ? (
-              <span className="absolute right-3 top-3 rounded-full border border-white/70 bg-[#314979] px-4 py-2 text-xs font-semibold tracking-[0.18em] text-white shadow-[0_8px_18px_-12px_rgba(15,23,42,0.6)]">
-                {discountPercent}% OFF
-              </span>
-            ) : null}
+            <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+              {discountPercent > 0 ? (
+                <span className="rounded-full border border-white/70 bg-[#314979] px-3 py-1.5 text-[0.62rem] font-semibold tracking-[0.16em] text-white shadow-[0_8px_18px_-12px_rgba(15,23,42,0.6)]">
+                  {discountPercent}% OFF
+                </span>
+              ) : null}
+              {minimumQuantity > 1 ? (
+                <span className="rounded-full border border-white/70 bg-white/88 px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-slate-700 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.35)]">
+                  Pack x{minimumQuantity}
+                </span>
+              ) : null}
+            </div>
           </div>
           </Link>
 
-          <div className="flex min-h-[8.75rem] flex-1 flex-col p-3 sm:min-h-[10.25rem] sm:p-5">
-            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.08rem] leading-[1.08] tracking-[-0.03em] ${
+          <div className="flex min-h-[9.5rem] flex-1 flex-col p-4 sm:min-h-[10.75rem] sm:p-5">
+            <Link to={`/products/${product.handle}`} className={`line-clamp-2 font-display text-[1.05rem] leading-[1.08] tracking-[-0.03em] ${
               nativeApp ? "text-foreground" : "text-foreground"
             } sm:text-[1.08rem]`}>
               {title}
@@ -171,7 +179,21 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
               </div>
             ) : null}
 
-            <div className="mt-auto flex items-end justify-between gap-2 pt-3.5 sm:pt-5">
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="salt-editorial-meta rounded-full px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.1em]">
+                Curated pick
+              </span>
+              {highlights.slice(0, 1).map((highlight) => (
+                <span
+                  key={`shop-highlight-${highlight}`}
+                  className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.56rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+                >
+                  {highlight}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-auto flex items-end justify-between gap-3 pt-4 sm:pt-5">
               <div className="min-w-0">
                 <p className="font-display text-[1.08rem] leading-none tracking-[0.12em] text-primary sm:text-[1.25rem]">
                   {formatMoney(min)}

@@ -1443,21 +1443,32 @@ const ShopPage = () => {
             </>
           ) : (
             <>
-              <div className="salt-section-shell mt-5 rounded-[1.35rem] p-3 sm:mt-6 sm:rounded-[1.6rem] sm:p-4 lg:p-5">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-7 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-9 xl:grid-cols-5 xl:gap-x-7 xl:gap-y-10">
-                  {visibleProducts.map((product, index) => (
-                    <Reveal
-                      key={product.id}
-                      delayMs={0}
-                      className="salt-reveal-instant mx-auto h-full w-full max-w-[11.4rem] sm:max-w-[11.8rem] lg:max-w-[12.1rem] xl:max-w-[12.35rem]"
-                    >
-                      <ProductCard
-                        product={product}
-                        variant="shop"
-                        reviewSummary={productRatingsById[product.id] ?? null}
-                      />
-                    </Reveal>
-                  ))}
+              <div className="salt-section-shell mt-5 rounded-[1.45rem] p-3 sm:mt-6 sm:rounded-[1.7rem] sm:p-4 lg:p-5">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-8 xl:grid-cols-5 xl:gap-x-7 xl:gap-y-9">
+                  {visibleProducts.map((product, index) => {
+                    const cardSpan =
+                      index === 0
+                        ? "col-span-2 row-span-2 xl:col-span-2 xl:row-span-2"
+                        : index % 7 === 3
+                          ? "sm:col-span-2 lg:col-span-2"
+                          : index % 6 === 2
+                            ? "lg:row-span-2"
+                            : "";
+
+                    return (
+                      <Reveal
+                        key={product.id}
+                        delayMs={0}
+                        className={`salt-reveal-instant h-full w-full ${cardSpan}`.trim()}
+                      >
+                        <ProductCard
+                          product={product}
+                          variant="shop"
+                          reviewSummary={productRatingsById[product.id] ?? null}
+                        />
+                      </Reveal>
+                    );
+                  })}
                 </div>
               </div>
 
