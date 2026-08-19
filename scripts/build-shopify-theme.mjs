@@ -54,6 +54,16 @@ const themeDataAssets = [
   { source: "product-search.json", asset: "data-product-search.json", themePath: "/data/product-search.json" },
   { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
   {
+    source: "sidebar-collections.json",
+    asset: "data-sidebar-collections.json",
+    themePath: "/data/sidebar-collections.json",
+  },
+  {
+    source: "header-collections.json",
+    asset: "data-header-collections.json",
+    themePath: "/data/header-collections.json",
+  },
+  {
     source: "collection-products.json",
     asset: "data-collection-products.json",
     themePath: "/data/collection-products.json",
@@ -698,6 +708,35 @@ const sectionLiquid = `<div
     "title": {{ salt_sidebar_menu.title | default: 'Collections' | json }},
     "items": [
       {% for salt_group in salt_sidebar_menu.links %}
+        {
+          "id": {{ salt_group.handle | default: salt_group.title | json }},
+          "title": {{ salt_group.title | json }},
+          "url": {{ salt_group.url | json }},
+          "type": {{ salt_group.type | json }},
+          "items": [
+            {% for salt_child in salt_group.links %}
+              {
+                "id": {{ salt_child.handle | default: salt_child.title | json }},
+                "title": {{ salt_child.title | json }},
+                "url": {{ salt_child.url | json }},
+                "type": {{ salt_child.type | json }},
+                "items": []
+              }{% unless forloop.last %},{% endunless %}
+            {% endfor %}
+          ]
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  }
+</script>
+<script type="application/json" id="salt-header-collections">
+  {% assign salt_header_menu = linklists['header-collections'] %}
+  {
+    "handle": "header-collections",
+    "source": "shopify-liquid-menu",
+    "title": {{ salt_header_menu.title | default: 'Header Collections' | json }},
+    "items": [
+      {% for salt_group in salt_header_menu.links %}
         {
           "id": {{ salt_group.handle | default: salt_group.title | json }},
           "title": {{ salt_group.title | json }},

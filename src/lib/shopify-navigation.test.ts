@@ -43,4 +43,32 @@ describe("Shopify collection navigation", () => {
     );
     expect(groups.map((group) => group.title)).not.toContain("Home & Kitchen");
   });
+
+  it("keeps header groups separate from sidebar groups", () => {
+    const payload = normalizeShopifyNavigationPayload({
+      items: [
+        { title: "Men", url: "/collections/men-collection", items: [] },
+        { title: "Women", url: "/collections/women", items: [] },
+        { title: "Kids", url: "/collections/kids", items: [] },
+      ],
+      headerItems: [
+        { title: "Men", url: "/collections/men-collection", items: [] },
+        { title: "Women", url: "/collections/women", items: [] },
+      ],
+    });
+
+    expect(buildCollectionNavigation(payload, "header").map((group) => group.title)).toEqual([
+      "Best Sellers",
+      "New Arrivals",
+      "Men",
+      "Women",
+    ]);
+    expect(buildCollectionNavigation(payload, "sidebar").map((group) => group.title)).toEqual([
+      "Best Sellers",
+      "New Arrivals",
+      "Men",
+      "Women",
+      "Kids",
+    ]);
+  });
 });

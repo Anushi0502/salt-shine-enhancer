@@ -508,15 +508,19 @@ const MainHeader = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const resourcesNavItem = utilityNavItems.find((item) => item.label === "Resources") || utilityNavItems[0];
   const supportNavItem = utilityNavItems.find((item) => item.label === "Support") || utilityNavItems[0];
+  const sidebarCollections = useMemo(
+    () => buildCollectionNavigation(navigationPayload, "sidebar"),
+    [navigationPayload],
+  );
   const headerCollections = useMemo(
-    () => buildCollectionNavigation(navigationPayload),
+    () => buildCollectionNavigation(navigationPayload, "header"),
     [navigationPayload],
   );
   const searchScopeOptions = useMemo(() => {
     const options = [{ label: "All", collection: "all-products" }];
     const seen = new Set(["all-products"]);
 
-    headerCollections.forEach((group) => {
+    sidebarCollections.forEach((group) => {
       const entries = [
         group.handle ? { label: group.title, collection: group.handle } : null,
         ...group.items.map((item) => ({ label: item.title, collection: item.handle })),
@@ -533,7 +537,7 @@ const MainHeader = () => {
     });
 
     return options;
-  }, [headerCollections]);
+  }, [sidebarCollections]);
   const headerLinks = useMemo(() => {
     const dynamicLinks = headerCollections.slice(fixedHeaderLinks.length).flatMap<SiteHeaderCollectionLink>((group) => {
       const routeHandle = group.handle || group.items[0]?.handle;
@@ -1026,7 +1030,7 @@ const MainHeader = () => {
         onOpenChange={setMenuOpen}
         auth={auth}
         onSignOut={handleSignOut}
-        collections={headerCollections}
+        collections={sidebarCollections}
       />
     </>
   );

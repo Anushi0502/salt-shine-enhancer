@@ -1,12 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRuntimeContext, getShopifyStorefrontToken, resolveThemeAsset } from "@/lib/theme-assets";
 
-const NAVIGATION_MENU_HANDLE = String(
+const SIDEBAR_NAVIGATION_MENU_HANDLE = String(
   import.meta.env.VITE_SHOPIFY_NAVIGATION_MENU_HANDLE || "sidebar-collections",
 )
   .trim()
   .toLowerCase();
-const NAVIGATION_DATA_PATH = "/data/sidebar-collections.json";
+const HEADER_NAVIGATION_MENU_HANDLE = String(
+  import.meta.env.VITE_SHOPIFY_HEADER_NAVIGATION_MENU_HANDLE || "header-collections",
+)
+  .trim()
+  .toLowerCase();
+const SIDEBAR_NAVIGATION_DATA_PATH = "/data/sidebar-collections.json";
+const HEADER_NAVIGATION_DATA_PATH = "/data/header-collections.json";
 const STOREFRONT_API_VERSION = String(import.meta.env.VITE_SHOPIFY_STOREFRONT_API_VERSION || "2026-07").trim();
 const NAVIGATION_STALE_TIME_MS = 5 * 60 * 1000;
 const RESERVED_COLLECTION_HANDLES = new Set(["best-sellers", "appplaza-best-sellers", "new-arrivals"]);
@@ -26,6 +32,11 @@ export type ShopifyNavigationPayload = {
   handle?: string;
   title?: string;
   items: ShopifyNavigationItem[];
+  headerItems?: ShopifyNavigationItem[];
+  headerGeneratedAt?: string;
+  headerSource?: string;
+  headerHandle?: string;
+  headerTitle?: string;
 };
 
 export type CollectionNavigationItem = {
@@ -122,41 +133,52 @@ function normalizeMenuItem(value: unknown): ShopifyNavigationItem | null {
 export function normalizeShopifyNavigationPayload(value: unknown): ShopifyNavigationPayload {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const rawItems = Array.isArray(record.items) ? record.items : [];
+  const rawHeaderItems = Array.isArray(record.headerItems) ? record.headerItems : [];
 
   return {
     generatedAt: record.generatedAt ? String(record.generatedAt) : undefined,
     source: record.source ? String(record.source) : undefined,
-    handle: record.handle ? String(record.handle) : NAVIGATION_MENU_HANDLE,
+    handle: record.handle ? String(record.handle) : SIDEBAR_NAVIGATION_MENU_HANDLE,
     title: record.title ? normalizeText(record.title) : undefined,
     items: rawItems.map(normalizeMenuItem).filter((item): item is ShopifyNavigationItem => Boolean(item)),
+    headerItems: rawHeaderItems
+      .map(normalizeMenuItem)
+      .filter((item): item is ShopifyNavigationItem => Boolean(item)),
+    headerGeneratedAt: record.headerGeneratedAt ? String(record.headerGeneratedAt) : undefined,
+    headerSource: record.headerSource ? String(record.headerSource) : undefined,
+    headerHandle: record.headerHandle ? String(record.headerHandle) : undefined,
+    headerTitle: record.headerTitle ? normalizeText(record.headerTitle) : undefined,
   };
 }
 
-function readInlineNavigation(): ShopifyNavigationPayload | null {
+function readInlineNavigation(elementId: string, expectedHandle: string): ShopifyNavigationPayload | null {
   if (typeof document === "undefined") {
     return null;
   }
 
-  const node = document.getElementById("salt-sidebar-collections");
+  const node = document.getElementById(elementId);
   if (!node?.textContent?.trim()) {
     return null;
   }
 
   try {
     const payload = normalizeShopifyNavigationPayload(JSON.parse(node.textContent));
-    return payload.items.length ? { ...payload, source: payload.source || "shopify-liquid-menu" } : null;
+    return payload.handle === expectedHandle && payload.items.length
+      ? { ...payload, source: payload.source || "shopify-liquid-menu" }
+      : null;
   } catch {
     return null;
   }
 }
 
-async function fetchThemeNavigation(): Promise<ShopifyNavigationPayload> {
-  const response = await fetch(resolveThemeAsset(NAVIGATION_DATA_PATH), { cache: "force-cache" });
+async function fetchThemeNavigation(dataPath: string, handle: string): Promise<ShopifyNavigationPayload> {
+  const response = await fetch(resolveThemeAsset(dataPath), { cache: "force-cache" });
   if (!response.ok) {
     throw new Error(`Navigation snapshot request failed (${response.status})`);
   }
 
-  return normalizeShopifyNavigationPayload(await response.json());
+  const payload = normalizeShopifyNavigationPayload(await response.json());
+  return { ...payload, handle: payload.handle || handle };
 }
 
 function storefrontGraphqlEndpoint(): string | null {
@@ -178,7 +200,7 @@ function storefrontGraphqlEndpoint(): string | null {
   }
 }
 
-async function fetchLiveStorefrontNavigation(): Promise<ShopifyNavigationPayload> {
+async function fetchLiveStorefrontNavigation(handle: string): Promise<ShopifyNavigationPayload> {
   const token = getShopifyStorefrontToken();
   const endpoint = storefrontGraphqlEndpoint();
   if (!token || !endpoint) {
@@ -221,7 +243,7 @@ async function fetchLiveStorefrontNavigation(): Promise<ShopifyNavigationPayload
           }
         }
       }`,
-      variables: { handle: NAVIGATION_MENU_HANDLE },
+      variables: { handle },
     }),
   });
 
@@ -232,26 +254,30 @@ async function fetchLiveStorefrontNavigation(): Promise<ShopifyNavigationPayload
 
   const menu = payload.data?.menu;
   if (!menu) {
-    throw new Error(`Shopify menu '${NAVIGATION_MENU_HANDLE}' was not found`);
+    throw new Error(`Shopify menu '${handle}' was not found`);
   }
 
   return normalizeShopifyNavigationPayload({
     generatedAt: new Date().toISOString(),
     source: "shopify-storefront-menu",
-    handle: menu.handle || NAVIGATION_MENU_HANDLE,
+    handle: menu.handle || handle,
     title: menu.title || "",
     items: menu.items,
   });
 }
 
-export async function loadShopifyNavigation(): Promise<ShopifyNavigationPayload> {
-  const inline = readInlineNavigation();
+async function loadSingleNavigation(
+  handle: string,
+  inlineElementId: string,
+  dataPath: string,
+): Promise<ShopifyNavigationPayload> {
+  const inline = readInlineNavigation(inlineElementId, handle);
   if (inline) {
     return inline;
   }
 
   try {
-    const live = await fetchLiveStorefrontNavigation();
+    const live = await fetchLiveStorefrontNavigation(handle);
     if (live.items.length) {
       return live;
     }
@@ -261,19 +287,51 @@ export async function loadShopifyNavigation(): Promise<ShopifyNavigationPayload>
   }
 
   try {
-    return await fetchThemeNavigation();
+    const snapshot = await fetchThemeNavigation(dataPath, handle);
+    if (snapshot.items.length) {
+      return snapshot;
+    }
   } catch {
-    return {
-      generatedAt: new Date().toISOString(),
-      source: "empty-navigation",
-      handle: NAVIGATION_MENU_HANDLE,
-      title: "",
-      items: [],
-    };
+    // The generated fallback is optional when the Shopify menu is live.
   }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: "empty-navigation",
+    handle,
+    title: "",
+    items: [],
+  };
 }
 
-export function buildCollectionNavigation(payload: ShopifyNavigationPayload | null | undefined): CollectionNavigationGroup[] {
+export async function loadShopifyNavigation(): Promise<ShopifyNavigationPayload> {
+  const [sidebar, header] = await Promise.all([
+    loadSingleNavigation(
+      SIDEBAR_NAVIGATION_MENU_HANDLE,
+      "salt-sidebar-collections",
+      SIDEBAR_NAVIGATION_DATA_PATH,
+    ),
+    loadSingleNavigation(
+      HEADER_NAVIGATION_MENU_HANDLE,
+      "salt-header-collections",
+      HEADER_NAVIGATION_DATA_PATH,
+    ),
+  ]);
+
+  return {
+    ...sidebar,
+    headerItems: header.items,
+    headerGeneratedAt: header.generatedAt,
+    headerSource: header.source,
+    headerHandle: header.handle,
+    headerTitle: header.title,
+  };
+}
+
+export function buildCollectionNavigation(
+  payload: ShopifyNavigationPayload | null | undefined,
+  menu: "sidebar" | "header" = "sidebar",
+): CollectionNavigationGroup[] {
   const fixedGroups: CollectionNavigationGroup[] = [
     {
       id: "fixed-best-sellers",
@@ -292,7 +350,8 @@ export function buildCollectionNavigation(payload: ShopifyNavigationPayload | nu
   ];
 
   const seenGroupHandles = new Set<string>(RESERVED_COLLECTION_HANDLES);
-  const groups = (payload?.items || []).flatMap<CollectionNavigationGroup>((item, index) => {
+  const sourceItems = menu === "header" ? payload?.headerItems || [] : payload?.items || [];
+  const groups = sourceItems.flatMap<CollectionNavigationGroup>((item, index) => {
     const parentHandle = collectionHandleFromUrl(item.url);
     const childItems = item.items.flatMap<CollectionNavigationItem>((child, childIndex) => {
       const handle = collectionHandleFromUrl(child.url);
@@ -339,7 +398,7 @@ export function buildCollectionNavigation(payload: ShopifyNavigationPayload | nu
 
 export function useShopifyNavigation(enabled = true) {
   return useQuery({
-    queryKey: ["shopify-navigation", NAVIGATION_MENU_HANDLE],
+    queryKey: ["shopify-navigation", SIDEBAR_NAVIGATION_MENU_HANDLE, HEADER_NAVIGATION_MENU_HANDLE],
     queryFn: loadShopifyNavigation,
     enabled,
     staleTime: NAVIGATION_STALE_TIME_MS,
