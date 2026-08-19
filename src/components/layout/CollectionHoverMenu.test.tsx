@@ -20,7 +20,7 @@ function makeCollection(
       id: `${handle}-${subcollection.handle}`,
       title: subcollection.title,
       handle: subcollection.handle,
-      href: `/collections/${handle}?collection=${subcollection.handle}`,
+      href: `/collections/${subcollection.handle}`,
     })),
   };
 }
@@ -93,7 +93,7 @@ describe("CollectionHoverMenu", () => {
     expect(submenu).toHaveAttribute("data-state", "closed");
   });
 
-  it("navigates subcollection clicks to the collection route", () => {
+  it("navigates subcollection clicks to their canonical collection route", () => {
     render(
       <MemoryRouter initialEntries={["/"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
@@ -123,7 +123,7 @@ describe("CollectionHoverMenu", () => {
     fireEvent.click(screen.getByRole("link", { name: "Daily Living Aids" }));
 
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/collections/senior-living-solutions?collection=daily-living-aids",
+      "/collections/daily-living-aids",
     );
   });
 });

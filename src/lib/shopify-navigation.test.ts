@@ -38,9 +38,7 @@ describe("Shopify collection navigation", () => {
     expect(groups[2]?.handle).toBeNull();
     expect(groups[2]?.items.map((item) => item.title)).toEqual(["Admin Cookware"]);
     expect(groups[3]?.href).toBe("/collections/admin-outdoor");
-    expect(groups[3]?.items[0]?.href).toBe(
-      "/collections/admin-outdoor?collection=admin-travel-picks",
-    );
+    expect(groups[3]?.items[0]?.href).toBe("/collections/admin-travel-picks");
     expect(groups.map((group) => group.title)).not.toContain("Home & Kitchen");
   });
 

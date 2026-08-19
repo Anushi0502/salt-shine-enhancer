@@ -102,8 +102,10 @@ function collectionHref(handle: string): string {
   return `/collections/${encodeURIComponent(handle)}`;
 }
 
-function subcollectionHref(parentHandle: string, childHandle: string): string {
-  return `${collectionHref(parentHandle)}?collection=${encodeURIComponent(childHandle)}`;
+function subcollectionHref(_parentHandle: string, childHandle: string): string {
+  // Shopify menu children are real collection links. Keep their canonical
+  // collection URL so a child never resolves back to the parent route.
+  return collectionHref(childHandle);
 }
 
 function normalizeMenuItem(value: unknown): ShopifyNavigationItem | null {
