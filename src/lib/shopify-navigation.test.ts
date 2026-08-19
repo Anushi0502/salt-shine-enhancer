@@ -54,6 +54,7 @@ describe("Shopify collection navigation", () => {
       headerItems: [
         { title: "Men", url: "/collections/men-collection", items: [] },
         { title: "Women", url: "/collections/women", items: [] },
+        { title: "Kids", url: "/collections/kids", items: [] },
       ],
     });
 
@@ -62,6 +63,7 @@ describe("Shopify collection navigation", () => {
       "New Arrivals",
       "Men",
       "Women",
+      "Kids",
     ]);
     expect(buildCollectionNavigation(payload, "sidebar").map((group) => group.title)).toEqual([
       "Best Sellers",
