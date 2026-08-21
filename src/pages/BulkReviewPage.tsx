@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+﻿import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import {
@@ -64,7 +64,9 @@ type BulkSubmitStats = {
   datedUnknown: number;
 };
 
-const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
+const
+
+DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
 const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
 
 const templateCsv = [
