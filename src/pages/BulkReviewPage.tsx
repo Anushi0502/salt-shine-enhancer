@@ -17,7 +17,6 @@ import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 import { useProductSearchIndex } from "@/lib/shopify-data";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { toast } from "sonner";
-
 type ParsedReviewRow = {
   rowNumber: number;
   productIdRaw: string;
