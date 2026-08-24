@@ -16,6 +16,7 @@ import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import { useJudgeMeProductRating } from "@/lib/judgeme";
+import { useProductByHandle } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 import ProductRating from "@/components/storefront/ProductRating";
 
@@ -62,11 +63,12 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
   const isHero = variant === "hero";
   const isShop = variant === "shop" || isHero;
-  // Cards are rendered from the synced catalog snapshot. A card only needs
-  // display data; refreshing every visible card from Shopify creates a burst
-  // of requests and makes collection/home navigation feel sluggish. The PDP
-  // still loads the authoritative product detail when the shopper opens it.
-  const product = snapshotProduct;
+  // Use the synced snapshot for immediate paint, then refresh the same product
+  // from Shopify so cards do not keep showing an older price than the PDP.
+  // React Query deduplicates repeated handles and the loader has a short warm
+  // window, so repeated cards do not create duplicate requests.
+  const { data: liveProduct } = useProductByHandle(snapshotProduct.handle, true, true, snapshotProduct);
+  const product = liveProduct || snapshotProduct;
   const { isWishlisted, toggleItem } = useWishlist();
   const reviewSummaryProvided = reviewSummary !== undefined;
   const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
