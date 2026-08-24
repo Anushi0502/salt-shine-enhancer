@@ -405,7 +405,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
-    {% elsif request.page_type == 'index' and ${JSON.stringify(routeAssets.home || "")} != blank %}
+    {% elsif request.path == '/' and ${JSON.stringify(routeAssets.home || "")} != blank %}
       <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
     {% endif %}
     {% if request.page_type == 'product' %}
@@ -649,7 +649,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% else %}
       {{ salt_content_for_header }}
     {% endif %}
-    {% if request.page_type == 'index' and ${JSON.stringify(routeAssets.homeHero || "")} != blank %}
+    {% if request.path == '/' and ${JSON.stringify(routeAssets.homeHero || "")} != blank %}
       {{ ${JSON.stringify(routeAssets.homeHero || "")} | asset_url | preload_tag: as: 'image' }}
     {% endif %}
     {% if request.page_type == 'product' %}
@@ -671,7 +671,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         })();
       </script>
     {% endif %}
-    {% if request.page_type == 'index' %}
+    {% if request.path == '/' %}
       <script>
         (function () {
           window.__SALT_HOME_COLLECTION_PREFETCH__ = {
