@@ -229,6 +229,15 @@ export function productImage(product: ShopifyProduct): string | null {
   return normalizeShopifyAssetUrl(product.image?.src || product.images[0]?.src);
 }
 
+function isShopifyImageUrl(source: string): boolean {
+  try {
+    const url = new URL(source);
+    return /cdn\.shopify\.com$/i.test(url.hostname) || url.pathname.startsWith("/cdn/shop/");
+  } catch {
+    return false;
+  }
+}
+
 export function responsiveShopifyImageUrl(source: string | null | undefined, width: number): string {
   const normalized = normalizeShopifyAssetUrl(source) || "";
   if (!normalized || !Number.isFinite(width) || width <= 0) {
@@ -237,8 +246,7 @@ export function responsiveShopifyImageUrl(source: string | null | undefined, wid
 
   try {
     const url = new URL(normalized);
-    const isShopifyImage = /cdn\.shopify\.com$/i.test(url.hostname) || url.pathname.startsWith("/cdn/shop/");
-    if (!isShopifyImage) {
+    if (!isShopifyImageUrl(normalized)) {
       return normalized;
     }
 
@@ -254,7 +262,7 @@ export function responsiveShopifyImageSrcSet(
   widths: readonly number[] = [320, 480, 720],
 ): string | undefined {
   const normalized = normalizeShopifyAssetUrl(source) || "";
-  if (!normalized || !/cdn\.shopify\.com/i.test(normalized)) {
+  if (!normalized || !isShopifyImageUrl(normalized)) {
     return undefined;
   }
 
