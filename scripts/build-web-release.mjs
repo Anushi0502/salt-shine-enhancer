@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access, cp, mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, readdir, rm, symlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync, spawn } from "node:child_process";
@@ -14,6 +14,26 @@ async function ensure(path, label) {
   } catch {
     throw new Error(`${label} not found at ${path}`);
   }
+}
+
+const generatedListingPayloadPattern = /^(?:products(?:-\d{4})?|product-search(?:-\d{4})?|home-(?:featured|collection)-products)\.json$/;
+
+async function removeGeneratedListingPayloads(distRoot) {
+  const dataDir = resolve(distRoot, "data");
+  let entries = [];
+
+  try {
+    entries = await readdir(dataDir);
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+
+  await Promise.all(
+    entries
+      .filter((entry) => generatedListingPayloadPattern.test(entry))
+      .map((entry) => rm(resolve(dataDir, entry), { force: true })),
+  );
 }
 
 function run(command, args, env = process.env, cwd = rootDir) {
@@ -81,9 +101,6 @@ function pauseOneDrive() {
 
 async function main() {
   await ensure(resolve(rootDir, "output", "product-knowledge.json"), "validated product knowledge artifact");
-  await ensure(resolve(rootDir, "public", "data", "products.json"), "full product catalog manifest");
-  await ensure(resolve(rootDir, "public", "data", "product-search.json"), "product search manifest");
-  await ensure(resolve(rootDir, "public", "data", "home-collection-products.json"), "homepage collection artifact");
 
   const stageDir = await mkdtemp(join(tmpdir(), "salt-web-build-"));
   const stageNodeModules = resolve(stageDir, "node_modules");
@@ -146,7 +163,9 @@ async function main() {
       recursive: true,
       force: true,
     });
+    await removeGeneratedListingPayloads(resolve(stageDir, "dist"));
     await run(nodeBin, [resolve(stageDir, "scripts", "postbuild-compat.mjs")], process.env, stageDir);
+    await rm(resolve(rootDir, "dist"), { recursive: true, force: true });
     await cp(resolve(stageDir, "dist"), resolve(rootDir, "dist"), {
       recursive: true,
       force: true,

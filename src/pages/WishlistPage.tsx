@@ -6,7 +6,7 @@ import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { formatMoney } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
-import { useProductSearchIndex } from "@/lib/shopify-data";
+import { useProductsByHandles } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 
 function normalizeHandle(input: string | null | undefined): string {
@@ -22,14 +22,14 @@ function normalizeHandle(input: string | null | undefined): string {
 
 const WishlistPage = () => {
   const { items, itemCount, clear, removeItem } = useWishlist();
-  const { data: productsPayload } = useProductSearchIndex();
+  const { data: liveProducts } = useProductsByHandles(items.map((item) => item.handle), items.length > 0);
 
   const productsByHandle = useMemo(
     () =>
       new Map(
-        (productsPayload?.products || []).map((product) => [normalizeHandle(product.handle), product]),
+        (liveProducts || []).map((product) => [normalizeHandle(product.handle), product]),
       ),
-    [productsPayload],
+    [liveProducts],
   );
 
   const savedEntries = useMemo(

@@ -7,12 +7,15 @@ import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { readRecentlyViewedHandles, RECENTLY_VIEWED_UPDATED_EVENT } from "@/lib/recently-viewed";
-import { useProductSearchIndex } from "@/lib/shopify-data";
+import { useProductsByHandles } from "@/lib/shopify-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 const RecentlyViewedPage = () => {
-  const { data, isLoading, error, refetch } = useProductSearchIndex();
   const [recentHandles, setRecentHandles] = useState<string[]>(() => readRecentlyViewedHandles());
+  const { data: liveProducts, isLoading, error, refetch } = useProductsByHandles(
+    recentHandles,
+    recentHandles.length > 0,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -34,13 +37,13 @@ const RecentlyViewedPage = () => {
   }, []);
 
   const recentProducts = useMemo(() => {
-    const products = data?.products || [];
+    const products = liveProducts || [];
     const byHandle = new Map(products.map((product) => [product.handle.trim().toLowerCase(), product]));
 
     return recentHandles
       .map((handle) => byHandle.get(handle))
       .filter((product): product is ShopifyProduct => Boolean(product));
-  }, [data?.products, recentHandles]);
+  }, [liveProducts, recentHandles]);
   const recentProductIds = useMemo(() => recentProducts.map((product) => product.id), [recentProducts]);
   const recentRatingsQuery = useJudgeMeRatings(recentProductIds);
   const recentRatingsById = recentRatingsQuery.data ?? {};
@@ -55,7 +58,7 @@ const RecentlyViewedPage = () => {
     />
   );
 
-  if (isLoading) {
+  if (recentHandles.length > 0 && isLoading) {
     return (
       <>
         {seoMetadata}

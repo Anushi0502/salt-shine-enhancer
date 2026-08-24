@@ -35,23 +35,11 @@ const themeDir = resolveThemeDir();
 const themeAssetsDir = resolve(themeDir, "assets");
 const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
 const themeDataAssets = [
-  { source: "products.json", asset: "data-products.json", themePath: "/data/products.json" },
-  {
-    source: "home-featured-products.json",
-    asset: "data-home-featured-products.json",
-    themePath: "/data/home-featured-products.json",
-  },
-  {
-    source: "home-collection-products.json",
-    asset: "data-home-collection-products.json",
-    themePath: "/data/home-collection-products.json",
-  },
   {
     source: "recently-ordered-products.json",
     asset: "data-recently-ordered-products.json",
     themePath: "/data/recently-ordered-products.json",
   },
-  { source: "product-search.json", asset: "data-product-search.json", themePath: "/data/product-search.json" },
   { source: "collections.json", asset: "data-collections.json", themePath: "/data/collections.json" },
   {
     source: "sidebar-collections.json",
@@ -72,12 +60,90 @@ const themeDataAssets = [
   { source: "blog-posts.json", asset: "data-blog-posts.json", themePath: "/data/blog-posts.json" },
   { source: "shop.json", asset: "data-shop.json", themePath: "/data/shop.json" },
 ];
-const PRODUCT_SHARD_SOURCE_PATTERN = /^products-\d{4}\.json$/;
-const PRODUCT_SEARCH_SHARD_SOURCE_PATTERN = /^product-search-\d{4}\.json$/;
 
-function serializeInlineJson(value) {
-  return JSON.stringify(value ?? null).replace(/</g, "\\u003c");
+const removedListingAssetPatterns = [
+  /^data-products(?:-\d{4})?\.json$/,
+  /^data-product-search(?:-\d{4})?\.json$/,
+  /^data-home-(?:featured|collection)-products\.json$/,
+];
+
+function buildLiquidProductRecord(variableName = "item") {
+  return `{
+    "id": {{ ${variableName}.id | json }},
+    "title": {{ ${variableName}.title | json }},
+    "handle": {{ ${variableName}.handle | json }},
+    "body_html": null,
+    "vendor": {{ ${variableName}.vendor | json }},
+    "product_type": {{ ${variableName}.type | json }},
+    "tags": {{ ${variableName}.tags | json }},
+    "created_at": {{ ${variableName}.created_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+    "published_at": {{ ${variableName}.published_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+    "updated_at": {{ ${variableName}.updated_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+    "variants": [
+      {% for variant in ${variableName}.variants %}
+        {
+          "id": {{ variant.id | json }},
+          "title": {{ variant.title | json }},
+          "price": {{ variant.price | divided_by: 100.0 | json }},
+          "compare_at_price": {% if variant.compare_at_price %}{{ variant.compare_at_price | divided_by: 100.0 | json }}{% else %}null{% endif %},
+          "available": {{ variant.available | json }},
+          "sku": {{ variant.sku | json }},
+          "requires_shipping": {{ variant.requires_shipping | json }}
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ],
+    "images": [
+      {% if ${variableName}.featured_image %}
+        {
+          "id": {{ ${variableName}.featured_image.id | default: ${variableName}.id | json }},
+          "src": {{ ${variableName}.featured_image | image_url: width: 900 | json }},
+          "alt": {{ ${variableName}.featured_image.alt | default: ${variableName}.title | json }},
+          "width": {{ ${variableName}.featured_image.width | json }},
+          "height": {{ ${variableName}.featured_image.height | json }}
+        }
+      {% endif %}
+    ],
+    "image": {% if ${variableName}.featured_image %}{
+      "id": {{ ${variableName}.featured_image.id | default: ${variableName}.id | json }},
+      "src": {{ ${variableName}.featured_image | image_url: width: 900 | json }},
+      "alt": {{ ${variableName}.featured_image.alt | default: ${variableName}.title | json }},
+      "width": {{ ${variableName}.featured_image.width | json }},
+      "height": {{ ${variableName}.featured_image.height | json }}
+    }{% else %}null{% endif %}
+  }`;
 }
+
+function buildHomeProductRecord(variableName = "item") {
+  return `{
+    "id": {{ ${variableName}.id | json }},
+    "title": {{ ${variableName}.title | json }},
+    "handle": {{ ${variableName}.handle | json }},
+    "image": {{ ${variableName}.featured_image | image_url: width: 720 | json }},
+    "price": {{ ${variableName}.price | divided_by: 100.0 | json }},
+    "compareAtPrice": {% if ${variableName}.compare_at_price and ${variableName}.compare_at_price > ${variableName}.price %}{{ ${variableName}.compare_at_price | divided_by: 100.0 | json }}{% else %}null{% endif %}
+  }`;
+}
+
+function buildHomeCollectionSection(key, title, handle) {
+  return `${JSON.stringify(key)}: {
+    "title": ${JSON.stringify(title)},
+    "handle": ${JSON.stringify(handle)},
+    "products": [
+      {% assign salt_home_collection = collections[${JSON.stringify(handle)}] %}
+      {% for item in salt_home_collection.products limit: 12 %}
+        ${buildHomeProductRecord("item")}{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  }`;
+}
+
+const homeCollectionSectionsLiquid = [
+  ["animeCollectables", "Anime Collectables", "anime-collectables"],
+  ["creatorEssentials", "Creator Essentials", "creator-essentials"],
+  ["lipCare", "Lip Care", "lips-and-care"],
+  ["watches", "Watches", "watches"],
+  ["glamEyePalettes", "Glam Eye Palettes", "glam-eye-palettes"],
+].map((entry) => buildHomeCollectionSection(...entry)).join(",\n");
 
 function buildThemeAssetMapEntries() {
   return themeDataAssets
@@ -108,23 +174,34 @@ async function ensureDistExists() {
   }
 }
 
-function templateJson(sectionType = "salt-app") {
+function templateJson(sectionType = "salt-app", includeProductData = false) {
+  const sections = {
+    main: {
+      type: sectionType,
+      settings: {},
+    },
+  };
+  const order = ["main"];
+
+  if (includeProductData) {
+    sections["salt-product-data"] = {
+      type: "salt-product-data",
+      settings: {},
+    };
+    order.unshift("salt-product-data");
+  }
+
   return JSON.stringify(
     {
-      sections: {
-        main: {
-          type: sectionType,
-          settings: {},
-        },
-      },
-      order: ["main"],
+      sections,
+      order,
     },
     null,
     2,
   );
 }
 
-async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFeaturedProductsPayload = null) {
+async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
   await mkdir(resolve(themeDir, "layout"), { recursive: true });
   await mkdir(resolve(themeDir, "sections"), { recursive: true });
   await mkdir(resolve(themeDir, "templates"), { recursive: true });
@@ -572,6 +649,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% else %}
       {{ salt_content_for_header }}
     {% endif %}
+    {% if request.page_type == 'index' and ${JSON.stringify(routeAssets.homeHero || "")} != blank %}
+      {{ ${JSON.stringify(routeAssets.homeHero || "")} | asset_url | preload_tag: as: 'image' }}
+    {% endif %}
     {% if request.page_type == 'product' %}
       <script>
         (function () {
@@ -594,12 +674,33 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
     {% if request.page_type == 'index' %}
       <script>
         (function () {
-          window.__SALT_HOME_PREFETCH__ = ${serializeInlineJson(homeFeaturedProductsPayload)};
+          window.__SALT_HOME_COLLECTION_PREFETCH__ = {
+            generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+            source: 'shopify-liquid:home-collections',
+            sections: {
+              ${homeCollectionSectionsLiquid}
+            }
+          };
+
+          {% assign salt_best_sellers = collections["best-sellers"] %}
+          window.__SALT_HOME_PREFETCH__ = {
+            generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+            source: 'shopify-liquid:best-sellers',
+            total: {{ salt_best_sellers.products_count | default: 0 | json }},
+            sources: { bestSellerProducts: 'best-sellers' },
+            bestSellerProducts: [
+              {% for item in salt_best_sellers.products limit: 12 %}
+                ${buildHomeProductRecord("item")}{% unless forloop.last %},{% endunless %}
+              {% endfor %}
+            ],
+            quirkyGiftPicks: [],
+            everydayEssentialProducts: []
+          };
         })();
       </script>
     {% endif %}
     {% if request.page_type == 'collection' and collection %}
-      {% paginate collection.products by 250 %}
+      {% paginate collection.products by 36 %}
         <script>
           (function () {
             // Shopify renders this payload inside the uploaded theme. It is a
@@ -607,50 +708,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
             // prices, availability, and newly added first-page products before
             // its modules execute and without a storefront API round-trip.
             var liveProducts = [
-              {% for item in collection.products limit: 24 %}
-                {
-                  id: {{ item.id | json }},
-                  title: {{ item.title | json }},
-                  handle: {{ item.handle | json }},
-                  body_html: null,
-                  vendor: {{ item.vendor | json }},
-                  product_type: {{ item.type | json }},
-                  tags: {{ item.tags | json }},
-                  created_at: {{ item.created_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
-                  published_at: {{ item.published_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
-                  updated_at: {{ item.updated_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
-                  variants: [
-                    {% for variant in item.variants %}
-                      {
-                        id: {{ variant.id | json }},
-                        title: {{ variant.title | json }},
-                        price: {{ variant.price | json }},
-                        compare_at_price: {% if variant.compare_at_price %}{{ variant.compare_at_price | json }}{% else %}null{% endif %},
-                        available: {{ variant.available | json }},
-                        sku: {{ variant.sku | json }},
-                        requires_shipping: {{ variant.requires_shipping | json }}
-                      }{% unless forloop.last %},{% endunless %}
-                    {% endfor %}
-                  ],
-                  images: [
-                    {% if item.featured_image %}
-                      {
-                        id: {{ item.featured_image.id | default: item.id | json }},
-                        src: {{ item.featured_image | image_url: width: 900 | json }},
-                        alt: {{ item.featured_image.alt | default: item.title | json }},
-                        width: {{ item.featured_image.width | json }},
-                        height: {{ item.featured_image.height | json }}
-                      }
-                    {% endif %}
-                  ],
-                  image: {% if item.featured_image %}{
-                    id: {{ item.featured_image.id | default: item.id | json }},
-                    src: {{ item.featured_image | image_url: width: 900 | json }},
-                    alt: {{ item.featured_image.alt | default: item.title | json }},
-                    width: {{ item.featured_image.width | json }},
-                    height: {{ item.featured_image.height | json }}
-                  }{% else %}null{% endif %}
-                }{% unless forloop.last %},{% endunless %}
+              {% for item in collection.products %}
+                ${buildLiquidProductRecord("item")}{% unless forloop.last %},{% endunless %}
               {% endfor %}
             ];
 
@@ -659,13 +718,54 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}, homeFea
               generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
               complete: {% if paginate.pages == 1 %}true{% else %}false{% endif %},
               currentPage: {{ paginate.current_page | json }},
-              total: {{ collection.products_count | json }},
+              total: {{ paginate.items | json }},
               productIds: [
                 {% for item in collection.products %}
                   {{ item.id | json }}{% unless forloop.last %},{% endunless %}
                 {% endfor %}
               ],
               products: liveProducts
+            };
+          })();
+        </script>
+      {% endpaginate %}
+    {% endif %}
+    {% if request.page_type == 'search' and search.performed %}
+      {% paginate search.results by 36 %}
+        <script>
+          (function () {
+            window.__SALT_SEARCH_PREFETCH__ = {
+              generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+              source: 'shopify-liquid:search',
+              kind: 'search',
+              handle: 'all-products',
+              query: {{ search.terms | json }},
+              page: {{ paginate.current_page | json }},
+              pageSize: 36,
+              total: {{ paginate.items | json }},
+              totalPages: {{ paginate.pages | json }},
+              hasPreviousPage: {% if paginate.previous %}true{% else %}false{% endif %},
+              hasNextPage: {% if paginate.next %}true{% else %}false{% endif %},
+              productTypes: [
+                {% assign salt_search_type_written = false %}
+                {% for filter in search.filters %}
+                  {% if filter.param_name == 'filter.p.product_type' %}
+                    {% for value in filter.values %}
+                      {% if salt_search_type_written %},{% endif %}{{ value.value | json }}
+                      {% assign salt_search_type_written = true %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              ],
+              products: [
+                {% assign salt_search_product_written = false %}
+                {% for item in search.results %}
+                  {% if item.object_type == 'product' %}
+                    {% if salt_search_product_written %},{% endif %}${buildLiquidProductRecord("item")}
+                    {% assign salt_search_product_written = true %}
+                  {% endif %}
+                {% endfor %}
+              ]
             };
           })();
         </script>
@@ -772,18 +872,102 @@ ${buildThemeAssetMapEntries()}
 </script>
 `;
 
+const productDataSectionLiquid = `{% if request.page_type == 'collection' and collection %}
+  {% paginate collection.products by 36 %}
+    <script type="application/json" id="salt-product-listing-data">
+      {
+        "generatedAt": {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+        "source": "shopify-liquid-section:collection",
+        "kind": "collection",
+        "handle": {{ collection.handle | downcase | json }},
+        "query": "",
+        "page": {{ paginate.current_page | json }},
+        "pageSize": 36,
+        "total": {{ paginate.items | json }},
+        "totalPages": {{ paginate.pages | json }},
+        "hasPreviousPage": {% if paginate.previous %}true{% else %}false{% endif %},
+        "hasNextPage": {% if paginate.next %}true{% else %}false{% endif %},
+        "productTypes": [
+          {% assign salt_collection_type_written = false %}
+          {% for filter in collection.filters %}
+            {% if filter.param_name == 'filter.p.product_type' %}
+              {% for value in filter.values %}
+                {% if salt_collection_type_written %},{% endif %}{{ value.value | json }}
+                {% assign salt_collection_type_written = true %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        ],
+        "products": [
+          {% for item in collection.products %}
+            ${buildLiquidProductRecord("item")}{% unless forloop.last %},{% endunless %}
+          {% endfor %}
+        ]
+      }
+    </script>
+  {% endpaginate %}
+{% elsif request.page_type == 'search' and search.performed %}
+  {% paginate search.results by 36 %}
+    <script type="application/json" id="salt-product-listing-data">
+      {
+        "generatedAt": {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+        "source": "shopify-liquid-section:search",
+        "kind": "search",
+        "handle": "all-products",
+        "query": {{ search.terms | json }},
+        "page": {{ paginate.current_page | json }},
+        "pageSize": 36,
+        "total": {{ paginate.items | json }},
+        "totalPages": {{ paginate.pages | json }},
+        "hasPreviousPage": {% if paginate.previous %}true{% else %}false{% endif %},
+        "hasNextPage": {% if paginate.next %}true{% else %}false{% endif %},
+        "productTypes": [
+          {% assign salt_search_section_type_written = false %}
+          {% for filter in search.filters %}
+            {% if filter.param_name == 'filter.p.product_type' %}
+              {% for value in filter.values %}
+                {% if salt_search_section_type_written %},{% endif %}{{ value.value | json }}
+                {% assign salt_search_section_type_written = true %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        ],
+        "products": [
+          {% assign salt_search_section_product_written = false %}
+          {% for item in search.results %}
+            {% if item.object_type == 'product' %}
+              {% if salt_search_section_product_written %},{% endif %}${buildLiquidProductRecord("item")}
+              {% assign salt_search_section_product_written = true %}
+            {% endif %}
+          {% endfor %}
+        ]
+      }
+    </script>
+  {% endpaginate %}
+{% else %}
+  <script type="application/json" id="salt-product-listing-data">
+    {"generatedAt": null, "source": "shopify-liquid-section:empty", "kind": "collection", "handle": "all-products", "query": "", "page": 1, "pageSize": 36, "total": 0, "totalPages": 1, "hasPreviousPage": false, "hasNextPage": false, "productTypes": [], "products": []}
+  </script>
+{% endif %}
+
+{% schema %}
+{"name":"SALT live product data","settings":[]}
+{% endschema %}
+`;
+
   await writeFile(resolve(themeDir, "layout", "theme.liquid"), themeLiquid);
   await writeFile(resolve(themeDir, "sections", "salt-app.liquid"), sectionLiquid);
+  await writeFile(resolve(themeDir, "sections", "salt-product-data.liquid"), productDataSectionLiquid);
 
   await writeFile(resolve(themeDir, "templates", "index.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "product.json"), templateJson());
-  await writeFile(resolve(themeDir, "templates", "collection.json"), templateJson());
+  await writeFile(resolve(themeDir, "templates", "collection.json"), templateJson("salt-app", true));
   await writeFile(resolve(themeDir, "templates", "list-collections.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "cart.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "page.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "blog.json"), templateJson());
   await writeFile(resolve(themeDir, "templates", "article.json"), templateJson());
-  await writeFile(resolve(themeDir, "templates", "search.json"), templateJson());
+  await writeFile(resolve(themeDir, "templates", "search.json"), templateJson("salt-app", true));
   await writeFile(resolve(themeDir, "templates", "404.json"), templateJson());
   await writeFile(
     resolve(themeDir, "templates", "robots.txt.liquid"),
@@ -922,14 +1106,11 @@ async function copyAssets(entryJsPath, entryCssPath) {
     resolve(themeAssetsDir, "shopify-meta-pixel-customer-events.js"),
   );
 
-  const existingProductShardAssets = (await readdir(themeAssetsDir)).filter((asset) =>
-    /^data-products-\d{4}\.json$/.test(asset),
-  );
-  const existingProductSearchShardAssets = (await readdir(themeAssetsDir)).filter((asset) =>
-    /^data-product-search-\d{4}\.json$/.test(asset),
+  const removedListingAssets = (await readdir(themeAssetsDir)).filter((asset) =>
+    removedListingAssetPatterns.some((pattern) => pattern.test(asset)),
   );
   await Promise.all(
-    [...existingProductShardAssets, ...existingProductSearchShardAssets].map((asset) =>
+    removedListingAssets.map((asset) =>
       rm(resolve(themeAssetsDir, asset), { force: true }),
     ),
   );
@@ -947,37 +1128,12 @@ async function main() {
   const { jsPath, cssPath } = parseEntryAssets(indexHtml);
   const settingsDataPath = resolve(themeDir, "config", "settings_data.json");
   const settingsData = existsSync(settingsDataPath) ? await readFile(settingsDataPath, "utf8") : null;
-  const homeFeaturedProductsPath = resolve(publicDir, "data", "home-featured-products.json");
-  const homeFeaturedProductsPayload = existsSync(homeFeaturedProductsPath)
-    ? JSON.parse(await readFile(homeFeaturedProductsPath, "utf8"))
-    : null;
   const distAssets = await readdir(resolve(distDir, "assets"));
   const routeAssets = {
     home: distAssets.find((asset) => /^HomePage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
     product: distAssets.find((asset) => /^ProductPage-[A-Za-z0-9_-]+\.js$/.test(asset)) || "",
+    homeHero: distAssets.find((asset) => /^anime-collectables-square-[A-Za-z0-9_-]+\.webp$/.test(asset)) || "",
   };
-
-  const productShardSources = (await readdir(resolve(publicDir, "data")))
-    .filter((source) => PRODUCT_SHARD_SOURCE_PATTERN.test(source))
-    .sort();
-  for (const source of productShardSources) {
-    themeDataAssets.push({
-      source,
-      asset: `data-${source}`,
-      themePath: `/data/${source}`,
-    });
-  }
-
-  const productSearchShardSources = (await readdir(resolve(publicDir, "data")))
-    .filter((source) => PRODUCT_SEARCH_SHARD_SOURCE_PATTERN.test(source))
-    .sort();
-  for (const source of productSearchShardSources) {
-    themeDataAssets.push({
-      source,
-      asset: `data-${source}`,
-      themePath: `/data/${source}`,
-    });
-  }
 
   await mkdir(themeDir, { recursive: true });
   await Promise.all(
@@ -988,7 +1144,7 @@ async function main() {
   // Keep Shopify-admin app embeds and theme-editor state intact. The generated
   // app bundle owns the app assets, not config/settings_data.json.
   const themeEntryJs = await copyAssets(jsPath, cssPath);
-  await writeThemeScaffold(settingsData, { ...routeAssets, entry: themeEntryJs }, homeFeaturedProductsPayload);
+  await writeThemeScaffold(settingsData, { ...routeAssets, entry: themeEntryJs });
 
   process.stdout.write(`Shopify theme bundle generated at ${themeDir}\n`);
 }

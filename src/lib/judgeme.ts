@@ -71,6 +71,15 @@ function normalizeToken(value: string): string {
   return String(value || "").trim();
 }
 
+export function prioritizeJudgeMeShopDomains(domains: string[]): string[] {
+  return Array.from(new Set(domains.map(normalizeDomain).filter(Boolean))).sort((left, right) => {
+    const leftIsPermanentShopifyDomain = left.endsWith(".myshopify.com");
+    const rightIsPermanentShopifyDomain = right.endsWith(".myshopify.com");
+
+    return Number(rightIsPermanentShopifyDomain) - Number(leftIsPermanentShopifyDomain);
+  });
+}
+
 function getJudgeMePublicToken(): string {
   const runtimeContext = getRuntimeContext();
   const fromRuntime = normalizeToken(runtimeContext.judgeMePublicToken || "");
@@ -103,7 +112,7 @@ function getJudgeMeShopDomains(): string[] {
     normalizeDomain(DEFAULT_JUDGEME_SHOP_DOMAIN),
   ].filter(Boolean);
 
-  return Array.from(new Set(candidates));
+  return prioritizeJudgeMeShopDomains(candidates);
 }
 
 function parseBadgeNumber(html: string, pattern: RegExp): number {

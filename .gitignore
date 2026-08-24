@@ -15,7 +15,11 @@ dist-ssr
 
 # Generated Shopify snapshots and backfill reports are kept local.
 public/data/home-featured-products.json
+public/data/home-collection-products.json
+public/data/products.json
+public/data/products-*.json
 public/data/product-search.json
+public/data/product-search-*.json
 output/product-metafield-backfill-manifest.json
 output/shopify-seo-release-manifest.json
 output/.shopify-seo-live-catalog.json

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
@@ -157,11 +157,13 @@ function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
 }
 
 const HomePage = () => {
-  // Do not download the full 6k-product catalog just to render curated homepage cards.
-  // Full catalog loading remains on search, collection, and product routes.
-  const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
+  // Request only the small live Shopify collections used by this page. Product,
+  // search, and collection routes independently fetch their current bounded view.
+  const homeFeaturedProductsQuery = useHomeFeaturedProducts();
+  const { data: homeFeaturedProductsPayload } = homeFeaturedProductsQuery;
   const homeCollectionProductsQuery = useHomeCollectionProducts();
   const { data: homeCollectionProductsPayload } = homeCollectionProductsQuery;
+  const [homeRatingsEnabled, setHomeRatingsEnabled] = useState(false);
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
   const homeCardSources = useMemo<HomeCardSource[]>(() => {
     const collectionProducts = homeCollectionProductsPayload
@@ -175,7 +177,22 @@ const HomePage = () => {
       ...collectionProducts,
     ];
   }, [homeCollectionProductsPayload, homeFeaturedProductsPayload?.bestSellerProducts]);
-  const homeRatingsQuery = useJudgeMeRatings(homeCardSources.map((product) => product.id));
+  useEffect(() => {
+    if (!homeFeaturedProductsQuery.isSuccess || !homeCollectionProductsQuery.isSuccess) {
+      setHomeRatingsEnabled(false);
+      return undefined;
+    }
+
+    // Product ratings are useful, but dozens of third-party badge requests must
+    // not compete with the hero, collection data, or first interaction.
+    const timer = window.setTimeout(() => setHomeRatingsEnabled(true), 1_500);
+    return () => window.clearTimeout(timer);
+  }, [homeCollectionProductsQuery.isSuccess, homeFeaturedProductsQuery.isSuccess]);
+
+  const homeRatingsQuery = useJudgeMeRatings(
+    homeCardSources.map((product) => product.id),
+    homeRatingsEnabled,
+  );
   const homeRatingsById = homeRatingsQuery.data || {};
   const bestSellerTiles = useMemo(
     () =>

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, CheckCircle2, MessageSquareQuote, PenSquare, Star, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { prioritizeJudgeMeShopDomains } from "@/lib/judgeme";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
@@ -87,20 +88,16 @@ function normalizeDomain(value: string): string {
 
 function getJudgeMeConfig(): JudgeMeConfig | null {
   const runtime = getRuntimeContext();
-  const shopDomains = Array.from(
-    new Set(
-      [
-        runtime.judgeMeShopDomain,
-        runtime.shopDomain,
-        getShopBaseOrigin(),
-        import.meta.env.VITE_JUDGEME_SHOP_DOMAIN,
-        import.meta.env.VITE_SALT_SHOP_URL,
-        import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
-        DEFAULT_JUDGEME_SHOP_DOMAIN,
-      ]
-        .map((value) => normalizeDomain(String(value || "")))
-        .filter(Boolean),
-    ),
+  const shopDomains = prioritizeJudgeMeShopDomains(
+    [
+      runtime.judgeMeShopDomain,
+      runtime.shopDomain,
+      getShopBaseOrigin(),
+      import.meta.env.VITE_JUDGEME_SHOP_DOMAIN,
+      import.meta.env.VITE_SALT_SHOP_URL,
+      import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
+      DEFAULT_JUDGEME_SHOP_DOMAIN,
+    ].map((value) => normalizeDomain(String(value || ""))),
   );
   const shopDomain = shopDomains[0] || "";
   const publicToken = String(

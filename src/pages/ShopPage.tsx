@@ -19,7 +19,6 @@ import TrustStrip from "@/components/storefront/TrustStrip";
 import EverydayCarryEssentials from "@/components/storefront/EverydayCarryEssentials";
 
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
-import { filterProducts, uniqueProductTypes } from "@/lib/catalog";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
@@ -31,11 +30,11 @@ import {
   resolveCollectionShopifyHandle,
   SITE_COLLECTIONS,
 } from "@/lib/site-navigation";
-import { useCollections, useCollectionProductIds, useProductSearchIndex } from "@/lib/shopify-data";
+import { useLiveProductListing } from "@/lib/live-product-listings";
+import { useCollections } from "@/lib/shopify-data";
 import {
   buildBreadcrumbStructuredData,
   buildCollectionStructuredData,
-  rankProductsForShopChannel,
 } from "@/lib/sales-optimization";
 import type { SearchIntelligence } from "@/lib/search-intelligence";
 import {
@@ -110,14 +109,6 @@ function findVirtualPriceSubcollection(handle: string | null | undefined) {
   }
 
   return null;
-}
-
-function getUsableProductIds(productIds: number[] | null | undefined): number[] | null {
-  const usableProductIds = Array.isArray(productIds)
-    ? productIds.filter((productId) => Number.isFinite(productId) && productId > 0)
-    : [];
-
-  return usableProductIds.length ? usableProductIds : null;
 }
 
 function normalizeCollectionFilter(value: string | null | undefined): string {
@@ -311,22 +302,7 @@ const ShopPage = () => {
   const [customMaxInput, setCustomMaxInput] = useState(maxFilter == null ? "" : String(maxFilter));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(false);
-  const needsFullCatalog =
-    isAllProductsCollection ||
-    hasSearchQuery ||
-    Boolean(typeFilter) ||
-    sort !== "featured" ||
-    minFilter != null ||
-    maxFilter != null ||
-    isVirtualPriceSubcollection;
-  const [shouldLoadFullCatalog, setShouldLoadFullCatalog] = useState(needsFullCatalog);
   const lastTrackedSearchRef = useRef("");
-
-  useEffect(() => {
-    if (needsFullCatalog) {
-      setShouldLoadFullCatalog(true);
-    }
-  }, [needsFullCatalog]);
 
   useEffect(() => {
     setCustomMinInput(minFilter == null ? "" : String(minFilter));
@@ -369,28 +345,23 @@ const ShopPage = () => {
     }
   }, [isDefaultSearchCollection, searchParams, setSearchParams]);
 
-  // The compact catalog carries every search/filter/sort field this grid needs
-  // at a fraction of the full product-detail snapshot's transfer size.
+  // Shopify renders only the requested page, filter, and sort into a lightweight
+  // section response. This keeps prices current without downloading the catalog.
   const {
     data: productsPayload,
-    collectionPageProductIds,
-    collectionPageTotal,
-    collectionPageLoading,
-    collectionPageError,
     isLoading: productsLoading,
     error: productsError,
     refetch: refetchProducts,
-  } = useProductSearchIndex(true, !isVirtualPriceSubcollection, shouldLoadFullCatalog);
-  const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
-  const {
-    data: collectionProductIdsPayload,
-    isLoading: collectionProductIdsLoading,
-    error: collectionProductIdsError,
-    refetch: refetchCollectionProductIds,
-  } = useCollectionProductIds(
+  } = useLiveProductListing({
     collectionHandle,
-    Boolean(collectionHandle) && !isAllProductsCollection,
-  );
+    query: deferredQuery,
+    page,
+    sort,
+    productType: typeFilter,
+    minPrice: effectiveMinFilter,
+    maxPrice: effectiveMaxFilter,
+  });
+  const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
@@ -401,136 +372,20 @@ const ShopPage = () => {
         : null,
     [collections, deferredQuery, hasSearchQuery, products, searchIntelligenceBuilder],
   );
-  const productTypes = useMemo(() => uniqueProductTypes(products), [products]);
-  const liveCollectionProductIds = useMemo(
-    () => getUsableProductIds(collectionProductIdsPayload?.productIds),
-    [collectionProductIdsPayload?.productIds],
-  );
-  const liveCollectionPageProductIds = useMemo(
-    () => getUsableProductIds(collectionPageProductIds),
-    [collectionPageProductIds],
-  );
-  const catalogProductIds = useMemo(
-    () => (isAllProductsCollection ? products.map((product) => product.id) : null),
-    [isAllProductsCollection, products],
-  );
-  const selectedCollectionProductIds = useMemo(() => {
-    if (isAllProductsCollection) {
-      return catalogProductIds;
-    }
-
-    // Before the full live membership crawl completes, only current-page
-    // Shopify IDs are eligible. This prevents old static cards from leaking
-    // into a realtime collection view.
-    return liveCollectionPageProductIds ?? liveCollectionProductIds;
-  }, [catalogProductIds, isAllProductsCollection, liveCollectionPageProductIds, liveCollectionProductIds]);
-  const selectedCollectionOrder = useMemo(() => {
-    if (!collectionHandle || !Array.isArray(selectedCollectionProductIds) || !selectedCollectionProductIds.length) {
-      return null;
-    }
-
-    return new Map(selectedCollectionProductIds.map((productId, index) => [productId, index]));
-  }, [collectionHandle, selectedCollectionProductIds]);
-
-  const textFilteredProducts = useMemo(
-    () => filterProducts(products, { query: deferredQuery, productType: typeFilter, collections }),
-    [products, deferredQuery, typeFilter, collections],
-  );
-
-  const collectionFilteredProducts = useMemo(() => {
-    if (!collectionHandle) {
-      return textFilteredProducts;
-    }
-
-    return filterProducts(textFilteredProducts, {
-      collection: collectionHandle,
-      collections,
-      collectionProductIds: selectedCollectionProductIds,
-    });
-  }, [collectionHandle, textFilteredProducts, collections, selectedCollectionProductIds]);
-
-  const priceFilteredProducts = useMemo(
-    () =>
-      collectionFilteredProducts.filter((product) => {
-        const price = minPrice(product);
-        if (effectiveMinFilter != null && price < effectiveMinFilter) {
-          return false;
-        }
-
-        if (effectiveMaxFilter != null && price > effectiveMaxFilter) {
-          return false;
-        }
-
-        return true;
-      }),
-    [collectionFilteredProducts, effectiveMaxFilter, effectiveMinFilter],
+  const productTypes = useMemo(
+    () => productsPayload?.productTypes ?? [],
+    [productsPayload?.productTypes],
   );
 
   const sortedProducts = useMemo(() => {
-    const base = [...priceFilteredProducts];
-
-    if (sort === "title-asc") {
-      return base.sort((a, b) => a.title.localeCompare(b.title));
-    }
-
-    if (sort === "title-desc") {
-      return base.sort((a, b) => b.title.localeCompare(a.title));
-    }
-
-    if (sort === "featured") {
-      // Search relevance is already scored by the catalog intelligence layer.
-      // A merchandising re-rank here would push weaker matches ahead of intent matches.
-      if (deferredQuery.trim()) {
-        return base;
-      }
-
-      if (selectedCollectionOrder) {
-        return base.sort((a, b) => {
-          const leftRank = selectedCollectionOrder.get(a.id);
-          const rightRank = selectedCollectionOrder.get(b.id);
-          const leftHasRank = leftRank != null;
-          const rightHasRank = rightRank != null;
-
-          if (leftHasRank && rightHasRank && leftRank !== rightRank) {
-            return leftRank - rightRank;
-          }
-
-          if (leftHasRank !== rightHasRank) {
-            return leftHasRank ? -1 : 1;
-          }
-
-          return 0;
-        });
-      }
-
-      return rankProductsForShopChannel(base, {
-        query: deferredQuery,
-        focusTerms: [curatedSubcollection?.title || curatedCollection?.title || collectionHandle, typeFilter].filter(
-          Boolean,
-        ),
-      });
-    }
-
-    if (sort === "price-asc") {
-      return base.sort((a, b) => minPrice(a) - minPrice(b));
-    }
-
-    if (sort === "price-desc") {
-      return base.sort((a, b) => minPrice(b) - minPrice(a));
-    }
-
+    const base = [...products];
+    // Shopify handles every globally sortable option. Discount is not a native
+    // Shopify sort key, so keep that one useful by ranking the bounded live page.
     if (sort === "discount") {
       return base.sort((a, b) => savingsPercent(b) - savingsPercent(a));
     }
-
-    if (sort === "newest") {
-      return base.sort(
-        (a, b) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime(),
-      );
-    }
-
     return base;
-  }, [collectionHandle, curatedCollection?.title, curatedSubcollection?.title, deferredQuery, priceFilteredProducts, selectedCollectionOrder, sort, typeFilter]);
+  }, [products, sort]);
 
   const selectedCollection = isVirtualPriceSubcollection
     ? undefined
@@ -572,24 +427,12 @@ const ShopPage = () => {
     selectedCollection?.title ||
     "Collection preview";
 
-  const canUseLiveCollectionTotal = Boolean(
-    liveCollectionPageProductIds?.length &&
-      (collectionPageTotal || collectionProductIdsPayload?.total) &&
-      !hasSearchQuery &&
-      !typeFilter &&
-      minFilter == null &&
-      maxFilter == null &&
-      !isVirtualPriceSubcollection,
-  );
-  const liveCollectionTotal = collectionPageTotal || collectionProductIdsPayload?.total || 0;
-  const totalResults = canUseLiveCollectionTotal ? liveCollectionTotal : sortedProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
+  const totalResults = productsPayload?.total ?? sortedProducts.length;
+  const totalPages = productsPayload?.totalPages ?? Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults);
-  const visibleProducts = liveCollectionPageProductIds?.length && !isVirtualPriceSubcollection
-    ? sortedProducts
-    : sortedProducts.slice(startIndex, endIndex);
+  const visibleProducts = sortedProducts;
+  const endIndex = Math.min(startIndex + visibleProducts.length, totalResults);
   const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
   const productRatingIds = useMemo(
     () => Array.from(new Set([...visibleProducts, ...predictiveProducts].map((product) => product.id))),
@@ -631,26 +474,12 @@ const ShopPage = () => {
   const seoDescription = query.trim()
     ? `Search ${query.trim()} across ${totalResults.toLocaleString()} products with smarter ranking, filters, and merchandising signals.`
     : collectionHeroSummary;
-  const hasCollectionMembershipFallback = Boolean(
-    isAllProductsCollection || liveCollectionPageProductIds?.length || liveCollectionProductIds?.length,
-  );
-  const waitingForCollectionIds =
-    Boolean(collectionHandle) &&
-    !isAllProductsCollection &&
-    !hasCollectionMembershipFallback &&
-    (collectionProductIdsLoading || collectionPageLoading);
-  const hasBlockingCollectionError =
-    Boolean(collectionHandle) &&
-    !isAllProductsCollection &&
-    Boolean(collectionProductIdsError || collectionPageError) &&
-    !hasCollectionMembershipFallback;
-
   useEffect(() => {
-    if (productsLoading || waitingForCollectionIds) {
+    if (productsLoading) {
       return;
     }
 
-    if (productsError || hasBlockingCollectionError) {
+    if (productsError) {
       return;
     }
 
@@ -669,14 +498,12 @@ const ShopPage = () => {
     trackMetaPixelSearch(normalizedQuery, totalResults);
   }, [
     collectionHandle,
-    hasBlockingCollectionError,
-    waitingForCollectionIds,
     productsError,
     productsLoading,
     deferredQuery,
     totalResults,
   ]);
-  if (productsLoading || waitingForCollectionIds) {
+  if (productsLoading) {
     return (
       <LoadingState
         title="Loading catalog"
@@ -685,7 +512,7 @@ const ShopPage = () => {
     );
   }
 
-  if (productsError || hasBlockingCollectionError) {
+  if (productsError) {
     return (
       <ErrorState
         title="Catalog unavailable"
@@ -696,9 +523,6 @@ const ShopPage = () => {
             onClick={() => {
               refetchProducts();
               refetchCollections();
-              if (collectionHandle) {
-                refetchCollectionProductIds();
-              }
             }}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
           >
@@ -710,10 +534,6 @@ const ShopPage = () => {
   }
 
   const updateParams = (updates: Record<string, string | null>, resetPage = false) => {
-    if (Object.keys(updates).some((key) => ["q", "type", "sort", "min", "max"].includes(key))) {
-      setShouldLoadFullCatalog(true);
-    }
-
     const next = new URLSearchParams(searchParams);
 
     Object.entries(updates).forEach(([key, value]) => {
@@ -1096,7 +916,7 @@ const ShopPage = () => {
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                   {understoodIntent
-                    ? `${understoodIntent.label}. Ranked across the full catalog knowledge base, product attributes, and live constraints.`
+                    ? `${understoodIntent.label}. Ranked from current Shopify results, product attributes, and live constraints.`
                     : "Search titles, product types, tags, boost phrases, and collection cues all at once."}
                 </p>
               </div>

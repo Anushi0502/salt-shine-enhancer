@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveThemeAsset } from "@/lib/theme-assets";
+import { compareAt, minPrice, productImage } from "@/lib/formatters";
+import { loadCollectionPreviewProducts } from "@/lib/live-product-listings";
+import type { ShopifyProduct } from "@/types/shopify";
 
 export type HomeFeaturedProduct = {
   id: number;
@@ -28,9 +30,24 @@ type SaltHomePreloadWindow = Window & {
   __SALT_HOME_PREFETCH__?: Partial<HomeFeaturedProductsPayload>;
 };
 
-const HOME_FEATURED_PRODUCTS_PATH = "/data/home-featured-products.json";
 const HOME_FEATURED_PRODUCTS_QUERY_KEY = ["home-featured-products", "catalog"] as const;
-const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 5 * 60 * 1000;
+const HOME_FEATURED_PRODUCTS_STALE_TIME_MS = 60 * 1000;
+
+function toHomeFeaturedProduct(product: ShopifyProduct): HomeFeaturedProduct | null {
+  const image = productImage(product) || "";
+  const price = minPrice(product);
+  if (!product.id || !product.title || !product.handle || !image || price <= 0) return null;
+
+  const compareAtPrice = compareAt(product);
+  return {
+    id: product.id,
+    title: product.title,
+    handle: product.handle,
+    image,
+    price,
+    compareAtPrice: compareAtPrice > price ? compareAtPrice : null,
+  };
+}
 
 function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined): HomeFeaturedProduct | null {
   const id = Number(input?.id || 0);
@@ -80,7 +97,7 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
   return {
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: payload.source || "shopify-liquid:home",
-    total: quirkyGiftPicks.length,
+    total: bestSellerProducts.length,
     sources: payload.sources,
     bestSellerProducts,
     quirkyGiftPicks,
@@ -90,33 +107,23 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
 
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
   try {
-    const url = resolveThemeAsset(HOME_FEATURED_PRODUCTS_PATH);
-    // Theme assets are versioned on publish. Reuse the browser/CDN response
-    // during a short browsing session instead of revalidating on every mount.
-    const response = await fetch(url, { cache: "force-cache" });
-
-    if (!response.ok || !/json/i.test(response.headers.get("content-type") || "")) {
-      throw new Error("Catalog-backed home products are unavailable");
-    }
-
-    const payload = (await response.json()) as Partial<HomeFeaturedProductsPayload>;
-    const bestSellerProducts = normalizeProducts(payload.bestSellerProducts);
-    const quirkyGiftPicks = normalizeProducts(payload.quirkyGiftPicks);
-    const everydayEssentialProducts = normalizeProducts(payload.everydayEssentialProducts);
+    const bestSellerProducts = (await loadCollectionPreviewProducts("best-sellers", 12))
+      .map(toHomeFeaturedProduct)
+      .filter((product): product is HomeFeaturedProduct => Boolean(product));
 
     return {
-      generatedAt: payload.generatedAt || new Date().toISOString(),
-      source: `cache:${payload.source || HOME_FEATURED_PRODUCTS_PATH}`,
-      total: quirkyGiftPicks.length,
-      sources: payload.sources,
+      generatedAt: new Date().toISOString(),
+      source: "shopify-live:best-sellers",
+      total: bestSellerProducts.length,
+      sources: { bestSellerProducts: "best-sellers" },
       bestSellerProducts,
-      quirkyGiftPicks,
-      everydayEssentialProducts,
+      quirkyGiftPicks: [],
+      everydayEssentialProducts: [],
     };
   } catch {
     return {
       generatedAt: new Date().toISOString(),
-      source: `cache:${HOME_FEATURED_PRODUCTS_PATH}`,
+      source: "shopify-live:best-sellers",
       total: 0,
       bestSellerProducts: [],
       quirkyGiftPicks: [],

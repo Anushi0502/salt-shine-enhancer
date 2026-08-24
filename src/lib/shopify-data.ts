@@ -40,11 +40,6 @@ import {
   normalizeProductCustomData,
   normalizeShopCustomData,
 } from "@/lib/product-custom-data.js";
-import {
-  isProductCatalogManifest,
-  mergeProductShardPayloads,
-} from "@/lib/product-catalog-shards.js";
-import { isProductSearchManifest } from "@/lib/product-search-shards.js";
 import { isNativeApp } from "@/lib/mobile";
 import { buildLiveShopifyBaseCandidates } from "@/lib/shopify-live-bases";
 import { SHOPIFY_POLICY_ARCHIVE, type ShopifyPolicyKey } from "@/lib/shopify-policy-archive";
@@ -65,8 +60,6 @@ const BLOG_HANDLES = Array.from(
   ),
 );
 const BLOG_HANDLE = BLOG_HANDLES[0] || "posts";
-const PRODUCTS_DATA_PATH = "/data/products.json";
-const PRODUCT_SEARCH_DATA_PATH = "/data/product-search.json";
 const COLLECTIONS_DATA_PATH = "/data/collections.json";
 const COLLECTION_PRODUCTS_DATA_PATH = "/data/collection-products.json";
 const ABOUT_DATA_PATH = "/data/about.json";
@@ -652,24 +645,10 @@ async function fetchProductByHandleFromStorefront(base: string, handle: string):
   return normalizeStorefrontGraphqlProduct(product);
 }
 
-async function fetchAllProductsFromLive(base: string): Promise<ShopifyProduct[]> {
-  const allProducts: ShopifyProduct[] = [];
-  let page = 1;
-
-  while (true) {
-    const url = `${base}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
-    const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
-
-    allProducts.push(...payload.products);
-
-    if (payload.products.length < PAGE_LIMIT) {
-      break;
-    }
-
-    page += 1;
-  }
-
-  return allProducts;
+async function fetchProductDiscoveryPageFromLive(base: string): Promise<ShopifyProduct[]> {
+  const url = `${base}/collections/all-products/products.json?limit=${PAGE_LIMIT}&page=1&sort_by=manual`;
+  const payload = await fetchJson<{ products: ShopifyProduct[] }>(url);
+  return Array.isArray(payload.products) ? payload.products : [];
 }
 
 function normalizeStorefrontProductPayload(product: Record<string, unknown>): ShopifyProduct {
@@ -1106,14 +1085,13 @@ function mergeHeadPreloadedCollectionProducts(payload: ProductsPayload): Product
     mergedIds.add(String(liveProduct.id));
     mergedHandles.add(String(liveProduct.handle || "").trim().toLowerCase());
     const mergedProduct = mergeProductRecords(liveProduct, cachedProduct);
-    // Shopify's current Liquid payload is authoritative for the visible
-    // collection card; cached custom merchandising fields are only an overlay.
+    // Shopify's current Liquid payload is authoritative for the visible card;
+    // optional merchandising fields from the bounded live payload are overlays.
     return mergedProduct;
   });
 
-  // A product added in Shopify after the static index was built should still
-  // appear immediately on its collection page. Collection ordering below will
-  // place the appended live record in the correct merchandiser-defined slot.
+  // A product present in the request-time page but missing from the bounded
+  // discovery page should still appear immediately.
   liveProducts.forEach((liveProduct) => {
     const normalizedHandle = String(liveProduct.handle || "").trim().toLowerCase();
     if (mergedIds.has(String(liveProduct.id)) || mergedHandles.has(normalizedHandle)) {
@@ -1540,58 +1518,6 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
   });
 }
 
-async function fetchProductsFromCache(): Promise<ProductsPayload> {
-  const payload = await fetchThemeJson<ProductsPayload & { shards?: Array<{ path?: string; file?: string }> }>(PRODUCTS_DATA_PATH);
-  const hydratedPayload = isProductCatalogManifest(payload)
-    ? mergeProductShardPayloads(
-        payload,
-        await Promise.all(
-          payload.shards.map((shard) =>
-            fetchThemeJson<ProductsPayload>(shard.path || `/data/${shard.file || ""}`),
-          ),
-        ),
-      )
-    : payload;
-  const products = Array.isArray(hydratedPayload.products) ? hydratedPayload.products : [];
-
-  if (!products.length) {
-    throw new Error("Cached product payload is empty");
-  }
-
-  return normalizeProductsPayload({
-    generatedAt: hydratedPayload.generatedAt || new Date().toISOString(),
-    source: `cache:${hydratedPayload.source || PRODUCTS_DATA_PATH}`,
-    total: hydratedPayload.total || products.length,
-    products,
-  });
-}
-
-async function fetchProductSearchIndexFromCache(): Promise<ProductsPayload> {
-  const payload = await fetchThemeJson<ProductsPayload & { shards?: Array<{ path?: string; file?: string }> }>(PRODUCT_SEARCH_DATA_PATH);
-  const hydratedPayload = isProductSearchManifest(payload)
-    ? mergeProductShardPayloads(
-        payload,
-        await Promise.all(
-          payload.shards.map((shard) =>
-            fetchThemeJson<ProductsPayload>(shard.path || `/data/${shard.file || ""}`),
-          ),
-        ),
-      )
-    : payload;
-  const products = Array.isArray(hydratedPayload.products) ? hydratedPayload.products : [];
-
-  if (!products.length) {
-    throw new Error("Cached product search payload is empty");
-  }
-
-  return normalizeProductsPayload({
-    generatedAt: hydratedPayload.generatedAt || new Date().toISOString(),
-    source: `cache:${hydratedPayload.source || PRODUCT_SEARCH_DATA_PATH}`,
-    total: hydratedPayload.total || products.length,
-    products,
-  });
-}
-
 async function fetchCollectionsFromCache(): Promise<CollectionsPayload> {
   const payload = await fetchThemeJson<CollectionsPayload>(COLLECTIONS_DATA_PATH);
   const collections = Array.isArray(payload.collections) ? payload.collections : [];
@@ -1733,64 +1659,27 @@ async function fetchPolicyPageFromLive(path: string, fallbackTitle: string): Pro
 }
 
 export async function loadProducts(): Promise<ProductsPayload> {
-  try {
-    return await fetchProductsFromCache();
-  } catch {
-    // A local build or an incomplete theme can be missing the snapshot; use the
-    // live Storefront fallback only in that recovery path.
-  }
-
   const endpointErrors: string[] = [];
 
   for (const base of getLiveCatalogBases()) {
     try {
-      const products = await fetchAllProductsFromLive(base);
-      const livePayload = normalizeProductsPayload({
+      const products = await fetchProductDiscoveryPageFromLive(base);
+      return normalizeProductsPayload({
         generatedAt: new Date().toISOString(),
-        source: base,
+        source: `${base}/collections/all-products/products.json`,
         total: products.length,
         products,
       });
-
-      try {
-        const cached = await fetchProductsFromCache();
-        const cachedById = new Map(cached.products.map((product) => [String(product.id), product]));
-        const cachedByHandle = new Map(
-          cached.products.map((product) => [String(product.handle || "").trim().toLowerCase(), product]),
-        );
-
-        return normalizeProductsPayload({
-          ...livePayload,
-          products: livePayload.products.map((product) => {
-            const cachedMatch =
-              cachedById.get(String(product.id)) ||
-              cachedByHandle.get(String(product.handle || "").trim().toLowerCase()) ||
-              null;
-
-            return mergeProductRecords(product, cachedMatch);
-          }),
-        });
-      } catch {
-        return livePayload;
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
     }
   }
 
-  try {
-    const cached = await fetchProductsFromCache();
-    return cached;
-  } catch (cacheError) {
-    const details =
-      endpointErrors.length > 0
-        ? endpointErrors.slice(0, 4).join(" | ")
-        : "No reachable live products endpoints.";
-
-    const cacheMessage = cacheError instanceof Error ? cacheError.message : "unknown cache error";
-    throw new Error(`Live products fetch failed. ${details}. Cached products fetch failed: ${cacheMessage}`);
-  }
+  const details = endpointErrors.length > 0
+    ? endpointErrors.slice(0, 4).join(" | ")
+    : "No reachable live products endpoints.";
+  throw new Error(`Live product discovery failed. ${details}`);
 }
 
 async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct> {
@@ -1815,14 +1704,6 @@ async function loadProductByHandleFresh(handle: string): Promise<ShopifyProduct>
       const message = error instanceof Error ? error.message : "unknown error";
       endpointErrors.push(`${base} -> ${message}`);
     }
-  }
-
-  // Keep the versioned theme snapshot as a recovery path for local previews or
-  // stores where Shopify's public product endpoint is temporarily unavailable.
-  const cached = await fetchProductsFromCache();
-  const cachedProduct = cached.products.find((product) => String(product.handle || "").trim().toLowerCase() === normalizedHandle);
-  if (cachedProduct) {
-    return cachedProduct;
   }
 
   throw new Error(`Product "${normalizedHandle}" is unavailable. ${endpointErrors.slice(0, 3).join(" | ")}`);
@@ -1865,14 +1746,33 @@ export function warmProductByHandle(handle: string): void {
   });
 }
 
-export async function loadProductSearchIndex(): Promise<ProductsPayload> {
-  try {
-    return mergeHeadPreloadedCollectionProducts(await fetchProductSearchIndexFromCache());
-  } catch {
-    // Preserve a working search UI if an older local bundle lacks the compact
-    // index. Published bundles ship the smaller index instead of this fallback.
-    return mergeHeadPreloadedCollectionProducts(await loadProducts());
+export async function loadProductsByHandles(handles: string[]): Promise<ShopifyProduct[]> {
+  const normalizedHandles = Array.from(
+    new Set(handles.map((handle) => String(handle || "").trim().toLowerCase()).filter(Boolean)),
+  ).slice(0, 50);
+  const productsByHandle = new Map<string, ShopifyProduct>();
+
+  // Bound concurrency so a large wishlist cannot flood Shopify, while each
+  // product still uses the shared short-lived request cache above.
+  for (let index = 0; index < normalizedHandles.length; index += 6) {
+    const batch = normalizedHandles.slice(index, index + 6);
+    const results = await Promise.allSettled(batch.map((handle) => loadProductByHandle(handle)));
+    results.forEach((result, resultIndex) => {
+      if (result.status === "fulfilled") {
+        productsByHandle.set(batch[resultIndex], result.value);
+      }
+    });
   }
+
+  return normalizedHandles
+    .map((handle) => productsByHandle.get(handle))
+    .filter((product): product is ShopifyProduct => Boolean(product));
+}
+
+export async function loadProductSearchIndex(): Promise<ProductsPayload> {
+  // Compatibility path for secondary recommendation/admin surfaces. Primary
+  // shop and search routes use the 36-item server-filtered listing hook.
+  return mergeHeadPreloadedCollectionProducts(await loadProducts());
 }
 
 export function mergeCollectionPageProducts(
@@ -2242,6 +2142,22 @@ export function useProductByHandle(
   });
 }
 
+export function useProductsByHandles(handles: string[], enabled = true) {
+  const normalizedHandles = Array.from(
+    new Set(handles.map((handle) => String(handle || "").trim().toLowerCase()).filter(Boolean)),
+  ).slice(0, 50);
+
+  return useQuery({
+    queryKey: ["products-by-handle", DATA_MODE, normalizedHandles.join("|")],
+    queryFn: () => loadProductsByHandles(normalizedHandles),
+    enabled: enabled && normalizedHandles.length > 0,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
 export function useProductSearchIndex(
   enabled = true,
   hydrateCollectionPage = true,
@@ -2301,16 +2217,15 @@ export function useProductSearchIndex(
 
   return {
     ...catalogQuery,
-    // The static search shard remains the initial result. Live collection
-    // hydration is deliberately a second query so a slow Shopify endpoint
-    // cannot block the catalog grid or its filters.
+    // Keep compatibility consumers on bounded live data while the current
+    // collection page can paint independently from its Liquid seed.
     data,
     collectionPageProductIds: collectionPageQuery.data?.productIds || [],
     collectionPageTotal: collectionPageQuery.data?.total || 0,
     collectionPageLoading: collectionPageQuery.isLoading,
     collectionPageError: collectionPageQuery.error,
     // A Shopify Liquid page seed is enough to render the first visible cards.
-    // Keep the full search index loading in the background for filters/search.
+    // Keep the bounded compatibility query loading in the background.
     isLoading: catalogQuery.isLoading && !collectionPageProducts.length,
     isFetching: catalogQuery.isFetching || collectionPageQuery.isFetching,
   };

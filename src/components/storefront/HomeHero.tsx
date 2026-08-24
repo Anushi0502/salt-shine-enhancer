@@ -114,6 +114,7 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
                 src={normalizeShopifyAssetUrl(activeSlide.image) || activeSlide.image}
                 alt={activeSlide.alt}
                 loading="eager"
+                {...({ fetchpriority: "high" } as Record<string, string>)}
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
               />

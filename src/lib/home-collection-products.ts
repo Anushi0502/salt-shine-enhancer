@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveThemeAsset } from "@/lib/theme-assets";
+import { compareAt, minPrice, productImage } from "@/lib/formatters";
+import { loadCollectionPreviewProducts } from "@/lib/live-product-listings";
+import type { ShopifyProduct } from "@/types/shopify";
 
 export type HomeCollectionProduct = {
   id: number;
@@ -47,8 +49,32 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
 };
 
 type SaltHomeCollectionPreloadWindow = Window & {
-  __SALT_HOME_COLLECTION_PREFETCH__?: Promise<unknown>;
+  __SALT_HOME_COLLECTION_PREFETCH__?: unknown;
 };
+
+const HOME_SECTIONS = [
+  ["animeCollectables", "Anime Collectables", "anime-collectables"],
+  ["creatorEssentials", "Creator Essentials", "creator-essentials"],
+  ["lipCare", "Lip Care", "lips-and-care"],
+  ["watches", "Watches", "watches"],
+  ["glamEyePalettes", "Glam Eye Palettes", "glam-eye-palettes"],
+] as const;
+
+function toHomeCollectionProduct(product: ShopifyProduct): HomeCollectionProduct | null {
+  const image = productImage(product) || "";
+  const price = minPrice(product);
+  if (!product.id || !product.handle || !product.title || !image || price <= 0) return null;
+
+  const compareAtPrice = compareAt(product);
+  return {
+    id: product.id,
+    title: product.title,
+    handle: product.handle,
+    image,
+    price,
+    compareAtPrice: compareAtPrice > price ? compareAtPrice : null,
+  };
+}
 
 function normalizeHomeCollectionPayload(input: unknown): HomeCollectionProductsPayload {
   if (!input || typeof input !== "object") {
@@ -93,32 +119,41 @@ function normalizeHomeCollectionPayload(input: unknown): HomeCollectionProductsP
 
   return {
     generatedAt: String(payload.generatedAt || new Date().toISOString()),
-    source: String(payload.source || HOME_COLLECTION_PRODUCTS_PATH),
+    source: String(payload.source || "shopify-liquid:home-collections"),
     sections: Object.fromEntries(sectionEntries) as HomeCollectionProductsPayload["sections"],
   };
 }
 
-function getHomeCollectionPrefetch(): Promise<HomeCollectionProductsPayload> | undefined {
+function getHomeCollectionPrefetch(): HomeCollectionProductsPayload | undefined {
   if (typeof window === "undefined" || window.location.pathname !== "/") {
     return undefined;
   }
 
   const preload = (window as SaltHomeCollectionPreloadWindow).__SALT_HOME_COLLECTION_PREFETCH__;
-  return preload?.then(normalizeHomeCollectionPayload).catch(() => loadHomeCollectionProducts());
+  if (!preload || typeof (preload as Promise<unknown>).then === "function") return undefined;
+  const normalized = normalizeHomeCollectionPayload(preload);
+  return Object.values(normalized.sections).some((section) => section.products.length) ? normalized : undefined;
 }
 
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
-  try {
-    const response = await fetch(resolveThemeAsset("/data/home-collection-products.json"), {
-      // Theme assets are versioned on publish. Reuse the browser/CDN response
-      // during a short browsing session instead of revalidating on every mount.
-      cache: "force-cache",
-    });
-    if (!response.ok) throw new Error("Homepage collection products are unavailable");
-    return normalizeHomeCollectionPayload(await response.json());
-  } catch {
-    return EMPTY_PAYLOAD;
-  }
+  const sectionEntries = await Promise.all(
+    HOME_SECTIONS.map(async ([key, title, handle]) => {
+      try {
+        const products = (await loadCollectionPreviewProducts(handle, 12))
+          .map(toHomeCollectionProduct)
+          .filter((product): product is HomeCollectionProduct => Boolean(product));
+        return [key, { title, handle, products }] as const;
+      } catch {
+        return [key, EMPTY_SECTION(title, handle)] as const;
+      }
+    }),
+  );
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: "shopify-live:home-collections",
+    sections: Object.fromEntries(sectionEntries) as HomeCollectionProductsPayload["sections"],
+  };
 }
 
 export function useHomeCollectionProducts() {
@@ -126,10 +161,10 @@ export function useHomeCollectionProducts() {
 
   return useQuery({
     queryKey: ["home-collection-products", "catalog"],
-    queryFn: () => prefetch || loadHomeCollectionProducts(),
-    staleTime: 5 * 60 * 1000,
-    // The request is cached for the current browsing session, so navigation
-    // back to the homepage does not refetch the same merchandising payload.
+    queryFn: loadHomeCollectionProducts,
+    initialData: prefetch,
+    initialDataUpdatedAt: prefetch ? Date.now() : undefined,
+    staleTime: 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: false,

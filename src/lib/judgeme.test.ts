@@ -3,6 +3,7 @@ import {
   buildJudgeMeReviewFingerprint,
   dedupeJudgeMeTestimonials,
   normalizeJudgeMeReview,
+  prioritizeJudgeMeShopDomains,
   type JudgeMeTestimonial,
 } from "@/lib/judgeme";
 
@@ -23,6 +24,16 @@ function makeReview(input: Partial<JudgeMeTestimonial> = {}): JudgeMeTestimonial
 }
 
 describe("Judge.me review normalization", () => {
+  it("tries the permanent Shopify domain before branded storefront domains", () => {
+    expect(
+      prioritizeJudgeMeShopDomains([
+        "https://www.saltonlinestore.com/",
+        "0309D3-72.myshopify.com",
+        "www.saltonlinestore.com",
+      ]),
+    ).toEqual(["0309d3-72.myshopify.com", "www.saltonlinestore.com"]);
+  });
+
   it("repairs common encoding artifacts in review text", () => {
     const review = normalizeJudgeMeReview(makeReview());
 
