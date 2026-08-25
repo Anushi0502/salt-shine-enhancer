@@ -124,6 +124,8 @@ type HomeCardSource = {
   image: string;
   price: number;
   compareAtPrice: number | null;
+  averageRating?: number | null;
+  reviewCount?: number | null;
 };
 
 function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
@@ -141,6 +143,8 @@ function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
     created_at: "",
     published_at: null,
     updated_at: "",
+    average_rating: Number(source.averageRating) > 0 ? Number(source.averageRating) : undefined,
+    total_reviews: Number(source.reviewCount) > 0 ? Math.floor(Number(source.reviewCount)) : undefined,
     variants: [
       {
         id: source.id,

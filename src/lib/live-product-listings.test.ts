@@ -22,6 +22,8 @@ function liveProduct(overrides: Record<string, unknown> = {}) {
     vendor: "SALT",
     product_type: "Gifts",
     tags: ["live"],
+    average_rating: 4.5,
+    total_reviews: 2,
     variants: [
       {
         id: 201,
@@ -53,6 +55,8 @@ describe("live Shopify product listings", () => {
     expect(product?.variants[0]?.price).toBe("43.99");
     expect(product?.variants[0]?.compare_at_price).toBe("64.99");
     expect(product?.image?.src).toBe("https://cdn.shopify.com/current.webp");
+    expect(product?.average_rating).toBe(4.5);
+    expect(product?.total_reviews).toBe(2);
   });
 
   it("loads a server-filtered collection page from the Shopify section", async () => {

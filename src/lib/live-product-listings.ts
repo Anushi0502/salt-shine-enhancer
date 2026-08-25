@@ -183,6 +183,9 @@ export function normalizeLiveListingProduct(value: unknown): ShopifyProduct | nu
     });
   }
 
+  const averageRating = Number(record.average_rating);
+  const totalReviews = Number(record.total_reviews);
+
   return {
     id,
     title,
@@ -194,6 +197,14 @@ export function normalizeLiveListingProduct(value: unknown): ShopifyProduct | nu
     created_at: String(record.created_at || ""),
     published_at: String(record.published_at || "") || null,
     updated_at: String(record.updated_at || ""),
+    average_rating:
+      Number.isFinite(averageRating) && averageRating > 0
+        ? Math.min(5, Math.max(0, averageRating))
+        : undefined,
+    total_reviews:
+      Number.isFinite(totalReviews) && totalReviews > 0
+        ? Math.max(0, Math.floor(totalReviews))
+        : undefined,
     variants,
     images,
     image: images[0] || null,

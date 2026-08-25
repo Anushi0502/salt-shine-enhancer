@@ -119,13 +119,18 @@ function buildLiquidProductRecord(variableName = "item") {
 }
 
 function buildHomeProductRecord(variableName = "item") {
-  return `{
+  return `{% assign salt_home_judgeme_badge = ${variableName}.metafields.judgeme.badge | default: '' %}
+    {% assign salt_home_judgeme_rating = salt_home_judgeme_badge | split: "data-average-rating='" | last | split: "'" | first %}
+    {% assign salt_home_judgeme_review_count = salt_home_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
+    {
     "id": {{ ${variableName}.id | json }},
     "title": {{ ${variableName}.title | json }},
     "handle": {{ ${variableName}.handle | json }},
     "image": {{ ${variableName}.featured_image | image_url: width: 720 | json }},
     "price": {{ ${variableName}.price | divided_by: 100.0 | json }},
-    "compareAtPrice": {% if ${variableName}.compare_at_price and ${variableName}.compare_at_price > ${variableName}.price %}{{ ${variableName}.compare_at_price | divided_by: 100.0 | json }}{% else %}null{% endif %}
+    "compareAtPrice": {% if ${variableName}.compare_at_price and ${variableName}.compare_at_price > ${variableName}.price %}{{ ${variableName}.compare_at_price | divided_by: 100.0 | json }}{% else %}null{% endif %},
+    "averageRating": {% if salt_home_judgeme_badge contains "data-average-rating='" %}{{ salt_home_judgeme_rating | plus: 0 | json }}{% else %}null{% endif %},
+    "reviewCount": {% if salt_home_judgeme_badge contains "data-number-of-reviews='" %}{{ salt_home_judgeme_review_count | plus: 0 | json }}{% else %}null{% endif %}
   }`;
 }
 

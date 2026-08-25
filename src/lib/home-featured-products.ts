@@ -10,6 +10,8 @@ export type HomeFeaturedProduct = {
   image: string;
   price: number;
   compareAtPrice: number | null;
+  averageRating: number | null;
+  reviewCount: number | null;
 };
 
 export type HomeFeaturedProductsPayload = {
@@ -46,6 +48,8 @@ function toHomeFeaturedProduct(product: ShopifyProduct): HomeFeaturedProduct | n
     image,
     price,
     compareAtPrice: compareAtPrice > price ? compareAtPrice : null,
+    averageRating: Number(product.average_rating) > 0 ? Number(product.average_rating) : null,
+    reviewCount: Number(product.total_reviews) > 0 ? Number(product.total_reviews) : null,
   };
 }
 
@@ -56,6 +60,8 @@ function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined
   const image = String(input?.image || "").trim();
   const price = Number(input?.price);
   const compareAtPrice = Number(input?.compareAtPrice);
+  const averageRating = Number(input?.averageRating);
+  const reviewCount = Number(input?.reviewCount);
 
   if (!id || !title || !handle || !image || !Number.isFinite(price) || price <= 0) {
     return null;
@@ -68,6 +74,8 @@ function normalizeProduct(input: Partial<HomeFeaturedProduct> | null | undefined
     image,
     price,
     compareAtPrice: Number.isFinite(compareAtPrice) && compareAtPrice > price ? compareAtPrice : null,
+    averageRating: Number.isFinite(averageRating) && averageRating > 0 ? averageRating : null,
+    reviewCount: Number.isFinite(reviewCount) && reviewCount > 0 ? Math.floor(reviewCount) : null,
   };
 }
 

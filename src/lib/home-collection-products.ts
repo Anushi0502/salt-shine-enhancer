@@ -10,6 +10,8 @@ export type HomeCollectionProduct = {
   image: string;
   price: number;
   compareAtPrice: number | null;
+  averageRating: number | null;
+  reviewCount: number | null;
 };
 
 export type HomeCollectionSection = {
@@ -73,6 +75,8 @@ function toHomeCollectionProduct(product: ShopifyProduct): HomeCollectionProduct
     image,
     price,
     compareAtPrice: compareAtPrice > price ? compareAtPrice : null,
+    averageRating: Number(product.average_rating) > 0 ? Number(product.average_rating) : null,
+    reviewCount: Number(product.total_reviews) > 0 ? Number(product.total_reviews) : null,
   };
 }
 
@@ -104,7 +108,11 @@ function normalizeHomeCollectionPayload(input: unknown): HomeCollectionProductsP
                 String(product.handle || "").trim() &&
                 String(product.image || "").trim(),
             ),
-        )
+        ).map((product) => ({
+          ...product,
+          averageRating: Number(product.averageRating) > 0 ? Number(product.averageRating) : null,
+          reviewCount: Number(product.reviewCount) > 0 ? Math.floor(Number(product.reviewCount)) : null,
+        }))
       : [];
 
     return [
