@@ -96,6 +96,16 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
       : reviewSummary && reviewSummary.reviewCount > 0
         ? reviewSummary
         : null;
+  const productRouteState = displaySummary
+    ? {
+        productReviewSummary: {
+          handle: product.handle,
+          productId: product.id,
+          rating: displaySummary.rating,
+          reviewCount: displaySummary.reviewCount,
+        },
+      }
+    : undefined;
 
   if (isShop) {
     return (
@@ -106,6 +116,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
         <div className="relative overflow-hidden rounded-[1.65rem] border border-border/70 bg-muted shadow-[0_14px_30px_-24px_rgba(15,23,42,0.42)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-primary/35 group-hover:shadow-[0_22px_40px_-24px_rgba(15,23,42,0.45)]">
           <Link
             to={`/products/${product.handle}`}
+            state={productRouteState}
             className={`relative block overflow-hidden ${isHero ? "aspect-[1.28]" : "aspect-square"}`}
           >
             {image ? (
@@ -162,6 +173,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
         <div className={`min-w-0 px-1 ${isHero ? "pt-2 sm:pt-2.5" : "pt-4 sm:pt-5"}`}>
           <Link
             to={`/products/${product.handle}`}
+            state={productRouteState}
             className={`block truncate font-display font-semibold leading-[1.15] tracking-[-0.02em] text-foreground ${
               isHero ? "text-[clamp(0.78rem,1.1vw,1.02rem)]" : "text-[clamp(0.92rem,1.45vw,1.22rem)]"
             }`}
@@ -234,6 +246,7 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
 
       <Link
         to={`/products/${product.handle}`}
+        state={productRouteState}
         className="relative isolate block overflow-hidden rounded-t-[1.55rem] border-b border-border/70 bg-muted"
       >
         {image ? (

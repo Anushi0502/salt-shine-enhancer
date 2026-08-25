@@ -1,5 +1,5 @@
 import { lazy, startTransition, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -171,6 +171,13 @@ type ProductSpecPair = {
 type ProductReviewSummary = {
   rating: number;
   reviewCount: number;
+};
+
+type ProductReviewRouteState = {
+  productReviewSummary?: ProductReviewSummary & {
+    handle?: string;
+    productId?: number;
+  };
 };
 
 function extractNumericId(input?: string | number | null): string {
@@ -363,6 +370,7 @@ function extractProductSpecs(bodyHtml: string, productType: string, variantCount
 
 const ProductPage = () => {
   const { handle } = useParams();
+  const location = useLocation();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   // Shopify's Liquid product prefetch or the in-flight route warmup is the
@@ -455,6 +463,27 @@ const ProductPage = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
+  const routeReviewSummary = useMemo(() => {
+    const candidate = (location.state as ProductReviewRouteState | null)?.productReviewSummary;
+    const normalizedHandle = String(handle || "").trim().toLowerCase();
+    const candidateHandle = String(candidate?.handle || "").trim().toLowerCase();
+    const candidateProductId = Number(candidate?.productId || 0);
+    const currentProductId = Number(product?.id || 0);
+    const rating = Number(candidate?.rating || 0);
+    const reviewCount = Math.floor(Number(candidate?.reviewCount || 0));
+
+    if (
+      !candidate ||
+      rating <= 0 ||
+      reviewCount <= 0 ||
+      (candidateHandle && candidateHandle !== normalizedHandle) ||
+      (candidateProductId && currentProductId && candidateProductId !== currentProductId)
+    ) {
+      return null;
+    }
+
+    return { rating, reviewCount };
+  }, [handle, location.state, product?.id]);
   const [widgetReviewSummary, setWidgetReviewSummary] = useState<
     (ProductReviewSummary & { productId: number }) | null
   >(null);
@@ -479,10 +508,16 @@ const ProductPage = () => {
     },
     [product?.id],
   );
+  const fallbackReviewSummary =
+    productMetafieldReviewSummary && routeReviewSummary
+      ? productMetafieldReviewSummary.reviewCount >= routeReviewSummary.reviewCount
+        ? productMetafieldReviewSummary
+        : routeReviewSummary
+      : productMetafieldReviewSummary || routeReviewSummary;
   const reviewSummary =
     product && widgetReviewSummary?.productId === product.id
       ? widgetReviewSummary
-      : productMetafieldReviewSummary;
+      : fallbackReviewSummary;
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
