@@ -139,10 +139,59 @@ function normalizeJudgeMeHtml(raw: string): string {
     );
 }
 
-type JudgeMeRawSummary = {
+export type JudgeMeRawSummary = {
   rating: number;
   reviewCount: number;
 };
+
+export function parseJudgeMeWidgetSummary(html: string): JudgeMeRawSummary | null {
+  const normalizedHtml = normalizeJudgeMeHtml(String(html || ""));
+  if (!normalizedHtml) {
+    return null;
+  }
+
+  const attributeRating = parseBadgeNumber(
+    normalizedHtml,
+    /data-average-rating=["']([0-5](?:\.\d+)?)["']/i,
+  );
+  const attributeReviewCount = parseBadgeNumber(
+    normalizedHtml,
+    /data-number-of-reviews=["']([0-9,]+)["']/i,
+  );
+
+  if (typeof DOMParser === "undefined") {
+    if (!attributeRating && !attributeReviewCount) {
+      return null;
+    }
+
+    return {
+      rating: Math.min(5, Math.max(0, attributeRating || 0)),
+      reviewCount: Math.max(0, attributeReviewCount || 0),
+    };
+  }
+
+  const reviewDoc = new DOMParser().parseFromString(normalizedHtml, "text/html");
+  const publishedRatings = Array.from(reviewDoc.querySelectorAll(".jdgm-rev .jdgm-rev__rating"))
+    .map((node) => Number(node.getAttribute("data-score") || 0))
+    .filter((rating) => Number.isFinite(rating) && rating > 0 && rating <= 5);
+  const publishedReviewCount = publishedRatings.length;
+  const publishedAverage = publishedReviewCount > 0
+    ? publishedRatings.reduce((sum, rating) => sum + rating, 0) / publishedReviewCount
+    : 0;
+  const reviewCount = Math.max(attributeReviewCount, publishedReviewCount);
+  const rating = publishedReviewCount > attributeReviewCount
+    ? publishedAverage
+    : attributeRating || publishedAverage;
+
+  if (!rating && !reviewCount) {
+    return null;
+  }
+
+  return {
+    rating: Math.min(5, Math.max(0, rating || 0)),
+    reviewCount: Math.max(0, reviewCount || 0),
+  };
+}
 
 function parseJudgeMeBadge(html: string): JudgeMeRawSummary | null {
   const rating =
@@ -477,9 +526,21 @@ export async function fetchJudgeMeTestimonials(
 
         const pageCount = Math.max(1, Math.ceil(plan.total / JUDGEME_ALL_REVIEWS_PAGE_SIZE));
 
-        for (let page = 1; page <= pageCount && collected.length < maxReviews; page += JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE) {
+        let page = 1;
+        while (page <= pageCount && collected.length < maxReviews) {
+          const remainingReviews = Number.isFinite(maxReviews)
+            ? Math.max(1, maxReviews - collected.length)
+            : Number.POSITIVE_INFINITY;
+          const pagesNeededForRemainingReviews = Number.isFinite(remainingReviews)
+            ? Math.max(1, Math.ceil(remainingReviews / JUDGEME_ALL_REVIEWS_PAGE_SIZE))
+            : JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE;
+          const batchSize = Math.min(
+            JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE,
+            pageCount - page + 1,
+            pagesNeededForRemainingReviews,
+          );
           const batchPages = Array.from(
-            { length: Math.min(JUDGEME_TESTIMONIAL_PAGE_BATCH_SIZE, pageCount - page + 1) },
+            { length: batchSize },
             (_, index) => page + index,
           );
 
@@ -514,6 +575,8 @@ export async function fetchJudgeMeTestimonials(
               collected.push(review);
             }
           }
+
+          page += batchSize;
         }
       }
 
@@ -558,14 +621,14 @@ export function useJudgeMeRatings(productIds: number[], enabled = true) {
   });
 }
 
-export function useJudgeMeTestimonials(limit = Number.POSITIVE_INFINITY) {
+export function useJudgeMeTestimonials(limit = Number.POSITIVE_INFINITY, enabled = true) {
   const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : Number.POSITIVE_INFINITY;
   const limitKey = Number.isFinite(normalizedLimit) ? normalizedLimit : "all";
 
   return useQuery({
     queryKey: ["judgeme-home-testimonials", limitKey],
     queryFn: () => fetchJudgeMeTestimonials(normalizedLimit),
-    enabled: normalizedLimit > 0,
+    enabled: enabled && normalizedLimit > 0,
     staleTime: JUDGEME_STALE_TIME_MS,
     refetchInterval: false,
     refetchIntervalInBackground: false,

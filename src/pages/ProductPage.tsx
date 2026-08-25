@@ -1,4 +1,4 @@
-import { lazy, startTransition, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { lazy, startTransition, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -54,7 +54,6 @@ import {
 } from "@/lib/formatters";
 import { isNativeApp } from "@/lib/mobile";
 import { openExternalUrl } from "@/lib/mobile";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { rememberRecentlyViewedHandle } from "@/lib/recently-viewed";
 import {
   getStoreCurrencyCode,
@@ -456,10 +455,34 @@ const ProductPage = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const productMetafieldReviewSummary = useMemo(() => buildReviewSummaryFallback(product), [product]);
-  const currentRatingsQuery = useJudgeMeRatings(product ? [product.id] : []);
-  const reviewSummary = product
-    ? currentRatingsQuery.data?.[product.id] || productMetafieldReviewSummary
-    : productMetafieldReviewSummary;
+  const [widgetReviewSummary, setWidgetReviewSummary] = useState<
+    (ProductReviewSummary & { productId: number }) | null
+  >(null);
+  const handleReviewSummaryChange = useCallback(
+    (summary: ProductReviewSummary) => {
+      const productId = Number(product?.id || 0);
+      if (!productId || summary.rating <= 0 || summary.reviewCount <= 0) {
+        return;
+      }
+
+      setWidgetReviewSummary((current) => {
+        if (
+          current?.productId === productId &&
+          current.rating === summary.rating &&
+          current.reviewCount === summary.reviewCount
+        ) {
+          return current;
+        }
+
+        return { productId, ...summary };
+      });
+    },
+    [product?.id],
+  );
+  const reviewSummary =
+    product && widgetReviewSummary?.productId === product.id
+      ? widgetReviewSummary
+      : productMetafieldReviewSummary;
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
@@ -653,12 +676,6 @@ const ProductPage = () => {
         : [],
     [product, products, recentHandles],
   );
-  const relatedCardRatingIds = useMemo(
-    () => Array.from(new Set([...relatedProducts, ...complementaryProducts, ...recentlyViewedProducts].map((entry) => entry.id))),
-    [complementaryProducts, recentlyViewedProducts, relatedProducts],
-  );
-  const relatedCardRatingsQuery = useJudgeMeRatings(relatedCardRatingIds);
-  const relatedCardRatingsById = relatedCardRatingsQuery.data || {};
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   const seoStructuredData = useMemo(() => {
     if (!origin || !product) {
@@ -1508,7 +1525,11 @@ const ProductPage = () => {
       <div ref={secondaryContentAnchorRef} aria-hidden="true" className="h-px" />
       {loadSecondaryContent ? (
         <Suspense fallback={null}>
-          <ShopifyProductReviews productId={product.id} productHandle={product.handle} />
+          <ShopifyProductReviews
+            productId={product.id}
+            productHandle={product.handle}
+            onSummaryChange={handleReviewSummaryChange}
+          />
         </Suspense>
       ) : null}
 
@@ -1529,7 +1550,6 @@ const ProductPage = () => {
                   <ProductCard
                     product={related}
                     variant="shop"
-                    reviewSummary={relatedCardRatingsById[related.id] ?? null}
                   />
                 </Reveal>
               ))}
@@ -1555,7 +1575,6 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={relatedCardRatingsById[entry.id] ?? null}
                   />
                 </Reveal>
               ))}
@@ -1583,7 +1602,6 @@ const ProductPage = () => {
                   <ProductCard
                     product={entry}
                     variant="shop"
-                    reviewSummary={relatedCardRatingsById[entry.id] ?? null}
                   />
                 </Reveal>
               ))}

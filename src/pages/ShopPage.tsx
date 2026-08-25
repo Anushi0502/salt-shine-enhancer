@@ -20,7 +20,6 @@ import EverydayCarryEssentials from "@/components/storefront/EverydayCarryEssent
 
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { minPrice, savingsPercent } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import {
@@ -434,12 +433,6 @@ const ShopPage = () => {
   const visibleProducts = sortedProducts;
   const endIndex = Math.min(startIndex + visibleProducts.length, totalResults);
   const predictiveProducts = searchIntelligence?.predictedProducts ?? [];
-  const productRatingIds = useMemo(
-    () => Array.from(new Set([...visibleProducts, ...predictiveProducts].map((product) => product.id))),
-    [predictiveProducts, visibleProducts],
-  );
-  const productRatingsQuery = useJudgeMeRatings(productRatingIds);
-  const productRatingsById = productRatingsQuery.data || {};
   const predictiveQuerySuggestions = searchIntelligence?.querySuggestions ?? [];
   const predictiveCategorySuggestions = searchIntelligence?.categorySuggestions ?? [];
   const predictiveRefinements = searchIntelligence?.refinements ?? [];
@@ -1253,7 +1246,6 @@ const ShopPage = () => {
                           key={product.id}
                           product={product}
                           variant="shop"
-                          reviewSummary={productRatingsById[product.id] ?? null}
                         />
                       ))}
                     </div>
@@ -1270,7 +1262,6 @@ const ShopPage = () => {
                         <ProductCard
                           product={product}
                           variant="shop"
-                          reviewSummary={productRatingsById[product.id] ?? null}
                         />
                       </Reveal>
                     ))}

@@ -5,7 +5,6 @@ import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { formatMoney } from "@/lib/formatters";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { useProductsByHandles } from "@/lib/shopify-data";
 import { useWishlist } from "@/lib/wishlist";
 
@@ -40,16 +39,6 @@ const WishlistPage = () => {
       })),
     [items, productsByHandle],
   );
-  const savedProductIds = useMemo(
-    () =>
-      savedEntries
-        .map((entry) => entry.product?.id)
-        .filter((value): value is number => typeof value === "number"),
-    [savedEntries],
-  );
-  const savedRatingsQuery = useJudgeMeRatings(savedProductIds);
-  const savedRatingsById = savedRatingsQuery.data ?? {};
-
   const unresolvedCount = savedEntries.filter((entry) => !entry.product).length;
   const seoMetadata = (
     <SeoMetadata
@@ -132,7 +121,6 @@ const WishlistPage = () => {
                   <ProductCard
                     product={product}
                     variant="shop"
-                    reviewSummary={savedRatingsById[product.id] ?? null}
                   />
                   <button
                     type="button"

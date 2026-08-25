@@ -9,7 +9,7 @@ import GiftBanner from "@/components/salt/GiftBanner";
 import { polishPlainText } from "@/lib/formatters";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
-import { useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
+import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroAnimeCollectables from "@/assets/collection-banners/anime-collectables-square.webp";
 import heroCreatorEssentials from "@/assets/collection-banners/creator-essentials-square.webp";
@@ -32,7 +32,6 @@ type ReviewTile = {
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
 const HOME_PRODUCT_DISPLAY_LIMIT = 12;
-const HOME_RATING_PRODUCT_LIMIT = 4;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -163,37 +162,7 @@ const HomePage = () => {
   const { data: homeFeaturedProductsPayload } = homeFeaturedProductsQuery;
   const homeCollectionProductsQuery = useHomeCollectionProducts();
   const { data: homeCollectionProductsPayload } = homeCollectionProductsQuery;
-  const [homeRatingsEnabled, setHomeRatingsEnabled] = useState(false);
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
-  const homeCardSources = useMemo<HomeCardSource[]>(() => {
-    const collectionProducts = homeCollectionProductsPayload
-      ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) =>
-          section.products.slice(0, HOME_RATING_PRODUCT_LIMIT),
-        )
-      : [];
-
-    return [
-      ...(homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, HOME_PRODUCT_DISPLAY_LIMIT),
-      ...collectionProducts,
-    ];
-  }, [homeCollectionProductsPayload, homeFeaturedProductsPayload?.bestSellerProducts]);
-  useEffect(() => {
-    if (!homeFeaturedProductsQuery.isSuccess || !homeCollectionProductsQuery.isSuccess) {
-      setHomeRatingsEnabled(false);
-      return undefined;
-    }
-
-    // Product ratings are useful, but dozens of third-party badge requests must
-    // not compete with the hero, collection data, or first interaction.
-    const timer = window.setTimeout(() => setHomeRatingsEnabled(true), 1_500);
-    return () => window.clearTimeout(timer);
-  }, [homeCollectionProductsQuery.isSuccess, homeFeaturedProductsQuery.isSuccess]);
-
-  const homeRatingsQuery = useJudgeMeRatings(
-    homeCardSources.map((product) => product.id),
-    homeRatingsEnabled,
-  );
-  const homeRatingsById = homeRatingsQuery.data || {};
   const bestSellerTiles = useMemo(
     () =>
       (homeFeaturedProductsPayload?.bestSellerProducts || [])
@@ -270,10 +239,33 @@ const HomePage = () => {
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   const reviewScrollPositionRef = useRef(0);
+  const [testimonialsEnabled, setTestimonialsEnabled] = useState(false);
+  useEffect(() => {
+    const carousel = reviewCarouselRef.current;
+    if (!carousel || typeof IntersectionObserver === "undefined") {
+      setTestimonialsEnabled(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        setTestimonialsEnabled(true);
+        observer.disconnect();
+      },
+      { rootMargin: "900px 0px" },
+    );
+
+    observer.observe(carousel);
+    return () => observer.disconnect();
+  }, []);
   // The homepage displays at most REVIEW_DISPLAY_LIMIT testimonials. Do not
   // crawl Judge.me's entire review archive just to populate that carousel.
   const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } =
-    useJudgeMeTestimonials(REVIEW_DISPLAY_LIMIT);
+    useJudgeMeTestimonials(REVIEW_DISPLAY_LIMIT, testimonialsEnabled);
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     if (judgeMeTestimonials.length > 0) {
       return judgeMeTestimonials
@@ -416,7 +408,6 @@ const HomePage = () => {
       <div className="space-y-4 sm:space-y-5">
         <HomeHero
           slides={homeHeroSlides}
-          reviewSummaries={homeRatingsById}
           loading={homeCollectionProductsQuery.isPending}
         />
 
@@ -429,7 +420,6 @@ const HomePage = () => {
                   <ProductCard
                     product={product}
                     variant="shop"
-                    reviewSummary={homeRatingsById[product.id] ?? null}
                     className="w-full max-w-[11rem] justify-self-center"
                   />
                 </Reveal>
@@ -449,7 +439,6 @@ const HomePage = () => {
                       <ProductCard
                         product={product}
                         variant="shop"
-                        reviewSummary={homeRatingsById[product.id] ?? null}
                         className="w-full max-w-[11rem] justify-self-center"
                       />
                     </Reveal>

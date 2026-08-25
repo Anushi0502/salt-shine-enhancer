@@ -15,7 +15,6 @@ import {
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
-import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
 import ProductRating from "@/components/storefront/ProductRating";
 
@@ -63,8 +62,6 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
   const isHero = variant === "hero";
   const isShop = variant === "shop" || isHero;
   const { isWishlisted, toggleItem } = useWishlist();
-  const reviewSummaryProvided = reviewSummary !== undefined;
-  const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
   const nativeApp = isNativeApp();
   const isDense = variant === "dense";
   const min = minPrice(product);
@@ -82,7 +79,6 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
   );
   const highlights = (product.customData?.highlights || []).filter(Boolean).slice(0, 2);
   const wishlisted = isWishlisted(product.handle);
-  const summary = reviewSummaryProvided ? reviewSummary ?? null : fetchedSummary;
   const fallbackSummary =
     Number(product.average_rating || 0) > 0 && Number(product.total_reviews || 0) > 0
       ? {
@@ -91,7 +87,15 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
           purchasedLastMonth: 0,
         }
       : null;
-  const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
+  // Request-time Shopify Liquid includes Judge.me's synced badge summary.
+  // Prefer the source with the larger published-review count so a stale
+  // preview API response can never override the canonical card metadata.
+  const displaySummary =
+    fallbackSummary && (!reviewSummary || fallbackSummary.reviewCount >= reviewSummary.reviewCount)
+      ? fallbackSummary
+      : reviewSummary && reviewSummary.reviewCount > 0
+        ? reviewSummary
+        : null;
 
   if (isShop) {
     return (

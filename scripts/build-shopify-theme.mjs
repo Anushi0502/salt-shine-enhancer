@@ -68,7 +68,10 @@ const removedListingAssetPatterns = [
 ];
 
 function buildLiquidProductRecord(variableName = "item") {
-  return `{
+  return `{% assign salt_judgeme_badge = ${variableName}.metafields.judgeme.badge | default: '' %}
+    {% assign salt_judgeme_rating = salt_judgeme_badge | split: "data-average-rating='" | last | split: "'" | first %}
+    {% assign salt_judgeme_review_count = salt_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
+    {
     "id": {{ ${variableName}.id | json }},
     "title": {{ ${variableName}.title | json }},
     "handle": {{ ${variableName}.handle | json }},
@@ -79,6 +82,8 @@ function buildLiquidProductRecord(variableName = "item") {
     "created_at": {{ ${variableName}.created_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
     "published_at": {{ ${variableName}.published_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
     "updated_at": {{ ${variableName}.updated_at | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
+    "average_rating": {% if salt_judgeme_badge contains "data-average-rating='" %}{{ salt_judgeme_rating | plus: 0 | json }}{% else %}null{% endif %},
+    "total_reviews": {% if salt_judgeme_badge contains "data-number-of-reviews='" %}{{ salt_judgeme_review_count | plus: 0 | json }}{% else %}null{% endif %},
     "variants": [
       {% for variant in ${variableName}.variants %}
         {
@@ -653,6 +658,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {{ ${JSON.stringify(routeAssets.homeHero || "")} | asset_url | preload_tag: as: 'image' }}
     {% endif %}
     {% if request.page_type == 'product' %}
+      {% assign salt_product_judgeme_badge = product.metafields.judgeme.badge | default: '' %}
+      {% assign salt_product_judgeme_rating = salt_product_judgeme_badge | split: "data-average-rating='" | last | split: "'" | first %}
+      {% assign salt_product_judgeme_review_count = salt_product_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
       <script>
         (function () {
           var match = window.location.pathname.match(/^\\/products?\\/([^\\/?#]+)\\/?$/);
@@ -660,6 +668,10 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
 
           var handle = decodeURIComponent(match[1]);
           var inlineProduct = {{ product | json }};
+          if (inlineProduct && inlineProduct.id) {
+            inlineProduct.average_rating = {% if salt_product_judgeme_badge contains "data-average-rating='" %}{{ salt_product_judgeme_rating | plus: 0 | json }}{% else %}null{% endif %};
+            inlineProduct.total_reviews = {% if salt_product_judgeme_badge contains "data-number-of-reviews='" %}{{ salt_product_judgeme_review_count | plus: 0 | json }}{% else %}null{% endif %};
+          }
           window.__SALT_PRODUCT_PREFETCH__ = {
             handle: handle.toLowerCase(),
             raw: inlineProduct && inlineProduct.id ? inlineProduct : null,

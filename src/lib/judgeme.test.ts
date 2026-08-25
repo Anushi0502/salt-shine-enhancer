@@ -3,6 +3,7 @@ import {
   buildJudgeMeReviewFingerprint,
   dedupeJudgeMeTestimonials,
   normalizeJudgeMeReview,
+  parseJudgeMeWidgetSummary,
   prioritizeJudgeMeShopDomains,
   type JudgeMeTestimonial,
 } from "@/lib/judgeme";
@@ -57,5 +58,27 @@ describe("Judge.me review normalization", () => {
     expect(buildJudgeMeReviewFingerprint(uniqueReviews[0])).toBe(
       "benjamin wright|great product|this isn't just a humidifier-it's a conversation starter.",
     );
+  });
+
+  it("reads the canonical rating and count from the full product-review widget", () => {
+    const summary = parseJudgeMeWidgetSummary(`
+      <div class="jdgm-rev-widg" data-average-rating="4.50" data-number-of-reviews="2">
+        <div class="jdgm-rev"><span class="jdgm-rev__rating" data-score="5"></span></div>
+        <div class="jdgm-rev"><span class="jdgm-rev__rating" data-score="4"></span></div>
+      </div>
+    `);
+
+    expect(summary).toEqual({ rating: 4.5, reviewCount: 2 });
+  });
+
+  it("prefers the published review nodes when widget summary attributes lag behind", () => {
+    const summary = parseJudgeMeWidgetSummary(`
+      <div class="jdgm-rev-widg" data-average-rating="4.00" data-number-of-reviews="1">
+        <div class="jdgm-rev"><span class="jdgm-rev__rating" data-score="5"></span></div>
+        <div class="jdgm-rev"><span class="jdgm-rev__rating" data-score="4"></span></div>
+      </div>
+    `);
+
+    expect(summary).toEqual({ rating: 4.5, reviewCount: 2 });
   });
 });

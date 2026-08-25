@@ -13,7 +13,6 @@ import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useEditorialPage, useProductByHandle } from "@/lib/shopify-data";
 import { useCollections } from "@/lib/collections-data";
-import { useJudgeMeRatings } from "@/lib/judgeme";
 import { buildResourceRoute, SITE_RESOURCE_GUIDES, getCollectionByHandle } from "@/lib/site-navigation";
 import { buildFaqStructuredData } from "@/lib/structured-data";
 import type { ShopifyProduct } from "@/types/shopify";
@@ -167,9 +166,6 @@ const ResourcesPage = () => {
     () => buildFeaturedProductViews(page?.title || "Resource Hub", productsByHandle).slice(0, 3),
     [page?.title, productsByHandle],
   );
-  const featuredRatingsQuery = useJudgeMeRatings(featuredProducts.map((product) => product.productId));
-  const featuredRatingsById = featuredRatingsQuery.data || {};
-
   if (isLoading) {
     return <LoadingState title="Loading Resource Hub" subtitle="Building the AEO/GEO resource hub." />;
   }
@@ -409,7 +405,6 @@ const ResourcesPage = () => {
               <ResourceProductCard
                 key={product.handle}
                 product={product.product}
-                reviewSummary={featuredRatingsById[product.productId] ?? null}
               />
             ))}
           </div>
