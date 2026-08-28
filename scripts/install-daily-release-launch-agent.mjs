@@ -62,8 +62,11 @@ async function main() {
     PATH: pathValue,
     SALT_RELEASE_SKIP_MOBILE: "1",
     SALT_SHOPIFY_SYNC_ACTIVE_CATALOG: "1",
-    SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS: "hats",
+    SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS: "hats,wigs",
     SALT_REQUIRE_KNOWLEDGE_MODEL: "1",
+    SALT_KNOWLEDGE_ACCELERATOR: "auto",
+    SALT_CATALOG_VISION_SUPERVISED: "1",
+    SALT_CATALOG_DETERMINISTIC_FALLBACK_ALLOWED: "1",
     SALT_CATALOG_BATCH_SIZE: "50",
     SALT_CATALOG_TAXONOMY_APPROVED: "1",
     SALT_CATALOG_TAXONOMY_APPROVAL_ID: "salt-full-catalog-release-2026-08-06-approved",
@@ -80,7 +83,7 @@ async function main() {
   <array>
     ${xmlString(npmPath)}
     ${xmlString("run")}
-    ${xmlString("release:daily")}
+    ${xmlString("release")}
   </array>
   <key>WorkingDirectory</key>
   ${xmlString(rootDir)}
@@ -91,7 +94,7 @@ async function main() {
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key>
-    <integer>23</integer>
+    <integer>12</integer>
     <key>Minute</key>
     <integer>0</integer>
   </dict>
@@ -124,7 +127,7 @@ async function main() {
   await execFileAsync("/bin/launchctl", ["print", `gui/${uid}/${label}`]);
 
   process.stdout.write(`Installed ${label}.\n`);
-  process.stdout.write("Schedule: every day at 23:00 local macOS time.\n");
+  process.stdout.write("Schedule: every day at 12:00 local macOS time.\n");
   process.stdout.write(`Plist: ${plistPath}\n`);
   process.stdout.write(`Logs: ${stdoutPath}\n`);
 }

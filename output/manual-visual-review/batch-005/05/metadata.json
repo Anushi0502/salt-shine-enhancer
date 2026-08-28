@@ -1,0 +1,26 @@
+{
+  "index": 5,
+  "productId": "8066146304099",
+  "handle": "500ml-salad-dressing-bottle-leak-free-bpa-free-hand-shaking-spiral-stirring-cup-green-salad-dressing-shaker-container-kitchen",
+  "title": "500ML Salad Dressing Bottle Leak Free Bpa Free Hand Shaking Spiral",
+  "rawClassification": {
+    "ruleId": "kitchen-seasoning",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "kitchen-gadgets",
+    "canonicalType": "Seasoning & Dispenser Tool",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S735ac31a37494533ac2f601b961546718.webp?v=1784029863",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S46cbf441f88e47898d937054e767b25bm.webp?v=1784029863",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S866bca2bee01482fb0d05c4b6f725ebeA.webp?v=1784029863",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sdc1802faef0648f2a9d6e3122fdccbabU.webp?v=1784029863",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S166c4e83d20f4c2b8cb8fb3d707776d4y.webp?v=1784029863",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S2e5f2b6fe76f4632946e99e439f000acZ.webp?v=1784029863"
+  ]
+}

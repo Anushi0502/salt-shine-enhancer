@@ -1,0 +1,26 @@
+{
+  "index": 7,
+  "productId": "8036974919779",
+  "handle": "3-piece-kitchen-set-stainless-steel-mixing-bowl-cutting-system-easy-clean-design-space-saving-ideal-for-home-cooking",
+  "title": "3 Piece Industrial Machine For Mixing And Filling Tasks",
+  "rawClassification": {
+    "ruleId": "kitchen-gadgets",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "kitchen-gadgets",
+    "canonicalType": "Kitchen Gadget",
+    "confidence": 76,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf64ae0352c834f9e827a7212888999955.webp?v=1781943912",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S2f8a00a00f2846adacea914b60609420e.webp?v=1781943912",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Saf9bd994e17149299cd17ca10c8fe56dv.webp?v=1781943911",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S608400e6a909443c91b3821234442d297.webp?v=1781943911",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S73168357bbe342969b20dfe628e15f55I.webp?v=1781943911",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1129ec485ace4ee79002ead8b88068f4A.webp?v=1781943912"
+  ]
+}

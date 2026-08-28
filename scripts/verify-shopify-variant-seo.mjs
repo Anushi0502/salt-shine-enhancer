@@ -18,7 +18,16 @@ const QUERY = /* GraphQL */ `
         id
         handle
         title
-        variants(first: 250) { nodes { id title price } pageInfo { hasNextPage endCursor } }
+        variants(first: 250) {
+          nodes {
+            id
+            title
+            price
+            variantSeoTitle: metafield(namespace: "salt-seo", key: "variant_title") { value }
+            variantSeoDescription: metafield(namespace: "salt-seo", key: "variant_description") { value }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
       }
       pageInfo { hasNextPage endCursor }
     }
@@ -29,7 +38,13 @@ const VARIANT_CONTINUATION_QUERY = /* GraphQL */ `
   query VariantSeoVariantContinuation($id: ID!, $first: Int!, $after: String) {
     product(id: $id) {
       variants(first: $first, after: $after) {
-        nodes { id title price }
+        nodes {
+          id
+          title
+          price
+          variantSeoTitle: metafield(namespace: "salt-seo", key: "variant_title") { value }
+          variantSeoDescription: metafield(namespace: "salt-seo", key: "variant_description") { value }
+        }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -78,6 +93,20 @@ async function main() {
     if (profiles.some((profile) => !profile.title || !profile.description || profile.description.length > 160)) {
       failures.push({ handle: product.handle, reason: "invalid-variant-seo-profile" });
     }
+    const liveById = new Map(product.variants.map((variant) => [String(variant.id), variant]));
+    for (const profile of profiles) {
+      const live = liveById.get(String(profile.variantId));
+      if (!live) {
+        failures.push({ handle: product.handle, variantId: profile.variantId, reason: "variant-not-read-back" });
+        continue;
+      }
+      if (String(live.variantSeoTitle?.value || "").trim() !== profile.title) {
+        failures.push({ handle: product.handle, variantId: profile.variantId, reason: "variant-seo-title-readback-mismatch" });
+      }
+      if (String(live.variantSeoDescription?.value || "").trim() !== profile.description) {
+        failures.push({ handle: product.handle, variantId: profile.variantId, reason: "variant-seo-description-readback-mismatch" });
+      }
+    }
   }
 
   const report = {
@@ -86,7 +115,7 @@ async function main() {
     variants,
     productsWithDistinctVariantProfiles: distinctProducts,
     failures,
-    policy: "Product SEO remains canonical; selected Shopify variant drives request-time title, description, image, and offer metadata.",
+    policy: "Product SEO remains canonical; selected Shopify variant drives request-time title, description, image, offer metadata, and persisted salt-seo variant fields.",
   };
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   if (failures.length) throw new Error(`Variant SEO verification failed for ${failures.length} product(s)`);

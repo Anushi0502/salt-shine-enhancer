@@ -1,0 +1,26 @@
+{
+  "index": 9,
+  "productId": "8059440758883",
+  "handle": "130g-camel-milk-cactus-moisturizing-miracle-cream-firms-and-nourishes-the-skin-all-in-one-moisturizer",
+  "title": "130g Camel Milk Cactus Moisturizing",
+  "rawClassification": {
+    "ruleId": "skincare",
+    "departmentId": "general",
+    "categoryId": "beauty-skincare",
+    "subcategoryId": "skincare",
+    "canonicalType": "Skincare",
+    "confidence": 73,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sbe0c4fa269ee4316a3a866c1dcd27970E.webp?v=1783515229",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfd7b214f69b64249972787e75c0ae7d7I.webp?v=1783515230",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S7c24aa8a6f5a4455a8fbd1d50f19ae0bz.webp?v=1783515230",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sff31922aedec402394558b67c1f985eep.webp?v=1783515230",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3a5aa38f344f4b98ae5ed8889be538777.webp?v=1783515229",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa4abd239f2f947c79876ce6788b8ba6es.webp?v=1783515230"
+  ]
+}

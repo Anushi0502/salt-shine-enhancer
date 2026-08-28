@@ -1,0 +1,33 @@
+{
+  "index": 3,
+  "productId": "8066182447203",
+  "handle": "500ml-layered-protein-bottle-powder-shaker-with-powder-storage-container-large-water-bottle-water-bottle-with-wire-stirring-ball",
+  "title": "500ML Layered Protein Bottle Powder Shaker With Powder Storage",
+  "rawClassification": {
+    "ruleId": "water-bottles",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "drinkware",
+    "canonicalType": "Water Bottle",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5659a201d24d49da87d35dd5c257ad6a8.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9255c1272d1e40889afa1bdcdbca82b1V.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa8db4a7564be4674bce267d231944852P.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Seebab9f883394337af32107a8466c9f9O.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1fb8e8e5c3e9460e965176b7a09f900e1.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S147f7e9d7b1c431eb5a4cc723a4bde52N.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6d37cb910b8747d785bd68f686fa8631I.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8023c6eb382a447abb9102bf71d7e2db2.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd7e3acea2f7c4c2b984022cb389b8440D.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S99da546fe7ac46579afcadcdb1b7b458V.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se68a120739204869a791d3d207324ec9o.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9908d241215a47859cca21d017c4973cI.webp?v=1784030434",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8b3f5912758e44d0b85c28db22efd7e0z.webp?v=1784030434"
+  ]
+}

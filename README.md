@@ -65,11 +65,12 @@ keep their independently configured Shopify prices.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
 - `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
 - `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
-- `npm run release:schedule:install`: install or replace the macOS launchd job that runs the unified daily release at 11:00 PM local time, with output in `output/scheduled-release.log`.
+- `npm run release:schedule:install`: install or replace the macOS launchd job that runs the canonical full release at 12:00 PM local time, with output in `output/scheduled-release.log`.
 - `npm run release:products`: run the frozen product-cohort release path. It requires `output/new-product-cohort-catalog.json` and `output/new-product-cohort-handles.json`, then scopes SEO, metafields, mappings, zero-image cleanup, publication, and storefront/theme rebuild to those handles only.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
-- `npm run release`: run the full SALT release pipeline with version output and staged failure reporting.
+- `npm run release`: run the full SALT release pipeline from step 1 with version output and staged failure reporting.
+- `npm run release -- --resume`: resume the last failed or interrupted full release from its persisted phase checkpoint.
 
 ## Environment variables
 
@@ -113,6 +114,8 @@ Outputs:
 The sync path also ensures the product metafield definitions required by the storefront are present in Shopify before it refreshes the local snapshot files.
 
 The full product catalog is split into 45 MiB shards by default so every generated file remains below GitHub's 100 MB single-file limit. Set `SALT_PRODUCTS_SHARD_MAX_BYTES` to lower the limit when needed; generation hard-caps the value at 90 MiB. The storefront resolves the manifest and fetches shards in parallel; ordinary discovery pages use the smaller `product-search.json` index instead of downloading the full catalog.
+
+The canonical `release` and `release:daily` workflows do not generate or ship the product, search, or home listing payloads. Their Shopify refresh stages pass `--skip-generated-listings` and keep the temporary full catalog only in ignored `output/release-catalog-source.json` for release audits and mutations. The manual `sync:data` command remains available when a local full snapshot is explicitly needed.
 
 ## Shopify orders bundle update
 
@@ -232,7 +235,7 @@ This waits for the current SEO/apply manifest to report completion, then runs `n
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
 
-The daily background schedule runs `npm run release:daily`. It performs the full-catalog diversified classification and collection reconciliation in 50-product batches, then runs SEO, metafields, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs.
+The daily background schedule runs the canonical `npm run release` command at 12:00 PM local time. It performs the full active-catalog classification and collection reconciliation in bounded batches, then runs variant-aware SEO, categories, metafields, pricing, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs and uses the persisted run state for a compatible resume after interruption.
 
 Install or replace the schedule with:
 

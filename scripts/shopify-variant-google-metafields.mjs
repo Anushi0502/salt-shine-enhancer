@@ -10,6 +10,7 @@ import {
   buildGoogleVariantMetafieldPlan,
   normalizeSingleLineText,
 } from "../src/lib/shopify-variant-google-metafields.js";
+import { buildVariantSeoProfiles } from "../src/lib/shopify-variant-seo.js";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
@@ -31,6 +32,7 @@ const VARIANT_FIELDS = /* GraphQL */ `
   id
   legacyResourceId
   title
+  price
   sku
   barcode
   selectedOptions { name value }
@@ -47,6 +49,8 @@ const VARIANT_FIELDS = /* GraphQL */ `
   gender: metafield(namespace: "mm-google-shopping", key: "gender") { type value }
   mpn: metafield(namespace: "mm-google-shopping", key: "mpn") { type value }
   sizeSystem: metafield(namespace: "mm-google-shopping", key: "size_system") { type value }
+  variantSeoTitle: metafield(namespace: "salt-seo", key: "variant_title") { type value }
+  variantSeoDescription: metafield(namespace: "salt-seo", key: "variant_description") { type value }
 `;
 
 const METAFIELD_READBACK_FIELDS = /* GraphQL */ `
@@ -56,6 +60,8 @@ const METAFIELD_READBACK_FIELDS = /* GraphQL */ `
   gender: metafield(namespace: "mm-google-shopping", key: "gender") { value }
   mpn: metafield(namespace: "mm-google-shopping", key: "mpn") { value }
   sizeSystem: metafield(namespace: "mm-google-shopping", key: "size_system") { value }
+  variantSeoTitle: metafield(namespace: "salt-seo", key: "variant_title") { value }
+  variantSeoDescription: metafield(namespace: "salt-seo", key: "variant_description") { value }
 `;
 
 const ALL_VARIANTS_QUERY = /* GraphQL */ `
@@ -221,6 +227,24 @@ async function writeJsonAtomic(filePath, value) {
   await rename(temporaryPath, filePath);
 }
 
+async function writePlanJsonl(filePath, plans) {
+  await mkdir(dirname(filePath), { recursive: true });
+  await rm(filePath, { force: true });
+  const chunkSize = 1000;
+  for (let start = 0; start < plans.length; start += chunkSize) {
+    const chunk = plans
+      .slice(start, start + chunkSize)
+      .map((plan) => JSON.stringify(plan))
+      .join("\n");
+    if (chunk) await appendFile(filePath, `${chunk}\n`, "utf8");
+  }
+}
+
+async function readPlanJsonl(filePath) {
+  const lines = (await readFile(filePath, "utf8")).split(/\r?\n/).filter(Boolean);
+  return lines.map((line) => JSON.parse(line));
+}
+
 async function readState(filePath) {
   try {
     return JSON.parse(await readFile(filePath, "utf8"));
@@ -267,6 +291,13 @@ async function readCatalogCheckpoint(filePath) {
     const lines = (await readFile(filePath, "utf8")).split(/\r?\n/).filter(Boolean);
     const pages = lines.map((line) => JSON.parse(line));
     const last = pages.at(-1);
+    const hasPriceField = pages.every((page) =>
+      (page.nodes || []).every((variant) => Object.prototype.hasOwnProperty.call(variant, "price")),
+    );
+    if (!hasPriceField) {
+      await rm(filePath, { force: true });
+      return { variants: [], after: null, page: 0, complete: false };
+    }
     return {
       variants: pages.flatMap((entry) => entry.nodes || []),
       after: last?.hasNextPage ? last.endCursor : null,
@@ -459,17 +490,23 @@ async function waitForBulkOperation(operationId) {
   }
 }
 
-async function runBulkInputPart(part, partIndex, partTotal) {
-  const stagedUploadPath = await uploadBulkInput(part);
-  const data = await executeGraphQl(BULK_OPERATION_RUN_MUTATION, {
-    mutation: BULK_VARIANT_MUTATION,
-    stagedUploadPath,
-  }, { mutation: true, operation: `start variant bulk operation ${partIndex + 1}` });
-  const errors = data.bulkOperationRunMutation?.userErrors || [];
-  if (errors.length) throw new Error(`bulkOperationRunMutation failed: ${errors.map((error) => error.message).join(" | ")}`);
-  const operationId = data.bulkOperationRunMutation?.bulkOperation?.id;
-  if (!operationId) throw new Error("Shopify did not return a bulk operation id");
-  process.stdout.write(`Started bulk operation ${partIndex + 1}/${partTotal}: ${operationId}\n`);
+async function runBulkInputPart(part, partIndex, partTotal, existingOperationId = "", onStarted = null) {
+  let operationId = existingOperationId;
+  if (!operationId) {
+    const stagedUploadPath = await uploadBulkInput(part);
+    const data = await executeGraphQl(BULK_OPERATION_RUN_MUTATION, {
+      mutation: BULK_VARIANT_MUTATION,
+      stagedUploadPath,
+    }, { mutation: true, operation: `start variant bulk operation ${partIndex + 1}` });
+    const errors = data.bulkOperationRunMutation?.userErrors || [];
+    if (errors.length) throw new Error(`bulkOperationRunMutation failed: ${errors.map((error) => error.message).join(" | ")}`);
+    operationId = data.bulkOperationRunMutation?.bulkOperation?.id;
+    if (!operationId) throw new Error("Shopify did not return a bulk operation id");
+    process.stdout.write(`Started bulk operation ${partIndex + 1}/${partTotal}: ${operationId}\n`);
+  } else {
+    process.stdout.write(`Resuming bulk operation ${partIndex + 1}/${partTotal}: ${operationId}\n`);
+  }
+  if (onStarted) await onStarted(operationId);
   const operation = await waitForBulkOperation(operationId);
   if (!operation.url) throw new Error(`Completed bulk operation ${operationId} did not return a result URL`);
   const resultPath = part.path.replace("-bulk-input-", "-bulk-result-");
@@ -518,18 +555,52 @@ async function applyPlansWithBulkOperation(plans, manifest, manifestPath) {
   const { tasks, parts } = await createBulkInputParts(plans, manifestPath);
   manifest.summary.batches = parts.length;
   manifest.policy.applyTransport = "Shopify bulkOperationRunMutation with productVariantsBulkUpdate";
-  manifest.bulkOperations = [];
+  manifest.bulkOperations = Array.isArray(manifest.bulkOperations) ? manifest.bulkOperations : [];
   const skippedVariantIds = [];
   const retryPlans = [];
   await writeJsonAtomic(manifestPath, manifest);
   for (const [index, part] of parts.entries()) {
-    const result = await runBulkInputPart(part, index, parts.length);
+    const prior = manifest.bulkOperations[index];
+    const seededId = index === 0 && !prior?.id
+      ? String(process.env.SALT_VARIANT_GOOGLE_RESUME_BULK_OPERATION_ID || "")
+      : "";
+    const existingOperationId = prior?.id && prior.status !== "COMPLETED" ? prior.id : seededId;
+    if (existingOperationId) {
+      manifest.bulkOperations[index] = {
+        ...(prior || {}),
+        id: existingOperationId,
+        status: "RUNNING",
+        inputPath: part.path,
+      };
+      await writeJsonAtomic(manifestPath, manifest);
+    }
+    if (prior?.status === "COMPLETED" && prior.resultPath) {
+      manifest.verifiedWrites = Math.max(manifest.verifiedWrites || 0, prior.verifiedWrites || 0);
+      manifest.appliedBatches = index + 1;
+      await writeJsonAtomic(manifestPath, manifest);
+      continue;
+    }
+    const result = await runBulkInputPart(
+      part,
+      index,
+      parts.length,
+      existingOperationId,
+      async (operationId) => {
+        manifest.bulkOperations[index] = {
+          ...(manifest.bulkOperations[index] || {}),
+          id: operationId,
+          status: "RUNNING",
+          inputPath: part.path,
+        };
+        await writeJsonAtomic(manifestPath, manifest);
+      },
+    );
     const verification = await verifyBulkResult(result.resultPath, part, tasks);
     manifest.verifiedWrites += verification.verifiedWrites;
     skippedVariantIds.push(...verification.skippedVariantIds);
     retryPlans.push(...verification.retryPlans);
     manifest.appliedBatches = index + 1;
-    manifest.bulkOperations.push({
+    manifest.bulkOperations[index] = {
       id: result.operation.id,
       status: result.operation.status,
       objectCount: result.operation.objectCount,
@@ -540,7 +611,7 @@ async function applyPlansWithBulkOperation(plans, manifest, manifestPath) {
       verifiedWrites: verification.verifiedWrites,
       skippedDeletedVariants: verification.skippedVariantIds.length,
       retryVariants: verification.retryPlans.length,
-    });
+    };
     await writeJsonAtomic(manifestPath, manifest);
     process.stdout.write(`Verified bulk operation ${index + 1}/${parts.length}: ${verification.verifiedWrites} metafields\n`);
   }
@@ -619,7 +690,11 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
   const args = { ...parseArgs(["node", "script"]), ...options };
   if (args.planManifestPath && args.bulkResultPath) {
     const manifest = JSON.parse(await readFile(args.planManifestPath, "utf8"));
-    const plans = Array.isArray(manifest.variants) ? manifest.variants : [];
+    const plans = Array.isArray(manifest.variants)
+      ? manifest.variants
+      : manifest.variantsPath
+        ? await readPlanJsonl(resolve(rootDir, manifest.variantsPath))
+        : [];
     if (!plans.length) throw new Error(`Plan manifest contains no variants: ${args.planManifestPath}`);
     manifest.mode = "apply";
     manifest.resumedAt = new Date().toISOString();
@@ -655,8 +730,24 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
       );
   if (args.sample > 0) selected = selected.slice(0, args.sample);
 
+  const variantSeoProfilesById = new Map();
+  const variantsByProduct = new Map();
+  for (const variant of selected) {
+    const productKey = String(variant.product?.id || `variant:${variant.id}`);
+    if (!variantsByProduct.has(productKey)) variantsByProduct.set(productKey, []);
+    variantsByProduct.get(productKey).push(variant);
+  }
+  for (const variants of variantsByProduct.values()) {
+    const product = variants[0]?.product || {};
+    for (const profile of buildVariantSeoProfiles({ title: product.title, variants })) {
+      variantSeoProfilesById.set(profile.variantId, profile);
+    }
+  }
+
   const plans = selected.map((variant) => {
-    const plan = buildGoogleVariantMetafieldPlan(variant);
+    const plan = buildGoogleVariantMetafieldPlan(variant, {
+      variantSeoProfile: variantSeoProfilesById.get(String(variant.id)) || null,
+    });
     return {
       variantId: variant.id,
       legacyVariantId: String(variant.legacyResourceId || ""),
@@ -672,6 +763,7 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
   const selectedHandles = [...new Set(plans.map((plan) => plan.productHandle).filter(Boolean))];
   const summary = summarize(plans);
   summary.batches = buildBulkTasks(plans).length;
+  const planPath = args.manifestPath.replace(/\.json$/i, "-plan.jsonl");
   const manifest = {
     version: 1,
     mode: args.mode,
@@ -692,10 +784,11 @@ export async function runVariantGoogleMetafieldBackfill(options = {}) {
     catalog: { products: new Set(allVariants.map((variant) => variant.product?.id)).size, variants: allVariants.length },
     summary,
     products: selectedHandles,
-    variants: plans,
+    variantsPath: planPath,
     appliedBatches: 0,
     verifiedWrites: 0,
   };
+  await writePlanJsonl(planPath, plans);
   await writeJsonAtomic(args.handlesPath, selectedHandles);
   await writeJsonAtomic(args.manifestPath, manifest);
   process.stdout.write(`${args.mode} ${args.scope}: ${manifest.summary.selectedVariants} variants, ${manifest.summary.totalWrites} metafield writes\n`);

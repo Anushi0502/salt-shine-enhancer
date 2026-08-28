@@ -163,10 +163,10 @@ async function main() {
         unexpected: mismatch.unexpected,
       });
     }
-    if (fallbackQueue.some((entry) => entry?.collectionHandle !== "classification-review"
-      || entry?.managedTag !== "classification-review"
+    if (fallbackQueue.some((entry) => !["classification-review", "classification-fallback"].includes(entry?.collectionHandle)
+      || !["classification-review", "classification-fallback"].includes(entry?.managedTag)
       || entry?.semanticAssignmentAllowed !== false)) {
-      invalidVisualOverrides.push({ reason: "classification-review-fallback-policy-invalid" });
+      invalidVisualOverrides.push({ reason: "classification-fallback-policy-invalid" });
     }
   }
   report.summary.invalidVisualOverrides = invalidVisualOverrides.length;
@@ -185,14 +185,14 @@ async function main() {
 
   if (supervisedPending && unresolved.length) {
     process.stdout.write(
-      `Supervised image evidence gate passed: ${unresolved.length} image-backed candidates will be processed by the guarded vision classifier; unresolved or low-confidence results remain in classification-review.\n`,
+      `Supervised image evidence gate passed: ${unresolved.length} image-backed candidates will be processed by the guarded vision classifier; unresolved or low-confidence results remain in classification-fallback.\n`,
     );
     return;
   }
 
   if (deterministicFallbackAllowed && unresolved.length) {
     process.stdout.write(
-      `Deterministic image evidence gate passed with fallback: ${unresolved.length} ambiguous products are explicitly held in classification-review; no semantic image guesses will be published.\n`,
+      `Deterministic image evidence gate passed with fallback: ${unresolved.length} ambiguous products are explicitly held in classification-fallback; no semantic image guesses will be published.\n`,
     );
     return;
   }

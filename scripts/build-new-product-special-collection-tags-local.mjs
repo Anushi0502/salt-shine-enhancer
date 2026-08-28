@@ -6,7 +6,22 @@ import { resolve } from "node:path";
 const rootDir = resolve(import.meta.dirname, "..");
 const manifestPath = process.env.SALT_SPECIAL_COLLECTION_MANIFEST_PATH ||
   resolve(rootDir, "output", "catalog-special-collection-tags.json");
-const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+function loadManifest(filePath) {
+  try {
+    const raw = readFileSync(filePath, "utf8").trim();
+    if (!raw) {
+      process.stderr.write(`Special-collection manifest is empty; using live canonical tags: ${filePath}\n`);
+      return { assignments: [] };
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : { assignments: [] };
+  } catch (error) {
+    process.stderr.write(`Special-collection manifest is unavailable; using live canonical tags: ${filePath} (${error.message})\n`);
+    return { assignments: [] };
+  }
+}
+
+const manifest = loadManifest(manifestPath);
 
 export const SPECIAL_COLLECTION_MINIMUMS = Object.freeze({
   "creator-essentials": 500,

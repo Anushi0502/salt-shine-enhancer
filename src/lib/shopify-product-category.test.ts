@@ -39,6 +39,12 @@ describe("Shopify product taxonomy classifier", () => {
     expect(inferShopifyTaxonomyCategory({ handle: "mechanical-gaming-keyboard-stabilizer-pad" })?.id).toBe(
       "gid://shopify/TaxonomyCategory/el",
     );
+    expect(inferShopifyTaxonomyCategory({ handle: "stainless-steel-steamer-rack-for-dumplings" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg-11-8",
+    );
+    expect(inferShopifyTaxonomyCategory({ handle: "manual-garlic-mincer-crusher-press" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg-11-8",
+    );
   });
 
   it("does not guess when no high-confidence family matches", () => {

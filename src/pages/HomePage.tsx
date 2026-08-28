@@ -5,6 +5,7 @@ import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero from "@/components/storefront/HomeHero";
+import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { polishPlainText } from "@/lib/formatters";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
@@ -32,6 +33,14 @@ type ReviewTile = {
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
 const HOME_PRODUCT_DISPLAY_LIMIT = 12;
+
+const HOME_COLLECTION_SHELVES = [
+  { key: "animeCollectables", title: "Anime Collectables", handle: "anime-collectables" },
+  { key: "creatorEssentials", title: "Creator Essentials", handle: "creator-essentials" },
+  { key: "lipCare", title: "Lip Care", handle: "lips-and-care" },
+  { key: "watches", title: "Watches", handle: "watches" },
+  { key: "glamEyePalettes", title: "Glam Eye Palettes", handle: "glam-eye-palettes" },
+] as const;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -226,19 +235,15 @@ const HomePage = () => {
   }, [homeCollectionProductsPayload]);
   const homeCollectionSections = useMemo(
     () =>
-        homeCollectionProductsPayload
-        ? [
-            homeCollectionProductsPayload.sections.animeCollectables,
-            homeCollectionProductsPayload.sections.creatorEssentials,
-            homeCollectionProductsPayload.sections.lipCare,
-            homeCollectionProductsPayload.sections.watches,
-            homeCollectionProductsPayload.sections.glamEyePalettes,
-          ].map((section) => ({
-            title: section.title,
-            to: `/collections/${section.handle}`,
-            products: section.products.slice(0, HOME_PRODUCT_DISPLAY_LIMIT).map(toProductCardProduct),
-          }))
-      : [],
+      HOME_COLLECTION_SHELVES.map((fallbackSection) => {
+        const section = homeCollectionProductsPayload?.sections[fallbackSection.key];
+
+        return {
+          title: section?.title || fallbackSection.title,
+          to: `/collections/${section?.handle || fallbackSection.handle}`,
+          products: (section?.products || []).slice(0, HOME_PRODUCT_DISPLAY_LIMIT).map(toProductCardProduct),
+        };
+      }),
     [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
@@ -415,28 +420,50 @@ const HomePage = () => {
           loading={homeCollectionProductsQuery.isPending}
         />
 
-        {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>
+        <Reveal delayMs={80}>
           <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
-              {bestSellerDisplayTiles.map((product, index) => (
-                <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
-                  <ProductCard
-                    product={product}
-                    variant="shop"
-                    className="w-full max-w-[11rem] justify-self-center"
-                  />
-                </Reveal>
-              ))}
-            </div>
+            {homeFeaturedProductsQuery.isPending ? (
+              <HomeShelfState shelfTitle="Best Sellers" state="loading" />
+            ) : homeFeaturedProductsQuery.isError ? (
+              <HomeShelfState
+                shelfTitle="Best Sellers"
+                state="error"
+                onRetry={() => void homeFeaturedProductsQuery.refetch()}
+                isRetrying={homeFeaturedProductsQuery.isFetching}
+              />
+            ) : bestSellerDisplayTiles.length > 0 ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
+                {bestSellerDisplayTiles.map((product, index) => (
+                  <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
+                    <ProductCard
+                      product={product}
+                      variant="shop"
+                      className="w-full max-w-[11rem] justify-self-center"
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            ) : (
+              <HomeShelfState shelfTitle="Best Sellers" state="empty" />
+            )}
           </section>
-        </Reveal> : null}
+        </Reveal>
 
-        {homeCollectionSections.map((section, sectionIndex) =>
-          section.products.length > 0 ? (
-            <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
-              <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-                <SectionTitle title={section.title} to={section.to} />
+        {homeCollectionSections.map((section, sectionIndex) => (
+          <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
+            <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+              <SectionTitle title={section.title} to={section.to} />
+              {homeCollectionProductsQuery.isPending ? (
+                <HomeShelfState shelfTitle={section.title} state="loading" />
+              ) : homeCollectionProductsQuery.isError ? (
+                <HomeShelfState
+                  shelfTitle={section.title}
+                  state="error"
+                  onRetry={() => void homeCollectionProductsQuery.refetch()}
+                  isRetrying={homeCollectionProductsQuery.isFetching}
+                />
+              ) : section.products.length > 0 ? (
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
                   {section.products.map((product, index) => (
                     <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
@@ -448,10 +475,12 @@ const HomePage = () => {
                     </Reveal>
                   ))}
                 </div>
-              </section>
-            </Reveal>
-          ) : null,
-        )}
+              ) : (
+                <HomeShelfState shelfTitle={section.title} state="empty" />
+              )}
+            </section>
+          </Reveal>
+        ))}
 
         <Reveal delayMs={110}>
           <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">

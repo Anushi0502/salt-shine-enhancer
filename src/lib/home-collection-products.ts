@@ -146,14 +146,10 @@ function getHomeCollectionPrefetch(): HomeCollectionProductsPayload | undefined 
 async function loadHomeCollectionProducts(): Promise<HomeCollectionProductsPayload> {
   const sectionEntries = await Promise.all(
     HOME_SECTIONS.map(async ([key, title, handle]) => {
-      try {
-        const products = (await loadCollectionPreviewProducts(handle, 12))
-          .map(toHomeCollectionProduct)
-          .filter((product): product is HomeCollectionProduct => Boolean(product));
-        return [key, { title, handle, products }] as const;
-      } catch {
-        return [key, EMPTY_SECTION(title, handle)] as const;
-      }
+      const products = (await loadCollectionPreviewProducts(handle, 12))
+        .map(toHomeCollectionProduct)
+        .filter((product): product is HomeCollectionProduct => Boolean(product));
+      return [key, { title, handle, products }] as const;
     }),
   );
 

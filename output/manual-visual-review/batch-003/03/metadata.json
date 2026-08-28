@@ -1,0 +1,30 @@
+{
+  "index": 3,
+  "productId": "8066188345443",
+  "handle": "1pcs-glass-condiment-bottle-with-stainless-steel-rotatable-cap-for-everyday-cooking-and-bbq-pepper-shakers-kitchen-accessories",
+  "title": "1pcs Glass Condiment Bottle Stainless Steel",
+  "rawClassification": {
+    "ruleId": "kitchen-seasoning",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "kitchen-gadgets",
+    "canonicalType": "Seasoning & Dispenser Tool",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sbb92aab5c8384eb3af106c6a0c2be02cT.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfc32b0cc33364f2298092a60f1b7f459L.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S322fa5562cf942beb27dbd9475fdde8f1.webp?v=1784030485",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S92b521f7d3c04b6283a5c623c908282cQ.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S09e63b19f06247879b67844c1f698de77.webp?v=1784030485",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6202e1cd1b014c4c8971ca7ff8671bef4.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S06a704348ebe435abd3b3d940eb05640J.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9d0fafaf99af4826ae3ea9d16a67c3417.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S32db7fbbe2df490ebd0ee40313d07c90u.webp?v=1784030484",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sab72a66f0db44f658503ec1f0fdb5ebfl.webp?v=1784030484"
+  ]
+}

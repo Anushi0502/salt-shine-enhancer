@@ -12,13 +12,13 @@ import {
 } from "lucide-react";
 import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
 import ProductCard from "@/components/storefront/ProductCard";
+import CollectionGridState from "@/components/storefront/CollectionGridState";
 import Reveal from "@/components/storefront/Reveal";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import TrustStrip from "@/components/storefront/TrustStrip";
 import EverydayCarryEssentials from "@/components/storefront/EverydayCarryEssentials";
 
-import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { minPrice, savingsPercent } from "@/lib/formatters";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
@@ -349,6 +349,7 @@ const ShopPage = () => {
   const {
     data: productsPayload,
     isLoading: productsLoading,
+    isFetching: productsFetching,
     error: productsError,
     refetch: refetchProducts,
   } = useLiveProductListing({
@@ -360,7 +361,7 @@ const ShopPage = () => {
     minPrice: effectiveMinFilter,
     maxPrice: effectiveMaxFilter,
   });
-  const { data: collectionsPayload, refetch: refetchCollections } = useCollections();
+  const { data: collectionsPayload } = useCollections();
 
   const products = useMemo(() => productsPayload?.products ?? [], [productsPayload]);
   const collections = useMemo(() => collectionsPayload?.collections ?? [], [collectionsPayload]);
@@ -496,36 +497,6 @@ const ShopPage = () => {
     deferredQuery,
     totalResults,
   ]);
-  if (productsLoading) {
-    return (
-      <LoadingState
-        title="Loading catalog"
-        subtitle="Preparing filters, live pricing, and collection context."
-      />
-    );
-  }
-
-  if (productsError) {
-    return (
-      <ErrorState
-        title="Catalog unavailable"
-        subtitle="Retry to refresh live Shopify data."
-        action={
-          <button
-            type="button"
-            onClick={() => {
-              refetchProducts();
-              refetchCollections();
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Retry
-          </button>
-        }
-      />
-    );
-  }
-
   const updateParams = (updates: Record<string, string | null>, resetPage = false) => {
     const next = new URLSearchParams(searchParams);
 
@@ -1173,56 +1144,46 @@ const ShopPage = () => {
             </div>
           </Reveal>
 
-          {totalResults === 0 ? (
+          {productsError ? (
+            <CollectionGridState
+              state="error"
+              retrying={productsFetching}
+              onRetry={() => refetchProducts()}
+            />
+          ) : productsLoading || productsFetching ? (
+            <CollectionGridState state="loading" />
+          ) : totalResults === 0 ? (
             <>
-              <Reveal delayMs={90} className="mt-6">
-                <div className="salt-editorial-shell rounded-[2rem] p-6 text-center sm:p-8">
-                  <p className="salt-kicker">{hasSearchQuery ? "Closest predicted matches" : "No matching products"}</p>
-                  <h2 className="mt-3 font-display text-[clamp(1.9rem,3vw,2.8rem)]">
-                    {hasSearchQuery ? `We predicted these for "${query.trim()}"` : "No products match this filter"}
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                    {hasSearchQuery
-                      ? "Try a predicted product or pivot with a category shortcut."
-                      : "Try a broader term, remove one or two filters, or start from a collection entry point."}
-                  </p>
-                  <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="salt-primary-cta h-10 w-full px-5 text-xs font-bold uppercase tracking-[0.08em] sm:w-auto"
-                    >
-                      Reset filters
-                    </button>
-                    <Link to="/collections" className="salt-outline-chip h-10 w-full px-5 py-0 text-xs sm:w-auto">
-                      Browse collections
-                    </Link>
-                  </div>
-                  {hasSearchQuery && (predictiveQuerySuggestions.length || predictiveCategorySuggestions.length) ? (
-                    <div className="mt-5 flex flex-wrap justify-center gap-2">
-                      {predictiveQuerySuggestions.slice(0, 3).map((suggestion) => (
-                        <button
-                          key={`empty-query-${suggestion.query}`}
-                          type="button"
-                          onClick={() => updateParams({ q: suggestion.query }, true)}
-                          className="salt-applied-chip"
-                        >
-                          <span>{suggestion.label}</span>
-                        </button>
-                      ))}
-                      {predictiveCategorySuggestions.slice(0, 3).map((suggestion) => (
-                        <Link
-                          key={`empty-category-${suggestion.label}-${suggestion.to}`}
-                          to={suggestion.to}
-                          className="salt-applied-chip"
-                        >
-                          <span>{suggestion.label}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </Reveal>
+              <CollectionGridState
+                state="empty"
+                hasSearchQuery={hasSearchQuery}
+                query={query}
+                onReset={clearFilters}
+              >
+                {hasSearchQuery
+                  ? predictiveQuerySuggestions.slice(0, 3).map((suggestion) => (
+                      <button
+                        key={`empty-query-${suggestion.query}`}
+                        type="button"
+                        onClick={() => updateParams({ q: suggestion.query }, true)}
+                        className="salt-applied-chip"
+                      >
+                        <span>{suggestion.label}</span>
+                      </button>
+                    ))
+                  : null}
+                {hasSearchQuery
+                  ? predictiveCategorySuggestions.slice(0, 3).map((suggestion) => (
+                      <Link
+                        key={`empty-category-${suggestion.label}-${suggestion.to}`}
+                        to={suggestion.to}
+                        className="salt-applied-chip"
+                      >
+                        <span>{suggestion.label}</span>
+                      </Link>
+                    ))
+                  : null}
+              </CollectionGridState>
 
               {hasSearchQuery && predictiveProducts.length ? (
                 <Reveal delayMs={120} className="mt-5">

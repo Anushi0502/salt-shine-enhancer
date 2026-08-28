@@ -1,0 +1,26 @@
+{
+  "index": 10,
+  "productId": "8076764053603",
+  "handle": "20pcs-mixed-cute-beaded-ballpoint-pens-stationery-pens-for-writing-beadable-pens-school-office-supplies-japanese-stationery",
+  "title": "20pcs Mixed Cute Beaded Ballpoint Pens Stationery Pens For Writing",
+  "rawClassification": {
+    "ruleId": "beadable-pens",
+    "departmentId": "office-school",
+    "categoryId": "office-school-supplies",
+    "subcategoryId": "writing-supplies",
+    "canonicalType": "Beadable Pen",
+    "confidence": 77,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5031026f221248f4a0c50d14a4836c73E.webp?v=1784631823",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se707683e8f8c4402b4482f793ff5f1e4i.webp?v=1784631823",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se9ba254da1ea4a3292856f4e09f82836W.webp?v=1784631823",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5afe6d131fc2453eb1e3caae0d1cf4far.webp?v=1784631823",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf2ee96a4a6b04b2298153baf17c47765r.webp?v=1784631823",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sb67454730cc543f486fc3cd7bfae8f299.webp?v=1784631823"
+  ]
+}

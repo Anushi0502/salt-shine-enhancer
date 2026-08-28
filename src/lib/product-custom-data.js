@@ -314,6 +314,7 @@ function normalizeProductCustomData(input) {
     input.collectionSignal ??
       getMetafieldValue(rawMetafields, "salt-marketing", "collection_signal"),
   );
+  const classification = input.classification ?? getMetafieldValue(rawMetafields, "salt_taxonomy", "classification") ?? null;
 
   const diaperType =
     input.diaperType ??
@@ -339,6 +340,7 @@ function normalizeProductCustomData(input) {
     googleCustomProduct,
     shopChannelMinimumQuantity,
     collectionSignal: collectionSignal || null,
+    classification,
     diaperType,
     metafields: rawMetafields,
   };
@@ -397,6 +399,10 @@ function mergeProductCustomData(base, override) {
     collectionSignal: pickValue(
       normalizedOverride.collectionSignal,
       normalizedBase.collectionSignal,
+    ),
+    classification: pickValue(
+      normalizedOverride.classification,
+      normalizedBase.classification,
     ),
     diaperType: pickValue(normalizedOverride.diaperType, normalizedBase.diaperType),
     metafields: mergedMetafields,

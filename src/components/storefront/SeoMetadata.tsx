@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { buildCanonicalUrl, updateCanonicalLink } from "@/lib/canonical-url";
 
 type StructuredDataValue = Record<string, unknown> | null | undefined;
 
@@ -33,40 +34,6 @@ function escapeSelectorValue(value: string): string {
   return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function normalizePath(path: string | null | undefined): string {
-  const raw = String(path || "").trim();
-  if (!raw) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(raw)) {
-    return raw;
-  }
-
-  if (raw.startsWith("/")) {
-    return raw;
-  }
-
-  return `/${raw}`;
-}
-
-function getAbsoluteUrl(path: string | null | undefined): string {
-  const normalized = normalizePath(path);
-  if (!normalized) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(normalized)) {
-    return normalized;
-  }
-
-  if (typeof window === "undefined") {
-    return normalized;
-  }
-
-  return `${window.location.origin}${normalized}`;
-}
-
 function updateMetaTag(
   document: Document,
   attr: "name" | "property",
@@ -95,41 +62,6 @@ function updateMetaTag(
   const element = document.createElement("meta");
   element.setAttribute(attr, value);
   element.setAttribute("content", content);
-  element.setAttribute("data-seo-scope", scope);
-  document.head.appendChild(element);
-
-  return () => {
-    element.remove();
-  };
-}
-
-function updateLinkTag(
-  document: Document,
-  rel: string,
-  href: string,
-  scope: string,
-): Cleanup {
-  const selector = `link[rel="${escapeSelectorValue(rel)}"][data-seo-scope="${escapeSelectorValue(scope)}"]`;
-  const existing =
-    document.head.querySelector<HTMLLinkElement>(selector) ||
-    document.head.querySelector<HTMLLinkElement>(`link[rel="${escapeSelectorValue(rel)}"]`);
-
-  if (existing) {
-    const previousHref = existing.getAttribute("href");
-    existing.setAttribute("href", href);
-
-    return () => {
-      if (previousHref == null) {
-        existing.removeAttribute("href");
-      } else {
-        existing.setAttribute("href", previousHref);
-      }
-    };
-  }
-
-  const element = document.createElement("link");
-  element.setAttribute("rel", rel);
-  element.setAttribute("href", href);
   element.setAttribute("data-seo-scope", scope);
   document.head.appendChild(element);
 
@@ -217,9 +149,9 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "name", "description", description, scope));
     }
 
-    const absoluteCanonical = getAbsoluteUrl(canonicalPath);
+    const absoluteCanonical = canonicalPath ? buildCanonicalUrl(canonicalPath) : "";
     if (absoluteCanonical) {
-      cleanups.push(updateLinkTag(document, "canonical", absoluteCanonical, scope));
+      cleanups.push(updateCanonicalLink(document, canonicalPath));
       cleanups.push(updateMetaTag(document, "property", "og:url", absoluteCanonical, scope));
       cleanups.push(updateMetaTag(document, "name", "twitter:url", absoluteCanonical, scope));
     }

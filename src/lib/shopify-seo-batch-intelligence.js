@@ -24,6 +24,13 @@ import {
   reconcileManagedMinimumQuantityTags,
 } from "./shopify-seo-managed-tags.js";
 import { classifyProductKnowledge, PRODUCT_KNOWLEDGE_BASE_VERSION } from "./product-knowledge-base.js";
+import {
+  buildProductSpecificDescription,
+  deriveProductType,
+  extractEvidenceFacts,
+  isEarbudsCaseEvidence,
+  isGenericProductContent,
+} from "./catalog-content-evidence.js";
 
 export const PER_ORDER_OVERHEAD = 18;
 const MAX_REASONABLE_RETAIL_PRICE = 14999.99;
@@ -323,7 +330,10 @@ function titleCase(value) {
       if (/^\d+(?:\.\d+)?(?:v|a|w|mah|ml|gb|tb)$/i.test(token)) {
         return token.toUpperCase();
       }
-      if (/^(?:pcb|rgb|usb|tws|diy|led|ios|aa|aaa|sram|dji|psp)$/i.test(token)) {
+    if (/^airpods$/i.test(token)) {
+      return "AirPods";
+    }
+    if (/^(?:pcb|rgb|usb|tpu|tws|diy|led|ios|aa|aaa|sram|dji|psp)$/i.test(token)) {
         return token.toUpperCase();
       }
       if (/^[a-z0-9]+$/i.test(token) && token === token.toUpperCase()) {
@@ -667,6 +677,18 @@ export function buildHandleAlignedTitle(signals) {
   }
   if (/dried-flower-buds.*(?:soap|candle|craft)/i.test(handle)) {
     return "Dried Flower Buds for Soap, Candle and Craft Projects";
+  }
+  if (isEarbudsCaseEvidence(signals)) {
+    const airpods = handle.match(/airpods?-?(4(?:generation)?|pro-?\d*|\d+)/i);
+    const namedDevice = airpods
+      ? `AirPods ${airpods[1].replace(/generation/i, "").replace(/^-/, "").trim()}`.replace(/\s+$/, "")
+      : "";
+    const material = /tpu/i.test(handle) ? "TPU " : /silicone/i.test(handle) ? "Silicone " : "";
+    const finish = /transparent|clear/i.test(handle) ? "Transparent " : "";
+    const protective = /protective|shockproof|dustproof|anti[- ]?(?:scratch|fall)/i.test(handle)
+      ? "Protective "
+      : "";
+    return `${finish}${material}${protective}Earbuds Case${namedDevice ? ` for ${namedDevice}` : ""}`.trim();
   }
   if (/baby-toys?.*(?:drum|piano)|(?:drum|piano).*(?:toddler|baby-toys?)/i.test(handle)) {
     return "Musical Drum and Piano Toy with Lights and Sound for Toddlers";
@@ -1228,7 +1250,11 @@ function buildSearchPhrases(signals) {
 function buildSeoDescription(title, signals, searchPhrases) {
   const titleText = normalizePlainText(title);
   const knowledge = resolveProductKnowledge(signals.handle);
-  const facts = prioritizeProductFacts(extractSupportedProductFacts(signals), knowledge)
+  const facts = prioritizeProductFacts(
+    [...extractSupportedProductFacts(signals), ...extractEvidenceFacts(signals)],
+    knowledge,
+  )
+    .filter((fact, index, list) => list.findIndex((entry) => entry.label === fact.label && entry.value === fact.value) === index)
     .filter((fact) => fact.label !== "Product focus");
   const factClauses = facts.slice(0, 3).map((fact) => {
     if (fact.label === "Device compatibility") return `compatible with ${fact.value}`;
@@ -1258,7 +1284,7 @@ function buildSeoDescription(title, signals, searchPhrases) {
     ]).filter(Boolean);
     sentences.push(`Product details are based on the listed ${handleFacts.join(", ") || "product"} information.`);
   } else {
-    sentences.push(`${knowledge.copy.benefit}`);
+    sentences.push(`The listing identifies this as a ${deriveProductType(signals)}; review the supplied options and specifications before ordering.`);
   }
   sentences.push(`Review the listed ${titleText} details and available options at SALT.`);
   let sentence = sentences.join(" ");
@@ -1330,7 +1356,7 @@ function factToSentence(fact) {
   return labels[fact.label] || `${fact.label}: ${fact.value}.`;
 }
 
-function buildDescriptionHtml(title, signals) {
+function buildLegacyDescriptionHtml(title, signals) {
   const titleText = normalizePlainText(title);
   const knowledge = resolveProductKnowledge(signals.handle);
   const rawTypeText = sanitizeMarketplaceClaims(normalizePlainText(signals.productTypeText));
@@ -1496,6 +1522,10 @@ function buildDescriptionHtml(title, signals) {
     "<h3>Use &amp; Care</h3>", `<p>${escapeHtml(categoryCopy.use)} ${escapeHtml(careText)}</p>`,
     "<h3>FAQs</h3>", faq.map(([question, answer]) => `<p><strong>Q: ${escapeHtml(question)}</strong></p><p>A: ${escapeHtml(answer)}</p>`).join("\n"),
   ].filter(Boolean).join("\n");
+}
+
+function buildDescriptionHtml(title, signals) {
+  return buildProductSpecificDescription({ title, signals });
 }
 
 function shortenAtWordBoundary(value, maxLength) {
@@ -1809,6 +1839,7 @@ function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = nu
   const sourceTitle = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Title"]))));
   const sourceBodyHtml = normalizeHtmlValue(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Body (HTML)"]))));
   const sourceProductType = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Type", "Product Type"]))));
+  const sourceVendor = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["Vendor", "Brand"]))));
   const sourceSeoTitle = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["SEO Title"]))));
   const sourceSeoDescription = normalizePlainText(firstNonEmpty(...rows.map((row) => getRowValue(row, ["SEO Description"]))));
   const sourceTags = uniqueValues(rows.flatMap((row) => splitTags(getRowValue(row, ["Tags"]))));
@@ -1829,6 +1860,8 @@ function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = nu
     ? catalogContext.productsByHandle.get(normalizeHandleValue(handle)) || null
     : null;
   const catalogProductType = normalizePlainText(catalogProduct?.product_type || "");
+  const catalogVendor = normalizePlainText(catalogProduct?.vendor || "");
+  const catalogCategory = normalizePlainText(catalogProduct?.category?.fullName || catalogProduct?.category?.name || "");
   const catalogTitle = normalizePlainText(catalogProduct?.title || "");
   const catalogBodyHtml = normalizeHtmlValue(catalogProduct?.body_html || "");
   const catalogTags = uniqueValues(
@@ -1845,6 +1878,22 @@ function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = nu
       ? catalogProduct.customData.searchProductBoosts.map((entry) => normalizePlainText(entry)).filter(Boolean)
       : [],
   );
+  const variantOptionValues = uniqueValues([
+    ...(Array.isArray(catalogProduct?.variants) ? catalogProduct.variants : []).flatMap((variant) => [
+      variant?.title,
+      variant?.option1,
+      variant?.option2,
+      variant?.option3,
+      variant?.sku,
+    ]),
+    ...rows.flatMap((row) => [
+      getRowValue(row, ["Variant Title"]),
+      getRowValue(row, ["Option1 Value"]),
+      getRowValue(row, ["Option2 Value"]),
+      getRowValue(row, ["Option3 Value"]),
+      getRowValue(row, ["Variant SKU"]),
+    ]),
+  ]).filter((value) => !/^default title$/i.test(value));
   const catalogReviewRating = parseMoneyValue(
     firstNonEmpty(catalogProduct?.customData?.rating, catalogProduct?.average_rating, catalogProduct?.rating),
   );
@@ -1885,11 +1934,12 @@ function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = nu
   const collectionHandles = effectiveProductId
     ? catalogContext.productCollectionHandlesById.get(effectiveProductId) || []
     : [];
+  const effectiveCategoryQuery = categoryQuery || catalogCategory;
   const collectionSignal = normalizePlainText(
     firstNonEmpty(
       catalogProduct?.customData?.collectionSignal,
       collectionTitles.join(", "),
-      categoryQuery,
+      effectiveCategoryQuery,
     ),
   );
   const productKnowledge = classifyProductKnowledge({
@@ -1935,19 +1985,23 @@ function buildSignalsFromGroup(rows, handle, catalogContext, knowledgeModel = nu
     sourceTitle,
     sourceBodyHtml,
     sourceProductType,
+    sourceVendor,
     sourceSeoTitle,
     sourceSeoDescription,
     sourceTags,
-    categoryQuery,
+    categoryQuery: effectiveCategoryQuery,
     rowProductId: numericProductId || null,
     catalogProduct,
     catalogTitle,
     catalogBodyHtml,
     catalogProductType,
+    catalogVendor,
+    catalogCategory,
     catalogTags,
     catalogSubtitle,
     catalogHighlights,
     catalogSearchBoosts,
+    variantOptionValues,
     reviewSummary,
     anchorPrice,
     collectionTitles,
@@ -2102,15 +2156,13 @@ function buildProductProfile(signals) {
   );
   const explicitTitle = HANDLE_TITLE_OVERRIDES.get(signals.handle) || "";
   const recognizedHandleFamily = /^(iPhone Case|Screen Protector|Computer Mouse|Mouse Jiggler|Mouse Remote|Raincoat|Dog Nail File|Measuring Cup|Camping Cookware Set|Facial Mist Sprayer|Sports Outfit|Lip Balm|Hair Oil)$/i.test(normalizePlainText(signals.handlePhrase));
-  const rewriteLevel = classificationHeld
-    ? "medium"
-    : explicitTitle || recognizedHandleFamily
+  const rewriteLevel = explicitTitle || recognizedHandleFamily
+    ? "high"
+    : confidence >= 70
       ? "high"
-      : confidence >= 70
-        ? "high"
-        : confidence >= 45
-          ? "medium"
-          : "low";
+      : confidence >= 45
+        ? "medium"
+        : "low";
   const selectedTitle = normalizePlainText(selectCanonicalTitle(signals).candidate || signals.sourceTitle || signals.catalogTitle);
   const safeHandleTitle = buildSafeHandleTitle(signals);
   const selectedTitleIsWeak =
@@ -2135,7 +2187,7 @@ function buildProductProfile(signals) {
   const repairBody = descriptionNeedsRepair(signals.sourceBodyHtml);
   const altText = buildCanonicalAltText(signals, canonicalTitle);
 
-  const productType = normalizePlainText(firstNonEmpty(signals.sourceProductType, signals.catalogProductType));
+  const productType = normalizePlainText(deriveProductType(signals));
   const tags = uniqueValues([
     ...signals.sourceTags,
     ...(signals.sourceTags.length ? [] : signals.catalogTags),
@@ -2175,9 +2227,16 @@ function buildProductProfile(signals) {
     },
   };
 
+  const titleNeedsRepair = !signals.sourceTitle ||
+    isGenericProductContent(signals.sourceTitle) ||
+    hasHandleTitleConflict(signals) ||
+    normalizeComparableText(signals.sourceTitle) !== normalizeComparableText(canonicalTitle);
+  const bodyNeedsRepair = !signals.sourceBodyHtml ||
+    isGenericProductContent(signals.sourceBodyHtml) ||
+    repairBody;
   const desiredProductInput = {
-    title: rewriteLevel === "high" ? canonicalTitle : "",
-    descriptionHtml: rewriteLevel === "high" || repairBody ? descriptionHtml : "",
+    title: canonicalTitle,
+    descriptionHtml: descriptionHtml,
     productType,
     seo: {
       title: rewriteLevel !== "low" ? seoTitle : "",
@@ -2185,15 +2244,15 @@ function buildProductProfile(signals) {
     },
   };
 
-  if (rewriteLevel === "high" && canonicalTitle) {
-    if (normalizeComparableText(canonicalTitle) !== normalizeComparableText(signals.sourceTitle)) {
+  if (canonicalTitle) {
+    if (titleNeedsRepair && rewriteLevel !== "low") {
       productInput.title = canonicalTitle;
       changedFields.push("title");
     } else {
       skippedFields.push({ field: "title", reason: "already aligned" });
     }
 
-    if (descriptionHtml && normalizeComparableText(stripHtml(descriptionHtml)) !== normalizeComparableText(stripHtml(signals.sourceBodyHtml))) {
+    if (descriptionHtml && bodyNeedsRepair && rewriteLevel !== "low") {
       productInput.descriptionHtml = descriptionHtml;
       changedFields.push("body");
     } else {
@@ -2206,33 +2265,28 @@ function buildProductProfile(signals) {
       skippedFields.push({ field: "alt", reason: "already aligned" });
     }
   } else {
-    skippedFields.push({ field: "title", reason: rewriteLevel === "high" ? "already aligned" : "confidence below high threshold" });
-    if (repairBody && descriptionHtml && normalizeComparableText(stripHtml(descriptionHtml)) !== normalizeComparableText(stripHtml(signals.sourceBodyHtml))) {
-      productInput.descriptionHtml = descriptionHtml;
-      changedFields.push("body");
-    } else {
-      skippedFields.push({ field: "body", reason: rewriteLevel === "high" ? "already aligned" : "confidence below high threshold" });
-    }
-    skippedFields.push({ field: "alt", reason: "confidence below high threshold" });
+    skippedFields.push({ field: "title", reason: "no evidence-backed title" });
+    skippedFields.push({ field: "body", reason: "no evidence-backed description" });
+    skippedFields.push({ field: "alt", reason: "no evidence-backed title" });
   }
 
-  if (rewriteLevel !== "low") {
-    if (seoTitle && normalizeComparableText(seoTitle) !== normalizeComparableText(signals.sourceSeoTitle)) {
+  if (seoTitle && rewriteLevel !== "low") {
+    if (normalizeComparableText(seoTitle) !== normalizeComparableText(signals.sourceSeoTitle) || isGenericProductContent(signals.sourceSeoTitle)) {
       productInput.seo.title = seoTitle;
       changedFields.push("seo-title");
     } else {
       skippedFields.push({ field: "seo-title", reason: "already aligned or empty" });
     }
 
-    if (seoDescription && normalizeComparableText(seoDescription) !== normalizeComparableText(signals.sourceSeoDescription)) {
+    if (seoDescription && (normalizeComparableText(seoDescription) !== normalizeComparableText(signals.sourceSeoDescription) || isGenericProductContent(signals.sourceSeoDescription))) {
       productInput.seo.description = seoDescription;
       changedFields.push("seo-description");
     } else {
       skippedFields.push({ field: "seo-description", reason: "already aligned or empty" });
     }
   } else {
-    skippedFields.push({ field: "seo-title", reason: "confidence below medium threshold" });
-    skippedFields.push({ field: "seo-description", reason: "confidence below medium threshold" });
+    skippedFields.push({ field: "seo-title", reason: "no evidence-backed SEO title" });
+    skippedFields.push({ field: "seo-description", reason: "no evidence-backed SEO description" });
   }
 
   const price = suggestRetailPriceFromSignals({
@@ -2273,7 +2327,7 @@ function buildProductProfile(signals) {
         : null,
       classificationHeld,
       priorityFacts: knowledge.priorityFacts,
-      factCount: extractSupportedProductFacts(signals).length,
+      factCount: Math.max(extractSupportedProductFacts(signals).length, extractEvidenceFacts(signals).length),
       policy: MARKETPLACE_CONTENT_POLICY.market,
       titleOverride: Boolean(explicitTitle),
     },

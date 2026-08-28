@@ -3,6 +3,15 @@ import { describe, expect, it } from "vitest";
 import { buildVariantSeoProfiles, hasDistinctVariantSeo } from "@/lib/shopify-variant-seo.js";
 
 describe("variant-aware SEO", () => {
+  it("includes the live variant price in the description", () => {
+    const profiles = buildVariantSeoProfiles({
+      title: "10 Piece Pots And Pans Set",
+      variants: [{ id: 1, title: "United States", price: "209.99" }],
+    });
+
+    expect(profiles[0].description).toContain("Available for 209.99 USD.");
+  });
+
   it("creates a distinct profile for each materially different variant", () => {
     const profiles = buildVariantSeoProfiles({
       title: "Multi-purpose school set",

@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, MessageSquareQuote } from "lucide-react";
 import ShopifyProductReviews from "@/components/storefront/ShopifyProductReviews";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { useProductByHandle } from "@/lib/shopify-data";
 import { productImage } from "@/lib/formatters";
 
@@ -50,6 +51,13 @@ const ProductReviewsPage = () => {
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <SeoMetadata
+        title={`${product.title} Reviews | SALT Online Store`}
+        description={`Read customer reviews for ${product.title}.`}
+        canonicalPath={`/products/${product.handle}/reviews`}
+        image={productImage(product) || undefined}
+        ogType="product"
+      />
       <div className="salt-panel-shell rounded-[1.6rem] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">

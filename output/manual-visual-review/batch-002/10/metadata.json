@@ -1,0 +1,30 @@
+{
+  "index": 10,
+  "productId": "8066156527715",
+  "handle": "1pc-200ml-300ml-oil-spray-bottle-kitchen-cooking-olive-oil-dispenser-camping-bbq-baking-vinegar-soy-sauce-sprayer-containers",
+  "title": "1pc 200ML 300ML Oil Spray Bottle",
+  "rawClassification": {
+    "ruleId": "kitchen-seasoning",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "kitchen-gadgets",
+    "canonicalType": "Seasoning & Dispenser Tool",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S40a0015317ce43bda7a627ff217b3d2fS.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf62e869e33c14732a914b647a00ef3caX.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf121a6c349ad4d67bfac28b15b4cf4abi.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S21aab62f57934b188c1b261500ba1c15l.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3d602f3a11be4136bc2f8fe9be935abem.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd43e772178ec4a2692c0b4b167845f1f2.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S68a091d0b75940f4ab17172dfefbde71E.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S717b0758fd6a4ba29f9d64de5c9807072.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S12026b2cbb9444cc85dca35210f383a7H.webp?v=1784030032",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfb30fe117cb94606bfca5344b46f6d9a0.webp?v=1784030032"
+  ]
+}

@@ -24,6 +24,7 @@ const BACKFILL_FIELD_IDS = {
   badgeText: "salt-marketing.badge_text",
   highlights: "salt-marketing.highlights",
   collectionSignal: "salt-marketing.collection_signal",
+  classification: "salt_taxonomy.classification",
   rating: "reviews.rating",
   ratingCount: "reviews.rating_count",
   relatedProducts: "shopify--discovery--product_recommendation.related_products",
@@ -1382,8 +1383,39 @@ function buildProductPlan(product, context) {
   const writes = [];
   const skipped = [];
   const reasons = [];
+  const inferredCategory = inferShopifyTaxonomyCategory(product);
+  const classificationValue = JSON.stringify({
+    version: "2026-08-22.1",
+    productId: String(product.id || ""),
+    handle: normalizePlainText(product.handle || ""),
+    title,
+    productType,
+    category: inferredCategory?.name || product?.shopifyCategory?.name || "Other Products",
+    categoryConfidence: inferredCategory?.confidence || "controlled-fallback",
+    evidence: uniqueValues([
+      title,
+      product.handle,
+      productType,
+      getProductBodyText(product).slice(0, 320),
+      ...collectionTitles.slice(0, 3),
+    ]).slice(0, 8),
+  });
 
-  if (subtitle && subtitleAssessment.refresh) {
+  if (context.forceManagedMetafields || !hasMeaningfulValue(existing.classification)) {
+    writes.push({
+      fieldId: BACKFILL_FIELD_IDS.classification,
+      label: BACKFILL_FIELDS.classification?.name || "Catalog classification",
+      namespace: BACKFILL_FIELDS.classification?.namespace || "salt_taxonomy",
+      key: BACKFILL_FIELDS.classification?.key || "classification",
+      type: BACKFILL_FIELDS.classification?.type || "json",
+      ownerId: toShopifyGid("Product", product.id),
+      value: classificationValue,
+      reason: "Rebuilt versioned product-specific classification evidence for the full catalog",
+    });
+    reasons.push("classification");
+  }
+
+  if (subtitle && (context.forceManagedMetafields || subtitleAssessment.refresh)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.subtitle,
       label: BACKFILL_FIELDS.subtitle?.name || "Product subtitle",
@@ -1420,7 +1452,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.badgeText, reason: "already set" });
   }
 
-  if (highlights.length && (highlightsAssessment.refresh || refreshLegacyHighlights || existingHighlightsNeedExpansion)) {
+  if (highlights.length && (context.forceManagedMetafields || highlightsAssessment.refresh || refreshLegacyHighlights || existingHighlightsNeedExpansion)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.highlights,
       label: BACKFILL_FIELDS.highlights?.name || "Product highlights",
@@ -1445,7 +1477,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.highlights, reason: "already product-specific and unique" });
   }
 
-  if (collectionSignal && collectionSignalAssessment.refresh) {
+  if (collectionSignal && (context.forceManagedMetafields || collectionSignalAssessment.refresh)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.collectionSignal,
       label: BACKFILL_FIELDS.collectionSignal?.name || "Collection signal",
@@ -1540,7 +1572,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.shopChannelMinimumQuantity, reason: "already set" });
   }
 
-  if (searchBoostCandidates.length >= 3 && searchBoostAssessment.refresh) {
+  if (searchBoostCandidates.length >= 3 && (context.forceManagedMetafields || searchBoostAssessment.refresh)) {
     const searchBoostValue = serializeListValue(searchBoostCandidates.slice(0, 5));
     if (context.allowShopifySearchBoostWrite) {
       writes.push({
@@ -1716,6 +1748,7 @@ function createCatalogContext({
   enforceProductSpecificity = false,
   allowShopifySearchBoostWrite = true,
   allowShopifyComplementaryWrite = true,
+  forceManagedMetafields = false,
 } = {}) {
   const { collectionMap, productCollectionsById, productCollectionTitlesById } = buildCollectionIndex(
     collections,
@@ -1821,6 +1854,7 @@ function createCatalogContext({
     enforceProductSpecificity: Boolean(enforceProductSpecificity),
     allowShopifySearchBoostWrite: Boolean(allowShopifySearchBoostWrite),
     allowShopifyComplementaryWrite: Boolean(allowShopifyComplementaryWrite),
+    forceManagedMetafields: Boolean(forceManagedMetafields),
   };
 }
 

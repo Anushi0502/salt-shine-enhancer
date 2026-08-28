@@ -251,7 +251,7 @@ async function releaseLock() {
 
 function runDailyRelease({ resume = false } = {}) {
   return new Promise((resolvePromise, reject) => {
-    const args = ["run", "release:daily"];
+    const args = ["run", "release"];
     if (resume) args.push("--", "--resume");
     const child = spawn(npmBin, args, {
       cwd: rootDir,
@@ -261,7 +261,7 @@ function runDailyRelease({ resume = false } = {}) {
     child.once("error", reject);
     child.once("exit", (code, signal) => {
       if (code === 0) resolvePromise();
-      else reject(new Error(`release:daily exited with ${signal ? `signal ${signal}` : `code ${code}`}`));
+      else reject(new Error(`release exited with ${signal ? `signal ${signal}` : `code ${code}`}`));
     });
   });
 }
@@ -278,9 +278,21 @@ async function checkOnce(state) {
     };
   }
 
-  const baseline = await readLocalBaseline();
+  let baseline = null;
+  try {
+    baseline = await readLocalBaseline();
+  } catch (error) {
+    const localCatalogRebuildInProgress = releaseInspection.reasons.length > 0 &&
+      error?.code === "ENOENT" &&
+      /public[\\/]data[\\/]products\.json/.test(String(error?.path || error?.message || ""));
+    if (!localCatalogRebuildInProgress) throw error;
+    await log("local catalog snapshot is mid-rebuild; using the interrupted release checkpoint for resume");
+  }
   const live = await readLiveFingerprint();
-  const reasons = [...releaseInspection.reasons, ...detectDrift(baseline, live, state)];
+  const reasons = [
+    ...releaseInspection.reasons,
+    ...(baseline ? detectDrift(baseline, live, state) : []),
+  ];
   if (!reasons.length) {
     await log(`no drift; latest=${live.latestProductHandle || live.latestProductId || "none"}`);
     return { ...state, lastCheckedAt: live.checkedAt, lastError: "" };

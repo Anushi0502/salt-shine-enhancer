@@ -1,0 +1,25 @@
+{
+  "index": 3,
+  "productId": "8058383138915",
+  "handle": "100ml-olive-oil-curly-hair-mousse-for-women-strong-hold-anti-frizz-wig-styling-foam-haircare-product",
+  "title": "100ML Olive Oil Curly Hair Mousse",
+  "rawClassification": {
+    "ruleId": "unclassified",
+    "departmentId": "general",
+    "categoryId": "unclassified",
+    "subcategoryId": "unclassified",
+    "canonicalType": "100ml olive oil curly hair",
+    "confidence": 20,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "no-taxonomy-rule"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5eabea2392de473687114f6a83677f84E.webp?v=1783499758",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sea695cfe34804d67a0dde60ef46596c2d.webp?v=1783499758",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S97bf5a926a55489681316ce5ace9851dh.webp?v=1783499758",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Safc22f2ffb354fa48fbd72e256697e12U.webp?v=1783499759",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S475adc7272c549239f3204e153f81493q.webp?v=1783499759"
+  ]
+}

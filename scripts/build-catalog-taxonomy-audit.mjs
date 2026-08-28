@@ -47,7 +47,7 @@ const MERGE_TARGETS = Object.freeze({
   "caregiver-essentials": "health-wellness",
   "home-safety": "health-wellness",
   "garden-tools": "home-decor",
-  "artificial-aquarium-decor-plants": "home-decor",
+  "artificial-plants": "home-decor",
   "viral-tiktok-products": "unique-products",
   "staff-picks": "unique-products",
   "best-sellers": "appplaza-best-sellers",

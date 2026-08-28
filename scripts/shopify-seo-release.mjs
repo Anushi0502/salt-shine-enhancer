@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -18,12 +19,13 @@ import {
   normalizeComparableHtml,
 } from "../src/lib/shopify-seo-release.js";
 import { isActiveShopifyProduct } from "../src/lib/catalog-taxonomy-release.js";
-import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
+import { normalizeHandleValue, normalizePlainText, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
 import { managedMinimumQuantityTagFromTags } from "../src/lib/shopify-seo-managed-tags.js";
 import {
   assessProductContentSpecificity,
   findCatalogContentCollisions,
 } from "../src/lib/product-content-specificity.js";
+import { isEarbudsCaseEvidence } from "../src/lib/catalog-content-evidence.js";
 import { PRICE_REWORK_RULES } from "../src/lib/shopify-price-rework-policy.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
@@ -75,6 +77,8 @@ const cliAgentIds =
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
+const cliTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_CLI_TIMEOUT_MS || 180_000));
+const uploadTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_UPLOAD_TIMEOUT_MS || cliTimeoutMs));
 const seoApplyBatchSize = Math.max(1, Math.min(5, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 5)));
 const seoReadConcurrency = Math.max(1, Number(process.env.SALT_SHOPIFY_SEO_READ_CONCURRENCY || 4));
 const ACTIVE_PRODUCT_QUERY = "status:active";
@@ -538,6 +542,14 @@ function parseGraphQlPayload(raw) {
 
 let lastRequestFinishedAt = 0;
 
+function catalogBoundary(products) {
+  const handles = (Array.isArray(products) ? products : [])
+    .map((product) => normalizeHandleValue(product?.handle))
+    .filter(Boolean)
+    .sort();
+  return `sha256-${createHash("sha256").update(handles.join("\n")).digest("hex")}`;
+}
+
 async function runShopifyCliGraphQL(query, variables, { allowMutations = false, operation, retryInfo } = {}) {
   const now = Date.now();
   const waitFor = requestDelayMs - (now - lastRequestFinishedAt);
@@ -627,6 +639,8 @@ async function runShopifyCliGraphQL(query, variables, { allowMutations = false, 
           cwd: rootDir,
           env: getCliEnv(),
           maxBuffer: 20 * 1024 * 1024,
+          timeout: cliTimeoutMs,
+          killSignal: "SIGTERM",
         });
         lastRequestFinishedAt = Date.now();
         let rawOutput = "";
@@ -700,6 +714,126 @@ async function loadFrozenCatalogSnapshot(filePath, baseSnapshot) {
   return { ...baseSnapshot, products };
 }
 
+function normalizeReusableCatalogProduct(product) {
+  if (Array.isArray(product?.media?.nodes) && Array.isArray(product?.variants?.nodes)) {
+    return product;
+  }
+
+  const productId = toShopifyGid("Product", product?.id || product?.legacyResourceId);
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const images = Array.isArray(product?.images) ? product.images : [];
+  const publications = Array.isArray(product?.resourcePublications?.nodes)
+    ? product.resourcePublications.nodes
+    : Array.isArray(product?.resource_publications)
+      ? product.resource_publications
+      : [];
+
+  return {
+    ...product,
+    id: productId || product?.id || "",
+    descriptionHtml: product.descriptionHtml || product.body_html || "",
+    productType: product.productType || product.product_type || "",
+    variants: {
+      nodes: variants.map((variant) => ({
+        ...variant,
+        id: toShopifyGid("ProductVariant", variant?.id || variant?.legacyResourceId) || variant?.id || "",
+        title: variant?.title || "",
+      })),
+      pageInfo: { hasNextPage: false, endCursor: null },
+    },
+    media: {
+      nodes: images.map((image) => ({
+        __typename: "MediaImage",
+        id: toShopifyGid("MediaImage", image?.id || image?.legacyResourceId) || image?.id || "",
+        alt: image?.alt || image?.alt_text || "",
+        image: { url: image?.src || image?.url || "" },
+      })),
+      pageInfo: { hasNextPage: false, endCursor: null },
+    },
+    resourcePublications: {
+      nodes: publications,
+      pageInfo: { hasNextPage: false, endCursor: null },
+    },
+    seo: product.seo || { title: null, description: null },
+  };
+}
+
+async function loadReusableLiveCatalogSnapshot(snapshot) {
+  const reuseRequired = process.env.SALT_SHOPIFY_SEO_REUSE_LIVE_CATALOG === "1";
+  if (!reuseRequired) return null;
+  if (process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH === "1") return null;
+  try {
+    const payload = JSON.parse(await readFile(liveCatalogPath, "utf8"));
+    const products = Array.isArray(payload?.products) ? payload.products : [];
+    // The local shard reader returns a payload object while frozen snapshots
+    // contain a bare product array. Normalize both shapes before comparing
+    // the reusable live catalog boundary.
+    let sourceProducts = Array.isArray(snapshot?.products)
+      ? snapshot.products
+      : Array.isArray(snapshot?.products?.products)
+        ? snapshot.products.products
+        : [];
+    // A resumed release may retain an older shared snapshot while the live
+    // sync has already produced a newer active-catalog source. Prefer that
+    // current release boundary so a valid live cache is not downloaded twice.
+    const currentSourcePath = process.env.SALT_RELEASE_CATALOG_SOURCE_PATH;
+    if (currentSourcePath && resolve(currentSourcePath) !== resolve(liveCatalogPath)) {
+      try {
+        const currentSourcePayload = JSON.parse(await readFile(currentSourcePath, "utf8"));
+        const currentSourceProducts = Array.isArray(currentSourcePayload)
+          ? currentSourcePayload
+          : currentSourcePayload?.products;
+        if (Array.isArray(currentSourceProducts) && currentSourceProducts.length) {
+          sourceProducts = currentSourceProducts;
+        }
+      } catch {
+        // The shared snapshot remains the fallback boundary when the current
+        // release source is unavailable or not yet durable.
+      }
+    }
+    if (!products.length) throw new Error("cached product list is empty");
+    if (products.length !== sourceProducts.length) {
+      throw new Error(`cached product count ${products.length} does not match source snapshot ${sourceProducts.length}`);
+    }
+    const sourceHandles = new Set(sourceProducts.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
+    const liveHandles = new Set(products.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
+    if (sourceHandles.size !== sourceProducts.length) throw new Error("source snapshot contains duplicate or missing handles");
+    if (liveHandles.size !== products.length) throw new Error("cached catalog contains duplicate or missing handles");
+    for (const handle of sourceHandles) {
+      if (!liveHandles.has(handle)) throw new Error(`cached catalog is missing handle ${handle}`);
+    }
+    const incompleteNestedReads = products.find((product) => {
+      const hasMedia = Array.isArray(product?.media?.nodes) || Array.isArray(product?.images);
+      const hasVariants = Array.isArray(product?.variants?.nodes) || Array.isArray(product?.variants);
+      const hasPublications = Array.isArray(product?.resourcePublications?.nodes) || Array.isArray(product?.resource_publications);
+      return !hasMedia || !hasVariants || !hasPublications;
+    });
+    if (incompleteNestedReads) {
+      throw new Error(`cached catalog lacks complete live nested connections for ${incompleteNestedReads.handle || incompleteNestedReads.id}`);
+    }
+    if (payload?.generatedAt) {
+      const ageMs = Date.now() - new Date(payload.generatedAt).getTime();
+      if (!Number.isFinite(ageMs)) throw new Error("cached catalog has an invalid generatedAt timestamp");
+      if (ageMs > 24 * 60 * 60 * 1000) throw new Error(`cached catalog is ${Math.round(ageMs / 3600000)} hours old`);
+    }
+    const normalizedProducts = products.map(normalizeReusableCatalogProduct);
+    process.stdout.write(`Reusing verified live SEO catalog snapshot: ${normalizedProducts.length} products from ${payload.generatedAt || "unknown time"}.\n`);
+    return normalizedProducts;
+  } catch (error) {
+    // A resumed release may legitimately have a newer active catalog than the
+    // prior live SEO cache. Refresh that cache instead of failing before the
+    // guarded dry-run; the fresh catalog is still validated and read back.
+    const message = String(error?.message || "");
+    if (!/^source snapshot contains/i.test(message)) {
+      process.stdout.write(
+        `Verified live SEO catalog cache is stale or incomplete at ${liveCatalogPath}; fetching a fresh live catalog.\n`,
+      );
+      return null;
+    }
+    throw new Error(`Verified live SEO catalog reuse required but unavailable at ${liveCatalogPath}: ${error.message}`);
+  }
+}
+
 export async function fetchAllProducts(retryInfo = []) {
   const products = [];
   let after = null;
@@ -727,14 +861,30 @@ export async function fetchAllProducts(retryInfo = []) {
     after = connection.pageInfo.endCursor;
   }
 
-  for (let index = 0; index < products.length; index += 1) {
-    if (!hasNestedPaginationGap(products[index])) {
-      continue;
+  const hydrationIndexes = products
+    .map((product, index) => (hasNestedPaginationGap(product) ? index : -1))
+    .filter((index) => index >= 0);
+  const hydrationConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_SHOPIFY_SEO_HYDRATE_CONCURRENCY || seoReadConcurrency)));
+  let nextHydrationIndex = 0;
+  let hydratedCount = 0;
+  const hydrateWorker = async () => {
+    while (true) {
+      const queueIndex = nextHydrationIndex;
+      nextHydrationIndex += 1;
+      if (queueIndex >= hydrationIndexes.length) return;
+      const productIndex = hydrationIndexes[queueIndex];
+      const product = products[productIndex];
+      process.stdout.write(`Hydrating nested Shopify connections for ${product.handle}\n`);
+      products[productIndex] = await hydrateNestedProductConnections(product, retryInfo);
+      hydratedCount += 1;
+      if (hydratedCount % 100 === 0 || hydratedCount === hydrationIndexes.length) {
+        process.stdout.write(`Nested Shopify hydration progress: ${hydratedCount}/${hydrationIndexes.length}\n`);
+      }
     }
-
-    process.stdout.write(`Hydrating nested Shopify connections for ${products[index].handle}\n`);
-    products[index] = await hydrateNestedProductConnections(products[index], retryInfo);
-  }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(hydrationConcurrency, hydrationIndexes.length) }, () => hydrateWorker()),
+  );
 
   const excluded = products.filter((product) => !isActiveShopifyProduct(product));
   if (excluded.length) {
@@ -749,7 +899,7 @@ export async function fetchAllProducts(retryInfo = []) {
   return products;
 }
 
-async function fetchProductByHandle(handle, retryInfo, operation = `read ${handle}`) {
+export async function fetchProductByHandle(handle, retryInfo = [], operation = `read ${handle}`) {
   const data = await runShopifyCliGraphQL(
     PRODUCT_BY_HANDLE_QUERY,
     { identifier: { handle } },
@@ -1272,6 +1422,7 @@ function createManifest({ mode, output, plan, priorManifest }) {
     },
     failures: [],
     retryInfo: [],
+    bulkOperations: priorManifest?.bulkOperations ? { ...priorManifest.bulkOperations } : {},
     products,
   };
 }
@@ -1392,6 +1543,8 @@ function auditLiveSeoPlan(plan, manifest) {
     }
   }
   let passed = 0;
+  let accessoryProductsChecked = 0;
+  const accessoryConflicts = [];
   for (const content of plannedContent) {
     const { product, evidence, title, body, seoTitle, seoDescription } = content;
     const desired = product.desiredProductInput || {};
@@ -1421,6 +1574,26 @@ function auditLiveSeoPlan(plan, manifest) {
     }
     if (!seoDescriptionAssessment.specific) {
       issues.push(...seoDescriptionAssessment.issues.map((issue) => `seo-description:${issue}`));
+    }
+    const accessoryEvidence = isEarbudsCaseEvidence({
+      handle: product.handle,
+      sourceTitle: title,
+      sourceProductType: evidence.productType,
+      sourceTags: evidence.tags,
+    });
+    if (accessoryEvidence) {
+      accessoryProductsChecked += 1;
+      const accessoryText = `${title} ${seoTitle} ${seoDescription} ${body}`;
+      const hasCaseNoun = /\b(?:case|cover|sleeve|shell|bumper)\b/i.test(accessoryText);
+      const hasCoreAudioClaim = /(?:is|are)\s+(?:a|an)\s+(?:wireless\s+|bluetooth\s+)?(?:earbuds?|earphones?|headphones?)\b|\b(?:wireless|bluetooth)\s+(?:earbuds?|earphones?|headphones?)\b/i.test(accessoryText);
+      if (!hasCaseNoun) {
+        issues.push("earbuds-accessory-missing-case-noun");
+        accessoryConflicts.push({ handle: product.handle, reason: "earbuds-accessory-missing-case-noun" });
+      }
+      if (hasCoreAudioClaim && !/\b(?:case|cover|sleeve|shell|bumper)\b/i.test(title)) {
+        issues.push("earbuds-accessory-core-audio-claim");
+        accessoryConflicts.push({ handle: product.handle, reason: "earbuds-accessory-core-audio-claim" });
+      }
     }
     for (const field of collisionsByHandle.get(product.handle) || []) {
       issues.push(`duplicate-${field}`);
@@ -1452,6 +1625,10 @@ function auditLiveSeoPlan(plan, manifest) {
     failed: plan.products.length - passed,
     duplicateSeoTitles: collisions.filter((entry) => entry.field === "seo-title").length,
     duplicateSeoDescriptions: collisions.filter((entry) => entry.field === "seo-description").length,
+  };
+  manifest.seoContradictionAudit = {
+    accessoryProductsChecked,
+    conflicts: accessoryConflicts,
   };
   assertNoUnverifiedFailures(manifest);
 }
@@ -1527,7 +1704,7 @@ async function preflight({ plan, manifest, liveProducts, output }) {
     entry.liveFingerprint = buildLiveFingerprint(liveProduct);
     entry.liveStatus = liveProduct.status || "";
     entry.publishedSalesChannels = getPublishedSalesChannelCount(liveProduct);
-    const diff = compareLiveProductToPlan(liveProduct, productPlan);
+    const diff = cacheManifestDiff(entry, compareLiveProductToPlan(liveProduct, productPlan));
     entry.changedFields = diff.changedFields;
     entry.skippedFields = diff.skippedFields;
     entry.writeCount = diff.writeCount;
@@ -1572,10 +1749,51 @@ async function uploadSeoBulkInput(inputPath, retryInfo, label) {
   const curlArgs = ["-sS", "-X", "POST", target.url];
   for (const parameter of target.parameters || []) curlArgs.push("-F", `${parameter.name}=${parameter.value}`);
   curlArgs.push("-F", `file=@${inputPath};type=text/jsonl`);
-  await execFileAsync("curl", curlArgs, { cwd: rootDir, maxBuffer: 20 * 1024 * 1024 });
+  let attempt = 0;
+  while (true) {
+    try {
+      await execFileAsync("curl", curlArgs, {
+        cwd: rootDir,
+        maxBuffer: 20 * 1024 * 1024,
+        timeout: uploadTimeoutMs,
+        killSignal: "SIGTERM",
+      });
+      break;
+    } catch (error) {
+      const message = String(error?.stderr || error?.stdout || error?.message || error);
+      const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(message);
+      if (!transient || attempt >= maxAttempts - 1) {
+        throw new Error(`${label} staged upload failed: ${message.trim()}`);
+      }
+      const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
+      retryInfo?.push({
+        operation: `${label} staged upload`,
+        attempt: attempt + 1,
+        delayMs,
+        message: message.trim().slice(0, 500),
+        at: new Date().toISOString(),
+      });
+      process.stdout.write(
+        `Shopify staged upload failed for ${label}; retrying in ${Math.ceil(delayMs / 1000)}s\n`,
+      );
+      await sleep(delayMs);
+      attempt += 1;
+    }
+  }
   const stagedUploadPath = (target.parameters || []).find((parameter) => parameter.name === "key")?.value;
   if (!stagedUploadPath) throw new Error(`Shopify ${label} staged upload target did not include a key`);
   return stagedUploadPath;
+}
+
+function cacheManifestDiff(entry, diff) {
+  // Reuse the preflight comparison without serializing large mutation data.
+  Object.defineProperty(entry, "__releaseDiff", {
+    configurable: true,
+    enumerable: false,
+    value: diff,
+    writable: true,
+  });
+  return diff;
 }
 
 async function waitForSeoBulkOperation(operationId, retryInfo, label) {
@@ -1618,29 +1836,101 @@ async function verifySeoBulkResult(resultPath, tasks, responseKey, label) {
   }
 }
 
-async function runSeoBulkMutation({ tasks, variablesForTask, mutation, responseKey, label, outputPath, retryInfo }) {
+async function runSeoBulkMutation({
+  tasks,
+  variablesForTask,
+  mutation,
+  responseKey,
+  label,
+  outputPath,
+  retryInfo,
+  manifest,
+  checkpointKey,
+}) {
   if (!tasks.length) return null;
   const inputPath = outputPath.replace(/\.json$/i, `-${label.replace(/\s+/g, "-")}-bulk-input.jsonl`);
   const resultPath = outputPath.replace(/\.json$/i, `-${label.replace(/\s+/g, "-")}-bulk-result.jsonl`);
-  await writeFile(inputPath, `${tasks.map((task) => JSON.stringify(variablesForTask(task))).join("\n")}\n`, "utf8");
-  process.stdout.write(`Prepared ${tasks.length} ${label} input(s) for Shopify bulk mutation.\n`);
-  const stagedUploadPath = await uploadSeoBulkInput(inputPath, retryInfo, label);
-  const data = await runShopifyCliGraphQL(BULK_OPERATION_RUN_MUTATION, { mutation, stagedUploadPath }, {
-    allowMutations: true,
-    operation: `start ${label} bulk operation`,
-    retryInfo,
-  });
-  const errors = data?.bulkOperationRunMutation?.userErrors || [];
-  if (errors.length) throw new Error(`${label} bulk operation failed to start: ${formatUserErrors(errors)}`);
-  const operationId = data?.bulkOperationRunMutation?.bulkOperation?.id;
-  if (!operationId) throw new Error(`Shopify returned no ${label} bulk operation id`);
-  const operation = await waitForSeoBulkOperation(operationId, retryInfo, label);
+  const previousOperation = checkpointKey ? manifest?.bulkOperations?.[checkpointKey] : null;
+  let operation = null;
+
+  if (previousOperation?.id && previousOperation.status !== "FAILED") {
+    process.stdout.write(`Resuming ${label} bulk operation ${previousOperation.id}.\n`);
+    try {
+      operation = previousOperation.status === "COMPLETED"
+        ? previousOperation
+        : await waitForSeoBulkOperation(previousOperation.id, retryInfo, label);
+    } catch (error) {
+      if (manifest && checkpointKey) {
+        manifest.bulkOperations[checkpointKey] = {
+          ...previousOperation,
+          status: "FAILED",
+          error: String(error?.message || error),
+          failedAt: new Date().toISOString(),
+        };
+        await writeManifest(outputPath, manifest);
+      }
+      throw error;
+    }
+  }
+
+  const existingResultPath = previousOperation?.resultPath || resultPath;
+  if (operation?.status === "COMPLETED" && existingResultPath) {
+    try {
+      await access(existingResultPath);
+      await verifySeoBulkResult(existingResultPath, tasks, responseKey, label);
+      const reused = {
+        ...operation,
+        status: "COMPLETED",
+        inputPath: previousOperation?.inputPath || inputPath,
+        resultPath: existingResultPath,
+        reusedAt: new Date().toISOString(),
+      };
+      if (manifest && checkpointKey) {
+        manifest.bulkOperations = manifest.bulkOperations || {};
+        manifest.bulkOperations[checkpointKey] = reused;
+        await writeManifest(outputPath, manifest);
+      }
+      return reused;
+    } catch (error) {
+      process.stdout.write(
+        `${label} checkpoint result is unavailable or does not match this generation; ` +
+          `discarding the checkpoint and starting a fresh bulk mutation.\n`,
+      );
+      // Shopify may omit the result URL after a completed operation ages out.
+      // Do not retry that unusable checkpoint indefinitely.
+      if (!operation.url) operation = null;
+    }
+  }
+
+  if (!operation) {
+    await writeFile(inputPath, `${tasks.map((task) => JSON.stringify(variablesForTask(task))).join("\n")}\n`, "utf8");
+    process.stdout.write(`Prepared ${tasks.length} ${label} input(s) for Shopify bulk mutation.\n`);
+    process.stdout.write(`Uploading ${label} bulk input to Shopify.\n`);
+    const stagedUploadPath = await uploadSeoBulkInput(inputPath, retryInfo, label);
+    const data = await runShopifyCliGraphQL(BULK_OPERATION_RUN_MUTATION, { mutation, stagedUploadPath }, {
+      allowMutations: true,
+      operation: `start ${label} bulk operation`,
+      retryInfo,
+    });
+    const errors = data?.bulkOperationRunMutation?.userErrors || [];
+    if (errors.length) throw new Error(`${label} bulk operation failed to start: ${formatUserErrors(errors)}`);
+    const operationId = data?.bulkOperationRunMutation?.bulkOperation?.id;
+    if (!operationId) throw new Error(`Shopify returned no ${label} bulk operation id`);
+    operation = { id: operationId, status: "RUNNING", inputPath, resultPath, startedAt: new Date().toISOString() };
+    if (manifest && checkpointKey) {
+      manifest.bulkOperations = manifest.bulkOperations || {};
+      manifest.bulkOperations[checkpointKey] = operation;
+      await writeManifest(outputPath, manifest);
+    }
+    operation = await waitForSeoBulkOperation(operationId, retryInfo, label);
+  }
+
   if (!operation.url) throw new Error(`Completed ${label} bulk operation returned no result URL`);
   const response = await fetch(operation.url);
   if (!response.ok) throw new Error(`${label} bulk result download failed (${response.status})`);
   await writeFile(resultPath, Buffer.from(await response.arrayBuffer()));
   await verifySeoBulkResult(resultPath, tasks, responseKey, label);
-  return {
+  const completed = {
     id: operation.id,
     status: operation.status,
     objectCount: Number(operation.objectCount || 0),
@@ -1648,6 +1938,12 @@ async function runSeoBulkMutation({ tasks, variablesForTask, mutation, responseK
     inputPath,
     resultPath,
   };
+  if (manifest && checkpointKey) {
+    manifest.bulkOperations = manifest.bulkOperations || {};
+    manifest.bulkOperations[checkpointKey] = completed;
+    await writeManifest(outputPath, manifest);
+  }
+  return completed;
 }
 
 async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
@@ -1666,7 +1962,7 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
       markFailure(manifest, entry, "failed-unresolved", new Error(`Bulk apply identity missing or inactive: ${entry.handle}`));
       continue;
     }
-    const diff = compareLiveProductToPlan(liveProduct, productPlan);
+    const diff = entry.__releaseDiff || cacheManifestDiff(entry, compareLiveProductToPlan(liveProduct, productPlan));
     entry.changedFields = diff.changedFields;
     entry.skippedFields = diff.skippedFields;
     entry.writeCounts = {
@@ -1695,7 +1991,7 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
   const productTasks = tasks.filter((task) => productMutationFields(task.diff.productInput).length);
   const mediaTasks = tasks.filter((task) => task.diff.mediaInputs.length);
   manifest.bulkOperations = manifest.bulkOperations || {};
-    manifest.bulkOperations.product = await runSeoBulkMutation({
+  manifest.bulkOperations.product = await runSeoBulkMutation({
     tasks: productTasks,
     variablesForTask: (task) => ({ product: task.diff.productInput }),
     mutation: BULK_PRODUCT_UPDATE_MUTATION,
@@ -1703,6 +1999,8 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
     label: "SEO product",
     outputPath: output.path,
     retryInfo,
+    manifest,
+    checkpointKey: "product",
   });
   await writeManifest(output.path, manifest);
   const variantTasks = tasks.filter((task) => task.diff.variantInputs.length);
@@ -1714,6 +2012,8 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
     label: "SEO variant pricing",
     outputPath: output.path,
     retryInfo,
+    manifest,
+    checkpointKey: "variants",
   });
   await writeManifest(output.path, manifest);
   manifest.bulkOperations.media = await runSeoBulkMutation({
@@ -1724,6 +2024,8 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
     label: "SEO media",
     outputPath: output.path,
     retryInfo,
+    manifest,
+    checkpointKey: "media",
   });
   await writeManifest(output.path, manifest);
 
@@ -1825,7 +2127,7 @@ async function applyPlanBatched({ plan, manifest, output, liveProducts = [] }) {
           continue;
         }
 
-        const diff = compareLiveProductToPlan(liveProduct, productPlan);
+        const diff = entry.__releaseDiff || cacheManifestDiff(entry, compareLiveProductToPlan(liveProduct, productPlan));
         entry.changedFields = diff.changedFields;
         entry.skippedFields = diff.skippedFields;
         entry.writeCounts = {
@@ -1995,46 +2297,69 @@ export async function runShopifySeoRelease({
 } = {}) {
   const priorManifest = await readPriorManifest(output);
   const localSnapshot = await loadCatalogSnapshot();
-  const snapshot = await loadFrozenCatalogSnapshot(frozenCatalog, localSnapshot);
+  const sharedCatalogPath = frozenCatalog || process.env.SALT_RELEASE_CATALOG_SNAPSHOT_PATH || "";
+  const snapshot = await loadFrozenCatalogSnapshot(sharedCatalogPath, localSnapshot);
   const knowledgeModel = await readCatalogKnowledgeModel({
     required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
   });
   const explicitNewProductHandles = newProductsOnly ? await readProductHandles(productHandlesFile) : null;
-  const localPlan = await buildShopifySeoReleasePlan(snapshot, {
-    forceExplicitSeo: true,
-    repairVariantPricing,
-    knowledgeModel,
-  });
-  const selectedProducts = explicitNewProductHandles
-    ? localPlan.products.filter((product) => explicitNewProductHandles.has(product.handle))
-    : localPlan.products;
-  if (explicitNewProductHandles && selectedProducts.length !== explicitNewProductHandles.size) {
-    const available = new Set(localPlan.products.map((product) => product.handle));
-    const missing = [...explicitNewProductHandles].filter((handle) => !available.has(handle));
-    throw new Error(`Product handles file contains ${missing.length} handle(s) missing from the frozen catalog: ${missing.slice(0, 10).join(", ")}`);
+  const sourceProducts = Array.isArray(snapshot?.products)
+    ? snapshot.products
+    : Array.isArray(snapshot?.products?.products)
+      ? snapshot.products.products
+      : [];
+  // Full-catalog runs rebuild the plan against the verified live catalog below.
+  // Avoid constructing a second 15k-product plan before the live read, which
+  // needlessly doubles memory pressure and makes retries look stalled.
+  const requiresLocalSelection = sample > 0 || Boolean(explicitNewProductHandles);
+  let localPlan = null;
+  let localPlanSelection = null;
+  if (requiresLocalSelection) {
+    localPlan = await buildShopifySeoReleasePlan(snapshot, {
+      forceExplicitSeo: true,
+      repairVariantPricing,
+      knowledgeModel,
+    });
+    const selectedProducts = explicitNewProductHandles
+      ? localPlan.products.filter((product) => explicitNewProductHandles.has(product.handle))
+      : localPlan.products;
+    if (explicitNewProductHandles && selectedProducts.length !== explicitNewProductHandles.size) {
+      const available = new Set(localPlan.products.map((product) => product.handle));
+      const missing = [...explicitNewProductHandles].filter((handle) => !available.has(handle));
+      throw new Error(`Product handles file contains ${missing.length} handle(s) missing from the frozen catalog: ${missing.slice(0, 10).join(", ")}`);
+    }
+    localPlanSelection = {
+      ...localPlan,
+      products: sample > 0 ? selectedProducts.slice(0, sample) : selectedProducts,
+    };
   }
-  const localPlanSelection = {
-    ...localPlan,
-    products: sample > 0 ? selectedProducts.slice(0, sample) : selectedProducts,
+  const initialManifestPlan = localPlanSelection || {
+    summary: {
+      sourceRows: sourceProducts.length,
+      sourceProducts: sourceProducts.length,
+    },
+    products: [],
   };
-  let manifest = createManifest({ mode, output, plan: localPlanSelection, priorManifest });
+  let manifest = createManifest({ mode, output, plan: initialManifestPlan, priorManifest });
   manifest.policy.sample = sample || null;
   manifest.policy.tagsOnly = tagsOnly;
   manifest.policy.forceFullCatalog = fullCatalog;
   manifest.policy.frozenCatalog = frozenCatalog || null;
   manifest.policy.productHandlesFile = productHandlesFile || null;
   manifest.policy.newProductsOnly = newProductsOnly;
-  manifest.summary.sourceProducts = localPlan.summary.sourceProducts;
-  manifest.summary.localCatalogProducts = localPlan.summary.sourceProducts;
+  manifest.summary.sourceProducts = localPlan?.summary.sourceProducts || sourceProducts.length;
+  manifest.summary.localCatalogProducts = localPlan?.summary.sourceProducts || sourceProducts.length;
   await writeManifest(output, manifest);
 
   const retryInfo = manifest.retryInfo;
+  const localProductCount = localPlanSelection?.products.length || sourceProducts.length;
   process.stdout.write(
-    `Shopify SEO release ${mode}: ${localPlanSelection.products.length} local product(s), API ${apiVersion}\n`,
+    `Shopify SEO release ${mode}: ${localProductCount} local product(s), API ${apiVersion}\n`,
   );
   let liveProducts;
   try {
-    liveProducts = await fetchLiveProductsForPlan(localPlanSelection, retryInfo, sample, Boolean(frozenCatalog));
+    liveProducts = await loadReusableLiveCatalogSnapshot(snapshot) ||
+      await fetchLiveProductsForPlan(localPlanSelection || { products: sourceProducts }, retryInfo, sample, Boolean(frozenCatalog));
   } catch (error) {
     markFailure(manifest, null, "failed-live-read", error);
     refreshSummary(manifest);
@@ -2050,8 +2375,8 @@ export async function runShopifySeoRelease({
   await writeManifest(output, manifest);
   // A frozen catalog is the immutable pre-apply source of truth for safe resume.
   // Never merge current live prices into it or a resumed run could compound pricing.
-  const mergedSnapshot = frozenCatalog
-    ? { ...snapshot, liveOnlyProducts: [] }
+  const mergedSnapshot = sharedCatalogPath
+    ? { ...snapshot, products: liveProducts, liveOnlyProducts: [] }
     : mergeCatalogSnapshotWithLiveProducts(snapshot, liveProducts);
   await writeJsonFile(liveCatalogPath, {
     generatedAt: new Date().toISOString(),
@@ -2064,9 +2389,11 @@ export async function runShopifySeoRelease({
     repairVariantPricing,
     knowledgeModel,
   });
-  const selectedHandles = new Set(localPlanSelection.products.map((entry) => entry.handle));
+  const selectedHandles = localPlanSelection
+    ? new Set(localPlanSelection.products.map((entry) => entry.handle))
+    : null;
   const selectedPlan =
-    sample > 0
+    selectedHandles
       ? { ...mergedPlan, products: mergedPlan.products.filter((entry) => selectedHandles.has(entry.handle)) }
       : mergedPlan;
   const liveHandleSet = new Set(liveProducts.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
@@ -2089,9 +2416,11 @@ export async function runShopifySeoRelease({
   manifest.policy.catalogAugmentedFromLive = true;
   manifest.retryInfo = retryInfo;
   manifest.summary.sourceProducts = plan.summary.sourceProducts;
-  manifest.summary.localCatalogProducts = localPlan.summary.sourceProducts;
+  manifest.summary.localCatalogProducts = localPlan?.summary.sourceProducts || sourceProducts.length;
   manifest.summary.catalogAugmentedProducts = mergedSnapshot.liveOnlyProducts?.length || 0;
   manifest.summary.sourceOnlyExcluded = sourceOnlyExcluded;
+  manifest.policy.catalogBoundary = catalogBoundary(liveProducts);
+  manifest.policy.catalogBoundaryProductCount = liveProducts.length;
   await writeManifest(output, manifest);
 
   const eligibilityPlan = buildScopedPlanForLiveCatalog(plan, liveProducts, priorManifest, {

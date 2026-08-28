@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -58,6 +59,7 @@ import { scoreCatalogKnowledgeModelBatch } from "./catalog-knowledge-model-accel
 const rootDir = resolve(import.meta.dirname, "..");
 const execFileAsync = promisify(execFile);
 const defaultOutputPath = resolve(rootDir, "output", "shopify-catalog-integrity-manifest.json");
+const defaultVisualReviewCheckpointPath = resolve(rootDir, "output", "catalog-integrity-visual-review-checkpoint.json");
 const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT ||
   resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
 const collectionApprovalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
@@ -66,18 +68,25 @@ const membershipPollDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_
 const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
-const visionImageAttempts = Math.max(1, Math.min(8, Number(process.env.SALT_CATALOG_VISION_IMAGE_ATTEMPTS || 4)));
-const visionImageTimeoutMs = Math.max(5_000, Number(process.env.SALT_CATALOG_VISION_IMAGE_TIMEOUT_MS || 30_000));
+const visionImageAttempts = Math.max(1, Math.min(4, Number(process.env.SALT_CATALOG_VISION_IMAGE_ATTEMPTS || 1)));
+const visionImageTimeoutMs = Math.max(3_000, Number(process.env.SALT_CATALOG_VISION_IMAGE_TIMEOUT_MS || 8_000));
 const visionImageRetryDelayMs = Math.max(100, Number(process.env.SALT_CATALOG_VISION_IMAGE_RETRY_DELAY_MS || 750));
 const visionOutputTokens = Math.max(160, Math.min(512, Number(process.env.SALT_CATALOG_VISION_OUTPUT_TOKENS || 256)));
 const visionImageLimit = Math.max(1, Math.min(4, Number(process.env.SALT_CATALOG_VISION_IMAGE_LIMIT || 4)));
-const visionRequestTimeoutMs = Math.max(30_000, Number(process.env.SALT_CATALOG_VISION_REQUEST_TIMEOUT_MS || 120_000));
-const visionRequestAttempts = Math.max(1, Math.min(3, Number(process.env.SALT_CATALOG_VISION_REQUEST_ATTEMPTS || 2)));
+const visionRequestTimeoutMs = Math.max(20_000, Number(process.env.SALT_CATALOG_VISION_REQUEST_TIMEOUT_MS || 45_000));
+const visionRequestAttempts = Math.max(1, Math.min(2, Number(process.env.SALT_CATALOG_VISION_REQUEST_ATTEMPTS || 1)));
 const classificationConcurrency = Math.max(
   1,
   Math.min(8, Number(process.env.SALT_CATALOG_CLASSIFICATION_CONCURRENCY || 3)),
 );
+const collectionSourceApplyConcurrency = Math.max(
+  1,
+  Math.min(6, Number(process.env.SALT_COLLECTION_SOURCE_APPLY_CONCURRENCY || 3)),
+);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "catalog-integrity" });
+const GOVERNED_COLLECTION_TAGS = new Set(
+  SEMANTIC_COLLECTION_POLICIES.map((policy) => normalizeTag(policy.tag)),
+);
 
 async function readCurrentKnowledgeEvidence(products) {
   const evidencePath = process.env.SALT_CATALOG_KNOWLEDGE_EVIDENCE_PATH;
@@ -383,6 +392,13 @@ function uniqueTags(values) {
   return [...byNormalized.values()];
 }
 
+// Shopify can collapse tags that differ only by spaces, hyphens, or
+// underscores. Preserve the merchant spelling and treat the managed spelling
+// as an explicit alias instead of silently deleting merchant content.
+function tagCollisionKey(value) {
+  return normalizeTag(value).replace(/[\s_-]+/g, "");
+}
+
 function isManagedTag(tag, managedTagUniverse = new Set()) {
   const normalized = normalizeTag(tag);
   return MANAGED_TAG_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
@@ -477,6 +493,35 @@ async function verifyCollectionApproval() {
 async function writeManifest(path, manifest) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+}
+
+function catalogFingerprint(products) {
+  const keys = products
+    .map((product) => `${String(product?.id || "")}:${normalizeCollectionHandle(product?.handle)}`)
+    .filter((key) => key !== ":")
+    .sort();
+  return createHash("sha256").update(keys.join("\n")).digest("hex");
+}
+
+async function readVisualReviewCheckpoint(path, fingerprint) {
+  const checkpoint = await readJson(path, null);
+  if (checkpoint?.catalogFingerprint !== fingerprint) return new Map();
+  return new Map(
+    asArray(checkpoint?.classifications)
+      .filter((entry) => entry?.handle && entry?.visualEvidence)
+      .map((entry) => [normalizeCollectionHandle(entry.handle), entry]),
+  );
+}
+
+async function writeVisualReviewCheckpoint(path, fingerprint, entries) {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    catalogFingerprint: fingerprint,
+    taxonomyVersion: CATALOG_TAXONOMY_VERSION,
+    governanceVersion: COLLECTION_GOVERNANCE_VERSION,
+    classifications: [...entries.values()],
+  }, null, 2)}\n`, "utf8");
 }
 
 async function completeVariants(product, retryInfo) {
@@ -695,7 +740,9 @@ function resizeImageUrl(url) {
 
 function visionImageCandidates(url) {
   const resized = resizeImageUrl(url);
-  return [...new Set([resized, url].filter(Boolean))];
+  const candidates = [resized];
+  if (process.env.SALT_CATALOG_VISION_TRY_ORIGINAL === "1") candidates.push(url);
+  return [...new Set(candidates.filter(Boolean))];
 }
 
 function parseVisionJson(rawContent) {
@@ -811,7 +858,16 @@ async function classifyWithVision(product) {
   if (!imageUrls.length) return null;
   try {
     process.stdout.write(`Supervised vision enrichment started for ${product.handle} (${imageUrls.length} image(s)).\n`);
-    const images = await Promise.all(imageUrls.map((url) => imageAsBase64(resizeImageUrl(url))));
+    const imageResults = await Promise.all(imageUrls.map(async (url) => {
+      try {
+        return await imageAsBase64(resizeImageUrl(url));
+      } catch {
+        // One unavailable CDN asset must not discard the other product images.
+        return null;
+      }
+    }));
+    const images = imageResults.filter(Boolean);
+    if (!images.length) throw new Error("no product images could be fetched");
     const requestBody = JSON.stringify({
         model: visionModel,
         stream: false,
@@ -932,7 +988,7 @@ async function resolveKnowledge(product, { skipVision, deterministicOnly, superv
   if (deterministicOnly && !supervisedVision) {
     return {
       knowledge: classifyProductKnowledge(product, { knowledgeModel, modelEvidence }),
-      source: "review",
+      source: "fallback",
       reviewReasons: ["Deterministic taxonomy did not reach a safe classification."],
     };
   }
@@ -948,7 +1004,7 @@ async function resolveKnowledge(product, { skipVision, deterministicOnly, superv
   if (supervisedVision) {
     return {
       knowledge: classifyProductKnowledge(product, { knowledgeModel, modelEvidence }),
-      source: "review",
+      source: "fallback",
       reviewReasons: [vision?.error || "Supervised vision did not meet the confidence and alignment gates."],
       imageUrl: vision?.imageUrl || null,
       imageUrls: vision?.imageUrls || [],
@@ -1023,10 +1079,39 @@ async function buildDynamicAssignments(products) {
   return assignments;
 }
 
-function exactTagTask(liveProduct, desiredManagedTags, managedTagUniverse = new Set()) {
+function exactTagTask(
+  liveProduct,
+  desiredManagedTags,
+  managedTagUniverse = new Set(),
+  requiredManagedTags = [],
+) {
   const existing = uniqueTags(asArray(liveProduct.tags));
   const unmanaged = existing.filter((tag) => !isManagedTag(tag, managedTagUniverse));
-  const desired = uniqueTags([...unmanaged, ...desiredManagedTags]);
+  const requiredTagSet = new Set(requiredManagedTags.map(normalizeTag));
+  const unmanagedCollisionKeys = new Map();
+  for (const tag of unmanaged) {
+    const key = tagCollisionKey(tag);
+    if (key) unmanagedCollisionKeys.set(key, tag);
+  }
+  const managedTagAliases = [];
+  const effectiveManagedTags = uniqueTags(desiredManagedTags).filter((tag) => {
+    const alias = unmanagedCollisionKeys.get(tagCollisionKey(tag));
+    if (alias && normalizeTag(alias) !== normalizeTag(tag)) {
+      // Shopify treats punctuation-only tag variants as the same tag in some
+      // live writes. Keep the merchant spelling for taxonomy-only aliases,
+      // but never suppress a tag that is required to drive a collection.
+      const required = requiredTagSet.has(normalizeTag(tag));
+      managedTagAliases.push({
+        canonical: tag,
+        preserved: alias,
+        required,
+        reason: required ? "required-unmanaged-collision" : "preserved-unmanaged-collision",
+      });
+      return required;
+    }
+    return true;
+  });
+  const desired = uniqueTags([...unmanaged, ...effectiveManagedTags]);
   const existingSet = new Set(existing.map(normalizeTag));
   const desiredSet = new Set(desired.map(normalizeTag));
   const tagsToAdd = desired.filter((tag) => !existingSet.has(normalizeTag(tag)));
@@ -1035,7 +1120,9 @@ function exactTagTask(liveProduct, desiredManagedTags, managedTagUniverse = new 
     productId: liveProduct.id,
     handle: liveProduct.handle,
     desiredTags: desired,
-    desiredManagedTags: uniqueTags(desiredManagedTags),
+    desiredManagedTags: effectiveManagedTags,
+    requiredManagedTags: uniqueTags(requiredManagedTags),
+    managedTagAliases,
     tagsToAdd,
     tagsToRemove,
     status: tagsToAdd.length || tagsToRemove.length ? "would-update" : "exact-match",
@@ -1343,37 +1430,91 @@ async function applyCollectionTargets(targets, onlineStorePublication, retryInfo
   for (const target of exactTargets) await applyCollectionTarget(target, onlineStorePublication, retryInfo);
 
   if (updateTargets.length) {
-    const inputPath = output.replace(/\.json$/i, "-collection-bulk-input.jsonl");
-    const resultPath = output.replace(/\.json$/i, "-collection-bulk-result.jsonl");
-    await writeFile(inputPath, `${updateTargets.map((target) => JSON.stringify({
-      collection: buildCollectionUpdateInput(target),
-    })).join("\n")}\n`, "utf8");
-    const stagedUploadPath = await uploadBulkInput(inputPath, retryInfo, "catalog collection");
-    const data = await client.run(BULK_OPERATION_RUN_MUTATION, {
-      mutation: BULK_COLLECTION_UPDATE_MUTATION,
-      stagedUploadPath,
-    }, { allowMutations: true, operation: "start catalog collection bulk operation", retryInfo });
-    const errors = asArray(data?.bulkOperationRunMutation?.userErrors);
-    if (errors.length) throw new Error(`Catalog collection bulk operation failed to start: ${formatUserErrors(errors)}`);
-    const operationId = data?.bulkOperationRunMutation?.bulkOperation?.id;
-    if (!operationId) throw new Error("Shopify returned no catalog collection bulk operation id.");
-    const operation = await waitForBulkOperation(operationId, retryInfo, "catalog collection");
-    if (!operation.url) throw new Error("Completed catalog collection bulk operation returned no result URL.");
-    await execFileAsync("curl", ["-sS", "-L", operation.url, "-o", resultPath], {
-      cwd: rootDir,
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    await verifyCollectionBulkResult(resultPath, updateTargets);
+    const currentCollections = await fetchCollections(retryInfo);
+    const currentByHandle = new Map(currentCollections.map((collection) => [
+      normalizeCollectionHandle(collection.handle),
+      collection,
+    ]));
+    const sourceRepairTargets = [];
+    for (const target of updateTargets) {
+      const current = currentByHandle.get(target.policy.handle) ||
+        target.policy.legacyHandles.map((handle) => currentByHandle.get(handle)).find(Boolean);
+      if (!current) throw new Error(`${target.policy.handle}: collection disappeared before source repair.`);
+      target.existing = current;
+      target.collectionId = current.id;
+      const metadataExact = normalizeCollectionHandle(current.handle) === target.policy.handle &&
+        normalizeText(current.title) === target.policy.title;
+      if (metadataExact && collectionSourceMatches(target.policy, current)) {
+        target.status = "exact-match";
+        continue;
+      }
+      sourceRepairTargets.push(target);
+    }
+
+    // Shopify bulk mutation can acknowledge CollectionUpdateInput while
+    // silently retaining non-shareable collection sources. Direct bounded
+    // mutations are slower than a bulk job but make source replacement and
+    // handle redirects observable and verifiable before membership readback.
+    await mapWithConcurrency(
+      sourceRepairTargets,
+      collectionSourceApplyConcurrency,
+      async (target) => {
+        let data;
+        let lastError;
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          try {
+            data = await client.run(BULK_COLLECTION_UPDATE_MUTATION, {
+              collection: buildCollectionUpdateInput(target),
+            }, {
+              allowMutations: true,
+              operation: `repair collection source ${target.policy.handle}`,
+              retryInfo,
+            });
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (!/source not found/i.test(String(error?.message || error)) || attempt === 2) throw error;
+            const refreshed = (await fetchCollections(retryInfo)).find((collection) =>
+              normalizeCollectionHandle(collection.handle) === target.policy.handle);
+            if (!refreshed) throw error;
+            target.existing = refreshed;
+            target.collectionId = refreshed.id;
+          }
+        }
+        if (lastError) throw lastError;
+        const errors = asArray(data?.collectionUpdate?.userErrors);
+        if (errors.length) throw new Error(`${target.policy.handle}: ${formatUserErrors(errors)}`);
+        if (!data?.collectionUpdate?.collection?.id) {
+          throw new Error(`${target.policy.handle}: Shopify returned no collection after source repair.`);
+        }
+        target.collectionId = data.collectionUpdate.collection.id;
+        target.status = "updated";
+        return target;
+      },
+      "Collection source repairs applied",
+    );
+
+    const refreshedCollections = await fetchCollections(retryInfo);
+    const refreshedByHandle = new Map(refreshedCollections.map((collection) => [
+      normalizeCollectionHandle(collection.handle),
+      collection,
+    ]));
+    for (const target of updateTargets) {
+      const refreshed = refreshedByHandle.get(target.policy.handle);
+      if (!refreshed || !collectionSourceMatches(target.policy, refreshed)) {
+        throw new Error(`${target.policy.handle}: collection source failed live readback after direct repair.`);
+      }
+      target.existing = refreshed;
+      target.collectionId = refreshed.id;
+    }
     manifest.collectionBulkOperation = {
-      id: operation.id,
-      status: operation.status,
-      objectCount: Number(operation.objectCount || 0),
-      completedAt: operation.completedAt || new Date().toISOString(),
-      inputPath,
-      resultPath,
+      status: "DIRECT_MUTATIONS_COMPLETED",
+      objectCount: sourceRepairTargets.length,
+      completedAt: new Date().toISOString(),
     };
     await writeManifest(output, manifest);
-    process.stdout.write(`Canonical collection repairs applied through Shopify bulk mutation to ${updateTargets.length} collections.\n`);
+    process.stdout.write(`Canonical collection repairs applied and source-read-back verified for ${updateTargets.length} collections.\n`);
   }
 
   for (const target of createTargets) {
@@ -1430,9 +1571,9 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
   const expectedCollectionsByProduct = new Map(products.map((product) => [product.id, new Set([ALL_PRODUCTS_COLLECTION_POLICY.handle])]));
   for (const product of products) {
     const task = taskByProductId.get(product.id);
-    for (const tag of task?.desiredManagedTags || []) {
+    for (const tag of task?.requiredManagedTags || []) {
       expectedByTag.get(normalizeTag(tag))?.add(product.id);
-      const handle = isManagedCollectionTag(tag) ? canonicalCollectionHandle(tag) : "";
+      const handle = canonicalCollectionHandle(tag);
       if (handle) expectedCollectionsByProduct.get(product.id)?.add(handle);
     }
     for (const target of targets) {
@@ -1522,7 +1663,8 @@ async function run(args) {
   }
   if (args.mode === "apply") await verifyCollectionApproval();
   const retryInfo = [];
-  const priorManifestPath = args.output === defaultOutputPath ? args.output : defaultOutputPath;
+  const priorManifestPath = process.env.SALT_CATALOG_REUSE_MANIFEST_PATH ||
+    (args.output === defaultOutputPath ? args.output : defaultOutputPath);
   const priorManifest = await readJson(priorManifestPath);
   process.stdout.write("Catalog integrity: prior manifest loaded.\n");
   const knowledgeModel = await readCatalogKnowledgeModel({
@@ -1560,10 +1702,21 @@ async function run(args) {
   assertCompleteCollectionGovernance(collections);
   const localByHandle = localProductByHandle(catalog);
   const products = liveProducts.map((liveProduct) => mergeProduct(localByHandle.get(normalizeCollectionHandle(liveProduct.handle)) || {}, liveProduct));
+  const visualReviewCheckpointPath = resolve(
+    rootDir,
+    process.env.SALT_CATALOG_VISUAL_REVIEW_CHECKPOINT_PATH || defaultVisualReviewCheckpointPath,
+  );
+  const visualReviewCatalogFingerprint = catalogFingerprint(products);
+  const visualReviewCheckpoint = args.supervisedVision
+    ? await readVisualReviewCheckpoint(visualReviewCheckpointPath, visualReviewCatalogFingerprint)
+    : new Map();
+  if (visualReviewCheckpoint.size) {
+    process.stdout.write(`Reusing ${visualReviewCheckpoint.size} checkpointed supervised visual decisions for this catalog fingerprint.\n`);
+  }
   const reviewHandles = new Set(
     priorSnapshot
       ? [...priorSnapshot.byHandle.entries()]
-        .filter(([, entry]) => entry.classification?.source === "review")
+        .filter(([, entry]) => ["review", "fallback"].includes(entry.classification?.source))
         .map(([handle]) => handle)
       : [],
   );
@@ -1576,11 +1729,11 @@ async function run(args) {
   const visualEvidenceManifest = process.env.SALT_CATALOG_REUSE_VISUAL_EVIDENCE_MANIFEST
     ? await readJson(resolve(rootDir, process.env.SALT_CATALOG_REUSE_VISUAL_EVIDENCE_MANIFEST), null)
     : null;
-  const visualEvidenceByHandle = new Map(
-    asArray(visualEvidenceManifest?.classifications)
-      .filter((entry) => entry?.handle && entry?.visualEvidence)
-      .map((entry) => [normalizeCollectionHandle(entry.handle), entry]),
-  );
+  const visualEvidenceByHandle = new Map(visualReviewCheckpoint);
+  for (const entry of asArray(visualEvidenceManifest?.classifications)
+    .filter((candidate) => candidate?.handle && candidate?.visualEvidence)) {
+    visualEvidenceByHandle.set(normalizeCollectionHandle(entry.handle), entry);
+  }
   if (visualEvidenceByHandle.size) {
     process.stdout.write(`Reusing supervised visual evidence for ${visualEvidenceByHandle.size} products.\n`);
   }
@@ -1703,6 +1856,26 @@ async function run(args) {
     );
     for (const [index, entry] of batch.entries()) {
       resolvedProducts[entry.index] = resolutions[index];
+      const resolution = resolutions[index];
+      if (args.supervisedVision && resolution?.visualEvidence) {
+        visualReviewCheckpoint.set(normalizeCollectionHandle(entry.product.handle), {
+          handle: entry.product.handle,
+          productId: String(entry.product?.id || ""),
+          imageUrl: resolution.imageUrl || null,
+          imageUrls: resolution.imageUrls || [],
+          visualEvidence: resolution.visualEvidence,
+          visionAlignment: resolution.visionAlignment || null,
+          source: resolution.source || "review",
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+    if (args.supervisedVision) {
+      await writeVisualReviewCheckpoint(
+        visualReviewCheckpointPath,
+        visualReviewCatalogFingerprint,
+        visualReviewCheckpoint,
+      );
     }
     const batchNumber = Math.floor(batchStart / args.batchSize) + 1;
     if (batchNumber % 10 === 0 || batchNumber === resolutionBatchCount) {
@@ -1716,8 +1889,8 @@ async function run(args) {
     const approvedSpecialTags = [...dynamicHandles]
       .filter((handle) => Object.prototype.hasOwnProperty.call(SPECIAL_COLLECTION_MINIMUMS, handle))
       .map((handle) => collectionTagForHandle(handle));
-    const collectionTags = resolved.priorCollectionTags || (resolved.source === "review"
-      ? uniqueTags([collectionTagForHandle("classification-review"), ...approvedSpecialTags])
+    const collectionTags = resolved.priorCollectionTags || (["review", "fallback"].includes(resolved.source)
+      ? uniqueTags([collectionTagForHandle("classification-fallback"), ...approvedSpecialTags])
       : buildProductCollectionTags(product, resolved.knowledge, dynamicHandles));
     if (!collectionTags.length) {
       throw new Error(`${product.handle} has no semantic collection assignment after classification ${resolved.knowledge?.classificationRule || resolved.priorClassification?.ruleId || "unknown"}.`);
@@ -1728,14 +1901,23 @@ async function run(args) {
         simpleCatalogTag("classification-source", resolved.source === "existing-vision" ? "vision" : resolved.source),
       ]
       : [];
-    const desiredManagedTags = resolved.priorManagedTags || (resolved.source === "review"
+    const taxonomyTags = resolved.priorManagedTags
+      ? []
+      : asArray(resolved.knowledge.proposedTags).filter((tag) => {
+        // Simple taxonomy tags intentionally omit namespaces. Do not let a
+        // department/category tag such as `home-decor` activate a collection
+        // unless this product was explicitly assigned to that collection.
+        const normalized = normalizeTag(tag);
+        return !GOVERNED_COLLECTION_TAGS.has(normalized) || collectionTags.some((collectionTag) => normalizeTag(collectionTag) === normalized);
+      });
+    const desiredManagedTags = resolved.priorManagedTags || (["review", "fallback"].includes(resolved.source)
       ? collectionTags
       : uniqueTags([
-        ...asArray(resolved.knowledge.proposedTags),
+        ...taxonomyTags,
         ...collectionTags,
         ...classificationTags,
       ]));
-    resolvedTagPlans.push({ liveProduct: liveProducts[index], desiredManagedTags });
+    resolvedTagPlans.push({ liveProduct: liveProducts[index], desiredManagedTags, requiredManagedTags: collectionTags });
     classifications.push({
       productId: product.shopifyId,
       handle: product.handle,
@@ -1749,13 +1931,19 @@ async function run(args) {
       visualEvidence: resolved.visualEvidence || resolved.priorClassification?.visualEvidence || null,
       visionAlignment: resolved.visionAlignment || resolved.priorClassification?.visionAlignment || null,
       guessedRuleId: resolved.guessedRuleId || resolved.priorClassification?.guessedRuleId || null,
+      fallbackReason: resolved.reviewReasons || resolved.priorClassification?.fallbackReason || [],
       visionError: resolved.visionError || resolved.priorClassification?.visionError || null,
     });
   }
 
   const managedTagUniverse = new Set(resolvedTagPlans.flatMap((entry) => entry.desiredManagedTags).map(normalizeTag));
   for (const entry of resolvedTagPlans) {
-    tagTasks.push(exactTagTask(entry.liveProduct, entry.desiredManagedTags, managedTagUniverse));
+    tagTasks.push(exactTagTask(
+      entry.liveProduct,
+      entry.desiredManagedTags,
+      managedTagUniverse,
+      entry.requiredManagedTags,
+    ));
   }
 
   const specialCollectionCounts = Object.fromEntries(
@@ -1782,9 +1970,9 @@ async function run(args) {
       managedTags: "exact-set replacement for taxonomy, collection, and classification namespaces",
       unmanagedTags: "preserved exactly",
       uncertainProducts: args.supervisedVision
-        ? "supervised multi-image evidence only; confidence, agreement, taxonomy, and alignment gates; explicit classification-review fallback; no guesses"
+        ? "supervised multi-image evidence only; confidence, agreement, taxonomy, and alignment gates; explicit non-semantic classification-fallback; no guesses"
         : args.deterministicOnly
-          ? "deterministic-only; explicit classification-review fallback collection; no image classification or guesses"
+          ? "deterministic-only; explicit non-semantic classification-fallback collection; no image classification or guesses"
           : "legacy local image enrichment path; full release guesses remain disabled",
       semanticCollectionRule: "one canonical simple collection tag condition per collection",
       priceCollections: "exact variant-price source plus exact live membership verification",
@@ -1806,12 +1994,16 @@ async function run(args) {
       visionClassified: classifications.filter((entry) => entry.source === "vision").length,
       supervisedVision: Boolean(args.supervisedVision),
       guessedAssignments: classifications.filter((entry) => entry.source === "guess").length,
+      fallbackResolved: classifications.filter((entry) => entry.source === "fallback").length,
+      reviewPending: 0,
       reusedClassifications: classifications.filter((entry) => entry.reused).length,
       collectionlessProducts: null,
       failures: null,
       specialCollectionCounts,
       auditBatchSize: args.batchSize,
       auditBatchCount: taxonomyBatchCount,
+      visualReviewCheckpoint: args.supervisedVision ? visualReviewCheckpointPath : null,
+      visualReviewCheckpointEntries: args.supervisedVision ? visualReviewCheckpoint.size : 0,
     },
     classifications,
     tagTasks,

@@ -1,7 +1,7 @@
 import { CATALOG_TAXONOMY_VERSION } from "./catalog-taxonomy.js";
 import { legacyCatalogTagToSimple } from "./catalog-simple-tags.js";
 
-export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.3`;
+export const CATALOG_COLLECTION_PLAN_VERSION = `${CATALOG_TAXONOMY_VERSION}-collections.5`;
 export const CATALOG_COLLECTION_SOURCE_TITLE = `SALT taxonomy ${CATALOG_TAXONOMY_VERSION}`;
 
 function collection(handle, title, ruleTag, description, legacyHandles = []) {
@@ -26,6 +26,7 @@ export const CATALOG_COLLECTION_PLAN = Object.freeze([
   collection("mens-bags-wallets", "Men's Bags & Wallets", "salt:category:men-bags-wallets", "Shop men's bags, wallets, briefcases, organizers, and travel carry accessories."),
   collection("mens-accessories", "Men's Accessories", "salt:category:men-accessories", "Shop men's watches, belts, hats, jewelry, sunglasses, and style accessories."),
   collection("hats", "Hats", "salt:category:hats", "Shop hats, caps, beanies, visors, bucket hats, and other headwear accessories."),
+  collection("wigs", "Wigs", "salt:category:wigs", "Shop wigs, hair replacement systems, toupees, and cosplay wigs."),
   collection("mens-beauty-skincare", "Men's Beauty & Skincare", "salt:category:men-beauty-skincare", "Shop men's grooming, skincare, haircare, fragrance, and personal care essentials."),
   collection("kids", "Kids", "salt:department:kids", "Shop kids' wear, toys, games, baby care, and children's accessories."),
   collection("kids-wear", "Kids Wear", "salt:category:kids-wear", "Shop clothing, footwear, and everyday wear for babies, kids, and teens."),

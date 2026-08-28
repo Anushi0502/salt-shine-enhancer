@@ -56,8 +56,8 @@ function run(command, args, env = process.env, cwd = rootDir) {
   });
 }
 
-function getOneDrivePids() {
-  if (process.env.SALT_BUILD_PAUSE_ONEDRIVE === "0" || !rootDir.includes("OneDrive")) {
+function getOneDrivePids(env = process.env) {
+  if (env.SALT_BUILD_PAUSE_ONEDRIVE === "0" || !rootDir.includes("OneDrive")) {
     return [];
   }
 
@@ -78,8 +78,11 @@ function getOneDrivePids() {
     .filter((pid) => pid !== process.pid);
 }
 
-function pauseOneDrive() {
-  const pids = getOneDrivePids();
+function pauseOneDrive(env = process.env) {
+  if (env.SALT_BUILD_SHARED_NODE_MODULES === "1") {
+    return () => {};
+  }
+  const pids = getOneDrivePids(env);
   for (const pid of pids) {
     try {
       process.kill(pid, "SIGSTOP");
@@ -113,10 +116,11 @@ async function main() {
       recursive: true,
       force: true,
     });
-    await cp(resolve(rootDir, "node_modules"), stageNodeModules, {
-      recursive: true,
-      force: true,
-    });
+    // Keep dependencies shared instead of copying the entire tree into the
+    // temporary build directory. The source graph, cache, and output remain
+    // staged locally; shared dependency mode leaves OneDrive available for
+    // module resolution instead of pausing the provider under the symlink.
+    await symlink(resolve(rootDir, "node_modules"), stageNodeModules, "junction");
     await mkdir(stageScripts, { recursive: true });
     await cp(resolve(rootDir, "scripts"), stageScripts, {
       recursive: true,
@@ -151,8 +155,10 @@ async function main() {
     const buildEnv = {
       ...process.env,
       SALT_BUILD_SKIP_PUBLIC_COPY: "1",
+      SALT_BUILD_SHARED_NODE_MODULES: "1",
+      NODE_OPTIONS: process.env.NODE_OPTIONS || "--max-old-space-size=4096",
     };
-    const resumeOneDrive = pauseOneDrive();
+    const resumeOneDrive = pauseOneDrive(buildEnv);
     try {
       await run(nodeBin, [resolve(stageNodeModules, "vite", "bin", "vite.js"), "build"], buildEnv, stageDir);
     } finally {

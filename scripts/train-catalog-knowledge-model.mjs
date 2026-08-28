@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
   CATALOG_KNOWLEDGE_MODEL_RECORDS,
@@ -33,7 +33,9 @@ async function main() {
   const args = parseArgs(process.argv);
   const model = trainCatalogKnowledgeModel({ records: args.records });
   await mkdir(dirname(args.output), { recursive: true });
-  await writeFile(args.output, `${JSON.stringify(model, null, 2)}\n`, "utf8");
+  const temporaryPath = `${args.output}.tmp-${process.pid}`;
+  await writeFile(temporaryPath, `${JSON.stringify(model, null, 2)}\n`, "utf8");
+  await rename(temporaryPath, args.output);
   process.stdout.write(`Trained catalog knowledge model on ${model.trainingRecords} deterministic records with ${model.representativeRules} representatives at ${args.output}.\n`);
 }
 

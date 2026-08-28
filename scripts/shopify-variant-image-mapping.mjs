@@ -14,8 +14,14 @@ const rootDir = resolve(import.meta.dirname, "..");
 const defaultInputPath = resolve(rootDir, "public", "data", "products.json");
 const defaultOutputPath = resolve(rootDir, "output", "shopify-variant-image-mapping-manifest.json");
 const defaultHandlesPath = resolve(rootDir, "output", "shopify-seo-scope-handles.json");
-const defaultMediaCachePath = resolve(rootDir, "output", "shopify-variant-image-live-media-cache.json");
-const defaultCheckpointPath = resolve(rootDir, "output", "shopify-variant-image-mapping-checkpoint.json");
+const defaultMediaCachePath = resolve(
+  rootDir,
+  process.env.SALT_VARIANT_IMAGE_MEDIA_CACHE_PATH || "output/shopify-variant-image-live-media-cache.json",
+);
+const defaultCheckpointPath = resolve(
+  rootDir,
+  process.env.SALT_VARIANT_IMAGE_CHECKPOINT_PATH || "output/shopify-variant-image-mapping-checkpoint.json",
+);
 const shopBase = process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com";
 const storeDomain = new URL(shopBase).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
@@ -36,14 +42,16 @@ const visionConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VISI
 const planConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_PLAN_CONCURRENCY || 8));
 const visionModel = process.env.SALT_VARIANT_IMAGE_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
-const visionImageLimit = Math.max(2, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_LIMIT || 20)));
-const visionImageWidth = Math.max(384, Math.min(1200, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_WIDTH || 768)));
+const visionImageLimit = Math.max(2, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_LIMIT || 12)));
+const visionImageWidth = Math.max(384, Math.min(1200, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_WIDTH || 640)));
 const visionImageAttempts = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_ATTEMPTS || 3));
 const visionImageTimeoutMs = Math.max(10_000, Number(process.env.SALT_VARIANT_IMAGE_VISION_IMAGE_TIMEOUT_MS || 45_000));
-const visionRequestAttempts = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VISION_REQUEST_ATTEMPTS || 3));
-const visionRequestTimeoutMs = Math.max(30_000, Number(process.env.SALT_VARIANT_IMAGE_VISION_REQUEST_TIMEOUT_MS || 180_000));
+const visionRequestAttempts = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_VISION_REQUEST_ATTEMPTS || 1));
+const visionRequestTimeoutMs = Math.max(30_000, Number(process.env.SALT_VARIANT_IMAGE_VISION_REQUEST_TIMEOUT_MS || 120_000));
 const visionOutputTokens = Math.max(256, Number(process.env.SALT_VARIANT_IMAGE_VISION_OUTPUT_TOKENS || 1200));
 const visionContextLength = Math.max(4096, Number(process.env.SALT_VARIANT_IMAGE_VISION_CONTEXT_LENGTH || 8192));
+let visionProductsRemaining = Math.max(0, Number(process.env.SALT_VARIANT_IMAGE_VISION_PRODUCT_BUDGET || 64));
+const allowSourceOnlyExclusions = process.env.SALT_VARIANT_IMAGE_ALLOW_SOURCE_ONLY_EXCLUSIONS === "1";
 const debugHandle = normalizeHandleValue(process.env.SALT_VARIANT_IMAGE_DEBUG_HANDLE || "");
 const useBulkApply = process.env.SALT_VARIANT_IMAGE_USE_BULK !== "0";
 const bulkApplyThreshold = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_BULK_THRESHOLD || 25));
@@ -400,9 +408,13 @@ function productNeedsVisualVerification(product, images, variants, liveProduct =
       .sort((left, right) => right.score - left.score);
     return !ranked[0] || ranked[0].score < 18 || ranked[0].score - (ranked[1]?.score || 0) < 6;
   });
-  return allCurrentImage
-    || currentMappingContradictsText
-    || (hasDifferentSemanticRoles && (duplicateCurrentImage || hasWeakLexicalEvidence));
+  const deterministicAssignments = assignDeterministicMappings(variants, images);
+  const deterministicComplete = variants.length <= images.length
+    && deterministicAssignments.size === variants.length
+    && [...deterministicAssignments.values()].every((assignment) => assignment.confidence === "high");
+  if (deterministicComplete) return false;
+  return currentMappingContradictsText
+    || (hasDifferentSemanticRoles && (allCurrentImage || duplicateCurrentImage || hasWeakLexicalEvidence));
 }
 
 async function imageAsBase64(url) {
@@ -516,7 +528,7 @@ async function classifyVariantImagesWithVision(product, variants, images) {
     const tokens = new Set(tokenise(variantText(variant)));
     return tokens.has("lunch") || tokens.has("pencil");
   });
-  const candidateLimit = needsDeepVariantWindow ? visionImageLimit : Math.min(4, visionImageLimit);
+  const candidateLimit = needsDeepVariantWindow ? Math.min(12, visionImageLimit) : Math.min(4, visionImageLimit);
   const candidates = selectVisionCandidates(images, variants, candidateLimit);
   if (candidates.length < 2) return null;
   const encodedResults = await Promise.all(candidates.map(async (image, sourceIndex) => {
@@ -1048,14 +1060,19 @@ async function fetchLiveProductMediaByIds(ids, cachePath = "") {
   }
   const missingAfterFetch = uniqueIds.filter((id) => !partialCache.has(String(id)));
   if (missingAfterFetch.length) {
-    if (cachePath) {
-      await writeJsonAtomic(cachePath, {
-        generatedAt: new Date().toISOString(),
-        mediaPagesComplete: false,
-        products: [...partialCache.values()],
-      });
+    if (!allowSourceOnlyExclusions) {
+      if (cachePath) {
+        await writeJsonAtomic(cachePath, {
+          generatedAt: new Date().toISOString(),
+          mediaPagesComplete: false,
+          products: [...partialCache.values()],
+        });
+      }
+      throw new Error(`Shopify returned ${missingAfterFetch.length} scoped product(s) without live media records; resume after correcting the live scope.`);
     }
-    throw new Error(`Shopify returned ${missingAfterFetch.length} scoped product(s) without live media records; resume after correcting the live scope.`);
+    process.stdout.write(
+      `Excluding ${missingAfterFetch.length} source-only product(s) absent from the live Shopify scope; they are not active mapping targets.\n`,
+    );
   }
   if (cachePath) {
     await writeJsonAtomic(cachePath, {
@@ -1317,7 +1334,12 @@ async function buildPlan(snapshotProducts, liveProducts, scopeHandles, options =
 
   const fingerprint = planFingerprint(snapshotProducts, liveProducts, scopeHandles);
   const priorCheckpoint = await loadPlanCheckpoint(options.checkpointPath, fingerprint, options.resume);
-  const plansByHandle = new Map((priorCheckpoint?.plans || []).map((plan) => [plan.handle, plan]));
+  const reprocessVisionErrors = process.env.SALT_VARIANT_IMAGE_REPROCESS_VISION_ERRORS === "1";
+  const plansByHandle = new Map(
+    (priorCheckpoint?.plans || [])
+      .filter((plan) => !(reprocessVisionErrors && plan.visionError))
+      .map((plan) => [plan.handle, plan]),
+  );
   const pendingLiveProducts = liveFiltered.filter((product) => !plansByHandle.has(normalizeHandleValue(product?.handle)));
   let completedSinceCheckpoint = 0;
   let checkpointWrite = Promise.resolve();
@@ -1346,16 +1368,20 @@ async function buildPlan(snapshotProducts, liveProducts, scopeHandles, options =
 
     let vision = null;
     let visionError = "";
+    let visionSkippedReason = "";
     const visionEligible = options.vision && productNeedsVisualVerification(snapshotProduct, productImages, variants, liveProduct);
     if (debugHandle && handle === debugHandle) {
       process.stdout.write(`DEBUG vision=${options.vision} enabled=${visionEnabled} images=${productImages.length} variants=${variants.length} source=${variants.map((variant) => variant?.featured_image?.id || variant?.image_id || "").join(",")} eligible=${visionEligible} text=${variants.map(variantText).join(" | ")}\n`);
     }
-    if (visionEligible) {
+    if (visionEligible && visionProductsRemaining > 0) {
+      visionProductsRemaining -= 1;
       try {
         vision = await visionGate(() => classifyVariantImagesWithVision(snapshotProduct, variants, productImages));
       } catch (error) {
         visionError = normalizePlainText(error?.message || error);
       }
+    } else if (visionEligible) {
+      visionSkippedReason = "supervised-vision-budget-exhausted";
     }
 
     const assignments = assignVariantImages(variants, productImages, snapshotProduct, vision, options.forceGuesses);
@@ -1396,6 +1422,7 @@ async function buildPlan(snapshotProducts, liveProducts, scopeHandles, options =
       skipped,
       visionUsed: Boolean(vision),
       visionError,
+      visionSkippedReason,
       variantsConsidered: variants.length,
       prices: variants.map((variant) => ({ id: String(variant?.id || ""), price: variant?.price != null ? String(variant.price) : "" })),
     };
@@ -1428,6 +1455,7 @@ async function buildPlan(snapshotProducts, liveProducts, scopeHandles, options =
       variantsConsidered: evaluatedProducts.reduce((total, product) => total + product.variantsConsidered, 0),
       visionVerifiedProducts: evaluatedProducts.filter((product) => product.visionUsed).length,
       visionFailures: evaluatedProducts.filter((product) => product.visionError).length,
+      visionBudgetSkips: evaluatedProducts.filter((product) => product.visionSkippedReason).length,
       forcedGuessVariants: plannedProducts.reduce((total, product) => total + product.updates.filter((variant) => variant.reason === "forced-guess").length, 0),
       deterministicVariants: plannedProducts.reduce((total, product) => total + product.updates.filter((variant) => variant.reason !== "forced-guess" && variant.reason !== "supervised-vision").length, 0),
       supervisedVisionVariants: plannedProducts.reduce((total, product) => total + product.updates.filter((variant) => variant.reason === "supervised-vision").length, 0),
@@ -1695,6 +1723,14 @@ async function main() {
   }
   const cachedLiveProducts = await loadMediaCache(args.mediaCachePath, scopedProductIds);
   const liveProducts = cachedLiveProducts || await fetchLiveProductMediaByIds(scopedProductIds, args.mediaCachePath);
+  const liveProductIdSet = new Set(liveProducts.map((product) => String(product?.id || "")).filter(Boolean));
+  const liveScopeExclusions = scopedProductIds.filter((id) => !liveProductIdSet.has(String(id)));
+  if (liveScopeExclusions.length && !allowSourceOnlyExclusions) {
+    throw new Error(`Live Shopify scope is missing ${liveScopeExclusions.length} source product(s); refusing to map an incomplete scope.`);
+  }
+  if (liveScopeExclusions.length) {
+    process.stdout.write(`Live active mapping scope: ${liveProducts.length} products; ${liveScopeExclusions.length} source-only exclusions.\n`);
+  }
   if (!cachedLiveProducts) {
     await writeJsonAtomic(args.mediaCachePath, {
       generatedAt: new Date().toISOString(),
@@ -1726,6 +1762,8 @@ async function main() {
       planFingerprint: fingerprint,
       resumableCheckpoint: args.checkpointPath,
       resumeRequested: args.resume,
+      liveScopeExclusions,
+      sourceOnlyExclusionsAllowed: allowSourceOnlyExclusions,
     },
     products: plannedProducts,
     failures: [],

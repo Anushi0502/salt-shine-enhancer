@@ -114,30 +114,19 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
 }
 
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
-  try {
-    const bestSellerProducts = (await loadCollectionPreviewProducts("best-sellers", 12))
-      .map(toHomeFeaturedProduct)
-      .filter((product): product is HomeFeaturedProduct => Boolean(product));
+  const bestSellerProducts = (await loadCollectionPreviewProducts("best-sellers", 12))
+    .map(toHomeFeaturedProduct)
+    .filter((product): product is HomeFeaturedProduct => Boolean(product));
 
-    return {
-      generatedAt: new Date().toISOString(),
-      source: "shopify-live:best-sellers",
-      total: bestSellerProducts.length,
-      sources: { bestSellerProducts: "best-sellers" },
-      bestSellerProducts,
-      quirkyGiftPicks: [],
-      everydayEssentialProducts: [],
-    };
-  } catch {
-    return {
-      generatedAt: new Date().toISOString(),
-      source: "shopify-live:best-sellers",
-      total: 0,
-      bestSellerProducts: [],
-      quirkyGiftPicks: [],
-      everydayEssentialProducts: [],
-    };
-  }
+  return {
+    generatedAt: new Date().toISOString(),
+    source: "shopify-live:best-sellers",
+    total: bestSellerProducts.length,
+    sources: { bestSellerProducts: "best-sellers" },
+    bestSellerProducts,
+    quirkyGiftPicks: [],
+    everydayEssentialProducts: [],
+  };
 }
 
 export function useHomeFeaturedProducts(enabled = true) {
