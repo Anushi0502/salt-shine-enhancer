@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-27T20:28:28.225Z",
+  "generatedAt": "2026-08-28T21:10:49.462Z",
   "policy": "Every ambiguous product receives supervised evidence or an explicit non-semantic fallback; no pending review items remain.",
   "products": [
     {
@@ -1356,6 +1356,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8052555743331",
+      "handle": "mens-handbags-briefcase-canvas-shoulder-bag-man-for-documents-large-capacity-tote-laptop-bag-crossbody-travel-bags-vintage-k004",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8052555841635",
       "handle": "outdoor-men-waist-pack-bum-bag-pouch-waterproof-waist-bag-sport-hunting-belt-nylon-mobile-phone-bags-travel-tools-mens-bags",
       "title": "",
@@ -2544,17 +2555,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8094203379811",
-      "handle": "mens-t-shirts-the-truth-is-out-there-crazy-100-cotton-tee-shirt-short-sleeve-the-x-files-t-shirt-crewneck-tops-new-arrival-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8094209343587",
       "handle": "2026-mens-casual-t-shirt-fashion-slim-long-sleeve-v-neck-fitness-t-shirts-tops-homme-tshirt-boyfriend-gift-harajuku-streetwear",
       "title": "",
@@ -2689,28 +2689,6 @@
     {
       "productId": "gid://shopify/Product/8097472512099",
       "handle": "the-creature-cases-style-cartoon-print-t-shirts-high-quality-100-cotton-tee-shirt-round-neck-cartoon-boys-girls-kawaii-t-shirt",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8097472872547",
-      "handle": "summer-t-shirts-woman-o-neck-short-sleeves-tees-satin-klein-blue-champagne-solid-color-loose-womensoversized-t-shirt-silk-tops",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8097473757283",
-      "handle": "tacvasen-short-sleeve-crew-neck-cotton-t-shirts-mens-breathable-casual-t-shirt-sports-pullover-basic-tee-shirts-tops-clothing",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4656,6 +4634,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123478343779",
+      "handle": "breathable-wrist-support-brace-adjustable-thumb-loop-wrist-wrap-for-gym-sports-pain-relief",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123478409315",
       "handle": "wrist-brace-support-with-2-straps-and-metal-splint-stabilizer-relieve-tendinitis-arthritis-carpal-tunnel-pain-for-men-women",
       "title": "",
@@ -5107,17 +5096,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123483324515",
-      "handle": "moisturizing-lip-lotion-essence-volumizing-lip-glaze-womens-moisturizing-and-moisturizing-natural-lip-gloss-hydrating-lip-gloss-3",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123483521123",
       "handle": "tea-tree-essential-oil-nature-for-aromatherapy-diffuser-humidifier-woody-relieving-stress-massage-muscle",
       "title": "",
@@ -5261,8 +5239,118 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123566456931",
+      "handle": "removes-lint-from-clothes-pet-hair-removal-roller-removes-hairs-cat-hair-brush-take-out-of-clothes-for-cleaning-remover-tools-1",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123566489699",
+      "handle": "vintage-portable-led-lantern-handheld-emergency-lamp-with-charger-for-camping-tent-outdoor-atmosphere-lighting",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123566653539",
+      "handle": "self-cleaning-lint-sticking-roller-2-sides-dedusting-brush-pet-hair-remover-brush-removing-dog-cat-hair-from-sofa-carpet-clothes",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123566817379",
+      "handle": "reusable-electrostatic-dusting-brush-ergonomic-grip-quickly-removes-hair-lint-from-fabric-household-lint-roller",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123567177827",
+      "handle": "1pcself-cleaning-lint-sticking-roller-2-sides-removes-lint-from-clothes-reusable-pet-hair-remover-brush-from-sofa-carpet-clothe",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123567636579",
+      "handle": "1-multifunctional-long-handled-window-brush-wet-and-dry-dual-use-cleaning-brush-glass-brush-sofa-wall-pet-hair-carpet-clea",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123567669347",
+      "handle": "outdoor-camping-lantern-portable-usb-rechargeable-lamp-retro-led-light-for-emergency-fishing-hiking-tent-nightlight-waterproof",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123567702115",
       "handle": "tent-retro-style-horse-lantern-portable-led-emergency-lamp-bright-waterproof-camping-light-camping",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123567964259",
+      "handle": "solar-lanterns-solar-lights-outdoor-waterproof-boho-light-for-outside-hanging-rattan-lantern-decoration-for-garden-yard-patio",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123567997027",
+      "handle": "solar-flame-rope-lantern-type-c-fast-charging-waterproof-hanging-lamp-with-flickering-3d-flame-for-garden-patio-camping-decor",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123568029795",
+      "handle": "solar-flame-rope-lantern-type-c-fast-charging-waterproof-hanging-lamp-with-flickering-3d-flame-for-garden-patio-camping-decor-1",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5294,6 +5382,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123568193635",
+      "handle": "rattan-solar-lantern-ip65-waterproof-outside-big-rattan-solar-light-rattan-weaving-solar-garden-lantern-for-balcony-patio-garden",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123568226403",
       "handle": "solar-powered-solar-lantern-waterproof-iron-art-outdoor-decoration-with-hook-lithium-battery-solar-lighting-wedding-decoration",
       "title": "",
@@ -5316,8 +5415,52 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123568586851",
+      "handle": "health-medicine-first-aid-kit-oxford-cloth-portable-travel-storage-emergency-kit-tote-bag-outdoor-medical-bag-storage-case-red",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123568685155",
       "handle": "soft-pillow-cushion-laptop-lap-desk-ergonomic-portable-design-writing-padded-tray-padded-tray-foam-particles-filled",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123568783459",
+      "handle": "outdoor-emergency-survival-medicine-bag-pill-case-first-aid-kit-organizer-portable-storage-bag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123568881763",
+      "handle": "anti-epidemic-first-aid-kit-hygiene-emergency-medicine-kit-portable-family-storage-bag-convenient-for-vehicle-carry",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123568947299",
+      "handle": "portable-portable-medical-kit-home-first-aid-kit-outdoor-travel-medical-kit-large-capacity-medicine-storage-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5338,8 +5481,52 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123569209443",
+      "handle": "solar-lanterns-outdoor-waterproof-flickering-flame-solar-lantern-led-hanging-lanterns-decorative-outdoor-solar-lights-for-garden",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569274979",
+      "handle": "soft-pillow-cushion-laptop-lap-desk-padded-tray-portable-design-writing-padded-tray-ergonomic-hard-mouse-pad-small-pillow-table",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569307747",
+      "handle": "solar-lanterns-solar-lights-outdoor-waterproof-boho-light-for-outside-hanging-rattan-lantern-decoration-for-garden-yard-patio-1",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123569340515",
       "handle": "laptop-lap-desk-with-soft-pillow-cushion-portable-laptop-desk-writing-padded-tray-for-13-15inch-laptops",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569373283",
+      "handle": "elevating-bed-desk-top-laptop-writing-table-student-dormitory-upper-bed-computer-desk-small-table-bedroom-storage-organizer",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5382,6 +5569,50 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123569504355",
+      "handle": "kitchen-soap-dispensers-500ml-build-in-dispenser-soap-for-kitchen-bathroom-accessories-stainless-steel-pump-liquid-pe-bottle",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569537123",
+      "handle": "portable-folding-laptop-table-bed-tray-adjustable-height-lightweight-small-student-dorm-bunk-study-home-bedroom-dining-table",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569569891",
+      "handle": "500ml-kitchen-sink-detergent-dispensers-stainless-steel-head-liquid-dispenser-soap-pe-bottle-for-bathroom-soap-dispensers-chrome",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123569766499",
+      "handle": "first-aid-kit-emergency-survival-bag-handbag-durable-trauma-bag-compact-rescue-tote-bag-portable-medicine-storage-bag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123569864803",
       "handle": "laptop-lap-desk-with-soft-pillow-cushion-multifunctional-laptop-desk-writing-padded-tray-for-work-game",
       "title": "",
@@ -5404,6 +5635,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123570421859",
+      "handle": "soap-despenser-portable-foam-pumps-bottle-250-450-650ml-manually-press-soap-foaming-mousses-liquid-dispensers-bathroom-bottling",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123570454627",
       "handle": "automatic-inductive-soap-dispenser-foam-washing-phone-smart-hand-washing-soap-dispenser-alcohol-spray-dispenser-washing",
       "title": "",
@@ -5415,8 +5657,107 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8123570487395",
+      "handle": "ceramic-soap-dispenser-modern-vintage-brown-liquid-storage-container-save-soap-creative-lotion-pump-bottle-bathroom",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123570552931",
+      "handle": "smart-induction-soap-dispenser-stainless-steel-automatic-intelligent-liquid-soaps-container-large-foam-soaper-for-bathroom",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123570585699",
+      "handle": "bamboo-soap-dispenser-refillable-kitchen-sink-liquid-soap-dispenser-decorative-bathroom-sink-bar-soap-dispenser",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123570618467",
+      "handle": "soap-dispenser-with-metal-pump-textured-water-ripple-design-refillable-liquid-soap-bottle-for-bathroom-kitchen",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123570716771",
+      "handle": "1pc-soap-dispenser-300ml-10oz-ceramic-liquid-soap-pump-dispenser-refillable-dish-soap-dispenser-for-kitchen-bathroom-washroom",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8123570749539",
       "handle": "automatic-soap-dispenser-usb-charging-cute-cartoon-style-touchless-sensor-children-washing-hand-machine-soap-foam-dispenser",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123570782307",
+      "handle": "kitchen-300ml-automatic-liquid-soap-dispenser-usb-rechargeable-touchless-hand-high-capacity-detergent-bathroom-dispenser",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123571175523",
+      "handle": "ceramics-portable-soap-dispensers-handwashing-fluid-bottle-terrazzo-pattern-lotion-bottle-soap-bottle-bathroom-soap-dispensers",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123571241059",
+      "handle": "ceramic-yellow-duck-soap-dispenser-cartoon-hand-sanitizer-bottle-shower-gel-shampoo-soap-dispenser-bathroom-shampoo-dispenser",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123571306595",
+      "handle": "automatic-foaming-soap-dispenser-touchless-induction-hand-washer-smart-soap-dispenser-for-home-hotel-bathroom",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5450,6 +5791,61 @@
     {
       "productId": "gid://shopify/Product/8123571765347",
       "handle": "soap-dish-drainable-sponge-soap-bar-container-cute-cat-shaped-creative-water-drain-soap-tray-washing-sponge-holder-for-household",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123572420707",
+      "handle": "new-designer-brand-materials-luxury-100-natural-mulberry-silk-chiffon-fabric-pink-flowers-print-shirt-cloth-scarf-wide-tissu",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123572584547",
+      "handle": "fashion-design-womens-pink-silk-square-scarf-with-designer-signature-letter-logo-wraps-luxury-brand-lady-one-side-beach-skirts",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123573076067",
+      "handle": "amber-glass-soap-dispenser-with-black-pump-liquid-hand-soap-dispenser-for-bathroom-kitchen-dish-soap-dispenser-2pc-16oz-500ml",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123573305443",
+      "handle": "1pc-adorable-soap-dish-self-draining-solid-tray-for-kitchen-and-bathroom",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8123573469283",
+      "handle": "soap-dish-in-the-shape-of-a-boat-wall-mounted-no-drilling-required-suitable-for-bathrooms-soap-storage-box",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."

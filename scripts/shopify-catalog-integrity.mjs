@@ -60,6 +60,8 @@ const rootDir = resolve(import.meta.dirname, "..");
 const execFileAsync = promisify(execFile);
 const defaultOutputPath = resolve(rootDir, "output", "shopify-catalog-integrity-manifest.json");
 const defaultVisualReviewCheckpointPath = resolve(rootDir, "output", "catalog-integrity-visual-review-checkpoint.json");
+const defaultVisualTaxonomyEvidencePath = resolve(rootDir, "output", "visual-taxonomy-evidence.json");
+const defaultVisualTaxonomyModelPath = resolve(rootDir, "output", "visual-taxonomy-model.json");
 const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT ||
   resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
 const collectionApprovalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
@@ -977,13 +979,36 @@ function resolveExistingVisionKnowledge(product, knowledgeModel = null) {
   };
 }
 
-async function resolveKnowledge(product, { skipVision, deterministicOnly, supervisedVision, knowledgeModel = null, modelEvidence = undefined, priorVisualEvidence = null }) {
+function resolveTrainedVisualKnowledge(product, visualModelEvidence, knowledgeModel) {
+  if (!visualModelEvidence || visualModelEvidence.source !== "trained-visual-taxonomy-model" || visualModelEvidence.accepted !== true) return null;
+  const confidence = Number(visualModelEvidence.confidence);
+  const margin = Number(visualModelEvidence.margin);
+  const ruleId = String(visualModelEvidence.ruleId || "");
+  if (!ruleId || !Number.isFinite(confidence) || !Number.isFinite(margin) || confidence < 0.78 || margin < 0.18) return null;
+  const visionAlignment = assessVisionTaxonomyAlignment(product, ruleId);
+  if (!visionAlignment.accepted) return null;
+  const taxonomy = classifyCatalogTaxonomyByRuleId(product, ruleId, {
+    source: "trained-visual-taxonomy-model",
+    reason: `${normalizeText(visualModelEvidence.reason)} Model confidence ${Math.round(confidence * 100)}%, margin ${Math.round(margin * 100)}%.`,
+  });
+  return {
+    knowledge: buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel }),
+    source: "vision-model",
+    visualEvidence: visualModelEvidence,
+    visionAlignment,
+  };
+}
+
+async function resolveKnowledge(product, { skipVision, deterministicOnly, supervisedVision, knowledgeModel = null, modelEvidence = undefined, priorVisualEvidence = null, visualModelEvidence = null }) {
   const directTaxonomy = classifyCatalogTaxonomyWithoutOverrides(product);
   const deterministic = resolveDeterministicKnowledge(product, knowledgeModel, modelEvidence);
   if (deterministic) return deterministic;
 
   const existingVision = resolveExistingVisionKnowledge(product, knowledgeModel);
   if (existingVision) return existingVision;
+
+  const trainedVisual = resolveTrainedVisualKnowledge(product, visualModelEvidence, knowledgeModel);
+  if (trainedVisual) return trainedVisual;
 
   if (deterministicOnly && !supervisedVision) {
     return {
@@ -1737,6 +1762,22 @@ async function run(args) {
   if (visualEvidenceByHandle.size) {
     process.stdout.write(`Reusing supervised visual evidence for ${visualEvidenceByHandle.size} products.\n`);
   }
+  const visualTaxonomyEvidence = await readJson(
+    process.env.SALT_VISUAL_TAXONOMY_EVIDENCE_PATH || defaultVisualTaxonomyEvidencePath,
+    null,
+  );
+  const visualTaxonomyModel = await readJson(
+    process.env.SALT_VISUAL_TAXONOMY_MODEL_PATH || defaultVisualTaxonomyModelPath,
+    null,
+  );
+  const visualModelEvidenceByHandle = visualTaxonomyModel?.retention?.rawDataPurged === true &&
+    visualTaxonomyEvidence?.modelVersion === visualTaxonomyModel?.modelVersion &&
+    visualTaxonomyEvidence?.catalogGeneratedAt === catalog.generatedAt
+    ? new Map(Object.entries(visualTaxonomyEvidence?.products || {}).map(([handle, evidence]) => [normalizeCollectionHandle(handle), evidence]))
+    : new Map();
+  if (visualModelEvidenceByHandle.size) {
+    process.stdout.write(`Using ${visualModelEvidenceByHandle.size} current-catalog trained visual taxonomy decisions with confidence gates.\n`);
+  }
   const canReusePriorManifest = args.mode === "verify" && Boolean(priorSnapshot) &&
     (!args.reclassify || args.reusePriorManifest);
   if (args.reusePriorManifest && (!args.reclassify || args.mode !== "verify")) {
@@ -1851,6 +1892,7 @@ async function run(args) {
         knowledgeModel,
         modelEvidence: modelEvidenceByKey?.get(String(entry.product?.id || entry.product?.handle || "")),
         priorVisualEvidence: visualEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)),
+        visualModelEvidence: visualModelEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)),
       }),
       args.deterministicOnly ? "Review resolution processed" : "Visual resolution processed",
     );
@@ -1972,8 +2014,11 @@ async function run(args) {
       uncertainProducts: args.supervisedVision
         ? "supervised multi-image evidence only; confidence, agreement, taxonomy, and alignment gates; explicit non-semantic classification-fallback; no guesses"
         : args.deterministicOnly
-          ? "deterministic-only; explicit non-semantic classification-fallback collection; no image classification or guesses"
+          ? "deterministic taxonomy plus verified Metal visual-model evidence when available; confidence, margin, taxonomy, and alignment gates; explicit non-semantic classification-fallback; no guesses"
           : "legacy local image enrichment path; full release guesses remain disabled",
+      trainedVisualModel: visualModelEvidenceByHandle.size
+        ? "current-catalog verified Metal visual taxonomy evidence"
+        : "not installed or not available for this catalog fingerprint",
       semanticCollectionRule: "one canonical simple collection tag condition per collection",
       priceCollections: "exact variant-price source plus exact live membership verification",
       collectionlessProducts: "forbidden",
@@ -1991,8 +2036,10 @@ async function run(args) {
       tagsToRemove: tagTasks.reduce((sum, task) => sum + task.tagsToRemove.length, 0),
       taxonomyClassified: classifications.filter((entry) => entry.source === "taxonomy").length,
       approvedOverrides: classifications.filter((entry) => entry.source === "approved-override").length,
-      visionClassified: classifications.filter((entry) => entry.source === "vision").length,
+      visionClassified: classifications.filter((entry) => ["vision", "vision-model"].includes(entry.source)).length,
       supervisedVision: Boolean(args.supervisedVision),
+      trainedVisualModelDecisions: visualModelEvidenceByHandle.size,
+      trainedVisualModelAccepted: [...visualModelEvidenceByHandle.values()].filter((entry) => entry?.accepted === true).length,
       guessedAssignments: classifications.filter((entry) => entry.source === "guess").length,
       fallbackResolved: classifications.filter((entry) => entry.source === "fallback").length,
       reviewPending: 0,

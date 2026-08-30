@@ -30,6 +30,7 @@ const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/gra
 const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 0));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
+const maxRetryDelayMs = Math.max(1_000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
 const maxBatchProducts = Math.max(1, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_BATCH_SIZE || 25)));
 const applyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_APPLY_CONCURRENCY || 2));
 const fetchConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_FETCH_CONCURRENCY || 2));
@@ -80,6 +81,18 @@ const liveMediaPageSize = Math.max(
 );
 const graphqlTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_GRAPHQL_TIMEOUT_MS || 120_000));
 const checkpointInterval = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_CHECKPOINT_INTERVAL || 12));
+const mediaBatchTimeoutMs = Math.max(
+  graphqlTimeoutMs,
+  Number(process.env.SALT_VARIANT_IMAGE_MEDIA_BATCH_TIMEOUT_MS || 900_000),
+);
+const mediaCachePersistInterval = Math.max(
+  1,
+  Number(process.env.SALT_VARIANT_IMAGE_MEDIA_CACHE_PERSIST_INTERVAL || checkpointInterval),
+);
+
+// Shopify throttles are shared across concurrent requests. Without a shared
+// cooldown, workers retry together and can keep the same media page hot.
+let throttleGateUntil = 0;
 
 const LIVE_PRODUCT_SELECTION = /* GraphQL */ `
   id
@@ -308,6 +321,19 @@ function parseArgs(argv) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForThrottleGate() {
+  const waitMs = throttleGateUntil - Date.now();
+  if (waitMs > 0) await sleep(waitMs);
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} exceeded ${Math.ceil(timeoutMs / 60_000)} minute(s)`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 function tokenise(value) {
@@ -799,6 +825,7 @@ async function executeGraphQl(query, variables = {}, { mutation = false, operati
   if (mutation) cliArgs.push("--allow-mutations");
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    await waitForThrottleGate();
     try {
       let payload;
       if (adminAccessToken) {
@@ -860,7 +887,10 @@ async function executeGraphQl(query, variables = {}, { mutation = false, operati
       // Use a longer base delay for "Throttled" errors and add jitter to avoid thundering herd
       const baseDelay = /throttled|THROTTLED/i.test(message) ? 2000 * 2 ** attempt : 1000 * 2 ** attempt;
       const jitter = Math.floor(Math.random() * baseDelay * 0.3);
-      const retryMs = Math.min(30_000, baseDelay + jitter);
+      const retryMs = Math.min(maxRetryDelayMs, baseDelay + jitter);
+      if (/throttled|THROTTLED|rate limit|429/i.test(message)) {
+        throttleGateUntil = Math.max(throttleGateUntil, Date.now() + retryMs);
+      }
       process.stdout.write(`${operation} throttled; retrying in ${(retryMs / 1000).toFixed(1)}s\n`);
       await sleep(retryMs);
     }
@@ -998,47 +1028,68 @@ async function fetchLiveProductMediaByIds(ids, cachePath = "") {
     return [...partialCache.values()];
   }
   const batchCount = Math.ceil(missingIds.length / 20);
+  let completedBatchCount = 0;
+  let cacheWriteQueue = Promise.resolve();
+  const persistPartialCache = () => {
+    if (!cachePath) return Promise.resolve();
+    cacheWriteQueue = cacheWriteQueue.then(() => writeJsonAtomic(cachePath, {
+      generatedAt: new Date().toISOString(),
+      mediaPagesComplete: false,
+      products: [...partialCache.values()],
+    }));
+    return cacheWriteQueue;
+  };
   const tasks = Array.from({ length: batchCount }, (_, batchIndex) => async () => {
     const batch = missingIds.slice(batchIndex * 20, (batchIndex + 1) * 20);
-    const data = await executeGraphQl(
-      LIVE_PRODUCT_MEDIA_BY_ID_QUERY,
-      { ids: batch, mediaFirst: liveMediaPageSize, mediaAfter: null },
-      { operation: `scoped media batch ${batchIndex + 1}/${batchCount}` },
-    );
-    const products = (data.nodes || []).filter((product) => product?.id);
-    return Promise.all(products.map(async (product) => {
-      const nodes = [...(product.media?.nodes || [])];
-      let pageInfo = product.media?.pageInfo || { hasNextPage: false, endCursor: null };
-      while (pageInfo.hasNextPage && pageInfo.endCursor) {
-        const nextData = await executeGraphQl(
-          LIVE_PRODUCT_MEDIA_BY_ID_QUERY,
-          { ids: [product.id], mediaFirst: liveMediaPageSize, mediaAfter: pageInfo.endCursor },
-          { operation: `media continuation ${product.handle || product.id}` },
-        );
-        const nextProduct = (nextData.nodes || []).find((entry) => String(entry?.id || "") === String(product.id));
-        if (!nextProduct) break;
-        nodes.push(...(nextProduct.media?.nodes || []));
-        pageInfo = nextProduct.media?.pageInfo || { hasNextPage: false, endCursor: null };
-      }
-      const variants = [...(product.variants?.nodes || [])];
-      let variantPageInfo = product.variants?.pageInfo || { hasNextPage: false, endCursor: null };
-      while (variantPageInfo.hasNextPage && variantPageInfo.endCursor) {
-        const nextData = await executeGraphQl(
-          LIVE_PRODUCT_VARIANTS_BY_ID_QUERY,
-          { ids: [product.id], variantFirst: liveVariantPageSize, variantAfter: variantPageInfo.endCursor },
-          { operation: `variant continuation ${product.handle || product.id}` },
-        );
-        const nextProduct = (nextData.nodes || []).find((entry) => String(entry?.id || "") === String(product.id));
-        if (!nextProduct) break;
-        variants.push(...(nextProduct.variants?.nodes || []));
-        variantPageInfo = nextProduct.variants?.pageInfo || { hasNextPage: false, endCursor: null };
-      }
-      return {
-        ...product,
-        media: { ...product.media, nodes, pageInfo },
-        variants: { ...product.variants, nodes: variants, pageInfo: variantPageInfo },
-      };
-    }));
+    const operation = `scoped media batch ${batchIndex + 1}/${batchCount}`;
+    const result = await withTimeout((async () => {
+      const data = await executeGraphQl(
+        LIVE_PRODUCT_MEDIA_BY_ID_QUERY,
+        { ids: batch, mediaFirst: liveMediaPageSize, mediaAfter: null },
+        { operation },
+      );
+      const products = (data.nodes || []).filter((product) => product?.id);
+      return Promise.all(products.map(async (product) => {
+        const nodes = [...(product.media?.nodes || [])];
+        let pageInfo = product.media?.pageInfo || { hasNextPage: false, endCursor: null };
+        while (pageInfo.hasNextPage && pageInfo.endCursor) {
+          const nextData = await executeGraphQl(
+            LIVE_PRODUCT_MEDIA_BY_ID_QUERY,
+            { ids: [product.id], mediaFirst: liveMediaPageSize, mediaAfter: pageInfo.endCursor },
+            { operation: `media continuation ${product.handle || product.id}` },
+          );
+          const nextProduct = (nextData.nodes || []).find((entry) => String(entry?.id || "") === String(product.id));
+          if (!nextProduct) break;
+          nodes.push(...(nextProduct.media?.nodes || []));
+          pageInfo = nextProduct.media?.pageInfo || { hasNextPage: false, endCursor: null };
+        }
+        const variants = [...(product.variants?.nodes || [])];
+        let variantPageInfo = product.variants?.pageInfo || { hasNextPage: false, endCursor: null };
+        while (variantPageInfo.hasNextPage && variantPageInfo.endCursor) {
+          const nextData = await executeGraphQl(
+            LIVE_PRODUCT_VARIANTS_BY_ID_QUERY,
+            { ids: [product.id], variantFirst: liveVariantPageSize, variantAfter: variantPageInfo.endCursor },
+            { operation: `variant continuation ${product.handle || product.id}` },
+          );
+          const nextProduct = (nextData.nodes || []).find((entry) => String(entry?.id || "") === String(product.id));
+          if (!nextProduct) break;
+          variants.push(...(nextProduct.variants?.nodes || []));
+          variantPageInfo = nextProduct.variants?.pageInfo || { hasNextPage: false, endCursor: null };
+        }
+        return {
+          ...product,
+          media: { ...product.media, nodes, pageInfo },
+          variants: { ...product.variants, nodes: variants, pageInfo: variantPageInfo },
+        };
+      }));
+    })(), mediaBatchTimeoutMs, operation);
+
+    for (const product of result) partialCache.set(String(product.id), product);
+    completedBatchCount += 1;
+    if (completedBatchCount % mediaCachePersistInterval === 0 || completedBatchCount === batchCount) {
+      await persistPartialCache();
+    }
+    return result;
   });
   let fetchedCount = 0;
   try {

@@ -103,6 +103,14 @@ const variantImageEnv = {
   ...process.env,
   SALT_VARIANT_IMAGE_MEDIA_CACHE_PATH: variantImageCachePath,
   SALT_VARIANT_IMAGE_CHECKPOINT_PATH: variantImageCheckpointPath,
+  // A single live-media reader avoids Shopify throttle herds during a full
+  // catalog resume; local planning and verification remain parallel.
+  SALT_VARIANT_IMAGE_FETCH_CONCURRENCY:
+    process.env.SALT_VARIANT_IMAGE_FETCH_CONCURRENCY || "1",
+  SALT_VARIANT_IMAGE_INTER_BATCH_DELAY_MS:
+    process.env.SALT_VARIANT_IMAGE_INTER_BATCH_DELAY_MS || "1000",
+  SALT_SHOPIFY_REQUEST_DELAY_MS:
+    process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || "750",
   SALT_VARIANT_IMAGE_ALLOW_SOURCE_ONLY_EXCLUSIONS:
     process.env.SALT_VARIANT_IMAGE_ALLOW_SOURCE_ONLY_EXCLUSIONS || "1",
 };

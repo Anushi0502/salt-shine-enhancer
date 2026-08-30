@@ -51,6 +51,10 @@ Dev server defaults:
 - `npm run catalog:taxonomy:validate`: fail if a product is ambiguous but has managed taxonomy tags, or if product knowledge records collapse.
 - `npm run catalog:image-review:build`: generate the local image-review queue for unresolved taxonomy evidence.
 - `npm run catalog:image-review:validate`: block release until every review-required product has image-backed classification evidence.
+- `npm run catalog:vision:model:verify`: verify an installed Metal/MLX visual taxonomy adapter, its checksums, and its post-training raw-data purge record.
+- `npm run catalog:vision:model:stage`: stage a signed local/remote image manifest into an external, resumable raw corpus with checksum verification.
+- `npm run catalog:vision:model:ensure`: reuse a verified fine-tuned visual classifier or, when all training inputs are configured, train it once before the release continues.
+- `npm run catalog:vision:model:train`: train the visual taxonomy adapter from a marked, human-reviewed image corpus; the default lifecycle purges the raw corpus only after artifact and metric verification.
 - `npm run catalog:taxonomy:scale-check`: prove 500,000 repeated-type products retain separate knowledge identities.
 - `npm run shopify:products:zero-images:dry-run`: freshly identify active zero-image products before any deletion.
 - `npm run shopify:publications:all:dry-run`: read all active products and sales channels, then plan the final all-channel publication pass.
@@ -65,7 +69,7 @@ keep their independently configured Shopify prices.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
 - `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
 - `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
-- `npm run release:schedule:install`: install or replace the macOS launchd job that runs the canonical full release at 12:00 PM local time, with output in `output/scheduled-release.log`.
+- `npm run release:schedule:install`: install or replace the always-on macOS launchd watcher that owns the canonical release, monitors checkpoints, notifies on errors, and resumes guarded failures without a competing unsupervised release.
 - `npm run release:products`: run the frozen product-cohort release path. It requires `output/new-product-cohort-catalog.json` and `output/new-product-cohort-handles.json`, then scopes SEO, metafields, mappings, zero-image cleanup, publication, and storefront/theme rebuild to those handles only.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
@@ -235,7 +239,29 @@ This waits for the current SEO/apply manifest to report completion, then runs `n
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
 
-The daily background schedule runs the canonical `npm run release` command at 12:00 PM local time. It performs the full active-catalog classification and collection reconciliation in bounded batches, then runs variant-aware SEO, categories, metafields, pricing, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs and uses the persisted run state for a compatible resume after interruption.
+### Visual model data lifecycle
+
+The checked-in 128M-record catalog knowledge model is a deterministic text-evidence model. The optional visual model is a Metal/MLX fine-tuned image-taxonomy classifier: a declared fine-tuning command adapts a base image encoder over the signed corpus, then a Metal/MLX taxonomy head trains on embeddings emitted by that fine-tuned encoder. It requires a labeled corpus of at least 50,000,000,000 unique bytes, product-isolated train/validation/test splits, and human-reviewed or verified labels. The corpus directory must contain a `.salt-visual-corpus.json` marker with `{"kind":"salt-visual-training-corpus","datasetId":"...","deleteAfterTraining":true}`. The base and fine-tuned encoder checkpoints must be stored outside that corpus.
+
+Example training invocation:
+
+```bash
+npm run catalog:vision:model:train -- \
+  --dataset-dir /external/salt-visual-corpus \
+  --labels-manifest /external/salt-visual-labels.jsonl \
+  --base-checkpoint /external/checkpoints/image-encoder.mlpackage \
+  --encoder-command-json '["python3","/external/encode-images.py"]' \
+  --encoder-train-command-json '["python3","/external/finetune-images.py"]' \
+  --fine-tuned-checkpoint-output /external/checkpoints/salt-visual-encoder-finetuned.safetensors
+```
+
+The encoder fine-tuning command receives `manifestPath datasetPath labelsPath baseCheckpointPath outputCheckpointPath` and must perform real Metal fine-tuning, write the non-empty output checkpoint, and write `${outputCheckpointPath}.training.json` containing `fineTuned:true`, `device:"metal"`, positive `steps`, the signed `datasetManifestSha256`, and matching `baseCheckpointSha256` and `outputCheckpointSha256` values. The encoder output is then streamed JSONL embeddings from that fine-tuned checkpoint. `catalog:vision:model:stage` can first materialize a signed manifest of checksum-verified local files or URLs into an external corpus, resuming files that are already exact. Metal/MLX training uses class-balanced loss and refuses to install a head for any label absent from the training split. It writes a manifest-fingerprinted epoch checkpoint outside the raw corpus, so an interrupted job can resume without reprocessing completed epochs. The first release preflight uses `catalog:vision:model:ensure`: it reuses a verified model, stages and trains automatically only when the complete source/corpus, labels, base checkpoint, fine-tuning command, inference command, fine-tuned checkpoint path, and signed fine-tuning report are present, and rejects partial configuration. For launchd operation, those non-secret paths and encoder commands may be stored in `output/visual-taxonomy-training-config.json` using the keys `sourceManifest`, `datasetDir`, `labelsManifest`, `stagedLabelsManifest`, `baseCheckpoint`, `encoderCommandJson`, `encoderTrainCommandJson`, and `fineTunedEncoderCheckpoint`; environment variables override the file. After the final model, weights, metrics, taxonomy fingerprint, both encoder checkpoint checksums, and signed fine-tuning report are verified, the marked raw corpus is always removed and the artifact records the purged byte and image counts against the signed manifest; retention cannot be enabled for a successful training run, while failed runs retain the checkpoint and corpus for a compatible resume. The release never modifies system swap settings: large corpora are streamed and macOS manages swap normally. If neither a model nor a complete training configuration exists, release continues with the existing deterministic and explicit fallback gates; if an installed model is stale, unpurged, or incompatible, release stops rather than silently using it.
+
+For catalog-scale preparation, `catalog:vision:catalog-candidates` derives a candidate manifest only from active Shopify catalog images whose current deterministic taxonomy is already resolved. `catalog:vision:catalog-candidates:hydrate` records exact source bytes and SHA-256 checksums without retaining raw images, and `catalog:vision:catalog-candidates:prepare` creates the external shard configuration after the 50 GB target is reached. These records are marked `deterministic-candidate-only`; the resulting model is evidence-only and `catalog:vision:model:infer` refuses to publish its output unless a separate explicit review policy enables it. The release's deterministic taxonomy and fallback gates remain authoritative.
+
+`catalog:vision:open-images:manifest` can add a separate, source-backed candidate corpus when the catalog image projection is smaller than the training target. It streams the official Open Images V7 human-verification and image metadata files, keeps only explicit Creative Commons Attribution records, preserves the image landing page/author/license evidence, and maps only a checked-in set of object labels to existing taxonomy rules. Records are marked `external-human-verified-candidate` and `candidateOnly`; they are training evidence only and cannot publish or override catalog classification. The candidate supervisor runs this supplemental path after catalog hydration is exhausted, hydrates it with the same checksum/readback lifecycle, and retains no raw images after successful training.
+
+The background release watcher runs at login, triggers one canonical `npm run release:daily` run after 12:00 PM local time each day, and owns that release child. Set `SALT_RELEASE_WATCHER_RELEASE_SCRIPT=release` only when a full catalog release is intentionally required. It also repairs detected drift outside the scheduled run. It performs the full active-catalog classification and collection reconciliation in bounded batches, then runs variant-aware SEO, categories, metafields, pricing, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs, writes live checkpoint progress, sends macOS notifications for stale or failed runs, and uses the persisted run state for a compatible resume after interruption. This replaces the older unsupervised one-shot launchd job.
 
 Install or replace the schedule with:
 

@@ -1,8 +1,32 @@
 {
-  "generatedAt": "2026-08-27T20:20:54.316Z",
+  "generatedAt": "2026-08-28T21:06:57.917Z",
   "source": "shopify-admin-orders-with-deterministic-catalog-floor-fill",
   "total": 300,
   "products": [
+    {
+      "id": "gid://shopify/Product/8048946151523",
+      "title": "Pu Leather Box Bag Female Glossy",
+      "handle": "chic-pu-leather-box-bag-female-glossy-golden-elegant-clutch-ladies-wedding-birthday-party-evening-purse-hard-purse-and-handbag",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd358a8fa92cb4b48a3a3c69307bc8f73j.webp?v=1782740350",
+      "imageAlt": "Pu Leather Box Bag Female Glossy",
+      "price": 60.99
+    },
+    {
+      "id": "gid://shopify/Product/8059446591587",
+      "title": "Defense Beef Tallow Balm Moisturizer Face",
+      "handle": "wrinkle-defense-beef-tallow-balm-for-men-moisturizer-for-face-hydrating-anti-aging-cream-natural-skincare-with-essential-oils",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0aa24ccbabc5465fa4ad2b0db1bf7193W.webp?v=1783515490",
+      "imageAlt": "Defense Beef Tallow Balm Moisturizer Face",
+      "price": 61.99
+    },
+    {
+      "id": "gid://shopify/Product/8058392641635",
+      "title": "Original Restoria Discreet Colour Restoring Lotion",
+      "handle": "original-restoria-discreet-colour-restoring-lotion-hair-care-250ml-reduce-hair-for-men-and-women-hair-treatments",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sabfad23dd1744a4f907ae1f6f843f004L.webp?v=1783499907",
+      "imageAlt": "Original Restoria Discreet Colour Restoring Lotion",
+      "price": 57.99
+    },
     {
       "id": "gid://shopify/Product/8059444101219",
       "title": "Adeus Heat Sensation Moisturize Body Cream",
@@ -17,7 +41,7 @@
       "handle": "new-ultra-thin-smart-watch-men-1-96-amoled-hd-pixel-display-always-show-time-bt-call-reminder-smartwatch-ladies-for-android-ios",
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S84ee128dc0b741b0ad5ccee5eea16a8bU.webp?v=1782911242",
       "imageAlt": "Ultra Thin Smart Watch Amoled Hd",
-      "price": 78.99
+      "price": 109.99
     },
     {
       "id": "gid://shopify/Product/8052509671523",
@@ -386,14 +410,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S46d6573852ea4724920462b96ee9e375Z.webp?v=1784029858",
       "imageAlt": "Magnetic Power Bank 20000MAH Large Capacity Wireless Fast Charging",
       "price": 61.99
-    },
-    {
-      "id": "gid://shopify/Product/8059446591587",
-      "title": "Defense Beef Tallow Balm Moisturizer Face",
-      "handle": "wrinkle-defense-beef-tallow-balm-for-men-moisturizer-for-face-hydrating-anti-aging-cream-natural-skincare-with-essential-oils",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa1298884043549e8aade8660e1d07d3dQ.webp?v=1783515490",
-      "imageAlt": "Defense Beef Tallow Balm Moisturizer Face",
-      "price": 51.99
     },
     {
       "id": "gid://shopify/Product/8052510851171",
@@ -2204,108 +2220,84 @@
       "price": 46.99
     },
     {
-      "id": "gid://shopify/Product/8122376880227",
-      "title": "Short Sleeved Western Cowboy Series Printed T Shirt Fashionable",
-      "handle": "short-sleeved-western-cowboy-series-printed-t-shirt-fashionable-and-trendy-casual-and-versatile-regular-length-for-all-seasons",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc3ca2bf408994287ac013e39cc63cd2c3.webp?v=1787742854",
-      "imageAlt": "Short Sleeved Western Cowboy Series Printed T Shirt Fashionable",
+      "id": "gid://shopify/Product/7747142058083",
+      "title": "Steel Butter Melting Pot Hot Sauce",
+      "handle": "150-300ml-stainless-steel-butter-melting-pot-hot-sauce-pan",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S00302504a5e94850bbfe2261894c56a23.webp?v=1745923023",
+      "imageAlt": "Steel Butter Melting Pot Hot Sauce",
       "price": 46.99
     },
     {
-      "id": "gid://shopify/Product/8122376355939",
-      "title": "Couple Tee Bubu Is Watching Movies And Milk Tea With Dudu T Shirt",
-      "handle": "couple-tee-bubu-is-watching-movies-and-milk-tea-with-dudu-t-shirt-cartoon-cute-graphic-tees-for-ladies-kawaii-cotton-unisex-tops",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sb23b96830d15491f903273736b1f8dceF.webp?v=1787742847",
-      "imageAlt": "Couple Tee Bubu Is Watching Movies And Milk Tea With Dudu T Shirt",
-      "price": 46.99
+      "id": "gid://shopify/Product/7739508228195",
+      "title": "Soil Ph Meter Moisture Temperature Sunlight Tool",
+      "handle": "5-in-1-soil-ph-meter-moisture-temperature-sunlight-tester",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8a66fd1fca7f409d99fc232348016f12W.webp?v=1745569842",
+      "imageAlt": "Soil Ph Meter Moisture Temperature Sunlight Tool",
+      "price": 48.99
     },
     {
-      "id": "gid://shopify/Product/8122376781923",
-      "title": "Bodysuit Fishnet Beach Cover Up Sheer",
-      "handle": "hollow-out-bodysuit-fishnet-beach-cover-up-sheer-mesh-festival-swimwear-for-summer-beach-party",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd7a191667d5b4a118294a2d3dbde55a5I.webp?v=1787742852",
-      "imageAlt": "Bodysuit Fishnet Beach Cover Up Sheer",
+      "id": "gid://shopify/Product/7747142090851",
+      "title": "Adjustable Beverage Bottle Sprayer Gardening Watering",
+      "handle": "adjustable-beverage-bottle-sprayer-gardening-watering-tool",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd8c5e214b90c4a41adf8d0456f809670p.webp?v=1741070097",
+      "imageAlt": "Adjustable Beverage Bottle Sprayer Gardening Watering",
       "price": 43.99
     },
     {
-      "id": "gid://shopify/Product/8122384580707",
-      "title": "A Set Of 6 Transparent Stackable Plastic Food Storage Containers",
-      "handle": "a-set-of-6-transparent-stackable-plastic-food-storage-containers-with-blue-lids-and-measurement-markings-reusable-dishwasher-sa",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0b2b4324ab3e4565b7a82a0b53a4395ci.webp?v=1787743015",
-      "imageAlt": "A Set Of 6 Transparent Stackable Plastic Food Storage Containers",
-      "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/8122376159331",
-      "title": "I Tried To Be Normal Once Print Women T Shirts Multicolor Modal",
-      "handle": "i-tried-to-be-normal-once-print-women-t-shirts-multicolor-modal-short-sleeve-trendy-sports-clothes-casual-hip-hop-clothing",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd7202de051d04fa49a27e687ff9194ecy.webp?v=1787742847",
-      "imageAlt": "I Tried To Be Normal Once Print Women T Shirts Multicolor Modal",
-      "price": 44.99
-    },
-    {
-      "id": "gid://shopify/Product/8122384187491",
-      "title": "410 Stainless Steel Kitchen Spoon With Holes Cuisine Caviar Builder",
-      "handle": "410-stainless-steel-kitchen-spoon-with-holes-cuisine-caviar-builder-roe-sauce-strainer-spoon-durable-kitchen-cooking-gadgets",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se6250f2f213449fbb1fcaa9a92de1bcbj.webp?v=1787743012",
-      "imageAlt": "410 Stainless Steel Kitchen Spoon With Holes Cuisine Caviar Builder",
-      "price": 38.99
-    },
-    {
-      "id": "gid://shopify/Product/8111373615203",
-      "title": "Elegant Striped Blazer High Waist Pants Set",
-      "handle": "elegant-striped-blazer-high-waist-pants-set",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/a05616f9-3987-4972-83ab-f97a442ef358.jpg?v=1786992233",
-      "imageAlt": "Elegant Striped Blazer High Waist Pants Set",
-      "price": 77.99
-    },
-    {
-      "id": "gid://shopify/Product/8122384056419",
-      "title": "Polarized Fishing Sunglasses Uv400 Anti Glare Eyewear For Men Women",
-      "handle": "polarized-fishing-sunglasses-uv400-anti-glare-eyewear-for-men-women",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sca432309f65a41bfa6013caba6706136f.webp?v=1787743011",
-      "imageAlt": "Polarized Fishing Sunglasses Uv400 Anti Glare Eyewear For Men Women",
-      "price": 45.99
-    },
-    {
-      "id": "gid://shopify/Product/8122380714083",
-      "title": "13pcs Makeup Brush Set Foundation Concealer Powder Eyeshadow Blush",
-      "handle": "13pcs-makeup-brush-set-foundation-concealer-powder-eyeshadow-blush-brush-kabuki-blending-cosmetic-beauty-tool-for-face",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5d35dafad4fd4a898ccafb38437590085.webp?v=1787742919",
-      "imageAlt": "13pcs Makeup Brush Set Foundation Concealer Powder Eyeshadow Blush",
+      "id": "gid://shopify/Product/8123571994723",
+      "title": "Hair Scarf Women Silk Long Ribbon Foulard Cheveux Brand Design",
+      "handle": "luxury-hair-scarf-women-silk-long-ribbon-foulard-cheveux-brand-design-elegance-printing-lady-scarves-bandana-hair-accessories",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/He62943caae494ba3a1d486cf11aac2ceT.webp?v=1787831059",
+      "imageAlt": "Hair Scarf Women Silk Long Ribbon Foulard Cheveux Brand Design",
       "price": 43.99
     },
     {
-      "id": "gid://shopify/Product/8123570684003",
-      "title": "Automatic Liquid/Foma Soap Dispenser, Touchless Electric Dispenser, USB Rechargeable with Infrared Sensor for Bathroom,Kitchen",
-      "handle": "automatic-liquid-foma-soap-dispenser-touchless-electric-dispenser-usb-rechargeable-with-infrared-sensor-for-bathroom-kitchen",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S7e1c97030abd4c8dacdc64eab1fe5273J.webp?v=1787831028",
-      "imageAlt": "Automatic Liquid/Foma Soap Dispenser, Touchless Electric Dispenser, USB Rechargeable with Infrared Sensor for Bathroom,Kitchen",
-      "price": 58.99
+      "id": "gid://shopify/Product/8123573207139",
+      "title": "1 Elegant Silk Scarf Women S Accessories Breathable Uv Resistant",
+      "handle": "1-elegant-silk-scarf-womens-accessories-breathable-uv-resistant-decorative-fashionable-and-breathable",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6a86c79b396842d280e53f8cd9c4d849l.webp?v=1787831097",
+      "imageAlt": "1 Elegant Silk Scarf Women S Accessories Breathable Uv Resistant",
+      "price": 43.99
     },
     {
-      "id": "gid://shopify/Product/8122380386403",
-      "title": "Autumn Casual Women S Blouses Elegant Satin Multicolor Basic Slim",
-      "handle": "autumn-casual-womens-blouses-elegant-satin-multicolor-basic-slim-shirt-solid-vintage-trend-ball-dance-party-shirt-all-match-top",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sdc960e2605e641d29b70622f16485f77v.webp?v=1787742915",
-      "imageAlt": "Autumn Casual Women S Blouses Elegant Satin Multicolor Basic Slim",
-      "price": 52.99
+      "id": "gid://shopify/Product/7746985001059",
+      "title": "Ceramic Cookware Cookware Set",
+      "handle": "13-piece-ceramic-cookware-set-nonstick-detachable-handles",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
+      "imageAlt": "Ceramic Cookware Cookware Set",
+      "price": 128.99
     },
     {
-      "id": "gid://shopify/Product/8123570487395",
-      "title": "Ceramic Soap Dispenser Modern Vintage Brown Liquid Storage Container Save Soap Creative Lotion Pump Bottle Bathroom",
-      "handle": "ceramic-soap-dispenser-modern-vintage-brown-liquid-storage-container-save-soap-creative-lotion-pump-bottle-bathroom",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sed3086ce7fd14327864a0e86136c43b3Y.webp?v=1787831024",
-      "imageAlt": "Ceramic Soap Dispenser Modern Vintage Brown Liquid Storage Container Save Soap Creative Lotion Pump Bottle Bathroom",
+      "id": "gid://shopify/Product/7739507834979",
+      "title": "Anti Cut Gloves Kitchen Accessories",
+      "handle": "anti-cut-gloves-high-strength-for-gardening-industry",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S00cc1a38de754aed87585acb2da15d38M.webp?v=1745928485",
+      "imageAlt": "Anti Cut Gloves Kitchen Accessories",
+      "price": 47.99
+    },
+    {
+      "id": "gid://shopify/Product/8123573633123",
+      "title": "New Design Trendy Wrap Scarf Twill Fabric Flower Print 90cm Square",
+      "handle": "new-design-trendy-luxury-wrap-scarf-twill-fabric-flower-print-90cm-square-scarf-high-end-silk-scarf-for-women-shawl",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sdb2d7fe36f984642b13738978e09d652y.webp?v=1787831131",
+      "imageAlt": "New Design Trendy Wrap Scarf Twill Fabric Flower Print 90cm Square",
       "price": 42.99
     },
     {
-      "id": "gid://shopify/Product/8123570782307",
-      "title": "Kitchen 300ml Automatic Liquid Soap Dispenser USB Rechargeable Touchless Hand High Capacity Detergent Bathroom Dispenser",
-      "handle": "kitchen-300ml-automatic-liquid-soap-dispenser-usb-rechargeable-touchless-hand-high-capacity-detergent-bathroom-dispenser",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa890d219f7c44685bb3f24b3b6b82af5u.webp?v=1787831028",
-      "imageAlt": "Kitchen 300ml Automatic Liquid Soap Dispenser USB Rechargeable Touchless Hand High Capacity Detergent Bathroom Dispenser",
-      "price": 41.99
+      "id": "gid://shopify/Product/8123573665891",
+      "title": "Silicone Self Draining Soap Dishes With Waterfall Design Rectangular",
+      "handle": "silicone-self-draining-soap-dishes-with-waterfall-design-rectangular-soap-holder-trays-with-drainage-for-bathroom-accessories",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S583375401e12483bad47eafe5d008fa7A.webp?v=1787831148",
+      "imageAlt": "Silicone Self Draining Soap Dishes With Waterfall Design Rectangular",
+      "price": 44.99
+    },
+    {
+      "id": "gid://shopify/Product/8123573174371",
+      "title": "Soap Holder With Detachable Drain Tray Stainless Steel Rustproof Non",
+      "handle": "soap-holder-with-detachable-drain-tray-stainless-steel-rustproof-non-slip-soap-dish-for-bathroom-kitchen-organizer-1",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9d4b405bb5ef453688b4093f0cb11d66o_5d7d2c71-a7f3-4cad-a981-a5bb34eddb74.webp?v=1787831096",
+      "imageAlt": "Soap Holder With Detachable Drain Tray Stainless Steel Rustproof Non",
+      "price": 46.99
     },
     {
       "id": "gid://shopify/Product/8097473757283",
@@ -2316,36 +2308,36 @@
       "price": 60.99
     },
     {
-      "id": "gid://shopify/Product/8123569897571",
-      "title": "Ultra Large Portable Laptop Bed Table Foldable Desk with Cup Holder Multi Functional Computer Desks Bed Desk for Laptop",
-      "handle": "ultra-large-portable-laptop-bed-table-foldable-desk-with-cup-holder-multi-functional-computer-desks-bed-desk-for-laptop",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sb7489ca2b8164292b910e17eeb5a105av.webp?v=1787830967",
-      "imageAlt": "Ultra Large Portable Laptop Bed Table Foldable Desk with Cup Holder Multi Functional Computer Desks Bed Desk for Laptop",
-      "price": 63.99
+      "id": "gid://shopify/Product/8123573141603",
+      "title": "130 130cm Brand Russian Scarf Flowers For Women Ethnic Style Large",
+      "handle": "130-130cm-luxury-brand-russian-scarf-flowers-for-women-ethnic-style-large-square-scarf-warm-shawls-bandana-beach-travel-blanket",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc3f217200b5643b79f77091c519e90f8a.webp?v=1787831098",
+      "imageAlt": "130 130cm Brand Russian Scarf Flowers For Women Ethnic Style Large",
+      "price": 46.99
     },
     {
-      "id": "gid://shopify/Product/8123569373283",
-      "title": "Elevating Bed Desk Top Laptop Writing Table Student Dormitory Upper Bed Computer Desk Small Table Bedroom Storage Organizer",
-      "handle": "elevating-bed-desk-top-laptop-writing-table-student-dormitory-upper-bed-computer-desk-small-table-bedroom-storage-organizer",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Scd6706a213984004b3491d3bec07fe12o.webp?v=1787830939",
-      "imageAlt": "Elevating Bed Desk Top Laptop Writing Table Student Dormitory Upper Bed Computer Desk Small Table Bedroom Storage Organizer",
-      "price": 371.99
+      "id": "gid://shopify/Product/8123573534819",
+      "title": "2023 New Silk Scarf Branddesigner Pullover Scarf Print Head Large",
+      "handle": "2023-new-silk-scarf-luxury-branddesigner-pullover-scarf-print-head-large-handkerchief-hijab-shawl-women-bandanna-foulard-muffler",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S38ebc80774ba4304bdb53b926d802d92A.webp?v=1787831117",
+      "imageAlt": "2023 New Silk Scarf Branddesigner Pullover Scarf Print Head Large",
+      "price": 41.99
     },
     {
-      "id": "gid://shopify/Product/8122380320867",
-      "title": "Fast Wireless Car Charger For Magsafe Iphone 17 16 15 14 13 12 Pro",
-      "handle": "fast-wireless-car-charger-for-magsafe-iphone-17-16-15-14-13-12-pro-max-samsung-xiaomi-air-vent-mount-magnetic-phone-holder",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S16c482c443ca4027b85b201e252147beV.webp?v=1787742913",
-      "imageAlt": "Fast Wireless Car Charger For Magsafe Iphone 17 16 15 14 13 12 Pro",
-      "price": 40.99
+      "id": "gid://shopify/Product/7738957529187",
+      "title": "Mini Multi Use Kitchen Tool For Daily Kitchen Use And Daily",
+      "handle": "500w-mini-electric-heater-stove-multifunctional-kitchen-appliance",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0695966768864eb593ccfc9bb6e381afF.webp?v=1746097211",
+      "imageAlt": "Mini Multi Use Kitchen Tool For Daily Kitchen Use And Daily",
+      "price": 58.99
     },
     {
-      "id": "gid://shopify/Product/8123483684963",
-      "title": "Phatoil 100ML Pure Natural Essential Oils For Diffuser Candle Making",
-      "handle": "phatoil-100ml-pure-natural-essential-oils-for-diffuser-candle-making-lavender-jasmine-vanilla-eucalyptus-aroma-essential-oil",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3109a63d75404064a4928bcbcc27e0e3p.webp?v=1787815501",
-      "imageAlt": "Phatoil 100ML Pure Natural Essential Oils For Diffuser Candle Making",
-      "price": 49.99
+      "id": "gid://shopify/Product/7746984935523",
+      "title": "Hole Silicone Cake Mold Air Fryer Kitchen Accessories",
+      "handle": "7-hole-silicone-cake-mold-air-fryer-baking-accessory",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S99d5663a5029496a81b337bbfd87a583l.webp?v=1745922025",
+      "imageAlt": "Hole Silicone Cake Mold Air Fryer Kitchen Accessories",
+      "price": 46.99
     },
     {
       "id": "gid://shopify/Product/8097472872547",
@@ -2356,28 +2348,36 @@
       "price": 59.99
     },
     {
-      "id": "gid://shopify/Product/8122380058723",
-      "title": "1 Pack Mini Garlic Grinder Creative Garlic Press Kitchen Mash Manual",
-      "handle": "1-pack-mini-garlic-grinder-creative-garlic-press-kitchen-garlic-mash-manual-garlic-mashing-green-kitchen-gadgets",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1208cdb621f049a9a7d3d21c4ea1e3caX.webp?v=1787742908",
-      "imageAlt": "1 Pack Mini Garlic Grinder Creative Garlic Press Kitchen Mash Manual",
-      "price": 40.99
+      "id": "gid://shopify/Product/7735056793699",
+      "title": "Piece Black Kitchen Accessories Dinner Set",
+      "handle": "32-piece-black-plastic-wheat-straw-tableware-set",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S804869bec0bd4b0db126b519d0fb36cdW.webp?v=1739364104",
+      "imageAlt": "Piece Black Kitchen Accessories Dinner Set",
+      "price": 66.99
     },
     {
-      "id": "gid://shopify/Product/8122385793123",
-      "title": "J18 Wireless Bluetooth Earbuds With Anc",
-      "handle": "j18-tws-wireless-earbuds-5-3-bluetooth-headphones-long-playtime-noise-cancelling-voice-call-for-gaming-business-sports",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa080223c010846b6bbb8958a5f8d7b7ay.webp?v=1787743035",
-      "imageAlt": "J18 Wireless Bluetooth Earbuds With Anc",
-      "price": 40.99
+      "id": "gid://shopify/Product/7746857664611",
+      "title": "Frying Pan Utensils Kitchen Accessories",
+      "handle": "alishan-bamboo-spatula-set-non-stick-frying-pan-utensils",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1a4a7b7475304c99845c8dbf352f7c03O.webp?v=1745932359",
+      "imageAlt": "Frying Pan Utensils Kitchen Accessories",
+      "price": 42.99
     },
     {
-      "id": "gid://shopify/Product/8123572781155",
-      "title": "Luxury Women's Silk Scarf Fashionable and Versatile Elegant and Romantic Floral Print Silk Shawl Perfect for Travel Holiday Gift",
-      "handle": "luxury-womens-silk-scarf-fashionable-and-versatile-elegant-and-romantic-floral-print-silk-shawl-perfect-for-travel-holiday-gift",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sacac144bc5614d1a9af946442665b712a.webp?v=1787831083",
-      "imageAlt": "Luxury Women's Silk Scarf Fashionable and Versatile Elegant and Romantic Floral Print Silk Shawl Perfect for Travel Holiday Gift",
-      "price": 173.99
+      "id": "gid://shopify/Product/8123573502051",
+      "title": "Luxspire Soap Dish For Bar Soap Marble Shower Dish Self Draining",
+      "handle": "luxspire-soap-dish-for-bar-soap-marble-shower-soap-dish-self-draining-soap-tray-soap-saver-for-bathroom-shower-kitchen",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S7418618b23a04fd59e584b88ec801514a.webp?v=1787831107",
+      "imageAlt": "Luxspire Soap Dish For Bar Soap Marble Shower Dish Self Draining",
+      "price": 57.99
+    },
+    {
+      "id": "gid://shopify/Product/8123573108835",
+      "title": "Faux Silk Wool Scarf Women 130x130cm Smooth Soft Square Gift",
+      "handle": "luxury-faux-silk-wool-scarf-women-130x130cm-smooth-soft-square-gift-birthday-anniversary-all-scenarios-fashion",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc22cff5e4cad433b80cea77e1fc2734aJ.webp?v=1787831094",
+      "imageAlt": "Faux Silk Wool Scarf Women 130x130cm Smooth Soft Square Gift",
+      "price": 62.99
     },
     {
       "id": "gid://shopify/Product/8094203379811",
@@ -2388,22 +2388,22 @@
       "price": 56.99
     },
     {
-      "id": "gid://shopify/Product/8122386284643",
-      "title": "Portable Magnetic Phone Holder Selfie Stick 3 In 1 Foldable Tripod",
-      "handle": "portable-magnetic-phone-holder-selfie-stick-3-in-1-foldable-tripod-stand-for-iphone-ipad-tablet-laptop-desktop-use",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se295fadead5a42d9929ed914985817e7Z.webp?v=1787743049",
-      "imageAlt": "Portable Magnetic Phone Holder Selfie Stick 3 In 1 Foldable Tripod",
-      "price": 48.99
+      "id": "gid://shopify/Product/8123573010531",
+      "title": "110x110 Li Brocade Light Silk Scarf Women S Hot Model New Imitation",
+      "handle": "110x110-li-brocade-light-luxury-silk-scarf-womens-hot-model-new-imitation-silk-luxury-soft-photo-travel-scarf",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sef0b2756e8fb450190b22c0521ada044g.webp?v=1787831090",
+      "imageAlt": "110x110 Li Brocade Light Silk Scarf Women S Hot Model New Imitation",
+      "price": 44.99
     },
     {
-      "id": "gid://shopify/Product/8123572191331",
-      "title": "2026 Luxury Brand 70% Wool 30% Silk Scarf for Women Warm Neck Warmer Vintage Navy Blue Ethnic Paisley Print Scarves Ladies",
-      "handle": "2026-luxury-brand-70-wool-30-silk-scarf-for-women-warm-neck-warmer-vintage-navy-blue-ethnic-paisley-print-scarves-ladies",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S06309b4471b347dfbc7ff712d20fa89d8.webp?v=1787831063",
-      "imageAlt": "2026 Luxury Brand 70% Wool 30% Silk Scarf for Women Warm Neck Warmer Vintage Navy Blue Ethnic Paisley Print Scarves Ladies",
-      "price": 59.99
+      "id": "gid://shopify/Product/7744591757411",
+      "title": "Wooden Handle Silicone Kitchen Tools Non Kitchen Accessories",
+      "handle": "12set-of-wooden-handle-silicone-kitchen-tools-non-stick-pan-cooking-set",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S193c26b05f5f43b19e913f1250cf67d1L.webp?v=1745926711",
+      "imageAlt": "Wooden Handle Silicone Kitchen Tools Non Kitchen Accessories",
+      "price": 62.99
     }
   ],
-  "recentOrderProducts": 275,
-  "catalogFloorFillProducts": 25
+  "recentOrderProducts": 277,
+  "catalogFloorFillProducts": 23
 }

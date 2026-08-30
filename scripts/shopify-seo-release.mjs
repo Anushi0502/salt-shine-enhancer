@@ -79,6 +79,7 @@ const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTE
 const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
 const cliTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_CLI_TIMEOUT_MS || 180_000));
 const uploadTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_UPLOAD_TIMEOUT_MS || cliTimeoutMs));
+const readbackAttempts = Math.max(1, Math.min(6, Number(process.env.SALT_SHOPIFY_SEO_READBACK_ATTEMPTS || 4)));
 const seoApplyBatchSize = Math.max(1, Math.min(5, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 5)));
 const seoReadConcurrency = Math.max(1, Number(process.env.SALT_SHOPIFY_SEO_READ_CONCURRENCY || 4));
 const ACTIVE_PRODUCT_QUERY = "status:active";
@@ -817,6 +818,20 @@ async function loadReusableLiveCatalogSnapshot(snapshot) {
       if (ageMs > 24 * 60 * 60 * 1000) throw new Error(`cached catalog is ${Math.round(ageMs / 3600000)} hours old`);
     }
     const normalizedProducts = products.map(normalizeReusableCatalogProduct);
+    const sourceByHandle = new Map(
+      sourceProducts
+        .map((product) => [normalizeHandleValue(product?.handle), product])
+        .filter(([handle]) => Boolean(handle)),
+    );
+    const staleCacheProduct = normalizedProducts.find((product) => {
+      const source = sourceByHandle.get(normalizeHandleValue(product?.handle));
+      const cachedUpdatedAt = Date.parse(String(product?.updatedAt || ""));
+      const sourceUpdatedAt = Date.parse(String(source?.updated_at || source?.updatedAt || ""));
+      return Number.isFinite(cachedUpdatedAt) && Number.isFinite(sourceUpdatedAt) && cachedUpdatedAt + 1000 < sourceUpdatedAt;
+    });
+    if (staleCacheProduct) {
+      throw new Error(`cached live SEO catalog predates current source for ${staleCacheProduct.handle}`);
+    }
     process.stdout.write(`Reusing verified live SEO catalog snapshot: ${normalizedProducts.length} products from ${payload.generatedAt || "unknown time"}.\n`);
     return normalizedProducts;
   } catch (error) {
@@ -1332,9 +1347,93 @@ async function applyMutationAndVerify({ handle, operation, mutation, variables, 
     throw new Error(`${operation} mutation failed for ${handle}: ${formatUserErrors(errors)}`);
   }
 
-  const liveProduct = await fetchProductByHandle(handle, retryInfo, `${operation} readback ${handle}`);
-  assertMutationReadback(liveProduct, operation, mutationInput);
-  return liveProduct;
+  let lastReadbackError;
+  for (let attempt = 1; attempt <= readbackAttempts; attempt += 1) {
+    const liveProduct = await fetchProductByHandle(handle, retryInfo, `${operation} readback ${handle}`);
+    try {
+      assertMutationReadback(liveProduct, operation, mutationInput);
+      return liveProduct;
+    } catch (error) {
+      lastReadbackError = error;
+      if (attempt === readbackAttempts) break;
+      const delayMs = Math.min(8_000, Math.max(500, 500 * 2 ** (attempt - 1)));
+      process.stdout.write(
+        `${operation} readback is not settled for ${handle}; retrying verification in ${Math.ceil(delayMs / 1000)}s (${attempt}/${readbackAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+    }
+  }
+  throw lastReadbackError;
+}
+
+async function repairFinalReadbackDrift({ task, liveProduct, retryInfo }) {
+  let current = liveProduct;
+  let repairWrites = 0;
+  const repairCounts = { product: 0, variants: 0, media: 0 };
+  const repairedFields = [];
+  const maxRepairPasses = 2;
+
+  for (let pass = 1; pass <= maxRepairPasses; pass += 1) {
+    const diff = compareLiveProductToPlan(current, task.productPlan);
+    if (diff.unresolved.length) {
+      throw new Error(`Final verification identity failure: ${diff.unresolved.map((item) => `${item.kind}:${item.reason}`).join(", ")}`);
+    }
+    if (!diff.hasMutations) {
+      return { liveProduct: current, repairWrites, repairCounts, repairedFields: [...new Set(repairedFields)], diff };
+    }
+    repairedFields.push(...diff.changedFields);
+
+    process.stdout.write(
+      `Final SEO readback drift for ${task.entry.handle}; applying targeted repair pass ${pass}/${maxRepairPasses}: `
+      + `${diff.changedFields.join(", ")}\n`,
+    );
+
+    if (productMutationFields(diff.productInput).length) {
+      current = await applyMutationAndVerify({
+        handle: task.entry.handle,
+        operation: "product final readback repair",
+        mutation: PRODUCT_UPDATE_MUTATION,
+        variables: { product: diff.productInput },
+        retryInfo,
+        mutationInput: diff.productInput,
+      });
+      repairWrites += 1;
+      repairCounts.product += 1;
+    }
+    if (diff.variantInputs.length) {
+      current = await applyMutationAndVerify({
+        handle: task.entry.handle,
+        operation: "variant final readback repair",
+        mutation: VARIANT_UPDATE_MUTATION,
+        variables: { productId: current.id, variants: diff.variantInputs },
+        retryInfo,
+        mutationInput: diff.variantInputs,
+      });
+      repairWrites += diff.variantInputs.length;
+      repairCounts.variants += diff.variantInputs.length;
+    }
+    if (diff.mediaInputs.length) {
+      current = await applyMutationAndVerify({
+        handle: task.entry.handle,
+        operation: "media final readback repair",
+        mutation: MEDIA_UPDATE_MUTATION,
+        variables: { productId: current.id, media: diff.mediaInputs },
+        retryInfo,
+        mutationInput: diff.mediaInputs,
+      });
+      repairWrites += diff.mediaInputs.length;
+      repairCounts.media += diff.mediaInputs.length;
+    }
+  }
+
+  const finalDiff = compareLiveProductToPlan(current, task.productPlan);
+  if (finalDiff.unresolved.length) {
+    throw new Error(`Final verification identity failure: ${finalDiff.unresolved.map((item) => `${item.kind}:${item.reason}`).join(", ")}`);
+  }
+  if (finalDiff.hasMutations) {
+    throw new Error(`Final verification still has differences after targeted repair: ${finalDiff.changedFields.join(", ")}`);
+  }
+  return { liveProduct: current, repairWrites, repairCounts, repairedFields: [...new Set(repairedFields)], diff: finalDiff };
 }
 
 function createManifest({ mode, output, plan, priorManifest }) {
@@ -2041,7 +2140,7 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
   );
   const verificationFailures = [];
   for (const [index, task] of tasks.entries()) {
-    const finalLive = finalById.get(task.liveProduct.id);
+    let finalLive = finalById.get(task.liveProduct.id);
     try {
       if (!finalLive) throw new Error("Final verification product missing");
       const finalDiff = compareLiveProductToPlan(finalLive, task.productPlan);
@@ -2049,7 +2148,14 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
         throw new Error(`Final verification identity failure: ${finalDiff.unresolved.map((item) => `${item.kind}:${item.reason}`).join(", ")}`);
       }
       if (finalDiff.hasMutations) {
-        throw new Error(`Final verification still has differences: ${finalDiff.changedFields.join(", ")}`);
+        const repaired = await repairFinalReadbackDrift({ task, liveProduct: finalLive, retryInfo });
+        finalLive = repaired.liveProduct;
+        task.entry.changedFields = [...new Set([...(task.entry.changedFields || []), ...repaired.repairedFields])];
+        task.entry.writeCounts.product += repaired.repairCounts.product;
+        task.entry.writeCounts.variants += repaired.repairCounts.variants;
+        task.entry.writeCounts.media += repaired.repairCounts.media;
+        task.entry.writeCounts.total += repaired.repairWrites;
+        task.entry.writeCount += repaired.repairWrites;
       }
       task.entry.liveFingerprint = buildLiveFingerprint(finalLive);
       task.entry.skippedFields = finalDiff.skippedFields;

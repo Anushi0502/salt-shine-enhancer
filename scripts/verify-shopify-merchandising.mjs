@@ -62,11 +62,26 @@ function normalizeReferenceIdentity(node) {
   };
 }
 
+function normalizeCollectionSignalValue(value) {
+  if (value == null) return value;
+
+  // Collection membership is verified independently. The signal is a derived
+  // comma-separated summary, so Shopify/API collection ordering must not make
+  // an otherwise identical live readback fail.
+  return String(value)
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right))
+    .join(", ");
+}
+
 function normalizeProductDataForVerification(input) {
   const normalized = normalizeProductCustomData(input);
   if (!normalized) return normalized;
   return {
     ...normalized,
+    collectionSignal: normalizeCollectionSignalValue(normalized.collectionSignal),
     relatedProducts: (normalized.relatedProducts || []).map(normalizeReferenceIdentity),
     complementaryProducts: (normalized.complementaryProducts || []).map(normalizeReferenceIdentity),
     complementaryProductsFallback: (normalized.complementaryProductsFallback || []).map(normalizeReferenceIdentity),

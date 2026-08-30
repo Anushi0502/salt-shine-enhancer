@@ -15,12 +15,19 @@ const require = createRequire(import.meta.url);
 const catalogBatchSize = Math.max(1, Math.min(1000, Number(process.env.SALT_CATALOG_BATCH_SIZE || 50)));
 const releaseRunStatePath = resolve(rootDir, "output", "release-run-state.json");
 const releaseHeartbeatMs = Math.max(10_000, Number(process.env.SALT_RELEASE_HEARTBEAT_MS || 30_000));
+const releaseStageTelemetryMs = Math.max(1_000, Number(process.env.SALT_RELEASE_STAGE_TELEMETRY_MS || 5_000));
 const releaseStageRetries = Math.max(0, Math.min(3, Number(process.env.SALT_RELEASE_STAGE_RETRIES || 2)));
 const releaseStageRetryDelayMs = Math.max(1000, Number(process.env.SALT_RELEASE_STAGE_RETRY_DELAY_MS || 5000));
 const sharedCatalogSnapshotPath = resolve(rootDir, "output", "release-catalog-snapshot.json");
 const appliedIntegrityManifestPath = resolve(rootDir, "output", "shopify-catalog-integrity-applied-generation.json");
 const missingCostDeletionManifestPath = resolve(rootDir, "output", "shopify-missing-cost-product-deletion-manifest.json");
 const standbyRepairScriptPath = resolve(rootDir, "scripts", "release-proactive-repair.mjs");
+
+// A catalog release is not considered autonomous unless the verified visual
+// taxonomy model is present (or can be trained by the preceding ensure step).
+// Keep this requirement in the orchestrator so every entrypoint, including
+// the watcher and future package aliases, inherits the same gate.
+process.env.SALT_REQUIRE_VISUAL_TAXONOMY_MODEL ||= "1";
 
 // The canonical release uses the separately approved cost-band policy. Direct
 // invocation of the alignment script remains legacy-compatible unless callers
@@ -57,6 +64,29 @@ function formatCommand(command, args) {
 }
 
 let releaseRunState = {};
+
+function areCompatibleResumeProfiles(previousProfile, requestedProfile) {
+  if (!previousProfile || previousProfile === requestedProfile) return true;
+  // catalog and daily intentionally share the same full-catalog step graph.
+  // A watcher may resume a catalog run through the scheduled daily alias.
+  return [previousProfile, requestedProfile].every((profile) => ["catalog", "daily"].includes(profile));
+}
+
+export function resolveResumeStep(steps, previousRunState, numericFallback = 1) {
+  const savedLabel = String(previousRunState?.stepLabel || "").trim();
+  if (!savedLabel) return { resumeFromStep: Math.max(1, Number(numericFallback) || 1), restarted: false };
+  const matchingIndex = (Array.isArray(steps) ? steps : []).findIndex((step) => step?.label === savedLabel);
+  if (matchingIndex >= 0) return { resumeFromStep: matchingIndex + 1, restarted: false };
+  return { resumeFromStep: 1, restarted: true };
+}
+
+export function shouldRefreshSeoLiveCatalogOnResume(runState) {
+  if (runState?.status !== "failed") return false;
+  const stepLabel = String(runState?.stepLabel || "").toLowerCase();
+  const error = String(runState?.error || "").toLowerCase();
+  return stepLabel.includes("shopify seo") || stepLabel.includes("seo/product fields") ||
+    /seo verification|shopify seo|readback still has differences|readback mismatch/.test(error);
+}
 
 async function writeReleaseRunState(patch = {}) {
   releaseRunState = {
@@ -165,14 +195,65 @@ async function runStage({ label, command, args, cwd, index, total }) {
         stdio: ["ignore", "pipe", "pipe"],
       });
       let outputTail = "";
+      const stageStartedAt = new Date().toISOString();
+      let stageLastOutputAt = stageStartedAt;
+      let stageOutputBytes = 0;
+      let stageTelemetryTimer = null;
+      let stageTelemetryWriteInFlight = false;
+
+      const flushStageTelemetry = async () => {
+        if (stageTelemetryWriteInFlight) return;
+        stageTelemetryWriteInFlight = true;
+        try {
+          await writeReleaseRunState({
+            stageStatus: "running",
+            stageChildPid: Number(child.pid || 0),
+            stageStartedAt,
+            stageLastOutputAt,
+            stageOutputBytes,
+          });
+        } finally {
+          stageTelemetryWriteInFlight = false;
+        }
+      };
+
+      const scheduleStageTelemetry = () => {
+        if (stageTelemetryTimer) return;
+        stageTelemetryTimer = setTimeout(() => {
+          stageTelemetryTimer = null;
+          void flushStageTelemetry().catch(() => {});
+        }, releaseStageTelemetryMs);
+        stageTelemetryTimer.unref?.();
+      };
+
+      const finishStageTelemetry = (status, code = null, signal = "") => {
+        if (stageTelemetryTimer) clearTimeout(stageTelemetryTimer);
+        stageTelemetryTimer = null;
+        void writeReleaseRunState({
+          stageStatus: status,
+          stageChildPid: 0,
+          stageStartedAt,
+          stageLastOutputAt,
+          stageOutputBytes,
+          stageFinishedAt: new Date().toISOString(),
+          stageExitCode: code,
+          stageSignal: signal || "",
+        }).catch(() => {});
+      };
+
+      void flushStageTelemetry().catch(() => {});
       const forward = (chunk, target) => {
         target.write(chunk);
         outputTail = `${outputTail}${String(chunk)}`.slice(-24_000);
+        stageLastOutputAt = new Date().toISOString();
+        stageOutputBytes += Number(chunk?.length || String(chunk).length || 0);
+        scheduleStageTelemetry();
       };
       child.stdout.on("data", (chunk) => forward(chunk, process.stdout));
       child.stderr.on("data", (chunk) => forward(chunk, process.stderr));
 
       child.on("error", (error) => {
+        finishStageTelemetry("failed");
         rejectStep(
           new Error(
             `Release stopped at step ${index}/${total} (${label}).\nCommand: ${commandLine}\nWorking directory: ${cwd}\nReason: ${error.message}\n${outputTail}`,
@@ -181,6 +262,7 @@ async function runStage({ label, command, args, cwd, index, total }) {
       });
 
       child.on("exit", (code, signal) => {
+        finishStageTelemetry(code === 0 ? "completed" : "failed", code, signal || "");
         if (code === 0) {
           process.stdout.write(`[ok] ${label}\n`);
           resolveStep();
@@ -276,6 +358,18 @@ function buildCatalogReleaseSteps({
 
   return [
     {
+      label: "Audit visual taxonomy training inputs and 25 GB shard policy",
+      command: npmBin,
+      args: ["run", "catalog:vision:model:audit"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Ensure verified Metal visual taxonomy model and raw-data retention gate",
+      command: npmBin,
+      args: ["run", "catalog:vision:model:ensure"],
+      cwd: releaseRootDir,
+    },
+    {
       label: "Verify trained 128M-record catalog knowledge model",
       command: npmBin,
       args: ["run", "catalog:knowledge:model:verify"],
@@ -325,6 +419,12 @@ function buildCatalogReleaseSteps({
       label: "Build visual taxonomy review queue",
       command: npmBin,
       args: ["run", "catalog:image-review:build"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Run verified Metal visual taxonomy model when installed",
+      command: npmBin,
+      args: ["run", "catalog:vision:model:infer"],
       cwd: releaseRootDir,
     },
     {
@@ -531,12 +631,6 @@ function buildCatalogReleaseSteps({
       cwd: releaseRootDir,
     },
     {
-      label: "Final live-readback gate against the applied catalog generation",
-      command: npmBin,
-      args: ["run", "shopify:catalog-integrity:verify", "--", ...finalIntegrityArgs],
-      cwd: releaseRootDir,
-    },
-    {
       label: "Strict live audit of repaired collection classification",
       command: npmBin,
       args: [
@@ -547,6 +641,12 @@ function buildCatalogReleaseSteps({
         "--manifest",
         "output/shopify-catalog-integrity-applied-generation.json",
       ],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Final live-readback gate against the applied catalog generation",
+      command: npmBin,
+      args: ["run", "shopify:catalog-integrity:verify", "--", ...finalIntegrityArgs],
       cwd: releaseRootDir,
     },
     ...(includeMobile ? [
@@ -651,9 +751,9 @@ export function buildReleaseSteps({
   return buildCatalogReleaseSteps({
     releaseRootDir,
     includeMobile,
-    // Automated image classification is never part of the canonical release.
-    // The visual queue remains available for explicit review-only runs, while
-    // release classification stays deterministic with an auditable fallback.
+    // A trained visual adapter may contribute evidence only through its
+    // verified artifact, confidence, cross-image, and taxonomy-alignment
+    // gates. The existing supervised Ollama path remains opt-in.
     supervisedVision: profile === "catalog" &&
       process.env.SALT_CATALOG_VISION_SUPERVISED === "1" &&
       process.env.SALT_RELEASE_ALLOW_AUTOMATED_VISION === "1",
@@ -744,7 +844,19 @@ async function main() {
       if (!previousRunState || !["failed", "running"].includes(previousRunState.status)) {
         throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed or interrupted`);
       }
-      if (previousRunState.profile && previousRunState.profile !== args.profile) {
+      if (shouldRefreshSeoLiveCatalogOnResume(previousRunState)) {
+        // A failed SEO apply may have written some products after the reusable
+        // live snapshot was captured. Reusing it can make the planner skip the
+        // exact product that failed final readback. Refresh only this recovery
+        // path; successful resumes retain the normal cache-speed optimization.
+        process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH = "1";
+        process.stdout.write("SEO resume recovery: forcing a fresh live Shopify catalog before planning.\n");
+      }
+      // Keep the old checkpoint in memory until all resume validation passes.
+      // If validation fails, the catch block can preserve the exact prior
+      // step instead of replacing it with a one-line failure record.
+      releaseRunState = { ...previousRunState };
+      if (!areCompatibleResumeProfiles(previousRunState.profile, args.profile)) {
         throw new Error(`Cannot resume ${args.profile} release from ${previousRunState.profile} run state`);
       }
       if (previousRunState.stepIndex === 22) {
@@ -860,18 +972,33 @@ async function main() {
     }
 
     const steps = buildReleaseSteps({ rootDir, profile: args.profile });
+    if (args.resume && previousRunState?.stepLabel) {
+      const resolvedResume = resolveResumeStep(steps, previousRunState, resumeFromStep);
+      resumeFromStep = resolvedResume.resumeFromStep;
+      if (resolvedResume.restarted && args.profile !== "products") {
+        // A checkpoint from an older graph cannot be mapped safely. Restart
+        // the catalog graph rather than guessing a semantic stage boundary.
+        resumeFromStep = 1;
+        process.env.SALT_RELEASE_CATALOG_SNAPSHOT_REFRESH = "1";
+        process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH = "1";
+        process.stdout.write(
+          `Resume checkpoint label was not found in the ${steps.length}-step graph; restarting catalog generation from step 1.\n`,
+        );
+      }
+    }
     if (
       args.resume &&
       previousRunState?.stepLabel === "Verify Shopify merchandising backfill" &&
       process.env.SALT_RELEASE_SKIP_FINAL_MERCH_REFRESH !== "1"
     ) {
       const refreshBlockStart = steps.findIndex(
-        (step) => step.label === "Refresh live merchandising data after final catalog writes: Shopify product and collection data",
+        (step) => step.label === "Refresh Shopify data after final product publication: Shopify product and collection data",
       );
       if (refreshBlockStart >= 0) {
-        // The final-label lookup points at the third substep. A stale
-        // merchandising readback requires the complete refresh block so the
-        // product data used by the verifier is rebuilt before the gate runs.
+        // A stale merchandising readback can mean that the prior backfill
+        // planned against a locally synthesized value and skipped a live
+        // collection/product write. Re-run the publication refresh and the
+        // checkpointed merchandising backfill before attempting readback.
         resumeFromStep = refreshBlockStart + 1;
       }
     }
@@ -998,6 +1125,9 @@ async function main() {
     });
     process.stdout.write("\nRelease complete.\n");
   } catch (error) {
+    // Resume validation happens before the new run state is initialized. Keep
+    // the prior checkpoint and annotate the failure so a watcher can recover
+    // without losing the step that needs attention.
     await writeReleaseRunState({
       status: "failed",
       failedAt: new Date().toISOString(),

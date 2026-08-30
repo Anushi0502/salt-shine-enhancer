@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   inferApprovedDisclosureReferences,
+  inferDeterministicShopifyTaxonomyCategory,
   inferShopifyTaxonomyCategory,
 } from "./shopify-product-category.js";
 
@@ -51,6 +52,33 @@ describe("Shopify product taxonomy classifier", () => {
     expect(inferShopifyTaxonomyCategory({ handle: "assorted-everyday-item" })).toBeNull();
     expect(inferShopifyTaxonomyCategory({ handle: "educational-mathematics-toys-for-kids" })?.name).toBe("Toys");
     expect(inferShopifyTaxonomyCategory({ handle: "children-school-book-bag-backpack" })).toBeNull();
+  });
+
+  it("covers deterministic category families that previously had missing Shopify categories", () => {
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "adjustable-wrist-thumb-brace-splint" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hb-1-24",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "adjustable-laptop-stand" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/el-7-8-3-4",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "folding-laptop-lap-desk" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/os-6",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "automatic-liquid-soap-dispenser" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg-1-15",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "bamboo-soap-dish" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg-1-16",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "solar-outdoor-lantern" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "organic-shea-butter" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hb",
+    );
+    expect(inferDeterministicShopifyTaxonomyCategory({ handle: "folding-breakfast-tray" })?.id).toBe(
+      "gid://shopify/TaxonomyCategory/hg-11-10-7-9",
+    );
   });
 
   it("requires both explicit warning evidence and an approved disclosure object", () => {
