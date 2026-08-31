@@ -264,6 +264,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_collection_handle = salt_collection_segments | last %}
       {% if salt_collection_handle == 'holiday-gifts' %}
         {% assign salt_collection_handle = 'gifts' %}
+      {% elsif salt_collection_handle == 'winter-wear' or salt_collection_handle == 'clearance-archive' %}
+        {% assign salt_collection_handle = 'under-50' %}
       {% endif %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/collections/' | append: salt_collection_handle %}
       {% assign salt_custom_canonical = true %}
@@ -367,8 +369,13 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           tag.setAttribute('content', content);
         }
 
-        var isHolidayGiftsAlias = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?collections\/holiday-gifts\/?$/i.test(path);
-        if (isHolidayGiftsAlias) {
+        var collectionAliasTarget = '';
+        if (/^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?collections\/holiday-gifts\/?$/i.test(path)) {
+          collectionAliasTarget = '/collections/gifts';
+        } else if (/^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?collections\/(?:winter-wear|clearance-archive)\/?$/i.test(path)) {
+          collectionAliasTarget = '/collections/under-50';
+        }
+        if (collectionAliasTarget) {
           var indexableRobots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
           ensureMeta('robots', indexableRobots);
           ensureMeta('googlebot', indexableRobots);
@@ -378,7 +385,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             aliasCanonical.setAttribute('rel', 'canonical');
             document.head.appendChild(aliasCanonical);
           }
-          aliasCanonical.setAttribute('href', window.location.origin + '/collections/gifts');
+          aliasCanonical.setAttribute('href', window.location.origin + collectionAliasTarget);
           return;
         }
 

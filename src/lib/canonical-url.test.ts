@@ -38,6 +38,9 @@ describe("canonical URLs", () => {
     expect(buildCanonicalUrl("/es/collections/holiday-gifts")).toBe(
       "https://www.saltonlinestore.com/collections/gifts",
     );
+    expect(buildCanonicalUrl("/collections/winter-wear")).toBe(
+      "https://www.saltonlinestore.com/collections/under-50",
+    );
   });
 
   it("keeps one canonical link when route metadata updates", () => {

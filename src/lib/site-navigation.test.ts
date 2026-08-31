@@ -31,6 +31,8 @@ describe("resolveCollectionFeedHandle", () => {
     expect(resolveCollectionShopifyHandle("appplaza-best-sellers")).toBe("best-sellers");
     expect(resolveCollectionShopifyHandle("unique-products")).toBe("trending-finds");
     expect(resolveCollectionShopifyHandle("under-25")).toBe("under-50");
+    expect(resolveCollectionShopifyHandle("winter-wear")).toBe("under-50");
+    expect(resolveCollectionShopifyHandle("clearance-archive")).toBe("under-50");
   });
 
   it("canonicalizes nested legacy and virtual feeds without changing their routes", () => {
@@ -45,11 +47,11 @@ describe("resolveCollectionFeedHandle", () => {
     );
   });
 
-  it("normalizes the legacy winter-wear handle to the live clearance route", () => {
-    expect(resolveCollectionRouteHandle("winter-wear")).toBe("clearance-archive");
+  it("normalizes the legacy winter-wear handle to the live sale route", () => {
+    expect(resolveCollectionRouteHandle("winter-wear")).toBe("under-50");
     expect(getCollectionRoutePaths("winter-wear")).toEqual([
       "/collections/winter-wear",
-      "/collections/clearance-archive",
+      "/collections/under-50",
     ]);
   });
 

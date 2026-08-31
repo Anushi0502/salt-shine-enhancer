@@ -16,6 +16,8 @@ const COLLECTION_CANONICAL_ALIASES: Record<string, string> = {
   "cooking-essential": "cookware",
   "holiday-gifts": "gifts",
   "unique-products": "trending-finds",
+  "winter-wear": "under-50",
+  "clearance-archive": "under-50",
 };
 
 function hasCanonicalRel(link: HTMLLinkElement): boolean {
