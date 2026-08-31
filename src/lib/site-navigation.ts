@@ -318,6 +318,7 @@ export const SITE_HOME_FEATURED_SHORTCUTS: SiteFeaturedShortcut[] = [
 const COLLECTION_ROUTE_ALIASES: Record<string, string> = {
   apparel: "men-collection",
   "cooking-essential": "cookware",
+  "holiday-gifts": "gifts",
   "unique-products": "trending-finds",
   "winter-wear": "clearance-archive",
 };

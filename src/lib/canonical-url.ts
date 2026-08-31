@@ -11,6 +11,12 @@ type CanonicalDocumentState = {
 };
 
 const canonicalDocumentStates = new WeakMap<Document, CanonicalDocumentState>();
+const COLLECTION_CANONICAL_ALIASES: Record<string, string> = {
+  apparel: "men-collection",
+  "cooking-essential": "cookware",
+  "holiday-gifts": "gifts",
+  "unique-products": "trending-finds",
+};
 
 function hasCanonicalRel(link: HTMLLinkElement): boolean {
   return String(link.getAttribute("rel") || "")
@@ -51,7 +57,8 @@ export function normalizeCanonicalPath(input: string | null | undefined): string
   if (routeType === "collections" && segments[routeOffset + 1]) {
     // Older nested links used /collections/:parent/:child. Each child is a
     // real Shopify collection, so its direct handle is the canonical route.
-    const collectionHandle = segments[routeOffset + 2] || segments[routeOffset + 1];
+    const requestedHandle = segments[routeOffset + 2] || segments[routeOffset + 1];
+    const collectionHandle = COLLECTION_CANONICAL_ALIASES[requestedHandle] || requestedHandle;
     return `/collections/${collectionHandle}`;
   }
 

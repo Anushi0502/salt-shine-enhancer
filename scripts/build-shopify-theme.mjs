@@ -262,6 +262,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_collection_path = salt_route | split: '/collections/' | last %}
       {% assign salt_collection_segments = salt_collection_path | split: '/' %}
       {% assign salt_collection_handle = salt_collection_segments | last %}
+      {% if salt_collection_handle == 'holiday-gifts' %}
+        {% assign salt_collection_handle = 'gifts' %}
+      {% endif %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/collections/' | append: salt_collection_handle %}
       {% assign salt_custom_canonical = true %}
     {% elsif request.page_type == 'product' and product %}
