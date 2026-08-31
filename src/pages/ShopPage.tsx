@@ -854,7 +854,7 @@ const ShopPage = () => {
         description={seoDescription}
         canonicalPath={location.pathname}
         image={selectedCollectionImage || undefined}
-        noIndex={hasSearchQuery}
+        noIndex={hasSearchQuery || (location.pathname === "/shop" && Boolean(location.search))}
         structuredData={seoStructuredData}
       />
       <Reveal>
