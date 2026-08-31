@@ -367,6 +367,21 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           tag.setAttribute('content', content);
         }
 
+        var isHolidayGiftsAlias = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?collections\/holiday-gifts\/?$/i.test(path);
+        if (isHolidayGiftsAlias) {
+          var indexableRobots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+          ensureMeta('robots', indexableRobots);
+          ensureMeta('googlebot', indexableRobots);
+          var aliasCanonical = document.querySelector('link[rel="canonical"]');
+          if (!aliasCanonical) {
+            aliasCanonical = document.createElement('link');
+            aliasCanonical.setAttribute('rel', 'canonical');
+            document.head.appendChild(aliasCanonical);
+          }
+          aliasCanonical.setAttribute('href', window.location.origin + '/collections/gifts');
+          return;
+        }
+
         ensureMeta('robots', 'noindex,follow');
         ensureMeta('googlebot', 'noindex,follow');
 

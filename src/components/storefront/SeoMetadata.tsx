@@ -177,9 +177,11 @@ const SeoMetadata = ({
 
     cleanups.push(updateMetaTag(document, "name", "twitter:card", image ? "summary_large_image" : "summary", scope));
 
-    if (noIndex) {
-      cleanups.push(updateMetaTag(document, "name", "robots", "noindex,follow", scope));
-    }
+    const robotsContent = noIndex
+      ? "noindex,follow"
+      : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+    cleanups.push(updateMetaTag(document, "name", "robots", robotsContent, scope));
+    cleanups.push(updateMetaTag(document, "name", "googlebot", robotsContent, scope));
 
     const structuredPayloads = structuredData.filter(Boolean);
     if (structuredPayloads.length) {
