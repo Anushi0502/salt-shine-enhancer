@@ -1,4 +1,5 @@
 import { compareAt, minPrice, savingsPercent, productImage, stripHtml } from "@/lib/formatters";
+import { buildCanonicalUrl } from "@/lib/canonical-url";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type {
   CollectionProductsPayload,
@@ -99,6 +100,48 @@ function getProductReviewCount(product: ShopifyProduct): number {
   }
 
   return 0;
+}
+
+function shortenSeoText(value: string, maxLength = 160): string {
+  const text = value.replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const truncated = text.slice(0, maxLength + 1);
+  const boundary = truncated.lastIndexOf(" ");
+  const cutAt = boundary > Math.floor(maxLength * 0.65) ? boundary : maxLength;
+
+  return truncated
+    .slice(0, cutAt)
+    .replace(/[\s,;:|/-]+$/g, "")
+    .trim();
+}
+
+export function buildProductMetaDescription(
+  product: ShopifyProduct,
+  selectedVariant?: ShopifyProduct["variants"][number] | null,
+  currencyCode = "USD",
+): string {
+  const title = asText(product.title).trim() || "SALT product";
+  const variantLabel = selectedVariant && !/^default\s+title$/i.test(String(selectedVariant.title || ""))
+    ? String(selectedVariant.title).trim()
+    : "";
+  const productType = asText(product.product_type).trim();
+  const bodyText = stripHtml(product.body_html).replace(/\s+/g, " ").trim();
+  const context = [productType, bodyText]
+    .filter(Boolean)
+    .join(". ")
+    .replace(/[.!?]+$/g, "");
+  const normalizedCurrency = /^[A-Z]{3}$/.test(currencyCode.trim().toUpperCase())
+    ? currencyCode.trim().toUpperCase()
+    : "USD";
+  const price = selectedVariant ? Number(selectedVariant.price || 0) : minPrice(product);
+  const priceText = Number.isFinite(price) && price > 0 ? ` Available for ${price.toFixed(2)} ${normalizedCurrency}.` : "";
+
+  return shortenSeoText(
+    `Shop ${title}${variantLabel ? ` in the ${variantLabel} option` : ""}${context ? `. ${context}` : ""}.${priceText}`,
+  );
 }
 
 function getProductSearchCorpus(product: ShopifyProduct): string {
@@ -594,25 +637,36 @@ export function buildProductStructuredData(
   const normalizedCurrency = /^[A-Z]{3}$/.test(currencyCode.trim().toUpperCase())
     ? currencyCode.trim().toUpperCase()
     : "USD";
+  const canonicalProductUrl = buildCanonicalUrl(`/products/${product.handle}`);
+  const imageUrl = image
+    ? (() => {
+        try {
+          return new URL(image, origin || canonicalProductUrl).toString();
+        } catch {
+          return image;
+        }
+      })()
+    : undefined;
 
   return {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${canonicalProductUrl}#product`,
     name: productName,
     description,
-    image: image ? [image] : undefined,
+    image: imageUrl ? [imageUrl] : undefined,
     brand: {
       "@type": "Brand",
       name: product.vendor || "SALT",
     },
     sku: String(selectedVariant?.sku || product.variants[0]?.sku || product.handle || product.id),
-    url: `${origin}/products/${product.handle}${selectedVariant?.id ? `?variant=${selectedVariant.id}` : ""}`,
+    url: canonicalProductUrl,
     offers: {
       "@type": "Offer",
       priceCurrency: normalizedCurrency,
       price: asNumber(currentPrice),
       availability,
-      url: `${origin}/products/${product.handle}${selectedVariant?.id ? `?variant=${selectedVariant.id}` : ""}`,
+      url: canonicalProductUrl,
       itemCondition: "https://schema.org/NewCondition",
       ...(comparePrice > currentPrice
         ? {

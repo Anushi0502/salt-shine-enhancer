@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import { buildShopifyCartUrl, buildShopifyDirectCheckoutUrl, useCart } from "@/lib/cart";
+import { buildCanonicalUrl } from "@/lib/canonical-url";
 import {
   compareAt,
   formatMoney,
@@ -73,6 +74,7 @@ import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import {
   buildBreadcrumbStructuredData,
   buildProductCollectionIndex,
+  buildProductMetaDescription,
   buildProductStructuredData,
   pickComplementaryProducts,
   pickRelatedProducts,
@@ -712,6 +714,7 @@ const ProductPage = () => {
     [product, products, recentHandles],
   );
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const canonicalProductUrl = product ? buildCanonicalUrl(`/products/${product.handle}`) : "";
   const seoStructuredData = useMemo(() => {
     if (!origin || !product) {
       return [];
@@ -719,13 +722,13 @@ const ProductPage = () => {
 
     return [
       buildBreadcrumbStructuredData([
-        { name: "Home", url: `${origin}/` },
-        { name: "Shop", url: `${origin}/shop` },
-        { name: product.title, url: `${origin}/products/${product.handle}` },
+        { name: "Home", url: buildCanonicalUrl("/") },
+        { name: "Shop", url: buildCanonicalUrl("/shop") },
+        { name: product.title, url: canonicalProductUrl },
       ]),
       buildProductStructuredData(product, origin, reviewSummary, getStoreCurrencyCode(), selectedVariant),
     ].filter(Boolean);
-  }, [origin, product, reviewSummary, selectedVariant]);
+  }, [canonicalProductUrl, origin, product, reviewSummary, selectedVariant]);
 
   const variantSeoProfile = useMemo(
     () => buildVariantSeoProfile(product, selectedVariant, { currency: getStoreCurrencyCode() }),
@@ -1010,7 +1013,7 @@ const ProductPage = () => {
     >
       <SeoMetadata
         title={variantSeoProfile.title}
-        description={variantSeoProfile.description || `${productSummary}${subtitle ? ` ${subtitle}.` : ""}`}
+        description={buildProductMetaDescription(product, selectedVariant, getStoreCurrencyCode())}
         canonicalPath={`/products/${product.handle}`}
         image={primaryImage || undefined}
         ogType="product"
