@@ -40,16 +40,18 @@ export function normalizeCanonicalPath(input: string | null | undefined): string
   const withLeadingSlash = rawPathname.startsWith("/") ? rawPathname : `/${rawPathname}`;
   const normalizedPathname = withLeadingSlash.replace(/\/{2,}/g, "/");
   const segments = normalizedPathname.split("/").filter(Boolean);
-  const routeType = segments[0]?.toLowerCase();
+  const hasLocalePrefix = Boolean(segments[0] && /^[a-z]{2}(?:-[a-z]{2})?$/i.test(segments[0]));
+  const routeOffset = hasLocalePrefix ? 1 : 0;
+  const routeType = segments[routeOffset]?.toLowerCase();
 
-  if ((routeType === "product" || routeType === "products") && segments[1]) {
-    return `/products/${segments[1]}`;
+  if ((routeType === "product" || routeType === "products") && segments[routeOffset + 1]) {
+    return `/products/${segments[routeOffset + 1]}`;
   }
 
-  if (routeType === "collections" && segments[1]) {
+  if (routeType === "collections" && segments[routeOffset + 1]) {
     // Older nested links used /collections/:parent/:child. Each child is a
     // real Shopify collection, so its direct handle is the canonical route.
-    const collectionHandle = segments[2] || segments[1];
+    const collectionHandle = segments[routeOffset + 2] || segments[routeOffset + 1];
     return `/collections/${collectionHandle}`;
   }
 

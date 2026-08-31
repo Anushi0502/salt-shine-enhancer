@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import "@testing-library/jest-dom/vitest";
 
 import {
   buildCanonicalUrl,
@@ -25,6 +26,15 @@ describe("canonical URLs", () => {
       "https://www.saltonlinestore.com/collections/creator-essentials",
     );
     expect(buildCanonicalUrl("/")).toBe("https://www.saltonlinestore.com/");
+  });
+
+  it("normalizes locale-prefixed product and collection routes", () => {
+    expect(buildCanonicalUrl("/es/products/example-product?variant=123")).toBe(
+      "https://www.saltonlinestore.com/products/example-product",
+    );
+    expect(buildCanonicalUrl("/es/collections/home/creator-essentials")).toBe(
+      "https://www.saltonlinestore.com/collections/creator-essentials",
+    );
   });
 
   it("keeps one canonical link when route metadata updates", () => {

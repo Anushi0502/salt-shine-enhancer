@@ -259,7 +259,10 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/search' %}
       {% assign salt_custom_canonical = true %}
     {% elsif salt_route contains '/collections/' %}
-      {% assign salt_seo_canonical = 'https://' | append: request.host | append: salt_route %}
+      {% assign salt_collection_path = salt_route | split: '/collections/' | last %}
+      {% assign salt_collection_segments = salt_collection_path | split: '/' %}
+      {% assign salt_collection_handle = salt_collection_segments | last %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/collections/' | append: salt_collection_handle %}
       {% assign salt_custom_canonical = true %}
     {% elsif request.page_type == 'product' and product %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
@@ -521,7 +524,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     <script>
       (function () {
         var selector = '#svelte-bundle-widget, #pumper_bundle_svelte';
-        var pending = /^\\/products?(?:\\/|$)/.test(window.location.pathname);
+        var pending = /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?(?:\\/|$)/i.test(window.location.pathname);
         var observer = null;
         var originalDisplays = new WeakMap();
 
@@ -714,7 +717,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_product_judgeme_review_count = salt_product_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
       <script>
         (function () {
-          var match = window.location.pathname.match(/^\\/products?\\/([^\\/?#]+)\\/?$/);
+          var match = window.location.pathname.match(/^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/([^\\/?#]+)\\/?$/i);
           if (!match) return;
 
           var handle = decodeURIComponent(match[1]);
@@ -1049,6 +1052,10 @@ User-agent: *
 Disallow: /pages/finance
 Disallow: /apps:finance
 Disallow: /apps/finance
+
+# Let Google re-crawl the account entry redirect and honor the login surface's
+# noindex response without exposing authenticated order pages to indexing.
+Allow: /account/orders
 `,
   );
 

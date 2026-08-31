@@ -43,7 +43,9 @@ const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
 // router to render before it starts the chunk request.
 let productPageModule: Promise<typeof import("@/pages/ProductPage")> | null = null;
 const loadProductPage = () => (productPageModule ??= import("@/pages/ProductPage"));
-const isInitialProductRoute = /^\/products?\/[^/]+\/?$/.test(window.location.pathname);
+const isInitialProductRoute = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?products?\/[^/]+\/?$/i.test(
+  window.location.pathname,
+);
 
 if (isInitialProductRoute) {
   void loadProductPage();
@@ -115,10 +117,16 @@ const AppShell = () => (
                 <Route path="/pages/collections" element={<CollectionsPage />} />
                 <Route path="/collections/:handle" element={<CollectionRoutePage />} />
                 <Route path="/collections/:handle/:subhandle" element={<CollectionSubcollectionRoutePage />} />
+                <Route path="/:locale/collections/:handle" element={<CollectionRoutePage />} />
+                <Route path="/:locale/collections/:handle/:subhandle" element={<CollectionSubcollectionRoutePage />} />
                 <Route path="/product/:handle" element={<ProductPage />} />
                 <Route path="/products/:handle" element={<ProductPage />} />
+                <Route path="/:locale/product/:handle" element={<ProductPage />} />
+                <Route path="/:locale/products/:handle" element={<ProductPage />} />
                 <Route path="/product/:handle/reviews" element={<ProductReviewsPage />} />
                 <Route path="/products/:handle/reviews" element={<ProductReviewsPage />} />
+                <Route path="/:locale/product/:handle/reviews" element={<ProductReviewsPage />} />
+                <Route path="/:locale/products/:handle/reviews" element={<ProductReviewsPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/pages/wishlist" element={<WishlistPage />} />
