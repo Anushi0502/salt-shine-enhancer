@@ -198,7 +198,8 @@ Configure these deployment-only variables before publishing it:
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
-The finance page is Shopify-only: orders, refunds, product costs, disputes, payout cash, payment fees, campaign attribution, and app billing are fetched from Shopify at request time. The backend tries Shopify Payments GraphQL first and the Shopify payout REST endpoint second, so `read_shopify_payments_payouts` can power the live ledger even when the protected Payments account scope is unavailable. It never fabricates a payout, subscription, campaign cost, or supplier cost; records Shopify does not expose remain visible as reconciliation exceptions.
+- `FINANCE_CAMPAIGN_COST_PER_ORDER`: operating campaign cost applied once to each non-cancelled order when Shopify does not return paid campaign spend; defaults to the store pricing rule of `$18`.
+The finance page is Shopify-only: orders, refunds, DSers-synced product costs, disputes, payout cash, payment fees, campaign attribution, and app billing are fetched from Shopify at request time. The backend tries Shopify Payments GraphQL first and the Shopify payout REST endpoint second, so `read_shopify_payments_payouts` can power the live ledger even when the protected Payments account scope is unavailable. It never fabricates a payout, subscription, or supplier cost. When Shopify returns no paid campaign spend, the configured per-order campaign cost is applied explicitly and shown in the campaign ledger; records Shopify does not expose remain visible as reconciliation exceptions.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 

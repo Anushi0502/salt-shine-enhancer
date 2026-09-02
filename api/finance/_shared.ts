@@ -17,6 +17,7 @@ const SUMMARY_CACHE_TTL_MS = 5 * 1000;
 const DEFAULT_CURRENCY = "USD";
 const DEFAULT_TIMEZONE = process.env.FINANCE_TIMEZONE || "America/New_York";
 const DEFAULT_SHOPIFY_CLI_CLIENT_ID = "7e9cb568cfd431c538f36d1ad3f2b4f6";
+const DEFAULT_CAMPAIGN_COST_PER_ORDER_CENTS = 1800;
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://salt-online-storev2-gcs1124s-projects.vercel.app",
   "https://www.saltonlinestore.com",
@@ -140,6 +141,11 @@ type CampaignSpendSource = {
   allocationsByOrderId: Map<string, number>;
   state: FinanceSourceState;
   message?: string;
+};
+
+type EffectiveCampaignSpendSource = CampaignSpendSource & {
+  configuredCostPerOrderCents: number;
+  fallbackOrderCount: number;
 };
 
 type DisputeSource = {
@@ -877,6 +883,69 @@ async function loadCampaignCosts(orders: ShopifyOrder[], start: string, end: str
   };
 }
 
+function configuredCampaignCostPerOrderCents(): number {
+  const raw = process.env.FINANCE_CAMPAIGN_COST_PER_ORDER
+    ?? process.env.SALT_VARIANT_COST_CAMPAIGN_COST_PER_ORDER
+    ?? String(DEFAULT_CAMPAIGN_COST_PER_ORDER_CENTS / 100);
+  const amount = Number(raw);
+  return Number.isFinite(amount) && amount >= 0
+    ? Math.round(amount * 100)
+    : DEFAULT_CAMPAIGN_COST_PER_ORDER_CENTS;
+}
+
+function applyEffectiveCampaignCosts(
+  rows: NormalizedOrder[],
+  campaignData: CampaignSpendSource,
+  currency: string,
+): EffectiveCampaignSpendSource {
+  const configuredCostPerOrderCents = configuredCampaignCostPerOrderCents();
+  const allocationsByOrderId = new Map<string, number>();
+  let fallbackOrderCount = 0;
+
+  for (const row of rows) {
+    const shopifyAllocatedCents = campaignData.allocationsByOrderId.get(row.id);
+    if (shopifyAllocatedCents != null && shopifyAllocatedCents > 0) {
+      allocationsByOrderId.set(row.id, shopifyAllocatedCents);
+      continue;
+    }
+    allocationsByOrderId.set(row.id, configuredCostPerOrderCents);
+    fallbackOrderCount += 1;
+  }
+
+  const campaigns = [...campaignData.campaigns];
+  if (fallbackOrderCount && configuredCostPerOrderCents > 0) {
+    const configuredTotalCents = fallbackOrderCount * configuredCostPerOrderCents;
+    campaigns.push({
+      key: "configured|per-order|campaign-cost",
+      title: "Campaign cost per order",
+      source: "configured",
+      medium: "per-order",
+      campaign: `${(configuredCostPerOrderCents / 100).toFixed(2)} per order`,
+      adSpendCents: configuredTotalCents,
+      allocatedCents: configuredTotalCents,
+      currency,
+      orderCount: fallbackOrderCount,
+    });
+  }
+
+  const state: FinanceSourceState = fallbackOrderCount ? "partial" : campaignData.state;
+  const message = [
+    campaignData.message,
+    fallbackOrderCount
+      ? `${formatMoneyText(configuredCostPerOrderCents, currency)} campaign cost per order was applied to ${fallbackOrderCount} non-cancelled order${fallbackOrderCount === 1 ? "" : "s"} where Shopify paid campaign spend was not returned.`
+      : undefined,
+  ].filter(Boolean).join(" | ");
+
+  return {
+    campaigns: campaigns.sort((left, right) => right.allocatedCents - left.allocatedCents || left.title.localeCompare(right.title)),
+    allocationsByOrderId,
+    state,
+    message: message || undefined,
+    configuredCostPerOrderCents,
+    fallbackOrderCount,
+  };
+}
+
 function isChargebackLoss(dispute: ShopifyDispute): boolean {
   const type = String(dispute.type || dispute.initiatedAs || "").toLowerCase();
   const status = String(dispute.status || "").toLowerCase();
@@ -1316,7 +1385,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
 
   const normalized = normalizeOrders(orders, disputeData.byOrderId, start, end);
   if (normalized.missingCostCount) {
-    const message = "Some line items do not have a Shopify inventory cost-per-item value. The unresolved items remain excluded from cost totals until Shopify supplies a cost.";
+    const message = "Some line items do not have a DSers-synced Shopify inventory cost-per-item value. The unresolved items remain excluded from cost totals until Shopify supplies a cost.";
     const affected = normalized.missingCostLabels.slice(0, 6).join("; ");
     const more = normalized.missingCostLabels.length > 6 ? `; +${normalized.missingCostLabels.length - 6} more` : "";
     addException(exception("missing-cost", `${message} Affected: ${affected}${more}`, normalized.missingCostCount, "high"));
@@ -1324,6 +1393,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   if (normalized.multiCurrency) addException(exception("currency", "The selected period contains multiple currencies. Totals are not converted.", 1, "high"));
 
   const currency = normalized.currency || DEFAULT_CURRENCY;
+  const effectiveCampaignData = applyEffectiveCampaignCosts(normalized.rows, campaignData, currency);
   const grossSalesCents = normalized.rows.reduce((sum, row) => sum + row.grossSalesCents, 0);
   const discountsCents = normalized.rows.reduce((sum, row) => sum + row.discountsCents, 0);
   const refundsCents = normalized.rows.reduce((sum, row) => sum + row.refundsCents, 0);
@@ -1334,7 +1404,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const cogsCents = normalized.rows.reduce((sum, row) => sum + row.cogsCents, 0);
   const paymentFeesCents = payoutData.payouts.reduce((sum, payout) => sum + payout.feeCents, 0);
   const chargebacksCents = disputeData.disputes.reduce((sum, dispute) => sum + (isChargebackLoss(dispute) ? simpleMoneyCents(dispute.amount) : 0), 0);
-  const campaignCostsCents = campaignData.campaigns.reduce((sum, campaign) => sum + campaign.allocatedCents, 0);
+  const campaignCostsCents = effectiveCampaignData.campaigns.reduce((sum, campaign) => sum + campaign.allocatedCents, 0);
   const subscriptionCostsCents = subscriptions.reduce((sum, subscription) => sum + subscription.allocatedCents, 0);
   const payoutsReceivedCents = payoutData.payouts.reduce((sum, payout) => sum + (isPaidPayout(payout.status) ? payout.netCents : 0), 0);
   const grossProfitCents = netSalesCents + shippingIncomeCents - cogsCents;
@@ -1350,7 +1420,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
 
   const orderRows: FinanceOrderRow[] = normalized.rows.slice(-200).reverse().map((row) => {
     const allocatedFeesCents = Math.round(row.netRevenueCents * feeRatio);
-    const campaignCostCents = campaignData.allocationsByOrderId.get(row.id) || 0;
+    const campaignCostCents = effectiveCampaignData.allocationsByOrderId.get(row.id) || 0;
     const profitCents = row.netRevenueCents - row.cogsCents - allocatedFeesCents - row.chargebackCents - campaignCostCents;
     return {
       id: row.id,
@@ -1392,12 +1462,12 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       payouts: payoutData.state,
       dsers: dsersState,
       subscriptions: subscriptionState,
-      campaigns: campaignData.state,
+      campaigns: effectiveCampaignData.state,
       reconciliation: reconciliationData.state,
       messages: [
         normalized.missingCostCount
-          ? `Shopify inventory cost coverage is partial: ${normalized.missingCostCount} ordered item${normalized.missingCostCount === 1 ? "" : "s"} still need a cost value.`
-          : "Product cost is read from Shopify inventory cost-per-item values.",
+          ? `DSers product-cost coverage is partial: ${normalized.missingCostCount} ordered item${normalized.missingCostCount === 1 ? "" : "s"} still need a cost value in Shopify.`
+          : "DSers product cost is read from Shopify inventory cost-per-item values synced into Shopify.",
         payoutData.state === "connected"
           ? "Live Shopify payouts are connected; payment fees are allocated to order rows by net revenue."
           : "Shopify payout data is waiting for merchant-approved Payments access and will retry automatically.",
@@ -1412,11 +1482,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
         normalized.periodRefundsCents
           ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in cash refund events created during the selected period. Net sales applies ${formatMoneyText(returnDeductionsCents, currency)} of product return deductions; line-item returns are read from Shopify and payment-only refunds are capped at the order product subtotal.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to cancelled orders and is excluded from the accrual P&L to avoid counting cancelled revenue twice.` : ""}`
           : "No Shopify refund events were created during the selected period.",
-        campaignData.state === "connected"
-          ? `${campaignData.campaigns.length} Shopify marketing campaign${campaignData.campaigns.length === 1 ? "" : "s"} were matched and allocated to attributed orders.`
-          : campaignData.state === "partial"
-            ? "Shopify marketing campaign spend was only partially matched to attributed orders."
-            : "Shopify marketing activity is waiting for read_marketing_events access.",
+        effectiveCampaignData.message || "Campaign cost allocation is not available yet.",
         reconciliationData.message || "Live reconciliation is not available yet.",
       ],
     },
@@ -1450,17 +1516,17 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "Refunds and returns", cents: -returnDeductionsCents, tone: "negative", detail: "Product return deductions; cash refund events remain visible in reconciliation" },
       { label: "Net sales", cents: netSalesCents, tone: "positive", detail: "Product revenue after discounts and refunds" },
       { label: "Shipping income", cents: shippingIncomeCents, tone: "positive", detail: "Shipping charged to customers" },
-      { label: "Supplier and product cost", cents: -cogsCents, tone: "negative", detail: normalized.missingCostCount ? `Shopify inventory cost; ${normalized.missingCostCount} item costs remain unresolved` : "Shopify inventory cost-per-item values" },
+      { label: "DSers product cost", cents: -cogsCents, tone: "negative", detail: normalized.missingCostCount ? `DSers-synced Shopify cost; ${normalized.missingCostCount} item costs remain unresolved` : "DSers-synced Shopify inventory cost-per-item values" },
       { label: "Payment fees", cents: -paymentFeesCents, tone: "negative", detail: "Fees reported through Shopify payouts" },
       { label: "Chargebacks", cents: -chargebacksCents, tone: "negative", detail: "Lost, accepted, or expired Shopify chargebacks only" },
-      { label: "Campaign spend", cents: -campaignCostsCents, tone: "negative", detail: "Shopify marketing activity ad spend allocated to attributed orders" },
+      { label: "Campaign cost per order", cents: -campaignCostsCents, tone: "negative", detail: "Shopify paid spend where returned; otherwise the configured campaign cost per order" },
       { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Shopify app billing returned by the Admin API" },
       { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, and subscriptions" },
     ],
     reconciliation: reconciliationData.summary,
     payouts: payoutData.payouts,
     subscriptions,
-    campaignCosts: campaignData.campaigns,
+    campaignCosts: effectiveCampaignData.campaigns,
     orders: orderRows,
     exceptions: consolidateExceptions(exceptions),
   };
