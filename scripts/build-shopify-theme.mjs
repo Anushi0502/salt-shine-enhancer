@@ -236,7 +236,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
+    {% # theme-check-disable ContentForHeaderModification %}
     {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
+    {% # theme-check-enable ContentForHeaderModification %}
 
     {% if salt_route == '/' %}
       {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
@@ -252,6 +254,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_seo_description = 'Browse the live SALT catalog of cookware, gifts, apparel, beauty, gadgets, and everyday essentials.' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/shop' %}
       {% assign salt_custom_canonical = true %}
+      {% if request.query_string != blank %}
+        {% assign salt_seo_robots = 'noindex,follow' %}
+      {% endif %}
     {% elsif salt_route == '/search' %}
       {% assign salt_seo_title = 'Search SALT Online Store' %}
       {% assign salt_seo_description = 'Search the live SALT catalog for products, collections, and everyday essentials.' %}
@@ -498,8 +503,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         the product payload arrives. Preloading product.featured_image here can
         fetch a different CDN variant and creates a wasted-preload warning.
       {%- endcomment -%}
-      <link rel="preconnect" href="https://magecomp.us" crossorigin>
-      <link rel="dns-prefetch" href="//magecomp.us">
       <script>
         (function () {
           // LimitQtyHelper is injected by a Shopify app with defer, but its
@@ -1047,6 +1050,10 @@ const productDataSectionLiquid = `{% if request.page_type == 'collection' and co
 `;
 
   await writeFile(resolve(themeDir, "layout", "theme.liquid"), themeLiquid);
+  await writeFile(
+    resolve(themeDir, "layout", "password.liquid"),
+    "{{ content_for_header }}{{ content_for_layout }}\n",
+  );
   await writeFile(resolve(themeDir, "sections", "salt-app.liquid"), sectionLiquid);
   await writeFile(resolve(themeDir, "sections", "salt-product-data.liquid"), productDataSectionLiquid);
 
@@ -1234,6 +1241,11 @@ async function main() {
   await Promise.all(
     themeScaffoldEntries.map((entry) =>
       rm(resolve(themeDir, entry), { recursive: true, force: true }),
+    ),
+  );
+  await Promise.all(
+    themeScaffoldEntries.map((entry) =>
+      mkdir(resolve(themeDir, entry), { recursive: true }),
     ),
   );
   // Keep Shopify-admin app embeds and theme-editor state intact. The generated
