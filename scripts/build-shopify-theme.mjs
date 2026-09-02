@@ -441,6 +441,39 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         }
       }
     </script>
+    {% if salt_route contains '/collections/' %}
+      {% assign salt_schema_collection = collections[salt_collection_handle] %}
+      {% if salt_schema_collection %}
+        {% assign salt_schema_collection_description = salt_schema_collection.description | strip_html | strip_newlines | truncate: 500 %}
+        {% if salt_schema_collection_description == blank %}
+          {% assign salt_schema_collection_description = salt_seo_description %}
+        {% endif %}
+        <script type="application/ld+json">
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "@id": {{ salt_seo_canonical | append: '#collection' | json }},
+            "name": {{ salt_schema_collection.title | json }},
+            "description": {{ salt_schema_collection_description | json }},
+            "url": {{ salt_seo_canonical | json }}{% if salt_schema_collection.products_count > 0 %},
+            "mainEntity": {
+              "@type": "ItemList",
+              "numberOfItems": {{ salt_schema_collection.products_count | plus: 0 | json }},
+              "itemListElement": [
+                {% for salt_schema_product in salt_schema_collection.products limit: 12 %}
+                  {
+                    "@type": "ListItem",
+                    "position": {{ forloop.index | json }},
+                    "name": {{ salt_schema_product.title | json }},
+                    "url": {{ 'https://' | append: request.host | append: '/products/' | append: salt_schema_product.handle | json }}
+                  }{% unless forloop.last %},{% endunless %}
+                {% endfor %}
+              ]
+            }{% endif %}
+          }
+        </script>
+      {% endif %}
+    {% endif %}
     {% if request.page_type == 'product' and product %}
       {% assign salt_schema_url = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_schema_product_name = product.title %}
@@ -898,6 +931,14 @@ const sectionLiquid = `<div
   data-judgeme-public-token="TQ0rk940ADN89zj_f83SKuTYIfY"
   data-currency="{{ cart.currency.iso_code | default: shop.currency | escape }}"
 ></div>
+<noscript>
+  <main>
+    <h1>{{ page_title | default: shop.name | escape }}</h1>
+    {% if page_description != blank %}
+      <p>{{ page_description | strip_html | escape }}</p>
+    {% endif %}
+  </main>
+</noscript>
 <script type="application/json" id="salt-sidebar-collections">
   {% assign salt_sidebar_menu = linklists['sidebar-collections'] %}
   {
