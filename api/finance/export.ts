@@ -197,9 +197,9 @@ export default async function handler(req: any, res: any) {
     section("Methodology");
     for (const message of [
       "Payouts represent cash movement and are intentionally shown separately from profit.",
-      "Product cost uses Shopify inventory cost-per-item values; unresolved items remain flagged.",
+      "DSers product cost uses Shopify inventory cost-per-item values synced by DSers; unresolved items remain flagged.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
-      "Campaign spend is pulled from Shopify marketing activity attribution and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
+      "Campaign cost uses Shopify paid spend where returned; otherwise the configured campaign cost per order is applied once to each non-cancelled order.",
       "Subscriptions are read from Shopify Admin app billing; Shopify plan and external vendor billing are not exposed by this connection.",
       "Live reconciliation is calculated from current Shopify payout, order-cost, campaign, and subscription responses.",
       "Taxes collected are reported separately and are not treated as operating profit.",
