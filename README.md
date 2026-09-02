@@ -192,16 +192,13 @@ The `/pages/finance` route is the private, server-backed workspace. Legacy `/app
 
 Configure these deployment-only variables before publishing it:
 
-- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, `read_marketing_events`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
+- `SHOPIFY_ADMIN_REFRESH_TOKEN`: server-only Shopify CLI refresh token. The finance API rotates the short-lived access token automatically when Shopify returns an authorization failure.
+- `SHOPIFY_CLI_CLIENT_ID`: Shopify CLI/app client ID used with the refresh token. Defaults to the connected SALT finance app client ID.
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
-- `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`. When this variable is absent or `[]`, the finance view uses the current merchant-provided Shopify Grow charge ($19.99/month) plus the DSers Advanced public-plan reference ($19.90/month), and labels that source for invoice verification.
-- `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
-- `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
-- `FINANCE_RECONCILIATION_JSON`: optional workbook/cash bridge. It accepts `{ "source": "Store -2026.xlsx", "rows": [{ "month": "July 2026", "pendingPayout": 1187.29, "payoutPaid": 3448.38, "orderCost": 1662.81, "billCost": 1633.67, "profit": 1339.19 }] }`; each row can be period-scoped with `start`/`end`. This is displayed as a manual cash reconciliation and is kept separate from Shopify accrual profit. `profit` is preserved when supplied; otherwise it is calculated as payout plus pending cash less order cost, bills, campaign cost, and fees.
-
-The backend tries Shopify Payments GraphQL first and REST second. It never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
+The finance page is Shopify-only: orders, refunds, product costs, disputes, payout cash, payment fees, campaign attribution, and app billing are fetched from Shopify at request time. The backend tries Shopify Payments GraphQL first and the Shopify payout REST endpoint second, so `read_shopify_payments_payouts` can power the live ledger even when the protected Payments account scope is unavailable. It never fabricates a payout, subscription, campaign cost, or supplier cost; records Shopify does not expose remain visible as reconciliation exceptions.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 

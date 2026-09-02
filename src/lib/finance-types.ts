@@ -1,4 +1,4 @@
-export type FinanceSourceState = "connected" | "partial" | "missing" | "manual" | "unavailable";
+export type FinanceSourceState = "connected" | "partial" | "missing" | "unavailable";
 
 export type FinanceSourceStatus = {
   shopify: FinanceSourceState;
