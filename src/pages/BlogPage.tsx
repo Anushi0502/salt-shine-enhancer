@@ -74,7 +74,7 @@ const BlogPage = () => {
       description="Read SALT product education, practical guides, and useful ideas for easier everyday shopping."
       canonicalPath={canonicalPath}
       noIndex={Boolean(blogHandle && !isPrimaryShopifyBlog)}
-      structuredData={origin ? [buildBlogStructuredData(posts, origin)] : []}
+      structuredData={origin ? [buildBlogStructuredData(posts, origin, canonicalPath)] : []}
     />
   );
   const [featuredPost, ...remainingPosts] = posts;

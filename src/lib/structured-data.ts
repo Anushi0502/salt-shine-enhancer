@@ -69,8 +69,12 @@ function absoluteStructuredUrl(value: string | null | undefined, origin: string)
   }
 }
 
-export function buildBlogStructuredData(posts: BlogPost[], origin: string): StructuredData {
-  const blogUrl = `${origin}/pages/blog`;
+export function buildBlogStructuredData(
+  posts: BlogPost[],
+  origin: string,
+  blogPath = "/pages/blog",
+): StructuredData {
+  const blogUrl = `${origin}${blogPath}`;
 
   return {
     "@context": "https://schema.org",

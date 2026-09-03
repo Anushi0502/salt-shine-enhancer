@@ -512,6 +512,26 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         }
       </script>
     {% endif %}
+    {% if request.page_type == 'blog' and blog %}
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          "@id": {{ salt_seo_canonical | append: '#blog' | json }},
+          "name": {{ blog.title | json }},
+          "url": {{ salt_seo_canonical | json }},
+          "blogPost": [
+            {% for salt_blog_article in blog.articles limit: 12 %}
+              {
+                "@type": "BlogPosting",
+                "headline": {{ salt_blog_article.title | json }},
+                "url": {{ 'https://' | append: request.host | append: salt_blog_article.url | json }}
+              }{% unless forloop.last %},{% endunless %}
+            {% endfor %}
+          ]
+        }
+      </script>
+    {% endif %}
     {% if salt_route == '/pages/faq' %}
       <script type="application/ld+json">
         {
@@ -1080,7 +1100,7 @@ const sectionLiquid = `<div
       <h1>SALT Journal</h1>
       <p>Fresh stories, product education, and practical ideas from SALT.</p>
     {% elsif request.page_type == 'blog' and blog %}
-      <h1>{{ blog.title | escape }}</h1>
+      <h1>SALT Journal</h1>
       <p>Fresh stories, product education, and practical ideas from SALT.</p>
     {% elsif request.page_type == 'article' and article %}
       <h1>{{ article.title | escape }}</h1>
