@@ -976,6 +976,7 @@ const ShopPage = () => {
                 kicker={collectionHeroKicker}
                 title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
                 description={collectionHeroSummary}
+                as="h1"
               />
               <TrustStrip
                 className="mt-4"

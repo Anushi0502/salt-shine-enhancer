@@ -415,6 +415,7 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
+        <h1 className="sr-only">Shop Cookware, Clothing, Decor &amp; Gifts | SALT Online Store</h1>
         <HomeHero
           slides={homeHeroSlides}
           loading={homeCollectionProductsQuery.isPending}
