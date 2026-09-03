@@ -3,8 +3,10 @@ import { ArrowLeft, ArrowUpRight, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
-import { readingTime, sanitizeRichHtml } from "@/lib/formatters";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
+import { conciseTitle, readingTime, sanitizeRichHtml, stripHtml } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
+import { buildArticleStructuredData } from "@/lib/structured-data";
 
 const articleImageFallback = (
   <div className="grid h-[280px] w-full place-items-center rounded-2xl border border-border bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
@@ -71,7 +73,7 @@ const BlogPostPage = () => {
         subtitle="The requested blog post handle is unavailable."
         action={
           <Link
-            to="/blog"
+            to="/pages/blog"
             className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
           >
             Browse posts
@@ -85,12 +87,25 @@ const BlogPostPage = () => {
   const relatedPosts = (data?.posts || [])
     .filter((entry) => entry.handle !== post.handle)
     .slice(0, 3);
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const seoMetadata = (
+    <SeoMetadata
+      title={`${conciseTitle(post.title, 48)} | SALT Journal`}
+      description={stripHtml(post.excerpt || post.contentHtml).slice(0, 160)}
+      canonicalPath={`/blogs/posts/${post.handle}`}
+      image={post.image || undefined}
+      ogType="article"
+      structuredData={origin ? [buildArticleStructuredData(post, origin)] : []}
+    />
+  );
 
   return (
-    <section className="mx-auto mt-6 w-[min(1000px,calc(100%_-_20px))] pb-10">
+    <>
+      {seoMetadata}
+      <section className="mx-auto mt-6 w-[min(1000px,calc(100%_-_20px))] pb-10">
       <Reveal>
         <Link
-          to="/blog"
+              to="/pages/blog"
           className="salt-outline-chip h-10 gap-2 px-4 py-0 text-xs"
         >
           <ArrowLeft className="h-4 w-4" /> Back to blog
@@ -178,7 +193,7 @@ const BlogPostPage = () => {
               {relatedPosts.map((entry) => (
                 <Link
                   key={entry.id}
-                  to={`/blog/${entry.handle}`}
+                  to={`/blogs/posts/${entry.handle}`}
                   className="salt-kpi-card salt-metric-card rounded-xl p-3 transition hover:border-primary/50"
                 >
                   <p className="line-clamp-2 text-sm font-semibold">{entry.title}</p>
@@ -191,7 +206,8 @@ const BlogPostPage = () => {
           </section>
         </Reveal>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 };
 

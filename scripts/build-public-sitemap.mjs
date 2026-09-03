@@ -34,9 +34,27 @@ async function readJson(name) {
   }
 }
 
-const [productsPayload, collectionsPayload] = await Promise.all([
-  readJson("products.json"),
+async function readFirstJson(paths) {
+  for (const path of paths) {
+    try {
+      return JSON.parse(await readFile(path, "utf8"));
+    } catch {
+      // Keep looking for the next approved catalog source.
+    }
+  }
+
+  return null;
+}
+
+const [productsPayload, collectionsPayload, blogPayload] = await Promise.all([
+  readFirstJson([
+    resolve(dataDir, "products.json"),
+    // Product listing payloads are intentionally not part of the storefront
+    // runtime. The release catalog remains an approved sitemap-only source.
+    resolve(rootDir, "output", "release-catalog-source.json"),
+  ]),
   readJson("collections.json"),
+  readJson("blog-posts.json"),
 ]);
 
 const productRecords = Array.isArray(productsPayload?.products)
@@ -68,11 +86,16 @@ const addUrl = (path, options = {}) => {
 
 [
   ["/", "daily", "1.0"],
-  ["/shop", "daily", "0.9"],
   ["/collections", "daily", "0.9"],
-  ["/blog", "daily", "0.8"],
+  ["/pages/blog", "daily", "0.8"],
   ["/pages/about-us", "weekly", "0.7"],
   ["/pages/contact-us", "weekly", "0.7"],
+  ["/pages/resources", "weekly", "0.7"],
+  ["/pages/faq", "weekly", "0.7"],
+  ["/pages/affiliate-program", "weekly", "0.6"],
+  ["/pages/mission-vision", "weekly", "0.6"],
+  ["/pages/wholesale-inquiries", "weekly", "0.6"],
+  ["/pages/terms-conditions", "weekly", "0.5"],
 ].forEach(([path, changefreq, priority]) => addUrl(path, { changefreq, priority }));
 
 for (const collection of Array.isArray(collectionsPayload?.collections) ? collectionsPayload.collections : []) {
@@ -87,11 +110,21 @@ for (const collection of Array.isArray(collectionsPayload?.collections) ? collec
 
 for (const product of productRecords) {
   const handle = String(product?.handle || "").trim();
-  if (!handle || product?.status && product.status !== "active") continue;
+  if (!handle || (product?.status && String(product.status).toLowerCase() !== "active")) continue;
   addUrl(`/products/${encodeURIComponent(handle)}`, {
     changefreq: "weekly",
     priority: "0.7",
     lastmod: product.updated_at || product.published_at || product.created_at,
+  });
+}
+
+for (const post of Array.isArray(blogPayload?.posts) ? blogPayload.posts : []) {
+  const handle = String(post?.handle || "").trim();
+  if (!handle) continue;
+  addUrl(`/blogs/posts/${encodeURIComponent(handle)}`, {
+    changefreq: "monthly",
+    priority: "0.6",
+    lastmod: post.updatedAt || post.updated_at || post.publishedAt || post.published_at,
   });
 }
 

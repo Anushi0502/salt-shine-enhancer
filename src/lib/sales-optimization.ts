@@ -579,6 +579,11 @@ export function buildOrganizationStructuredData(shop: ShopifyShop | null | undef
     "@type": "Organization",
     name: shop?.name || "SALT",
     url: origin,
+    sameAs: [
+      "https://instagram.com/saltonlinestore",
+      "https://www.facebook.com/profile.php?id=61573199456052",
+      "https://youtube.com/@saltonlinestore",
+    ],
   };
 }
 
@@ -590,7 +595,7 @@ export function buildWebsiteStructuredData(shop: ShopifyShop | null | undefined,
     url: origin,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${origin}/shop?q={search_term_string}`,
+      target: `${origin}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };

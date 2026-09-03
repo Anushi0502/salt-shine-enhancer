@@ -1,9 +1,10 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
 import OpenContentPageShell from "@/components/storefront/OpenContentPageShell";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { buildResourceReason } from "@/lib/editorial-pages";
@@ -34,8 +35,6 @@ type ResolvedFeaturedProduct = {
   reason: string;
   collectionLabel?: string;
 };
-
-const metaDescriptionSelector = 'meta[name="description"]';
 
 const resourceHubPathCopy: Record<string, string> = {
   "senior-living-guides": "Support an older adult, reduce friction at home, or choose a gift that will actually be used.",
@@ -458,58 +457,12 @@ const EditorialPageByHandle = ({
   errorSubtitle,
 }: EditorialPageByHandleProps) => {
   const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const location = useLocation();
   const { data, isLoading, error, refetch } = useEditorialPage(normalizedHandle);
   const { data: collectionsData } = useCollections();
   const featuredProduct0Query = useProductByHandle(data?.page?.featuredProducts?.[0]?.handle);
   const featuredProduct1Query = useProductByHandle(data?.page?.featuredProducts?.[1]?.handle);
   const featuredProduct2Query = useProductByHandle(data?.page?.featuredProducts?.[2]?.handle);
-
-  useEffect(() => {
-    if (typeof document === "undefined") {
-      return;
-    }
-
-    const page = data?.page;
-    const nextTitle = page?.seoTitle || (page ? `${page.title} | SALT Online Store` : document.title);
-    const nextDescription = page?.metaDescription || page?.summary || "";
-    const previousTitle = document.title;
-    const existingMeta = document.head.querySelector<HTMLMetaElement>(metaDescriptionSelector);
-    const previousDescription = existingMeta?.getAttribute("content");
-    let createdMeta = false;
-
-    document.title = nextTitle;
-
-    let metaTag = existingMeta;
-    if (!metaTag) {
-      metaTag = document.createElement("meta");
-      metaTag.setAttribute("name", "description");
-      document.head.appendChild(metaTag);
-      createdMeta = true;
-    }
-
-    if (nextDescription) {
-      metaTag.setAttribute("content", nextDescription);
-    }
-
-    return () => {
-      document.title = previousTitle;
-      const currentMeta = document.head.querySelector<HTMLMetaElement>(metaDescriptionSelector);
-      if (!currentMeta) {
-        return;
-      }
-
-      if (createdMeta) {
-        currentMeta.remove();
-        return;
-      }
-
-      if (previousDescription) {
-        currentMeta.setAttribute("content", previousDescription);
-      } else {
-        currentMeta.removeAttribute("content");
-      }
-    };
-  }, [data?.page]);
 
   const adminCollectionsByHandle = useMemo(
     () =>
@@ -604,26 +557,49 @@ const EditorialPageByHandle = ({
       );
   }, [adminCollectionsByHandle, isResourceHubHandle, productsByHandle, resourceContext.guide, resourceContext.topic]);
   const pageSectionClassName = "";
+  const canonicalAliases: Record<string, string> = {
+    "/resources": "/pages/resources",
+    "/mission-vision": "/pages/mission-vision",
+    "/affiliate-program": "/pages/affiliate-program",
+    "/wholesale-inquiries": "/pages/wholesale-inquiries",
+    "/terms-conditions": "/pages/terms-conditions",
+  };
+  const canonicalPath = canonicalAliases[location.pathname] || location.pathname || `/pages/${normalizedHandle}`;
+  const seoMetadata = (
+    <SeoMetadata
+      title={data?.page?.seoTitle || (data?.page ? `${data.page.title} | SALT Online Store` : "SALT Online Store")}
+      description={data?.page?.metaDescription || data?.page?.summary || "Useful SALT guides and store information for easier everyday shopping."}
+      canonicalPath={canonicalPath}
+    />
+  );
 
   if (isLoading) {
-    return <LoadingState title={loadingTitle} subtitle={loadingSubtitle} />;
+    return (
+      <>
+        {seoMetadata}
+        <LoadingState title={loadingTitle} subtitle={loadingSubtitle} />
+      </>
+    );
   }
 
   if (error || !data?.page) {
     return (
-      <ErrorState
-        title={errorTitle}
-        subtitle={errorSubtitle}
-        action={
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="salt-primary-cta h-11 rounded-xl px-5 text-sm font-bold"
-        >
-          Retry
-        </button>
-        }
-      />
+      <>
+        {seoMetadata}
+        <ErrorState
+          title={errorTitle}
+          subtitle={errorSubtitle}
+          action={
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="salt-primary-cta h-11 rounded-xl px-5 text-sm font-bold"
+            >
+              Retry
+            </button>
+          }
+        />
+      </>
     );
   }
 
@@ -692,6 +668,8 @@ const EditorialPageByHandle = ({
   );
 
   return (
+    <>
+      {seoMetadata}
       <OpenContentPageShell
       breadcrumbs={breadcrumbs}
       kicker={page.kicker}
@@ -849,7 +827,8 @@ const EditorialPageByHandle = ({
           </Accordion>
         </section>
       ) : null}
-    </OpenContentPageShell>
+      </OpenContentPageShell>
+    </>
   );
 };
 

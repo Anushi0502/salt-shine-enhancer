@@ -283,6 +283,22 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% if salt_social_collection and salt_social_collection.image %}
         {% assign salt_social_image = salt_social_collection.image | image_url: width: 1200 %}
       {% endif %}
+    {% elsif request.page_type == 'blog' %}
+      {% assign salt_blog_path = salt_route | split: '/blogs/' | last %}
+      {% assign salt_blog_handle = salt_blog_path | split: '/' | first %}
+      {% assign salt_seo_title = 'SALT Journal | SALT Online Store' %}
+      {% assign salt_seo_description = 'Fresh stories, product education, and practical ideas from SALT.' %}
+      {% if salt_blog_handle == 'jjjjjjj' or salt_blog_handle == 'whom-we-serve' %}
+        {% assign salt_seo_robots = 'noindex,follow' %}
+      {% endif %}
+    {% elsif request.page_type == 'article' and article %}
+      {% assign salt_article_title = article.title | truncate: 58 %}
+      {% assign salt_article_description = article.excerpt | default: article.content | strip_html | strip_newlines | truncate: 160 %}
+      {% assign salt_seo_title = salt_article_title | append: ' | SALT Journal' %}
+      {% assign salt_seo_description = salt_article_description %}
+      {% if article.image %}
+        {% assign salt_social_image = article.image | image_url: width: 1200 %}
+      {% endif %}
     {% elsif request.page_type == 'product' and product %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_custom_canonical = true %}
@@ -354,27 +370,29 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% unless salt_social_image contains '://' %}
       {% assign salt_social_image = 'https:' | append: salt_social_image %}
     {% endunless %}
+    {% assign salt_seo_title_output = salt_seo_title | replace: '&amp;', '&' %}
+    {% assign salt_seo_description_output = salt_seo_description | strip_html | strip_newlines | replace: '&amp;', '&' %}
 
-    <title>{{ salt_seo_title | escape }}</title>
+    <title>{{ salt_seo_title_output | escape }}</title>
     {% if salt_seo_description != blank %}
-      <meta name="description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+      <meta name="description" content="{{ salt_seo_description_output | escape }}">
     {% endif %}
     <meta name="robots" content="{{ salt_seo_robots }}">
     <meta name="googlebot" content="{{ salt_seo_robots }}">
-    <meta property="og:title" content="{{ salt_seo_title | escape }}">
-    <meta property="og:description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+    <meta property="og:title" content="{{ salt_seo_title_output | escape }}">
+    <meta property="og:description" content="{{ salt_seo_description_output | escape }}">
     <meta property="og:url" content="{{ salt_seo_canonical | escape }}">
     <meta property="og:image" content="{{ salt_social_image | escape }}">
     <meta property="og:image:secure_url" content="{{ salt_social_image | escape }}">
-    <meta property="og:image:alt" content="{{ salt_seo_title | escape }}">
-    <meta property="og:type" content="{% if request.page_type == 'product' %}product{% else %}website{% endif %}">
+    <meta property="og:image:alt" content="{{ salt_seo_title_output | escape }}">
+    <meta property="og:type" content="{% if request.page_type == 'product' %}product{% elsif request.page_type == 'article' %}article{% else %}website{% endif %}">
     <meta property="og:site_name" content="{{ shop.name | escape }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ salt_seo_title | escape }}">
-    <meta name="twitter:description" content="{{ salt_seo_description | strip_html | strip_newlines | escape }}">
+    <meta name="twitter:title" content="{{ salt_seo_title_output | escape }}">
+    <meta name="twitter:description" content="{{ salt_seo_description_output | escape }}">
     <meta name="twitter:url" content="{{ salt_seo_canonical | escape }}">
     <meta name="twitter:image" content="{{ salt_social_image | escape }}">
-    <meta name="twitter:image:alt" content="{{ salt_seo_title | escape }}">
+    <meta name="twitter:image:alt" content="{{ salt_seo_title_output | escape }}">
     {% if salt_custom_canonical %}
       <link rel="canonical" href="{{ salt_seo_canonical | escape }}">
     {% endif %}
@@ -443,7 +461,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         "@id": "https://{{ request.host }}/#organization",
         "name": {{ shop.name | json }},
         "url": "https://{{ request.host }}/",
-        "logo": {{ 'brand-salt-logo.png' | asset_url | json }}
+        "logo": {{ 'brand-salt-logo.png' | asset_url | json }},
+        "sameAs": [
+          "https://instagram.com/saltonlinestore",
+          "https://www.facebook.com/profile.php?id=61573199456052",
+          "https://youtube.com/@saltonlinestore"
+        ]
       }
     </script>
     <script type="application/ld+json">
@@ -455,11 +478,40 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         "url": "https://{{ request.host }}/",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://{{ request.host }}/shop?q={search_term_string}",
+          "target": "https://{{ request.host }}/search?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }
     </script>
+    {% if request.page_type == 'article' and article %}
+      {% assign salt_article_schema_description = article.excerpt | default: article.content | strip_html | strip_newlines | truncate: 500 %}
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "@id": {{ salt_seo_canonical | append: '#article' | json }},
+          "mainEntityOfPage": {{ salt_seo_canonical | json }},
+          "headline": {{ article.title | json }},
+          "description": {{ salt_article_schema_description | json }},
+          "url": {{ salt_seo_canonical | json }},
+          "author": {
+            "@type": "Person",
+            "name": {{ article.author | default: shop.name | json }}
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": {{ shop.name | json }},
+            "logo": {
+              "@type": "ImageObject",
+              "url": {{ 'brand-salt-logo.png' | asset_url | json }}
+            }
+          }{% if article.image %},
+          "image": [{{ article.image | image_url: width: 1200 | json }}]{% endif %}{% if article.published_at %},
+          "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }}{% endif %}{% if article.updated_at %},
+          "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }}{% endif %}
+        }
+      </script>
+    {% endif %}
     {% if salt_route == '/pages/faq' %}
       <script type="application/ld+json">
         {
@@ -1018,6 +1070,22 @@ const sectionLiquid = `<div
         <h3>What should I do if I still need help?</h3>
         <p>Use the Contact Us link for a support message and the team can route the request cleanly.</p>
       </section>
+    {% elsif request.path == '/pages/about-us' %}
+      <h1>About SALT Online Store</h1>
+      <p>Learn how SALT makes practical products easy to discover, save, and buy.</p>
+    {% elsif request.path == '/pages/contact-us' %}
+      <h1>Contact SALT Support</h1>
+      <p>Reach the SALT support team for delivery questions, product advice, returns, or order help.</p>
+    {% elsif request.path == '/pages/blog' %}
+      <h1>SALT Journal</h1>
+      <p>Fresh stories, product education, and practical ideas from SALT.</p>
+    {% elsif request.page_type == 'blog' and blog %}
+      <h1>{{ blog.title | escape }}</h1>
+      <p>Fresh stories, product education, and practical ideas from SALT.</p>
+    {% elsif request.page_type == 'article' and article %}
+      <h1>{{ article.title | escape }}</h1>
+      {% assign salt_noscript_article_description = article.excerpt | default: article.content | strip_html | strip_newlines | truncate: 320 %}
+      <p>{{ salt_noscript_article_description | escape }}</p>
     {% else %}
       <h1>{{ page_title | default: shop.name | escape }}</h1>
       {% if page_description != blank %}

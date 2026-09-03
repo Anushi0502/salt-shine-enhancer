@@ -34,6 +34,14 @@ function escapeSelectorValue(value: string): string {
   return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function toAbsoluteUrl(value: string): string {
+  try {
+    return new URL(value, window.location.origin).toString();
+  } catch {
+    return value;
+  }
+}
+
 function updateMetaTag(
   document: Document,
   attr: "name" | "property",
@@ -137,6 +145,7 @@ const SeoMetadata = ({
 
     const cleanups: Cleanup[] = [];
     const previousTitle = document.title;
+    const absoluteImage = image ? toAbsoluteUrl(image) : "";
 
     if (title) {
       document.title = title;
@@ -170,12 +179,15 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "property", "og:type", ogType, scope));
     }
 
-    if (image) {
-      cleanups.push(updateMetaTag(document, "property", "og:image", image, scope));
-      cleanups.push(updateMetaTag(document, "name", "twitter:image", image, scope));
+    if (absoluteImage) {
+      cleanups.push(updateMetaTag(document, "property", "og:image", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "property", "og:image:secure_url", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "property", "og:image:alt", title || "SALT Online Store", scope));
+      cleanups.push(updateMetaTag(document, "name", "twitter:image", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "name", "twitter:image:alt", title || "SALT Online Store", scope));
     }
 
-    cleanups.push(updateMetaTag(document, "name", "twitter:card", image ? "summary_large_image" : "summary", scope));
+    cleanups.push(updateMetaTag(document, "name", "twitter:card", absoluteImage ? "summary_large_image" : "summary", scope));
 
     const robotsContent = noIndex
       ? "noindex,follow"

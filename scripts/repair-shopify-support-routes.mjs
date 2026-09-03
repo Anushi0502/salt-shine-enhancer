@@ -1,4 +1,6 @@
 import { createShopifyAdminGraphQLClient, asArray } from "./shopify-admin-graphql-client.mjs";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 const client = createShopifyAdminGraphQLClient({
   rootDir: process.cwd(),
@@ -53,6 +55,14 @@ const pageDefinitions = [
   },
 ];
 
+let blogPosts = [];
+try {
+  const blogPayload = JSON.parse(await readFile(resolve(process.cwd(), "public/data/blog-posts.json"), "utf8"));
+  blogPosts = Array.isArray(blogPayload?.posts) ? blogPayload.posts : [];
+} catch {
+  // The route repair remains safe if the optional local blog cache is absent.
+}
+
 const redirects = [
   ["/about", "/pages/about-us"],
   ["/contact", "/pages/contact-us"],
@@ -61,6 +71,7 @@ const redirects = [
   ["/wishlist", "/pages/wishlist"],
   ["/pages/contact", "/pages/contact-us"],
   ["/blog", "/pages/blog"],
+  ["/pages/collections", "/collections"],
   ["/affiliate-program", "/pages/affiliate-program"],
   ["/mission-vision", "/pages/mission-vision"],
   ["/wholesale-inquiries", "/pages/wholesale-inquiries"],
@@ -70,6 +81,10 @@ const redirects = [
   ["/shipping-policy", "/policies/shipping-policy"],
   ["/refund-policy", "/policies/refund-policy"],
   ["/privacy-policy", "/policies/privacy-policy"],
+  ...blogPosts
+    .map((post) => String(post?.handle || "").trim())
+    .filter(Boolean)
+    .map((handle) => [`/blog/${handle}`, `/blogs/posts/${handle}`]),
 ];
 
 const existingPagesData = await client.run(

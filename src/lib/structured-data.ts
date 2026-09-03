@@ -1,4 +1,4 @@
-import type { ShopifyShop } from "@/types/shopify";
+import type { BlogPost, ShopifyShop } from "@/types/shopify";
 
 type StructuredData = Record<string, unknown>;
 
@@ -6,6 +6,12 @@ type FaqEntry = {
   question: string;
   answer: string;
 };
+
+const ORGANIZATION_SAME_AS = [
+  "https://instagram.com/saltonlinestore",
+  "https://www.facebook.com/profile.php?id=61573199456052",
+  "https://youtube.com/@saltonlinestore",
+];
 
 export function buildOrganizationStructuredData(
   shop: ShopifyShop | null | undefined,
@@ -19,6 +25,7 @@ export function buildOrganizationStructuredData(
     url: origin,
     logo: `${origin}/brand/salt-logo.png`,
     inLanguage: "en-US",
+    sameAs: ORGANIZATION_SAME_AS,
   };
 }
 
@@ -35,9 +42,79 @@ export function buildWebsiteStructuredData(
     inLanguage: "en-US",
     potentialAction: {
       "@type": "SearchAction",
-      target: `${origin}/shop?q={search_term_string}`,
+      target: `${origin}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
+  };
+}
+
+function cleanStructuredText(value: string | null | undefined, maxLength = 500): string {
+  const text = String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}
+
+function absoluteStructuredUrl(value: string | null | undefined, origin: string): string | undefined {
+  if (!value || !origin) {
+    return undefined;
+  }
+
+  try {
+    return new URL(value, origin).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+export function buildBlogStructuredData(posts: BlogPost[], origin: string): StructuredData {
+  const blogUrl = `${origin}/pages/blog`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": `${blogUrl}#blog`,
+    name: "SALT Journal",
+    url: blogUrl,
+    blogPost: posts.slice(0, 12).map((post) => ({
+      "@type": "BlogPosting",
+      headline: cleanStructuredText(post.title, 110),
+      url: absoluteStructuredUrl(`/blogs/posts/${post.handle}`, origin),
+      datePublished: post.publishedAt || undefined,
+      dateModified: post.updatedAt || post.publishedAt || undefined,
+    })),
+  };
+}
+
+export function buildArticleStructuredData(post: BlogPost, origin: string): StructuredData {
+  const articleUrl =
+    absoluteStructuredUrl(`/blogs/posts/${post.handle}`, origin) || `${origin}/blogs/posts/${post.handle}`;
+  const imageUrl = absoluteStructuredUrl(post.image, origin);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${articleUrl}#article`,
+    mainEntityOfPage: articleUrl,
+    headline: cleanStructuredText(post.title, 110),
+    description: cleanStructuredText(post.excerpt || post.contentHtml, 500),
+    image: imageUrl ? [imageUrl] : undefined,
+    author: {
+      "@type": "Person",
+      name: cleanStructuredText(post.author, 80) || "SALT",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "SALT Online Store",
+      logo: {
+        "@type": "ImageObject",
+        url: `${origin}/brand/salt-logo.png`,
+      },
+    },
+    datePublished: post.publishedAt || undefined,
+    dateModified: post.updatedAt || post.publishedAt || undefined,
   };
 }
 
