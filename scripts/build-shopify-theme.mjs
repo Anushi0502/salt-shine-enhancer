@@ -1038,7 +1038,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
       <script type="module" src="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}"></script>
     {% else %}
-      <script type="module" src="{{ 'salt-app.js' | asset_url }}"></script>
     {% endif %}
   </head>
   <body>

@@ -133,7 +133,7 @@ const SeoMetadata = ({
   description,
   canonicalPath,
   image,
-  ogType = "website",
+  ogType,
   noIndex = false,
   structuredData = [],
   scope = "page",
@@ -146,6 +146,8 @@ const SeoMetadata = ({
     const cleanups: Cleanup[] = [];
     const previousTitle = document.title;
     const absoluteImage = image ? toAbsoluteUrl(image) : "";
+    const managesRouteMetadata = Boolean(title || description || canonicalPath || image || noIndex);
+    const resolvedOgType = managesRouteMetadata ? ogType || "website" : null;
 
     if (title) {
       document.title = title;
@@ -175,11 +177,11 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "name", "twitter:description", description, scope));
     }
 
-    if (ogType) {
-      cleanups.push(updateMetaTag(document, "property", "og:type", ogType, scope));
+    if (resolvedOgType) {
+      cleanups.push(updateMetaTag(document, "property", "og:type", resolvedOgType, scope));
     }
 
-    if (absoluteImage) {
+    if (absoluteImage && managesRouteMetadata) {
       cleanups.push(updateMetaTag(document, "property", "og:image", absoluteImage, scope));
       cleanups.push(updateMetaTag(document, "property", "og:image:secure_url", absoluteImage, scope));
       cleanups.push(updateMetaTag(document, "property", "og:image:alt", title || "SALT Online Store", scope));
@@ -187,13 +189,15 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "name", "twitter:image:alt", title || "SALT Online Store", scope));
     }
 
-    cleanups.push(updateMetaTag(document, "name", "twitter:card", absoluteImage ? "summary_large_image" : "summary", scope));
+    if (managesRouteMetadata) {
+      cleanups.push(updateMetaTag(document, "name", "twitter:card", absoluteImage ? "summary_large_image" : "summary", scope));
 
-    const robotsContent = noIndex
-      ? "noindex,follow"
-      : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
-    cleanups.push(updateMetaTag(document, "name", "robots", robotsContent, scope));
-    cleanups.push(updateMetaTag(document, "name", "googlebot", robotsContent, scope));
+      const robotsContent = noIndex
+        ? "noindex,follow"
+        : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+      cleanups.push(updateMetaTag(document, "name", "robots", robotsContent, scope));
+      cleanups.push(updateMetaTag(document, "name", "googlebot", robotsContent, scope));
+    }
 
     const structuredPayloads = structuredData.filter(Boolean);
     if (structuredPayloads.length) {
