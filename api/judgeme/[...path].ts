@@ -74,7 +74,7 @@ async function readRequestBody(req) {
 }
 
 function getBodyHeaders(req) {
-  const headers = {};
+  const headers: Record<string, string> = {};
   const contentType = req.headers?.["content-type"];
 
   if (contentType) {
