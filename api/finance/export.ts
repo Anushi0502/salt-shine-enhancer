@@ -80,9 +80,10 @@ export default async function handler(req: any, res: any) {
     const highlights = [
       ["Net sales", summary.kpis.netSalesCents],
       ["Gross profit", summary.kpis.grossProfitCents],
-      ["Operating profit", summary.kpis.operatingProfitCents],
+      ["Operating profit (realized)", summary.kpis.operatingProfitCents],
+      ["Operating profit (conservative)", summary.kpis.conservativeOperatingProfitCents],
       ["Payouts received", summary.kpis.payoutsReceivedCents],
-      ["Campaign spend", summary.kpis.campaignCostsCents],
+      ["Campaign cost per order", summary.kpis.campaignCostsCents],
       ["Cost coverage", summary.kpis.costCoveragePercent == null ? null : `${summary.kpis.costCoveragePercent}%`],
     ] as const;
     activeFont.current = regularFont;

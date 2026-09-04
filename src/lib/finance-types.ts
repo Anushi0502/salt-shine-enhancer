@@ -23,11 +23,13 @@ export type FinanceKpis = {
   cogsCents: number;
   paymentFeesCents: number;
   chargebacksCents: number;
+  pendingChargebackCents: number;
   campaignCostsCents: number;
   subscriptionCostsCents: number;
   payoutsReceivedCents: number;
   grossProfitCents: number;
   operatingProfitCents: number;
+  conservativeOperatingProfitCents: number;
   marginPercent: number | null;
   orderCount: number;
   cancelledOrdersCount: number;

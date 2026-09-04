@@ -1240,6 +1240,8 @@ function normalizeOrders(
   missingCostCount: number;
   missingCostLabels: string[];
   periodRefundsCents: number;
+  reportOrderRefundsCents: number;
+  updatedOrderRefundsCents: number;
   nonCancelledPeriodRefundsCents: number;
   returnDeductionsCents: number;
   cancelledOrderRefundsCents: number;
@@ -1315,15 +1317,25 @@ function normalizeOrders(
       } satisfies NormalizedOrder;
     });
 
+  const reportOrders = orders.filter((order) => isDateInPeriod(order.createdAt, start, end));
+  const reportOrderRefundsCents = reportOrders.reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0);
+  const periodRefundsCents = orders.reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0);
+
   return {
     rows,
     currency: currencies.values().next().value || DEFAULT_CURRENCY,
     missingCostCount,
     missingCostLabels: [...missingCostLabels],
-    periodRefundsCents: orders.reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
-    nonCancelledPeriodRefundsCents: orders.filter((order) => !order.cancelledAt).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
-    returnDeductionsCents: orders.filter((order) => !order.cancelledAt).reduce((sum, order) => sum + orderPeriodReturnDeductionCents(order, start, end), 0),
-    cancelledOrderRefundsCents: orders.filter((order) => Boolean(order.cancelledAt)).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
+    // The union includes orders created before the report period so refund
+    // events are still available for cash reconciliation. Accrual P&L metrics
+    // must stay at the report-order grain, otherwise an old order refunded in
+    // this month reduces this month's sales a second time.
+    periodRefundsCents,
+    reportOrderRefundsCents,
+    updatedOrderRefundsCents: Math.max(periodRefundsCents - reportOrderRefundsCents, 0),
+    nonCancelledPeriodRefundsCents: reportOrders.filter((order) => !order.cancelledAt).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
+    returnDeductionsCents: reportOrders.filter((order) => !order.cancelledAt).reduce((sum, order) => sum + orderPeriodReturnDeductionCents(order, start, end), 0),
+    cancelledOrderRefundsCents: reportOrders.filter((order) => Boolean(order.cancelledAt)).reduce((sum, order) => sum + orderPeriodRefundCents(order, start, end), 0),
     multiCurrency: currencies.size > 1,
   };
 }
@@ -1498,7 +1510,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   if (pendingChargebackCents) {
     addException(exception(
       "shopify-disputes",
-      `${formatMoneyText(pendingChargebackCents, "USD")} across ${pendingChargebackDisputes.length} Shopify chargeback dispute${pendingChargebackDisputes.length === 1 ? " remains" : "s remain"} under review. This exposure is shown for visibility and is not deducted until Shopify marks it lost, accepted, or expired.`,
+      `${formatMoneyText(pendingChargebackCents, "USD")} across ${pendingChargebackDisputes.length} Shopify chargeback dispute${pendingChargebackDisputes.length === 1 ? " remains" : "s remain"} under review. Realized profit excludes this unresolved exposure; the conservative profit view deducts it for planning.`,
       pendingChargebackDisputes.length,
       "medium",
     ));
@@ -1537,6 +1549,7 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
   const payoutsReceivedCents = payoutData.payouts.reduce((sum, payout) => sum + (isPaidPayout(payout.status) ? payout.netCents : 0), 0);
   const grossProfitCents = netSalesCents + shippingIncomeCents - cogsCents;
   const operatingProfitCents = grossProfitCents - paymentFeesCents - chargebacksCents - campaignCostsCents - subscriptionCostsCents;
+  const conservativeOperatingProfitCents = operatingProfitCents - pendingChargebackCents;
   const reconciliationData = buildAutomaticReconciliation(payoutData, cogsCents, campaignCostsCents, subscriptionCostsCents);
   const totalItems = normalized.rows.reduce((sum, row) => sum + row.itemCount, 0);
   const coveredItems = normalized.rows.reduce((sum, row) => sum + row.coveredItemCount, 0);
@@ -1604,11 +1617,11 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
           : "Shopify app billing returned no active subscriptions; Shopify plan and external vendor charges are not exposed through this connection.",
         disputeData.state === "connected"
           ? disputeData.disputes.length
-            ? `${disputeData.disputes.length} Shopify dispute${disputeData.disputes.length === 1 ? " was" : "s were"} reviewed; only lost, accepted, or expired chargebacks reduce profit.${pendingChargebackCents ? ` ${formatMoneyText(pendingChargebackCents, "USD")} remains under review and is not deducted yet.` : ""}`
+            ? `${disputeData.disputes.length} Shopify dispute${disputeData.disputes.length === 1 ? " was" : "s were"} reviewed; realized profit deducts only lost, accepted, or expired chargebacks.${pendingChargebackCents ? ` ${formatMoneyText(pendingChargebackCents, "USD")} remains under review; the conservative profit view includes this exposure.` : ""}`
             : "No Shopify disputes were initiated in the selected period."
           : "Shopify dispute data is unavailable, so chargeback deductions cannot be fully verified.",
         normalized.periodRefundsCents
-          ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in cash refund events created during the selected period. Net sales applies ${formatMoneyText(returnDeductionsCents, currency)} of product return deductions; line-item returns are read from Shopify and payment-only refunds are capped at the order product subtotal.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to cancelled orders and is excluded from the accrual P&L to avoid counting cancelled revenue twice.` : ""}`
+          ? `Shopify recorded ${formatMoneyText(normalized.periodRefundsCents, currency)} in cash refund events created during the selected period. The selected order-period P&L applies ${formatMoneyText(returnDeductionsCents, currency)} of product return deductions;${normalized.updatedOrderRefundsCents ? ` ${formatMoneyText(normalized.updatedOrderRefundsCents, currency)} belongs to older orders and remains reconciliation-only,` : ""} while line-item returns are read from Shopify and payment-only refunds are capped at the order product subtotal.${normalized.cancelledOrderRefundsCents ? ` ${formatMoneyText(normalized.cancelledOrderRefundsCents, currency)} belongs to report-period cancelled orders and is excluded from accrual net sales.` : ""}`
           : "No Shopify refund events were created during the selected period.",
         effectiveCampaignData.message || "Campaign cost allocation is not available yet.",
         reconciliationData.message || "Live reconciliation is not available yet.",
@@ -1627,11 +1640,13 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       cogsCents,
       paymentFeesCents,
       chargebacksCents,
+      pendingChargebackCents,
       campaignCostsCents,
       subscriptionCostsCents,
       payoutsReceivedCents,
       grossProfitCents,
       operatingProfitCents,
+      conservativeOperatingProfitCents,
       marginPercent: percent(operatingProfitCents, netSalesCents + shippingIncomeCents),
       orderCount: normalized.rows.length,
       cancelledOrdersCount,
@@ -1647,9 +1662,11 @@ export async function buildFinanceSummary(start: string, end: string): Promise<F
       { label: "DSers product cost", cents: -cogsCents, tone: "negative", detail: normalized.missingCostCount ? `DSers-synced Shopify cost; ${normalized.missingCostCount} item costs remain unresolved` : "DSers-synced Shopify inventory cost-per-item values" },
       { label: "Payment fees", cents: -paymentFeesCents, tone: "negative", detail: "Fees reported through Shopify payouts" },
       { label: "Chargebacks", cents: -chargebacksCents, tone: "negative", detail: "Lost, accepted, or expired Shopify chargebacks only" },
+      { label: "Chargebacks under review", cents: -pendingChargebackCents, tone: "muted", detail: "Conservative exposure only; not a realized loss until Shopify changes the dispute status" },
       { label: "Campaign cost per order", cents: -campaignCostsCents, tone: "negative", detail: "Shopify paid spend where returned; otherwise the configured campaign cost per order" },
       { label: "Subscriptions and software", cents: -subscriptionCostsCents, tone: "negative", detail: "Shopify Grow and DSers Admin-verified recurring charges allocated by calendar month" },
       { label: "Operating profit", cents: operatingProfitCents, tone: operatingProfitCents >= 0 ? "positive" : "negative", detail: "Net sales plus shipping less cost, fees, and subscriptions" },
+      { label: "Operating profit (conservative)", cents: conservativeOperatingProfitCents, tone: conservativeOperatingProfitCents >= 0 ? "positive" : "negative", detail: "Realized operating profit less chargebacks still under review" },
     ],
     reconciliation: reconciliationData.summary,
     payouts: payoutData.payouts,
