@@ -200,7 +200,7 @@ export default async function handler(req: any, res: any) {
       "DSers product cost uses Shopify inventory cost-per-item values synced by DSers; unresolved items remain flagged.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
       "Campaign cost uses Shopify paid spend where returned; otherwise the configured campaign cost per order is applied once to each non-cancelled order.",
-      "Subscriptions are read from Shopify Admin app billing; Shopify plan and external vendor billing are not exposed by this connection.",
+      "Shopify Grow ($105/month) and DSers ($19.90/month) are Shopify Admin-verified recurring charges allocated by calendar month; FINANCE_SHOPIFY_GROW_MONTHLY_COST and FINANCE_DSERS_MONTHLY_COST override those values when the merchant changes plans.",
       "Live reconciliation is calculated from current Shopify payout, order-cost, campaign, and subscription responses.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {
