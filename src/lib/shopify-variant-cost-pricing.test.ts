@@ -1,11 +1,61 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildCostBasedVariantPricePlan,
   buildVariantCostPriceAlignmentPlan,
+  costBasedTargetPrice,
   costProtectedMinimumPrice,
 } from "@/lib/shopify-variant-cost-pricing.js";
 
 describe("variant cost-price alignment", () => {
+  it("uses the approved cost band, overhead, and .99 rounding", () => {
+    expect(costBasedTargetPrice("10.00")).toBe("49.99");
+    expect(costBasedTargetPrice("15.00", { clothing: true })).toBe("54.99");
+  });
+
+  it("prices every variant independently and validates compare-at separately", () => {
+    const plan = buildCostBasedVariantPricePlan([
+      {
+        handle: "mixed-quantity-product",
+        variants: [
+          { id: "one", title: "1pc", cost_per_item: "10.00", price: "39.99", compare_at_price: "44.99" },
+          { id: "two", title: "2pcs", cost_per_item: "15.00", price: "99.99", compare_at_price: "119.99" },
+        ],
+      },
+    ]);
+
+    expect(plan.blockingHeld).toHaveLength(0);
+    expect(plan.byHandle.get("mixed-quantity-product")).toEqual([
+      expect.objectContaining({
+        variantId: "one",
+        quantity: 1,
+        price: "49.99",
+        compareAtPrice: null,
+        compareAtAction: "clear-invalid-compare-at",
+      }),
+      expect.objectContaining({
+        variantId: "two",
+        quantity: 2,
+        price: "54.99",
+        compareAtPrice: "119.99",
+      }),
+    ]);
+  });
+
+  it("blocks the plan when live cost is missing instead of guessing", () => {
+    const plan = buildCostBasedVariantPricePlan([
+      {
+        handle: "missing-cost",
+        variants: [{ id: "one", title: "Standard", price: "49.99" }],
+      },
+    ]);
+
+    expect(plan.summary.variantsWithMissingCost).toBe(1);
+    expect(plan.blockingHeld).toEqual([
+      expect.objectContaining({ reason: "missing-live-cost-for-cost-based-pricing" }),
+    ]);
+  });
+
   it("uses a higher .99 retail target for clothing", () => {
     expect(costProtectedMinimumPrice("10.00", {
       campaignCostPerOrder: 18,
@@ -93,6 +143,67 @@ describe("variant cost-price alignment", () => {
         price: "49.99",
         reason: expect.stringContaining("same-product-wild-price-outlier"),
       }),
+    ]);
+  });
+
+  it("repairs a random same-quantity color price when live costs match", () => {
+    const plan = buildVariantCostPriceAlignmentPlan([
+      {
+        handle: "colored-four-pack",
+        variants: [
+          { id: "black", title: "Black 4Pairs", cost_per_item: "10.00", price: "183.99" },
+          { id: "blue", title: "Blue 4Pairs", cost_per_item: "10.50", price: "45.99" },
+          { id: "red", title: "Red 4Pairs", cost_per_item: "10.25", price: "45.99" },
+        ],
+      },
+    ]);
+
+    expect(plan.summary.variantPeerOutlierGroups).toBe(1);
+    expect(plan.byHandle.get("colored-four-pack")).toEqual([
+      expect.objectContaining({
+        variantId: "black",
+        currentPrice: "183.99",
+        price: "45.99",
+        reason: expect.stringContaining("same-product-wild-price-outlier"),
+      }),
+    ]);
+  });
+
+  it("holds same-quantity peers when their costs prove they are different products", () => {
+    const plan = buildVariantCostPriceAlignmentPlan([
+      {
+        handle: "different-cost-packs",
+        variants: [
+          { id: "a", title: "Black 4Pairs", cost_per_item: "10.00", price: "250.00" },
+          { id: "b", title: "Blue 4Pairs", cost_per_item: "30.00", price: "79.99" },
+        ],
+      },
+    ]);
+
+    expect(plan.summary.variantPeerOutlierGroups).toBe(0);
+    expect(plan.priceReview).toEqual([
+      expect.objectContaining({ reason: "variant-peer-price-outlier-costs-not-aligned" }),
+    ]);
+    expect(plan.byHandle.has("different-cost-packs")).toBe(false);
+  });
+
+  it("repairs a singleton quantity tier from an unambiguous lower-tier price ladder", () => {
+    const plan = buildVariantCostPriceAlignmentPlan([
+      {
+        handle: "quantity-ladder",
+        variants: [
+          { id: "five-black", title: "Black 5pcs", cost_per_item: "3.00", price: "64.99" },
+          { id: "five-white", title: "White 5pcs", cost_per_item: "3.10", price: "64.99" },
+          { id: "fifty-black", title: "Black 50pcs", cost_per_item: "3.20", price: "649.99" },
+          { id: "fifty-white", title: "White 50pcs", cost_per_item: "3.10", price: "64.99" },
+          { id: "hundred-black", title: "Black 100pcs", cost_per_item: "3.20", price: "64.99" },
+        ],
+      },
+    ]);
+
+    expect(plan.byHandle.get("quantity-ladder")).toEqual([
+      expect.objectContaining({ variantId: "fifty-white", price: "649.99" }),
+      expect.objectContaining({ variantId: "hundred-black", price: "649.99" }),
     ]);
   });
 

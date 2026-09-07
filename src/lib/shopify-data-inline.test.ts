@@ -186,7 +186,7 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/data/collection-products.json"))).toBe(false);
   });
 
-  it("keeps the current Liquid pricing authoritative over a stale compact snapshot", async () => {
+  it("keeps the current Liquid pricing authoritative over the bounded live discovery page", async () => {
     installInlineCollection({
       productIds: [101, 102],
       products: [liveProduct(), liveProduct({ id: 102, handle: "newly-added", title: "Newly Added" })],
@@ -194,14 +194,11 @@ describe("Shopify Liquid collection bootstrap", () => {
     });
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (!url.includes("/data/product-search.json")) {
+      if (!url.includes("/collections/all-products/products.json")) {
         throw new Error(`Unexpected fetch URL: ${url}`);
       }
 
       return jsonResponse({
-        generatedAt: "2026-07-01T00:00:00Z",
-        source: "/data/product-search.json",
-        total: 1,
         products: [
           {
             id: 101,
@@ -241,6 +238,7 @@ describe("Shopify Liquid collection bootstrap", () => {
     expect(refreshed?.customData?.subtitle).toBe("Curated subtitle");
     expect(payload.products.some((product) => product.handle === "newly-added")).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain("/data/product-search");
   });
 
   it("uses generated catalog pricing instead of a stale Liquid product snapshot", async () => {

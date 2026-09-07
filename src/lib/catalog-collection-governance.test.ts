@@ -7,10 +7,12 @@ import {
   buildPriceCollectionSource,
   buildProductCollectionTags,
   buildSemanticCollectionSource,
+  canonicalCollectionHandle,
   collectionTagForHandle,
   productMatchesPricePolicy,
   resolveCollectionPolicyByLiveHandle,
 } from "./catalog-collection-governance.js";
+import { classifyCatalogTaxonomy } from "./catalog-taxonomy.js";
 
 const LIVE_HANDLES_BEFORE_REPAIR = [
   "all-products", "appplaza-best-sellers", "artificial-aquarium-decor-plants", "audio", "back-to-school",
@@ -63,6 +65,30 @@ describe("catalog collection governance", () => {
     ]);
   });
 
+  it("canonicalizes legacy collection aliases before product membership verification", () => {
+    expect(canonicalCollectionHandle("electronic-accessories")).toBe("portable-gadgets");
+    expect(canonicalCollectionHandle("face-mask")).toBe("health-wellness");
+    expect(resolveCollectionPolicyByLiveHandle("electronic-accessories")?.handle).toBe("portable-gadgets");
+    expect(resolveCollectionPolicyByLiveHandle("face-mask")?.handle).toBe("health-wellness");
+  });
+
+  it("keeps taxonomy aliases from creating collection assignments", () => {
+    const faceMaskKnowledge = {
+      departmentId: "beauty",
+      categoryId: "women-beauty-skincare",
+      subcategoryId: "face-masks",
+      classificationRule: "face-masks",
+      proposedTags: ["face-mask"],
+      collectionTargets: [],
+      audience: { id: "women" },
+    };
+    const tags = buildProductCollectionTags(
+      { title: "Women's UV Face Mask", handle: "womens-uv-face-mask" },
+      faceMaskKnowledge,
+    );
+    expect(tags).not.toContain("health-wellness");
+  });
+
   it("matches price collections against every variant", () => {
     const under25 = PRICE_COLLECTION_POLICIES.find((policy) => policy.handle === "under-25");
     expect(productMatchesPricePolicy({ variants: [{ price: "24.99" }, { price: "199.99" }] }, under25)).toBe(true);
@@ -95,6 +121,181 @@ describe("catalog collection governance", () => {
     expect(hats).toBeDefined();
     expect(collectionTagForHandle("hats")).toBe("hats");
     expect(buildProductCollectionTags(product, knowledge)).toContain("hats");
+  });
+
+  it("routes men wigs to wigs and men's accessories", () => {
+    const product = {
+      title: "Men's Short Black Hair Replacement Wig with Clips",
+      handle: "men-hair-replacement-short-black-wig-with-clips",
+    };
+    const knowledge = classifyCatalogTaxonomy(product);
+    const tags = buildProductCollectionTags(product, knowledge);
+
+    expect(knowledge.ruleId).toBe("mens-hair-replacement-wigs");
+    expect(knowledge.proposedTags).toContain("men-wigs");
+    expect(tags).toEqual(expect.arrayContaining(["wigs", "mens-accessories"]));
+    expect(tags).not.toContain("womens-accessories");
+  });
+
+  it("routes women wigs to wigs and women's accessories", () => {
+    const product = {
+      title: "Black Short Curly Hair Wig for Women",
+      handle: "black-short-curly-hair-wig-for-women",
+    };
+    const knowledge = classifyCatalogTaxonomy(product);
+    const tags = buildProductCollectionTags(product, knowledge);
+
+    expect(knowledge.ruleId).toBe("womens-short-curly-wigs");
+    expect(knowledge.proposedTags).toContain("women-wigs");
+    expect(tags).toEqual(expect.arrayContaining(["wigs", "womens-accessories"]));
+    expect(tags).not.toContain("mens-accessories");
+  });
+
+  it("keeps garden tools out of Home & Decor even when stale model tags remain", () => {
+    const product = {
+      title: "Manganese Steel Handheld Gardening Hoe Weeding Tool",
+      handle: "manganese-steel-handheld-gardening-hoe-for-weeding-soil-loosening",
+      product_type: "tool",
+    };
+    const knowledge = {
+      departmentId: "home-decor",
+      categoryId: "home-car-accessories",
+      subcategoryId: "garden-tools",
+      classificationRule: "garden-tools",
+      proposedTags: ["home-decor", "garden-tools"],
+      collectionTargets: ["home-decor", "garden-tools"],
+      audience: { id: "unisex" },
+    };
+    const tags = buildProductCollectionTags(product, knowledge);
+
+    expect(tags).toContain("garden-tools");
+    expect(tags).not.toContain("home-decor");
+  });
+
+  it("does not place a skirt set in the T-Shirts collection", () => {
+    const knowledge = classifyCatalogTaxonomy({
+      title: "Black Two Piece Beaded Zipper Top Skirt Set 4 Shirt",
+      handle: "black-two-piece-beaded-zipper-top-skirt-set",
+      product_type: "shirt",
+    });
+    const tags = buildProductCollectionTags(
+      { title: "Black Two Piece Beaded Zipper Top Skirt Set 4 Shirt", handle: "black-two-piece-beaded-zipper-top-skirt-set", product_type: "shirt" },
+      knowledge,
+    );
+
+    expect(knowledge.ruleId).not.toBe("t-shirts");
+    expect(tags).not.toContain("t-shirt");
+  });
+
+  it("does not route wig-care products into the wigs collection", () => {
+    const product = {
+      title: "Wig Care Shampoo and Conditioner Set",
+      handle: "wig-care-shampoo-conditioner-set",
+    };
+    const knowledge = classifyCatalogTaxonomy(product);
+    const tags = buildProductCollectionTags(product, knowledge);
+
+    expect(knowledge.ruleId).toBe("hair-care");
+    expect(tags).not.toContain("wigs");
+  });
+
+  it("requires audience and apparel evidence for Kids Wear", () => {
+    const product = { title: "Men's Casual Watch", handle: "mens-casual-watch" };
+    const knowledge = {
+      departmentId: "men",
+      subcategoryId: "kids-clothing",
+      audience: { id: "men" },
+      proposedTags: ["kids-wear"],
+      collectionTargets: ["kids-wear"],
+    };
+    expect(buildProductCollectionTags(product, knowledge)).not.toContain("kids-wear");
+  });
+
+  it("keeps cat supplies, pet feeding, grooming, and travel pet-specific", () => {
+    const nonPet = { title: "Cat Eye False Eyelashes", handle: "cat-eye-false-eyelashes" };
+    const nonPetKnowledge = {
+      departmentId: "beauty",
+      subcategoryId: "eye-makeup",
+      audience: { id: "beauty" },
+      proposedTags: ["cat-supplies", "pet-grooming"],
+      collectionTargets: ["cat-supplies", "pet-grooming"],
+    };
+    const pet = { title: "Portable Dog Water Bottle for Travel", handle: "portable-dog-water-bottle-travel" };
+    const petKnowledge = {
+      departmentId: "pets",
+      subcategoryId: "dog-supplies",
+      audience: { id: "pets" },
+      proposedTags: [],
+      collectionTargets: [],
+    };
+
+    const nonPetTags = buildProductCollectionTags(nonPet, nonPetKnowledge);
+    const petTags = buildProductCollectionTags(pet, petKnowledge);
+    expect(nonPetTags).not.toEqual(expect.arrayContaining(["cat-supplies", "pet-feeding", "pet-grooming", "pet-travel"]));
+    expect(petTags).toEqual(expect.arrayContaining(["pet-feeding", "pet-travel"]));
+  });
+
+  it("does not treat generic portable pet cleaning products as travel products", () => {
+    const product = {
+      title: "Portable Pet Hair Remover Brush for Sofa and Clothes",
+      handle: "portable-lint-remover-pet-hair-remover-brush-for-sofa-clothes-cleaning",
+    };
+    const knowledge = {
+      departmentId: "pets",
+      subcategoryId: "pet-grooming-tools",
+      audience: { id: "pets" },
+      proposedTags: [],
+      collectionTargets: [],
+    };
+    expect(buildProductCollectionTags(product, knowledge)).not.toContain("pet-travel");
+  });
+
+  it("requires seasonal decor evidence instead of a holiday word alone", () => {
+    const decor = {
+      title: "Christmas Wreath Door Hanging Decoration",
+      handle: "christmas-wreath-door-hanging-decoration",
+    };
+    const unrelated = {
+      title: "Synthetic Mens Hair Wig for Halloween Costume",
+      handle: "synthetic-mens-hair-wig-for-halloween-costume",
+    };
+    const knowledge = {
+      departmentId: "general",
+      subcategoryId: "general-merchandise",
+      audience: { id: "unisex" },
+      proposedTags: [],
+      collectionTargets: [],
+    };
+    expect(buildProductCollectionTags(decor, knowledge)).toContain("seasonal-decor");
+    expect(buildProductCollectionTags(unrelated, knowledge)).not.toContain("seasonal-decor");
+  });
+
+  it("keeps light fixtures and turf out of Artificial Plants", () => {
+    const plantPolicy = SEMANTIC_COLLECTION_POLICIES.find((entry) => entry.handle === "artificial-plants");
+    const light = { title: "Artificial Ivy Vine String Lights", handle: "artificial-ivy-vine-string-lights" };
+    const plant = { title: "Artificial Ivy Vine Plant for Home Decor", handle: "artificial-ivy-vine-plant-home-decor" };
+    const knowledge = {
+      departmentId: "home-decor",
+      subcategoryId: "home-decor",
+      audience: { id: "unisex" },
+      proposedTags: [],
+      collectionTargets: [],
+    };
+    expect(plantPolicy).toBeDefined();
+    expect(buildProductCollectionTags(light, knowledge)).not.toContain("artificial-plants");
+    expect(buildProductCollectionTags(plant, knowledge)).toContain("artificial-plants");
+  });
+
+  it("renames the aquarium plant collection through a canonical alias", () => {
+    const policy = SEMANTIC_COLLECTION_POLICIES.find((entry) => entry.handle === "artificial-plants");
+    expect(policy?.title).toBe("Artificial Plants");
+    expect(resolveCollectionPolicyByLiveHandle("artificial-aquarium-decor-plants")?.handle).toBe("artificial-plants");
+    const source = buildSemanticCollectionSource(policy);
+    expect(source.inclusion.matchType).toBe("ANY");
+    expect(source.inclusion.conditions.map((condition) => condition.productTag.values)).toEqual([
+      ["artificial-plants"],
+      ["artificial-aquarium-decor-plants"],
+    ]);
   });
 
   it("has no duplicate canonical handles or aliases", () => {

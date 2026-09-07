@@ -5,8 +5,13 @@ export function scheduleAfterPaint(task: () => void): () => void {
 
   let cancelled = false;
   let frameId: number | null = null;
+  let idleId: number | null = null;
   let taskId: number | null = null;
-  const fallbackId: number | null = window.setTimeout(run, 1200);
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+  const fallbackId: number | null = window.setTimeout(run, 1_500);
 
   function run(): void {
     if (cancelled) {
@@ -17,6 +22,9 @@ export function scheduleAfterPaint(task: () => void): () => void {
     if (taskId !== null) {
       window.clearTimeout(taskId);
     }
+    if (idleId !== null && idleWindow.cancelIdleCallback) {
+      idleWindow.cancelIdleCallback(idleId);
+    }
     if (fallbackId !== null) {
       window.clearTimeout(fallbackId);
     }
@@ -26,10 +34,14 @@ export function scheduleAfterPaint(task: () => void): () => void {
 
   if (typeof window.requestAnimationFrame === "function") {
     frameId = window.requestAnimationFrame(() => {
-      taskId = window.setTimeout(run, 0);
+      if (idleWindow.requestIdleCallback) {
+        idleId = idleWindow.requestIdleCallback(run, { timeout: 1_200 });
+      } else {
+        taskId = window.setTimeout(run, 200);
+      }
     });
   } else {
-    taskId = window.setTimeout(run, 0);
+    taskId = window.setTimeout(run, 200);
   }
 
   return () => {
@@ -39,6 +51,9 @@ export function scheduleAfterPaint(task: () => void): () => void {
     }
     if (taskId !== null) {
       window.clearTimeout(taskId);
+    }
+    if (idleId !== null && idleWindow.cancelIdleCallback) {
+      idleWindow.cancelIdleCallback(idleId);
     }
     if (fallbackId !== null) {
       window.clearTimeout(fallbackId);

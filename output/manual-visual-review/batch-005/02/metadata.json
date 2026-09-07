@@ -1,0 +1,31 @@
+{
+  "index": 2,
+  "productId": "8076882772067",
+  "handle": "500ml-children-portable-stainless-steel-straw-bottles-sports-water-bottle-for-kids-outdoor-cycling-camping-bicycle-bike-kettle",
+  "title": "500ML Children Portable Stainless Steel Straw Bottles Sports Water",
+  "rawClassification": {
+    "ruleId": "water-bottles",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "drinkware",
+    "canonicalType": "Water Bottle",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S01382e24e72f49d68aacc7b5170c327fm.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc16cafa53c2344e8a47192424e943244P.webp?v=1784633941",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa8692caa02d44f7e811669c51583b1fdr.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S2d794e26119b4237bf8cd6766f7c32db6.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S541b1f253273479cbbde772ca67b55e3p.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3f1ed70db34247a0aeb0facfaa81db2cA.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd3061cd3a6384adba68d76523b358f3ec.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sab80ff1aeaf14e93999dc43bd1a9bd62y.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa5582aebefa54b718718c7a412eb0207g.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd087a954ef814d2392a0b9f16792d87cE.webp?v=1784633942",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sbd9468f2163f428481e2a273a19e9e43j.webp?v=1784633942"
+  ]
+}

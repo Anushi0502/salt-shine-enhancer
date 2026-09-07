@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { buildCanonicalUrl, updateCanonicalLink } from "@/lib/canonical-url";
 
 type StructuredDataValue = Record<string, unknown> | null | undefined;
 
@@ -33,38 +34,12 @@ function escapeSelectorValue(value: string): string {
   return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function normalizePath(path: string | null | undefined): string {
-  const raw = String(path || "").trim();
-  if (!raw) {
-    return "";
+function toAbsoluteUrl(value: string): string {
+  try {
+    return new URL(value, window.location.origin).toString();
+  } catch {
+    return value;
   }
-
-  if (/^https?:\/\//i.test(raw)) {
-    return raw;
-  }
-
-  if (raw.startsWith("/")) {
-    return raw;
-  }
-
-  return `/${raw}`;
-}
-
-function getAbsoluteUrl(path: string | null | undefined): string {
-  const normalized = normalizePath(path);
-  if (!normalized) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(normalized)) {
-    return normalized;
-  }
-
-  if (typeof window === "undefined") {
-    return normalized;
-  }
-
-  return `${window.location.origin}${normalized}`;
 }
 
 function updateMetaTag(
@@ -95,41 +70,6 @@ function updateMetaTag(
   const element = document.createElement("meta");
   element.setAttribute(attr, value);
   element.setAttribute("content", content);
-  element.setAttribute("data-seo-scope", scope);
-  document.head.appendChild(element);
-
-  return () => {
-    element.remove();
-  };
-}
-
-function updateLinkTag(
-  document: Document,
-  rel: string,
-  href: string,
-  scope: string,
-): Cleanup {
-  const selector = `link[rel="${escapeSelectorValue(rel)}"][data-seo-scope="${escapeSelectorValue(scope)}"]`;
-  const existing =
-    document.head.querySelector<HTMLLinkElement>(selector) ||
-    document.head.querySelector<HTMLLinkElement>(`link[rel="${escapeSelectorValue(rel)}"]`);
-
-  if (existing) {
-    const previousHref = existing.getAttribute("href");
-    existing.setAttribute("href", href);
-
-    return () => {
-      if (previousHref == null) {
-        existing.removeAttribute("href");
-      } else {
-        existing.setAttribute("href", previousHref);
-      }
-    };
-  }
-
-  const element = document.createElement("link");
-  element.setAttribute("rel", rel);
-  element.setAttribute("href", href);
   element.setAttribute("data-seo-scope", scope);
   document.head.appendChild(element);
 
@@ -193,7 +133,7 @@ const SeoMetadata = ({
   description,
   canonicalPath,
   image,
-  ogType = "website",
+  ogType,
   noIndex = false,
   structuredData = [],
   scope = "page",
@@ -205,6 +145,9 @@ const SeoMetadata = ({
 
     const cleanups: Cleanup[] = [];
     const previousTitle = document.title;
+    const absoluteImage = image ? toAbsoluteUrl(image) : "";
+    const managesRouteMetadata = Boolean(title || description || canonicalPath || image || noIndex);
+    const resolvedOgType = managesRouteMetadata ? ogType || "website" : null;
 
     if (title) {
       document.title = title;
@@ -217,9 +160,9 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "name", "description", description, scope));
     }
 
-    const absoluteCanonical = getAbsoluteUrl(canonicalPath);
+    const absoluteCanonical = canonicalPath ? buildCanonicalUrl(canonicalPath) : "";
     if (absoluteCanonical) {
-      cleanups.push(updateLinkTag(document, "canonical", absoluteCanonical, scope));
+      cleanups.push(updateCanonicalLink(document, canonicalPath));
       cleanups.push(updateMetaTag(document, "property", "og:url", absoluteCanonical, scope));
       cleanups.push(updateMetaTag(document, "name", "twitter:url", absoluteCanonical, scope));
     }
@@ -234,19 +177,26 @@ const SeoMetadata = ({
       cleanups.push(updateMetaTag(document, "name", "twitter:description", description, scope));
     }
 
-    if (ogType) {
-      cleanups.push(updateMetaTag(document, "property", "og:type", ogType, scope));
+    if (resolvedOgType) {
+      cleanups.push(updateMetaTag(document, "property", "og:type", resolvedOgType, scope));
     }
 
-    if (image) {
-      cleanups.push(updateMetaTag(document, "property", "og:image", image, scope));
-      cleanups.push(updateMetaTag(document, "name", "twitter:image", image, scope));
+    if (absoluteImage && managesRouteMetadata) {
+      cleanups.push(updateMetaTag(document, "property", "og:image", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "property", "og:image:secure_url", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "property", "og:image:alt", title || "SALT Online Store", scope));
+      cleanups.push(updateMetaTag(document, "name", "twitter:image", absoluteImage, scope));
+      cleanups.push(updateMetaTag(document, "name", "twitter:image:alt", title || "SALT Online Store", scope));
     }
 
-    cleanups.push(updateMetaTag(document, "name", "twitter:card", image ? "summary_large_image" : "summary", scope));
+    if (managesRouteMetadata) {
+      cleanups.push(updateMetaTag(document, "name", "twitter:card", absoluteImage ? "summary_large_image" : "summary", scope));
 
-    if (noIndex) {
-      cleanups.push(updateMetaTag(document, "name", "robots", "noindex,follow", scope));
+      const robotsContent = noIndex
+        ? "noindex,follow"
+        : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+      cleanups.push(updateMetaTag(document, "name", "robots", robotsContent, scope));
+      cleanups.push(updateMetaTag(document, "name", "googlebot", robotsContent, scope));
     }
 
     const structuredPayloads = structuredData.filter(Boolean);

@@ -2,8 +2,19 @@ import { normalizePlainText } from "./shopify-seo-batch.js";
 import { classifyCatalogTaxonomy } from "./catalog-taxonomy.js";
 
 const CATEGORY_RULES = [
+  [/(?:\b(?:wrist|thumb|finger)\b.{0,55}\b(?:brace|splint|support|stabilizer|orthosis|sleeve)\b|\b(?:brace|splint|support|stabilizer|orthosis|sleeve)\b.{0,55}\b(?:wrist|thumb|finger)\b)/i, "hb-1-24", "Supports & Braces"],
+  [/(?:\b(?:big toe|hallux|toe)\b.{0,55}\b(?:brace|splint|support|straightener|corrector)\b|\b(?:brace|splint|support|straightener|corrector)\b.{0,55}\b(?:big toe|hallux|toe)\b)/i, "hb-1-24", "Supports & Braces"],
+  [/(?:\blaptop\b|\bcomputer\b).{0,45}\b(?:stand|riser|cooling pad|cooling tray)\b|\b(?:stand|riser|cooling pad|cooling tray)\b.{0,45}\b(?:laptop|computer)\b/i, "el-7-8-3-4", "Laptop Stands"],
+  [/(?:\blaptop\b|\bcomputer\b).{0,45}\b(?:lap desk|bed table|bed tray)\b|\b(?:lap desk|bed table|bed tray)\b.{0,45}\b(?:laptop|computer)\b/i, "os-6", "Lap Desks"],
+  [/(?:\bautomatic\b|\bsensor\b|\bfoam\b|\bliquid\b|\bhand\b).{0,35}\bsoap dispenser\b|\bsoap dispenser\b/i, "hg-1-15", "Soap & Lotion Dispensers"],
+  [/\bsoap\b.{0,40}\b(?:dish|box|tray|rack|holder)\b|\b(?:dish|box|tray|rack|holder)\b.{0,40}\bsoap\b/i, "hg-1-16", "Soap Dishes & Holders"],
+  [/(?:\bsolar\b.{0,40}\b(?:lantern|light|lighting)\b|\b(?:lantern|light|lighting)\b.{0,40}\bsolar\b)/i, "hg", "Home & Garden"],
+  [/(?:\bshea butter\b|\bbody butter\b)/i, "hb", "Health & Beauty"],
+  [/(?:\b(?:serving|breakfast|dessert)\b.{0,45}\btray\b|\btray\b.{0,45}\b(?:serving|breakfast|dessert)\b)/i, "hg-11-10-7-9", "Serving Trays"],
   [/out[-\s]of[-\s]stock[-\s]placeholder[-\s]listing|out[-\s]of[-\s]stock(?:[-\s]out[-\s]of[-\s]stock){2,}/i, "pa", "Product Add-Ons"],
   [/(?:order|price)\s+(?:price\s+)?difference|order adjustment/i, "pa", "Product Add-Ons"],
+  [/(?:steamer|steaming)\s+rack|rack\s+for\s+(?:dumplings?|fish|steaming)/i, "hg-11-8", "Kitchen Tools & Utensils"],
+  [/(?:garlic\s+(?:mincer|crusher|press|chopper|grinder)|(?:mincer|crusher|press|chopper|grinder).{0,24}garlic)/i, "hg-11-8", "Kitchen Tools & Utensils"],
   [/(?:wireless|bluetooth|open[ -]?ear|in[ -]?ear).{0,35}(?:earbuds?|earphones?|headphones?)|(?:earbuds?|earphones?|headphones?).{0,35}(?:wireless|bluetooth|case|cover)/i, "el", "Electronics"],
   [/(?:earbuds?|earphones?|headsets?|airpods?|eartips?|ear tips?|galaxy buds|realme buds)/i, "el", "Electronics"],
   [/(?:pen|pencil|crayon).{0,25}(?:case|box|pouch|organizer)|(?:case|box|pouch|organizer).{0,25}(?:pen|pencil|crayon)/i, "os-3-16", "Pen & Pencil Cases"],
@@ -79,11 +90,29 @@ const richCategoryCache = new WeakMap();
 
 function buildProductEvidenceText(product) {
   const tags = Array.isArray(product?.tags) ? product.tags.join(" ") : product?.tags || "";
+  const variants = Array.isArray(product?.variants)
+    ? product.variants.flatMap((variant) => [
+        variant?.title,
+        variant?.option1,
+        variant?.option2,
+        variant?.option3,
+        variant?.sku,
+      ])
+    : [];
+  const customData = product?.customData && typeof product.customData === "object"
+    ? Object.values(product.customData)
+    : [];
   return normalizePlainText([
     product?.handle,
     product?.title,
     product?.product_type || product?.productType,
+    product?.vendor,
+    product?.body_html || product?.bodyHtml,
+    product?.category?.fullName,
+    product?.category?.name,
     tags,
+    ...variants,
+    ...customData,
   ].join(" ")).replace(/[-_]+/g, " ");
 }
 
@@ -133,7 +162,14 @@ export function inferDeterministicShopifyTaxonomyCategory(product) {
       }
     : null;
   const result = reviewSafeApparelFallback || !fullName
-    ? reviewSafeApparelFallback
+    ? reviewSafeApparelFallback || {
+        id: "",
+        name: "Other Products",
+        fullName: "Other Products",
+        confidence: "controlled-fallback",
+        reason: "No narrower Shopify taxonomy path was supported by the complete product evidence; resolved through the explicit Shopify fallback category.",
+        ruleId: classification?.ruleId || "unclassified",
+      }
     : {
         id: "",
         name: fullName.split(/\s*>\s*/).at(-1) || fullName,

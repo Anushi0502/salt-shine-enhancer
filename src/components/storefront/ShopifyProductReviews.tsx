@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, CheckCircle2, MessageSquareQuote, PenSquare, Star, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { parseJudgeMeWidgetSummary, prioritizeJudgeMeShopDomains } from "@/lib/judgeme";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 
@@ -21,10 +22,7 @@ type ShopifyProductReviewsProps = {
   productHandle: string;
   productTitle?: string;
   mode?: "embedded" | "page";
-};
-
-type JudgeMePreviewBadgeResponse = {
-  badge?: string;
+  onSummaryChange?: (summary: { rating: number; reviewCount: number }) => void;
 };
 
 type JudgeMeProductReviewResponse = {
@@ -66,7 +64,6 @@ type JudgeMeConfig = {
 };
 
 type JudgeMeWidgetData = {
-  badgeHtml: string;
   widgetHtml: string;
   resolvedShopDomain?: string;
 };
@@ -87,20 +84,16 @@ function normalizeDomain(value: string): string {
 
 function getJudgeMeConfig(): JudgeMeConfig | null {
   const runtime = getRuntimeContext();
-  const shopDomains = Array.from(
-    new Set(
-      [
-        runtime.judgeMeShopDomain,
-        runtime.shopDomain,
-        getShopBaseOrigin(),
-        import.meta.env.VITE_JUDGEME_SHOP_DOMAIN,
-        import.meta.env.VITE_SALT_SHOP_URL,
-        import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
-        DEFAULT_JUDGEME_SHOP_DOMAIN,
-      ]
-        .map((value) => normalizeDomain(String(value || "")))
-        .filter(Boolean),
-    ),
+  const shopDomains = prioritizeJudgeMeShopDomains(
+    [
+      runtime.judgeMeShopDomain,
+      runtime.shopDomain,
+      getShopBaseOrigin(),
+      import.meta.env.VITE_JUDGEME_SHOP_DOMAIN,
+      import.meta.env.VITE_SALT_SHOP_URL,
+      import.meta.env.VITE_SHOPIFY_STOREFRONT_URL,
+      DEFAULT_JUDGEME_SHOP_DOMAIN,
+    ].map((value) => normalizeDomain(String(value || ""))),
   );
   const shopDomain = shopDomains[0] || "";
   const publicToken = String(
@@ -143,7 +136,6 @@ async function fetchJudgeMeWidgetHtml(
         t: String(Date.now()),
       });
 
-      const previewUrl = buildJudgeMeProxyUrl("widgets/preview_badge", baseParams);
       const reviewUrl = buildJudgeMeProxyUrl(
         "widgets/product_review",
         new URLSearchParams({
@@ -153,19 +145,12 @@ async function fetchJudgeMeWidgetHtml(
         }),
       );
 
-      const [previewRes, reviewRes] = await Promise.all([
-        fetch(previewUrl, { credentials: "omit" }),
-        fetch(reviewUrl, { credentials: "omit" }),
-      ]);
-
-      const previewPayload = previewRes.ok ? ((await previewRes.json()) as JudgeMePreviewBadgeResponse) : {};
+      const reviewRes = await fetch(reviewUrl, { credentials: "omit" });
       const reviewPayload = reviewRes.ok ? ((await reviewRes.json()) as JudgeMeProductReviewResponse) : {};
 
-      const badgeHtml = normalizeJudgeMeHtml(String(previewPayload.badge || ""));
       const widgetHtml = normalizeJudgeMeHtml(String(reviewPayload.widget || ""));
-      if (badgeHtml || widgetHtml) {
+      if (widgetHtml) {
         return {
-          badgeHtml,
           widgetHtml,
           resolvedShopDomain: candidateDomain,
         };
@@ -176,7 +161,6 @@ async function fetchJudgeMeWidgetHtml(
   }
 
   return {
-    badgeHtml: "",
     widgetHtml: "",
   };
 }
@@ -262,20 +246,14 @@ function parseText(element: Element | null): string {
   return (element?.textContent || "").replace(/\s+/g, " ").trim();
 }
 
-function parseJudgeMeData(data: { badgeHtml: string; widgetHtml: string } | undefined): JudgeMeParsedData {
+function parseJudgeMeData(data: Pick<JudgeMeWidgetData, "widgetHtml"> | undefined): JudgeMeParsedData {
   if (!data || typeof DOMParser === "undefined") {
     return { averageRating: 0, reviewCount: 0, reviews: [] };
   }
 
-  let averageRating = 0;
-  let reviewCount = 0;
-
-  if (data.badgeHtml) {
-    const badgeDoc = new DOMParser().parseFromString(data.badgeHtml, "text/html");
-    const badgeEl = badgeDoc.querySelector(".jdgm-prev-badge");
-    averageRating = Number(badgeEl?.getAttribute("data-average-rating") || 0);
-    reviewCount = Number(badgeEl?.getAttribute("data-number-of-reviews") || 0);
-  }
+  const widgetSummary = parseJudgeMeWidgetSummary(data.widgetHtml);
+  let averageRating = widgetSummary?.rating || 0;
+  let reviewCount = widgetSummary?.reviewCount || 0;
 
   const reviewDoc = new DOMParser().parseFromString(data.widgetHtml || "", "text/html");
   const reviewNodes = Array.from(reviewDoc.querySelectorAll(".jdgm-rev"));
@@ -390,6 +368,7 @@ const ShopifyProductReviews = ({
   productHandle,
   productTitle,
   mode = "embedded",
+  onSummaryChange,
 }: ShopifyProductReviewsProps) => {
   const reviewPagePath = `/products/${productHandle}/reviews`;
   const queryClient = useQueryClient();
@@ -413,7 +392,7 @@ const ShopifyProductReviews = ({
     staleTime: JUDGEME_CACHE_MS,
     queryFn: async () => {
       if (!judgeMeConfig) {
-        return { badgeHtml: "", widgetHtml: "" };
+        return { widgetHtml: "" };
       }
       return fetchJudgeMeWidgetHtml(productId, judgeMeConfig);
     },
@@ -437,6 +416,17 @@ const ShopifyProductReviews = ({
   useEffect(() => {
     setVisibleCount(6);
   }, [sortBy, ratingFilter, productId]);
+
+  useEffect(() => {
+    if (parsed.averageRating <= 0 || parsed.reviewCount <= 0) {
+      return;
+    }
+
+    onSummaryChange?.({
+      rating: parsed.averageRating,
+      reviewCount: parsed.reviewCount,
+    });
+  }, [onSummaryChange, parsed.averageRating, parsed.reviewCount]);
 
   useEffect(() => {
     if (mode !== "page") {

@@ -16,6 +16,19 @@ const collectionPageSize = Math.max(1, Math.min(250, Number(process.env.SALT_COL
 const productPageSize = 250;
 const jobPollMs = Math.max(1000, Number(process.env.SALT_COLLECTION_SHUFFLE_JOB_POLL_MS || 2000));
 const jobPollAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_SHUFFLE_JOB_POLL_ATTEMPTS || 300));
+// Shopify's reorder job can finish before the collection connection exposes its
+// new order. Keep the retry window long enough for large collections without
+// issuing another mutation during propagation.
+const readbackAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_SHUFFLE_READBACK_ATTEMPTS || 12));
+const readbackDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_SHUFFLE_READBACK_DELAY_MS || 5000));
+const liveBatchReadbackThreshold = Math.max(0, Number(process.env.SALT_COLLECTION_SHUFFLE_LIVE_BATCH_READBACK_THRESHOLD || 1000));
+const collectionReadConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_COLLECTION_SHUFFLE_READ_CONCURRENCY || 4)));
+const excludedCollectionHandles = new Set(
+  String(process.env.SALT_COLLECTION_SHUFFLE_EXCLUDE_HANDLES || "test")
+    .split(",")
+    .map((handle) => handle.trim().toLowerCase())
+    .filter(Boolean),
+);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "collection-shuffle" });
 
 const COLLECTIONS_QUERY = /* GraphQL */ `
@@ -99,7 +112,7 @@ async function fetchCollections() {
     after = payload.collections.pageInfo.endCursor || null;
     if (!after) throw new Error("Shopify returned a next page without a cursor while reading collections");
   }
-  return collections;
+  return collections.filter((collection) => !excludedCollectionHandles.has(String(collection.handle || "").toLowerCase()));
 }
 
 async function fetchCollectionProducts(collectionId) {
@@ -116,14 +129,35 @@ async function fetchCollectionProducts(collectionId) {
   return ids;
 }
 
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  let completed = 0;
+
+  async function worker() {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= items.length) return;
+      results[index] = await mapper(items[index], index);
+      completed += 1;
+      if (completed % 10 === 0 || completed === items.length) {
+        process.stdout.write(`Collection shuffle read progress: ${completed}/${items.length}.\n`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
+
 async function buildPlan(seed) {
   const collections = await fetchCollections();
-  const plan = [];
-  for (const collection of collections) {
+  return mapWithConcurrency(collections, collectionReadConcurrency, async (collection) => {
     const currentIds = await fetchCollectionProducts(collection.id);
     const desiredIds = shuffleCollectionProductIds(currentIds, `${seed}:${collection.handle}`);
     const moves = buildCollectionReorderMoves(currentIds, desiredIds);
-    plan.push({
+    return {
       id: collection.id,
       handle: collection.handle,
       title: collection.title,
@@ -134,9 +168,8 @@ async function buildPlan(seed) {
       desiredIds,
       moves,
       needsReorder: currentIds.join("|") !== desiredIds.join("|"),
-    });
-  }
-  return plan;
+    };
+  });
 }
 
 async function waitForJob(jobId) {
@@ -170,7 +203,13 @@ async function applyCollection(entry) {
     missingFromLive: entry.desiredIds.filter((id) => !currentSet.has(id)),
     newlyLive: currentIds.filter((id) => !plannedSet.has(id)),
   };
+  const maxReorderBatches = Math.max(4, Math.ceil(Math.max(currentIds.length, targetIds.length) / 250) * 4);
+  let reorderBatches = 0;
   while (currentIds.join("|") !== targetIds.join("|")) {
+    reorderBatches += 1;
+    if (reorderBatches > maxReorderBatches) {
+      throw new Error(`${entry.handle}: exceeded ${maxReorderBatches} live reorder batches without converging`);
+    }
     const moves = buildCollectionReorderMoves(currentIds, targetIds);
     if (!moves.length) throw new Error(`Unable to build a reorder move for ${entry.handle}`);
     const payload = await client.run(
@@ -183,18 +222,33 @@ async function applyCollection(entry) {
     const errors = asArray(payload?.collectionReorderProducts?.userErrors);
     if (errors.length) throw new Error(`${entry.handle}: ${JSON.stringify(errors)}`);
     await waitForJob(payload?.collectionReorderProducts?.job?.id);
-    // Shopify applies moves sequentially. Mirror that deterministic result
-    // locally between jobs and do one complete live readback at the end of the
-    // collection instead of re-fetching every product page after every batch.
-    currentIds = applyCollectionReorderMoves(currentIds, moves);
+    // For small collections, mirroring the completed job avoids an extra
+    // connection read. Large collections can expose a partially applied order
+    // at position boundaries, so recompute every next batch from live Shopify
+    // state instead of trusting a local mirror.
+    if (liveBatchReadbackThreshold > 0 && currentIds.length >= liveBatchReadbackThreshold) {
+      currentIds = await fetchCollectionProducts(entry.id);
+    } else {
+      currentIds = applyCollectionReorderMoves(currentIds, moves);
+    }
   }
 
-  const actualIds = await fetchCollectionProducts(entry.id);
-  const actualTargetIds = buildLiveMembershipTarget(actualIds, targetIds);
-  if (actualIds.join("|") !== actualTargetIds.join("|")) {
-    throw new Error(`${entry.handle}: manual order readback mismatch`);
+  let actualIds = [];
+  for (let attempt = 1; attempt <= readbackAttempts; attempt += 1) {
+    actualIds = await fetchCollectionProducts(entry.id);
+    const actualTargetIds = buildLiveMembershipTarget(actualIds, targetIds);
+    if (actualIds.join("|") === actualTargetIds.join("|")) {
+      return membershipDrift;
+    }
+    if (attempt < readbackAttempts) {
+      const retryDelayMs = Math.min(30_000, readbackDelayMs * Math.max(1, Math.ceil(attempt / 3)));
+      process.stdout.write(
+        `${entry.handle}: order readback pending (${attempt}/${readbackAttempts}); retrying in ${Math.round(retryDelayMs / 1000)}s\n`,
+      );
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, retryDelayMs));
+    }
   }
-  return membershipDrift;
+  throw new Error(`${entry.handle}: manual order readback mismatch after ${readbackAttempts} attempts`);
 }
 
 async function main() {
@@ -240,7 +294,7 @@ async function main() {
     }
     const failedHandles = new Set(
       asArray(priorManifest.failures)
-        .filter((failure) => failure?.reason === "order-readback-mismatch")
+        .filter((failure) => ["order-readback-mismatch", "apply-failed"].includes(failure?.reason))
         .map((failure) => failure.handle),
     );
     if (!failedHandles.size) throw new Error("--repair-failed found no order-readback failures in the shuffle manifest.");
@@ -270,10 +324,21 @@ async function main() {
     };
     plan = repairedPlan;
   } else {
-    plan = hasReusablePriorPlan ? priorManifest.collections : await buildPlan(args.seed);
+    plan = hasReusablePriorPlan
+      ? priorManifest.collections.filter((entry) => !excludedCollectionHandles.has(String(entry.handle || "").toLowerCase()))
+      : await buildPlan(args.seed);
   }
   const manifest = canReusePriorPlan
-    ? { ...priorManifest, mode: args.mode, resumedAt: new Date().toISOString() }
+    ? {
+        ...priorManifest,
+        mode: args.mode,
+        resumedAt: new Date().toISOString(),
+        collections: plan,
+        appliedCollections: asArray(priorManifest.appliedCollections).filter(
+          (handle) => !excludedCollectionHandles.has(String(handle || "").toLowerCase()),
+        ),
+        excludedCollectionHandles: [...excludedCollectionHandles],
+      }
     : {
         generatedAt: new Date().toISOString(),
         mode: args.mode,
@@ -293,6 +358,7 @@ async function main() {
         },
         collections: plan,
         failures: [],
+        excludedCollectionHandles: [...excludedCollectionHandles],
       };
   await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
@@ -305,17 +371,35 @@ async function main() {
   for (const [index, entry] of plan.entries()) {
     if (appliedCollections.has(entry.handle)) continue;
     process.stdout.write(`Shuffle progress: ${appliedCollections.size}/${plan.length} starting ${entry.handle}\n`);
-    const membershipDrift = await applyCollection(entry);
-    appliedCollections.add(entry.handle);
-    manifest.appliedCollections = [...appliedCollections];
-    if (membershipDrift.missingFromLive.length || membershipDrift.newlyLive.length) {
-      manifest.membershipDrift = [
-        ...(manifest.membershipDrift || []),
-        { handle: entry.handle, ...membershipDrift },
-      ];
-    }
+    manifest.inFlightHandle = entry.handle;
+    manifest.lastAttemptAt = new Date().toISOString();
     await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-    process.stdout.write(`Shuffle progress: ${index + 1}/${plan.length} verified ${entry.handle}\n`);
+    try {
+      const membershipDrift = await applyCollection(entry);
+      appliedCollections.add(entry.handle);
+      manifest.appliedCollections = [...appliedCollections];
+      manifest.inFlightHandle = "";
+      manifest.lastError = "";
+      manifest.failures = (manifest.failures || []).filter((failure) => failure?.handle !== entry.handle);
+      if (!manifest.failures.length) manifest.failedAt = "";
+      if (membershipDrift.missingFromLive.length || membershipDrift.newlyLive.length) {
+        manifest.membershipDrift = [
+          ...(manifest.membershipDrift || []),
+          { handle: entry.handle, ...membershipDrift },
+        ];
+      }
+      await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      process.stdout.write(`Shuffle progress: ${index + 1}/${plan.length} verified ${entry.handle}\n`);
+    } catch (error) {
+      manifest.lastError = String(error?.message || error);
+      manifest.failedAt = new Date().toISOString();
+      manifest.failures = [
+        ...(manifest.failures || []).filter((failure) => failure?.handle !== entry.handle),
+        { handle: entry.handle, reason: "apply-failed", error: manifest.lastError },
+      ];
+      await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      throw error;
+    }
   }
   manifest.completedAt = new Date().toISOString();
   await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");

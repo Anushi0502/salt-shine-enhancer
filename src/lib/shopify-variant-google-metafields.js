@@ -1,10 +1,14 @@
+import { buildVariantSeoProfile } from "./shopify-variant-seo.js";
+
 export const GOOGLE_VARIANT_METAFIELD_DEFINITIONS = [
   { id: "ageGroup", name: "Google: Age Group", namespace: "mm-google-shopping", key: "age_group" },
   { id: "condition", name: "Google: Condition", namespace: "mm-google-shopping", key: "condition" },
   { id: "gender", name: "Google: Gender", namespace: "mm-google-shopping", key: "gender" },
   { id: "mpn", name: "Google: MPN", namespace: "mm-google-shopping", key: "mpn" },
   { id: "sizeSystem", name: "Google: Size System", namespace: "mm-google-shopping", key: "size_system" },
-].map((definition) => ({ ...definition, type: "single_line_text_field" }));
+  { id: "variantSeoTitle", name: "SALT Variant SEO Title", namespace: "salt-seo", key: "variant_title", type: "single_line_text_field" },
+  { id: "variantSeoDescription", name: "SALT Variant SEO Description", namespace: "salt-seo", key: "variant_description", type: "multi_line_text_field" },
+].map((definition) => ({ ...definition, type: definition.type || "single_line_text_field" }));
 
 const CHILD_PATTERN = /\b(baby|babies|boy|boys|child|children|girl|girls|kid|kids|youth)\b/i;
 const INFANT_PATTERN = /\b(baby|babies|infant|infants)\b/i;
@@ -74,20 +78,30 @@ export function inferGoogleMpn(variant) {
   return legacyId ? `SALT-${legacyId}` : "";
 }
 
-export function buildGoogleVariantMetafieldPlan(variant) {
+function normalizeMetafieldValue(definition, value) {
+  if (definition.type === "multi_line_text_field") {
+    return String(value ?? "").replace(/\r\n?/g, "\n").trim();
+  }
+  return normalizeSingleLineText(value);
+}
+
+export function buildGoogleVariantMetafieldPlan(variant, { variantSeoProfile = null } = {}) {
+  const effectiveVariantSeoProfile = variantSeoProfile || buildVariantSeoProfile(variant?.product || {}, variant);
   const desired = {
     ageGroup: inferGoogleAgeGroup(variant),
     condition: "new",
     gender: inferGoogleGender(variant),
     mpn: inferGoogleMpn(variant),
     sizeSystem: inferGoogleSizeSystem(variant),
+    variantSeoTitle: effectiveVariantSeoProfile.title,
+    variantSeoDescription: effectiveVariantSeoProfile.description,
   };
   const writes = [];
   const skipped = [];
 
   for (const definition of GOOGLE_VARIANT_METAFIELD_DEFINITIONS) {
-    const value = normalizeSingleLineText(desired[definition.id]);
-    const currentValue = normalizeSingleLineText(variant?.metafields?.[definition.id]?.value);
+    const value = normalizeMetafieldValue(definition, desired[definition.id]);
+    const currentValue = normalizeMetafieldValue(definition, variant?.metafields?.[definition.id]?.value);
     if (!value) {
       skipped.push({ fieldId: definition.id, reason: definition.id === "sizeSystem" ? "not applicable without a supported size option" : "no supported value" });
       continue;

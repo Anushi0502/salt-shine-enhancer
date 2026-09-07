@@ -52,19 +52,23 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
 }
 
+function formatTimestamp(value: string): string {
+  if (!value) return "Not available";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+}
+
 function sourceLabel(state: FinanceSourceState): string {
   return {
     connected: "Connected",
     partial: "Partial",
     missing: "Missing",
-    manual: "Manual",
     unavailable: "Unavailable",
   }[state];
 }
 
 function sourceTone(state: FinanceSourceState): string {
   if (state === "connected") return "border-emerald-200/80 bg-emerald-50/80 text-emerald-800";
-  if (state === "partial" || state === "manual") return "border-amber-200/80 bg-amber-50/80 text-amber-800";
+  if (state === "partial") return "border-amber-200/80 bg-amber-50/80 text-amber-800";
   return "border-rose-200/80 bg-rose-50/80 text-rose-800";
 }
 
@@ -110,7 +114,7 @@ function SourceBadge({ label, state }: { label: string; state: FinanceSourceStat
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border/55 py-3 last:border-0">
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className={`h-2 w-2 shrink-0 rounded-full ${state === "connected" ? "bg-emerald-500" : state === "partial" || state === "manual" ? "bg-amber-500" : "bg-rose-500"}`} />
+        <span className={`h-2 w-2 shrink-0 rounded-full ${state === "connected" ? "bg-emerald-500" : state === "partial" ? "bg-amber-500" : "bg-rose-500"}`} />
         <span className="truncate text-sm font-semibold text-foreground">{label}</span>
       </div>
       <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] ${sourceTone(state)}`}>{sourceLabel(state)}</span>
@@ -248,6 +252,12 @@ const FinancePage = () => {
     if (authState === "authenticated") void loadSummary();
   }, [authState, loadSummary]);
 
+  useEffect(() => {
+    if (authState !== "authenticated") return;
+    const interval = window.setInterval(() => void loadSummary(), 30_000);
+    return () => window.clearInterval(interval);
+  }, [authState, loadSummary]);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError("");
@@ -319,19 +329,10 @@ const FinancePage = () => {
   const payoutsNeedApproval = summary?.sources.payouts === "partial" || summary?.sources.payouts === "unavailable";
   const payoutsNotice =
     summary?.sources.payouts === "partial"
-      ? "Shopify payouts are in fallback mode until merchant-approved Payments API access is granted."
+      ? "Shopify payout access is limited until merchant-approved Payments API access is granted."
       : summary?.sources.payouts === "unavailable"
-        ? "Shopify payouts are not connected yet. Merchant approval or a reconciled payout export is required."
+        ? "Shopify payout data is unavailable. The page will retry automatically when access is restored."
         : "";
-  const reconciliationTotals = summary?.reconciliation.totals;
-  const payoutCashCents = (reconciliationTotals?.pendingPayoutCents || 0) + (reconciliationTotals?.payoutPaidCents || 0);
-  const revenueToCashGapCents = (kpis?.netSalesCents || 0) + (kpis?.shippingIncomeCents || 0) - payoutCashCents;
-  const orderCostGapCents = (reconciliationTotals?.orderCostCents || 0) - (kpis?.cogsCents || 0);
-  const campaignGapCents = (reconciliationTotals?.campaignCostCents || 0) - (kpis?.campaignCostsCents || 0);
-  const subscriptionGapCents = -(kpis?.subscriptionCostsCents || 0);
-  const feeGapCents = (reconciliationTotals?.feeCents || 0) - (kpis?.paymentFeesCents || 0);
-  const chargebackGapCents = -(kpis?.chargebacksCents || 0);
-  const bridgeGapCents = (kpis?.operatingProfitCents || 0) - (reconciliationTotals?.profitCents || 0);
   const missingCostException = summary?.exceptions.find((item) => item.kind === "missing-cost");
 
   return (
@@ -345,7 +346,7 @@ const FinancePage = () => {
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-emerald-800"><ShieldCheck className="h-3.5 w-3.5" /> Protected</span>
               </div>
               <h1 className="mt-4 max-w-2xl font-display text-[clamp(2.5rem,6vw,5.6rem)] leading-[0.88] tracking-[-0.07em] text-foreground">Profit with a clearer next move.</h1>
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">A single operating view for revenue, real payouts, supplier cost, subscriptions, and the exceptions that need attention.</p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">A single operating view for revenue, real payouts, DSers product cost, campaign cost per order, subscriptions, and the exceptions that need attention.</p>
             </div>
             <div className="flex flex-wrap gap-2 lg:max-w-[25rem] lg:justify-end">
               <button type="button" onClick={() => void loadSummary()} disabled={isRefreshing} className="salt-outline-chip h-11 gap-2 px-4 text-xs font-bold uppercase tracking-[0.1em] disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} /> Refresh</button>
@@ -357,7 +358,7 @@ const FinancePage = () => {
           <div className="mt-7 grid gap-3 border-t border-border/65 pt-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> From</span><input type="date" value={period.start} onChange={(event) => setPeriod((current) => ({ ...current, start: event.target.value }))} className="h-11 w-full rounded-xl border border-border bg-background/70 px-3 text-sm text-foreground" /></label>
             <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" /> To</span><input type="date" value={period.end} onChange={(event) => setPeriod((current) => ({ ...current, end: event.target.value }))} className="h-11 w-full rounded-xl border border-border bg-background/70 px-3 text-sm text-foreground" /></label>
-            <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/55 px-3 py-2.5 text-xs text-muted-foreground sm:h-11"><Database className="h-4 w-4 text-primary" /><span>{summary ? `Updated ${formatDate(summary.generatedAt)}` : "Waiting for data"}</span></div>
+            <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/55 px-3 py-2.5 text-xs text-muted-foreground sm:h-11"><Database className="h-4 w-4 text-primary" /><span>{summary ? `Live · ${formatTimestamp(summary.generatedAt)}` : "Waiting for data"}</span></div>
           </div>
         </header>
 
@@ -386,11 +387,11 @@ const FinancePage = () => {
             ) : null}
 
             <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              <StatCard label="Operating profit (accrual)" value={formatMoney(kpis?.operatingProfitCents || 0, currency)} detail={`${kpis?.marginPercent == null ? "n/a" : `${kpis.marginPercent}%`} accrual margin | campaign + recurring costs included${reconciliationTotals?.profitCents == null ? "" : ` | workbook cash profit ${formatMoney(reconciliationTotals.profitCents, currency)} below`}`} accent={kpis?.operatingProfitCents && kpis.operatingProfitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
+              <StatCard label="Operating profit (conservative)" value={formatMoney(kpis?.conservativeOperatingProfitCents || 0, currency)} detail={`realized ${formatMoney(kpis?.operatingProfitCents || 0, currency)} | ${kpis?.pendingChargebackCents ? `${formatMoney(kpis.pendingChargebackCents, currency)} under review included` : "no pending chargebacks"}`} accent={kpis?.conservativeOperatingProfitCents && kpis.conservativeOperatingProfitCents < 0 ? "gold" : "green"} icon={<CircleDollarSign className="h-5 w-5" />} />
               <StatCard label="Net sales" value={formatMoney(kpis?.netSalesCents || 0, currency)} detail={`${kpis?.orderCount || 0} orders | ${formatMoney(kpis?.returnDeductionsCents || 0, currency)} product returns removed`} icon={<ArrowUpRight className="h-5 w-5" />} />
-              <StatCard label="Payouts received" value={formatMoney(kpis?.payoutsReceivedCents || 0, currency)} detail="Cash movement, not profit | bridge below" accent="navy" icon={<WalletCards className="h-5 w-5" />} />
-              <StatCard label="Supplier cost" value={formatMoney(kpis?.cogsCents || 0, currency)} detail={`${kpis?.costCoveragePercent == null ? "n/a" : `${kpis.costCoveragePercent}%`} cost coverage${missingCostException ? ` | ${missingCostException.count} item${missingCostException.count === 1 ? "" : "s"} missing` : ""}`} accent="gold" icon={<ArrowDownRight className="h-5 w-5" />} />
-              <StatCard label="Subscriptions" value={formatMoney(kpis?.subscriptionCostsCents || 0, currency)} detail="Configured operating costs" accent="navy" icon={<FileText className="h-5 w-5" />} />
+              <StatCard label="Payouts received" value={formatMoney(kpis?.payoutsReceivedCents || 0, currency)} detail="Paid Shopify payout cash" accent="navy" icon={<WalletCards className="h-5 w-5" />} />
+              <StatCard label="DSers product cost" value={formatMoney(kpis?.cogsCents || 0, currency)} detail={`${kpis?.costCoveragePercent == null ? "n/a" : `${kpis.costCoveragePercent}%`} cost coverage${missingCostException ? ` | ${missingCostException.count} item${missingCostException.count === 1 ? "" : "s"} missing` : ""}`} accent="gold" icon={<ArrowDownRight className="h-5 w-5" />} />
+              <StatCard label="Subscriptions" value={formatMoney(kpis?.subscriptionCostsCents || 0, currency)} detail="Shopify Grow + DSers recurring costs" accent="navy" icon={<FileText className="h-5 w-5" />} />
             </section>
 
             <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
@@ -398,27 +399,26 @@ const FinancePage = () => {
                 <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">P&L statement</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Where the money went.</h2></div><span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground">{summary.period.start} to {summary.period.end}</span></div>
                 <div className="mt-5">{summary.pnlRows.map((row) => <PnlRow key={row.label} row={row} currency={currency} />)}</div>
               </article>
-              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers cost coverage" state={summary.sources.dsers} /><SourceBadge label="Campaign spend" state={summary.sources.campaigns} /><SourceBadge label="Subscriptions" state={summary.sources.subscriptions} /><SourceBadge label="Workbook bridge" state={summary.sources.reconciliation} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
+              <aside className="rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><p className="salt-kicker">Live data confidence</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Know what is real.</h2><div className="mt-4"><SourceBadge label="Shopify orders" state={summary.sources.shopify} /><SourceBadge label="Shopify payouts" state={summary.sources.payouts} /><SourceBadge label="DSers product cost" state={summary.sources.dsers} /><SourceBadge label="Campaign cost per order" state={summary.sources.campaigns} /><SourceBadge label="Grow + DSers billing" state={summary.sources.subscriptions} /><SourceBadge label="Live reconciliation" state={summary.sources.reconciliation} /></div><div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">{summary.sources.messages.map((message) => <p key={message} className="mt-2 first:mt-0">{message}</p>)}</div></aside>
             </section>
 
             <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6">
-              <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Cash reconciliation</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Keep cash and accrual honest.</h2></div><span className={`rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] ${sourceTone(summary.reconciliation.state)}`}>{sourceLabel(summary.reconciliation.state)}</span></div>
-              <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground">This bridge is kept separate from the Shopify accrual P&amp;L above. It explains the workbook result without treating payout cash, cancelled-order refunds, or campaign spend as the same ledger.</p>
+              <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Live cash reconciliation</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Keep cash and accrual honest.</h2></div><span className={`rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] ${sourceTone(summary.reconciliation.state)}`}>{sourceLabel(summary.reconciliation.state)}</span></div>
+              <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground">Calculated from Shopify payout, order, product-cost, campaign, refund, chargeback, and app-billing responses for the selected period.</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <ReconciliationMetric label="Pending payout" cents={summary.reconciliation.totals.pendingPayoutCents} currency={currency} />
                 <ReconciliationMetric label="Payout paid" cents={summary.reconciliation.totals.payoutPaidCents} currency={currency} />
                 <ReconciliationMetric label="Order cost" cents={-summary.reconciliation.totals.orderCostCents} currency={currency} />
-                <ReconciliationMetric label="Bill cost" cents={-summary.reconciliation.totals.billCostCents} currency={currency} />
-                <ReconciliationMetric label="Campaign cost in bridge" cents={-summary.reconciliation.totals.campaignCostCents} currency={currency} />
-                <ReconciliationMetric label="Fees in bridge" cents={-summary.reconciliation.totals.feeCents} currency={currency} />
-                <ReconciliationMetric label="Workbook profit" cents={summary.reconciliation.totals.profitCents} currency={currency} />
-                <ReconciliationMetric label="Accrual P&L minus bridge" cents={(kpis?.operatingProfitCents || 0) - summary.reconciliation.totals.profitCents} currency={currency} />
+                <ReconciliationMetric label="Subscription cost" cents={-summary.reconciliation.totals.billCostCents} currency={currency} />
+                <ReconciliationMetric label="Campaign cost" cents={-summary.reconciliation.totals.campaignCostCents} currency={currency} />
+                <ReconciliationMetric label="Payment fees recorded" cents={-summary.reconciliation.totals.feeCents} currency={currency} />
+                <ReconciliationMetric label="Live cash profit" cents={summary.reconciliation.totals.profitCents} currency={currency} />
+                <ReconciliationMetric label="Accrual P&L vs live cash" cents={(kpis?.operatingProfitCents || 0) - summary.reconciliation.totals.profitCents} currency={currency} />
                 <ReconciliationMetric label="Refunds in Shopify period" cents={-(kpis?.periodRefundsCents || 0)} currency={currency} />
                 <ReconciliationMetric label="Cancelled refund cash" cents={-(kpis?.cancelledOrderRefundsCents || 0)} currency={currency} />
               </div>
-              {summary.reconciliation.state === "manual" ? <div className="mt-5"><p className="salt-kicker">Gap drivers</p><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><ReconciliationMetric label="Revenue vs payout cash" cents={revenueToCashGapCents} currency={currency} /><ReconciliationMetric label="Order-cost source gap" cents={orderCostGapCents} currency={currency} /><ReconciliationMetric label="Bills outside accrual" cents={reconciliationTotals?.billCostCents || 0} currency={currency} /><ReconciliationMetric label="Campaign not in workbook" cents={campaignGapCents} currency={currency} /><ReconciliationMetric label="Subscriptions not in workbook" cents={subscriptionGapCents} currency={currency} /><ReconciliationMetric label="Fees / chargebacks gap" cents={feeGapCents + chargebackGapCents} currency={currency} /><ReconciliationMetric label="Total explained gap" cents={bridgeGapCents} currency={currency} /></div><p className="mt-3 text-xs leading-5 text-muted-foreground">The total equals accrual operating profit minus workbook cash profit. Negative values are deductions present in Shopify but absent from the workbook bridge.</p></div> : null}
               <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-3.5 text-xs leading-5 text-blue-900">
-                <p>{summary.reconciliation.message || "No workbook reconciliation source is configured."}</p>
+                <p>{summary.reconciliation.message || "Live reconciliation is not available yet."}</p>
                 {(kpis?.cancelledOrderRefundsCents || 0) > 0 ? <p className="mt-2">{formatMoney(kpis?.cancelledOrderRefundsCents || 0, currency)} of the period refund events belong to cancelled orders and are shown here for review, but excluded from the accrual P&amp;L to avoid double counting cancelled revenue.</p> : null}
               </div>
             </section>
@@ -432,7 +432,7 @@ const FinancePage = () => {
 
             <section className="mt-5 rounded-[1.7rem] border border-border/75 bg-card/80 p-5 shadow-[0_22px_50px_-38px_rgba(15,23,42,0.35)] sm:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="salt-kicker">Order profitability</p><h2 className="mt-2 font-display text-3xl tracking-[-0.05em]">Find the margin leaks.</h2></div><span className="text-xs text-muted-foreground">Showing up to 200 orders</span></div><div className="mt-5 overflow-x-auto">{summary.orders.length ? <div className="min-w-[700px]"><div className="grid grid-cols-[1.15fr_0.75fr_0.75fr_0.75fr_0.85fr] gap-4 border-b border-border/75 px-4 pb-2 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-muted-foreground"><span>Order</span><span className="text-right">Net revenue</span><span className="text-right">Cost</span><span className="text-right">Fees</span><span className="text-right">Profit</span></div>{summary.orders.map((order) => <ProfitabilityRow key={order.id} order={order} currency={currency} />)}</div> : <p className="rounded-2xl border border-border/65 bg-background/50 p-4 text-sm text-muted-foreground">No orders were returned for this period.</p>}</div></section>
 
-            <footer className="flex flex-col gap-2 px-1 pb-4 pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Protected SALT finance workspace</span><span>Last generated {formatDate(summary.generatedAt)} | {summary.period.timezone}</span></footer>
+            <footer className="flex flex-col gap-2 px-1 pb-4 pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Protected SALT finance workspace · live Shopify data</span><span>Last refreshed {formatTimestamp(summary.generatedAt)} | {summary.period.timezone}</span></footer>
           </>
         ) : null}
       </div>
@@ -449,7 +449,7 @@ function FinanceAccessCard({ error }: { error: string }) {
 }
 
 function FinanceLogin({ password, setPassword, error, onSubmit }: { password: string; setPassword: (value: string) => void; error: string; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
-  return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_10%,hsl(var(--primary)/0.14),transparent_32%),radial-gradient(circle_at_80%_90%,hsl(var(--salt-gold)/0.12),transparent_28%),hsl(var(--background))] p-4 sm:p-6"><div className="w-full max-w-xl rounded-[2rem] border border-border/75 bg-card/85 p-7 shadow-[0_35px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur sm:p-10"><div className="flex items-start justify-between gap-4"><div><p className="salt-kicker">Private operations</p><h1 className="mt-4 font-display text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.88] tracking-[-0.07em]">The numbers stay inside.</h1></div><div className="rounded-2xl border border-border/75 bg-background/70 p-3 text-primary"><LockKeyhole className="h-6 w-6" /></div></div><p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">Enter the finance workspace password to view payout, profit, supplier cost, and subscription data.</p><form onSubmit={onSubmit} className="mt-7"><label className="block"><span className="mb-2 block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Workspace password</span><input autoFocus type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" className="h-13 w-full rounded-2xl border border-border bg-background/75 px-4 text-base text-foreground" placeholder="Enter password" /></label>{error ? <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}<button type="submit" className="salt-primary-cta mt-5 h-12 w-full gap-2 rounded-2xl text-sm font-bold uppercase tracking-[0.12em]"><ShieldCheck className="h-4 w-4" /> Unlock finance</button></form><div className="mt-7 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Server-side session protection is enabled.</div></div></div>;
+  return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_10%,hsl(var(--primary)/0.14),transparent_32%),radial-gradient(circle_at_80%_90%,hsl(var(--salt-gold)/0.12),transparent_28%),hsl(var(--background))] p-4 sm:p-6"><div className="w-full max-w-xl rounded-[2rem] border border-border/75 bg-card/85 p-7 shadow-[0_35px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur sm:p-10"><div className="flex items-start justify-between gap-4"><div><p className="salt-kicker">Private operations</p><h1 className="mt-4 font-display text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.88] tracking-[-0.07em]">The numbers stay inside.</h1></div><div className="rounded-2xl border border-border/75 bg-background/70 p-3 text-primary"><LockKeyhole className="h-6 w-6" /></div></div><p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">Enter the finance workspace password to view payout, profit, DSers product cost, campaign cost per order, and subscription data.</p><form onSubmit={onSubmit} className="mt-7"><label className="block"><span className="mb-2 block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Workspace password</span><input autoFocus type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" className="h-13 w-full rounded-2xl border border-border bg-background/75 px-4 text-base text-foreground" placeholder="Enter password" /></label>{error ? <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}<button type="submit" className="salt-primary-cta mt-5 h-12 w-full gap-2 rounded-2xl text-sm font-bold uppercase tracking-[0.12em]"><ShieldCheck className="h-4 w-4" /> Unlock finance</button></form><div className="mt-7 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Server-side session protection is enabled.</div></div></div>;
 }
 
 export default FinancePage;

@@ -80,9 +80,10 @@ export default async function handler(req: any, res: any) {
     const highlights = [
       ["Net sales", summary.kpis.netSalesCents],
       ["Gross profit", summary.kpis.grossProfitCents],
-      ["Operating profit", summary.kpis.operatingProfitCents],
+      ["Operating profit (realized)", summary.kpis.operatingProfitCents],
+      ["Operating profit (conservative)", summary.kpis.conservativeOperatingProfitCents],
       ["Payouts received", summary.kpis.payoutsReceivedCents],
-      ["Campaign spend", summary.kpis.campaignCostsCents],
+      ["Campaign cost per order", summary.kpis.campaignCostsCents],
       ["Cost coverage", summary.kpis.costCoveragePercent == null ? null : `${summary.kpis.costCoveragePercent}%`],
     ] as const;
     activeFont.current = regularFont;
@@ -120,14 +121,14 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    section("Native Reconciliation");
+    section("Live Reconciliation");
     const reconciliationTotals = summary.reconciliation.totals;
     for (const [label, value] of [
       ["Pending payout", reconciliationTotals.pendingPayoutCents],
       ["Payout paid", reconciliationTotals.payoutPaidCents],
       ["Order cost", reconciliationTotals.orderCostCents],
       ["Bill cost", reconciliationTotals.billCostCents],
-      ["Native profit", reconciliationTotals.profitCents],
+      ["Live cash profit", reconciliationTotals.profitCents],
     ] as const) {
       ensureSpace();
       writeLine(page, label, 48, y, 10, activeFont.current, muted);
@@ -135,7 +136,7 @@ export default async function handler(req: any, res: any) {
       y -= 18;
     }
     if (!summary.reconciliation.rows.length) {
-      writeLine(page, summary.reconciliation.message || "Native reconciliation rows are not available yet.", 48, y, 10, activeFont.current, muted);
+      writeLine(page, summary.reconciliation.message || "Live reconciliation records are not available yet.", 48, y, 10, activeFont.current, muted);
       y -= 18;
     } else {
       for (const row of summary.reconciliation.rows.slice(0, 40)) {
@@ -168,7 +169,7 @@ export default async function handler(req: any, res: any) {
     if (!summary.subscriptions.length) {
       writeLine(page, "No active Shopify app subscriptions or external recurring costs were returned.", 48, y, 9, activeFont.current, muted);
       y -= 12;
-      writeLine(page, "Add FINANCE_SUBSCRIPTIONS_JSON for DSers, domain, and other vendor costs.", 48, y, 9, activeFont.current, muted);
+      writeLine(page, "Shopify Admin did not return active app billing items for this period.", 48, y, 9, activeFont.current, muted);
       y -= 18;
     } else {
       for (const subscription of summary.subscriptions) {
@@ -197,11 +198,11 @@ export default async function handler(req: any, res: any) {
     section("Methodology");
     for (const message of [
       "Payouts represent cash movement and are intentionally shown separately from profit.",
-      "Product cost uses Shopify inventory cost plus matched DSers supplier cost mappings.",
+      "DSers product cost uses Shopify inventory cost-per-item values synced by DSers; unresolved items remain flagged.",
       "Payment fees are taken from Shopify payout data and allocated to order rows by net revenue.",
-      "Campaign spend is pulled from Shopify marketing activity attribution and allocated to attributed orders, including cancelled and disputed orders when attribution exists.",
-      "SALT app subscriptions are read from Shopify Admin billing; external vendor subscriptions use configured operating costs.",
-      "Native reconciliation rows are pulled from Shopify order finance metafields first, with FINANCE_RECONCILIATION_JSON as a fallback import path.",
+      "Campaign cost uses Shopify paid spend where returned; otherwise the configured campaign cost per order is applied once to each non-cancelled order.",
+      "Shopify Grow ($105/month) and DSers ($19.90/month) are Shopify Admin-verified recurring charges allocated by calendar month; FINANCE_SHOPIFY_GROW_MONTHLY_COST and FINANCE_DSERS_MONTHLY_COST override those values when the merchant changes plans.",
+      "Live reconciliation is calculated from current Shopify payout, order-cost, campaign, and subscription responses.",
       "Taxes collected are reported separately and are not treated as operating profit.",
     ]) {
       ensureSpace();

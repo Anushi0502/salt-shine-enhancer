@@ -17,20 +17,25 @@ function variant(overrides: Record<string, unknown> = {}) {
     sku: "SKU-123",
     barcode: "",
     selectedOptions: [],
-    metafields: {},
+    metafields: {
+      variantSeoTitle: { value: "Everyday Organizer | SALT Online Store" },
+      variantSeoDescription: { value: "Shop Everyday Organizer. See the exact variant image, availability, and pricing before checkout." },
+    },
     product: { handle: "everyday-organizer", title: "Everyday Organizer", productType: "", tags: [], category: null },
     ...overrides,
   };
 }
 
 describe("Shopify Google variant metafield intelligence", () => {
-  it("uses the five live single-line Google Shopping definitions", () => {
+  it("uses the five Google definitions plus two persisted variant SEO definitions", () => {
     expect(GOOGLE_VARIANT_METAFIELD_DEFINITIONS.map(({ namespace, key, type }) => ({ namespace, key, type }))).toEqual([
       { namespace: "mm-google-shopping", key: "age_group", type: "single_line_text_field" },
       { namespace: "mm-google-shopping", key: "condition", type: "single_line_text_field" },
       { namespace: "mm-google-shopping", key: "gender", type: "single_line_text_field" },
       { namespace: "mm-google-shopping", key: "mpn", type: "single_line_text_field" },
       { namespace: "mm-google-shopping", key: "size_system", type: "single_line_text_field" },
+      { namespace: "salt-seo", key: "variant_title", type: "single_line_text_field" },
+      { namespace: "salt-seo", key: "variant_description", type: "multi_line_text_field" },
     ]);
   });
 
@@ -58,17 +63,20 @@ describe("Shopify Google variant metafield intelligence", () => {
         condition: { value: "new" },
         gender: { value: "unisex" },
         mpn: { value: "MERCHANT-MPN" },
+        variantSeoTitle: { value: "Everyday Organizer | SALT Online Store" },
+        variantSeoDescription: { value: "Shop Everyday Organizer. See the exact variant image, availability, and pricing before checkout." },
       },
     }));
     expect(plan.desired.mpn).toBe("MERCHANT-MPN");
     expect(plan.writes).toEqual([]);
-    expect(plan.skipped).toHaveLength(5);
+    expect(plan.skipped).toHaveLength(7);
   });
 
-  it("normalizes every value to one line and creates a stable fallback MPN", () => {
+  it("normalizes single-line values and creates a stable fallback MPN", () => {
     expect(normalizeSingleLineText("  one\n two\tthree ")).toBe("one two three");
-    const plan = buildGoogleVariantMetafieldPlan(variant({ sku: "", barcode: "" }));
+    const plan = buildGoogleVariantMetafieldPlan(variant({ sku: "", barcode: "", metafields: {} }));
     expect(plan.desired.mpn).toBe("SALT-123");
-    expect(plan.writes.every((write) => write.type === "single_line_text_field" && !/[\r\n\t]/.test(write.value))).toBe(true);
+    expect(plan.writes.filter((write) => write.type === "single_line_text_field").every((write) => !/[\r\n\t]/.test(write.value))).toBe(true);
+    expect(plan.writes.find((write) => write.fieldId === "variantSeoDescription")?.type).toBe("multi_line_text_field");
   });
 });

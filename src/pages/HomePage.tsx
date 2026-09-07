@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero from "@/components/storefront/HomeHero";
+import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { polishPlainText } from "@/lib/formatters";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
-import { useJudgeMeRatings, useJudgeMeTestimonials } from "@/lib/judgeme";
+import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroAnimeCollectables from "@/assets/collection-banners/anime-collectables-square.webp";
 import heroCreatorEssentials from "@/assets/collection-banners/creator-essentials-square.webp";
@@ -32,7 +33,14 @@ type ReviewTile = {
 const HOME_REVIEW_SCROLL_PX_PER_MS = 0.06;
 const REVIEW_DISPLAY_LIMIT = 24;
 const HOME_PRODUCT_DISPLAY_LIMIT = 12;
-const HOME_RATING_PRODUCT_LIMIT = 4;
+
+const HOME_COLLECTION_SHELVES = [
+  { key: "animeCollectables", title: "Anime Collectables", handle: "anime-collectables" },
+  { key: "creatorEssentials", title: "Creator Essentials", handle: "creator-essentials" },
+  { key: "lipCare", title: "Lip Care", handle: "lips-and-care" },
+  { key: "watches", title: "Watches", handle: "watches" },
+  { key: "glamEyePalettes", title: "Glam Eye Palettes", handle: "glam-eye-palettes" },
+] as const;
 
 const fallbackReviewTiles: ReviewTile[] = [
   {
@@ -125,6 +133,8 @@ type HomeCardSource = {
   image: string;
   price: number;
   compareAtPrice: number | null;
+  averageRating?: number | null;
+  reviewCount?: number | null;
 };
 
 function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
@@ -142,6 +152,8 @@ function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
     created_at: "",
     published_at: null,
     updated_at: "",
+    average_rating: Number(source.averageRating) > 0 ? Number(source.averageRating) : undefined,
+    total_reviews: Number(source.reviewCount) > 0 ? Math.floor(Number(source.reviewCount)) : undefined,
     variants: [
       {
         id: source.id,
@@ -157,26 +169,13 @@ function toProductCardProduct(source: HomeCardSource): ShopifyProduct {
 }
 
 const HomePage = () => {
-  // Do not download the full 6k-product catalog just to render curated homepage cards.
-  // Full catalog loading remains on search, collection, and product routes.
-  const { data: homeFeaturedProductsPayload } = useHomeFeaturedProducts();
+  // Request only the small live Shopify collections used by this page. Product,
+  // search, and collection routes independently fetch their current bounded view.
+  const homeFeaturedProductsQuery = useHomeFeaturedProducts();
+  const { data: homeFeaturedProductsPayload } = homeFeaturedProductsQuery;
   const homeCollectionProductsQuery = useHomeCollectionProducts();
   const { data: homeCollectionProductsPayload } = homeCollectionProductsQuery;
   const normalizedHeroMain = normalizeShopifyAssetUrl(heroMain) || heroMain;
-  const homeCardSources = useMemo<HomeCardSource[]>(() => {
-    const collectionProducts = homeCollectionProductsPayload
-      ? Object.values(homeCollectionProductsPayload.sections).flatMap((section) =>
-          section.products.slice(0, HOME_RATING_PRODUCT_LIMIT),
-        )
-      : [];
-
-    return [
-      ...(homeFeaturedProductsPayload?.bestSellerProducts || []).slice(0, HOME_PRODUCT_DISPLAY_LIMIT),
-      ...collectionProducts,
-    ];
-  }, [homeCollectionProductsPayload, homeFeaturedProductsPayload?.bestSellerProducts]);
-  const homeRatingsQuery = useJudgeMeRatings(homeCardSources.map((product) => product.id));
-  const homeRatingsById = homeRatingsQuery.data || {};
   const bestSellerTiles = useMemo(
     () =>
       (homeFeaturedProductsPayload?.bestSellerProducts || [])
@@ -236,27 +235,46 @@ const HomePage = () => {
   }, [homeCollectionProductsPayload]);
   const homeCollectionSections = useMemo(
     () =>
-        homeCollectionProductsPayload
-        ? [
-            homeCollectionProductsPayload.sections.animeCollectables,
-            homeCollectionProductsPayload.sections.creatorEssentials,
-            homeCollectionProductsPayload.sections.lipCare,
-            homeCollectionProductsPayload.sections.watches,
-            homeCollectionProductsPayload.sections.glamEyePalettes,
-          ].map((section) => ({
-            title: section.title,
-            to: `/collections/${section.handle}`,
-            products: section.products.slice(0, HOME_PRODUCT_DISPLAY_LIMIT).map(toProductCardProduct),
-          }))
-      : [],
+      HOME_COLLECTION_SHELVES.map((fallbackSection) => {
+        const section = homeCollectionProductsPayload?.sections[fallbackSection.key];
+
+        return {
+          title: section?.title || fallbackSection.title,
+          to: `/collections/${section?.handle || fallbackSection.handle}`,
+          products: (section?.products || []).slice(0, HOME_PRODUCT_DISPLAY_LIMIT).map(toProductCardProduct),
+        };
+      }),
     [homeCollectionProductsPayload],
   );
   const reviewCarouselRef = useRef<HTMLDivElement | null>(null);
   const reviewScrollPositionRef = useRef(0);
+  const [testimonialsEnabled, setTestimonialsEnabled] = useState(false);
+  useEffect(() => {
+    const carousel = reviewCarouselRef.current;
+    if (!carousel || typeof IntersectionObserver === "undefined") {
+      setTestimonialsEnabled(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        setTestimonialsEnabled(true);
+        observer.disconnect();
+      },
+      { rootMargin: "900px 0px" },
+    );
+
+    observer.observe(carousel);
+    return () => observer.disconnect();
+  }, []);
   // The homepage displays at most REVIEW_DISPLAY_LIMIT testimonials. Do not
   // crawl Judge.me's entire review archive just to populate that carousel.
   const { data: judgeMeTestimonials = [], isFetching: judgeMeTestimonialsFetching } =
-    useJudgeMeTestimonials(REVIEW_DISPLAY_LIMIT);
+    useJudgeMeTestimonials(REVIEW_DISPLAY_LIMIT, testimonialsEnabled);
   const reviewTiles = useMemo<ReviewTile[]>(() => {
     if (judgeMeTestimonials.length > 0) {
       return judgeMeTestimonials
@@ -397,51 +415,73 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
+        <h1 className="sr-only">Shop Cookware, Clothing, Decor &amp; Gifts | SALT Online Store</h1>
         <HomeHero
           slides={homeHeroSlides}
-          reviewSummaries={homeRatingsById}
           loading={homeCollectionProductsQuery.isPending}
         />
 
-        {bestSellerDisplayTiles.length > 0 ? <Reveal delayMs={80}>
+        <Reveal delayMs={80}>
           <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
-              {bestSellerDisplayTiles.map((product, index) => (
-                <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
-                  <ProductCard
-                    product={product}
-                    variant="shop"
-                    reviewSummary={homeRatingsById[product.id] ?? null}
-                    className="w-full max-w-[11rem] justify-self-center"
-                  />
-                </Reveal>
-              ))}
-            </div>
+            {homeFeaturedProductsQuery.isPending ? (
+              <HomeShelfState shelfTitle="Best Sellers" state="loading" />
+            ) : homeFeaturedProductsQuery.isError ? (
+              <HomeShelfState
+                shelfTitle="Best Sellers"
+                state="error"
+                onRetry={() => void homeFeaturedProductsQuery.refetch()}
+                isRetrying={homeFeaturedProductsQuery.isFetching}
+              />
+            ) : bestSellerDisplayTiles.length > 0 ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
+                {bestSellerDisplayTiles.map((product, index) => (
+                  <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
+                    <ProductCard
+                      product={product}
+                      variant="shop"
+                      className="w-full max-w-[11rem] justify-self-center"
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            ) : (
+              <HomeShelfState shelfTitle="Best Sellers" state="empty" />
+            )}
           </section>
-        </Reveal> : null}
+        </Reveal>
 
-        {homeCollectionSections.map((section, sectionIndex) =>
-          section.products.length > 0 ? (
-            <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
-              <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-                <SectionTitle title={section.title} to={section.to} />
+        {homeCollectionSections.map((section, sectionIndex) => (
+          <Reveal key={section.to} delayMs={100 + sectionIndex * 20}>
+            <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+              <SectionTitle title={section.title} to={section.to} />
+              {homeCollectionProductsQuery.isPending ? (
+                <HomeShelfState shelfTitle={section.title} state="loading" />
+              ) : homeCollectionProductsQuery.isError ? (
+                <HomeShelfState
+                  shelfTitle={section.title}
+                  state="error"
+                  onRetry={() => void homeCollectionProductsQuery.refetch()}
+                  isRetrying={homeCollectionProductsQuery.isFetching}
+                />
+              ) : section.products.length > 0 ? (
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5 lg:gap-5 xl:grid-cols-6 xl:gap-6">
                   {section.products.map((product, index) => (
                     <Reveal key={`${product.handle}-${index}`} delayMs={0} className="salt-reveal-instant">
                       <ProductCard
                         product={product}
                         variant="shop"
-                        reviewSummary={homeRatingsById[product.id] ?? null}
                         className="w-full max-w-[11rem] justify-self-center"
                       />
                     </Reveal>
                   ))}
                 </div>
-              </section>
-            </Reveal>
-          ) : null,
-        )}
+              ) : (
+                <HomeShelfState shelfTitle={section.title} state="empty" />
+              )}
+            </section>
+          </Reveal>
+        ))}
 
         <Reveal delayMs={110}>
           <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">

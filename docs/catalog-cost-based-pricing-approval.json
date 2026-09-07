@@ -1,0 +1,27 @@
+{
+  "approvalId": "salt-cost-based-pricing-2026-08-24-approved",
+  "approved": true,
+  "approvedAt": "2026-08-24",
+  "approvalSource": "User approval: approve cost-based pricing",
+  "scope": {
+    "products": "all active Shopify products and variants with live cost data",
+    "priceFloor": 35,
+    "strategyId": "cost-band-v2-2026-08-24",
+    "overhead": 16,
+    "multiplierPolicy": {
+      "upTo5": "2.25x",
+      "over5To12": "1.90x",
+      "over12To20": "1.75x",
+      "over20To35": "1.60x",
+      "over35To60": "1.50x",
+      "over60To100": "1.40x",
+      "over100": "1.35x"
+    },
+    "formula": "max($35 floor, (cost per item + $16 overhead) * cost-band multiplier, (cost per item + $16 overhead) / (1 - contribution margin)); round upward to .99",
+    "variantPrices": "calculate each variant independently from live cost; preserve variant and quantity differences",
+    "compareAtPrices": "preserve only valid existing compare-at prices above the new target; clear invalid values; never invent compare-at prices",
+    "dryRunApplyReadback": "required in order",
+    "missingCostData": "hold with explicit evidence and block price writes; never guess cost",
+    "status": "do not change product status or sales-channel inclusion"
+  }
+}

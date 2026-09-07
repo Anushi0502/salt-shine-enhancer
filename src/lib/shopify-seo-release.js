@@ -74,17 +74,19 @@ function titleCaseQualifier(value) {
     .join(" ");
 }
 
-function buildSemanticGroupQualifier(product, members) {
-  const ownTokens = tokenizeSpecificityText(product.handle, { includeGeneric: false });
-  const otherTokens = new Set(
-    members
-      .filter((entry) => entry.handle !== product.handle)
-      .flatMap((entry) => tokenizeSpecificityText(entry.handle, { includeGeneric: false })),
-  );
-  const uniqueTokens = [...new Set(ownTokens)]
-    .filter((token) => !otherTokens.has(token) && !/^\d+$/.test(token))
-    .slice(0, 3);
-  return titleCaseQualifier(uniqueTokens.join(" "));
+function buildSemanticGroupQualifiers(members) {
+  const tokenSets = members.map((member) => new Set(tokenizeSpecificityText(member.handle, { includeGeneric: false })));
+  const tokenFrequency = new Map();
+  for (const tokens of tokenSets) {
+    for (const token of tokens) tokenFrequency.set(token, (tokenFrequency.get(token) || 0) + 1);
+  }
+
+  return tokenSets.map((tokens) => titleCaseQualifier(
+    [...tokens]
+      .filter((token) => tokenFrequency.get(token) === 1 && !/^\d+$/.test(token))
+      .slice(0, 3)
+      .join(" "),
+  ));
 }
 
 function duplicateSeoGroups(products, field) {
@@ -146,7 +148,7 @@ function disambiguateSeoContent(products) {
       const duplicateGroups = duplicateSeoGroups(products, field);
       if (!duplicateGroups.length) break;
       for (const group of duplicateGroups) {
-        const semanticQualifiers = group.map((product) => buildSemanticGroupQualifier(product, group));
+        const semanticQualifiers = buildSemanticGroupQualifiers(group);
         const semanticQualifiersAreUnique =
           pass === 0 &&
           semanticQualifiers.every(Boolean) &&
@@ -881,7 +883,13 @@ function buildMediaDiff(liveProduct, productPlan, changedFields, skippedFields) 
     ? liveProduct.media.nodes
     : Array.isArray(liveProduct?.media)
       ? liveProduct.media
-      : [];
+      : Array.isArray(liveProduct?.images)
+        ? liveProduct.images.map((image) => ({
+            id: image?.id || image?.legacyResourceId || "",
+            alt: image?.alt || image?.alt_text || "",
+            image: { url: image?.src || image?.url || "" },
+          }))
+        : [];
 
   for (const desired of productPlan?.desiredMediaTargets || []) {
     const resolution = resolveLiveMedia(liveMedia, desired.imageSrc);
@@ -1009,7 +1017,13 @@ export function buildLiveFingerprint(liveProduct) {
     ? liveProduct.media.nodes
     : Array.isArray(liveProduct?.media)
       ? liveProduct.media
-      : [];
+      : Array.isArray(liveProduct?.images)
+        ? liveProduct.images.map((image) => ({
+            id: image?.id || image?.legacyResourceId || "",
+            alt: image?.alt || image?.alt_text || "",
+            image: { url: image?.src || image?.url || "" },
+          }))
+        : [];
 
   return buildReleaseFingerprint({
     handle: normalizeHandleValue(liveProduct?.handle),

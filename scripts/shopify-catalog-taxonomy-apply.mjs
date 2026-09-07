@@ -18,6 +18,8 @@ import {
   classifyCatalogTaxonomy,
   classifyCatalogTaxonomyByRuleId,
 } from "../src/lib/catalog-taxonomy.js";
+import { isImageReviewedCatalogTaxonomyOverride } from "../src/lib/catalog-taxonomy-image-overrides.js";
+import { getCatalogTaxonomyOverride } from "../src/lib/catalog-taxonomy-overrides.js";
 import { buildProductKnowledgeFromTaxonomy } from "../src/lib/product-knowledge-base.js";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
@@ -772,14 +774,30 @@ async function runCatalogTaxonomyRelease({ mode, output, sample }) {
   const knowledgeByHandle = new Map(localProducts.map((product) => {
     const handle = normalizeText(product?.handle).toLowerCase();
     const frozen = classificationByHandle.get(handle);
-    const taxonomy = frozen.ruleId === "unclassified"
-      ? classifyCatalogTaxonomy(product)
+    const visualOverride = getCatalogTaxonomyOverride(product);
+    const hasReviewedVisualOverride = isImageReviewedCatalogTaxonomyOverride(visualOverride);
+    let taxonomy = frozen.ruleId === "unclassified"
+      ? hasReviewedVisualOverride
+        ? classifyCatalogTaxonomyByRuleId(product, visualOverride.ruleId, {
+          source: "catalog-image-review",
+          reason: "Manual image-backed resolution of frozen classification-review hold",
+        })
+        : classifyCatalogTaxonomy(product)
       : classifyCatalogTaxonomyByRuleId(product, frozen.ruleId, {
         source: `catalog-integrity-${frozen.source || "verified"}`,
         reason: "Frozen full-catalog collection-integrity classification",
       });
-    if (frozen.ruleId === "unclassified" && taxonomy.ruleId !== "unclassified") {
-      throw new Error(`${handle}: frozen review classification changed from unclassified to ${taxonomy.ruleId}.`);
+    if (frozen.ruleId === "unclassified" && taxonomy.ruleId !== "unclassified" && !hasReviewedVisualOverride) {
+      // A deterministic signal is not permission to publish a semantic
+      // classification over an unresolved visual-review hold. Keep the
+      // explicit fallback until an image-backed decision is recorded.
+      process.stdout.write(
+        `${handle}: preserving frozen review classification; deterministic signal ${taxonomy.ruleId} remains review-only.\n`,
+      );
+      taxonomy = classifyCatalogTaxonomyByRuleId(product, "unclassified", {
+        source: `catalog-integrity-${frozen.source || "verified"}`,
+        reason: `Frozen review hold preserved; deterministic signal ${taxonomy.ruleId} requires visual review`,
+      });
     }
     return [handle, buildProductKnowledgeFromTaxonomy(product, taxonomy, { knowledgeModel })];
   }));

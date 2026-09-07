@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useCollections } from "@/lib/collections-data";
-import { useProductSearchIndex } from "@/lib/shopify-data";
+import { usePredictiveProducts } from "@/lib/live-product-listings";
 import type { ShopifyProduct } from "@/types/shopify";
 
 const DEFAULT_TRENDING_SEARCHES = ["Gifts", "Candles", "Kitchen", "Pet accessories", "Home decor"];
@@ -66,10 +66,8 @@ const HeaderSearchResults = ({
   onSearchAll,
   onQuickSearch,
 }: HeaderSearchResultsProps) => {
-  // Keep the controlled header input responsive. The catalog matcher is
-  // intentionally debounced so typing does not rescan 14k records on every
-  // keypress; this mirrors the lightweight predictive-search path used by
-  // the faster Future Light Store experience.
+  // Keep the controlled header input responsive and debounce Shopify's live
+  // predictive endpoint so quick typing does not issue redundant requests.
   const [debouncedQuery, setDebouncedQuery] = useState(query);
 
   useEffect(() => {
@@ -82,12 +80,11 @@ const HeaderSearchResults = ({
   const normalizedQuery = useMemo(() => normalizeSearchPhrase(deferredQuery), [deferredQuery]);
   const queryTokens = useMemo(() => normalizedQuery.split(/\s+/).filter(Boolean), [normalizedQuery]);
   const canMatchProducts = normalizedQuery.length >= 2;
-  // Do not download the full catalog just because the search panel opened.
-  // The compact index is needed only after the shopper has entered a useful
-  // two-character query; empty-panel quick picks stay entirely local.
-  const { data: productsData } = useProductSearchIndex(canMatchProducts, false);
+  // Shopify predictive search returns only the useful live matches. React Query
+  // deduplicates repeated terms, so typing never downloads or rescans a catalog.
+  const { data: predictiveProducts } = usePredictiveProducts(deferredQuery, 6, canMatchProducts);
   const { data: collectionsData } = useCollections(canMatchProducts);
-  const allProducts = useMemo(() => productsData?.products ?? [], [productsData]);
+  const allProducts = useMemo(() => predictiveProducts ?? [], [predictiveProducts]);
   const allCollections = useMemo(() => collectionsData?.collections ?? [], [collectionsData]);
   const quickSearchRecords = useMemo(
     () => {

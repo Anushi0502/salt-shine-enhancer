@@ -32,6 +32,20 @@ describe("catalog taxonomy release", () => {
     expect(classification.ruleId).not.toBe("phone-case");
   });
 
+  it("classifies an AirPods TPU case as an earbuds case, not earbuds or phone case", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Airpods 4 Wireless Bluetooth Earbuds With Anc",
+      handle: "2025-for-airpods-4generation-airpods-4-bluetooth-earphones-anc-wireless-headphones-earbuds-noise-cancelling-transparent-tpu-case",
+      productType: "phone case",
+    });
+
+    expect(classification.ruleId).toBe("airpods-earbuds-cases");
+    expect(classification.canonicalType).toBe("Earbuds Case");
+    expect(classification.subcategoryId).toBe("earbuds-cases");
+    expect(classification.ruleId).not.toBe("earbuds");
+    expect(classification.ruleId).not.toBe("phone-case");
+  });
+
   it("classifies compact flowerpots as planters rather than cookware", () => {
     const classification = classifyCatalogTaxonomy({
       title: "Plastic Flowerpot Grow Box For Flowers And Plants",

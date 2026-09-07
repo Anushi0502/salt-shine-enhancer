@@ -318,8 +318,9 @@ export const SITE_HOME_FEATURED_SHORTCUTS: SiteFeaturedShortcut[] = [
 const COLLECTION_ROUTE_ALIASES: Record<string, string> = {
   apparel: "men-collection",
   "cooking-essential": "cookware",
+  "holiday-gifts": "gifts",
   "unique-products": "trending-finds",
-  "winter-wear": "clearance-archive",
+  "winter-wear": "under-50",
 };
 
 // Keep storefront route handles stable while sending only live Shopify handles
@@ -329,6 +330,8 @@ const COLLECTION_SHOPIFY_HANDLE_ALIASES: Record<string, string> = {
   "appplaza-best-sellers": "best-sellers",
   "unique-products": "trending-finds",
   "under-25": "under-50",
+  "winter-wear": "under-50",
+  "clearance-archive": "under-50",
 };
 
 const COLLECTION_ROUTE_ALIAS_SOURCES_BY_TARGET = Object.entries(COLLECTION_ROUTE_ALIASES).reduce<

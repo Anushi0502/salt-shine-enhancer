@@ -1,10 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ArrowRight, BookOpenText, Clock3, Sparkles } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { readingTime } from "@/lib/formatters";
 import { useBlogPosts } from "@/lib/shopify-data";
+import { buildBlogStructuredData } from "@/lib/structured-data";
 
 const blogImageFallback = (
   <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_25%_20%,hsl(var(--primary)/0.2),transparent_46%),radial-gradient(circle_at_72%_78%,hsl(var(--salt-blue)/0.22),transparent_40%),hsl(var(--muted))] px-6 text-center">
@@ -32,6 +34,7 @@ function formattedDate(value: string): string {
 }
 
 const BlogPage = () => {
+  const { blogHandle } = useParams();
   const { data, isLoading, error, refetch } = useBlogPosts();
 
   if (isLoading) {
@@ -62,13 +65,27 @@ const BlogPage = () => {
   }
 
   const posts = data?.posts || [];
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const isPrimaryShopifyBlog = blogHandle === "posts";
+  const canonicalPath = isPrimaryShopifyBlog ? "/blogs/posts" : "/pages/blog";
+  const seoMetadata = (
+    <SeoMetadata
+      title="SALT Journal | Product guides and practical ideas"
+      description="Read SALT product education, practical guides, and useful ideas for easier everyday shopping."
+      canonicalPath={canonicalPath}
+      noIndex={Boolean(blogHandle && !isPrimaryShopifyBlog)}
+      structuredData={origin ? [buildBlogStructuredData(posts, origin, canonicalPath)] : []}
+    />
+  );
   const [featuredPost, ...remainingPosts] = posts;
   const highlightedAuthors = Array.from(
     new Set(posts.map((post) => post.author).filter((author): author is string => Boolean(author))),
   ).slice(0, 4);
 
   return (
-    <section className="mx-auto mt-8 w-[min(1200px,96vw)] pb-8">
+    <>
+      {seoMetadata}
+      <section className="mx-auto mt-8 w-[min(1200px,96vw)] pb-8">
       <Reveal>
         <div className="salt-panel-shell rounded-[2rem] p-6 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Blog</p>
@@ -124,7 +141,7 @@ const BlogPage = () => {
           {featuredPost ? (
             <Reveal delayMs={60} className="mt-6">
               <article className="salt-section-shell overflow-hidden rounded-[2rem] lg:grid lg:grid-cols-[1.1fr_0.9fr]">
-                <Link to={`/blog/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
+                <Link to={`/blogs/posts/${featuredPost.handle}`} className="block h-full overflow-hidden bg-muted">
                   <ResilientImage
                     src={featuredPost.image}
                     alt={featuredPost.title}
@@ -136,7 +153,7 @@ const BlogPage = () => {
                 <div className="p-6 sm:p-8">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Featured post</p>
                   <h2 className="mt-2 font-display text-[clamp(1.8rem,2.8vw,2.8rem)] leading-[1.02]">
-                    <Link to={`/blog/${featuredPost.handle}`} className="hover:text-primary">
+                    <Link to={`/blogs/posts/${featuredPost.handle}`} className="hover:text-primary">
                       {featuredPost.title}
                     </Link>
                   </h2>
@@ -151,7 +168,7 @@ const BlogPage = () => {
                     </span>
                   </div>
                   <Link
-                    to={`/blog/${featuredPost.handle}`}
+                    to={`/blogs/posts/${featuredPost.handle}`}
                     className="salt-primary-cta mt-5 h-11 gap-2 px-5 text-xs font-bold uppercase tracking-[0.08em]"
                   >
                     Read featured story <ArrowRight className="h-3.5 w-3.5" />
@@ -166,7 +183,7 @@ const BlogPage = () => {
               {remainingPosts.map((post, index) => (
                 <Reveal key={post.id} delayMs={index * 70}>
                   <article className="salt-card-hover salt-metric-card flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-[linear-gradient(165deg,hsl(var(--card)/0.98),hsl(var(--card)/0.9))] shadow-soft">
-                    <Link to={`/blog/${post.handle}`} className="block overflow-hidden bg-muted">
+                    <Link to={`/blogs/posts/${post.handle}`} className="block overflow-hidden bg-muted">
                       <ResilientImage
                         src={post.image}
                         alt={post.title}
@@ -181,7 +198,7 @@ const BlogPage = () => {
                         {formattedDate(post.publishedAt)}
                       </p>
                       <h2 className="mt-2 line-clamp-2 font-display text-2xl leading-tight">
-                        <Link to={`/blog/${post.handle}`} className="hover:text-primary">
+                        <Link to={`/blogs/posts/${post.handle}`} className="hover:text-primary">
                           {post.title}
                         </Link>
                       </h2>
@@ -194,7 +211,7 @@ const BlogPage = () => {
                       </div>
                       <div className="mt-4">
                         <Link
-                          to={`/blog/${post.handle}`}
+                          to={`/blogs/posts/${post.handle}`}
                           className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.1em] text-primary"
                         >
                           Read post <ArrowRight className="h-3.5 w-3.5" />
@@ -208,7 +225,8 @@ const BlogPage = () => {
           ) : null}
         </>
       )}
-    </section>
+      </section>
+    </>
   );
 };
 

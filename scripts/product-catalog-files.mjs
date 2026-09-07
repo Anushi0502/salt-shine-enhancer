@@ -11,6 +11,23 @@ import {
 const PRODUCT_SHARD_FILE_PATTERN = /^products-\d{4}\.json$/;
 
 export async function readProductCatalogPayload(dataDir) {
+  const runningCanonicalRelease = /^(?:release|release:daily|release:product|release:products)$/.test(
+    process.env.npm_lifecycle_event || "",
+  );
+  const sharedSnapshotPaths = [
+    process.env.SALT_RELEASE_CATALOG_SOURCE_PATH,
+    runningCanonicalRelease ? resolve(process.cwd(), "output", "release-catalog-source.json") : "",
+    process.env.SALT_RELEASE_CATALOG_SNAPSHOT_PATH,
+  ].filter((path, index, paths) => path && paths.indexOf(path) === index);
+
+  for (const sharedSnapshotPath of sharedSnapshotPaths) {
+    try {
+      const shared = JSON.parse(await readFile(resolve(sharedSnapshotPath), "utf8"));
+      if (Array.isArray(shared?.products) && shared.products.length) return { products: shared.products };
+    } catch {
+      // Try the next release snapshot location before falling back to shards.
+    }
+  }
   const resolvedDataDir = resolve(dataDir);
   const manifestPath = resolve(resolvedDataDir, "products.json");
   const payload = JSON.parse(await readFile(manifestPath, "utf8"));

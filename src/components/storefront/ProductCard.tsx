@@ -15,7 +15,6 @@ import {
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
-import { useJudgeMeProductRating } from "@/lib/judgeme";
 import type { ShopifyProduct } from "@/types/shopify";
 import ProductRating from "@/components/storefront/ProductRating";
 
@@ -28,7 +27,7 @@ type ProductCardProps = {
   className?: string;
 };
 
-const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSummary, className = "" }: ProductCardProps) => {
+const ProductCard = ({ product, variant = "default", reviewSummary, className = "" }: ProductCardProps) => {
   const cardRef = useRef<HTMLElement | null>(null);
   const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
 
@@ -62,14 +61,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
   const isHero = variant === "hero";
   const isShop = variant === "shop" || isHero;
-  // Cards are rendered from the synced catalog snapshot. A card only needs
-  // display data; refreshing every visible card from Shopify creates a burst
-  // of requests and makes collection/home navigation feel sluggish. The PDP
-  // still loads the authoritative product detail when the shopper opens it.
-  const product = snapshotProduct;
   const { isWishlisted, toggleItem } = useWishlist();
-  const reviewSummaryProvided = reviewSummary !== undefined;
-  const { summary: fetchedSummary } = useJudgeMeProductRating(reviewSummaryProvided ? undefined : product.id);
   const nativeApp = isNativeApp();
   const isDense = variant === "dense";
   const min = minPrice(product);
@@ -87,7 +79,6 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
   );
   const highlights = (product.customData?.highlights || []).filter(Boolean).slice(0, 2);
   const wishlisted = isWishlisted(product.handle);
-  const summary = reviewSummaryProvided ? reviewSummary ?? null : fetchedSummary;
   const fallbackSummary =
     Number(product.average_rating || 0) > 0 && Number(product.total_reviews || 0) > 0
       ? {
@@ -96,7 +87,25 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
           purchasedLastMonth: 0,
         }
       : null;
-  const displaySummary = summary && summary.reviewCount > 0 ? summary : fallbackSummary;
+  // Request-time Shopify Liquid includes Judge.me's synced badge summary.
+  // Prefer the source with the larger published-review count so a stale
+  // preview API response can never override the canonical card metadata.
+  const displaySummary =
+    fallbackSummary && (!reviewSummary || fallbackSummary.reviewCount >= reviewSummary.reviewCount)
+      ? fallbackSummary
+      : reviewSummary && reviewSummary.reviewCount > 0
+        ? reviewSummary
+        : null;
+  const productRouteState = displaySummary
+    ? {
+        productReviewSummary: {
+          handle: product.handle,
+          productId: product.id,
+          rating: displaySummary.rating,
+          reviewCount: displaySummary.reviewCount,
+        },
+      }
+    : undefined;
 
   if (isShop) {
     return (
@@ -107,6 +116,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         <div className="relative overflow-hidden rounded-[1.65rem] border border-border/70 bg-muted shadow-[0_14px_30px_-24px_rgba(15,23,42,0.42)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-primary/35 group-hover:shadow-[0_22px_40px_-24px_rgba(15,23,42,0.45)]">
           <Link
             to={`/products/${product.handle}`}
+            state={productRouteState}
             className={`relative block overflow-hidden ${isHero ? "aspect-[1.28]" : "aspect-square"}`}
           >
             {image ? (
@@ -163,6 +173,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
         <div className={`min-w-0 px-1 ${isHero ? "pt-2 sm:pt-2.5" : "pt-4 sm:pt-5"}`}>
           <Link
             to={`/products/${product.handle}`}
+            state={productRouteState}
             className={`block truncate font-display font-semibold leading-[1.15] tracking-[-0.02em] text-foreground ${
               isHero ? "text-[clamp(0.78rem,1.1vw,1.02rem)]" : "text-[clamp(0.92rem,1.45vw,1.22rem)]"
             }`}
@@ -235,6 +246,7 @@ const ProductCard = ({ product: snapshotProduct, variant = "default", reviewSumm
 
       <Link
         to={`/products/${product.handle}`}
+        state={productRouteState}
         className="relative isolate block overflow-hidden rounded-t-[1.55rem] border-b border-border/70 bg-muted"
       >
         {image ? (

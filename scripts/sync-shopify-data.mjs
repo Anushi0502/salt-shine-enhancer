@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import {
@@ -11,9 +12,7 @@ import {
   normalizeProductReferenceList,
   normalizeShopCustomData,
 } from "../src/lib/product-custom-data.js";
-import { buildProductSearchPayload } from "./product-search-index.mjs";
-import { readProductCatalogPayload, writeProductCatalogPayload } from "./product-catalog-files.mjs";
-import { writeProductSearchPayload } from "./product-search-files.mjs";
+import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { filterOnlineStoreProducts, filterProductIdsToCatalog } from "./shopify-publication.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
@@ -45,19 +44,68 @@ const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const storefrontBoundaryMode = String(process.env.SALT_SHOPIFY_STOREFRONT_BOUNDARY || "live").trim().toLowerCase();
+const runningCanonicalRelease = /^(?:release|release:daily|release:product|release:products)$/.test(
+  process.env.npm_lifecycle_event || "",
+);
+const skipGeneratedListingPayloads =
+  process.argv.includes("--skip-generated-listings") ||
+  /^(1|true|yes)$/i.test(process.env.SALT_RELEASE_SKIP_GENERATED_LISTINGS || "") ||
+  runningCanonicalRelease;
+// A canonical release must not publish a stale collection membership snapshot
+// after a live collection repair. Keep the cache fallback for standalone
+// storefront syncs, but make release-time membership reads fail closed.
+const forceLiveCollectionMemberships =
+  /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_FORCE_LIVE_COLLECTION_MEMBERSHIPS || "") ||
+  skipGeneratedListingPayloads ||
+  runningCanonicalRelease;
+const releaseCatalogSourcePath = resolve(
+  process.env.SALT_RELEASE_CATALOG_SOURCE_PATH || "output/release-catalog-source.json",
+);
+const generatedListingPayloadPattern = /^(?:products(?:-\d{4})?|product-search(?:-\d{4})?|home-(?:featured|collection)-products)\.json$/;
 const skipProductEnrichment = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SKIP_PRODUCT_ENRICHMENT || "");
 const syncActiveCatalog = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_SYNC_ACTIVE_CATALOG || "");
+const preferCompleteProductEnrichmentCache = /^(1|true|yes)$/i.test(
+  process.env.SALT_SHOPIFY_USE_COMPLETE_CUSTOM_DATA_CACHE || "",
+);
+const forceLiveProductEnrichment = /^(1|true|yes)$/i.test(
+  process.env.SALT_SHOPIFY_FORCE_LIVE_PRODUCT_ENRICHMENT || "",
+);
+const fetchVariantCostsWithCompleteCache = /^(1|true|yes)$/i.test(
+  process.env.SALT_SHOPIFY_CACHE_VARIANT_COSTS || "",
+);
 const useCliAdminPricing = /^(1|true|yes)$/i.test(process.env.SALT_SHOPIFY_USE_CLI_ADMIN_PRICING || "");
 const collectionsPath = resolve(outDir, "collections.json");
 const collectionProductsPath = resolve(outDir, "collection-products.json");
 const collectionMergeManifestPath = resolve(process.cwd(), "output", "catalog-collection-merge-manifest.json");
 const productCustomDataBulkPath = resolve(process.cwd(), "output", ".shopify-metafield-custom-data-bulk.jsonl");
+const productCustomDataCheckpointPath = resolve(
+  process.cwd(),
+  "output",
+  ".shopify-product-custom-data-checkpoint.json",
+);
+const variantCostCheckpointPath = resolve(process.cwd(), "output", ".shopify-variant-cost-checkpoint.json");
 const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
 const shopPath = resolve(outDir, "shop.json");
 let forceLiveCollectionHandles = new Set();
 let requestQueue = Promise.resolve();
 const execFileAsync = promisify(execFile);
+
+async function removeGeneratedListingPayloads() {
+  let entries;
+  try {
+    entries = await readdir(outDir);
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+
+  const staleFiles = entries.filter((entry) => generatedListingPayloadPattern.test(entry));
+  await Promise.all(staleFiles.map((file) => rm(resolve(outDir, file), { force: true })));
+  if (staleFiles.length) {
+    process.stdout.write(`Removed ${staleFiles.length} stale generated listing payload files\n`);
+  }
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -382,6 +430,81 @@ async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = 
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+}
+
+function isRetryableShopifyCliError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return /network|socket|tls|econn|enotfound|timed out|timeout|429|rate limit|502|503|504|temporar/.test(message);
+}
+
+async function runShopifyStoreGraphQLWithRetry(query, variables, { label }) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await runShopifyStoreGraphQL(query, variables);
+    } catch (error) {
+      if (!isRetryableShopifyCliError(error) || attempt >= maxRequestAttempts - 1) {
+        throw error;
+      }
+
+      const delayMs = Math.min(
+        maxRetryDelayMs,
+        adminRetryBaseDelayMs * 2 ** attempt + Math.floor(Math.random() * 500),
+      );
+      process.stdout.write(
+        `${label} transient failure; retrying batch in ${Math.round(delayMs / 1000)}s ` +
+          `(attempt ${attempt + 1}/${maxRequestAttempts - 1})\n`,
+      );
+      await sleep(delayMs);
+    }
+  }
+}
+
+function enrichmentFingerprint(productIds) {
+  return createHash("sha256").update(productIds.join("\n")).digest("hex");
+}
+
+async function readEnrichmentCheckpoint(filePath, fingerprint, requiredIds = []) {
+  try {
+    const payload = JSON.parse(await readFile(filePath, "utf8"));
+    if (payload?.version !== 1) {
+      return null;
+    }
+
+    const completedIds = new Set(Array.isArray(payload.completedIds) ? payload.completedIds.map(String) : []);
+    const coversRequiredIds = requiredIds.length > 0 && requiredIds.every((id) => completedIds.has(String(id)));
+    if (payload.fingerprint !== fingerprint && !coversRequiredIds) {
+      return null;
+    }
+
+    return {
+      completedIds,
+      records: payload.records && typeof payload.records === "object" ? payload.records : {},
+    };
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      process.stdout.write(`Ignoring invalid enrichment checkpoint ${filePath}: ${error.message}\n`);
+    }
+    return null;
+  }
+}
+
+async function writeEnrichmentCheckpoint(filePath, fingerprint, completedIds, records) {
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(
+    filePath,
+    JSON.stringify(
+      {
+        version: 1,
+        fingerprint,
+        completedIds: [...completedIds],
+        records,
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
 }
 
 const SHOP_CUSTOM_DATA_QUERY = /* GraphQL */ `
@@ -968,11 +1091,30 @@ async function fetchProductCustomDataMap(products) {
 
   const batches = chunkArray(productIds, 50);
   const records = new Map();
+  const fingerprint = enrichmentFingerprint(productIds);
+  const checkpoint = await readEnrichmentCheckpoint(productCustomDataCheckpointPath, fingerprint, productIds);
+  const completedIds = checkpoint?.completedIds || new Set();
 
-  for (const batch of batches) {
+  if (checkpoint) {
+    for (const [productId, customData] of Object.entries(checkpoint.records)) {
+      records.set(productId, customData);
+    }
+    process.stdout.write(
+      `Resuming Shopify custom-data enrichment from ${completedIds.size}/${productIds.length} products\n`,
+    );
+  }
+
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const batch = batches[batchIndex];
+    if (batch.every((id) => completedIds.has(String(id)))) {
+      continue;
+    }
+
     const payload = adminAccessToken
       ? await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch })
-      : await runShopifyStoreGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch });
+      : await runShopifyStoreGraphQLWithRetry(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch }, {
+          label: `custom-data batch ${batchIndex + 1}/${batches.length}`,
+        });
     const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
 
     for (const node of nodes) {
@@ -987,6 +1129,14 @@ async function fetchProductCustomDataMap(products) {
 
       records.set(String(node.legacyResourceId), customData);
     }
+
+    batch.forEach((id) => completedIds.add(String(id)));
+    await writeEnrichmentCheckpoint(
+      productCustomDataCheckpointPath,
+      fingerprint,
+      completedIds,
+      Object.fromEntries(records),
+    );
   }
 
   return records;
@@ -1053,7 +1203,7 @@ function attachBulkCustomDataReferences(node, productsByGid) {
   return result;
 }
 
-async function loadProductCustomDataBulkCache(products) {
+async function loadProductCustomDataBulkCache(products, { allowPartial = false } = {}) {
   const raw = await readFile(productCustomDataBulkPath, "utf8");
   const selectedIds = new Set(
     products
@@ -1073,7 +1223,7 @@ async function loadProductCustomDataBulkCache(products) {
     }
   }
 
-  if (productNodes.size !== selectedIds.size) {
+  if (!allowPartial && productNodes.size !== selectedIds.size) {
     throw new Error(
       `completed Shopify metafield bulk cache is incomplete (${productNodes.size}/${selectedIds.size} products)`,
     );
@@ -1087,7 +1237,7 @@ async function loadProductCustomDataBulkCache(products) {
     }
   }
 
-  if (records.size !== products.length) {
+  if (!allowPartial && records.size !== products.length) {
     throw new Error(
       `completed Shopify metafield bulk cache normalized ${records.size}/${products.length} products`,
     );
@@ -1107,11 +1257,30 @@ async function fetchProductVariantCostMap(products) {
 
   const batches = chunkArray(productIds, 50);
   const records = new Map();
+  const fingerprint = enrichmentFingerprint(productIds);
+  const checkpoint = await readEnrichmentCheckpoint(variantCostCheckpointPath, fingerprint, productIds);
+  const completedIds = checkpoint?.completedIds || new Set();
 
-  for (const batch of batches) {
+  if (checkpoint) {
+    for (const [productId, costs] of Object.entries(checkpoint.records)) {
+      records.set(productId, new Map(Object.entries(costs || {})));
+    }
+    process.stdout.write(
+      `Resuming Shopify variant-cost enrichment from ${completedIds.size}/${productIds.length} products\n`,
+    );
+  }
+
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const batch = batches[batchIndex];
+    if (batch.every((id) => completedIds.has(String(id)))) {
+      continue;
+    }
+
     const payload = adminAccessToken
       ? await fetchAdminGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch })
-      : await runShopifyStoreGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch });
+      : await runShopifyStoreGraphQLWithRetry(PRODUCT_VARIANT_COST_QUERY, { ids: batch }, {
+          label: `variant-cost batch ${batchIndex + 1}/${batches.length}`,
+        });
     const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
 
     for (const node of nodes) {
@@ -1122,9 +1291,51 @@ async function fetchProductVariantCostMap(products) {
 
       records.set(normalized.productLegacyId, normalized.variantCosts);
     }
+
+    batch.forEach((id) => completedIds.add(String(id)));
+    await writeEnrichmentCheckpoint(
+      variantCostCheckpointPath,
+      fingerprint,
+      completedIds,
+      Object.fromEntries([...records].map(([productId, costs]) => [productId, Object.fromEntries(costs)])),
+    );
   }
 
   return records;
+}
+
+function applyProductEnrichment(products, customDataMap, variantCostMap = new Map()) {
+  return products.map((product) => {
+    const customData = customDataMap.get(String(product.id)) || null;
+    const variantCosts = variantCostMap.get(String(product.id)) || null;
+    const variants = Array.isArray(product.variants)
+      ? product.variants.map((variant) => {
+          const legacyVariantId = String(variant?.legacyResourceId || variant?.id || "").trim();
+          const cost = legacyVariantId ? variantCosts?.get(legacyVariantId) || "" : "";
+          if (!cost) {
+            return variant;
+          }
+
+          return {
+            ...variant,
+            cost,
+            cost_per_item: cost,
+          };
+        })
+      : product.variants;
+
+    if (!customData) {
+      return variants === product.variants ? product : { ...product, variants };
+    }
+
+    return {
+      ...product,
+      customData,
+      variants,
+      average_rating: product.average_rating ?? customData.rating ?? undefined,
+      total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
+    };
+  });
 }
 
 async function fetchProductVariantPricingMapFromBulkOperation() {
@@ -1347,7 +1558,7 @@ async function fetchShopCustomData() {
 }
 
 async function fetchCollectionProductIds(handle) {
-  const forceLive = forceLiveCollectionHandles.has(handle);
+  const forceLive = forceLiveCollectionMemberships || forceLiveCollectionHandles.has(handle);
   if (!forceLive) {
     try {
       return await fetchCollectionProductIdsFromCachedFile(handle);
@@ -1356,7 +1567,10 @@ async function fetchCollectionProductIds(handle) {
       process.stdout.write(`Cached collection ids unavailable for "${handle}"; falling back to live fetch (${cacheMessage})\n`);
     }
   } else {
-    process.stdout.write(`Bypassing cached collection ids for completed merge target "${handle}"\n`);
+    const reason = forceLiveCollectionMemberships
+      ? "canonical release"
+      : "completed merge target";
+    process.stdout.write(`Bypassing cached collection ids for ${reason} "${handle}"\n`);
   }
 
   const ids = [];
@@ -1379,7 +1593,10 @@ async function fetchCollectionProductIds(handle) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
     if (forceLive) {
-      throw new Error(`Live collection ids failed for completed merge target "${handle}": ${message}`);
+      const reason = forceLiveCollectionMemberships
+        ? "canonical release"
+        : "completed merge target";
+      throw new Error(`Live collection ids failed for ${reason} "${handle}": ${message}`);
     }
     process.stdout.write(`Live collection ids failed for "${handle}"; trying cached mapping (${message})\n`);
 
@@ -2016,42 +2233,71 @@ async function fetchProductsForSync() {
         return fastProducts;
       }
 
+      if (preferCompleteProductEnrichmentCache && !forceLiveProductEnrichment) {
+        try {
+          const cachedCustomDataMap = await loadProductCustomDataBulkCache(products);
+          let variantCostMap = new Map();
+          if (fetchVariantCostsWithCompleteCache) {
+            try {
+              variantCostMap = await fetchProductVariantCostMap(products);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : "unknown variant cost error";
+              process.stdout.write(
+                `Complete custom-data cache loaded; live variant costs unavailable, retaining source costs (${message})\n`,
+              );
+            }
+          } else {
+            process.stdout.write(
+              "Complete custom-data cache loaded; deferring live variant-cost reads to the dedicated pricing gate\n",
+            );
+          }
+
+          const cachedProducts = applyProductEnrichment(products, cachedCustomDataMap, variantCostMap);
+          process.stdout.write(
+            `Using complete Shopify bulk cache for ${cachedProducts.length} products with ${cachedCustomDataMap.size} metafield payloads and ${variantCostMap.size} variant cost payloads\n`,
+          );
+          return cachedProducts;
+      } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown complete-cache error";
+          process.stdout.write(`Complete Shopify bulk cache not usable; continuing with live enrichment (${message})\n`);
+          try {
+            const partialCustomDataMap = await loadProductCustomDataBulkCache(products, { allowPartial: true });
+            const missingProducts = products.filter((product) => !partialCustomDataMap.has(String(product.id)));
+            if (partialCustomDataMap.size && missingProducts.length < products.length) {
+              process.stdout.write(
+                `Reusing ${partialCustomDataMap.size} cached merchandising payloads; ` +
+                  `fetching ${missingProducts.length} missing product(s) live\n`,
+              );
+              const [liveCustomDataMap, variantCostMap] = await Promise.all([
+                fetchProductCustomDataMap(missingProducts),
+                fetchProductVariantCostMap(products),
+              ]);
+              const mergedCustomDataMap = new Map(partialCustomDataMap);
+              for (const [productId, customData] of liveCustomDataMap) {
+                mergedCustomDataMap.set(productId, customData);
+              }
+              const enrichedProducts = applyProductEnrichment(products, mergedCustomDataMap, variantCostMap);
+              process.stdout.write(
+                `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products, ` +
+                  `${mergedCustomDataMap.size} cached/live metafield payloads, and ${variantCostMap.size} variant cost payloads\n`,
+              );
+              return enrichedProducts;
+            }
+          } catch (partialCacheError) {
+            const partialMessage = partialCacheError instanceof Error ? partialCacheError.message : "unknown partial-cache error";
+            process.stdout.write(`Partial Shopify bulk cache unavailable; continuing with full live enrichment (${partialMessage})\n`);
+          }
+        }
+      } else if (forceLiveProductEnrichment) {
+        process.stdout.write("Forcing live product merchandising enrichment after the final catalog write generation\n");
+      }
+
       try {
         const [customDataMap, variantCostMap] = await Promise.all([
           fetchProductCustomDataMap(products),
           fetchProductVariantCostMap(products),
         ]);
-        const enrichedProducts = products.map((product) => {
-          const customData = customDataMap.get(String(product.id)) || null;
-          const variantCosts = variantCostMap.get(String(product.id)) || null;
-          const variants = Array.isArray(product.variants)
-            ? product.variants.map((variant) => {
-                const legacyVariantId = String(variant?.legacyResourceId || variant?.id || "").trim();
-                const cost = legacyVariantId ? variantCosts?.get(legacyVariantId) || "" : "";
-                if (!cost) {
-                  return variant;
-                }
-
-                return {
-                  ...variant,
-                  cost,
-                  cost_per_item: cost,
-                };
-              })
-            : product.variants;
-
-          if (!customData) {
-            return variants === product.variants ? product : { ...product, variants };
-          }
-
-          return {
-            ...product,
-            customData,
-            variants,
-            average_rating: product.average_rating ?? customData.rating ?? undefined,
-            total_reviews: product.total_reviews ?? customData.ratingCount ?? undefined,
-          };
-        });
+        const enrichedProducts = applyProductEnrichment(products, customDataMap, variantCostMap);
 
         process.stdout.write(
           `${adminAccessToken ? "Using Admin API" : "Using Shopify CLI"} product feed with ${products.length} products, ${customDataMap.size} metafield payloads, and ${variantCostMap.size} variant cost payloads\n`,
@@ -2061,10 +2307,7 @@ async function fetchProductsForSync() {
         const message = error instanceof Error ? error.message : "unknown error";
         try {
           const cachedCustomDataMap = await loadProductCustomDataBulkCache(products);
-          const recoveredProducts = products.map((product) => ({
-            ...product,
-            customData: cachedCustomDataMap.get(String(product.id)) || null,
-          }));
+          const recoveredProducts = applyProductEnrichment(products, cachedCustomDataMap);
 
           process.stdout.write(
             `${adminAccessToken ? "Admin" : "CLI"} product metafield fetch failed; recovered complete custom data from Shopify bulk cache (${message})\n`,
@@ -2225,7 +2468,6 @@ async function main() {
     total: products.length,
     products: sortByUpdatedAt(products),
   };
-  const productSearchPayload = buildProductSearchPayload(productPayload);
 
   const collectionPayload = {
     generatedAt: startedAt,
@@ -2276,9 +2518,9 @@ async function main() {
 
     if (isAllProducts) {
       collection.products_count = visibleIds.length;
-      if (collection.customData?.heroSummary) {
-        collection.customData.heroSummary = `Discover ${visibleIds.length.toLocaleString()} products across the full SALT catalog.`;
-      }
+      // Do not synthesize a collection metafield value in the local snapshot.
+      // The collection backfill must compare the live hero summary and write a
+      // changed generated value before final readback.
     }
 
     collectionProductMap.collections[collection.handle] = {
@@ -2292,20 +2534,45 @@ async function main() {
   }
 
   await mkdir(outDir, { recursive: true });
-  const productManifest = await writeProductCatalogPayload(outDir, productPayload);
-  const productSearchManifest = await writeProductSearchPayload(outDir, productSearchPayload);
+  let productManifest = null;
+  let productSearchManifest = null;
+  let productSearchPayload = null;
+  if (skipGeneratedListingPayloads) {
+    await removeGeneratedListingPayloads();
+    await mkdir(dirname(releaseCatalogSourcePath), { recursive: true });
+    await writeFile(
+      releaseCatalogSourcePath,
+      JSON.stringify(productPayload),
+      "utf8",
+    );
+  } else {
+    const [{ buildProductSearchPayload }, { writeProductCatalogPayload }, { writeProductSearchPayload }] = await Promise.all([
+      import("./product-search-index.mjs"),
+      import("./product-catalog-files.mjs"),
+      import("./product-search-files.mjs"),
+    ]);
+    productSearchPayload = buildProductSearchPayload(productPayload);
+    productManifest = await writeProductCatalogPayload(outDir, productPayload);
+    productSearchManifest = await writeProductSearchPayload(outDir, productSearchPayload);
+  }
   await writeFile(collectionsPath, JSON.stringify(collectionPayload));
   await writeFile(collectionProductsPath, JSON.stringify(collectionProductMap));
   await writeFile(aboutPath, JSON.stringify(aboutPayload));
   await writeFile(blogPostsPath, JSON.stringify(blogPayload));
   await writeFile(shopPath, JSON.stringify(shopPayload));
 
-  process.stdout.write(
-    `Saved ${productPayload.total} products to public/data/products.json across ${productManifest.shardCount} shards (max ${productManifest.shardMaxBytes} bytes each)\n`,
-  );
-  process.stdout.write(
-    `Saved ${productSearchPayload.total} compact search products to public/data/product-search.json across ${productSearchManifest.shardCount} shards (max ${productSearchManifest.shardMaxBytes} bytes each)\n`,
-  );
+  if (skipGeneratedListingPayloads) {
+    process.stdout.write(
+      `Skipped generated product/search listing payloads; saved ${productPayload.total} products to ${releaseCatalogSourcePath}\n`,
+    );
+  } else {
+    process.stdout.write(
+      `Saved ${productPayload.total} products to public/data/products.json across ${productManifest.shardCount} shards (max ${productManifest.shardMaxBytes} bytes each)\n`,
+    );
+    process.stdout.write(
+      `Saved ${productSearchPayload.total} compact search products to public/data/product-search.json across ${productSearchManifest.shardCount} shards (max ${productSearchManifest.shardMaxBytes} bytes each)\n`,
+    );
+  }
   process.stdout.write(`Saved ${collectionPayload.total} collections to public/data/collections.json\n`);
   process.stdout.write(
     `Saved collection product mapping to public/data/collection-products.json\n`,

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCartRecommendations,
   buildProductCollectionIndex,
+  buildProductMetaDescription,
   buildProductStructuredData,
   pickRelatedProducts,
   rankProductsForMerchandising,
@@ -279,5 +280,38 @@ describe("sales optimization", () => {
 
     expect(offers.priceCurrency).toBe("USD");
     expect(priceSpecification.priceCurrency).toBe("USD");
+  });
+
+  it("keeps product structured-data URLs aligned with the canonical product route", () => {
+    const product = makeProduct({
+      id: 41,
+      title: "Canonical Product",
+      handle: "canonical-product",
+    });
+
+    const structuredData = buildProductStructuredData(product, "https://example.com", null, "USD", product.variants[0]);
+    const offers = structuredData.offers as Record<string, unknown>;
+    const canonicalUrl = "https://www.saltonlinestore.com/products/canonical-product";
+
+    expect(structuredData.url).toBe(canonicalUrl);
+    expect(structuredData["@id"]).toBe(`${canonicalUrl}#product`);
+    expect(offers.url).toBe(canonicalUrl);
+    expect(String(offers.url)).not.toContain("?variant=");
+  });
+
+  it("builds a product-specific meta description from catalog content", () => {
+    const product = makeProduct({
+      id: 42,
+      title: "Hydrating Face Cream",
+      handle: "hydrating-face-cream",
+      productType: "Skincare",
+      price: "24.99",
+    });
+
+    const description = buildProductMetaDescription(product, product.variants[0]);
+
+    expect(description).toContain("Hydrating Face Cream");
+    expect(description).toContain("Skincare");
+    expect(description.length).toBeLessThanOrEqual(160);
   });
 });

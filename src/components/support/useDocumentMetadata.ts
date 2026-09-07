@@ -1,7 +1,7 @@
 import { useEffect } from "react";
+import { updateCanonicalLink } from "@/lib/canonical-url";
 
 const metaDescriptionSelector = 'meta[name="description"]';
-const canonicalSelector = 'link[rel="canonical"]';
 
 export function useDocumentMetadata(
   title: string,
@@ -16,13 +16,13 @@ export function useDocumentMetadata(
     const previousTitle = document.title;
     const existingMeta = document.head.querySelector<HTMLMetaElement>(metaDescriptionSelector);
     const previousDescription = existingMeta?.getAttribute("content");
-    const existingCanonical = document.head.querySelector<HTMLLinkElement>(canonicalSelector);
-    const previousCanonical = existingCanonical?.getAttribute("href");
     const existingRobots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
     const previousRobots = existingRobots?.getAttribute("content");
     let createdMeta = false;
-    let createdCanonical = false;
     let createdRobots = false;
+    const cleanupCanonical = options.canonicalPath
+      ? updateCanonicalLink(document, options.canonicalPath)
+      : undefined;
 
     document.title = title;
 
@@ -38,18 +38,6 @@ export function useDocumentMetadata(
       metaTag.setAttribute("content", description);
     }
 
-    if (options.canonicalPath) {
-      const canonical = new URL(options.canonicalPath, window.location.origin).href;
-      let canonicalTag = existingCanonical;
-      if (!canonicalTag) {
-        canonicalTag = document.createElement("link");
-        canonicalTag.setAttribute("rel", "canonical");
-        document.head.appendChild(canonicalTag);
-        createdCanonical = true;
-      }
-      canonicalTag.setAttribute("href", canonical);
-    }
-
     if (options.noIndex) {
       let robotsTag = existingRobots;
       if (!robotsTag) {
@@ -62,6 +50,7 @@ export function useDocumentMetadata(
     }
 
     return () => {
+      cleanupCanonical?.();
       document.title = previousTitle;
       const currentMeta = document.head.querySelector<HTMLMetaElement>(metaDescriptionSelector);
       if (currentMeta) {
@@ -72,13 +61,6 @@ export function useDocumentMetadata(
         } else {
           currentMeta.removeAttribute("content");
         }
-      }
-
-      const currentCanonical = document.head.querySelector<HTMLLinkElement>(canonicalSelector);
-      if (createdCanonical) {
-        currentCanonical?.remove();
-      } else if (currentCanonical && previousCanonical) {
-        currentCanonical.setAttribute("href", previousCanonical);
       }
 
       const currentRobots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');

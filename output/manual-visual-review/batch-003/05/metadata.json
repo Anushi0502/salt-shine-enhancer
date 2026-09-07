@@ -1,0 +1,26 @@
+{
+  "index": 5,
+  "productId": "8066150105187",
+  "handle": "2-4pcs-portable-seasoning-squeeze-bottles-kitchen-ketchup-salad-sauce-olive-oil-dispenser-container-picnic-bbq-cooking-gadgets",
+  "title": "2 4pcs Portable Seasoning Squeeze Bottles Kitchen Ketchup Salad",
+  "rawClassification": {
+    "ruleId": "kitchen-seasoning",
+    "departmentId": "home-decor",
+    "categoryId": "kitchen-cookware",
+    "subcategoryId": "kitchen-gadgets",
+    "canonicalType": "Seasoning & Dispenser Tool",
+    "confidence": 75,
+    "reviewRequired": true,
+    "reviewReasons": [
+      "single-evidence-lane"
+    ]
+  },
+  "imageUrls": [
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sed58e26e463c40ea8c8b8be0c0889945B.webp?v=1784029997",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6fe369108aea4de19bdbee263db9e4f1X.webp?v=1784029997",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/See9828cb7cd445a0a5d818348159f2fan.webp?v=1784029998",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S4d8e395380c74350801fefa72089bf6cT.webp?v=1784029998",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S2994444e478c408ba948b0e32c3d49dcT.webp?v=1784029997",
+    "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S900d87671e7c4e6db78ca4868d530ef21.webp?v=1784029997"
+  ]
+}

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import OpenContentPageShell from "@/components/storefront/OpenContentPageShell";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
+import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { sanitizeRichHtml } from "@/lib/formatters";
 import { useAboutPage } from "@/lib/shopify-data";
 
@@ -49,6 +50,13 @@ const AboutPage = () => {
 
   const cleanedBodyHtml = sanitizeRichHtml(data.page.bodyHtml);
   const updatedLabel = formatDate(data.page.updatedAt);
+  const seoMetadata = (
+    <SeoMetadata
+      title="About SALT Online Store"
+      description="Learn how SALT makes practical products easy to discover, save, and buy."
+      canonicalPath="/pages/about-us"
+    />
+  );
 
   const heroMeta = (
     <div className="flex flex-wrap gap-2">
@@ -106,7 +114,9 @@ const AboutPage = () => {
   );
 
   return (
-    <OpenContentPageShell
+    <>
+      {seoMetadata}
+      <OpenContentPageShell
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "About SALT" },
@@ -126,7 +136,8 @@ const AboutPage = () => {
         className="prose prose-sm max-w-none leading-[1.74] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-muted-foreground prose-img:rounded-2xl prose-img:border prose-img:border-border/70"
         dangerouslySetInnerHTML={{ __html: cleanedBodyHtml }}
       />
-    </OpenContentPageShell>
+      </OpenContentPageShell>
+    </>
   );
 };
 

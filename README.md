@@ -51,6 +51,10 @@ Dev server defaults:
 - `npm run catalog:taxonomy:validate`: fail if a product is ambiguous but has managed taxonomy tags, or if product knowledge records collapse.
 - `npm run catalog:image-review:build`: generate the local image-review queue for unresolved taxonomy evidence.
 - `npm run catalog:image-review:validate`: block release until every review-required product has image-backed classification evidence.
+- `npm run catalog:vision:model:verify`: verify an installed Metal/MLX visual taxonomy adapter, its checksums, and its post-training raw-data purge record.
+- `npm run catalog:vision:model:stage`: stage a signed local/remote image manifest into an external, resumable raw corpus with checksum verification.
+- `npm run catalog:vision:model:ensure`: reuse a verified fine-tuned visual classifier or, when all training inputs are configured, train it once before the release continues.
+- `npm run catalog:vision:model:train`: train the visual taxonomy adapter from a marked, human-reviewed image corpus; the default lifecycle purges the raw corpus only after artifact and metric verification.
 - `npm run catalog:taxonomy:scale-check`: prove 500,000 repeated-type products retain separate knowledge identities.
 - `npm run shopify:products:zero-images:dry-run`: freshly identify active zero-image products before any deletion.
 - `npm run shopify:publications:all:dry-run`: read all active products and sales channels, then plan the final all-channel publication pass.
@@ -65,11 +69,12 @@ keep their independently configured Shopify prices.
 - `npm run shopify:variant-image-mapping:apply`: bulk associate variants to the best matching product images.
 - `npm run shopify:product-metafields:backfill:apply`: backfill merchandising metafields for products.
 - `npm run release:overnight`: wait for the current SEO apply to finish, then launch the full release pipeline and log progress to `output/overnight-release.log`.
-- `npm run release:schedule:install`: install or replace the macOS launchd job that runs the unified daily release at 11:00 PM local time, with output in `output/scheduled-release.log`.
+- `npm run release:schedule:install`: install or replace the always-on macOS launchd watcher that owns the canonical release, monitors checkpoints, notifies on errors, and resumes guarded failures without a competing unsupervised release.
 - `npm run release:products`: run the frozen product-cohort release path. It requires `output/new-product-cohort-catalog.json` and `output/new-product-cohort-handles.json`, then scopes SEO, metafields, mappings, zero-image cleanup, publication, and storefront/theme rebuild to those handles only.
 - `npm run build:shopify-theme`: build app, then generate `shopify-theme/` package.
 - `npm run theme:bundle`: generate the Shopify theme package from an existing `dist/`.
-- `npm run release`: run the full SALT release pipeline with version output and staged failure reporting.
+- `npm run release`: run the full SALT release pipeline from step 1 with version output and staged failure reporting.
+- `npm run release -- --resume`: resume the last failed or interrupted full release from its persisted phase checkpoint.
 
 ## Environment variables
 
@@ -113,6 +118,8 @@ Outputs:
 The sync path also ensures the product metafield definitions required by the storefront are present in Shopify before it refreshes the local snapshot files.
 
 The full product catalog is split into 45 MiB shards by default so every generated file remains below GitHub's 100 MB single-file limit. Set `SALT_PRODUCTS_SHARD_MAX_BYTES` to lower the limit when needed; generation hard-caps the value at 90 MiB. The storefront resolves the manifest and fetches shards in parallel; ordinary discovery pages use the smaller `product-search.json` index instead of downloading the full catalog.
+
+The canonical `release` and `release:daily` workflows do not generate or ship the product, search, or home listing payloads. Their Shopify refresh stages pass `--skip-generated-listings` and keep the temporary full catalog only in ignored `output/release-catalog-source.json` for release audits and mutations. The manual `sync:data` command remains available when a local full snapshot is explicitly needed.
 
 ## Shopify orders bundle update
 
@@ -185,16 +192,16 @@ The `/pages/finance` route is the private, server-backed workspace. Legacy `/app
 
 Configure these deployment-only variables before publishing it:
 
-- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
+- `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, `read_marketing_events`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
+- `SHOPIFY_ADMIN_REFRESH_TOKEN`: server-only Shopify CLI refresh token. The finance API rotates the short-lived access token automatically when Shopify returns an authorization failure.
+- `SHOPIFY_CLI_CLIENT_ID`: Shopify CLI/app client ID used with the refresh token. Defaults to the connected SALT finance app client ID.
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.
-- `FINANCE_SUBSCRIPTIONS_JSON`: JSON array of DSers, domain, and other recurring costs that are not owned by the SALT app. SALT app subscriptions are read automatically from `currentAppInstallation`. When this variable is absent or `[]`, the finance view uses the current merchant-provided Shopify Grow charge ($19.99/month) plus the DSers Advanced public-plan reference ($19.90/month), and labels that source for invoice verification.
-- `FINANCE_DSER_COSTS_JSON`: optional DSers export mapping keyed by variant ID, variant GID, or SKU, for example `[{"variantId":"44359087816803","cost":4.25}]`.
-- `FINANCE_PAYOUTS_JSON`: optional reconciled payout export fallback. It is used only when Shopify payout access is unavailable and accepts `amount`/`fee`/`net` or their `*Cents` equivalents.
-- `FINANCE_RECONCILIATION_JSON`: optional workbook/cash bridge. It accepts `{ "source": "Store -2026.xlsx", "rows": [{ "month": "July 2026", "pendingPayout": 1187.29, "payoutPaid": 3448.38, "orderCost": 1662.81, "billCost": 1633.67, "profit": 1339.19 }] }`; each row can be period-scoped with `start`/`end`. This is displayed as a manual cash reconciliation and is kept separate from Shopify accrual profit. `profit` is preserved when supplied; otherwise it is calculated as payout plus pending cash less order cost, bills, campaign cost, and fees.
-
-The backend tries Shopify Payments GraphQL first and REST second. It never fabricates a payout or supplier cost when Shopify or DSers has not supplied one; those records remain visible as reconciliation exceptions.
+- `FINANCE_CAMPAIGN_COST_PER_ORDER`: operating campaign cost applied once to each non-cancelled order when Shopify does not return paid campaign spend; defaults to the store pricing rule of `$18`.
+- `FINANCE_SHOPIFY_GROW_MONTHLY_COST`: Shopify Admin-verified Grow plan charge, allocated by calendar month; defaults to `$105`.
+- `FINANCE_DSERS_MONTHLY_COST`: Shopify Admin-verified DSers charge, allocated by calendar month; defaults to `$19.90`.
+The finance page is Shopify-only: orders, refunds (including refunds on older orders updated during the period), DSers-synced product costs, disputes, payout cash, payment fees, and campaign attribution are fetched from Shopify at request time. Older-order refund events remain visible in cash reconciliation, while accrual net sales and profit stay at the selected order-created period so the same refund cannot reduce a later period twice. The backend tries Shopify Payments GraphQL first and the Shopify payout REST endpoint second, so `read_shopify_payments_payouts` can power the live ledger even when the protected Payments account scope is unavailable. Shopify Admin billing verified the current Grow and DSers recurring charges; because this API connection does not expose store invoice history or third-party plan history, those explicit verified defaults are allocated automatically by calendar month and can be overridden by the two server-only variables above. When Shopify returns no paid campaign spend, the configured per-order campaign cost is applied once to each non-cancelled order and shown in the campaign ledger; records Shopify does not expose remain visible as reconciliation exceptions. Realized profit deducts only resolved chargeback losses; the conservative profit view also deducts disputes under review for planning.
 
 Use the supplied finance password only when generating the hash. Do not commit the plaintext password or put any of these variables behind a `VITE_` prefix.
 
@@ -232,7 +239,29 @@ This waits for the current SEO/apply manifest to report completion, then runs `n
 
 The release script prints Node, npm, Vite, and Capacitor CLI versions before starting, then stops immediately on the first failing stage and reports which step failed.
 
-The daily background schedule runs `npm run release:daily`. It performs the full-catalog diversified classification and collection reconciliation in 50-product batches, then runs SEO, metafields, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs.
+### Visual model data lifecycle
+
+The checked-in 128M-record catalog knowledge model is a deterministic text-evidence model. The optional visual model is a Metal/MLX fine-tuned image-taxonomy classifier: a declared fine-tuning command adapts a base image encoder over the signed corpus, then a Metal/MLX taxonomy head trains on embeddings emitted by that fine-tuned encoder. It requires a labeled corpus of at least 50,000,000,000 unique bytes, product-isolated train/validation/test splits, and human-reviewed or verified labels. The corpus directory must contain a `.salt-visual-corpus.json` marker with `{"kind":"salt-visual-training-corpus","datasetId":"...","deleteAfterTraining":true}`. The base and fine-tuned encoder checkpoints must be stored outside that corpus.
+
+Example training invocation:
+
+```bash
+npm run catalog:vision:model:train -- \
+  --dataset-dir /external/salt-visual-corpus \
+  --labels-manifest /external/salt-visual-labels.jsonl \
+  --base-checkpoint /external/checkpoints/image-encoder.mlpackage \
+  --encoder-command-json '["python3","/external/encode-images.py"]' \
+  --encoder-train-command-json '["python3","/external/finetune-images.py"]' \
+  --fine-tuned-checkpoint-output /external/checkpoints/salt-visual-encoder-finetuned.safetensors
+```
+
+The encoder fine-tuning command receives `manifestPath datasetPath labelsPath baseCheckpointPath outputCheckpointPath` and must perform real Metal fine-tuning, write the non-empty output checkpoint, and write `${outputCheckpointPath}.training.json` containing `fineTuned:true`, `device:"metal"`, positive `steps`, the signed `datasetManifestSha256`, and matching `baseCheckpointSha256` and `outputCheckpointSha256` values. The encoder output is then streamed JSONL embeddings from that fine-tuned checkpoint. `catalog:vision:model:stage` can first materialize a signed manifest of checksum-verified local files or URLs into an external corpus, resuming files that are already exact. Metal/MLX training uses class-balanced loss and refuses to install a head for any label absent from the training split. It writes a manifest-fingerprinted epoch checkpoint outside the raw corpus, so an interrupted job can resume without reprocessing completed epochs. The first release preflight uses `catalog:vision:model:ensure`: it reuses a verified model, stages and trains automatically only when the complete source/corpus, labels, base checkpoint, fine-tuning command, inference command, fine-tuned checkpoint path, and signed fine-tuning report are present, and rejects partial configuration. For launchd operation, those non-secret paths and encoder commands may be stored in `output/visual-taxonomy-training-config.json` using the keys `sourceManifest`, `datasetDir`, `labelsManifest`, `stagedLabelsManifest`, `baseCheckpoint`, `encoderCommandJson`, `encoderTrainCommandJson`, and `fineTunedEncoderCheckpoint`; environment variables override the file. After the final model, weights, metrics, taxonomy fingerprint, both encoder checkpoint checksums, and signed fine-tuning report are verified, the marked raw corpus is always removed and the artifact records the purged byte and image counts against the signed manifest; retention cannot be enabled for a successful training run, while failed runs retain the checkpoint and corpus for a compatible resume. The release never modifies system swap settings: large corpora are streamed and macOS manages swap normally. If neither a model nor a complete training configuration exists, release continues with the existing deterministic and explicit fallback gates; if an installed model is stale, unpurged, or incompatible, release stops rather than silently using it.
+
+For catalog-scale preparation, `catalog:vision:catalog-candidates` derives a candidate manifest only from active Shopify catalog images whose current deterministic taxonomy is already resolved. `catalog:vision:catalog-candidates:hydrate` records exact source bytes and SHA-256 checksums without retaining raw images, and `catalog:vision:catalog-candidates:prepare` creates the external shard configuration after the 50 GB target is reached. These records are marked `deterministic-candidate-only`; the resulting model is evidence-only and `catalog:vision:model:infer` refuses to publish its output unless a separate explicit review policy enables it. The release's deterministic taxonomy and fallback gates remain authoritative.
+
+`catalog:vision:open-images:manifest` can add a separate, source-backed candidate corpus when the catalog image projection is smaller than the training target. It streams the official Open Images V7 human-verification and image metadata files, keeps only explicit Creative Commons Attribution records, preserves the image landing page/author/license evidence, and maps only a checked-in set of object labels to existing taxonomy rules. Records are marked `external-human-verified-candidate` and `candidateOnly`; they are training evidence only and cannot publish or override catalog classification. The candidate supervisor runs this supplemental path after catalog hydration is exhausted, hydrates it with the same checksum/readback lifecycle, and retains no raw images after successful training.
+
+The background release watcher runs at login, triggers one canonical `npm run release:daily` run after 12:00 PM local time each day, and owns that release child. Set `SALT_RELEASE_WATCHER_RELEASE_SCRIPT=release` only when a full catalog release is intentionally required. It also repairs detected drift outside the scheduled run. It performs the full active-catalog classification and collection reconciliation in bounded batches, then runs variant-aware SEO, categories, metafields, pricing, publication, verification, web build, and Shopify theme generation. It skips mobile shell sync for unattended runs, writes live checkpoint progress, sends macOS notifications for stale or failed runs, and uses the persisted run state for a compatible resume after interruption. This replaces the older unsupervised one-shot launchd job.
 
 Install or replace the schedule with:
 

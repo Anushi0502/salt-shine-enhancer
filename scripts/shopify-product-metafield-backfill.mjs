@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -27,6 +28,8 @@ const DEFAULT_OUTPUT_FILE = resolve(process.cwd(), "output", "product-metafield-
 const DEFAULT_INPUT_DIR = resolve(process.cwd(), "public", "data");
 const PRODUCT_CATALOG_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-live-catalog.json");
 const PRODUCT_CUSTOM_DATA_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-metafield-custom-data.json");
+const PRODUCT_CATEGORY_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-category-backfill-checkpoint.json");
+const PRODUCT_CATEGORY_PLAN_CHECKPOINT = resolve(process.cwd(), "output", ".shopify-category-backfill-plans.json");
 const PRODUCT_CUSTOM_DATA_BULK_RESULT = resolve(process.cwd(), "output", ".shopify-metafield-custom-data-bulk.jsonl");
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
@@ -42,6 +45,8 @@ const JUDGEME_PUBLIC_TOKEN =
   "TQ0rk940ADN89zj_f83SKuTYIfY";
 const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 4));
 const BACKFILL_BULK_THRESHOLD = Math.max(1, Number(process.env.SALT_BACKFILL_BULK_THRESHOLD || 500));
+const SHOPIFY_MAX_REQUEST_ATTEMPTS = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 10));
+const SHOPIFY_MAX_RETRY_DELAY_MS = Math.max(1_000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 120_000));
 const JUDGEME_SHOP_DOMAINS = Array.from(
   new Set(
     [
@@ -151,6 +156,7 @@ const BULK_PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           badgeText: metafield(namespace: "salt-marketing", key: "badge_text") { jsonValue value }
           highlights: metafield(namespace: "salt-marketing", key: "highlights") { jsonValue value }
           collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") { jsonValue value }
+          classification: metafield(namespace: "salt_taxonomy", key: "classification") { jsonValue value }
           rating: metafield(namespace: "reviews", key: "rating") { jsonValue value }
           ratingCount: metafield(namespace: "reviews", key: "rating_count") { jsonValue value }
           relatedProductsDisplay: metafield(namespace: "shopify--discovery--product_recommendation", key: "related_products_display") { jsonValue value }
@@ -339,6 +345,9 @@ function isRetryableShopifyCliError(error) {
 
   return [
     "429",
+    "throttled",
+    "rate limit",
+    "rate_limited",
     "too many requests",
     "retry-after",
     "temporarily unavailable",
@@ -381,7 +390,7 @@ function partitionMetafieldUserErrors(userErrors = [], entryCount = 0) {
 
 function computeCliRetryDelayMs(attempt) {
   const jitterMs = Math.floor(Math.random() * 500);
-  return Math.min(60_000, 1500 * 2 ** attempt + jitterMs);
+  return Math.min(SHOPIFY_MAX_RETRY_DELAY_MS, 1500 * 2 ** attempt + jitterMs);
 }
 
 async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false } = {}) {
@@ -419,18 +428,25 @@ async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = 
       args.push("--allow-mutations");
     }
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let attempt = 0; attempt < SHOPIFY_MAX_REQUEST_ATTEMPTS; attempt += 1) {
       try {
         await execFileAsync("shopify", args, {
           env: getShopifyCliEnv(),
           maxBuffer: 10 * 1024 * 1024,
         });
-        break;
+        const rawOutput = await readFile(outputFile, "utf8");
+        const parsedOutput = JSON.parse(rawOutput);
+        if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
+          const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
+          throw new Error(`Shopify CLI GraphQL errors for ${SHOP_DOMAIN}: ${message}`);
+        }
+
+        return parsedOutput.data || parsedOutput || {};
       } catch (error) {
-        if (attempt < 4 && isRetryableShopifyCliError(error)) {
+        if (attempt < SHOPIFY_MAX_REQUEST_ATTEMPTS - 1 && isRetryableShopifyCliError(error)) {
           const delayMs = computeCliRetryDelayMs(attempt);
           process.stdout.write(
-            `Shopify CLI request failed; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/4)\n`,
+            `Shopify CLI request failed; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${SHOPIFY_MAX_REQUEST_ATTEMPTS})\n`,
           );
           await sleep(delayMs);
           continue;
@@ -439,15 +455,7 @@ async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = 
         throw error;
       }
     }
-
-    const rawOutput = await readFile(outputFile, "utf8");
-    const parsedOutput = JSON.parse(rawOutput);
-    if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
-      const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
-      throw new Error(`Shopify CLI GraphQL errors for ${SHOP_DOMAIN}: ${message}`);
-    }
-
-    return parsedOutput.data || parsedOutput || {};
+    throw new Error(`Shopify CLI request exhausted ${SHOPIFY_MAX_REQUEST_ATTEMPTS} attempts`);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -523,6 +531,10 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           value
         }
         collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") {
+          jsonValue
+          value
+        }
+        classification: metafield(namespace: "salt_taxonomy", key: "classification") {
           jsonValue
           value
         }
@@ -809,6 +821,7 @@ function normalizeLiveProductCustomDataNode(node) {
     badgeText: node.badgeText?.jsonValue ?? node.badgeText?.value ?? null,
     highlights: normalizeStringList(node.highlights?.jsonValue ?? node.highlights?.value ?? []),
     collectionSignal: node.collectionSignal?.jsonValue ?? node.collectionSignal?.value ?? null,
+    classification: node.classification?.jsonValue ?? node.classification?.value ?? null,
     rating: parseRatingValue(node.rating?.jsonValue ?? node.rating?.value ?? null),
     ratingCount: node.ratingCount?.jsonValue ?? node.ratingCount?.value ?? null,
     relatedProductsDisplay: node.relatedProductsDisplay?.jsonValue ?? node.relatedProductsDisplay?.value ?? null,
@@ -1005,22 +1018,26 @@ async function fetchLiveProductCustomDataMap(products) {
     : [];
 
   const fingerprint = `v5:${productIds.length}:${productIds[0] || ""}:${productIds.at(-1) || ""}`;
-  try {
-    const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
-    const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
-    if (
-      checkpoint?.complete &&
-      checkpoint?.fingerprint === fingerprint &&
-      Number.isFinite(age) &&
-      age >= 0 &&
-      age < 6 * 60 * 60 * 1000 &&
-      Array.isArray(checkpoint.records)
-    ) {
-      process.stdout.write(`Using fresh metafield readback checkpoint for ${checkpoint.records.length} products\n`);
-      return new Map(checkpoint.records);
+  if (process.env.SALT_BACKFILL_FORCE_LIVE_CUSTOM_DATA_REFRESH !== "1") {
+    try {
+      const checkpoint = await loadJson(PRODUCT_CUSTOM_DATA_CHECKPOINT, "metafield custom-data checkpoint");
+      const age = Date.now() - new Date(checkpoint?.generatedAt || 0).getTime();
+      if (
+        checkpoint?.complete &&
+        checkpoint?.fingerprint === fingerprint &&
+        Number.isFinite(age) &&
+        age >= 0 &&
+        age < 6 * 60 * 60 * 1000 &&
+        Array.isArray(checkpoint.records)
+      ) {
+        process.stdout.write(`Using fresh metafield readback checkpoint for ${checkpoint.records.length} products\n`);
+        return new Map(checkpoint.records);
+      }
+    } catch {
+      // Missing or stale checkpoints fall through to live Shopify reads.
     }
-  } catch {
-    // Missing or stale checkpoints fall through to live Shopify reads.
+  } else {
+    process.stdout.write("Forcing fresh Shopify product/metafield readback after an interrupted backfill\n");
   }
 
   if (productIds.length >= 500) {
@@ -1069,7 +1086,7 @@ function normalizeLiveCatalogProduct(node) {
 }
 
 async function fetchLiveProductCatalog() {
-  const useCatalogCheckpoint = process.env.SALT_BACKFILL_USE_CATALOG_CHECKPOINT === "1";
+  const useCatalogCheckpoint = process.env.SALT_BACKFILL_USE_CATALOG_CHECKPOINT !== "0";
   let checkpoint = null;
   try {
     checkpoint = await loadJson(PRODUCT_CATALOG_CHECKPOINT, "metafield live catalog checkpoint");
@@ -1667,7 +1684,6 @@ function resolveTaxonomyPath(path, categories) {
 
 async function buildCategoryPlans(products) {
   const candidates = (Array.isArray(products) ? products : [])
-    .filter((product) => !product?.shopifyCategory?.id)
     .map((product) => ({
       product,
       category: inferDeterministicShopifyTaxonomyCategory(product),
@@ -1679,6 +1695,31 @@ async function buildCategoryPlans(products) {
       .map(({ category }) => String(category.fullName || "").trim())
       .filter(Boolean),
   )];
+  const sourceFingerprint = createHash("sha256")
+    .update(
+      candidates
+        .map(({ product, category }) => `${product.id}\t${category.fullName}\t${product.shopifyCategory?.id || product.category?.id || ""}`)
+        .sort()
+        .join("\n"),
+    )
+    .digest("hex");
+  const savedPlanCheckpoint = await loadOptionalJson(PRODUCT_CATEGORY_PLAN_CHECKPOINT);
+  if (
+    savedPlanCheckpoint?.sourceFingerprint === sourceFingerprint &&
+    Array.isArray(savedPlanCheckpoint.plans) &&
+    savedPlanCheckpoint.plans.length === candidates.length
+  ) {
+    process.stdout.write(`Using fingerprinted Shopify category plan checkpoint for ${savedPlanCheckpoint.plans.length} products\n`);
+    return {
+      plans: savedPlanCheckpoint.plans,
+      summary: savedPlanCheckpoint.summary || {
+        candidates: candidates.length,
+        paths: paths.length,
+        resolved: savedPlanCheckpoint.plans.length,
+        unresolved: candidates.length - savedPlanCheckpoint.plans.length,
+      },
+    };
+  }
   const resolvedByPath = new Map();
   const taxonomyCategories = await fetchShopifyTaxonomyCategories(paths);
   for (const path of paths) {
@@ -1707,13 +1748,14 @@ async function buildCategoryPlans(products) {
       categoryId: resolved.id,
       categoryName: resolved.name || category.name,
       categoryFullName: resolved.fullName || category.fullName || "",
+      currentCategoryId: String(product.shopifyCategory?.id || product.category?.id || ""),
       confidence: category.confidence,
       reason: category.reason,
       };
     })
     .filter(Boolean);
 
-  return {
+  const result = {
     plans,
     summary: {
       candidates: candidates.length,
@@ -1722,11 +1764,68 @@ async function buildCategoryPlans(products) {
       unresolved: candidates.length - plans.length,
     },
   };
+  await mkdir(dirname(PRODUCT_CATEGORY_PLAN_CHECKPOINT), { recursive: true });
+  await writeFile(
+    PRODUCT_CATEGORY_PLAN_CHECKPOINT,
+    `${JSON.stringify({ version: 1, sourceFingerprint, ...result, updatedAt: new Date().toISOString() })}\n`,
+    "utf8",
+  );
+  return result;
+}
+
+function categoryPlanFingerprint(plans) {
+  return createHash("sha256")
+    .update(
+      plans
+        .map((plan) => `${plan.productGid}\t${plan.categoryId}`)
+        .sort()
+        .join("\n"),
+    )
+    .digest("hex");
 }
 
 async function applyCategoryPlans(plans) {
-  const batches = chunkArray(plans, 15);
+  const exactPlans = plans.filter((plan) => String(plan.currentCategoryId || "") === String(plan.categoryId));
+  const plansToWrite = plans.filter((plan) => String(plan.currentCategoryId || "") !== String(plan.categoryId));
+  if (exactPlans.length) {
+    process.stdout.write(`Skipping ${exactPlans.length} category update(s) already exact in live Shopify readback\n`);
+  }
+  const batches = chunkArray(plansToWrite, 15);
   const results = Array.from({ length: batches.length }, () => []);
+  const fingerprint = categoryPlanFingerprint(plansToWrite);
+  const savedCheckpoint = await loadOptionalJson(PRODUCT_CATEGORY_CHECKPOINT);
+  const checkpoint = savedCheckpoint?.fingerprint === fingerprint
+    ? {
+        fingerprint,
+        completedBatches: { ...(savedCheckpoint.completedBatches || {}) },
+      }
+    : { fingerprint, completedBatches: {} };
+  const checkpointWriteQueue = { current: Promise.resolve() };
+
+  const persistCheckpoint = async () => {
+    checkpointWriteQueue.current = checkpointWriteQueue.current.then(async () => {
+      await mkdir(dirname(PRODUCT_CATEGORY_CHECKPOINT), { recursive: true });
+      await writeFile(PRODUCT_CATEGORY_CHECKPOINT, `${JSON.stringify({
+        version: 1,
+        fingerprint,
+        completedBatches: checkpoint.completedBatches,
+        updatedAt: new Date().toISOString(),
+      })}\n`, "utf8");
+    });
+    await checkpointWriteQueue.current;
+  };
+
+  const pendingBatchIndexes = [];
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+    const saved = checkpoint.completedBatches[String(batchIndex)];
+    if (Array.isArray(saved) && saved.length === batches[batchIndex].length) {
+      results[batchIndex] = saved;
+      process.stdout.write(`Category batch ${batchIndex + 1}/${batches.length} resumed from verified checkpoint (${saved.length} products)\n`);
+    } else {
+      pendingBatchIndexes.push(batchIndex);
+    }
+  }
+
   let nextBatchIndex = 0;
 
   const applyBatch = async (batch, batchIndex) => {
@@ -1765,27 +1864,45 @@ async function applyCategoryPlans(plans) {
       });
     }
 
+    checkpoint.completedBatches[String(batchIndex)] = results[batchIndex];
+    await persistCheckpoint();
     process.stdout.write(`Category batch ${batchIndex + 1}/${batches.length} verified (${batch.length} products)\n`);
   };
 
   const worker = async () => {
-    while (nextBatchIndex < batches.length) {
-      const batchIndex = nextBatchIndex;
+    while (nextBatchIndex < pendingBatchIndexes.length) {
+      const batchIndex = pendingBatchIndexes[nextBatchIndex];
       nextBatchIndex += 1;
       await applyBatch(batches[batchIndex], batchIndex);
     }
   };
 
   await Promise.all(
-    Array.from({ length: Math.min(BACKFILL_APPLY_CONCURRENCY, batches.length) }, () => worker()),
+    Array.from({ length: Math.min(BACKFILL_APPLY_CONCURRENCY, pendingBatchIndexes.length) }, () => worker()),
   );
 
-  return results.flat();
+  return [
+    ...exactPlans.map((plan) => ({
+      ...plan,
+      verifiedCategoryId: plan.categoryId,
+      skippedBecauseExact: true,
+      verifiedAt: new Date().toISOString(),
+    })),
+    ...results.flat(),
+  ];
 }
 
 async function writeManifest(filePath, manifest) {
   await mkdir(dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+}
+
+async function writeLargeAuditArtifacts(outputFile, { products, categories }) {
+  const productPlansPath = outputFile.replace(/\.json$/i, ".product-plans.json");
+  const categoryPlansPath = outputFile.replace(/\.json$/i, ".category-plans.json");
+  await writeManifest(productPlansPath, products);
+  await writeManifest(categoryPlansPath, categories);
+  return { productPlansPath, categoryPlansPath };
 }
 
 function bulkMetafieldVariables(batch) {
@@ -2137,6 +2254,7 @@ async function main() {
     // subtype; keep the source-owned fallback authoritative instead.
     allowShopifySearchBoostWrite: false,
     allowShopifyComplementaryWrite: false,
+    forceManagedMetafields: true,
   });
   const marketingBackfillPlan = args.productOnly
     ? {
@@ -2271,6 +2389,22 @@ async function main() {
     })),
   };
 
+  // A full-catalog manifest duplicates the large product, category, and batch
+  // structures already represented by the bulk input and detail artifacts.
+  // Keep the release manifest small so Node does not need another 200+ MB
+  // string while the hydrated catalog is still resident in memory.
+  const compactLargeManifest = args.allActive && process.env.SALT_BACKFILL_FULL_MANIFEST !== "1";
+  if (compactLargeManifest) {
+    const auditArtifacts = await writeLargeAuditArtifacts(args.outputFile, {
+      products: manifest.products,
+      categories: manifest.categories,
+    });
+    manifest.auditArtifacts = auditArtifacts;
+    delete manifest.products;
+    delete manifest.categories;
+    delete manifest.batches;
+  }
+
   await writeManifest(args.outputFile, manifest);
   process.stdout.write(`Manifest written to ${args.outputFile}\n`);
   process.stdout.write(
@@ -2303,6 +2437,7 @@ async function main() {
   };
   await writeManifest(args.outputFile, manifest);
   await rm(PRODUCT_CUSTOM_DATA_CHECKPOINT, { force: true });
+  await rm(PRODUCT_CATEGORY_CHECKPOINT, { force: true });
   process.stdout.write(`Apply complete. Updated manifest written to ${args.outputFile}\n`);
 }
 

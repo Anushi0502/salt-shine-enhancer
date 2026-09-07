@@ -594,10 +594,13 @@ describe("Shopify SEO release reconciliation", () => {
     expect(labels.indexOf("Delete verified active zero-image products")).toBeLessThan(
       labels.indexOf("Publish every active product to all sales channels"),
     );
-    expect(labels.indexOf("Publish every active product to all sales channels")).toBeLessThan(
-      labels.indexOf("Refresh Shopify data after final product publication"),
+    const finalPublicationRefreshIndex = labels.findIndex((label) =>
+      label.startsWith("Refresh Shopify data after final product publication:"),
     );
-    expect(labels.indexOf("Refresh Shopify data after final product publication")).toBeLessThan(
+    expect(labels.indexOf("Publish every active product to all sales channels")).toBeLessThan(
+      finalPublicationRefreshIndex,
+    );
+    expect(finalPublicationRefreshIndex).toBeLessThan(
       labels.indexOf("Build web app"),
     );
     expect(labels.indexOf("Apply Shopify merchandising metafield backfill after catalog boundary changes")).toBeLessThan(
@@ -623,7 +626,7 @@ describe("Shopify SEO release reconciliation", () => {
     expect(labels).toContain("Verify every active product has product-specific SEO and metafields");
     expect(labels).toContain("Verify exact collection membership and price rules");
     expect(labels).not.toContain("Rework low Shopify prices with the approved campaign cost");
-    expect(labels.at(-1)).toBe("Final live-readback gate after tag cleanup and collection merges");
+    expect(labels.at(-1)).toBe("Final live-readback gate against the applied catalog generation");
   });
 
   it("keeps the product release on the new-products SEO and publication path", () => {

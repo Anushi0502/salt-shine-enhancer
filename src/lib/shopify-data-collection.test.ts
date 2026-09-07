@@ -10,6 +10,18 @@ import {
 } from "@/lib/shopify-data";
 import type { ProductsPayload, ShopifyProduct } from "@/types/shopify";
 
+type InlineCollectionWindow = Window & {
+  __SALT_COLLECTION_PREFETCH__?: {
+    handle: string;
+    generatedAt: string;
+    complete: boolean;
+    currentPage: number;
+    total: number;
+    productIds: number[];
+    products: Array<Record<string, unknown>>;
+  };
+};
+
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -59,6 +71,7 @@ function staticPayload(): ProductsPayload {
 }
 
 afterEach(() => {
+  delete (window as InlineCollectionWindow).__SALT_COLLECTION_PREFETCH__;
   window.history.replaceState({}, "", "/");
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -125,8 +138,17 @@ describe("lazy Shopify collection hydration", () => {
     expect(merged.products[0]?.title).toBe("Live cached product");
   });
 
-  it("returns the static catalog before the bounded live hydration resolves", async () => {
+  it("returns the Liquid page seed before bounded live hydration resolves", async () => {
     window.history.replaceState({}, "", "/collections/under-50");
+    (window as InlineCollectionWindow).__SALT_COLLECTION_PREFETCH__ = {
+      handle: "under-50",
+      generatedAt: "2026-08-25T00:00:00Z",
+      complete: false,
+      currentPage: 1,
+      total: 2,
+      productIds: [101],
+      products: [staticPayload().products[0] as unknown as Record<string, unknown>],
+    };
     let resolveHydration!: (response: Response) => void;
     const hydrationPending = new Promise<Response>((resolve) => {
       resolveHydration = resolve;
@@ -137,12 +159,16 @@ describe("lazy Shopify collection hydration", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes("/data/product-search.json")) {
-          return jsonResponse(staticPayload());
+        if (url.includes("/collections/all-products/products.json")) {
+          return jsonResponse({ products: staticPayload().products });
         }
 
-        if (url.includes("/collections/") && url.includes("/products.json")) {
+        if (url.includes("/collections/under-50/products.json")) {
           return hydrationPending;
+        }
+
+        if (url.endsWith("/collections/under-50.json")) {
+          return jsonResponse({ collection: { products_count: 2 } });
         }
 
         throw new Error(`Unexpected fetch URL: ${url}`);

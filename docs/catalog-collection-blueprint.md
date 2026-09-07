@@ -1,8 +1,8 @@
 # SALT Full-Catalog Release Blueprint
 
 Taxonomy version: `2026-08-06.1`
-Collection plan version: `2026-08-06.1-collections.3`
-Collection governance version: `2026-08-10.3`
+Collection plan version: `2026-08-06.1-collections.4`
+Collection governance version: `2026-08-20.2`
 
 ## Release Boundary
 

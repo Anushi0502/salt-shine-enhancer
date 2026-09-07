@@ -102,6 +102,9 @@ const ContactPage = () => {
   const nativeApp = isNativeApp();
   const { data, isLoading, error, refetch } = useEditorialPage("contact");
   const page = data?.page;
+  const contactTitle = page?.title?.trim().toLowerCase() === "contact-us"
+    ? "Contact SALT Support"
+    : page?.title || "Contact SALT Support";
 
   useDocumentMetadata(
     page?.seoTitle || "Contact Support | SALT Online Store",
@@ -353,7 +356,7 @@ const ContactPage = () => {
               <div className="max-w-4xl">
                 <p className="salt-kicker">{page.kicker}</p>
                 <h1 className="mt-3 font-display text-[clamp(2.45rem,5.8vw,4.7rem)] leading-[0.9] tracking-[-0.06em] text-foreground">
-                  {page.title}
+                  {contactTitle}
                 </h1>
                 <p className="mt-4 max-w-3xl text-[0.98rem] leading-7 text-muted-foreground sm:text-base">
                   {page.summary}
