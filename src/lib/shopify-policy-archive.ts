@@ -175,7 +175,7 @@ export const SHOPIFY_POLICY_ARCHIVE = {
 <p>If we transfer your personal information out of Europe, we will rely on recognized transfer mechanisms like the European Commission's Standard Contractual Clauses, or any equivalent contracts issued by the relevant competent authority of the UK, as relevant, unless the data transfer is to a country that has been determined to provide an adequate level of protection.</p>
 
 <h2>Contact</h2>
-<p>Should you have any questions about our privacy practices or this Privacy Policy, or if you would like to exercise any of the rights available to you, please call or email us at support@saltonlinestore.com or contact us at 317 Notre Dame Avenue, Dayton, OH, 45404, US.</p>
+<p>Should you have any questions about our privacy practices or this Privacy Policy, or if you would like to exercise any of the rights available to you, please call or email us at help@saltonlinestore.com or contact us at 317 Notre Dame Avenue, Dayton, OH, 45404, US.</p>
 
 
 <span></span>`,
@@ -194,14 +194,14 @@ export const SHOPIFY_POLICY_ARCHIVE = {
 <p> <strong>5. Return Shipping Costs</strong><br>-<strong style="font-size:0.875rem;"> Return shipping costs are the responsibility of the custome</strong><span style="font-size:0.875rem;"><strong>r</strong> unless the return is due to an error on our part (e.g., incorrect or defective item).</span></p>
 <p>- If a return is required, we will provide instructions on where to ship the item. Please note that return shipping costs can be significant, especially for international returns.</p>
 <p><strong>6. Refunds</strong><br>- <strong>Refunds will be issued to the original payment method</strong> once we receive the returned item and confirm it is in its original, unused condition. Shipping fees are non-refundable.<br>-<strong> Partial refunds</strong> may be issued at our discretion, depending on the condition of the returned item.</p>
-<p><strong>7. Late or Missing Refunds</strong><br>-<strong> If you haven’t received a refund</strong>, please check your bank account again or contact your credit card company; it may take some time before your refund is officially posted.<br>- If you’ve done all of this and still have not received your refund, please contact us at support@saltonlinestore.com</p>
+<p><strong>7. Late or Missing Refunds</strong><br>-<strong> If you haven’t received a refund</strong>, please check your bank account again or contact your credit card company; it may take some time before your refund is officially posted.<br>- If you’ve done all of this and still have not received your refund, please contact us at help@saltonlinestore.com</p>
 <p><strong>8. Final Sale Items</strong><br>- <strong>All clearance and sale items are final sale</strong> and cannot be returned or exchanged.</p>
-<p><strong>9. How to Initiate a Return</strong><br>- To initiate a return, please contact our customer support at "support@saltonlinestore.com" with your order number and a detailed description of the issue. We will provide you with further instructions.</p>
+<p><strong>9. How to Initiate a Return</strong><br>- To initiate a return, please contact our customer support at "help@saltonlinestore.com" with your order number and a detailed description of the issue. We will provide you with further instructions.</p>
 <p><strong>10. Shipping Times and Delays</strong><br>- <strong>Please note that shipping times may vary </strong>depending on the destination country and that delays caused by customs or postal services are beyond our control. We appreciate your understanding.</p>
 <p>---</p>
 <p><strong>Important Notes:</strong><br>- <strong>All returns must be pre-approved by our customer service team. </strong>Items sent back to us without first requesting a return will not be accepted.<br>- <strong>We reserve the right to deny returns</strong> that do not comply with our return policy.</p>
 <p>---</p>
-<p><strong>Contact Us:</strong><br>If you have any questions about our return policy, feel free to reach out to us at "support@saltonlinestore.com" </p>`,
+<p><strong>Contact Us:</strong><br>If you have any questions about our return policy, feel free to reach out to us at "help@saltonlinestore.com" </p>`,
   },
   shipping: {
     title: "Shipping policy",
@@ -276,11 +276,11 @@ export const SHOPIFY_POLICY_ARCHIVE = {
 <p>If your order is significantly delayed, please reach out to our support team.</p>
 <hr>
 <h2>Lost or Missing Packages</h2>
-<p>If your package has not arrived within <strong>30 business days</strong> from the shipping date, please contact us at <strong>support@saltonlinestore.com</strong>. We will assist in locating your package or arranging a suitable resolution.</p>
+<p>If your package has not arrived within <strong>30 business days</strong> from the shipping date, please contact us at <strong>help@saltonlinestore.com</strong>. We will assist in locating your package or arranging a suitable resolution.</p>
 <hr>
 <h2>Contact Us</h2>
 <p>If you have any questions or concerns regarding shipping, feel free to contact us:</p>
-<p><strong>Email:</strong> support@saltonlinestore.com</p>
+<p><strong>Email:</strong> help@saltonlinestore.com</p>
 <p><strong>Store URL:</strong> https://www.saltonlinestore.com/</p>`,
   },
   contact: {
@@ -289,7 +289,7 @@ export const SHOPIFY_POLICY_ARCHIVE = {
     archiveUrl: "https://web.archive.org/web/20250801042347id_/https://www.saltonlinestore.com/policies/contact-information",
     route: "/policies/contact-information",
     bodyHtml: String.raw`<p>Trade name: Saltonlinestore</p>
-<p>Email: support@saltonlinestore.com</p>
+<p>Email: help@saltonlinestore.com</p>
 <p> </p>`,
   },
 } satisfies Record<string, ShopifyPolicyRecord>;

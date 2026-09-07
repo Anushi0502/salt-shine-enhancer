@@ -22,7 +22,7 @@ import { getRuntimeContext } from "@/lib/theme-assets";
 
 const supportTopics = ["Order tracking", "Returns and exchanges", "Product recommendation", "Bulk order request"];
 const runtimeContext = getRuntimeContext();
-const supportEmail = runtimeContext.supportEmail || "support@saltonlinestore.com";
+const supportEmail = runtimeContext.supportEmail || "help@saltonlinestore.com";
 const supportPhone = "+1 888-835-7211";
 const contactPolicyHref = "/pages/contact-information";
 
