@@ -1516,7 +1516,7 @@ const productDataSectionLiquid = `{% if request.page_type == 'collection' and co
   await writeFile(
     resolve(themeDir, "templates", "robots.txt.liquid"),
     `{% for group in robots.default_groups %}
-{{- group.user_agent_name -}}
+{{- group.user_agent -}}
 {% for rule in group.rules %}
 {{- rule -}}
 {% endfor %}
