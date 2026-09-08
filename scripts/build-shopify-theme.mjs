@@ -403,7 +403,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         var hasQuery = query.length > 1;
         var isFinance = path === '/pages/finance' || path === '/apps:finance' || path === '/apps/finance' || (path === '/' && /(?:^|&)finance=1(?:&|$)/.test(query.slice(1)));
         var isQuerySurface = path === '/' || path === '/shop' || path === '/search';
-        if (!isFinance && !(hasQuery && isQuerySurface)) return;
+        var isProductQueryVariant = hasQuery && /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/[^/]+\\/?$/i.test(path);
+        if (!isFinance && !isProductQueryVariant && !(hasQuery && isQuerySurface)) return;
 
         function ensureMeta(name, content) {
           var tag = document.querySelector('meta[name="' + name + '"]');
@@ -432,6 +433,28 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             document.head.appendChild(aliasCanonical);
           }
           aliasCanonical.setAttribute('href', window.location.origin + collectionAliasTarget);
+          return;
+        }
+
+        if (isProductQueryVariant) {
+          var applyProductQueryNoIndex = function () {
+            ensureMeta('robots', 'noindex,follow');
+            ensureMeta('googlebot', 'noindex,follow');
+            var productQueryCanonical = document.querySelector('link[rel="canonical"]');
+            if (!productQueryCanonical) {
+              productQueryCanonical = document.createElement('link');
+              productQueryCanonical.setAttribute('rel', 'canonical');
+              document.head.appendChild(productQueryCanonical);
+            }
+            productQueryCanonical.setAttribute('href', window.location.origin + path);
+          };
+          applyProductQueryNoIndex();
+          new MutationObserver(applyProductQueryNoIndex).observe(document.head, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['href', 'rel', 'content']
+          });
           return;
         }
 
