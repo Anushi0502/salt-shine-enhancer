@@ -236,6 +236,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
+    {% assign salt_product_canonical_alias = '' %}
     {% assign salt_social_image = 'brand-salt-logo.png' | asset_url %}
     {% # theme-check-disable ContentForHeaderModification %}
     {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
@@ -302,6 +303,38 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% elsif request.page_type == 'product' and product %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_custom_canonical = true %}
+      {% case product.handle %}
+        {% when 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset-1' %}
+          {% assign salt_product_canonical_alias = 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset' %}
+        {% when 'mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook-1' %}
+          {% assign salt_product_canonical_alias = 'mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook' %}
+        {% when 'laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case-1' %}
+          {% assign salt_product_canonical_alias = 'laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case' %}
+        {% when 'school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks-1' %}
+          {% assign salt_product_canonical_alias = 'school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks' %}
+        {% when 'covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover-1' %}
+          {% assign salt_product_canonical_alias = 'covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover' %}
+        {% when 'mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags-1' %}
+          {% assign salt_product_canonical_alias = 'mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags' %}
+        {% when 'turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care-1' %}
+          {% assign salt_product_canonical_alias = 'turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care' %}
+        {% when 'mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme-1' %}
+          {% assign salt_product_canonical_alias = 'mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme' %}
+        {% when 'facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home-1' %}
+          {% assign salt_product_canonical_alias = 'facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home' %}
+        {% when 'turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m-1' %}
+          {% assign salt_product_canonical_alias = 'turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m' %}
+        {% when 'causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women-1' %}
+          {% assign salt_product_canonical_alias = 'causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women' %}
+        {% when '4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush-1' %}
+          {% assign salt_product_canonical_alias = '4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush' %}
+        {% when 'hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair-1' %}
+          {% assign salt_product_canonical_alias = 'hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair' %}
+        {% when 'body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing-1' %}
+          {% assign salt_product_canonical_alias = 'body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing' %}
+        {% when 'blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright-1' %}
+          {% assign salt_product_canonical_alias = 'blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright' %}
+      {% endcase %}
     {% elsif salt_route == '/cart' or salt_route == '/wishlist' or salt_route == '/recently-viewed' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
     {% elsif salt_route == '/pages/wishlist' %}
@@ -366,6 +399,10 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         {% assign salt_variant_description = product.description | strip_html | strip_newlines | truncate: 115 %}
         {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
       {% endunless %}
+    {% endif %}
+    {% if salt_product_canonical_alias != blank %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: salt_product_canonical_alias %}
+      {% assign salt_custom_canonical = true %}
     {% endif %}
     {% if salt_route contains '/pages/track-order' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
