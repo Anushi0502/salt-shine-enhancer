@@ -182,7 +182,7 @@ const paymentIcons = [
 ];
 
 const runtimeContext = getRuntimeContext();
-const SUPPORT_EMAIL = runtimeContext.supportEmail || "support@saltonlinestore.com";
+const SUPPORT_EMAIL = runtimeContext.supportEmail || "help@saltonlinestore.com";
 const SUPPORT_PHONE = "+1 888-835-7211";
 const SUPPORT_ADDRESS = "P O box 15 Dayton 45404 ohio";
 

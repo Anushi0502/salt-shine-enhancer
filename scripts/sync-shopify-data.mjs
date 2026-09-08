@@ -37,7 +37,25 @@ const blogHandles = Array.from(
   ),
 );
 const outDir = resolve(process.cwd(), "public", "data");
-const requestSpacingMs = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS ?? 250);
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    ? Math.min(maximum, Math.max(minimum, Math.floor(parsed)))
+    : fallback;
+}
+
+const configuredRequestSpacingMs = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS ?? 250);
+const requestSpacingMs = Number.isFinite(configuredRequestSpacingMs)
+  ? Math.max(0, configuredRequestSpacingMs)
+  : 250;
+const requestConcurrency = boundedInteger(process.env.SALT_SHOPIFY_READ_CONCURRENCY, 4, 1, 8);
+const enrichmentConcurrency = boundedInteger(process.env.SALT_SHOPIFY_ENRICHMENT_CONCURRENCY, 4, 1, 8);
+const collectionProductReadConcurrency = boundedInteger(
+  process.env.SALT_COLLECTION_PRODUCT_READ_CONCURRENCY,
+  4,
+  1,
+  8,
+);
 const requestTimeoutMs = Number(process.env.SALT_SHOPIFY_REQUEST_TIMEOUT_MS ?? 45_000);
 const maxRequestAttempts = Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS ?? 8);
 const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60_000);
@@ -88,7 +106,11 @@ const aboutPath = resolve(outDir, "about.json");
 const blogPostsPath = resolve(outDir, "blog-posts.json");
 const shopPath = resolve(outDir, "shop.json");
 let forceLiveCollectionHandles = new Set();
-let requestQueue = Promise.resolve();
+let cachedCollectionProductsByHandle;
+let requestActive = 0;
+let requestLastStartAt = 0;
+let requestPumpTimer = null;
+const requestWaiters = [];
 const execFileAsync = promisify(execFile);
 
 async function removeGeneratedListingPayloads() {
@@ -139,31 +161,45 @@ function computeRetryDelayMs(response, attempt, baseDelayMs) {
   return Math.min(maxRetryDelayMs, baseDelayMs * 2 ** attempt + jitterMs);
 }
 
-async function runSerializedRequest(task) {
-  let releaseQueue;
-  const currentRequest = new Promise((resolve) => {
-    releaseQueue = resolve;
+function pumpRequestQueue() {
+  if (requestPumpTimer) {
+    clearTimeout(requestPumpTimer);
+    requestPumpTimer = null;
+  }
+
+  while (requestActive < requestConcurrency && requestWaiters.length) {
+    const waitMs = Math.max(0, requestLastStartAt + requestSpacingMs - Date.now());
+    if (waitMs > 0) {
+      requestPumpTimer = setTimeout(pumpRequestQueue, waitMs);
+      requestPumpTimer.unref?.();
+      return;
+    }
+
+    const resolveRequest = requestWaiters.shift();
+    requestActive += 1;
+    requestLastStartAt = Date.now();
+    resolveRequest?.();
+  }
+}
+
+async function runRateLimitedRequest(task) {
+  await new Promise((resolveRequest) => {
+    requestWaiters.push(resolveRequest);
+    pumpRequestQueue();
   });
 
-  const previousRequest = requestQueue;
-  requestQueue = currentRequest;
-  await previousRequest;
-
   try {
-    const result = await task();
-    if (requestSpacingMs > 0) {
-      await sleep(requestSpacingMs);
-    }
-    return result;
+    return await task();
   } finally {
-    releaseQueue?.();
+    requestActive = Math.max(0, requestActive - 1);
+    pumpRequestQueue();
   }
 }
 
 async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts } = {}) {
   let response;
   try {
-    response = await runSerializedRequest(() => fetch(url, {
+    response = await runRateLimitedRequest(() => fetch(url, {
       signal: AbortSignal.timeout(requestTimeoutMs),
     }));
   } catch (error) {
@@ -198,11 +234,25 @@ async function fetchJsonUrl(url, { attempt = 0, maxAttempts = maxRequestAttempts
   return response.json();
 }
 
-async function fetchCollectionProductIdsFromCachedFile(handle) {
+async function loadCachedCollectionProducts() {
+  if (cachedCollectionProductsByHandle) {
+    return cachedCollectionProductsByHandle;
+  }
+
   const raw = await readFile(collectionProductsPath, "utf8");
   const payload = JSON.parse(raw);
-  const entry = payload?.collections?.[handle];
-  const productIds = Array.isArray(entry?.productIds) ? entry.productIds : [];
+  cachedCollectionProductsByHandle = new Map(
+    Object.entries(payload?.collections || {}).map(([handle, entry]) => [
+      handle,
+      Array.isArray(entry?.productIds) ? entry.productIds : [],
+    ]),
+  );
+  return cachedCollectionProductsByHandle;
+}
+
+async function fetchCollectionProductIdsFromCachedFile(handle) {
+  const cachedProducts = await loadCachedCollectionProducts();
+  const productIds = cachedProducts.get(handle) || [];
 
   if (!productIds.length) {
     process.stdout.write(`Cached collection products payload missing handle "${handle}"\n`);
@@ -268,7 +318,7 @@ async function fetchAdminResponse(pathOrUrl, { attempt = 0, maxAttempts = maxReq
   const url = buildAdminUrl(pathOrUrl);
   let response;
   try {
-    response = await runSerializedRequest(() =>
+    response = await runRateLimitedRequest(() =>
       fetch(url, {
         headers: {
           Accept: "application/json",
@@ -321,7 +371,7 @@ async function fetchAdminGraphQL(query, variables = {}, { attempt = 0, maxAttemp
 
   let response;
   try {
-    response = await runSerializedRequest(() =>
+    response = await runRateLimitedRequest(() =>
       fetch(adminGraphqlUrl, {
         method: "POST",
         headers: {
@@ -876,6 +926,23 @@ function chunkArray(items, size) {
   return chunks;
 }
 
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), items.length);
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= items.length) return;
+      results[index] = await mapper(items[index], index);
+    }
+  }));
+
+  return results;
+}
+
 function extractNumericId(input) {
   const text = String(input || "").trim();
   if (!text) {
@@ -1104,33 +1171,29 @@ async function fetchProductCustomDataMap(products) {
     );
   }
 
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-    const batch = batches[batchIndex];
-    if (batch.every((id) => completedIds.has(String(id)))) {
-      continue;
-    }
+  const pendingBatchIndexes = batches
+    .map((batch, batchIndex) => batch.every((id) => completedIds.has(String(id))) ? null : batchIndex)
+    .filter((batchIndex) => batchIndex !== null);
+  for (let groupStart = 0; groupStart < pendingBatchIndexes.length; groupStart += enrichmentConcurrency) {
+    const group = pendingBatchIndexes.slice(groupStart, groupStart + enrichmentConcurrency);
+    const results = await Promise.all(group.map(async (batchIndex) => {
+      const batch = batches[batchIndex];
+      const payload = adminAccessToken
+        ? await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch })
+        : await runShopifyStoreGraphQLWithRetry(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch }, {
+            label: `custom-data batch ${batchIndex + 1}/${batches.length}`,
+          });
+      return { batch, nodes: Array.isArray(payload?.nodes) ? payload.nodes : [] };
+    }));
 
-    const payload = adminAccessToken
-      ? await fetchAdminGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch })
-      : await runShopifyStoreGraphQLWithRetry(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch }, {
-          label: `custom-data batch ${batchIndex + 1}/${batches.length}`,
-        });
-    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
-
-    for (const node of nodes) {
-      if (!node?.legacyResourceId) {
-        continue;
+    for (const { batch, nodes } of results) {
+      for (const node of nodes) {
+        if (!node?.legacyResourceId) continue;
+        const customData = normalizeCustomDataNode(node);
+        if (customData) records.set(String(node.legacyResourceId), customData);
       }
-
-      const customData = normalizeCustomDataNode(node);
-      if (!customData) {
-        continue;
-      }
-
-      records.set(String(node.legacyResourceId), customData);
+      batch.forEach((id) => completedIds.add(String(id)));
     }
-
-    batch.forEach((id) => completedIds.add(String(id)));
     await writeEnrichmentCheckpoint(
       productCustomDataCheckpointPath,
       fingerprint,
@@ -1270,29 +1333,28 @@ async function fetchProductVariantCostMap(products) {
     );
   }
 
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-    const batch = batches[batchIndex];
-    if (batch.every((id) => completedIds.has(String(id)))) {
-      continue;
-    }
+  const pendingBatchIndexes = batches
+    .map((batch, batchIndex) => batch.every((id) => completedIds.has(String(id))) ? null : batchIndex)
+    .filter((batchIndex) => batchIndex !== null);
+  for (let groupStart = 0; groupStart < pendingBatchIndexes.length; groupStart += enrichmentConcurrency) {
+    const group = pendingBatchIndexes.slice(groupStart, groupStart + enrichmentConcurrency);
+    const results = await Promise.all(group.map(async (batchIndex) => {
+      const batch = batches[batchIndex];
+      const payload = adminAccessToken
+        ? await fetchAdminGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch })
+        : await runShopifyStoreGraphQLWithRetry(PRODUCT_VARIANT_COST_QUERY, { ids: batch }, {
+            label: `variant-cost batch ${batchIndex + 1}/${batches.length}`,
+          });
+      return { batch, nodes: Array.isArray(payload?.nodes) ? payload.nodes : [] };
+    }));
 
-    const payload = adminAccessToken
-      ? await fetchAdminGraphQL(PRODUCT_VARIANT_COST_QUERY, { ids: batch })
-      : await runShopifyStoreGraphQLWithRetry(PRODUCT_VARIANT_COST_QUERY, { ids: batch }, {
-          label: `variant-cost batch ${batchIndex + 1}/${batches.length}`,
-        });
-    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
-
-    for (const node of nodes) {
-      const normalized = normalizeVariantCostNode(node);
-      if (!normalized) {
-        continue;
+    for (const { batch, nodes } of results) {
+      for (const node of nodes) {
+        const normalized = normalizeVariantCostNode(node);
+        if (normalized) records.set(normalized.productLegacyId, normalized.variantCosts);
       }
-
-      records.set(normalized.productLegacyId, normalized.variantCosts);
+      batch.forEach((id) => completedIds.add(String(id)));
     }
-
-    batch.forEach((id) => completedIds.add(String(id)));
     await writeEnrichmentCheckpoint(
       variantCostCheckpointPath,
       fingerprint,
@@ -1493,10 +1555,13 @@ async function fetchCollectionCustomDataMap(collections) {
   const batches = chunkArray(collectionIds, 50);
   const records = new Map();
 
-  for (const batch of batches) {
-    const payload = adminAccessToken
-      ? await fetchAdminGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch })
-      : await runShopifyStoreGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch });
+  const payloads = await Promise.all(
+    batches.map((batch) => adminAccessToken
+      ? fetchAdminGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch })
+      : runShopifyStoreGraphQL(COLLECTION_CUSTOM_DATA_QUERY, { ids: batch })),
+  );
+
+  for (const payload of payloads) {
     const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
 
     for (const node of nodes) {
@@ -2452,6 +2517,10 @@ async function fetchShopForSync() {
 
 async function main() {
   const startedAt = new Date().toISOString();
+  process.stdout.write(
+    `Sync throughput: ${requestConcurrency} Shopify reads, ${enrichmentConcurrency} enrichment batches, ` +
+      `${collectionProductReadConcurrency} collection mappings (request spacing ${requestSpacingMs}ms)\n`,
+  );
   await loadForcedLiveCollectionHandles();
 
   const [products, collections, aboutPage, blogResult, shop] = await Promise.all([
@@ -2511,26 +2580,32 @@ async function main() {
     .map((product) => Number(product.id))
     .filter((productId) => Number.isFinite(productId) && productId > 0);
 
-  for (const collection of collections) {
-    const isAllProducts = collection.handle === "all-products";
-    const ids = isAllProducts ? allProductIds : await fetchCollectionProductIds(collection.handle);
-    const visibleIds = filterProductIdsToCatalog(ids, products);
+  const collectionMappings = await mapWithConcurrency(
+    collections,
+    collectionProductReadConcurrency,
+    async (collection) => {
+      const isAllProducts = collection.handle === "all-products";
+      const ids = isAllProducts ? allProductIds : await fetchCollectionProductIds(collection.handle);
+      const visibleIds = filterProductIdsToCatalog(ids, products);
 
-    if (isAllProducts) {
-      collection.products_count = visibleIds.length;
-      // Do not synthesize a collection metafield value in the local snapshot.
-      // The collection backfill must compare the live hero summary and write a
-      // changed generated value before final readback.
-    }
+      if (isAllProducts) {
+        collection.products_count = visibleIds.length;
+        // Do not synthesize a collection metafield value in the local snapshot.
+        // The collection backfill must compare the live hero summary and write a
+        // changed generated value before final readback.
+      }
 
-    collectionProductMap.collections[collection.handle] = {
-      title: collection.title,
-      productIds: visibleIds,
-    };
-
-    process.stdout.write(
-      `Fetched collection mapping ${collection.handle}: ${visibleIds.length} published products\n`,
-    );
+      process.stdout.write(
+        `Fetched collection mapping ${collection.handle}: ${visibleIds.length} published products\n`,
+      );
+      return [collection.handle, {
+        title: collection.title,
+        productIds: visibleIds,
+      }];
+    },
+  );
+  for (const [handle, mapping] of collectionMappings) {
+    collectionProductMap.collections[handle] = mapping;
   }
 
   await mkdir(outDir, { recursive: true });

@@ -1,8 +1,12 @@
 import { CATALOG_COLLECTION_PLAN } from "./catalog-collection-plan.js";
 import { normalizeCatalogText } from "./catalog-taxonomy.js";
 
-export const COLLECTION_GOVERNANCE_VERSION = "2026-08-27.1";
+export const COLLECTION_GOVERNANCE_VERSION = "2026-09-01.1";
 export const COLLECTION_TAG_PREFIX = "salt:collection:";
+// `test` is an intentionally unmanaged Shopify collection used for store
+// testing. It is read-only for the release and must never be reconciled as a
+// governed customer-facing collection.
+export const DEFAULT_READ_ONLY_LIVE_COLLECTION_HANDLES = Object.freeze(["test"]);
 
 // These collections were merged into their canonical targets. Keep the map so
 // legacy product tags and navigation references resolve without recreating the
@@ -90,6 +94,53 @@ const SEASONAL_DECOR_OBJECT_TERMS = Object.freeze([
   "tabletop", "centerpiece", "wall hanging", "party backdrop", "hanging", "figurine", "door hanging",
 ]);
 
+const HOME_SAFETY_FALSE_POSITIVE_TERMS = Object.freeze([
+  "mouse", "computer mouse", "wireless mouse", "gaming mouse", "keyboard", "laptop", "computer accessory",
+  "usb hub", "beer bottle opener", "bottle opener", "beer opener", "wine opener", "corkscrew", "can opener",
+]);
+
+const HATS_FALSE_POSITIVE_TERMS = Object.freeze([
+  "beer bottle opener", "bottle opener", "beer opener", "wine opener", "corkscrew", "can opener", "bar tool",
+]);
+
+const HAT_POSITIVE_TERMS = Object.freeze([
+  "hat", "hats", "cap", "caps", "beanie", "visor", "headwear", "fedora", "cowboy hat", "bucket hat",
+  "baseball cap", "sun hat", "bonnet", "beret", "head scarf",
+]);
+
+const GIFT_RECIPIENT_TERMS = Object.freeze({
+  dad: Object.freeze([
+    "dad", "daddy", "father", "fathers day", "father s day", "husband", "grandpa", "grandfather", "for him",
+    "gift for men", "mens gift", "men gift",
+  ]),
+  mom: Object.freeze([
+    "mom", "mommy", "mother", "mothers day", "mother s day", "wife", "grandma", "grandmother", "for her",
+    "gift for women", "womens gift", "women gift",
+  ]),
+});
+
+const GIFT_INTENT_TERMS = Object.freeze([
+  "gift", "gifts", "present", "presents", "gift set", "gift box", "gift idea", "gift ideas", "birthday",
+  "christmas", "holiday", "fathers day", "father s day", "mothers day", "mother s day",
+]);
+
+const DAILY_LIVING_AID_TERMS = Object.freeze([
+  "daily living", "daily-living", "elderly", "senior care", "caregiver", "assistive", "adaptive", "mobility aid",
+  "pill organizer", "pill box", "medicine organizer", "medication organizer", "reacher grabber", "dressing aid",
+  "bed rail", "shower chair", "grab bar", "safety rail", "walker", "walking cane", "wheelchair accessory",
+  "hearing aid accessory", "vision aid",
+]);
+
+const SENIOR_LIVING_TERMS = Object.freeze([
+  "senior", "elderly", "senior care", "caregiver", "assisted living", "nursing home", "retirement", "daily living",
+  "mobility aid", "pill organizer", "medicine organizer", "adaptive", "assistive",
+]);
+
+const CANDLE_TERMS = Object.freeze([
+  "candle", "candles", "scented candle", "soy candle", "wax melt", "tealight", "tea light", "votive",
+  "pillar candle", "taper candle", "led candle", "flameless candle", "candle holder", "candlelight",
+]);
+
 const EXTRA_SEMANTIC_SPECS = [
   spec("classification-review", "Classification Review", { dynamic: "classification-review" }),
   spec("classification-fallback", "Classification Fallback", { dynamic: "classification-fallback" }),
@@ -107,9 +158,17 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("back-to-school", "Back to School", { categories: ["office-school-supplies"], targets: ["back-to-school"] }),
   spec("beauty-makeup-essentials", "Beauty Makeup Essentials", { subcategories: ["eye-makeup", "face-makeup", "lip-care-makeup", "makeup-tools", "beauty-tools"], targets: ["beauty-makeup-essentials"] }),
   spec("blush-glow", "Blush & Glow", { textAny: ["blush", "cheek tint", "highlighter", "illuminator"], targets: ["blush-glow"] }),
-  spec("senior-living-solutions", "Senior Living Solutions", { dynamic: "senior-living", textAny: ["senior", "elderly", "daily living aid", "caregiver", "mobility aid", "pill organizer"] }, ["books"]),
+  spec("senior-living-solutions", "Senior Living Solutions", {
+    textAny: SENIOR_LIVING_TERMS,
+    exclude: { textAny: ["senior prom", "senior costume", "senior fashion"] },
+  }, ["books"]),
   spec("camping-gear", "Camping Gear", { categories: ["camping-essentials"], targets: ["camping-gear"] }),
-  spec("candles", "Candles", { subcategories: ["candles-home-fragrance"], targets: ["candles"] }),
+  spec("candles", "Candles", {
+    require: { textAny: CANDLE_TERMS },
+    subcategories: ["candles-home-fragrance"],
+    targets: ["candles"],
+    textAny: CANDLE_TERMS,
+  }),
   spec("car-accessories", "Home & Car Accessories", { departments: ["automotive"], categories: ["home-car-accessories"], targets: ["car-accessories"] }),
   spec("caregiver-essentials", "Caregiver Essentials", { dynamic: "caregiver", textAny: ["caregiver", "patient aid", "daily living aid", "medicine organizer"] }),
   spec("cat-supplies", "Cat Supplies", {
@@ -118,7 +177,12 @@ const EXTRA_SEMANTIC_SPECS = [
   }),
   spec("cleaning-tools", "Cleaning Tools", { subcategories: ["cleaning-tools"], targets: ["cleaning-tools"] }),
   spec("coffee-tea-accessories", "Coffee & Tea Accessories", { subcategories: ["coffee-tea-accessories"], textAny: ["coffee", "tea infuser", "tea set", "teapot"] }),
-  spec("daily-living-aids", "Daily Living Aids", { dynamic: "daily-living", subcategories: ["medicine-organizers", "mobility-support", "vision-care"], targets: ["daily-living-aids"] }),
+  spec("daily-living-aids", "Daily Living Aids", {
+    require: { textAny: DAILY_LIVING_AID_TERMS },
+    subcategories: ["medicine-organizers", "mobility-support", "vision-care"],
+    targets: ["daily-living-aids"],
+    textAny: DAILY_LIVING_AID_TERMS,
+  }),
   spec("decorative-accessories", "Decorative Accessories", { subcategories: ["home-decor", "planters-garden-decor", "aroma-decor"], targets: ["decorative-accessories"] }),
   spec("dining-essentials", "Dining Essentials", { subcategories: ["dining-serveware", "drinkware"], targets: ["dining-essentials"] }),
   spec("dog-supplies", "Dog Supplies", { subcategories: ["dog-supplies"], textAll: ["dog"] }),
@@ -129,14 +193,22 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("garden-tools", "Garden & Tools", { subcategories: ["garden-tools", "tools-hardware", "home-repair-tools"], targets: ["garden-tools"] }),
   spec("general-merchandise", "General Merchandise", { departments: ["general"] }),
   spec("gifts", "Gifts Collection", { dynamic: "gifts", departments: ["gifts"], targets: ["gifts"], textAny: ["gift box", "gift set", "birthday gift", "christmas gift", "housewarming gift"] }),
-  spec("gifts-for-dad", "Gifts for Dad", { dynamic: "gifts-for-dad" }),
-  spec("gifts-for-mom", "Gifts for Mom", { dynamic: "gifts-for-mom" }),
+  spec("gifts-for-dad", "Gifts for Dad", {
+    textAnyGroups: [GIFT_INTENT_TERMS, GIFT_RECIPIENT_TERMS.dad],
+  }),
+  spec("gifts-for-mom", "Gifts for Mom", {
+    textAnyGroups: [GIFT_INTENT_TERMS, GIFT_RECIPIENT_TERMS.mom],
+  }),
   spec("gifts-for-seniors", "Gifts for Seniors", { dynamic: "gifts-for-seniors" }),
   spec("glam-eye-palettes", "Glam Eye Palettes", { textAny: ["eyeshadow palette", "eye shadow palette", "makeup palette"] }),
   spec("hair-nourishment", "Hair Nourishment", { subcategories: ["hair-care"], textAny: ["hair oil", "hair mask", "hair nourishment", "hair treatment"], targets: ["hair-nourishment"] }),
   spec("hair-wash-essentials", "Hair Wash Essentials", { textAny: ["shampoo", "conditioner", "hair wash", "scalp cleanser"] }),
   spec("holiday-gifts", "Holiday Gifts", { dynamic: "holiday-gifts", textAny: ["christmas gift", "holiday gift", "festive gift"] }),
-  spec("home-safety", "Home Safety", { dynamic: "home-safety", textAny: ["home safety", "anti slip", "grab bar", "safety rail", "door alarm"] }),
+  spec("home-safety", "Home Safety", {
+    require: { textAny: ["home safety", "anti slip", "grab bar", "safety rail", "door alarm"] },
+    textAny: ["home safety", "anti slip", "grab bar", "safety rail", "door alarm"],
+    exclude: { textAny: HOME_SAFETY_FALSE_POSITIVE_TERMS },
+  }),
   spec("housewarming-gifts", "Housewarming Gifts", { dynamic: "housewarming-gifts", textAny: ["housewarming gift", "new home gift"] }),
   spec("iphone-cases", "iPhone Cases", { require: { rules: ["phone-case"], textAny: ["iphone"] } }),
   spec("jeans", "Jeans", { subcategories: ["jeans"], rules: ["jeans"] }),
@@ -231,6 +303,13 @@ function buildPlanSpecs() {
                 "grafting tool", "grafting shears", "shears", "secateur", "gardening tool", "garden tool",
               ],
             },
+          }
+      : entry.handle === "hats"
+        ? {
+            require: { textAny: HAT_POSITIVE_TERMS },
+            taxonomyTags: [entry.ruleTag],
+            targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: HATS_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "mens-fashion" || entry.handle === "womens-fashion"
         ? {
@@ -382,7 +461,10 @@ export function productMatchesSemanticCollection(policy, product, knowledge, dyn
   const text = productText(product);
   const allMatches = (match.textAll || []).every((phrase) => hasPhrase(text, phrase));
   const anyMatches = !(match.textAny || []).length || (match.textAny || []).some((phrase) => hasPhrase(text, phrase));
-  if (Boolean((match.textAll || []).length || (match.textAny || []).length) && allMatches && anyMatches) return true;
+  const anyGroupMatches = (match.textAnyGroups || []).every((group) =>
+    Array.isArray(group) && group.some((phrase) => hasPhrase(text, phrase)));
+  if (Boolean((match.textAll || []).length || (match.textAny || []).length || (match.textAnyGroups || []).length) &&
+    allMatches && anyMatches && anyGroupMatches) return true;
 
   // `require` is a gate, not an alternative to the collection's positive
   // evidence. If it is the only positive rule, its successful match is the
@@ -435,10 +517,10 @@ export function resolveCollectionPolicyByLiveHandle(handle) {
 
 export function assertCompleteCollectionGovernance(collections) {
   const readOnlyHandles = new Set(
-    String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "")
-      .split(",")
-      .map(normalizeCollectionHandle)
-      .filter(Boolean),
+    [
+      ...DEFAULT_READ_ONLY_LIVE_COLLECTION_HANDLES,
+      ...String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "").split(","),
+    ].map(normalizeCollectionHandle).filter(Boolean),
   );
   const unknown = (Array.isArray(collections) ? collections : [])
     .map((collection) => normalizeCollectionHandle(collection?.handle))

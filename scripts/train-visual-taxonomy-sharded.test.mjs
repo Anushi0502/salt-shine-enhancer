@@ -1,50 +1,59 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import {
-  adapterPathForShard,
-  buildFullManifest,
-  validateShardPlan,
-} from "./train-visual-taxonomy-sharded.mjs";
-import { getCatalogTaxonomyDefinitions } from "../src/lib/catalog-taxonomy.js";
+import { loadState, saveState } from "./train-visual-taxonomy-sharded.mjs";
 
-const [firstRule, secondRule] = getCatalogTaxonomyDefinitions().map((definition) => definition.id);
+const plan = {
+  sourceManifestSha256: "s".repeat(64),
+  targetBytes: 50_000_000_000,
+  maxShardBytes: 6_000_000_000,
+};
+const planSha256 = "p".repeat(64);
 
-function plan(overrides = {}) {
+function state(phase, updatedAt) {
   return {
-    kind: "salt-visual-taxonomy-shard-plan",
+    kind: "salt-visual-taxonomy-shard-training-state",
     version: 1,
-    sourceManifestSha256: "a".repeat(64),
-    targetBytes: 50_000_000_000,
-    maxShardBytes: 25_000_000_000,
-    bytes: 50_000_000_000,
-    shards: [
-      { shardIndex: 1, shardName: "shard-001", bytes: 25_000_000_000, imageCount: 1, sourceManifest: "/external/one.jsonl", datasetDir: "/external/shard-001", labelsOutput: "/external/one.labels.jsonl" },
-      { shardIndex: 2, shardName: "shard-002", bytes: 25_000_000_000, imageCount: 1, sourceManifest: "/external/two.jsonl", datasetDir: "/external/shard-002", labelsOutput: "/external/two.labels.jsonl" },
-    ],
-    ...overrides,
+    planSha256,
+    sourceManifestSha256: plan.sourceManifestSha256,
+    targetBytes: plan.targetBytes,
+    maxShardBytes: plan.maxShardBytes,
+    phase,
+    adapterShards: {},
+    embeddingShards: {},
+    updatedAt,
   };
 }
 
-describe("sharded visual taxonomy training", () => {
-  it("requires two sequential shards and never permits a shard over 25 GB", () => {
-    expect(validateShardPlan(plan())).toMatchObject({ totalBytes: 50_000_000_000, maxShardBytes: 25_000_000_000 });
-    expect(() => validateShardPlan(plan({ shards: [plan().shards[0]] }))).toThrow(/at least two/);
-    expect(() => validateShardPlan(plan({ shards: [{ ...plan().shards[0], bytes: 25_000_000_001 }, plan().shards[1]] }))).toThrow(/25 GB/);
-    expect(() => validateShardPlan(plan({ maxShardBytes: 25_000_000_001 }))).toThrow(/25 GB/);
-  });
+describe("sharded visual training state", () => {
+  it("prefers the newest local checkpoint and mirrors saves for the watcher", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "salt-visual-state-test-"));
+    try {
+      const remotePath = join(directory, "output", "state.json");
+      const localPath = join(directory, "cache", "state.json");
+      const stale = state("adapter", "2026-08-31T10:00:00.000Z");
+      const fresh = state("head-training", "2026-08-31T11:00:00.000Z");
+      await mkdir(join(directory, "output"), { recursive: true });
+      await mkdir(join(directory, "cache"), { recursive: true });
+      await writeFile(remotePath, `${JSON.stringify(stale)}\n`, "utf8");
+      await writeFile(localPath, `${JSON.stringify(fresh)}\n`, "utf8");
 
-  it("builds one globally checked manifest from shard manifests", () => {
-    const shardManifests = [
-      { entries: [{ image: "one.webp", imageSha256: "1".repeat(64), bytes: 25_000_000_000, productId: "p1", ruleId: firstRule, split: "train" }] },
-      { entries: [{ image: "two.webp", imageSha256: "2".repeat(64), bytes: 25_000_000_000, productId: "p2", ruleId: secondRule, split: "test" }] },
-    ];
-    const result = buildFullManifest(shardManifests, plan());
-    expect(result).toMatchObject({ bytes: 50_000_000_000, imageCount: 2, productCount: 2, labelCount: 2 });
-    expect(result.manifestSha256).toMatch(/^[a-f0-9]{64}$/);
-  });
+      await expect(loadState(remotePath, planSha256, plan, localPath)).resolves.toMatchObject({
+        phase: "head-training",
+      });
 
-  it("uses a stable separate adapter artifact for each non-final shard", () => {
-    expect(adapterPathForShard("/external/final.safetensors", 0, 2)).toBe("/external/final.safetensors.shard-001");
-    expect(adapterPathForShard("/external/final.safetensors", 1, 2)).toBe("/external/final.safetensors");
+      await saveState(remotePath, fresh, { phase: "complete" }, localPath);
+      const mirrored = JSON.parse(await readFile(remotePath, "utf8"));
+      const local = JSON.parse(await readFile(localPath, "utf8"));
+      expect(mirrored.phase).toBe("complete");
+      expect(local.phase).toBe("complete");
+      expect(mirrored.planSha256).toBe(planSha256);
+      expect(local.planSha256).toBe(planSha256);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

@@ -1,8 +1,320 @@
 {
-  "generatedAt": "2026-08-28T21:06:57.917Z",
-  "source": "shopify-admin-orders-with-deterministic-catalog-floor-fill",
-  "total": 300,
+  "generatedAt": "2026-09-08T03:02:02.705Z",
+  "source": "shopify-admin-orders",
+  "total": 307,
   "products": [
+    {
+      "id": "gid://shopify/Product/8051181584483",
+      "title": "Quartz Wristwatches Watch",
+      "handle": "simple-womens-watches-small-round-girls-belt-watches-quartz-wristwatches-womens-watch-reloj-para-mujer",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S79ab93ba90bd4dea893be7719b955346B.webp?v=1782911423",
+      "imageAlt": "Quartz Wristwatches Watch",
+      "price": 45.99
+    },
+    {
+      "id": "gid://shopify/Product/8066145091683",
+      "title": "Solar Power Bank 100000MAH Wireless Fast Charging Portable Charger",
+      "handle": "solar-power-bank-100000mah-wireless-fast-charging-portable-charger-built-in-cables-led-flashlight-for-camping-travel-emergency",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S227758397214495992a26f99bda8fc383.webp?v=1784029838",
+      "imageAlt": "Solar Power Bank 100000MAH Wireless Fast Charging Portable Charger",
+      "price": 77.99
+    },
+    {
+      "id": "gid://shopify/Product/8098833989731",
+      "title": "Juno Beastars Anime T Shirt Unisex Anime Manga Shirt",
+      "handle": "juno-beastars-anime-t-shirt-unisex-anime-manga-shirt",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sda5145d0eb81494293085dcebf97f165t.webp?v=1785937813",
+      "imageAlt": "Juno Beastars Anime T Shirt Unisex Anime Manga Shirt",
+      "price": 50.99
+    },
+    {
+      "id": "gid://shopify/Product/8051879706723",
+      "title": "100ML Unisex Fresh Perfume For Daily Wear And Everyday Fragrance Use",
+      "handle": "women-perfume-100ml-caramel-vanilla-flavor-fresh-natural-charming-irresistible-sun-gourmet-longlasting-fragrance-brand-bodyspray",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S441b5950ae5c4d6188885f5cc3b7542eT.webp?v=1782987595",
+      "imageAlt": "100ML Unisex Fresh Perfume For Daily Wear And Everyday Fragrance Use",
+      "price": 49.99
+    },
+    {
+      "id": "gid://shopify/Product/8055563944035",
+      "title": "Wallet Genuine Leather Zipper Bag",
+      "handle": "wallet-for-men-2024-new-genuine-leather-zipper-wallet-change-card-bag-all-in-one-wallet-trendy-short-clip-for-men",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8f9ef72700884ea5a43c7187665252d5p.webp?v=1783411420",
+      "imageAlt": "Wallet Genuine Leather Zipper Bag",
+      "price": 59.99
+    },
+    {
+      "id": "gid://shopify/Product/8066251980899",
+      "title": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
+      "handle": "original-pen-drive-16tb-usb-3-2-flash-drive-high-speed-pen-drive-type-c-metal-usb-memory-for-computer-storage-devices",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5ce0fdb7208f4a06970130f46c608330Z.webp?v=1784031600",
+      "imageAlt": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
+      "price": 59.99
+    },
+    {
+      "id": "gid://shopify/Product/8076873433187",
+      "title": "Cute Water Bottle With Straw The Amazing Digitals Circus 900ML Cup",
+      "handle": "cute-water-bottle-with-straw-the-amazing-digitals-circus-900ml-cup-kids-outdoor-sports-large-capacity-mug-children-birthday-gift",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S48cdd5445334494988fc22b45d59e9e7m.webp?v=1784633569",
+      "imageAlt": "Cute Water Bottle With Straw The Amazing Digitals Circus 900ML Cup",
+      "price": 44.99
+    },
+    {
+      "id": "gid://shopify/Product/8068255580259",
+      "title": "Bosecxt Ultra Air 7 Wireless Bluetooth Earbuds With Microphone",
+      "handle": "bosecxt-ultra-air-7-bluetooth-earphones-tws-smart-touch-control-hifi-wireless-headphone-waterproof-game-motion-earbuds-with-mic",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S63289b77fef94032a694f60fc6829e36A.webp?v=1784121556",
+      "imageAlt": "Bosecxt Ultra Air 7 Wireless Bluetooth Earbuds With Microphone",
+      "price": 61.99
+    },
+    {
+      "id": "gid://shopify/Product/8051173523555",
+      "title": "Purpose Golf Accessory Bag Firm Structured Purpose Accessory Bag",
+      "handle": "2026-latest-ladies-golf-shoulder-handbag-multi-purpose-golf-accessory-bag-firm-structured-design-portable-hand-tote-bag",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S15bcef662d8b49fc93db9a22259faf94g.webp?v=1782910450",
+      "imageAlt": "Purpose Golf Accessory Bag Firm Structured Purpose Accessory Bag",
+      "price": 119.99
+    },
+    {
+      "id": "gid://shopify/Product/8052506689635",
+      "title": "Electric Lint Remover Fabric Shaver Digital Tool",
+      "handle": "electric-lint-remover-fabric-shaver-digital-display-electric-pellet-fluff-remover-usb-rechargeable-ergonomic-for-clothes-sweater",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6e0e52a20bb84df2a9043beb76285722u.webp?v=1783070590",
+      "imageAlt": "Electric Lint Remover Fabric Shaver Digital Tool",
+      "price": 46.99
+    },
+    {
+      "id": "gid://shopify/Product/8055560208483",
+      "title": "Bat Id Wallet Leather Slim Card Bag",
+      "handle": "bat-id-wallet-for-men-leather-slim-card-holder-case-cover-with-cutout-superhero-face-eyes-mask-gift-for-husband-teens-boy-friend-2",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Safb41b57234f4465b7e798c000ca61e1v.webp?v=1783411281",
+      "imageAlt": "Bat Id Wallet Leather Slim Card Bag",
+      "price": 44.99
+    },
+    {
+      "id": "gid://shopify/Product/8051907985507",
+      "title": "Mens Mechanical Watches Business Automatic Wristwatch",
+      "handle": "mens-fashion-mechanical-watches-business-automatic-wristwatch-stainless-steel-luminous-designer-clock-reojes-de-hombre-new-2023",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S573c0437417d4f22977d902da46630a5z.webp?v=1782988080",
+      "imageAlt": "Mens Mechanical Watches Business Automatic Wristwatch",
+      "price": 154.99
+    },
+    {
+      "id": "gid://shopify/Product/8066116517987",
+      "title": "Children Educational Toys Montessori Materials Biology Wooden",
+      "handle": "children-educational-toys-montessori-materials-biology-wooden-skeleton-puzzle-frog-horse-tortiose-fish-bird-animal-toys-for-boy",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/H753a395379f34defad2874abd3d93dd2f.webp?v=1784029030",
+      "imageAlt": "Children Educational Toys Montessori Materials Biology Wooden",
+      "price": 54.99
+    },
+    {
+      "id": "gid://shopify/Product/8068253745251",
+      "title": "42V 2A 5 Pin Charger For 36V E Bike Batteries",
+      "handle": "charger-42-v-2a-85w-5-pin-round-for-36v-batteries-from-fischer-phylion-devron-lifebike-batavus-sparta-and-more",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf0238d41d4794c3cb0814b4c90872517k.webp?v=1784121461",
+      "imageAlt": "42V 2A 5 Pin Charger For 36V E Bike Batteries",
+      "price": 81.99
+    },
+    {
+      "id": "gid://shopify/Product/8052510851171",
+      "title": "Qibest Matte Liquid Lipstick Waterproof Long",
+      "handle": "qibest-matte-liquid-lipstick-waterproof-long-lasting-velvet-mate-nude-red-lip-gloss-lint-tube-makeup-cosmetic-lipsticks-lipgloss",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/H1e8b8aa65da249f1a6ed6639aaf3ab54x.webp?v=1783070960",
+      "imageAlt": "Qibest Matte Liquid Lipstick Waterproof Long",
+      "price": 41.99
+    },
+    {
+      "id": "gid://shopify/Product/8051985580131",
+      "title": "Kaleidos Eyeliner Gel Pencil Waterproof Chameleon Makeup Product",
+      "handle": "kaleidos-eyeliner-gel-pencil-waterproof-chameleon-colour-long-wear-glitter-metallic-eye-shadows-pen-eye-liner-stamp-makeup",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfed7badd38a548dd8a1552e9469c770cf.webp?v=1782996481",
+      "imageAlt": "Kaleidos Eyeliner Gel Pencil Waterproof Chameleon Makeup Product",
+      "price": 54.99
+    },
+    {
+      "id": "gid://shopify/Product/8052548075619",
+      "title": "Nail Airbrush Portable Compressor",
+      "handle": "nail-airbrush-portable-airbrush-with-compressor-painting-air-brush-mini-compressor-paint-gun-for-nail-art-paint-crafts-modeling",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S321e828f6d33434ebb6b879c6daab359y.webp?v=1783081711",
+      "imageAlt": "Nail Airbrush Portable Compressor",
+      "price": 64.99
+    },
+    {
+      "id": "gid://shopify/Product/8058438549603",
+      "title": "Sports Shoes Featuring Durable Coated Leather",
+      "handle": "popular-sports-shoes-for-men-and-women-featuring-a-durable-coated-leather-upper-breathable-and-comfortable-with-a-rubber-sole",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S5178ad71e5934cf0ae9e08f3a1fd8071v.webp?v=1783500720",
+      "imageAlt": "Sports Shoes Featuring Durable Coated Leather",
+      "price": 128.99
+    },
+    {
+      "id": "gid://shopify/Product/8051173556323",
+      "title": "Bag Felt Binder Clip High",
+      "handle": "girls-bag-2024-new-fashion-felt-binder-clip-high-capacity-shoulder-bag-handbag-office-lady-women-bag",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sf431039300b04d96a0dd24fe5604f64do.webp?v=1782910450",
+      "imageAlt": "Bag Felt Binder Clip High",
+      "price": 45.99
+    },
+    {
+      "id": "gid://shopify/Product/8060554149987",
+      "title": "Round Tip Beard Tweezers Eyebrow Facial Tool",
+      "handle": "round-tip-beard-tweezers-eyebrow-facial-hair-removal-tool-seamless-grip-precise-trimming-tweezers-durable-beauty-tools-for-men",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8fbeabcc690e49118be01a5c24d6844b7.webp?v=1783586687",
+      "imageAlt": "Round Tip Beard Tweezers Eyebrow Facial Tool",
+      "price": 43.99
+    },
+    {
+      "id": "gid://shopify/Product/8065630077027",
+      "title": "Kids Sweaters Children Autumn Winter Knitted Clothes Boys Girls Wool",
+      "handle": "kids-sweaters-children-autumn-winter-knitted-clothes-boys-girls-wool-knit-stand-collar-pullover-casual-clothing",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sad68eaefd8a04a94be71fd4f08d0a266w.webp?v=1784019847",
+      "imageAlt": "Kids Sweaters Children Autumn Winter Knitted Clothes Boys Girls Wool",
+      "price": 46.99
+    },
+    {
+      "id": "gid://shopify/Product/8094179197027",
+      "title": "Mens Jeans 2024 Overalls Men Pockets Casual Loose Long Denim Pants",
+      "handle": "mens-jeans-2024-overalls-men-pockets-casual-loose-long-denim-pants-slim-splice-straight-rompers-autumn-plus-size-long-jeans-men",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfdd2d5617e954a9a97b7b770ef3dae40F.webp?v=1785572077",
+      "imageAlt": "Mens Jeans 2024 Overalls Men Pockets Casual Loose Long Denim Pants",
+      "price": 52.99
+    },
+    {
+      "id": "gid://shopify/Product/8051172212835",
+      "title": "Business Single Shoulder Bag Polo Vertical",
+      "handle": "the-leisure-business-single-shoulder-bag-polo-vertical-bag-man-trend-inclined-shoulder-bag",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sed0f5ba94fc14fa28ecf27642b4c992dM.webp?v=1782910419",
+      "imageAlt": "Business Single Shoulder Bag Polo Vertical",
+      "price": 52.99
+    },
+    {
+      "id": "gid://shopify/Product/7769707151459",
+      "title": "Slim Fit Casual Pants Business Stretch",
+      "handle": "mens-cotton-slim-fit-casual-pants-business-fashion-stretch-trousers",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc5548c43ece2434882c6fcac3362b1e2J.webp?v=1744717550",
+      "imageAlt": "Slim Fit Casual Pants Business Stretch",
+      "price": 65.99
+    },
+    {
+      "id": "gid://shopify/Product/8058392969315",
+      "title": "Horse Hair Care Oil 100ML Mane",
+      "handle": "horse-hair-care-oil-100ml-mane-shine-essential-oil-with-plant-ingredients-nourishing-coat-treatment-easy-carry-for-all-breeds",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa4c4a9f2cf844368bca425ccb409227aU.webp?v=1783499912",
+      "imageAlt": "Horse Hair Care Oil 100ML Mane",
+      "price": 45.99
+    },
+    {
+      "id": "gid://shopify/Product/8094172971107",
+      "title": "Mens Jeans Print High Waist Straight Leg Denim Pants Harajuku Unisex",
+      "handle": "mens-jeans-print-high-waist-straight-leg-denim-pants-harajuku-unisex-loose-fit-tapered-casual-streetwear-fashion-trend-arrival",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S86b9b76ab18b44f58b6ef571cc48fae6j.webp?v=1785571880",
+      "imageAlt": "Mens Jeans Print High Waist Straight Leg Denim Pants Harajuku Unisex",
+      "price": 75.99
+    },
+    {
+      "id": "gid://shopify/Product/8066252013667",
+      "title": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
+      "handle": "original-pen-drive-16tb-usb-3-2-flash-drive-high-speed-pen-drive-type-c-metal-usb-memory-for-computer-storage-devices-1",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc5a5e0e36b474edea2ac0ec1874057ffo.webp?v=1784031600",
+      "imageAlt": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
+      "price": 61.99
+    },
+    {
+      "id": "gid://shopify/Product/8058571292771",
+      "title": "Professional Hairdressing Carbon Comb Anti Static",
+      "handle": "professional-hairdressing-carbon-comb-anti-static-hair-comb-haircut-tools-hairdresser-cutting-comb-barber-styling-hair-comb-set",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/H8333b34618eb4e92a7b40b11b88b2a059.webp?v=1783503234",
+      "imageAlt": "Professional Hairdressing Carbon Comb Anti Static",
+      "price": 46.99
+    },
+    {
+      "id": "gid://shopify/Product/8052514455651",
+      "title": "Makeup Organizer Large Capacity Cosmetic",
+      "handle": "makeup-organizer-large-capacity-cosmetic-organizer-with-transparent-drawer-multi-functional-lipstick-cosmetic-organizer",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S03897f1ea5cc44b28117af95b26d8d796.webp?v=1783072078",
+      "imageAlt": "Makeup Organizer Large Capacity Cosmetic",
+      "price": 52.99
+    },
+    {
+      "id": "gid://shopify/Product/8055603789923",
+      "title": "Mens Party Nightclubs Trousers Incerun American",
+      "handle": "mens-party-nightclubs-trousers-incerun-2024-american-style-stylish-sexy-male-glittering-fabric-perspective-thin-long-pants-s-5xl",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S037f7f1b8fbc438994d4628a8f0377ab0.webp?v=1783412647",
+      "imageAlt": "Mens Party Nightclubs Trousers Incerun American",
+      "price": 52.99
+    },
+    {
+      "id": "gid://shopify/Product/8055562960995",
+      "title": "Mens Leather Magic Wallets Portable Money Bag",
+      "handle": "hot-sale-mens-leather-magic-wallets-portable-money-clips-with-credit-card-slot-cash-holder-purse-for-man-brown-coffee",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/HTB1NFN9SwDqK1RjSZSyq6yxEVXaf.webp?v=1783411406",
+      "imageAlt": "Mens Leather Magic Wallets Portable Money Bag",
+      "price": 40.99
+    },
+    {
+      "id": "gid://shopify/Product/8058392641635",
+      "title": "Original Restoria Discreet Colour Restoring Lotion",
+      "handle": "original-restoria-discreet-colour-restoring-lotion-hair-care-250ml-reduce-hair-for-men-and-women-hair-treatments",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sabfad23dd1744a4f907ae1f6f843f004L.webp?v=1783499907",
+      "imageAlt": "Original Restoria Discreet Colour Restoring Lotion",
+      "price": 57.99
+    },
+    {
+      "id": "gid://shopify/Product/8053911158883",
+      "title": "Reversible Travel Tote Bag Large Capacity",
+      "handle": "reversible-travel-tote-bag-large-capacity-foldable-carry-on-duffle-bag-canvas-shoulder-luggage-packing-bag-for-women-men",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S660fe44d696d433285a40e6e9fa0dbafj.webp?v=1783325506",
+      "imageAlt": "Reversible Travel Tote Bag Large Capacity",
+      "price": 59.99
+    },
+    {
+      "id": "gid://shopify/Product/8051905167459",
+      "title": "LED Digital Watch Stainless Steel",
+      "handle": "luxury-led-digital-watch-for-men-stainless-steel-mens-electronic-wristwatch-simple-business-gold-sliver-mens-watch-reloj-hombre",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6caa0c63a4a04e609192084f633a76f6C.webp?v=1782988061",
+      "imageAlt": "LED Digital Watch Stainless Steel",
+      "price": 43.99
+    },
+    {
+      "id": "gid://shopify/Product/8053919809635",
+      "title": "Leather Travel Duffel Bag Large Capacity",
+      "handle": "hot-sale-pu-leather-women-travel-duffel-bag-for-men-large-capacity-waterproof-travel-bag-design-zipper-multifunction-luggage-bag",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Hc8bf761526a64758b2845fdef630ffccj.webp?v=1783325821",
+      "imageAlt": "Leather Travel Duffel Bag Large Capacity",
+      "price": 52.99
+    },
+    {
+      "id": "gid://shopify/Product/8053937537123",
+      "title": "Backpacks Princess Backpack",
+      "handle": "children-school-bags-for-girls-kids-satchel-primary-orthopedic-school-backpacks-princess-backpack-teenager-schoolbag-knapsack-1",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se842a8be81f643c2bc4c2e24d27db943F_5aaacf4f-8ca7-4d94-8cff-f994ca343c34.webp?v=1783326786",
+      "imageAlt": "Backpacks Princess Backpack",
+      "price": 73.99
+    },
+    {
+      "id": "gid://shopify/Product/8052489388131",
+      "title": "7d Waterproof Mascara",
+      "handle": "7d-waterproof-mascara-fiber-lashes-with-100-pure-collagen-volumizing-lengthening-curling-smudge-proof-long-lasting",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sdc1bf89497f9437e851d69ec6faa8d68L.webp?v=1783065297",
+      "imageAlt": "7d Waterproof Mascara",
+      "price": 40.99
+    },
+    {
+      "id": "gid://shopify/Product/8098826158179",
+      "title": "Anime Code Geass Ring Lelouch Adjustable Cosplay Unisex Couple Lover",
+      "handle": "anime-code-geass-ring-lelouch-adjustable-cosplay-unisex-couple-lover-rings-prop-jewelry-gift-accessories",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S30affcc90d064df0a504452e34d9d2ddC.webp?v=1785937503",
+      "imageAlt": "Anime Code Geass Ring Lelouch Adjustable Cosplay Unisex Couple Lover",
+      "price": 41.99
+    },
+    {
+      "id": "gid://shopify/Product/8059439874147",
+      "title": "Rain Coat Jackets Hooded Belt Waterproof",
+      "handle": "fashion-rain-coat-jackets-hooded-with-belt-waterproof-transparent-plastic-long-ladies-clear-raincoats-women-men",
+      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Se288046c8ff14f2a8bf14e3e3862f7f5s.webp?v=1783515220",
+      "imageAlt": "Rain Coat Jackets Hooded Belt Waterproof",
+      "price": 72.99
+    },
     {
       "id": "gid://shopify/Product/8048946151523",
       "title": "Pu Leather Box Bag Female Glossy",
@@ -20,14 +332,6 @@
       "price": 61.99
     },
     {
-      "id": "gid://shopify/Product/8058392641635",
-      "title": "Original Restoria Discreet Colour Restoring Lotion",
-      "handle": "original-restoria-discreet-colour-restoring-lotion-hair-care-250ml-reduce-hair-for-men-and-women-hair-treatments",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sabfad23dd1744a4f907ae1f6f843f004L.webp?v=1783499907",
-      "imageAlt": "Original Restoria Discreet Colour Restoring Lotion",
-      "price": 57.99
-    },
-    {
       "id": "gid://shopify/Product/8059444101219",
       "title": "Adeus Heat Sensation Moisturize Body Cream",
       "handle": "adeus-heat-sensation-moisturize-body-cream-repair-damage-firm-skin-non-greasy-refresh-enhance-elasticity-body-massage-cream-1",
@@ -41,7 +345,7 @@
       "handle": "new-ultra-thin-smart-watch-men-1-96-amoled-hd-pixel-display-always-show-time-bt-call-reminder-smartwatch-ladies-for-android-ios",
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S84ee128dc0b741b0ad5ccee5eea16a8bU.webp?v=1782911242",
       "imageAlt": "Ultra Thin Smart Watch Amoled Hd",
-      "price": 109.99
+      "price": 78.99
     },
     {
       "id": "gid://shopify/Product/8052509671523",
@@ -82,14 +386,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S29514e0a4f974fceb3e793e4328ac92az.webp?v=1783070150",
       "imageAlt": "Lip Plumper Oil Instantly Volumising Increase",
       "price": 42.99
-    },
-    {
-      "id": "gid://shopify/Product/8051173523555",
-      "title": "Purpose Golf Accessory Bag Firm Structured Purpose Accessory Bag",
-      "handle": "2026-latest-ladies-golf-shoulder-handbag-multi-purpose-golf-accessory-bag-firm-structured-design-portable-hand-tote-bag",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S15bcef662d8b49fc93db9a22259faf94g.webp?v=1782910450",
-      "imageAlt": "Purpose Golf Accessory Bag Firm Structured Purpose Accessory Bag",
-      "price": 119.99
     },
     {
       "id": "gid://shopify/Product/8113419681891",
@@ -412,14 +708,6 @@
       "price": 61.99
     },
     {
-      "id": "gid://shopify/Product/8052510851171",
-      "title": "Qibest Matte Liquid Lipstick Waterproof Long",
-      "handle": "qibest-matte-liquid-lipstick-waterproof-long-lasting-velvet-mate-nude-red-lip-gloss-lint-tube-makeup-cosmetic-lipsticks-lipgloss",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/H1e8b8aa65da249f1a6ed6639aaf3ab54x.webp?v=1783070960",
-      "imageAlt": "Qibest Matte Liquid Lipstick Waterproof Long",
-      "price": 41.99
-    },
-    {
       "id": "gid://shopify/Product/7847080329315",
       "title": "Super Sharp Grafting Knife Fruit Trees Tool",
       "handle": "super-sharp-grafting-knife-for-fruit-trees",
@@ -508,22 +796,6 @@
       "price": 43.99
     },
     {
-      "id": "gid://shopify/Product/8066249457763",
-      "title": "16TB Usb3 2 Flash Drive Metal High Speed Pen Drive 8TB 4TB",
-      "handle": "16tb-usb3-2-flash-drive-metal-high-speed-pen-drive-8tb-4tb-waterproof-type-c-usb-pen-drive-for-computer-storage-devices",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S62c76a915c224dd1bed96fea3454209e8.webp?v=1784031519",
-      "imageAlt": "16TB Usb3 2 Flash Drive Metal High Speed Pen Drive 8TB 4TB",
-      "price": 50.99
-    },
-    {
-      "id": "gid://shopify/Product/8068255580259",
-      "title": "Bosecxt Ultra Air 7 Wireless Bluetooth Earbuds With Microphone",
-      "handle": "bosecxt-ultra-air-7-bluetooth-earphones-tws-smart-touch-control-hifi-wireless-headphone-waterproof-game-motion-earbuds-with-mic",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S63289b77fef94032a694f60fc6829e36A.webp?v=1784121556",
-      "imageAlt": "Bosecxt Ultra Air 7 Wireless Bluetooth Earbuds With Microphone",
-      "price": 61.99
-    },
-    {
       "id": "gid://shopify/Product/8076926189667",
       "title": "Protective Iphone Case For Iphone 17",
       "handle": "for-iphone-17-16-15-14-13-12-11-pro-max-mini-se-2020-2022-air-xs-xr-7-8-plus-16e-diy-photo-customized-case-imd-shockproof-cover",
@@ -554,14 +826,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S58220095541644659aef3e28e03a79c5r.webp?v=1783326524",
       "imageAlt": "Adjustable Strap Quilted Duffle Bag Large Phone Case",
       "price": 61.99
-    },
-    {
-      "id": "gid://shopify/Product/8060554149987",
-      "title": "Round Tip Beard Tweezers Eyebrow Facial Tool",
-      "handle": "round-tip-beard-tweezers-eyebrow-facial-hair-removal-tool-seamless-grip-precise-trimming-tweezers-durable-beauty-tools-for-men",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0959ab0e332a46e7bcc18dfcb2e70d20B.webp?v=1783586687",
-      "imageAlt": "Round Tip Beard Tweezers Eyebrow Facial Tool",
-      "price": 41.99
     },
     {
       "id": "gid://shopify/Product/8066262663267",
@@ -674,14 +938,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sbc62ea82b74b47368000f950260393e6i.webp?v=1783081140",
       "imageAlt": "Colors Eyeshadow Palette Dark Black Grey",
       "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/8066251980899",
-      "title": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
-      "handle": "original-pen-drive-16tb-usb-3-2-flash-drive-high-speed-pen-drive-type-c-metal-usb-memory-for-computer-storage-devices",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S25ffdb3e06b64d07b9d7b0222debe651L.webp?v=1784031600",
-      "imageAlt": "Original Pen Drive 16TB USB 3 2 Flash Drive High Speed Pen Type C",
-      "price": 59.99
     },
     {
       "id": "gid://shopify/Product/7771812659299",
@@ -922,14 +1178,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sfba37f5cd0904143b57143a89e9e9c0b9.webp?v=1784121736",
       "imageAlt": "Anti Lost Ear Hooks For Wireless Earbuds",
       "price": 41.99
-    },
-    {
-      "id": "gid://shopify/Product/8066216460387",
-      "title": "2TB Metal USB 3 0 Pen Drive 2TB USB Flash Drives 1TB High Speed",
-      "handle": "2tb-metal-usb-3-0-pen-drive-2tb-usb-flash-drives-1tb-high-speed-pendrive-waterproof-usb-flash-disk-new-upgraded-type-c-adapter",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sa370e21a1cb8491d8ce383e780801c24B.webp?v=1784030808",
-      "imageAlt": "2TB Metal USB 3 0 Pen Drive 2TB USB Flash Drives 1TB High Speed",
-      "price": 45.99
     },
     {
       "id": "gid://shopify/Product/8052514717795",
@@ -1756,14 +2004,6 @@
       "price": 56.99
     },
     {
-      "id": "gid://shopify/Product/7769707151459",
-      "title": "Slim Fit Casual Pants Business Stretch",
-      "handle": "mens-cotton-slim-fit-casual-pants-business-fashion-stretch-trousers",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S3a57be13c3424a37a4a192b27aacfdcfc.webp?v=1744717550",
-      "imageAlt": "Slim Fit Casual Pants Business Stretch",
-      "price": 65.99
-    },
-    {
       "id": "gid://shopify/Product/7738902184035",
       "title": "Artificial Peony Rose Bouquet Silk Flowers",
       "handle": "artificial-peony-rose-bouquet-silk-flowers-for-home-wedding-decor",
@@ -2218,192 +2458,6 @@
       "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8eb4f009868f40bb882118bd60aa5fe7w.webp?v=1733994650",
       "imageAlt": "Thermal Underwear Fleece Lined Top Bottom Shirt",
       "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/7747142058083",
-      "title": "Steel Butter Melting Pot Hot Sauce",
-      "handle": "150-300ml-stainless-steel-butter-melting-pot-hot-sauce-pan",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S00302504a5e94850bbfe2261894c56a23.webp?v=1745923023",
-      "imageAlt": "Steel Butter Melting Pot Hot Sauce",
-      "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/7739508228195",
-      "title": "Soil Ph Meter Moisture Temperature Sunlight Tool",
-      "handle": "5-in-1-soil-ph-meter-moisture-temperature-sunlight-tester",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S8a66fd1fca7f409d99fc232348016f12W.webp?v=1745569842",
-      "imageAlt": "Soil Ph Meter Moisture Temperature Sunlight Tool",
-      "price": 48.99
-    },
-    {
-      "id": "gid://shopify/Product/7747142090851",
-      "title": "Adjustable Beverage Bottle Sprayer Gardening Watering",
-      "handle": "adjustable-beverage-bottle-sprayer-gardening-watering-tool",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd8c5e214b90c4a41adf8d0456f809670p.webp?v=1741070097",
-      "imageAlt": "Adjustable Beverage Bottle Sprayer Gardening Watering",
-      "price": 43.99
-    },
-    {
-      "id": "gid://shopify/Product/8123571994723",
-      "title": "Hair Scarf Women Silk Long Ribbon Foulard Cheveux Brand Design",
-      "handle": "luxury-hair-scarf-women-silk-long-ribbon-foulard-cheveux-brand-design-elegance-printing-lady-scarves-bandana-hair-accessories",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/He62943caae494ba3a1d486cf11aac2ceT.webp?v=1787831059",
-      "imageAlt": "Hair Scarf Women Silk Long Ribbon Foulard Cheveux Brand Design",
-      "price": 43.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573207139",
-      "title": "1 Elegant Silk Scarf Women S Accessories Breathable Uv Resistant",
-      "handle": "1-elegant-silk-scarf-womens-accessories-breathable-uv-resistant-decorative-fashionable-and-breathable",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6a86c79b396842d280e53f8cd9c4d849l.webp?v=1787831097",
-      "imageAlt": "1 Elegant Silk Scarf Women S Accessories Breathable Uv Resistant",
-      "price": 43.99
-    },
-    {
-      "id": "gid://shopify/Product/7746985001059",
-      "title": "Ceramic Cookware Cookware Set",
-      "handle": "13-piece-ceramic-cookware-set-nonstick-detachable-handles",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Ceramic_Cookware_Set.webp?v=1756373479",
-      "imageAlt": "Ceramic Cookware Cookware Set",
-      "price": 128.99
-    },
-    {
-      "id": "gid://shopify/Product/7739507834979",
-      "title": "Anti Cut Gloves Kitchen Accessories",
-      "handle": "anti-cut-gloves-high-strength-for-gardening-industry",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S00cc1a38de754aed87585acb2da15d38M.webp?v=1745928485",
-      "imageAlt": "Anti Cut Gloves Kitchen Accessories",
-      "price": 47.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573633123",
-      "title": "New Design Trendy Wrap Scarf Twill Fabric Flower Print 90cm Square",
-      "handle": "new-design-trendy-luxury-wrap-scarf-twill-fabric-flower-print-90cm-square-scarf-high-end-silk-scarf-for-women-shawl",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sdb2d7fe36f984642b13738978e09d652y.webp?v=1787831131",
-      "imageAlt": "New Design Trendy Wrap Scarf Twill Fabric Flower Print 90cm Square",
-      "price": 42.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573665891",
-      "title": "Silicone Self Draining Soap Dishes With Waterfall Design Rectangular",
-      "handle": "silicone-self-draining-soap-dishes-with-waterfall-design-rectangular-soap-holder-trays-with-drainage-for-bathroom-accessories",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S583375401e12483bad47eafe5d008fa7A.webp?v=1787831148",
-      "imageAlt": "Silicone Self Draining Soap Dishes With Waterfall Design Rectangular",
-      "price": 44.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573174371",
-      "title": "Soap Holder With Detachable Drain Tray Stainless Steel Rustproof Non",
-      "handle": "soap-holder-with-detachable-drain-tray-stainless-steel-rustproof-non-slip-soap-dish-for-bathroom-kitchen-organizer-1",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S9d4b405bb5ef453688b4093f0cb11d66o_5d7d2c71-a7f3-4cad-a981-a5bb34eddb74.webp?v=1787831096",
-      "imageAlt": "Soap Holder With Detachable Drain Tray Stainless Steel Rustproof Non",
-      "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/8097473757283",
-      "title": "Tacvasen Short Sleeve Crew Neck Cotton T Shirts Mens Breathable",
-      "handle": "tacvasen-short-sleeve-crew-neck-cotton-t-shirts-mens-breathable-casual-t-shirt-sports-pullover-basic-tee-shirts-tops-clothing",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd2b044e26f7842c4b8b0a452f62b4559L.webp?v=1785836481",
-      "imageAlt": "Tacvasen Short Sleeve Crew Neck Cotton T Shirts Mens Breathable",
-      "price": 60.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573141603",
-      "title": "130 130cm Brand Russian Scarf Flowers For Women Ethnic Style Large",
-      "handle": "130-130cm-luxury-brand-russian-scarf-flowers-for-women-ethnic-style-large-square-scarf-warm-shawls-bandana-beach-travel-blanket",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc3f217200b5643b79f77091c519e90f8a.webp?v=1787831098",
-      "imageAlt": "130 130cm Brand Russian Scarf Flowers For Women Ethnic Style Large",
-      "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573534819",
-      "title": "2023 New Silk Scarf Branddesigner Pullover Scarf Print Head Large",
-      "handle": "2023-new-silk-scarf-luxury-branddesigner-pullover-scarf-print-head-large-handkerchief-hijab-shawl-women-bandanna-foulard-muffler",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S38ebc80774ba4304bdb53b926d802d92A.webp?v=1787831117",
-      "imageAlt": "2023 New Silk Scarf Branddesigner Pullover Scarf Print Head Large",
-      "price": 41.99
-    },
-    {
-      "id": "gid://shopify/Product/7738957529187",
-      "title": "Mini Multi Use Kitchen Tool For Daily Kitchen Use And Daily",
-      "handle": "500w-mini-electric-heater-stove-multifunctional-kitchen-appliance",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S0695966768864eb593ccfc9bb6e381afF.webp?v=1746097211",
-      "imageAlt": "Mini Multi Use Kitchen Tool For Daily Kitchen Use And Daily",
-      "price": 58.99
-    },
-    {
-      "id": "gid://shopify/Product/7746984935523",
-      "title": "Hole Silicone Cake Mold Air Fryer Kitchen Accessories",
-      "handle": "7-hole-silicone-cake-mold-air-fryer-baking-accessory",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S99d5663a5029496a81b337bbfd87a583l.webp?v=1745922025",
-      "imageAlt": "Hole Silicone Cake Mold Air Fryer Kitchen Accessories",
-      "price": 46.99
-    },
-    {
-      "id": "gid://shopify/Product/8097472872547",
-      "title": "Summer T Shirts Woman O Neck Short Sleeves Tees Satin Klein Blue",
-      "handle": "summer-t-shirts-woman-o-neck-short-sleeves-tees-satin-klein-blue-champagne-solid-color-loose-womensoversized-t-shirt-silk-tops",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S6aa5bd72b6e5472aa9d121d89a2a4537k.webp?v=1785836462",
-      "imageAlt": "Summer T Shirts Woman O Neck Short Sleeves Tees Satin Klein Blue",
-      "price": 59.99
-    },
-    {
-      "id": "gid://shopify/Product/7735056793699",
-      "title": "Piece Black Kitchen Accessories Dinner Set",
-      "handle": "32-piece-black-plastic-wheat-straw-tableware-set",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S804869bec0bd4b0db126b519d0fb36cdW.webp?v=1739364104",
-      "imageAlt": "Piece Black Kitchen Accessories Dinner Set",
-      "price": 66.99
-    },
-    {
-      "id": "gid://shopify/Product/7746857664611",
-      "title": "Frying Pan Utensils Kitchen Accessories",
-      "handle": "alishan-bamboo-spatula-set-non-stick-frying-pan-utensils",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S1a4a7b7475304c99845c8dbf352f7c03O.webp?v=1745932359",
-      "imageAlt": "Frying Pan Utensils Kitchen Accessories",
-      "price": 42.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573502051",
-      "title": "Luxspire Soap Dish For Bar Soap Marble Shower Dish Self Draining",
-      "handle": "luxspire-soap-dish-for-bar-soap-marble-shower-soap-dish-self-draining-soap-tray-soap-saver-for-bathroom-shower-kitchen",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S7418618b23a04fd59e584b88ec801514a.webp?v=1787831107",
-      "imageAlt": "Luxspire Soap Dish For Bar Soap Marble Shower Dish Self Draining",
-      "price": 57.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573108835",
-      "title": "Faux Silk Wool Scarf Women 130x130cm Smooth Soft Square Gift",
-      "handle": "luxury-faux-silk-wool-scarf-women-130x130cm-smooth-soft-square-gift-birthday-anniversary-all-scenarios-fashion",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sc22cff5e4cad433b80cea77e1fc2734aJ.webp?v=1787831094",
-      "imageAlt": "Faux Silk Wool Scarf Women 130x130cm Smooth Soft Square Gift",
-      "price": 62.99
-    },
-    {
-      "id": "gid://shopify/Product/8094203379811",
-      "title": "Crazy Cotton Tee Shirt Short Sleeve",
-      "handle": "mens-t-shirts-the-truth-is-out-there-crazy-100-cotton-tee-shirt-short-sleeve-the-x-files-t-shirt-crewneck-tops-new-arrival-1",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S33fcb9af9ca3406287d7b2978c2311ceu_ae6cfb4b-2c9a-44fd-acad-9fa6e209eef7.webp?v=1785573024",
-      "imageAlt": "Crazy Cotton Tee Shirt Short Sleeve",
-      "price": 56.99
-    },
-    {
-      "id": "gid://shopify/Product/8123573010531",
-      "title": "110x110 Li Brocade Light Silk Scarf Women S Hot Model New Imitation",
-      "handle": "110x110-li-brocade-light-luxury-silk-scarf-womens-hot-model-new-imitation-silk-luxury-soft-photo-travel-scarf",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sef0b2756e8fb450190b22c0521ada044g.webp?v=1787831090",
-      "imageAlt": "110x110 Li Brocade Light Silk Scarf Women S Hot Model New Imitation",
-      "price": 44.99
-    },
-    {
-      "id": "gid://shopify/Product/7744591757411",
-      "title": "Wooden Handle Silicone Kitchen Tools Non Kitchen Accessories",
-      "handle": "12set-of-wooden-handle-silicone-kitchen-tools-non-stick-pan-cooking-set",
-      "image": "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/S193c26b05f5f43b19e913f1250cf67d1L.webp?v=1745926711",
-      "imageAlt": "Wooden Handle Silicone Kitchen Tools Non Kitchen Accessories",
-      "price": 62.99
     }
-  ],
-  "recentOrderProducts": 277,
-  "catalogFloorFillProducts": 23
+  ]
 }

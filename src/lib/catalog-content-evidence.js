@@ -50,7 +50,7 @@ const ATTRIBUTE_PATTERNS = [
 const UNSUPPORTED_CLAIM_PATTERN = /\b(?:maximum|pain\s+relief|pain\s+support|fast\s+recovery|must[- ]?have|perfect\s+gift|great\s+gift|hot\s+brand|guaranteed|cure)\b/i;
 const PROMOTIONAL_OPTION_PATTERN = /\b(?:buy\s*\d+\s*get\s*\d+|free\s+shipping|sale|discount|coupon|deal|offer)\b/i;
 const SKU_OPTION_PATTERN = /^[A-Z0-9][A-Z0-9._:-]{2,}$/i;
-const LEGACY_GENERIC_SENTENCE_PATTERN = /serves the specific|specific function identified|confirmed product facts|available options help shoppers compare|best for:\s*shoppers looking for|specific makeup, application, nail, lip, eye, or grooming step|specific beauty routine or look|specific product type named/i;
+const LEGACY_GENERIC_SENTENCE_PATTERN = /serves the specific|specific function identified|confirmed product facts|available options help shoppers compare|best for:\s*shoppers looking for|specific makeup, application, nail, lip, eye, or grooming step|specific beauty routine or look|specific product type named|described by the supplied product information|listing identifies this as/i;
 
 function normalizeVariantFact(value) {
   let candidate = text(value);
@@ -221,7 +221,7 @@ export function buildProductSpecificDescription({ title, signals = {} } = {}) {
   const article = /^[aeiou]/i.test(noun) ? "an" : "a";
   const purpose = optionText
     ? `${titleText} is ${article} ${noun} with the listed options ${optionText}.`
-    : `${titleText} is ${article} ${noun} described by the supplied product information.`;
+    : `${titleText} is ${article} ${noun} identified by the product title and supplied listing details.`;
   const use = facts.find((fact) => fact.label === "Use")?.value;
   const care = use
     ? `Use it for the listed ${use} context and follow the supplied setup, handling, cleaning, storage, and safety instructions.`
@@ -245,7 +245,7 @@ export function buildProductSpecificDescription({ title, signals = {} } = {}) {
 
 export function isGenericProductContent(value) {
   const normalized = text(value).toLowerCase();
-  return !normalized || /serves the specific|specific function identified|specific everyday task identified|best for: shoppers looking for the specific|product overview|without extra guesswork|straightforward way/i.test(normalized);
+  return !normalized || /serves the specific|specific function identified|specific everyday task identified|best for: shoppers looking for the specific|described by the supplied product information|listing identifies this as|product overview|without extra guesswork|straightforward way/i.test(normalized);
 }
 
 export { PRODUCT_NOUNS };

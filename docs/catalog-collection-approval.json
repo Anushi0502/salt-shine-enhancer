@@ -5,7 +5,7 @@
   "approvalSource": "User request to rerun the full catalog after new products were added, add governed Hats and Wigs collections, route women's wigs into Women's Accessories and men's wigs into Men's Accessories, reduce misclassification, repair every collection, and leave no product collectionless",
   "taxonomyVersion": "2026-08-06.1",
   "collectionPlanVersion": "2026-08-06.1-collections.4",
-  "governanceVersion": "2026-08-27.1",
+  "governanceVersion": "2026-09-01.1",
   "scope": {
     "managedCollections": "create or repair only canonical collections in the checked-in full-catalog governance registry",
     "controlledRuleTags": "exactly one canonical simple collection tag condition per semantic collection, except approved union rules for gifts and trending-finds",

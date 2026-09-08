@@ -175,9 +175,11 @@ async function main() {
   try {
     // Vite can be killed by the OneDrive file-provider while traversing the
     // dependency graph. Keep the graph and compiler cache on local storage.
-    await cp(resolve(rootDir, "src"), resolve(stageDir, "src"), {
-      recursive: true,
-      force: true,
+    // Node's recursive copy can hang on an evicted OneDrive file-provider
+    // handle. macOS cp streams the same tree without leaving a zero-byte
+    // destination file behind, so the build can reach Vite reliably.
+    execFileSync("cp", ["-R", resolve(rootDir, "src"), stageDir], {
+      stdio: "inherit",
     });
     if (useLocalNodeModules) {
       // Use a local, lockfile-keyed npm cache rather than copying the
@@ -236,16 +238,14 @@ async function main() {
       resumeOneDrive();
     }
 
-    await cp(resolve(rootDir, "public"), resolve(stageDir, "dist"), {
-      recursive: true,
-      force: true,
+    execFileSync("cp", ["-R", resolve(rootDir, "public"), resolve(stageDir, "dist")], {
+      stdio: "inherit",
     });
     await removeGeneratedListingPayloads(resolve(stageDir, "dist"));
     await run(nodeBin, [resolve(stageDir, "scripts", "postbuild-compat.mjs")], process.env, stageDir);
     await rm(resolve(rootDir, "dist"), { recursive: true, force: true });
-    await cp(resolve(stageDir, "dist"), resolve(rootDir, "dist"), {
-      recursive: true,
-      force: true,
+    execFileSync("cp", ["-R", resolve(stageDir, "dist"), rootDir], {
+      stdio: "inherit",
     });
   } finally {
     await rm(stageDir, { recursive: true, force: true });

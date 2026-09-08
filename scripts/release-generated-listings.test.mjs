@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 
 import { buildReleaseSteps } from "./release.mjs";
@@ -9,6 +11,15 @@ describe("release generated listing payload policy", () => {
 
     expect(syncSteps.length).toBeGreaterThan(0);
     expect(syncSteps.every((step) => step.args.includes("--skip-generated-listings"))).toBe(true);
+
+    const parallelRefreshSteps = steps.filter(
+      (step) => step.args?.[0] === "scripts/release-secondary-data-refresh.mjs",
+    );
+    expect(parallelRefreshSteps.length).toBeGreaterThan(0);
+    expect(parallelRefreshSteps.every((step) =>
+      step.label.includes("recently ordered products and managed collection membership") ||
+      step.label === "Refresh live merchandising data after final catalog writes"
+    )).toBe(true);
 
     const commandArguments = steps.flatMap((step) => step.args || []);
     expect(commandArguments).not.toContain("catalog:artifacts");

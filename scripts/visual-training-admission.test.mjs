@@ -40,4 +40,26 @@ describe("visual training admission", () => {
     expect(result.shouldStart).toBe(true);
     expect(result.requiredFreeBytes).toBe(26_000_000_000);
   });
+
+  it("admits resumable head training without requiring another raw shard", () => {
+    const result = evaluateVisualTrainingAdmission({
+      configExists: true,
+      availableBytes: 11_000_000_000,
+      requiredFreeBytes: 14_500_000_000,
+      maxShardBytes: 6_000_000_000,
+      headOnlyReady: true,
+    });
+    expect(result.shouldStart).toBe(true);
+    expect(result.requiredFreeBytes).toBe(8_000_000_000);
+  });
+
+  it("does not admit resumable head training below its own safety floor", () => {
+    const result = evaluateVisualTrainingAdmission({
+      configExists: true,
+      availableBytes: 7_500_000_000,
+      headOnlyReady: true,
+    });
+    expect(result.shouldStart).toBe(false);
+    expect(result.reason).toContain("resumable head training");
+  });
 });

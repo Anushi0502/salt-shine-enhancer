@@ -5,7 +5,6 @@ import { createReadStream } from "node:fs";
 import {
   copyFile,
   mkdir,
-  readFile,
   realpath,
   rename,
   rm,
@@ -14,6 +13,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, extname, resolve, sep } from "node:path";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const allowedImageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".heic"]);
@@ -21,7 +21,9 @@ const trustedLabelSources = new Set(["human", "human-reviewed", "verified", "cur
 const candidateLabelSources = new Set(["deterministic-candidate", "external-human-verified-candidate"]);
 const markerName = ".salt-visual-corpus.json";
 const progressName = ".salt-visual-staging-progress.json";
-const defaultConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_VISUAL_STAGING_CONCURRENCY || 8)));
+// Staging is network-bound; keep it bounded, but do not leave throughput
+// artificially capped at eight workers on machines that can sustain more.
+const defaultConcurrency = Math.max(1, Math.min(24, Number(process.env.SALT_VISUAL_STAGING_CONCURRENCY || 16)));
 const progressCheckpointInterval = Math.max(
   16,
   Math.min(2_048, Number(process.env.SALT_VISUAL_STAGING_PROGRESS_INTERVAL || 128)),
@@ -30,8 +32,11 @@ const progressCheckpointMs = Math.max(
   1_000,
   Number(process.env.SALT_VISUAL_STAGING_PROGRESS_MS || 5_000),
 );
-const requestAttempts = Math.max(1, Math.min(6, Number(process.env.SALT_VISUAL_STAGING_ATTEMPTS || 4)));
+// A single CDN/DNS hiccup must not abort an entire shard. Completed entries
+// remain checkpointed, while this bounded retry budget absorbs short outages.
+const requestAttempts = Math.max(1, Math.min(8, Number(process.env.SALT_VISUAL_STAGING_ATTEMPTS || 6)));
 const requestTimeoutMs = Math.max(5_000, Number(process.env.SALT_VISUAL_STAGING_TIMEOUT_MS || 60_000));
+const maxRetryDelayMs = Math.max(1_000, Math.min(120_000, Number(process.env.SALT_VISUAL_STAGING_MAX_RETRY_DELAY_MS || 30_000)));
 const defaultMaxShardBytes = Math.max(
   1_000_000_000,
   Number(process.env.SALT_VISUAL_STAGING_MAX_SHARD_BYTES || 25_000_000_000),
@@ -41,7 +46,6 @@ const minimumFreeOverheadBytes = Math.max(
   2 * 1024 ** 3,
   Number(process.env.SALT_VISUAL_STAGING_FREE_OVERHEAD_BYTES || 8 * 1024 ** 3),
 );
-
 function parseArgs(argv) {
   const args = {
     sourceManifest: process.env.SALT_VISUAL_TRAINING_SOURCE_MANIFEST || "",
@@ -231,7 +235,7 @@ function planVisualCorpusShards(entries, { maxShardBytes = defaultMaxShardBytes,
 
 async function readJson(path, fallback) {
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    return JSON.parse(await readFileWithRetry(path, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") return fallback;
     throw error;
@@ -256,6 +260,14 @@ async function assertSafePaths(args) {
   const sourcePath = await realpath(resolve(args.sourceManifest));
   if (isInside(sourcePath, datasetPath)) throw new Error("The raw visual corpus cannot contain its source manifest.");
   return { datasetPath, sourcePath };
+}
+
+function parseRetryAfterMs(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  if (/^\d+(?:\.\d+)?$/.test(text)) return Math.max(0, Number(text) * 1_000);
+  const timestamp = Date.parse(text);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : 0;
 }
 
 async function normalizeEntries(rawEntries, sourceManifestPath, datasetPath) {
@@ -304,21 +316,113 @@ async function normalizeEntries(rawEntries, sourceManifestPath, datasetPath) {
   });
 }
 
-async function fetchBytes(url) {
+function concatenateBytes(chunks, totalBytes) {
+  const output = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
+}
+
+async function fetchBytes(url, expectedBytes = 0) {
   let lastError = null;
+  const chunks = [];
+  let receivedBytes = 0;
+  const expected = Number(expectedBytes || 0);
+
   for (let attempt = 1; attempt <= requestAttempts; attempt += 1) {
+    const rangeStart = receivedBytes;
+    const attemptChunks = [];
+    let attemptBytes = 0;
+    let preservePartial = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
     try {
+      const headers = { Accept: "image/avif,image/webp,image/jpeg,image/png,*/*" };
+      if (rangeStart > 0) headers.Range = `bytes=${rangeStart}-`;
       const response = await fetch(url, {
-        headers: { Accept: "image/avif,image/webp,image/jpeg,image/png,*/*" },
-        signal: AbortSignal.timeout(requestTimeoutMs),
+        headers,
+        signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`image HTTP ${response.status}`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      if (!bytes.byteLength) throw new Error("image response was empty");
-      return bytes;
+      if (!response.ok) {
+        const retryAfter = response.headers.get("retry-after");
+        const error = new Error(`image HTTP ${response.status}`);
+        error.retryAfterMs = retryAfter ? parseRetryAfterMs(retryAfter) : 0;
+        error.discardPartial = true;
+        throw error;
+      }
+
+      // Some hosts ignore Range. Restart from the returned full body instead
+      // of appending duplicate bytes to the verified partial response.
+      if (rangeStart > 0 && response.status === 200) {
+        chunks.length = 0;
+        receivedBytes = 0;
+      } else if (rangeStart > 0 && response.status !== 206) {
+        const error = new Error(`image range request returned HTTP ${response.status}`);
+        error.discardPartial = true;
+        throw error;
+      }
+      if (response.status === 206) {
+        const contentRange = String(response.headers.get("content-range") || "");
+        const match = contentRange.match(/^bytes\s+(\d+)-(\d+)\/(\d+|\*)$/i);
+        const responseStart = Number(match?.[1]);
+        const responseTotal = match?.[3] === "*" ? 0 : Number(match?.[3]);
+        if (!match || responseStart !== rangeStart || (expected && responseTotal && responseTotal !== expected)) {
+          const error = new Error(`image range response did not match requested offset ${rangeStart}`);
+          error.discardPartial = true;
+          throw error;
+        }
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        const error = new Error("image response had no readable body");
+        error.discardPartial = true;
+        throw error;
+      }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+          if (!chunk.byteLength) continue;
+          attemptChunks.push(chunk);
+          attemptBytes += chunk.byteLength;
+          if (expected && receivedBytes + attemptBytes > expected) {
+            const error = new Error(`image response exceeded the expected ${expected} bytes`);
+            error.discardPartial = true;
+            throw error;
+          }
+        }
+      } finally {
+        reader.releaseLock?.();
+      }
+
+      if (!attemptBytes) throw new Error("image response was empty");
+      chunks.push(...attemptChunks);
+      receivedBytes += attemptBytes;
+      if (!expected || receivedBytes === expected) return concatenateBytes(chunks, receivedBytes);
+      lastError = new Error(`image response ended at ${receivedBytes}/${expected} bytes`);
     } catch (error) {
       lastError = error;
-      if (attempt < requestAttempts) await new Promise((resolveSleep) => setTimeout(resolveSleep, 250 * 2 ** (attempt - 1)));
+      preservePartial = error?.discardPartial !== true;
+      if (preservePartial && attemptBytes) {
+        chunks.push(...attemptChunks);
+        receivedBytes += attemptBytes;
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (attempt < requestAttempts) {
+      const exponentialDelay = Math.min(maxRetryDelayMs, 250 * 2 ** (attempt - 1));
+      const serverDelay = Number(lastError?.retryAfterMs || 0);
+      const jitter = Math.floor(Math.random() * Math.max(1, Math.min(1_000, exponentialDelay / 2)));
+      const delay = Math.min(maxRetryDelayMs, Math.max(exponentialDelay, serverDelay) + jitter);
+      await new Promise((resolveSleep) => setTimeout(resolveSleep, delay));
     }
   }
   throw lastError || new Error("image download failed");
@@ -336,7 +440,7 @@ async function stageEntry(entry, datasetPath) {
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
-  const bytes = entry.localSource ? await readFile(entry.localSource) : await fetchBytes(entry.source);
+  const bytes = entry.localSource ? await readFileWithRetry(entry.localSource) : await fetchBytes(entry.source, entry.bytes);
   const digest = { sha256: sha256Bytes(bytes), bytes: bytes.byteLength };
   if (digest.sha256 !== entry.sha256 || digest.bytes !== entry.bytes) {
     throw new Error(`Checksum or byte count mismatch for ${entry.source}; expected ${entry.sha256}/${entry.bytes}, received ${digest.sha256}/${digest.bytes}.`);
@@ -365,7 +469,7 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 async function main() {
   const args = parseArgs(process.argv);
   const { datasetPath, sourcePath } = await assertSafePaths(args);
-  const sourceBytes = await readFile(sourcePath);
+  const sourceBytes = await readFileWithRetry(sourcePath);
   const sourceManifestSha256 = sha256Bytes(sourceBytes);
   const entries = await normalizeEntries(parseManifestText(sourceBytes.toString("utf8")), sourcePath, datasetPath);
   const expectedBytes = entries.reduce((total, entry) => total + entry.bytes, 0);
@@ -453,7 +557,7 @@ async function main() {
   process.stdout.write(`Visual corpus ready at ${datasetPath}; ${staged.length} images staged and labels written to ${resolve(args.labelsOutput)}.\n`);
 }
 
-export { normalizeEntries, parseManifestText, planVisualCorpusShards };
+export { fetchBytes, normalizeEntries, parseManifestText, planVisualCorpusShards };
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename)) {
   main().catch((error) => {

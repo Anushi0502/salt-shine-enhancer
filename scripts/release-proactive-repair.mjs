@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 
 import { SPECIAL_COLLECTION_MINIMUMS } from "./build-new-product-special-collection-tags-local.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { validateCollectionRepairRules } from "./validate-collection-repair-rules.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
@@ -196,6 +197,19 @@ async function runPostflight() {
   process.stdout.write(`Release postflight passed: ${report.activeProducts} active products, ${report.shuffleCollections} shuffled collections, zero blocked repairs.\n`);
 }
 
+async function runCollectionRepairAudit() {
+  const checks = validateCollectionRepairRules();
+  const report = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    mode: "standby-collection-repair-rule-audit",
+    ...checks,
+  };
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(resolve(outputDir, "release-collection-repair-standby.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  process.stdout.write(`Standby collection repair audit passed: ${checks.cases.length} regression cases.\n`);
+}
+
 async function runSeoAudit() {
   const manifest = await readJson(resolve(outputDir, "shopify-seo-release-manifest.json"));
   if (!manifest) throw new Error("SEO audit requires output/shopify-seo-release-manifest.json");
@@ -229,8 +243,10 @@ async function main() {
       ? "seo"
     : process.argv.includes("--postflight")
       ? "postflight"
+    : process.argv.includes("--collection")
+      ? "collection"
       : "preflight";
-  const runner = mode === "visual" ? runVisualAudit : mode === "seo" ? runSeoAudit : mode === "postflight" ? runPostflight : runPreflight;
+  const runner = mode === "visual" ? runVisualAudit : mode === "seo" ? runSeoAudit : mode === "postflight" ? runPostflight : mode === "collection" ? runCollectionRepairAudit : runPreflight;
   await runner();
 }
 

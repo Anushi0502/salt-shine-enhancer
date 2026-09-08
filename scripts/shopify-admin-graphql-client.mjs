@@ -61,7 +61,15 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
     `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:${agentName}`;
   let lastRequestFinishedAt = 0;
 
-  async function run(query, variables = {}, { allowMutations = false, operation = "Shopify request", retryInfo = [] } = {}) {
+  async function run(query, variables = {}, {
+    allowMutations = false,
+    operation = "Shopify request",
+    retryInfo = [],
+    maxAttempts: requestedMaxAttempts = maxAttempts,
+    maxRetryDelayMs: requestedMaxRetryDelayMs = maxRetryDelayMs,
+  } = {}) {
+    const requestMaxAttempts = Math.max(1, Number(requestedMaxAttempts) || maxAttempts);
+    const requestMaxRetryDelayMs = Math.max(1000, Number(requestedMaxRetryDelayMs) || maxRetryDelayMs);
     const waitFor = requestDelayMs - (Date.now() - lastRequestFinishedAt);
     if (waitFor > 0) await sleep(waitFor);
 
@@ -138,10 +146,10 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
         }
       } catch (error) {
         lastRequestFinishedAt = Date.now();
-        if (!isRetryable(error) || attempt >= maxAttempts - 1) {
+        if (!isRetryable(error) || attempt >= requestMaxAttempts - 1) {
           throw new Error(`${operation} failed: ${normalizeText(error?.message || error)}`);
         }
-        const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
+        const delayMs = Math.min(requestMaxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
         retryInfo.push({
           operation,
           attempt: attempt + 1,

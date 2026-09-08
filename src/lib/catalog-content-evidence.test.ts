@@ -88,4 +88,23 @@ describe("catalog content evidence", () => {
     expect(description).not.toMatch(/everyday product|specific function identified/i);
     expect(description).not.toContain("200007763:201336106");
   });
+
+  it("rejects the newer generic supplied-information fallback", () => {
+    const legacy = "A keyboard described by the supplied product information.";
+    expect(isGenericProductContent(legacy)).toBe(true);
+
+    const description = buildProductSpecificDescription({
+      title: "87 Key Wired RGB Mechanical Gaming Keyboard",
+      signals: {
+        handle: "87-key-gaming-keyboard-wired-rgb-mechanical-keyboard",
+        sourceTitle: "87 Key Wired RGB Mechanical Gaming Keyboard",
+        sourceBodyHtml: legacy,
+        variantOptionValues: ["Black Red switch", "White Blue switch"],
+      },
+    });
+
+    expect(description).not.toContain("described by the supplied product information");
+    expect(description).toContain("keyboard");
+    expect(description).toContain("87 key");
+  });
 });

@@ -7,7 +7,7 @@ export const VISUAL_TAXONOMY_MODEL_SCHEMA_VERSION = 1;
 export const VISUAL_TAXONOMY_MODEL_TYPE = "mlx-metal-finetuned-visual-taxonomy-classifier";
 export const VISUAL_TAXONOMY_MODEL_BACKEND = "mlx-metal";
 export const VISUAL_TAXONOMY_MIN_DATASET_BYTES = 50_000_000_000;
-export const VISUAL_TAXONOMY_MODEL_VERSION = `${CATALOG_TAXONOMY_VERSION}.visual-finetuned.1`;
+export const VISUAL_TAXONOMY_MODEL_VERSION = `${CATALOG_TAXONOMY_VERSION}.visual-finetuned.2`;
 
 function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -71,6 +71,18 @@ export async function assertVisualTaxonomyModel(model, {
   if (training.precision !== "float16") throw new Error("Visual taxonomy training must use float16 weights.");
   if (!training.metrics || typeof training.metrics !== "object") throw new Error("Visual taxonomy training metrics are missing.");
   if (training.metrics.qualityGate?.passed !== true) throw new Error("Visual taxonomy quality gate was not passed by the trainer.");
+  if (value.modelVersion === VISUAL_TAXONOMY_MODEL_VERSION) {
+    const qualityGate = asObject(training.metrics.qualityGate);
+    if (qualityGate.decisionMode !== "selective-high-margin-only") {
+      throw new Error("Visual taxonomy v2 models must use the selective high-margin decision policy.");
+    }
+    if (Number(qualityGate.minimumTestSelectiveAccuracy || 0) < 0.85 || Number(qualityGate.minimumTestSelectiveMacroF1 || 0) < 0.55) {
+      throw new Error("Visual taxonomy v2 model quality thresholds are below the required selective accuracy or macro-F1 floor.");
+    }
+    if (!Number.isFinite(Number(qualityGate.selectiveMargin)) || Number(qualityGate.selectiveMargin) < 2) {
+      throw new Error("Visual taxonomy v2 model is missing its conservative selective margin calibration.");
+    }
+  }
   asNonNegativeNumber(training.metrics.test?.coverage, "Visual taxonomy test coverage");
   asNonNegativeNumber(training.metrics.test?.macroF1, "Visual taxonomy test macroF1");
   asNonNegativeNumber(training.metrics.test?.accuracy, "Visual taxonomy test accuracy");

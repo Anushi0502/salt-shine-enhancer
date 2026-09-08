@@ -2127,17 +2127,6 @@ export const CATALOG_TAXONOMY_IMAGE_OVERRIDES = Object.freeze([
     reason: "Manual source-image review shows a handheld garden and car-wash water spray nozzle, confirming Garden Tool.",
   },
   {
-    id: "image-manual-face-mist-8052546240611",
-    productId: "8052546240611",
-    handle: "face-mist-lasting-refreshing-soothing-skin-care-for-dry-skin-oil-control-makeup-fixing-daily-hydration-for-women-all-skin-types",
-    ruleId: "facial-mists",
-    approved: true,
-    imageReviewed: true,
-    imageUrl: "https://cdn.shopify.com/s/files/1/0580/7659/4275/files/Sd2ca6d021f82432097652eb9d9b95877I.webp?v=1783081670",
-    reviewedAt: "2026-08-21T00:00:00Z",
-    reason: "Manual source-image review shows a facial mist spray marketed for dry-skin hydration and makeup setting, confirming Facial Mist.",
-  },
-  {
     id: "image-manual-mens-suit-8055601299555",
     productId: "8055601299555",
     handle: "mens-casual-business-have-smoking-suit-high-end-brand-boutique-fashion-blazer-vest-pants-groom-wedding-dress-party-suit",

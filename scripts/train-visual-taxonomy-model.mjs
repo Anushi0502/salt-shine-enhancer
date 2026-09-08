@@ -7,7 +7,6 @@ import {
   copyFile,
   lstat,
   mkdir,
-  readFile,
   realpath,
   rename,
   rm,
@@ -34,6 +33,7 @@ import {
   getCatalogTaxonomyDefinitions,
 } from "../src/lib/catalog-taxonomy.js";
 import { taxonomyTrainingFingerprint } from "../src/lib/catalog-knowledge-model.js";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
@@ -134,7 +134,7 @@ async function assertSafeDatasetRoot(datasetDir) {
   const datasetStat = await lstat(datasetPath);
   if (!datasetStat.isDirectory()) throw new Error(`Visual training dataset is not a directory: ${datasetPath}`);
   const markerPath = resolve(datasetPath, datasetMarkerName);
-  const marker = JSON.parse(await readFile(markerPath, "utf8"));
+  const marker = JSON.parse(await readFileWithRetry(markerPath, "utf8"));
   if (marker?.kind !== "salt-visual-training-corpus" || !marker?.datasetId) {
     throw new Error(`Dataset marker ${markerPath} is missing kind or datasetId.`);
   }
@@ -199,7 +199,7 @@ function normalizeLabelSource(entry) {
 }
 
 async function buildTrainingManifest({ datasetPath, labelsManifest, minBytes }) {
-  const entries = parseManifestText(await readFile(resolve(labelsManifest), "utf8"));
+  const entries = parseManifestText(await readFileWithRetry(resolve(labelsManifest), "utf8"));
   if (!entries.length) throw new Error("Visual training labels manifest has no records.");
   const productSplits = new Map();
   const imageHashes = new Set();
@@ -276,6 +276,7 @@ async function runEncoder(args, manifestPath, datasetPath, embeddingsPath, check
     throw new Error("--encoder-command-json must be a non-empty string array.");
   }
   const [executable, ...prefixArgs] = command;
+  const progressPath = `${embeddingsPath}.progress.json`;
   process.stdout.write(`Encoding ${manifestPath} with declared encoder ${executable} on the supplied corpus.\n`);
   await execFileAsync(executable, [...prefixArgs, manifestPath, datasetPath, embeddingsPath], {
     cwd: rootDir,
@@ -283,6 +284,8 @@ async function runEncoder(args, manifestPath, datasetPath, embeddingsPath, check
       ...process.env,
       SALT_VISUAL_BASE_CHECKPOINT: checkpointPath,
       SALT_VISUAL_ENCODER_CHECKPOINT: checkpointPath,
+      SALT_VISUAL_TRAINING_PROGRESS_PATH: progressPath,
+      SALT_VISUAL_TRAINING_SHARD_ID: embeddingsPath,
       SALT_VISUAL_REQUIRE_METAL: "1",
       PYTHONUNBUFFERED: "1",
     },
@@ -369,7 +372,7 @@ async function runEncoderFineTuning(
   const outputDigest = await hashFile(outputPath);
   let report;
   try {
-    report = JSON.parse(await readFile(reportPath, "utf8"));
+    report = JSON.parse(await readFileWithRetry(reportPath, "utf8"));
   } catch (error) {
     throw new Error(`The encoder fine-tuning command did not produce its signed report at ${reportPath}: ${error.message}`);
   }
@@ -406,6 +409,8 @@ async function validateEmbeddings({ embeddingsPath, manifest, outputPath }) {
   let dimension = 0;
   let records = 0;
   await access(embeddingsPath);
+  // Resume-safe runs may enter validation before the records directory exists.
+  await mkdir(dirname(outputPath), { recursive: true });
   const output = `${outputPath}.tmp-${process.pid}`;
   const handle = await import("node:fs/promises").then(({ open }) => open(output, "w"));
   try {
@@ -461,12 +466,12 @@ async function runMlxTraining({ recordsPath, weightsPath, metricsPath, labelsPat
     },
     maxBuffer: 32 * 1024 * 1024,
   });
-  return JSON.parse(await readFile(metricsPath, "utf8"));
+  return JSON.parse(await readFileWithRetry(metricsPath, "utf8"));
 }
 
 async function purgeRawCorpus(datasetPath, marker) {
   const markerPath = resolve(datasetPath, datasetMarkerName);
-  const currentMarker = JSON.parse(await readFile(markerPath, "utf8"));
+  const currentMarker = JSON.parse(await readFileWithRetry(markerPath, "utf8"));
   if (currentMarker?.datasetId !== marker.datasetId || currentMarker?.deleteAfterTraining !== true) {
     throw new Error("Raw corpus marker changed before purge; refusing deletion.");
   }
@@ -481,7 +486,7 @@ async function purgeRawCorpus(datasetPath, marker) {
 
 async function readJsonIfPresent(path) {
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    return JSON.parse(await readFileWithRetry(path, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") return null;
     throw error;
@@ -511,7 +516,7 @@ async function writeCompletionRecord({ completionPath, modelPath, weightsPath, j
 }
 
 async function assertPurgeReady({ journal, modelPath, weightsPath }) {
-  const model = JSON.parse(await readFile(modelPath, "utf8"));
+  const model = JSON.parse(await readFileWithRetry(modelPath, "utf8"));
   const taxonomyFingerprint = taxonomyTrainingFingerprint(getCatalogTaxonomyDefinitions());
   await assertVisualTaxonomyModel(model, {
     taxonomyVersion: CATALOG_TAXONOMY_VERSION,
@@ -556,7 +561,7 @@ async function finalizePurgedModel({ completionPath, journal, modelPath, weights
       throw new Error(`Visual taxonomy purge journal path mismatch for ${name}; refusing finalization.`);
     }
   }
-  const model = JSON.parse(await readFile(modelPath, "utf8"));
+  const model = JSON.parse(await readFileWithRetry(modelPath, "utf8"));
   if (model?.dataset?.datasetId !== journal.datasetId || model?.dataset?.manifestSha256 !== journal.manifestSha256) {
     throw new Error("Visual taxonomy purge journal does not match the trained model manifest; refusing finalization.");
   }
@@ -577,7 +582,7 @@ async function finalizePurgedModel({ completionPath, journal, modelPath, weights
     weightsPath,
   });
   await writeCompletionRecord({ completionPath, modelPath, weightsPath, journal, model });
-  const trainingCheckpointPath = resolve(outputDir, `.visual-taxonomy-training-${journal.manifestSha256}.checkpoint.npz`);
+  const trainingCheckpointPath = resolve(outputDir, `.visual-taxonomy-training-${journal.manifestSha256}-l2-balanced-adam-v2.checkpoint.npz`);
   await rm(trainingCheckpointPath, { force: true });
   await rm(`${trainingCheckpointPath}.json`, { force: true });
   await rm(defaultPurgeJournalPath, { force: true });
@@ -608,7 +613,7 @@ async function recoverPendingPurge({ completionPath, modelPath, weightsPath }) {
   await assertPurgeReady({ journal, modelPath, weightsPath });
   try {
     await lstat(datasetPath);
-    const marker = JSON.parse(await readFile(resolve(datasetPath, datasetMarkerName), "utf8"));
+    const marker = JSON.parse(await readFileWithRetry(resolve(datasetPath, datasetMarkerName), "utf8"));
     if (marker?.datasetId !== journal.datasetId || marker?.deleteAfterTraining !== true) {
       throw new Error("Raw corpus marker does not match the pending purge journal; refusing deletion.");
     }
@@ -672,7 +677,7 @@ async function main() {
     );
     await runEncoder(args, signedManifestPath, datasetPath, embeddingsPath, fineTunedEncoder.path);
     const embeddingSummary = await validateEmbeddings({ embeddingsPath, manifest, outputPath: recordsPath });
-    const trainingCheckpointPath = resolve(outputDir, `.visual-taxonomy-training-${manifest.manifestSha256}.checkpoint.npz`);
+    const trainingCheckpointPath = resolve(outputDir, `.visual-taxonomy-training-${manifest.manifestSha256}-l2-balanced-adam-v2.checkpoint.npz`);
     const trainingCheckpointMetadataPath = `${trainingCheckpointPath}.json`;
     const metrics = await runMlxTraining({
       recordsPath,

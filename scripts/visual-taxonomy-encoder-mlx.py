@@ -102,9 +102,33 @@ def image_embeddings(model, processor, generate, paths):
 
 
 def save_json(path: Path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     temporary.write_text(json.dumps(value, indent=2) + "\n")
     temporary.replace(path)
+
+
+def resume_embedding_records(path: Path, entries):
+    """Return the verified prefix of a stable partial embedding output."""
+    if not path.is_file():
+        return 0
+    count = 0
+    try:
+        with path.open() as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                if count >= len(entries) or record.get("imageSha256") != entries[count].get("imageSha256"):
+                    raise ValueError(f"partial embedding order mismatch at record {line_number}")
+                count += 1
+    except (OSError, ValueError, json.JSONDecodeError):
+        path.unlink(missing_ok=True)
+        return 0
+    if count < len(entries) and count % max(1, int(os.environ.get("SALT_VISUAL_ENCODER_BATCH_SIZE", "16"))) != 0:
+        path.unlink(missing_ok=True)
+        return 0
+    return count
 
 
 def fine_tune(manifest_path: Path, dataset_path: Path, labels_path: Path, base_checkpoint: Path, output_path: Path):
@@ -325,10 +349,32 @@ def encode(manifest_path: Path, dataset_path: Path, embeddings_path: Path):
     # Keep encode throughput aligned with fine-tuning; callers can lower this
     # through the environment if unified-memory pressure requires it.
     batch_size = max(1, int(os.environ.get("SALT_VISUAL_ENCODER_BATCH_SIZE", "16")))
+    progress_raw = os.environ.get("SALT_VISUAL_TRAINING_PROGRESS_PATH", "").strip()
+    progress_path = Path(progress_raw).expanduser() if progress_raw else None
+    total_records = len(entries)
+    partial_path = embeddings_path.with_name(f".{embeddings_path.name}.partial")
+    records_written = resume_embedding_records(partial_path, entries)
+
+    def update_progress(status, **details):
+        if progress_path is None:
+            return
+        save_json(progress_path, {
+            "status": status,
+            "device": "metal",
+            "phase": "embedding-encoding",
+            "shard": os.environ.get("SALT_VISUAL_TRAINING_SHARD_ID", ""),
+            "recordsWritten": records_written,
+            "totalRecords": total_records,
+            "batchSize": batch_size,
+            "updatedAt": time.time(),
+            **details,
+        })
+
     embeddings_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = embeddings_path.with_name(f".{embeddings_path.name}.tmp-{os.getpid()}")
-    with temporary.open("w") as output:
-        for batch in batches(entries, batch_size):
+    update_progress("encoding", startedAt=time.time(), resumedRecords=records_written)
+    with partial_path.open("a" if records_written else "w") as output:
+        for batch_index, batch_start in enumerate(range(records_written, total_records, batch_size), start=records_written // batch_size):
+            batch = entries[batch_start:batch_start + batch_size]
             x = image_embeddings(model, processor, generate, [image_path(dataset_path, entry) for entry in batch])
             projected = x @ projection.T + projection_bias
             mx.eval(projected)
@@ -340,20 +386,44 @@ def encode(manifest_path: Path, dataset_path: Path, embeddings_path: Path):
                     "split": entry["split"],
                     "embedding": [float(value) for value in embedding],
                 }) + "\n")
-    temporary.replace(embeddings_path)
+            records_written += len(batch)
+            if batch_index == 0 or batch_index % 10 == 0 or records_written == total_records:
+                output.flush()
+                update_progress("encoding", batch=batch_index + 1)
+    partial_path.replace(embeddings_path)
+    update_progress("completed", completedAt=time.time())
     print(json.dumps({"records": len(entries), "embeddingDimensions": int(projection.shape[0]), "device": "metal"}), flush=True)
 
 
+def smoke(checkpoint_path: Path, image_path: Path):
+    """Verify that a base MLX checkpoint can execute one real image on Metal."""
+    require_metal()
+    if not image_path.is_file():
+        raise SystemExit(f"Smoke-test image does not exist: {image_path}")
+    model, processor, generate = load_backbone(checkpoint_path)
+    embeddings = image_embeddings(model, processor, generate, [image_path])
+    print(json.dumps({
+        "records": 1,
+        "embeddingDimensions": int(embeddings.shape[-1]),
+        "device": "metal",
+        "checkpoint": str(checkpoint_path),
+        "image": str(image_path),
+    }), flush=True)
+
+
 def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in {"fine-tune", "encode"}:
-        raise SystemExit("usage: visual-taxonomy-encoder-mlx.py fine-tune|encode ...")
+    if len(sys.argv) < 2 or sys.argv[1] not in {"fine-tune", "encode", "smoke"}:
+        raise SystemExit("usage: visual-taxonomy-encoder-mlx.py fine-tune|encode|smoke ...")
     if sys.argv[1] == "fine-tune" and len(sys.argv) == 7:
         fine_tune(*(Path(value) for value in sys.argv[2:]))
         return
     if sys.argv[1] == "encode" and len(sys.argv) == 5:
         encode(*(Path(value) for value in sys.argv[2:]))
         return
-    raise SystemExit("usage: fine-tune MANIFEST DATASET LABELS BASE_CHECKPOINT OUTPUT_CHECKPOINT | encode MANIFEST DATASET EMBEDDINGS")
+    if sys.argv[1] == "smoke" and len(sys.argv) == 4:
+        smoke(*(Path(value) for value in sys.argv[2:]))
+        return
+    raise SystemExit("usage: fine-tune MANIFEST DATASET LABELS BASE_CHECKPOINT OUTPUT_CHECKPOINT | encode MANIFEST DATASET EMBEDDINGS | smoke BASE_CHECKPOINT IMAGE")
 
 
 if __name__ == "__main__":

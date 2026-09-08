@@ -2206,7 +2206,8 @@ async function main() {
   if (args.allActive && (hasExplicitSelection || args.limitProducts > 0)) {
     throw new Error("--all-active cannot be combined with a limited product selection");
   }
-  const liveCatalogProducts = hasExplicitSelection
+  const forceLiveSelectedCatalog = process.env.SALT_BACKFILL_FORCE_LIVE_SELECTED_CATALOG === "1";
+  const liveCatalogProducts = hasExplicitSelection && !forceLiveSelectedCatalog
     ? releaseCatalogPayload?.products
     : await fetchLiveProductCatalog();
   const allProducts = mergeReleaseCatalogProducts(localProducts, liveCatalogProducts);

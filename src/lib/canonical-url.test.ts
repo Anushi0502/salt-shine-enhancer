@@ -43,6 +43,12 @@ describe("canonical URLs", () => {
     );
   });
 
+  it("consolidates verified duplicate product handles", () => {
+    expect(buildCanonicalUrl(
+      "/products/winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer",
+    )).toBe("https://www.saltonlinestore.com/products/tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable");
+  });
+
   it("keeps one canonical link when route metadata updates", () => {
     const firstCleanup = updateCanonicalLink(document, "/products/first");
     const secondCleanup = updateCanonicalLink(document, "/collections/watches?filter.v.availability=1");

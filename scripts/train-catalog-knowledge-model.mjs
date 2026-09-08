@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
   CATALOG_KNOWLEDGE_MODEL_RECORDS,
@@ -36,6 +36,9 @@ async function main() {
   const temporaryPath = `${args.output}.tmp-${process.pid}`;
   await writeFile(temporaryPath, `${JSON.stringify(model, null, 2)}\n`, "utf8");
   await rename(temporaryPath, args.output);
+  const backupTemporaryPath = `${args.output}.bak.tmp-${process.pid}`;
+  await copyFile(args.output, backupTemporaryPath);
+  await rename(backupTemporaryPath, `${args.output}.bak`);
   process.stdout.write(`Trained catalog knowledge model on ${model.trainingRecords} deterministic records with ${model.representativeRules} representatives at ${args.output}.\n`);
 }
 

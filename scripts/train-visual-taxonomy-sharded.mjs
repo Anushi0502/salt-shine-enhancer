@@ -4,15 +4,16 @@ import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import {
   access,
+  copyFile,
   lstat,
   mkdir,
-  readFile,
   rename,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises";
 import { once } from "node:events";
+import { setTimeout as sleep } from "node:timers/promises";
 import { dirname, relative, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
@@ -30,6 +31,7 @@ import {
 } from "../src/lib/visual-taxonomy-model.js";
 import { CATALOG_TAXONOMY_VERSION, getCatalogTaxonomyDefinitions } from "../src/lib/catalog-taxonomy.js";
 import { taxonomyTrainingFingerprint } from "../src/lib/catalog-knowledge-model.js";
+import { isTransientFileReadError, readFileWithRetry } from "./reliable-file-read.mjs";
 import {
   buildTrainingManifest,
   runEncoder,
@@ -125,14 +127,26 @@ async function hashFile(path) {
 
 async function writeJsonAtomic(path, value) {
   await mkdir(dirname(path), { recursive: true });
-  const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
-  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-  await rename(temporary, path);
+  let lastError;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const temporary = `${path}.tmp-${process.pid}-${Date.now()}-${attempt}`;
+    try {
+      await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+      await rename(temporary, path);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientFileReadError(error) || attempt === 15) throw error;
+      await rm(temporary, { force: true }).catch(() => {});
+      await sleep(Math.min(2_000, 100 * 2 ** attempt));
+    }
+  }
+  throw lastError;
 }
 
 async function readJson(path, fallback = null) {
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    return JSON.parse(await readFileWithRetry(path, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") return fallback;
     throw error;
@@ -141,9 +155,21 @@ async function readJson(path, fallback = null) {
 
 async function writeJsonLines(path, entries) {
   await mkdir(dirname(path), { recursive: true });
-  const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
-  await writeFile(temporary, `${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");
-  await rename(temporary, path);
+  let lastError;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const temporary = `${path}.tmp-${process.pid}-${Date.now()}-${attempt}`;
+    try {
+      await writeFile(temporary, `${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");
+      await rename(temporary, path);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientFileReadError(error) || attempt === 15) throw error;
+      await rm(temporary, { force: true }).catch(() => {});
+      await sleep(Math.min(2_000, 100 * 2 ** attempt));
+    }
+  }
+  throw lastError;
 }
 
 async function countLines(path) {
@@ -287,8 +313,51 @@ async function verifyFile(path, label) {
   return hashFile(path);
 }
 
-async function loadState(statePath, planHash, plan) {
-  const existing = await readJson(statePath);
+async function loadState(statePath, planHash, plan, localStatePath = "") {
+  const candidatePaths = [...new Set([
+    localStatePath,
+    statePath,
+    localStatePath ? `${localStatePath}.bak` : "",
+    `${statePath}.bak`,
+  ].filter(Boolean).map((path) => resolve(path)))];
+  const validCandidates = [];
+  const transientErrors = [];
+  const mismatchedCandidates = [];
+
+  for (const candidatePath of candidatePaths) {
+    try {
+      const candidate = await readJson(candidatePath);
+      if (!candidate) continue;
+      if (
+        candidate.kind === "salt-visual-taxonomy-shard-training-state" &&
+        candidate.version === 1 &&
+        candidate.planSha256 === planHash
+      ) {
+        validCandidates.push({ path: candidatePath, state: candidate });
+      } else {
+        mismatchedCandidates.push(candidatePath);
+      }
+    } catch (error) {
+      if (isTransientFileReadError(error)) {
+        transientErrors.push({ path: candidatePath, error });
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  const newest = validCandidates.sort((left, right) => {
+    const leftTime = Date.parse(String(left.state.updatedAt || "")) || 0;
+    const rightTime = Date.parse(String(right.state.updatedAt || "")) || 0;
+    return rightTime - leftTime;
+  })[0];
+  let existing = newest?.state;
+  if (newest && newest.path !== resolve(statePath)) {
+    process.stderr.write(`Visual shard state loaded from local checkpoint ${newest.path}; mirrored state may be stale.\n`);
+  }
+  if (!existing && transientErrors.length && mismatchedCandidates.length === 0) {
+    throw transientErrors[0].error;
+  }
   if (!existing) {
     return {
       kind: "salt-visual-taxonomy-shard-training-state",
@@ -309,9 +378,21 @@ async function loadState(statePath, planHash, plan) {
   return existing;
 }
 
-async function saveState(statePath, state, patch = {}) {
+async function saveState(statePath, state, patch = {}, localStatePath = "") {
   Object.assign(state, patch, { updatedAt: new Date().toISOString() });
+  const localPath = localStatePath ? resolve(localStatePath) : "";
+  if (localPath && localPath !== resolve(statePath)) {
+    // Keep the resumable journal off OneDrive. The project copy is still
+    // refreshed for watcher visibility, but cannot invalidate local progress.
+    await writeJsonAtomic(localPath, state);
+    await writeJsonAtomic(statePath, state).catch((error) => {
+      process.stderr.write(`Visual shard state mirror unavailable at ${statePath}: ${error.message}\n`);
+    });
+    await writeJsonAtomic(`${statePath}.bak`, state).catch(() => {});
+    return;
+  }
   await writeJsonAtomic(statePath, state);
+  await copyFile(statePath, `${statePath}.bak`).catch(() => {});
 }
 
 async function readAdapterReport(path) {
@@ -323,7 +404,7 @@ async function readAdapterReport(path) {
   return { reportPath, report, reportSha256: (await hashFile(reportPath)).sha256 };
 }
 
-async function trainAdapterShards({ args, plan, state, statePath, labelsPath, workRoot }) {
+async function trainAdapterShards({ args, plan, state, statePath, localStatePath, labelsPath, workRoot }) {
   const shardManifests = [];
   const encoderArgs = {
     encoderCommandJson: args.encoderCommandJson,
@@ -342,6 +423,15 @@ async function trainAdapterShards({ args, plan, state, statePath, labelsPath, wo
       continue;
     }
 
+    const stagingProgressPath = resolve(shard.datasetDir, ".salt-visual-staging-progress.json");
+    await saveState(statePath, state, {
+      phase: "staging",
+      currentShard: key,
+      currentProgressPath: stagingProgressPath,
+      currentShardDatasetDir: resolve(shard.datasetDir),
+      currentShardImageCount: Number(shard.imageCount || 0),
+      currentShardBytes: Number(shard.bytes || 0),
+    }, localStatePath);
     const marker = await ensureReadyDataset(shard, plan.maxShardBytes);
     const manifest = await buildTrainingManifest({
       datasetPath: assertExternalPath(shard.datasetDir, "Visual shard dataset directory"),
@@ -378,7 +468,7 @@ async function trainAdapterShards({ args, plan, state, statePath, labelsPath, wo
       resumeCheckpointPath,
       resumeEntriesProcessed,
       resumeSteps,
-    });
+    }, localStatePath);
     const fineTuned = await runEncoderFineTuning(
       encoderArgs,
       manifestPath,
@@ -404,7 +494,7 @@ async function trainAdapterShards({ args, plan, state, statePath, labelsPath, wo
           manifestSha256: manifest.manifestSha256,
         },
       },
-    });
+    }, localStatePath);
     await purgeShard(shard, marker);
     await saveState(statePath, state, {
       phase: index + 1 === plan.shards.length ? "embeddings" : "adapter",
@@ -412,7 +502,7 @@ async function trainAdapterShards({ args, plan, state, statePath, labelsPath, wo
         ...state.adapterShards,
         [key]: { ...state.adapterShards[key], status: "purged", purgedAt: new Date().toISOString() },
       },
-    });
+    }, localStatePath);
     adapterReports.push(reportInfo);
     shardManifests.push(manifest);
     process.stdout.write(`Visual adapter shard ${index + 1}/${plan.shards.length} complete and purged.\n`);
@@ -422,7 +512,7 @@ async function trainAdapterShards({ args, plan, state, statePath, labelsPath, wo
   return { finalAdapter, adapterReports, shardManifests };
 }
 
-async function encodeFinalShards({ args, plan, state, statePath, finalAdapter, workRoot, manifestsByShard }) {
+async function encodeFinalShards({ args, plan, state, statePath, localStatePath, finalAdapter, workRoot, manifestsByShard }) {
   const recordPaths = [];
   for (let index = 0; index < plan.shards.length; index += 1) {
     const shard = plan.shards[index];
@@ -434,6 +524,15 @@ async function encodeFinalShards({ args, plan, state, statePath, finalAdapter, w
       recordPaths.push(recordPath);
       continue;
     }
+    const stagingProgressPath = resolve(shard.datasetDir, ".salt-visual-staging-progress.json");
+    await saveState(statePath, state, {
+      phase: "embedding-staging",
+      currentShard: key,
+      currentProgressPath: stagingProgressPath,
+      currentShardDatasetDir: resolve(shard.datasetDir),
+      currentShardImageCount: Number(shard.imageCount || 0),
+      currentShardBytes: Number(shard.bytes || 0),
+    }, localStatePath);
     const marker = await ensureReadyDataset(shard, plan.maxShardBytes);
     const manifest = manifestsByShard[index] || await buildTrainingManifest({
       datasetPath: resolve(shard.datasetDir),
@@ -443,15 +542,25 @@ async function encodeFinalShards({ args, plan, state, statePath, finalAdapter, w
     const manifestPath = resolve(workRoot, "manifests", `shard-${String(index + 1).padStart(3, "0")}.jsonl`);
     await writeJsonLines(manifestPath, manifest.entries);
     const encoderOutput = resolve(workRoot, "encoder", `shard-${String(index + 1).padStart(3, "0")}.jsonl`);
+    await saveState(statePath, state, {
+      phase: "embedding-encoding",
+      currentShard: key,
+      currentProgressPath: `${encoderOutput}.progress.json`,
+      currentManifestSha256: manifest.manifestSha256,
+      currentEncoderOutput: encoderOutput,
+    }, localStatePath);
     await runEncoder({ encoderCommandJson: args.encoderCommandJson }, manifestPath, resolve(shard.datasetDir), encoderOutput, finalAdapter);
     const embeddingSummary = await validateEmbeddings({ embeddingsPath: encoderOutput, manifest, outputPath: recordPath });
+    await rm(`${encoderOutput}.progress.json`, { force: true });
     await saveState(statePath, state, {
       phase: "embeddings",
+      currentProgressPath: "",
+      currentEncoderOutput: "",
       embeddingShards: {
         ...state.embeddingShards,
         [key]: { status: "encoded", records: embeddingSummary.records, recordPath, manifestSha256: manifest.manifestSha256 },
       },
-    });
+    }, localStatePath);
     await purgeShard(shard, marker);
     await saveState(statePath, state, {
       phase: index + 1 === plan.shards.length ? "head" : "embeddings",
@@ -459,7 +568,7 @@ async function encodeFinalShards({ args, plan, state, statePath, finalAdapter, w
         ...state.embeddingShards,
         [key]: { ...state.embeddingShards[key], status: "purged", purgedAt: new Date().toISOString() },
       },
-    });
+    }, localStatePath);
     recordPaths.push(recordPath);
     process.stdout.write(`Final encoder embeddings shard ${index + 1}/${plan.shards.length} complete and purged.\n`);
   }
@@ -496,13 +605,14 @@ async function assertAllShardRootsPurged(plan) {
 async function main() {
   const args = parseArgs(process.argv);
   const planPath = resolve(args.shardPlan);
-  const planBytes = await readFile(planPath);
+  const planBytes = await readFileWithRetry(planPath);
   const planHash = createHash("sha256").update(planBytes).digest("hex");
   const plan = JSON.parse(planBytes);
   validateShardPlan(plan);
   const workRoot = assertExternalPath(args.workRoot || resolve(tmpdir(), `salt-visual-taxonomy-${planHash.slice(0, 16)}`), "Visual shard training work root");
   const statePath = resolve(args.stateOutput);
-  const state = await loadState(statePath, planHash, plan);
+  const localStatePath = resolve(process.env.SALT_VISUAL_TRAINING_LOCAL_STATE || resolve(workRoot, "shard-training-state.json"));
+  const state = await loadState(statePath, planHash, plan, localStatePath);
   await mkdir(workRoot, { recursive: true });
   const labelsPath = resolve(workRoot, "labels.json");
   let globalLabelIndex = Array.isArray(plan.labelIndex) && plan.labelIndex.length
@@ -511,7 +621,7 @@ async function main() {
   if (!globalLabelIndex) {
     const allRuleIds = plan.shards.flatMap((shard) => (Array.isArray(shard.entries) ? shard.entries.map((entry) => entry.ruleId) : []));
     for (const shard of plan.shards) {
-      const source = JSON.parse(`[${(await readFile(resolve(shard.sourceManifest), "utf8")).trim().split(/\r?\n/).filter(Boolean).join(",")}]`);
+      const source = JSON.parse(`[${(await readFileWithRetry(resolve(shard.sourceManifest), "utf8")).trim().split(/\r?\n/).filter(Boolean).join(",")}]`);
       allRuleIds.push(...source.map((entry) => entry.ruleId));
     }
     globalLabelIndex = buildVisualTaxonomyLabelIndex(allRuleIds);
@@ -521,13 +631,11 @@ async function main() {
     throw new Error("Visual shard plan labelIndex is not the canonical sorted taxonomy index.");
   }
   await writeJsonAtomic(labelsPath, globalLabelIndex);
-  const { finalAdapter, adapterReports } = await trainAdapterShards({ args, plan, state, statePath, labelsPath, workRoot });
+  const { finalAdapter, adapterReports } = await trainAdapterShards({ args, plan, state, statePath, localStatePath, labelsPath, workRoot });
   const shardManifests = [];
   for (const shard of plan.shards) {
-    const marker = await readJson(resolve(shard.datasetDir, corpusMarkerName));
-    if (marker) throw new Error(`Expected adapter phase to purge shard before final encoding: ${shard.datasetDir}`);
     const manifestPath = resolve(workRoot, "manifests", `shard-${String(shard.shardIndex).padStart(3, "0")}.jsonl`);
-    const manifestEntries = await readFile(manifestPath, "utf8");
+    const manifestEntries = await readFileWithRetry(manifestPath, "utf8");
     const entries = manifestEntries.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
     shardManifests.push({
       entries,
@@ -537,15 +645,32 @@ async function main() {
       manifestSha256: sha256Text(entries.map((entry) => JSON.stringify(entry)).join("\n")),
     });
   }
-  const recordPaths = await encodeFinalShards({ args, plan, state, statePath, finalAdapter, workRoot, manifestsByShard: shardManifests });
+  const recordPaths = await encodeFinalShards({ args, plan, state, statePath, localStatePath, finalAdapter, workRoot, manifestsByShard: shardManifests });
+  await saveState(statePath, state, {
+    phase: "embedding-assembly",
+    currentShard: null,
+    currentProgressPath: "",
+    embeddingRecordCount: recordPaths.length,
+  }, localStatePath);
   const fullManifest = buildFullManifest(shardManifests, plan);
   const fullManifestPath = resolve(workRoot, "full-training-manifest.jsonl");
   await writeJsonLines(fullManifestPath, fullManifest.entries);
   const recordsPath = resolve(workRoot, "all-embeddings.jsonl");
   await assembleRecords(recordPaths, recordsPath, fullManifest.imageCount);
-  const metricsPath = resolve(workRoot, "head-metrics.json");
-  const headCheckpointPath = resolve(workRoot, "head-checkpoint.npz");
+  // The head uses a versioned transform and optimizer namespace so older
+  // checkpoints cannot silently resume with incompatible training semantics.
+  // This release uses a calibrated linear head with selective high-margin
+  // acceptance; low-margin predictions remain in classification review.
+  const metricsPath = resolve(workRoot, "head-metrics-l2-calibrated-linear-adam-v5.json");
+  const headCheckpointPath = resolve(workRoot, "head-checkpoint-l2-calibrated-linear-adam-v5.npz");
   const headCheckpointMetadataPath = `${headCheckpointPath}.json`;
+  await saveState(statePath, state, {
+    phase: "head-training",
+    currentShard: null,
+    currentProgressPath: "",
+    currentRecordsPath: recordsPath,
+    currentManifestSha256: fullManifest.manifestSha256,
+  }, localStatePath);
   const metrics = state.phase === "complete" && await access(metricsPath).then(() => true).catch(() => false)
     ? await readJson(metricsPath)
     : await runMlxTraining({
@@ -578,6 +703,13 @@ async function main() {
   await writeJsonAtomic(aggregateReportPath, aggregateReport);
   const taxonomyFingerprint = taxonomyTrainingFingerprint(getCatalogTaxonomyDefinitions());
   const candidateOnly = fullManifest.entries.some((entry) => entry.candidateOnly === true);
+  const trainLabelCounts = metrics.trainLabelCounts && typeof metrics.trainLabelCounts === "object"
+    ? metrics.trainLabelCounts
+    : {};
+  const taxonomyLabels = fullManifest.labelIndex.map((entry) => ({
+    ...entry,
+    trained: Number(trainLabelCounts[entry.ruleId] || 0) > 0,
+  }));
   await assertAllShardRootsPurged(plan);
   const modelPath = resolve(args.output);
   const model = {
@@ -589,7 +721,12 @@ async function main() {
     candidateOnly,
     labelPolicy: candidateOnly ? "deterministic-candidate-only" : "human-reviewed-or-verified",
     releaseUse: candidateOnly ? "candidate-evidence-only" : "verified-visual-evidence",
-    taxonomy: { version: CATALOG_TAXONOMY_VERSION, fingerprint: taxonomyFingerprint, labels: fullManifest.labelIndex },
+    taxonomy: {
+      version: CATALOG_TAXONOMY_VERSION,
+      fingerprint: taxonomyFingerprint,
+      labels: taxonomyLabels,
+      untrainedLabels: taxonomyLabels.filter((entry) => entry.trained === false).map((entry) => entry.ruleId),
+    },
     dataset: {
       datasetId: `visual-sharded-${String(plan.sourceManifestSha256 || planHash).slice(0, 24)}`,
       bytes: fullManifest.bytes,
@@ -663,7 +800,7 @@ async function main() {
     purgedDatasetRoot: model.retention.purgedDatasetRoot,
     completedAt: new Date().toISOString(),
   });
-  await saveState(statePath, state, { phase: "complete", modelPath, modelSha256: modelDigest.sha256, completedAt: new Date().toISOString() });
+  await saveState(statePath, state, { phase: "complete", modelPath, modelSha256: modelDigest.sha256, completedAt: new Date().toISOString() }, localStatePath);
   await rm(workRoot, { recursive: true, force: true });
   process.stdout.write(`Verified sharded Metal visual taxonomy model across ${plan.shards.length} <=25 GB shards; raw corpus purged.\n`);
 }
@@ -675,4 +812,4 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   });
 }
 
-export { adapterPathForShard, buildFullManifest, parseArgs };
+export { adapterPathForShard, buildFullManifest, loadState, parseArgs, saveState };

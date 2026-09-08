@@ -13,6 +13,10 @@ const collectionsPath = resolve(dataDir, "collections.json");
 const collectionProductsPath = resolve(dataDir, "collection-products.json");
 const dryRun = process.argv.includes("--dry-run");
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_COLLECTION_MEMBERSHIP_PAGE_SIZE || 250)));
+const readConcurrency = Math.max(
+  1,
+  Math.min(6, Number(process.env.SALT_COLLECTION_MEMBERSHIP_READ_CONCURRENCY || 4) || 4),
+);
 const allowedPendingCreationHandles = new Set(
   String(process.env.SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS || "")
     .split(",")
@@ -107,6 +111,24 @@ async function fetchLiveCollectionProducts(handle) {
   return { title, productIds };
 }
 
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
+  );
+  return results;
+}
+
 async function main() {
   const [productPayload, collectionsPayload, collectionProductsPayload] = await Promise.all([
     readProductCatalogPayload(dataDir),
@@ -125,16 +147,15 @@ async function main() {
     ...collectionProductsPayload,
     collections: { ...(collectionProductsPayload.collections || {}) },
   };
-  const summaries = [];
-  let liveMembershipAvailable = true;
-  let authFallbackLogged = false;
+  const resolvedCollections = await mapWithConcurrency(
+    CATALOG_COLLECTION_PLAN,
+    readConcurrency,
+    async (entry) => {
+      const currentMapping = nextCollectionProducts.collections[entry.handle] || {};
+      let live = null;
+      let source = "live";
+      let authFallback = false;
 
-  for (const entry of CATALOG_COLLECTION_PLAN) {
-    const currentMapping = nextCollectionProducts.collections[entry.handle] || {};
-    let live = null;
-    let source = "live";
-
-    if (liveMembershipAvailable) {
       try {
         live = await fetchLiveCollectionProducts(entry.handle);
       } catch (error) {
@@ -157,35 +178,44 @@ async function main() {
           );
         } else {
           if (!isShopifyAuthFailure(error)) throw error;
-          liveMembershipAvailable = false;
           source = "cached";
-          if (!authFallbackLogged) {
-            process.stdout.write(
-              "Shopify Admin authentication is unavailable; retaining committed canonical collection memberships.\n",
-            );
-            authFallbackLogged = true;
-          }
+          authFallback = true;
         }
       }
-    } else {
-      source = "cached";
-    }
 
-    if (!live) {
-      const taggedProductIds = productIdsForControlledTags(
-        productPayload.products || [],
-        [entry.ruleTag, entry.handle],
-        catalogProductIds,
-      );
-      live = {
-        title: String(currentMapping.title || entry.title).trim(),
-        productIds: Array.isArray(currentMapping.productIds) && currentMapping.productIds.length
-          ? currentMapping.productIds
-          : taggedProductIds,
+      if (!live) {
+        const taggedProductIds = productIdsForControlledTags(
+          productPayload.products || [],
+          [entry.ruleTag, entry.handle],
+          catalogProductIds,
+        );
+        live = {
+          title: String(currentMapping.title || entry.title).trim(),
+          productIds: Array.isArray(currentMapping.productIds) && currentMapping.productIds.length
+            ? currentMapping.productIds
+            : taggedProductIds,
+        };
+        if (!currentMapping.productIds?.length && taggedProductIds.length) source = "controlled-tag-fallback";
+      }
+
+      return {
+        entry,
+        currentMapping,
+        live,
+        source,
+        authFallback,
       };
-      if (!currentMapping.productIds?.length && taggedProductIds.length) source = "controlled-tag-fallback";
-    }
+    },
+  );
 
+  if (resolvedCollections.some((resolved) => resolved.authFallback)) {
+    process.stdout.write(
+      "Shopify Admin authentication is unavailable for one or more collection reads; retaining committed canonical collection memberships for those collections.\n",
+    );
+  }
+
+  const summaries = [];
+  for (const { entry, currentMapping, live, source } of resolvedCollections) {
     const visibleProductIds = live.productIds.filter((id) => catalogProductIds.has(id));
     let collectionIndex = nextCollections.findIndex((collection) => collection.handle === entry.handle);
     if (collectionIndex < 0) {
@@ -229,7 +259,7 @@ async function main() {
   };
 
   process.stdout.write(
-    `${dryRun ? "Dry run" : "Refreshing"} ${summaries.length} canonical collection memberships against ${catalogProductIds.size} Online Store products\n`,
+    `${dryRun ? "Dry run" : "Refreshing"} ${summaries.length} canonical collection memberships against ${catalogProductIds.size} Online Store products (read concurrency ${readConcurrency})\n`,
   );
   process.stdout.write(`${JSON.stringify(summaries, null, 2)}\n`);
 

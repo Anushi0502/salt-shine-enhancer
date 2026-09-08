@@ -92,7 +92,25 @@ async function hasCompletedVariantSeoManifest() {
   }
 }
 
+async function hasCompletedProductSeoManifest() {
+  try {
+    const manifest = JSON.parse(await readFile(resolve(root, "output", "shopify-seo-release-manifest.json"), "utf8"));
+    const summary = manifest.summary || {};
+    const planned = Number(summary.plannedProducts || 0);
+    return manifest.mode === "apply"
+      && Boolean(manifest.completedAt)
+      && Number(summary.failed || 0) === 0
+      && Number(summary.unresolved || 0) === 0
+      && planned > 0
+      && Number(summary.exactMatches || 0) + Number(summary.updatedVerified || 0) === planned;
+  } catch {
+    return false;
+  }
+}
+
 const resumeAtVariantImage = process.env.SALT_SEO_GUARDED_RESUME_FROM_VARIANT_IMAGE === "1";
+const resumeAfterProductSeo = process.env.SALT_SEO_GUARDED_RESUME_AFTER_PRODUCT_SEO === "1"
+  && await hasCompletedProductSeoManifest();
 const seoDryRunManifestPath = process.env.SALT_SHOPIFY_SEO_DRY_RUN_MANIFEST_PATH
   || resolve(root, "output", "shopify-seo-release-dry-run-manifest.json");
 const variantImageCachePath = process.env.SALT_VARIANT_IMAGE_MEDIA_CACHE_PATH
@@ -115,7 +133,7 @@ const variantImageEnv = {
     process.env.SALT_VARIANT_IMAGE_ALLOW_SOURCE_ONLY_EXCLUSIONS || "1",
 };
 
-if (!resumeAtVariantImage) {
+if (!resumeAtVariantImage && !resumeAfterProductSeo) {
   run("1. Verify trained 128M-record catalog knowledge model", npmBin, ["run", "catalog:knowledge:model:verify"]);
   run("2. Verify catalog taxonomy approval", nodeBin, ["scripts/catalog-taxonomy-approval.mjs"]);
   run("3. Validate local catalog taxonomy", npmBin, ["run", "catalog:taxonomy:validate"]);
@@ -142,11 +160,13 @@ if (!resumeAtVariantImage) {
   }
   run("9. Guarded full-catalog Shopify SEO apply with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
   run("10. Apply taxonomy tags and metafields with live readback", npmBin, ["run", "shopify:taxonomy:apply"]);
-} else {
+} else if (resumeAtVariantImage) {
   process.stdout.write("Reusing completed guarded SEO and taxonomy stages; resuming at variant image mapping.\n");
+} else {
+  process.stdout.write("Reusing completed guarded product SEO and taxonomy stages; resuming at variant-specific SEO.\n");
 }
 
-if (await hasCompletedVariantSeoManifest()) {
+if (resumeAfterProductSeo || await hasCompletedVariantSeoManifest()) {
   process.stdout.write("11. Reusing completed variant-specific SEO metafield live readback.\n");
 } else {
   run(

@@ -20,6 +20,28 @@ const COLLECTION_CANONICAL_ALIASES: Record<string, string> = {
   "clearance-archive": "under-50",
 };
 
+// Google has already selected these canonical products for the live duplicate
+// URLs. Keep the source URL usable, but make metadata and structured data point
+// at the same product instead of competing in the index.
+const PRODUCT_CANONICAL_ALIASES: Record<string, string> = {
+  "winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer":
+    "tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable",
+  "ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1":
+    "ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men",
+  "children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil-1":
+    "children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil",
+  "black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-2":
+    "black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-3",
+  "anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l-2":
+    "anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l",
+  "jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot-1":
+    "jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot",
+  "car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-rv-motorcycle":
+    "car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-for-motorcycle",
+  "women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands-2":
+    "women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands",
+};
+
 function hasCanonicalRel(link: HTMLLinkElement): boolean {
   return String(link.getAttribute("rel") || "")
     .split(/\s+/)
@@ -53,7 +75,9 @@ export function normalizeCanonicalPath(input: string | null | undefined): string
   const routeType = segments[routeOffset]?.toLowerCase();
 
   if ((routeType === "product" || routeType === "products") && segments[routeOffset + 1]) {
-    return `/products/${segments[routeOffset + 1]}`;
+    const requestedHandle = segments[routeOffset + 1];
+    const canonicalHandle = PRODUCT_CANONICAL_ALIASES[requestedHandle] || requestedHandle;
+    return `/products/${canonicalHandle}`;
   }
 
   if (routeType === "collections" && segments[routeOffset + 1]) {

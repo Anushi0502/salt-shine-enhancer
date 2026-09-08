@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { appendFile, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
@@ -31,7 +32,7 @@ function parseArgs(argv) {
 }
 
 async function readJson(path, fallback = null) {
-  try { return JSON.parse(await readFile(path, "utf8")); } catch (error) {
+  try { return JSON.parse(await readFileWithRetry(path, "utf8")); } catch (error) {
     if (error?.code === "ENOENT") return fallback;
     throw error;
   }
@@ -109,12 +110,12 @@ export async function hydrateCandidateManifest({ source, output, state, target =
   const sourcePath = resolve(source || defaultSourcePath);
   const outputPath = resolve(output || defaultOutputPath);
   const statePath = resolve(state || defaultStatePath);
-  const sourceText = await readFile(sourcePath, "utf8");
+  const sourceText = await readFileWithRetry(sourcePath, "utf8");
   const sourceSha256 = sha256(Buffer.from(sourceText));
   const sourceEntries = parseJsonl(sourceText);
   const prior = await readJson(statePath, null);
   if (prior && prior.sourceSha256 !== sourceSha256) throw new Error("Hydration state belongs to a different candidate manifest.");
-  const hydrated = parseJsonl(await readFile(outputPath, "utf8").catch((error) => error?.code === "ENOENT" ? "" : Promise.reject(error)));
+  const hydrated = parseJsonl(await readFileWithRetry(outputPath, "utf8").catch((error) => error?.code === "ENOENT" ? "" : Promise.reject(error)));
   const completed = new Map(hydrated.map((entry) => [`${entry.productId}\n${entry.sourceUrl}`, entry]));
   let totalBytes = hydrated.reduce((sum, entry) => sum + Number(entry.bytes || 0), 0);
   let failures = prior?.failures || [];

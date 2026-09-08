@@ -42,6 +42,27 @@ function toAbsoluteUrl(value: string): string {
   }
 }
 
+function isForcedNoIndexRoute(pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean);
+  const first = String(segments[0] || "").toLowerCase();
+  const second = String(segments[1] || "").toLowerCase();
+  const third = String(segments[2] || "").toLowerCase();
+  const hasLocalePrefix = /^[a-z]{2}(?:-[a-z]{2})?$/.test(first);
+  const routeType = hasLocalePrefix ? second : first;
+
+  // Locale-prefixed catalog routes are duplicate discovery surfaces. The
+  // canonical English product/collection URL remains indexable, while these
+  // app-owned variants stay crawlable for links and language UX.
+  if (hasLocalePrefix && (routeType === "product" || routeType === "products" || routeType === "collections")) {
+    return true;
+  }
+
+  // Review pages are a thin utility view of the PDP. Keep them available to
+  // shoppers, but do not let an empty/filtered review state compete with the
+  // product URL in search.
+  return (routeType === "product" || routeType === "products") && third === "reviews";
+}
+
 function updateMetaTag(
   document: Document,
   attr: "name" | "property",
@@ -138,6 +159,9 @@ const SeoMetadata = ({
   structuredData = [],
   scope = "page",
 }: SeoMetadataProps) => {
+  const routeNoIndex = typeof window !== "undefined" ? isForcedNoIndexRoute(window.location.pathname) : false;
+  const effectiveNoIndex = noIndex || routeNoIndex;
+
   useEffect(() => {
     if (typeof document === "undefined") {
       return;
@@ -146,7 +170,7 @@ const SeoMetadata = ({
     const cleanups: Cleanup[] = [];
     const previousTitle = document.title;
     const absoluteImage = image ? toAbsoluteUrl(image) : "";
-    const managesRouteMetadata = Boolean(title || description || canonicalPath || image || noIndex);
+    const managesRouteMetadata = Boolean(title || description || canonicalPath || image || effectiveNoIndex);
     const resolvedOgType = managesRouteMetadata ? ogType || "website" : null;
 
     if (title) {
@@ -192,7 +216,7 @@ const SeoMetadata = ({
     if (managesRouteMetadata) {
       cleanups.push(updateMetaTag(document, "name", "twitter:card", absoluteImage ? "summary_large_image" : "summary", scope));
 
-      const robotsContent = noIndex
+      const robotsContent = effectiveNoIndex
         ? "noindex,follow"
         : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
       cleanups.push(updateMetaTag(document, "name", "robots", robotsContent, scope));
@@ -209,7 +233,7 @@ const SeoMetadata = ({
         cleanup();
       }
     };
-  }, [canonicalPath, description, image, noIndex, ogType, scope, structuredData, title]);
+  }, [canonicalPath, description, effectiveNoIndex, image, ogType, scope, structuredData, title]);
 
   return null;
 };

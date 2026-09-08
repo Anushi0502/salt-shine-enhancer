@@ -298,6 +298,61 @@ describe("catalog collection governance", () => {
     ]);
   });
 
+  it("removes the reported home-safety mouse false positive even with stale taxonomy evidence", () => {
+    const product = {
+      title: "Ergonomic Wireless Computer Mouse",
+      handle: "ergonomic-wireless-computer-mouse",
+      product_type: "home safety",
+    };
+    const knowledge = {
+      proposedTags: ["home-safety"],
+      collectionTargets: ["home-safety"],
+      classificationRule: "home-safety",
+    };
+    expect(buildProductCollectionTags(product, knowledge)).not.toContain("home-safety");
+  });
+
+  it("removes the reported hats beer-opener false positive even with stale taxonomy evidence", () => {
+    const product = {
+      title: "Stainless Steel Beer Bottle Opener",
+      handle: "stainless-steel-beer-bottle-opener",
+    };
+    const knowledge = {
+      subcategoryId: "hats-caps",
+      proposedTags: ["hats"],
+      collectionTargets: ["hats"],
+      classificationRule: "hats-caps",
+    };
+    expect(buildProductCollectionTags(product, knowledge)).not.toContain("hats");
+  });
+
+  it("uses recipient-plus-gift evidence for Dad and Mom collections", () => {
+    const dad = { title: "Leather Gift Set for Dad", handle: "leather-gift-set-for-dad" };
+    const mom = { title: "Personalized Birthday Present for Mom", handle: "personalized-birthday-present-for-mom" };
+    const unrelated = { title: "Men's Cotton Baseball Cap", handle: "mens-cotton-baseball-cap" };
+    const knowledge = { proposedTags: [], collectionTargets: [], classificationRule: "general-merchandise" };
+
+    expect(buildProductCollectionTags(dad, knowledge)).toContain("gifts-for-dad");
+    expect(buildProductCollectionTags(mom, knowledge)).toContain("gifts-for-mom");
+    expect(buildProductCollectionTags(unrelated, knowledge)).not.toEqual(expect.arrayContaining(["gifts-for-dad", "gifts-for-mom"]));
+  });
+
+  it("broadens living-aid, senior-solution, and candle evidence without requiring taxonomy", () => {
+    const knowledge = { proposedTags: [], collectionTargets: [], classificationRule: "general-merchandise" };
+    expect(buildProductCollectionTags(
+      { title: "Adjustable Elderly Bed Rail Assistive Support", handle: "adjustable-elderly-bed-rail" },
+      knowledge,
+    )).toContain("daily-living-aids");
+    expect(buildProductCollectionTags(
+      { title: "Caregiver Daily Living Aid for Assisted Living", handle: "caregiver-daily-living-aid" },
+      knowledge,
+    )).toContain("senior-living-solutions");
+    expect(buildProductCollectionTags(
+      { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
+      knowledge,
+    )).toContain("candles");
+  });
+
   it("has no duplicate canonical handles or aliases", () => {
     const canonical = COLLECTION_GOVERNANCE_POLICIES.map((policy) => policy.handle);
     expect(new Set(canonical).size).toBe(canonical.length);

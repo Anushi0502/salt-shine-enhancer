@@ -10,8 +10,8 @@ const contactDetails = [
   },
   {
     label: "Email",
-    value: "support@saltonlinestore.com",
-    href: "mailto:support@saltonlinestore.com",
+    value: "help@saltonlinestore.com",
+    href: "mailto:help@saltonlinestore.com",
     icon: Mail,
   },
   {

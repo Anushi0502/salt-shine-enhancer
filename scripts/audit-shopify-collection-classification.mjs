@@ -16,6 +16,7 @@ import {
 } from "../src/lib/catalog-collection-governance.js";
 import { classifyCatalogTaxonomyWithoutOverrides } from "../src/lib/catalog-taxonomy.js";
 import { asArray, createShopifyAdminGraphQLClient, normalizeText } from "./shopify-admin-graphql-client.mjs";
+import { filterMembershipToActiveProducts } from "./shopify-catalog-integrity.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputPath = resolve(rootDir, "output", "shopify-collection-classification-audit.json");
@@ -41,7 +42,7 @@ function parseArgs(argv) {
 
 const COLLECTIONS_QUERY = /* GraphQL */ `
   query CollectionClassificationAuditCollections($first: Int!, $after: String) {
-    collections(first: $first, after: $after) {
+    collections(first: $first, after: $after, query: "status:active") {
       nodes {
         id
         handle
@@ -61,6 +62,37 @@ const COLLECTIONS_QUERY = /* GraphQL */ `
               }
             }
           }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+const ACTIVE_TARGETED_COLLECTION_QUERY = /* GraphQL */ `
+  query CollectionClassificationAuditActiveTarget($first: Int!, $after: String, $query: String!) {
+    collections(first: $first, query: $query) {
+      nodes {
+        id
+        handle
+        title
+        sources {
+          __typename
+          ... on CollectionConditionsSource {
+            targetType
+            inclusion {
+              matchType
+              conditions {
+                __typename
+                ... on CollectionSourceInclusionConditionProductTag { relation values matchType }
+                ... on CollectionSourceInclusionConditionVariantPrice { relation value { amount currencyCode } }
+              }
+            }
+          }
+        }
+        products(first: 250, after: $after) {
+          nodes { id }
+          pageInfo { hasNextPage endCursor }
         }
       }
       pageInfo { hasNextPage endCursor }
@@ -101,6 +133,8 @@ const BULK_COLLECTION_MEMBERSHIP_QUERY = /* GraphQL */ `
 `;
 
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+const targetedReadAttempts = Math.max(2, Math.min(6, Number(process.env.SALT_COLLECTION_AUDIT_TARGETED_ATTEMPTS || 4)));
+const targetedReadDelayMs = Math.max(500, Math.min(10_000, Number(process.env.SALT_COLLECTION_AUDIT_TARGETED_DELAY_MS || 1500)));
 
 function numericId(value) {
   return String(value || "").match(/(\d+)$/)?.[1] || "";
@@ -192,6 +226,53 @@ async function fetchMembership() {
   return { collections, membersByCollectionId, operation };
 }
 
+async function fetchTargetedCollection(collectionHandle) {
+  const members = new Set();
+  let collection = null;
+  let after = null;
+  while (true) {
+    const data = await client.run(ACTIVE_TARGETED_COLLECTION_QUERY, {
+      first: 10,
+      after,
+      query: `status:active handle:${collectionHandle}`,
+    }, {
+      operation: `targeted active collection audit ${collectionHandle}`,
+    });
+    collection = asArray(data?.collections?.nodes).find((entry) => handle(entry?.handle) === collectionHandle);
+    if (!collection?.id) return null;
+    const connection = collection.products;
+    if (!connection) throw new Error(`Targeted collection membership audit returned no products for ${collectionHandle}.`);
+    for (const product of asArray(connection.nodes)) {
+      const id = idKey(product?.id);
+      if (id) members.add(id);
+    }
+    if (!connection.pageInfo?.hasNextPage) break;
+    after = connection.pageInfo.endCursor;
+    if (!after) throw new Error(`Targeted collection membership audit returned no cursor for ${collectionHandle}.`);
+    // The handle query is intentionally repeated with the product cursor so
+    // source and membership are read from the same active collection view.
+  }
+  return { collection, members };
+}
+
+async function fetchTargetedCollectionUntilExact(collectionHandle, expected) {
+  let last = null;
+  for (let attempt = 1; attempt <= targetedReadAttempts; attempt += 1) {
+    const targeted = await fetchTargetedCollection(collectionHandle);
+    if (!targeted) return null;
+    const missing = [...expected].filter((id) => !targeted.members.has(id));
+    const extra = [...targeted.members].filter((id) => !expected.has(id));
+    const sourceExact = sourceMatchesPolicy(
+      COLLECTION_GOVERNANCE_POLICIES.find((policy) => handle(policy.handle) === collectionHandle),
+      targeted.collection,
+    );
+    last = { targeted, sourceExact, membershipExact: missing.length === 0 && extra.length === 0, attempt };
+    if (sourceExact && last.membershipExact) return last;
+    if (attempt < targetedReadAttempts) await sleep(targetedReadDelayMs * Math.min(4, attempt));
+  }
+  return last;
+}
+
 function loadJson(path) {
   return readFile(resolve(rootDir, path), "utf8").then((value) => JSON.parse(value));
 }
@@ -204,6 +285,30 @@ function manifestExpectedByProduct(manifest) {
     ));
   }
   return expected;
+}
+
+function appliedClassificationEvidence(classification) {
+  if (!classification) return null;
+  return {
+    ...classification,
+    // The applied manifest stores the release authority as collectionHandles
+    // and ruleId. Normalize it to the governance evidence contract used by
+    // productMatchesSemanticCollection without changing the manifest.
+    collectionTargets: classification.collectionTargets || classification.collectionHandles || [],
+    classificationRule: classification.classificationRule || classification.ruleId || null,
+    proposedTags: classification.proposedTags || classification.managedTags || [],
+  };
+}
+
+function appliedClassificationMatchesPolicy(policy, classification) {
+  if (!classification) return false;
+  const assigned = new Set([
+    ...asArray(classification.collectionHandles),
+    ...asArray(classification.collectionTargets),
+  ].map(handle).filter(Boolean));
+  return [policy.handle, ...asArray(policy.legacyHandles), ...semanticCollectionRuleTags(policy)]
+    .map(handle)
+    .some((candidate) => assigned.has(candidate));
 }
 
 function sourceMatchesPolicy(policy, collection) {
@@ -303,19 +408,37 @@ async function run() {
   process.stdout.write(`Auditing ${products.length} local active products against live Shopify memberships.\n`);
   const [liveCollections, membership] = await Promise.all([fetchCollections(), fetchMembership()]);
   const liveByHandle = new Map(liveCollections.map((collection) => [handle(collection.handle), collection]));
-  const liveMembersByHandle = new Map();
-  for (const collection of membership.collections) {
-    liveMembersByHandle.set(handle(collection.handle), membership.membersByCollectionId.get(collection.id) || new Set());
-  }
 
   const productById = new Map();
   for (const product of products) {
     const key = idKey(product.id || product.legacyResourceId) || product.handle;
     productById.set(key, product);
   }
+  const activeProductIds = new Set(productById.keys());
+  const liveMembersByHandle = new Map();
+  const outOfScopeMemberships = [];
+  for (const collection of membership.collections) {
+    const rawMembers = membership.membersByCollectionId.get(collection.id) || new Set();
+    const activeMembers = filterMembershipToActiveProducts(rawMembers, activeProductIds);
+    const outOfScopeProductIds = [...rawMembers]
+      .map(idKey)
+      .filter((id) => id && !activeProductIds.has(id));
+    if (outOfScopeProductIds.length) {
+      outOfScopeMemberships.push({
+        collectionHandle: handle(collection.handle),
+        productIds: outOfScopeProductIds,
+        count: outOfScopeProductIds.length,
+      });
+    }
+    liveMembersByHandle.set(handle(collection.handle), activeMembers);
+  }
 
   const manifestExpected = manifestExpectedByProduct(manifest);
   const { expectedByProduct: taxonomyExpected, deterministic } = buildTaxonomyExpected(products);
+  const appliedClassifications = new Map(asArray(manifest?.classifications).map((classification) => [
+    idKey(classification?.productId) || classification?.handle,
+    classification,
+  ]));
   const governed = COLLECTION_GOVERNANCE_POLICIES.filter((policy) => policy.kind !== "catalog-boundary");
   const collectionIssues = [];
   const evidenceConflicts = [];
@@ -327,8 +450,8 @@ async function run() {
 
   for (const policy of governed) {
     const collectionHandle = handle(policy.handle);
-    const liveCollection = liveByHandle.get(collectionHandle);
-    const actual = liveMembersByHandle.get(collectionHandle) || new Set();
+    let liveCollection = liveByHandle.get(collectionHandle);
+    let actual = liveMembersByHandle.get(collectionHandle) || new Set();
     const expectedFromPlan = new Set();
     for (const [key, handles] of manifestExpected) if (handles.has(collectionHandle)) expectedFromPlan.add(key);
     // The applied catalog-integrity manifest is the release authority for
@@ -337,9 +460,32 @@ async function run() {
     const expected = policy.kind === "price"
       ? new Set([...taxonomyExpected].filter(([, handles]) => handles.has(collectionHandle)).map(([key]) => key))
       : expectedFromPlan;
-    const missing = [...expected].filter((id) => !actual.has(id));
-    const extra = [...actual].filter((id) => !expected.has(id));
-    const ruleMatches = sourceMatchesPolicy(policy, liveCollection);
+    let missing = [...expected].filter((id) => !actual.has(id));
+    let extra = [...actual].filter((id) => !expected.has(id));
+    let ruleMatches = sourceMatchesPolicy(policy, liveCollection);
+    let targetedReadback = null;
+    if (liveCollection && (!ruleMatches || missing.length || extra.length)) {
+      // Shopify's collection bulk export can lag the collection connection
+      // after a smart-source replacement. Re-read only the affected governed
+      // collection before failing; this remains a strict exact readback.
+      const targetedResult = await fetchTargetedCollectionUntilExact(collectionHandle, expected);
+      if (targetedResult) {
+        const { targeted, sourceExact, membershipExact, attempt } = targetedResult;
+        targetedReadback = {
+          attempted: true,
+          attempts: attempt,
+          sourceExact,
+          membershipExact,
+        };
+        liveCollection = targeted.collection;
+        actual = filterMembershipToActiveProducts(targeted.members, activeProductIds);
+        liveByHandle.set(collectionHandle, liveCollection);
+        liveMembersByHandle.set(collectionHandle, actual);
+        missing = [...expected].filter((id) => !actual.has(id));
+        extra = [...actual].filter((id) => !expected.has(id));
+        ruleMatches = sourceExact;
+      }
+    }
     if (!liveCollection || !ruleMatches || missing.length || extra.length) {
       collectionIssues.push({
         handle: collectionHandle,
@@ -354,6 +500,7 @@ async function run() {
         extra: extra.slice(0, 100).map((id) => productLabel(productById.get(id))),
         liveRuleSet: liveCollection?.ruleSet || null,
         liveSources: liveCollection?.sources || null,
+        targetedReadback,
         status: !liveCollection ? "missing-collection" : !ruleMatches ? "rule-mismatch" : "membership-mismatch",
       });
       for (const id of [...missing, ...extra]) mismatchProducts.add(id);
@@ -363,8 +510,12 @@ async function run() {
     for (const id of actual) {
       const product = productById.get(id);
       if (!product) continue;
-      const classification = deterministic.get(id);
-      if (!classification || !productMatchesSemanticCollection(policy, product, classification)) {
+      const applied = appliedClassifications.get(id);
+      const classification = appliedClassificationEvidence(applied) || deterministic.get(id);
+      const matches = applied
+        ? appliedClassificationMatchesPolicy(policy, applied)
+        : productMatchesSemanticCollection(policy, product, classification);
+      if (!classification || !matches) {
         evidenceConflicts.push({
           collectionHandle,
           collectionTitle: policy.title,
@@ -392,7 +543,18 @@ async function run() {
   }
 
   const named = new Map();
-  for (const target of ["iphone-cases", "men-t-shirt", "home-decor"]) {
+  for (const target of [
+    "iphone-cases",
+    "men-t-shirt",
+    "home-decor",
+    "home-safety",
+    "hats",
+    "gifts-for-dad",
+    "gifts-for-mom",
+    "daily-living-aids",
+    "senior-living-solutions",
+    "candles",
+  ]) {
     const issue = collectionIssues.find((entry) => entry.handle === target);
     const evidence = evidenceConflicts.filter((entry) => entry.collectionHandle === target);
     const actual = liveMembersByHandle.get(target) || new Set();
@@ -420,6 +582,7 @@ async function run() {
       collections: liveCollections.length,
       membershipCollections: membership.collections.length,
       membershipObjects: membership.operation?.objectCount || null,
+      outOfScopeMemberships,
     },
     namedCollections: Object.fromEntries(named),
     summary: {
@@ -443,7 +606,7 @@ async function run() {
       noWritesPerformed: true,
       liveMembershipComparedTo: "the applied catalog-integrity manifest for semantic and merchandising collections; deterministic live variant prices for price collections",
       strictMode: args.strict,
-      deterministicEvidenceConflictsAreDiagnostic: true,
+      deterministicEvidenceConflictsAreDiagnostic: false,
       dynamicCollections: governed.filter((policy) => policy.kind === "semantic" && policy.match?.dynamic).map((policy) => policy.handle),
       productNotFoundInLocalCatalog: "excluded from product-level examples but retained in collection counts",
     },
@@ -460,6 +623,7 @@ async function run() {
     const strictFailures = [
       ...(missingManifestProducts.length ? [`manifest missing ${missingManifestProducts.length} active products`] : []),
       ...(collectionIssues.length ? [`${collectionIssues.length} governed collection live drift issue(s)`] : []),
+      ...(evidenceConflicts.length ? [`${evidenceConflicts.length} deterministic collection evidence conflict(s)`] : []),
       ...(collectionless.length ? [`${collectionless.length} collectionless active products`] : []),
     ];
     if (strictFailures.length) throw new Error(`Strict collection audit failed: ${strictFailures.join("; ")}. See ${outputPath}`);

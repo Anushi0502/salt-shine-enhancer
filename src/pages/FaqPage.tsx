@@ -12,7 +12,7 @@ import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { buildFaqStructuredData } from "@/lib/structured-data";
 
 const runtimeContext = getRuntimeContext();
-const supportEmail = runtimeContext.supportEmail || "support@saltonlinestore.com";
+const supportEmail = runtimeContext.supportEmail || "help@saltonlinestore.com";
 const supportPhone = "+1 888-835-7211";
 
 const faqRoutes = [

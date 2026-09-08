@@ -74,8 +74,12 @@ async function main() {
   const knowledgeModel = await readCatalogKnowledgeModel({
     required: process.env.SALT_REQUIRE_KNOWLEDGE_MODEL === "1",
   });
-  const modelEvidenceByKey = await scoreCatalogKnowledgeModelBatch(knowledgeModel, productsPayload.products || []);
   const precomputedKnowledgeByKey = await readPrecomputedKnowledgeByKey(productsPayload);
+  // The knowledge build immediately before this script already scored the
+  // exact catalog generation. Avoid scoring the same 15k products twice.
+  const modelEvidenceByKey = precomputedKnowledgeByKey
+    ? null
+    : await scoreCatalogKnowledgeModelBatch(knowledgeModel, productsPayload.products || []);
   if (precomputedKnowledgeByKey) {
     process.stdout.write(`Reusing knowledge artifact for ${precomputedKnowledgeByKey.size} search records.\n`);
   }

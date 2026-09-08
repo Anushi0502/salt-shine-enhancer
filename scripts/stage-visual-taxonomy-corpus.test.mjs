@@ -1,6 +1,10 @@
+// @vitest-environment node
+
+import { createServer } from "node:http";
+
 import { describe, expect, it } from "vitest";
 
-import { normalizeEntries, planVisualCorpusShards } from "./stage-visual-taxonomy-corpus.mjs";
+import { fetchBytes, normalizeEntries, planVisualCorpusShards } from "./stage-visual-taxonomy-corpus.mjs";
 
 function entries(bytes) {
   return bytes.map((value, index) => ({
@@ -14,6 +18,35 @@ function entries(bytes) {
 }
 
 describe("visual taxonomy shard planning", () => {
+  it("resumes a short HTTP body with a bounded range request", async () => {
+    const body = Buffer.from("verified visual bytes");
+    const requests = [];
+    const server = createServer((request, response) => {
+      const range = String(request.headers.range || "");
+      requests.push(range);
+      if (!range) {
+        response.writeHead(200, { "content-length": 7 });
+        response.end(body.subarray(0, 7));
+        return;
+      }
+      const start = Number(range.match(/^bytes=(\d+)-$/)?.[1]);
+      response.writeHead(206, {
+        "content-length": body.length - start,
+        "content-range": `bytes ${start}-${body.length - 1}/${body.length}`,
+      });
+      response.end(body.subarray(start));
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    try {
+      const received = await fetchBytes(`http://127.0.0.1:${address.port}/image.jpg`, body.length);
+      expect(Buffer.from(received)).toEqual(body);
+      expect(requests).toEqual(["", "bytes=7-"]);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
   it("accepts external human-verified data only as explicitly marked candidate evidence", async () => {
     const previous = process.env.SALT_VISUAL_ALLOW_CANDIDATE_LABELS;
     process.env.SALT_VISUAL_ALLOW_CANDIDATE_LABELS = "1";

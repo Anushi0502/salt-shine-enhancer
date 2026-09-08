@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
@@ -1237,7 +1238,7 @@ function planFingerprint(snapshotProducts, liveProducts, scopeHandles) {
 async function loadPlanCheckpoint(checkpointPath, fingerprint, resume) {
   if (!resume) return null;
   try {
-    const parsed = JSON.parse(await readFile(checkpointPath, "utf8"));
+    const parsed = JSON.parse(await readFileWithRetry(checkpointPath, "utf8", 16));
     if (parsed?.version !== 2 || parsed?.fingerprint !== fingerprint || !Array.isArray(parsed?.plans)) return null;
     process.stdout.write(`Resuming ${parsed.plans.length} completed variant-image product plans from checkpoint\n`);
     return parsed;

@@ -1,20 +1,27 @@
 #!/usr/bin/env node
 
 import { existsSync } from "node:fs";
-import { mkdir, open, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, rename, rm, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
+import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 import { dirname, resolve } from "node:path";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
 const modelPath = resolve(process.env.SALT_VISUAL_TAXONOMY_MODEL_PATH || resolve(outputDir, "visual-taxonomy-model.json"));
 const weightsPath = resolve(process.env.SALT_VISUAL_TAXONOMY_WEIGHTS_PATH || resolve(outputDir, "visual-taxonomy-model-weights.npz"));
 const completionPath = resolve(process.env.SALT_VISUAL_TAXONOMY_TRAINING_COMPLETION_PATH || resolve(outputDir, "visual-taxonomy-training-completion.json"));
-const purgeJournalPath = resolve(outputDir, "visual-taxonomy-purge-journal.json");
+const purgeJournalPath = resolve(process.env.SALT_VISUAL_TRAINING_PURGE_JOURNAL_PATH || resolve(outputDir, "visual-taxonomy-purge-journal.json"));
 const defaultConfigPath = resolve(outputDir, "visual-taxonomy-training-config.json");
-const trainingStatusPath = resolve(outputDir, "visual-taxonomy-training-status.json");
-const trainingLockPath = resolve(outputDir, ".visual-taxonomy-model-training.lock");
+const trainingStatusPath = resolve(process.env.SALT_VISUAL_TRAINING_STATUS_PATH || resolve(outputDir, "visual-taxonomy-training-status.json"));
+const trainingLockPath = resolve(process.env.SALT_VISUAL_TRAINING_LOCK_PATH || resolve(outputDir, ".visual-taxonomy-model-training.lock"));
+const trainingWaitPollMs = Math.max(1_000, Number(process.env.SALT_VISUAL_TRAINING_WAIT_POLL_MS || 10_000));
+const trainingWaitTimeoutMs = Math.max(
+  trainingWaitPollMs,
+  Number(process.env.SALT_VISUAL_TRAINING_WAIT_TIMEOUT_MS || 24 * 60 * 60 * 1_000),
+);
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const execFileAsync = promisify(execFile);
 const defaultMetalPython = resolve(
@@ -136,7 +143,7 @@ async function loadTrainingConfig() {
   const configPath = resolve(process.env.SALT_VISUAL_TRAINING_CONFIG_PATH || defaultConfigPath);
   let fileConfig = {};
   try {
-    fileConfig = JSON.parse(await readFile(configPath, "utf8"));
+    fileConfig = JSON.parse(await readFileWithRetry(configPath, "utf8"));
   } catch (error) {
     if (error?.code !== "ENOENT") throw new Error(`Visual taxonomy training config is unreadable at ${configPath}: ${error.message}`);
   }
@@ -228,7 +235,7 @@ function configuredTrainingPlan(config) {
 
 async function modelExists() {
   try {
-    await readFile(modelPath, "utf8");
+    await readFileWithRetry(modelPath, "utf8");
     return true;
   } catch (error) {
     if (error?.code === "ENOENT") return false;
@@ -236,9 +243,66 @@ async function modelExists() {
   }
 }
 
+async function readTrainingLock() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const raw = await readFileWithRetry(trainingLockPath, "utf8");
+      if (!raw.trim()) {
+        await sleep(50);
+        continue;
+      }
+      const lock = JSON.parse(raw);
+      const pid = Number(lock?.pid || 0);
+      return pid > 0 ? { pid, startedAt: String(lock?.startedAt || "") } : null;
+    } catch (error) {
+      if (error?.code === "ENOENT") return null;
+      if (error instanceof SyntaxError && attempt < 3) {
+        await sleep(50);
+        continue;
+      }
+      throw new Error(`Visual taxonomy training lock is unreadable at ${trainingLockPath}: ${error.message}`);
+    }
+  }
+  throw new Error(`Visual taxonomy training lock is unreadable at ${trainingLockPath}: empty owner record`);
+}
+
+async function readTrainingStatus() {
+  try {
+    return JSON.parse(await readFileWithRetry(trainingStatusPath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw new Error(`Visual taxonomy training status is unreadable at ${trainingStatusPath}: ${error.message}`);
+  }
+}
+
+async function waitForExistingTraining() {
+  const startedAt = Date.now();
+  let reportedWait = false;
+
+  while (true) {
+    if (await modelExists()) return true;
+
+    const lock = await readTrainingLock();
+    if (!lock || !processAlive(lock.pid)) return false;
+
+    const status = await readTrainingStatus();
+    if (["failed", "blocked"].includes(String(status?.status || "").toLowerCase())) {
+      throw new Error(`Existing visual taxonomy training failed: ${String(status?.error || status?.reason || status.status)}`);
+    }
+    if (!reportedWait) {
+      process.stdout.write(`Visual taxonomy training is already running (pid ${lock.pid}); waiting for its verified model.\n`);
+      reportedWait = true;
+    }
+    if (Date.now() - startedAt >= trainingWaitTimeoutMs) {
+      throw new Error(`Timed out after ${Math.round(trainingWaitTimeoutMs / 60_000)} minutes waiting for visual taxonomy training pid ${lock.pid}.`);
+    }
+    await sleep(trainingWaitPollMs);
+  }
+}
+
 async function pendingPurgeExists() {
   try {
-    const journal = JSON.parse(await readFile(purgeJournalPath, "utf8"));
+    const journal = JSON.parse(await readFileWithRetry(purgeJournalPath, "utf8"));
     return Boolean(journal && ["pending", "purged"].includes(journal.status));
   } catch (error) {
     if (error?.code === "ENOENT") return false;
@@ -293,6 +357,7 @@ async function trainModel(inputs, { candidateOnly = false } = {}) {
     cwd: rootDir,
     env: {
       ...process.env,
+      SALT_VISUAL_MLX_PYTHON: process.env.SALT_VISUAL_MLX_PYTHON || resolveMetalPython(),
       SALT_VISUAL_TRAINING_RETAIN_RAW: "0",
       ...(candidateOnly ? { SALT_VISUAL_ALLOW_CANDIDATE_LABELS: "1" } : {}),
     },
@@ -328,6 +393,7 @@ async function trainShardedModel(sharded, inputs, { candidateOnly = false } = {}
     cwd: rootDir,
     env: {
       ...process.env,
+      SALT_VISUAL_MLX_PYTHON: process.env.SALT_VISUAL_MLX_PYTHON || resolveMetalPython(),
       SALT_VISUAL_TRAINING_RETAIN_RAW: "0",
       ...(candidateOnly ? { SALT_VISUAL_ALLOW_CANDIDATE_LABELS: "1" } : {}),
     },
@@ -366,12 +432,8 @@ async function acquireTrainingLock() {
       return lock;
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
-      let existing;
-      try {
-        existing = JSON.parse(await readFile(trainingLockPath, "utf8"));
-      } catch (readError) {
-        throw new Error(`Training lock exists but cannot be read safely: ${trainingLockPath}: ${readError.message}`);
-      }
+      const existing = await readTrainingLock();
+      if (!existing) continue;
       const ownerPid = Number(existing?.pid || 0);
       if (processAlive(ownerPid)) {
         throw new Error(`Another visual taxonomy training job owns ${trainingLockPath}; refusing a duplicate run.`);
@@ -410,7 +472,27 @@ async function ensureModel() {
     return;
   }
 
-  const lock = await acquireTrainingLock();
+  let lock;
+  try {
+    const trainingCompleted = await waitForExistingTraining();
+    if (trainingCompleted) {
+      await writeTrainingStatus("verifying", { reason: "checking the model produced by the active training owner" });
+      await verifyModel();
+      await writeTrainingStatus("verified", { reason: "active training owner produced a verified model" });
+      process.stdout.write(`Verified visual taxonomy model produced by the active training owner at ${modelPath}.\n`);
+      return;
+    }
+    lock = await acquireTrainingLock();
+  } catch (error) {
+    if (!/Another visual taxonomy training job owns/.test(String(error?.message || error))) throw error;
+    const trainingCompleted = await waitForExistingTraining();
+    if (!trainingCompleted) throw error;
+    await writeTrainingStatus("verifying", { reason: "checking the model produced by the active training owner" });
+    await verifyModel();
+    await writeTrainingStatus("verified", { reason: "active training owner produced a verified model" });
+    process.stdout.write(`Verified visual taxonomy model produced by the active training owner at ${modelPath}.\n`);
+    return;
+  }
 
   try {
     await writeTrainingStatus("training", {
@@ -420,7 +502,8 @@ async function ensureModel() {
       }),
       startedAt: new Date().toISOString(),
     });
-    await verifyMetalRuntime();
+    const metalPython = await verifyMetalRuntime();
+    process.env.SALT_VISUAL_MLX_PYTHON = metalPython;
     process.stdout.write("No installed visual taxonomy model found; starting the configured Metal training lifecycle.\n");
     if (plan.sharded) {
       process.stdout.write("Running the signed visual corpus through sequential <=25 GB shard checkpoints.\n");
