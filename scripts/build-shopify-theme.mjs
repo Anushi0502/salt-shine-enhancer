@@ -367,6 +367,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
       {% endunless %}
     {% endif %}
+    {% if salt_route contains '/pages/track-order' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
     {% unless salt_social_image contains '://' %}
       {% assign salt_social_image = 'https:' | append: salt_social_image %}
     {% endunless %}
