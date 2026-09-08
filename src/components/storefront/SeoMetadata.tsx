@@ -46,21 +46,14 @@ function isForcedNoIndexRoute(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
   const first = String(segments[0] || "").toLowerCase();
   const second = String(segments[1] || "").toLowerCase();
-  const third = String(segments[2] || "").toLowerCase();
   const hasLocalePrefix = /^[a-z]{2}(?:-[a-z]{2})?$/.test(first);
   const routeType = hasLocalePrefix ? second : first;
-
-  // Locale-prefixed catalog routes are duplicate discovery surfaces. The
-  // canonical English product/collection URL remains indexable, while these
-  // app-owned variants stay crawlable for links and language UX.
-  if (hasLocalePrefix && (routeType === "product" || routeType === "products" || routeType === "collections")) {
-    return true;
-  }
+  const reviewSegment = String(segments[hasLocalePrefix ? 3 : 2] || "").toLowerCase();
 
   // Review pages are a thin utility view of the PDP. Keep them available to
   // shoppers, but do not let an empty/filtered review state compete with the
   // product URL in search.
-  return (routeType === "product" || routeType === "products") && third === "reviews";
+  return (routeType === "product" || routeType === "products") && reviewSegment === "reviews";
 }
 
 function updateMetaTag(

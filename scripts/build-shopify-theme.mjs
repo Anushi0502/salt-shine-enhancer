@@ -238,16 +238,6 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% assign salt_custom_canonical = false %}
     {% assign salt_product_canonical_alias = '' %}
     {% assign salt_social_image = 'brand-salt-logo.png' | asset_url %}
-    {% assign salt_route_segments = salt_route | split: '/' %}
-    {% assign salt_route_first_segment = salt_route_segments[1] | downcase %}
-    {% assign salt_route_second_segment = salt_route_segments[2] | downcase %}
-    {% assign salt_locale_code = request.locale.iso_code | downcase %}
-    {% assign salt_is_locale_catalog_route = false %}
-    {% if salt_route_first_segment == salt_locale_code and salt_route_segments.size > 2 %}
-      {% if salt_route_second_segment == 'product' or salt_route_second_segment == 'products' or salt_route_second_segment == 'collections' %}
-        {% assign salt_is_locale_catalog_route = true %}
-      {% endif %}
-    {% endif %}
     {% assign salt_is_product_reviews_route = false %}
     {% if salt_route contains '/products/' and salt_route contains '/reviews' %}
       {% assign salt_is_product_reviews_route = true %}
@@ -430,7 +420,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
       {% endunless %}
     {% endif %}
-    {% if salt_is_locale_catalog_route or salt_is_product_reviews_route %}
+    {% if salt_is_product_reviews_route %}
       {% assign salt_seo_robots = 'noindex,follow' %}
     {% endif %}
     {% if salt_product_canonical_alias != blank %}
@@ -505,7 +495,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright-1': '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright'
         };
         var productCanonicalAlias = productCanonicalAliases[path] || '';
-        if (!isFinance && !isProductQueryVariant && !isLocalizedCatalogDuplicate && !isProductReviewRoute && !productCanonicalAlias && !(hasQuery && isQuerySurface)) return;
+        if (!isFinance && !isProductQueryVariant && !isProductReviewRoute && !productCanonicalAlias && !(hasQuery && isQuerySurface)) return;
 
         function ensureMeta(name, content) {
           var tag = document.querySelector('meta[name="' + name + '"]');
@@ -537,7 +527,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           return;
         }
 
-        if (isLocalizedCatalogDuplicate || isProductReviewRoute) {
+        if (isProductReviewRoute) {
           ensureMeta('robots', 'noindex,follow');
           ensureMeta('googlebot', 'noindex,follow');
           return;
