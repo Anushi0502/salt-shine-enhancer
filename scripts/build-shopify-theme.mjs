@@ -307,7 +307,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% elsif request.page_type == 'product' and product %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_custom_canonical = true %}
-      {% case product.handle %}
+      {% assign salt_product_path_handle = salt_route | split: '/products/' | last | split: '/' | first %}
+      {% case salt_product_path_handle %}
         {% when 'winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer' %}
           {% assign salt_product_canonical_alias = 'tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable' %}
         {% when 'ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1' %}
@@ -426,6 +427,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% if salt_product_canonical_alias != blank %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: salt_product_canonical_alias %}
       {% assign salt_custom_canonical = true %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
     {% endif %}
     {% if salt_route contains '/pages/track-order' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
@@ -543,8 +545,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
               document.head.appendChild(canonicalAliasLink);
             }
             canonicalAliasLink.setAttribute('href', canonicalTarget);
-            ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
-            ensureMeta('googlebot', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+            ensureMeta('robots', 'noindex,follow');
+            ensureMeta('googlebot', 'noindex,follow');
           };
           applyProductCanonical();
           new MutationObserver(applyProductCanonical).observe(document.head, {
