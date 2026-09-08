@@ -293,7 +293,7 @@ describe("sales optimization", () => {
     const structuredData = buildProductStructuredData(product, "https://example.com", null, "USD", product.variants[0]);
     const offers = structuredData.offers as Record<string, any>;
 
-    expect(structuredData.sku).toBe("structured-data-product");
+    expect(structuredData.sku).toBe("salt-43");
     expect(offers.shippingDetails.shippingDestination.addressCountry).toBe("US");
     expect(offers.hasMerchantReturnPolicy.merchantReturnDays).toBe(30);
   });

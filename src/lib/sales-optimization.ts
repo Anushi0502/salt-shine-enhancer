@@ -49,6 +49,19 @@ function normalizeText(value: unknown): string {
     .trim();
 }
 
+function buildProductStructuredDataSku(product: ShopifyProduct): string {
+  const productId = asText(product.id).replace(/[^a-z0-9]/gi, "");
+  if (productId) {
+    return `salt-${productId}`.slice(0, 70);
+  }
+
+  const fallbackHandle = asText(product.handle)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 60);
+  return fallbackHandle ? `salt-${fallbackHandle}` : "salt-product";
+}
+
 function tokenize(value: unknown): string[] {
   return normalizeText(value)
     .split(" ")
@@ -665,9 +678,9 @@ export function buildProductStructuredData(
       name: product.vendor || "SALT",
     },
     // Supplier SKUs can contain `#`, `:`, and very long option strings that
-    // fail Google's Merchant listing validation. The Shopify handle is stable,
-    // unique for the product, and always safe as the structured-data SKU.
-    sku: product.handle || String(product.id),
+    // fail Google's Merchant listing validation. A short Shopify product-ID
+    // SKU is stable, ASCII-safe, and stays within Google's length limit.
+    sku: buildProductStructuredDataSku(product),
     url: canonicalProductUrl,
     offers: {
       "@type": "Offer",

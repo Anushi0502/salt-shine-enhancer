@@ -764,6 +764,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_schema_judgeme_review_count = salt_schema_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
       {% assign salt_schema_judgeme_rating_value = salt_schema_judgeme_rating | plus: 0 %}
       {% assign salt_schema_judgeme_review_count_value = salt_schema_judgeme_review_count | plus: 0 %}
+      {% assign salt_schema_sku = 'salt-' | append: product.id %}
       <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -779,7 +780,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             "@type": "Brand",
             "name": {{ product.vendor | default: shop.name | json }}
           },
-          "sku": {{ product.handle | json }},
+          "sku": {{ salt_schema_sku | json }},
           "url": {{ salt_schema_url | json }},
           "offers": {
             "@type": "Offer",
