@@ -282,6 +282,22 @@ describe("sales optimization", () => {
     expect(priceSpecification.priceCurrency).toBe("USD");
   });
 
+  it("uses a safe product SKU and complete offer policy metadata", () => {
+    const product = makeProduct({
+      id: 43,
+      title: "Structured Data Product",
+      handle: "structured-data-product",
+    });
+    product.variants[0].sku = "14:29#white;200007763:201336100";
+
+    const structuredData = buildProductStructuredData(product, "https://example.com", null, "USD", product.variants[0]);
+    const offers = structuredData.offers as Record<string, any>;
+
+    expect(structuredData.sku).toBe("structured-data-product");
+    expect(offers.shippingDetails.shippingDestination.addressCountry).toBe("US");
+    expect(offers.hasMerchantReturnPolicy.merchantReturnDays).toBe(30);
+  });
+
   it("keeps product structured-data URLs aligned with the canonical product route", () => {
     const product = makeProduct({
       id: 41,

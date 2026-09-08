@@ -664,7 +664,10 @@ export function buildProductStructuredData(
       "@type": "Brand",
       name: product.vendor || "SALT",
     },
-    sku: String(selectedVariant?.sku || product.variants[0]?.sku || product.handle || product.id),
+    // Supplier SKUs can contain `#`, `:`, and very long option strings that
+    // fail Google's Merchant listing validation. The Shopify handle is stable,
+    // unique for the product, and always safe as the structured-data SKU.
+    sku: product.handle || String(product.id),
     url: canonicalProductUrl,
     offers: {
       "@type": "Offer",
@@ -673,6 +676,26 @@ export function buildProductStructuredData(
       availability,
       url: canonicalProductUrl,
       itemCondition: "https://schema.org/NewCondition",
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: 0,
+          currency: normalizedCurrency,
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "US",
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "US",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 30,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+      },
       ...(comparePrice > currentPrice
         ? {
             priceSpecification: {

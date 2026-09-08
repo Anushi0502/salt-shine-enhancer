@@ -238,6 +238,20 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% assign salt_custom_canonical = false %}
     {% assign salt_product_canonical_alias = '' %}
     {% assign salt_social_image = 'brand-salt-logo.png' | asset_url %}
+    {% assign salt_route_segments = salt_route | split: '/' %}
+    {% assign salt_route_first_segment = salt_route_segments[1] | downcase %}
+    {% assign salt_route_second_segment = salt_route_segments[2] | downcase %}
+    {% assign salt_locale_code = request.locale.iso_code | downcase %}
+    {% assign salt_is_locale_catalog_route = false %}
+    {% if salt_route_first_segment == salt_locale_code and salt_route_segments.size > 2 %}
+      {% if salt_route_second_segment == 'product' or salt_route_second_segment == 'products' or salt_route_second_segment == 'collections' %}
+        {% assign salt_is_locale_catalog_route = true %}
+      {% endif %}
+    {% endif %}
+    {% assign salt_is_product_reviews_route = false %}
+    {% if salt_route contains '/products/' and salt_route contains '/reviews' %}
+      {% assign salt_is_product_reviews_route = true %}
+    {% endif %}
     {% # theme-check-disable ContentForHeaderModification %}
     {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
     {% # theme-check-enable ContentForHeaderModification %}
@@ -304,6 +318,22 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_custom_canonical = true %}
       {% case product.handle %}
+        {% when 'winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer' %}
+          {% assign salt_product_canonical_alias = 'tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable' %}
+        {% when 'ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1' %}
+          {% assign salt_product_canonical_alias = 'ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men' %}
+        {% when 'children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil-1' %}
+          {% assign salt_product_canonical_alias = 'children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil' %}
+        {% when 'black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-2' %}
+          {% assign salt_product_canonical_alias = 'black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-3' %}
+        {% when 'anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l-2' %}
+          {% assign salt_product_canonical_alias = 'anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l' %}
+        {% when 'jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot-1' %}
+          {% assign salt_product_canonical_alias = 'jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot' %}
+        {% when 'car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-rv-motorcycle' %}
+          {% assign salt_product_canonical_alias = 'car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-for-motorcycle' %}
+        {% when 'women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands-2' %}
+          {% assign salt_product_canonical_alias = 'women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands' %}
         {% when 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset-1' %}
           {% assign salt_product_canonical_alias = 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset' %}
         {% when 'mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook-1' %}
@@ -400,6 +430,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
       {% endunless %}
     {% endif %}
+    {% if salt_is_locale_catalog_route or salt_is_product_reviews_route %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
     {% if salt_product_canonical_alias != blank %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: salt_product_canonical_alias %}
       {% assign salt_custom_canonical = true %}
@@ -444,7 +477,35 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         var isFinance = path === '/pages/finance' || path === '/apps:finance' || path === '/apps/finance' || (path === '/' && /(?:^|&)finance=1(?:&|$)/.test(query.slice(1)));
         var isQuerySurface = path === '/' || path === '/shop' || path === '/search';
         var isProductQueryVariant = hasQuery && /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/[^/]+\\/?$/i.test(path);
-        if (!isFinance && !isProductQueryVariant && !(hasQuery && isQuerySurface)) return;
+        var isLocalizedCatalogDuplicate = /^\\/(?:[a-z]{2}(?:-[a-z]{2})?)\\/(?:products?|collections)(?:\\/|$)/i.test(path);
+        var isProductReviewRoute = /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/[^/]+\\/reviews\\/?$/i.test(path);
+        var productCanonicalAliases = {
+          '/products/winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer': '/products/tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable',
+          '/products/ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1': '/products/ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men',
+          '/products/children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil-1': '/products/children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil',
+          '/products/black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-2': '/products/black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-3',
+          '/products/anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l-2': '/products/anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l',
+          '/products/jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot-1': '/products/jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot',
+          '/products/car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-rv-motorcycle': '/products/car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-for-motorcycle',
+          '/products/women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands-2': '/products/women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands',
+          '/products/buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset-1': '/products/buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset',
+          '/products/mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook-1': '/products/mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook',
+          '/products/laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case-1': '/products/laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case',
+          '/products/school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks-1': '/products/school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks',
+          '/products/covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover-1': '/products/covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover',
+          '/products/mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags-1': '/products/mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags',
+          '/products/turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care-1': '/products/turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care',
+          '/products/mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme-1': '/products/mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme',
+          '/products/facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home-1': '/products/facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home',
+          '/products/turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m-1': '/products/turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m',
+          '/products/causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women-1': '/products/causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women',
+          '/products/4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush-1': '/products/4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush',
+          '/products/hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair-1': '/products/hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair',
+          '/products/body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing-1': '/products/body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing',
+          '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright-1': '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright'
+        };
+        var productCanonicalAlias = productCanonicalAliases[path] || '';
+        if (!isFinance && !isProductQueryVariant && !isLocalizedCatalogDuplicate && !isProductReviewRoute && !productCanonicalAlias && !(hasQuery && isQuerySurface)) return;
 
         function ensureMeta(name, content) {
           var tag = document.querySelector('meta[name="' + name + '"]');
@@ -462,7 +523,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         } else if (/^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?collections\\/(?:winter-wear|clearance-archive)\\/?$/i.test(path)) {
           collectionAliasTarget = '/collections/under-50';
         }
-        if (collectionAliasTarget) {
+        if (collectionAliasTarget && !isLocalizedCatalogDuplicate) {
           var indexableRobots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
           ensureMeta('robots', indexableRobots);
           ensureMeta('googlebot', indexableRobots);
@@ -473,6 +534,35 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             document.head.appendChild(aliasCanonical);
           }
           aliasCanonical.setAttribute('href', window.location.origin + collectionAliasTarget);
+          return;
+        }
+
+        if (isLocalizedCatalogDuplicate || isProductReviewRoute) {
+          ensureMeta('robots', 'noindex,follow');
+          ensureMeta('googlebot', 'noindex,follow');
+          return;
+        }
+
+        if (productCanonicalAlias) {
+          var canonicalTarget = window.location.origin + productCanonicalAlias;
+          var applyProductCanonical = function () {
+            var canonicalAliasLink = document.querySelector('link[rel="canonical"]');
+            if (!canonicalAliasLink) {
+              canonicalAliasLink = document.createElement('link');
+              canonicalAliasLink.setAttribute('rel', 'canonical');
+              document.head.appendChild(canonicalAliasLink);
+            }
+            canonicalAliasLink.setAttribute('href', canonicalTarget);
+            ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+            ensureMeta('googlebot', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+          };
+          applyProductCanonical();
+          new MutationObserver(applyProductCanonical).observe(document.head, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['href', 'rel', 'content']
+          });
           return;
         }
 
@@ -682,6 +772,8 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_schema_judgeme_badge = product.metafields.judgeme.badge | default: '' %}
       {% assign salt_schema_judgeme_rating = salt_schema_judgeme_badge | split: "data-average-rating='" | last | split: "'" | first %}
       {% assign salt_schema_judgeme_review_count = salt_schema_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
+      {% assign salt_schema_judgeme_rating_value = salt_schema_judgeme_rating | plus: 0 %}
+      {% assign salt_schema_judgeme_review_count_value = salt_schema_judgeme_review_count | plus: 0 %}
       <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -726,11 +818,11 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
               "returnMethod": "https://schema.org/ReturnByMail",
               "returnFees": "https://schema.org/FreeReturn"
             }
-          }{% if salt_schema_judgeme_badge contains "data-average-rating='" and salt_schema_judgeme_badge contains "data-number-of-reviews='" %},
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": {{ salt_schema_judgeme_rating | plus: 0 | json }},
-            "reviewCount": {{ salt_schema_judgeme_review_count | plus: 0 | json }}
+          }{% if salt_schema_judgeme_rating_value > 0 and salt_schema_judgeme_review_count_value > 0 %},
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": {{ salt_schema_judgeme_rating_value | json }},
+              "reviewCount": {{ salt_schema_judgeme_review_count_value | json }}
           }{% endif %}
         }
       </script>
