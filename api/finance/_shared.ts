@@ -17,6 +17,9 @@ const SUMMARY_CACHE_TTL_MS = 5 * 1000;
 const DEFAULT_CURRENCY = "USD";
 const DEFAULT_TIMEZONE = process.env.FINANCE_TIMEZONE || "America/New_York";
 const DEFAULT_SHOPIFY_CLI_CLIENT_ID = "7e9cb568cfd431c538f36d1ad3f2b4f6";
+// Shopify CLI now authenticates through the account identity service and
+// supplies that store-scoped Admin session as a Bearer token.
+const DEFAULT_SHOPIFY_IDENTITY_CLIENT_ID = "fbdb2649-e327-4907-8f67-908d24cfd7e3";
 const DEFAULT_CAMPAIGN_COST_PER_ORDER_CENTS = 1800;
 // Verified in Shopify Admin billing on 2026-09-04. Keep these as overridable
 // defaults because store-plan and third-party app invoice history is not
@@ -169,6 +172,10 @@ type ReconciliationSource = {
 
 let shopifyAccessToken = String(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "").trim();
 let shopifyRefreshToken = String(process.env.SHOPIFY_ADMIN_REFRESH_TOKEN || "").trim();
+let shopifyIdentityAccessToken = String(process.env.SHOPIFY_IDENTITY_ACCESS_TOKEN || "").trim();
+let shopifyIdentityRefreshToken = String(process.env.SHOPIFY_IDENTITY_REFRESH_TOKEN || "").trim();
+let shopifyIdentityTokenExpiresAt = Date.parse(String(process.env.SHOPIFY_IDENTITY_ACCESS_TOKEN_EXPIRES_AT || "")) || 0;
+let shopifyAdminTokenExpiresAt = 0;
 let shopifyTokenRefreshPromise: Promise<string> | null = null;
 
 type NormalizedOrder = {
@@ -612,7 +619,7 @@ function shopBase(): string {
 }
 
 function hasShopifyCredentials(): boolean {
-  return Boolean(shopifyAccessToken || shopifyRefreshToken);
+  return Boolean(shopifyAccessToken || shopifyRefreshToken || shopifyIdentityAccessToken || shopifyIdentityRefreshToken);
 }
 
 function shopifyHeaders(token = shopifyAccessToken): Record<string, string> {
@@ -620,6 +627,10 @@ function shopifyHeaders(token = shopifyAccessToken): Record<string, string> {
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Shopify-Access-Token": token,
+    // New Shopify CLI token-exchange tokens are accepted as Bearer tokens.
+    // Keeping the legacy header preserves compatibility with classic Admin
+    // API tokens while the connection is migrated.
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -632,9 +643,76 @@ function isInvalidShopifyToken(message: string, status?: number): boolean {
   return status === 401 || /invalid api key|invalid.*access token|unrecognized login|wrong password/i.test(message);
 }
 
+async function requestShopifyIdentityToken(body: Record<string, string>): Promise<Record<string, any>> {
+  const response = await fetch("https://accounts.shopify.com/oauth/token", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(body).toString(),
+  });
+  const payload = await response.json().catch(() => ({}));
+  const message = errorMessage(payload?.errors ?? payload?.error ?? payload?.message);
+  if (!response.ok) throw new Error(`Shopify CLI identity token request failed: ${message || `HTTP ${response.status}`}`);
+  return payload as Record<string, any>;
+}
+
+async function useShopifyIdentityAdminToken(): Promise<string> {
+  if (!shopifyIdentityAccessToken) throw new Error("Shopify CLI identity access token is not configured");
+  // The current Shopify CLI Admin session is an identity token. Shopify's
+  // Admin API accepts it as a Bearer token; the legacy X-Shopify header is
+  // retained in shopifyHeaders for classic tokens.
+  shopifyAccessToken = shopifyIdentityAccessToken;
+  shopifyAdminTokenExpiresAt = shopifyIdentityTokenExpiresAt || Date.now() + 30 * 60 * 1000;
+  return shopifyAccessToken;
+}
+
+async function refreshShopifyIdentityTokens(): Promise<void> {
+  if (!shopifyIdentityRefreshToken) throw new Error("Shopify CLI identity refresh token is not configured");
+  const payload = await requestShopifyIdentityToken({
+    grant_type: "refresh_token",
+    access_token: shopifyIdentityAccessToken,
+    refresh_token: shopifyIdentityRefreshToken,
+    client_id: process.env.SHOPIFY_IDENTITY_CLIENT_ID || DEFAULT_SHOPIFY_IDENTITY_CLIENT_ID,
+  });
+  if (typeof payload.access_token !== "string" || typeof payload.refresh_token !== "string") {
+    throw new Error("Shopify CLI identity refresh returned an incomplete token pair");
+  }
+  shopifyIdentityAccessToken = payload.access_token;
+  shopifyIdentityRefreshToken = payload.refresh_token;
+  shopifyIdentityTokenExpiresAt = Date.now() + Math.max(60, Number(payload.expires_in) || 3600) * 1000;
+}
+
 async function refreshShopifyAccessToken(force = false): Promise<string> {
-  if (!shopifyRefreshToken) return shopifyAccessToken;
+  if (shopifyIdentityRefreshToken) {
+    if (!force && shopifyAccessToken && shopifyAdminTokenExpiresAt > Date.now() + 60_000) return shopifyAccessToken;
+    if (shopifyTokenRefreshPromise) return shopifyTokenRefreshPromise;
+
+    shopifyTokenRefreshPromise = (async () => {
+      // The CLI identity access token is short-lived, while its refresh token
+      // is rotated by Shopify. Refresh only when needed, then use the
+      // resulting store-scoped Admin session as a Bearer token.
+      if (!shopifyIdentityAccessToken || shopifyIdentityTokenExpiresAt <= Date.now() + 60_000) {
+        await refreshShopifyIdentityTokens();
+      }
+      try {
+        return await useShopifyIdentityAdminToken();
+      } catch (error) {
+        // An unset/old expiry marker can make the first exchange race the
+        // identity token expiry. One refresh-and-exchange retry is safe here.
+        if (shopifyIdentityRefreshToken) {
+          await refreshShopifyIdentityTokens();
+          return useShopifyIdentityAdminToken();
+        }
+        throw error;
+      }
+    })().finally(() => {
+      shopifyTokenRefreshPromise = null;
+    });
+
+    return shopifyTokenRefreshPromise;
+  }
+
   if (!force && shopifyAccessToken) return shopifyAccessToken;
+  if (!shopifyRefreshToken) return shopifyAccessToken;
   if (shopifyTokenRefreshPromise) return shopifyTokenRefreshPromise;
 
   shopifyTokenRefreshPromise = (async () => {
@@ -663,6 +741,10 @@ async function refreshShopifyAccessToken(force = false): Promise<string> {
 }
 
 async function currentShopifyAccessToken(): Promise<string> {
+  if (shopifyIdentityRefreshToken) {
+    if (shopifyAccessToken && shopifyAdminTokenExpiresAt > Date.now() + 60_000) return shopifyAccessToken;
+    return refreshShopifyAccessToken();
+  }
   if (shopifyAccessToken) return shopifyAccessToken;
   return refreshShopifyAccessToken();
 }
@@ -681,7 +763,7 @@ async function queryShopify(query: string, variables: Record<string, unknown>): 
     const message = formatShopifyApiError(body, response.status);
     if (response.ok && !message) return body.data;
 
-    if (attempt === 0 && shopifyRefreshToken && isInvalidShopifyToken(message, response.status)) {
+    if (attempt === 0 && (shopifyRefreshToken || shopifyIdentityRefreshToken) && isInvalidShopifyToken(message, response.status)) {
       token = await refreshShopifyAccessToken(true);
       continue;
     }
@@ -1176,7 +1258,7 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
     url.searchParams.set("limit", "250");
     let token = await currentShopifyAccessToken();
     let response = await fetch(url, { headers: shopifyHeaders(token) });
-    if (response.status === 401 && shopifyRefreshToken) {
+    if (response.status === 401 && (shopifyRefreshToken || shopifyIdentityRefreshToken)) {
       token = await refreshShopifyAccessToken(true);
       response = await fetch(url, { headers: shopifyHeaders(token) });
     }
