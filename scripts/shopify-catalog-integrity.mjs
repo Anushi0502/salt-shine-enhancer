@@ -77,6 +77,14 @@ const membershipRetryMode = ["bulk", "targeted"].includes(
 )
   ? String(process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE || "bulk").trim().toLowerCase()
   : "bulk";
+const tagReadbackRetryAttempts = Math.max(
+  0,
+  Math.min(4, Number(process.env.SALT_CATALOG_TAG_READBACK_RETRY_ATTEMPTS || 3)),
+);
+const tagReadbackRetryDelayMs = Math.max(
+  1000,
+  Number(process.env.SALT_CATALOG_TAG_READBACK_RETRY_DELAY_MS || 5000),
+);
 const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
@@ -1305,8 +1313,16 @@ async function applyExactTags(tasks, retryInfo, output, manifest) {
   process.stdout.write(`Exact tags applied through Shopify bulk mutation to ${actionable.length} products.\n`);
 }
 
+function describeTagReadbackFailure(failure) {
+  if (failure?.missingActiveProduct) return `${failure.handle || failure.productId}: missing from active Shopify readback`;
+  if (failure?.unexpectedActiveProduct) return `${failure.handle || failure.productId || "unknown product"}: unexpected active Shopify product in readback`;
+  const missing = asArray(failure?.missing).join(", ") || "none";
+  const extra = asArray(failure?.extra).join(", ") || "none";
+  return `${failure?.handle || failure?.productId || "unknown product"}: missing [${missing}], extra [${extra}]`;
+}
+
 async function verifyExactTags(tasks, retryInfo) {
-  const failures = [];
+  let failures = [];
   const taskById = new Map(tasks.map((task) => [task.productId, task]));
   const managedTagUniverse = new Set(tasks.flatMap((task) => task.desiredManagedTags).map(normalizeTag));
   const seen = new Set();
@@ -1329,7 +1345,7 @@ async function verifyExactTags(tasks, retryInfo) {
       const desired = new Set(task.desiredManagedTags.map(normalizeTag));
       const missing = [...desired].filter((tag) => !actual.has(tag));
       const extra = [...actual].filter((tag) => !desired.has(tag));
-      if (missing.length || extra.length) failures.push({ handle: task.handle, missing, extra });
+      if (missing.length || extra.length) failures.push({ productId: task.productId, handle: task.handle, missing, extra });
       else task.status = task.status === "exact-match" ? "exact-match-verified" : "updated-verified";
     }
     process.stdout.write(`Exact managed tags read back for ${seen.size}/${tasks.length} active products.\n`);
@@ -1338,7 +1354,41 @@ async function verifyExactTags(tasks, retryInfo) {
     if (!after) throw new Error("Exact tag readback pagination has no cursor.");
   }
   for (const task of tasks) if (!seen.has(task.productId)) failures.push({ handle: task.handle, missingActiveProduct: true });
-  if (failures.length) throw new Error(`${failures.length} products failed exact managed-tag readback.`);
+  if (!failures.length) return;
+
+  const retryable = failures.filter((failure) => failure?.productId && !failure.missingActiveProduct);
+  for (let attempt = 1; attempt <= tagReadbackRetryAttempts && retryable.length; attempt += 1) {
+    await sleep(tagReadbackRetryDelayMs * attempt);
+    process.stdout.write(
+      `Exact managed-tag readback found ${retryable.length} transient mismatch(es); targeted consistency retry ${attempt}/${tagReadbackRetryAttempts}.\n`,
+    );
+    const refreshed = await mapWithConcurrency(
+      retryable,
+      Math.max(1, Math.min(8, Number(process.env.SALT_CATALOG_TAG_READBACK_RETRY_CONCURRENCY || 4))),
+      async (failure) => {
+        const task = taskById.get(failure.productId);
+        const live = await readProductTags(failure.productId, retryInfo);
+        const actual = new Set(live.tags.map(normalizeTag).filter((tag) => managedTagUniverse.has(tag)));
+        const desired = new Set(task.desiredManagedTags.map(normalizeTag));
+        return {
+          handle: task.handle,
+          productId: task.productId,
+          missing: [...desired].filter((tag) => !actual.has(tag)),
+          extra: [...actual].filter((tag) => !desired.has(tag)),
+        };
+      },
+      "Tag consistency retry",
+    );
+    const persistentRetryable = refreshed.filter((failure) => failure.missing.length || failure.extra.length);
+    failures = failures.filter((failure) => failure.missingActiveProduct || !failure.productId).concat(persistentRetryable);
+    if (!persistentRetryable.length && !failures.length) {
+      process.stdout.write("Targeted tag consistency retry resolved the transient live readback mismatch(es).\n");
+      return;
+    }
+  }
+
+  const detail = failures.slice(0, 10).map(describeTagReadbackFailure).join("; ");
+  throw new Error(`${failures.length} products failed exact managed-tag readback: ${detail}`);
 }
 
 function sourceConditionSummary(source) {

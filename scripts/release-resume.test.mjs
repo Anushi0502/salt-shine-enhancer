@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   findRunningWatcherPids,
   hasCatalogBoundaryDrift,
+  productBoundaryFromPayload,
   getExplicitResumeStep,
   resolveResumeStep,
   shouldForceRestartFromStepOne,
@@ -109,6 +110,17 @@ describe("release checkpoint resume", () => {
     })).toBe(false);
   });
 
+  it("builds a stable handle boundary for products and classifications", () => {
+    const products = productBoundaryFromPayload({
+      products: [{ handle: "B" }, { handle: "a" }],
+    });
+    const classifications = productBoundaryFromPayload({
+      classifications: [{ handle: "a" }, { handle: "B" }],
+    }, "classifications");
+    expect(products).toEqual(classifications);
+    expect(productBoundaryFromPayload({ products: [{ handle: "c" }] })).not.toEqual(products);
+  });
+
   it("honors an explicit step-one restart marker", () => {
     expect(shouldForceRestartFromStepOne({ restartFromStep: 1 })).toBe(true);
     expect(shouldForceRestartFromStepOne({ restartFromStep: 15 })).toBe(false);
@@ -119,5 +131,15 @@ describe("release checkpoint resume", () => {
     expect(getExplicitResumeStep({ resumeFromStepOverride: 30 })).toBe(30);
     expect(getExplicitResumeStep({ resumeFromStepOverride: 30.5 })).toBe(null);
     expect(getExplicitResumeStep({ resumeFromStepOverride: 0 })).toBe(null);
+  });
+
+  it("keeps variant SEO resume tied to a fresh live catalog", () => {
+    expect(resolveResumeStep([
+      { label: "Reconcile variant-aware SEO profiles after final catalog writes" },
+      { label: "Verify variant-aware SEO profiles for every active variant" },
+    ], {
+      status: "failed",
+      stepLabel: "Verify variant-aware SEO profiles for every active variant",
+    })).toEqual({ resumeFromStep: 2, restarted: false });
   });
 });

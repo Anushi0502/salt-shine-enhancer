@@ -1,7 +1,7 @@
 import { CATALOG_COLLECTION_PLAN } from "./catalog-collection-plan.js";
 import { normalizeCatalogText } from "./catalog-taxonomy.js";
 
-export const COLLECTION_GOVERNANCE_VERSION = "2026-09-01.1";
+export const COLLECTION_GOVERNANCE_VERSION = "2026-09-09.3";
 export const COLLECTION_TAG_PREFIX = "salt:collection:";
 // `test` is an intentionally unmanaged Shopify collection used for store
 // testing. It is read-only for the release and must never be reconciled as a
@@ -108,6 +108,131 @@ const HAT_POSITIVE_TERMS = Object.freeze([
   "baseball cap", "sun hat", "bonnet", "beret", "head scarf",
 ]);
 
+const HUMAN_FOOTWEAR_SUBCATEGORIES = Object.freeze([
+  "footwear", "kids-footwear", "water-shoes",
+]);
+
+const HUMAN_FOOTWEAR_DEPARTMENTS = Object.freeze([
+  "men", "women", "kids", "general",
+]);
+
+const HUMAN_FOOTWEAR_TERMS = Object.freeze([
+  "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "sandal", "sandals",
+  "slipper", "slippers", "loafer", "loafers", "moccasin", "moccasins", "footwear",
+  "cleat", "cleats", "flat shoes", "heel", "heels", "pump shoes", "pumps", "clogs",
+  "trainers", "espadrilles", "mary jane",
+]);
+
+const FOOTWEAR_FALSE_POSITIVE_TERMS = Object.freeze([
+  "shoe compartment", "shoe storage", "shoe rack", "shoe organizer", "shoe organiser",
+  "shoe bag", "shoe cover", "shoe charm", "shoe charms", "sneaker charm", "sneaker charms",
+  "insole", "insoles", "shoe insert", "shoe inserts", "shoe polish", "shoe brush", "shoe horn",
+  "cold shoe", "phone rig", "mobile phone", "bottle sleeve", "stanley", "hydroflask", "tumbler",
+  "trousers", "pants", "shirt", "jeans", "skirt", "hair clip", "handbag", "backpack",
+  "organizer", "organiser", "storage box", "car trunk", "pet", "pets", "dog", "dogs", "puppy", "puppies",
+  "cat", "cats", "kitten", "kittens",
+]);
+
+const FORMAL_FOOTWEAR_TERMS = Object.freeze([
+  "formal", "dress shoe", "dress shoes", "business shoe", "business shoes", "office shoe",
+  "office shoes", "oxford", "oxfords", "loafer", "loafers", "derby shoe", "derby shoes",
+  "moccasin", "moccasins", "wedding shoe", "wedding shoes", "uniform shoe", "uniform shoes",
+  "court shoe", "court shoes", "pump shoes", "pumps",
+]);
+
+const SCHOOL_BAG_SUBCATEGORIES = Object.freeze([
+  "backpacks", "school-shoulder-bags", "school-bags",
+]);
+
+const SCHOOL_CONTEXT_TERMS = Object.freeze([
+  "school", "student", "students", "daycare", "kindergarten", "preschool", "classroom", "schoolbag",
+  "back to school", "college", "campus",
+]);
+
+const SCHOOL_BAG_ITEM_TERMS = Object.freeze([
+  "school bag", "schoolbag", "school backpack", "student backpack", "book bag", "school shoulder bag",
+  "school rucksack", "student bag", "satchel",
+]);
+
+const LUNCH_BOX_TERMS = Object.freeze([
+  "lunch box", "lunchbox", "bento box", "bento", "tiffin", "lunch container", "meal prep container",
+]);
+
+const LUNCH_BOX_FALSE_POSITIVE_TERMS = Object.freeze([
+  "lunch bag", "lunch bags", "lunch box bag", "lunchbox bag", "lunch tote", "lunch pouch",
+  "insulated lunch bag", "bento bag", "meal prep bag", "lunch box note", "lunch box notes", "lunchbox note", "lunchbox notes", "name sticker", "name stickers", "label",
+  "labels", "sticker", "stickers", "replacement lunch box", "replacement lunchbox", "lunch box cover", "lunchbox cover", "lunch box case", "lunchbox case",
+]);
+
+const WATER_BOTTLE_TERMS = Object.freeze([
+  "water bottle", "water bottles", "thermal water bottle", "thermal bottle", "thermos", "vacuum flask",
+  "tumbler", "drink bottle", "drinking bottle", "sports bottle", "straw water bottle", "hydration bottle",
+  "school bottle", "canteen bottle", "reusable bottle", "flask",
+]);
+
+const WATER_BOTTLE_FALSE_POSITIVE_TERMS = Object.freeze([
+  "hot water bottle", "water bottle cap", "water bottle caps", "water bottle lid", "water bottle lids",
+  "water bottle cover", "water bottle holder", "water bottle sleeve", "water bottle bag", "water bottle brush",
+  "water bottle replacement", "bottle cap", "bottle lid", "bottle opener", "pet water bottle", "dog water bottle",
+  "cat water bottle", "pet feeder bottle", "pill box", "water bottle toy", "squeeze toy", "perfume bottle",
+  "baby bottle", "feeding bottle", "spray bottle", "shampoo bottle",
+]);
+
+const STATIONERY_SUBCATEGORIES = Object.freeze([
+  "pen-pencil-cases", "stickers-labels", "binders-folders", "id-badge-holders", "labels-stickers",
+  "writing-supplies", "notebooks-planners", "school-supplies", "science-lab-supplies", "music-learning-supplies",
+  "calendars", "paper-cutting-tools", "reading-accessories",
+]);
+
+const BACK_TO_SCHOOL_ITEM_TERMS = Object.freeze([
+  "school bag", "schoolbag", "school backpack", "student backpack", "book bag", "backpack", "lunch box",
+  "lunchbox", "bento box", "tiffin", "water bottle", "school bottle", "stationery", "school supplies",
+  "pencil case", "pencil", "pen", "notebook", "planner", "binder", "folder", "crayon", "marker",
+  "school uniform", "school shoes", "backdrop",
+]);
+
+const BACK_TO_SCHOOL_FALSE_POSITIVE_TERMS = Object.freeze([
+  "water bottle cap", "water bottle caps", "water bottle lid", "water bottle lids", "water bottle cover",
+  "water bottle holder", "water bottle sleeve", "water bottle brush", "water bottle replacement", "bottle cap",
+  "bottle lid", "lunch box note", "lunch box notes", "lunchbox note", "lunchbox notes", "lunch bag",
+  "lunch bags", "lunch box bag", "lunchbox bag", "lunch tote", "lunch pouch", "school bag cover",
+  "school backpack cover", "backpack cover", "backpack rain cover", "bag pendant", "backpack pendant",
+  "bag ornament", "backpack ornament", "bag keyring", "bag keychain", "backpack keyring", "backpack keychain",
+  "bag trinket", "name tag",
+]);
+
+const STATIONERY_FALSE_POSITIVE_TERMS = Object.freeze([
+  ...WATER_BOTTLE_TERMS,
+  "water botlte", "water botle", "water botttle", "waterbottle",
+  ...SCHOOL_BAG_ITEM_TERMS,
+]);
+
+// A stale taxonomy category or collection tag must not put an animal product
+// into a human-facing collection. Do not use standalone `cat` here because
+// phrases such as "cat-eye eyeliner" are valid cosmetics; use pet-specific
+// phrases for cats and stronger animal signals for dogs and other pets.
+const PET_PRODUCT_TEXT_TERMS = Object.freeze([
+  "pet", "pets", "dog", "dogs", "puppy", "puppies", "canine", "feline", "kitten", "kittens",
+  "cat supplies", "cat toy", "cat toys", "cat food", "cat collar", "cat litter", "cat grooming",
+  "cat brush", "cat bed", "cat tree", "cat carrier", "cat feeder", "cat bowl", "cat nail",
+  "dog supplies", "dog toy", "dog toys", "dog food", "dog collar", "dog leash", "dog grooming",
+  "dog shampoo", "dog brush", "dog bed", "dog carrier", "dog feeder", "dog bowl", "dog nail",
+  "pet supplies", "pet toy", "pet toys", "pet food", "pet collar", "pet litter", "pet grooming",
+  "pet brush", "pet bed", "pet carrier", "pet feeder", "pet bowl", "pet safety", "pet mobility",
+  "pet medical", "pet feeding", "pet travel", "pet harness", "pet shampoo", "pet nail",
+]);
+
+const HUMAN_ONLY_COLLECTION_HANDLES = new Set([
+  "artificial-plants", "back-to-school", "beauty-makeup-essentials", "blush-glow", "candles",
+  "decorative-accessories", "daily-living-aids", "dramatic-lashes", "everyday-jewelry",
+  "earrings", "eye-beauty-collection", "face-creams-moisturizers", "footwear", "formal-footwear",
+  "garden-tools", "gifts-for-seniors", "glam-eye-palettes", "hair-nourishment", "hair-wash-essentials",
+  "housewarming-gifts", "jewelry-accessories", "kids-footwear", "lips-and-care", "luxury-fragrances",
+  "massage-tools", "medical-accessories", "mens-accessories", "mens-fashion", "mens-footwear",
+  "necklaces", "repair-shine-serums", "relaxation-products", "rings", "seasonal-decor", "sleep-essentials",
+  "stationery", "womens-accessories", "womens-fashion", "womens-footwear",
+]);
+
 const GIFT_RECIPIENT_TERMS = Object.freeze({
   dad: Object.freeze([
     "dad", "daddy", "father", "fathers day", "father s day", "husband", "grandpa", "grandfather", "for him",
@@ -155,8 +280,49 @@ const EXTRA_SEMANTIC_SPECS = [
     },
     exclude: { textAny: ["string light", "string lights", "vine light", "vine lights", "lamp", "lighting", "grass mat", "turf"] },
   }, ["artificial-aquarium-decor-plants"]),
-  spec("back-to-school", "Back to School", { categories: ["office-school-supplies"], targets: ["back-to-school"] }),
-  spec("beauty-makeup-essentials", "Beauty Makeup Essentials", { subcategories: ["eye-makeup", "face-makeup", "lip-care-makeup", "makeup-tools", "beauty-tools"], targets: ["beauty-makeup-essentials"] }),
+  spec("mens-footwear", "Men's Footwear", {
+    require: {
+      departments: ["men"],
+      subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+      textAny: HUMAN_FOOTWEAR_TERMS,
+    },
+    exclude: { textAny: FOOTWEAR_FALSE_POSITIVE_TERMS },
+  }),
+  spec("formal-footwear", "Formal Footwear", {
+    require: {
+      departments: HUMAN_FOOTWEAR_DEPARTMENTS,
+      subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+      textAnyGroups: [HUMAN_FOOTWEAR_TERMS, FORMAL_FOOTWEAR_TERMS],
+    },
+    exclude: { departments: ["pets"], textAny: FOOTWEAR_FALSE_POSITIVE_TERMS },
+  }),
+  spec("womens-footwear", "Women's Footwear", {
+    require: {
+      departments: ["women"],
+      subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+      textAny: HUMAN_FOOTWEAR_TERMS,
+    },
+    exclude: { textAny: FOOTWEAR_FALSE_POSITIVE_TERMS },
+  }),
+  spec("kids-footwear", "Kids Footwear", {
+    require: {
+      departments: ["kids"],
+      subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+      textAny: HUMAN_FOOTWEAR_TERMS,
+    },
+    exclude: { textAny: FOOTWEAR_FALSE_POSITIVE_TERMS },
+  }),
+  spec("back-to-school", "Back to School", {
+    require: { textAnyGroups: [SCHOOL_CONTEXT_TERMS, BACK_TO_SCHOOL_ITEM_TERMS] },
+    textAnyGroups: [SCHOOL_CONTEXT_TERMS, BACK_TO_SCHOOL_ITEM_TERMS],
+    targets: ["back-to-school"],
+    exclude: { textAny: BACK_TO_SCHOOL_FALSE_POSITIVE_TERMS },
+  }),
+  spec("beauty-makeup-essentials", "Beauty Makeup Essentials", {
+    subcategories: ["eye-makeup", "face-makeup", "lip-care-makeup", "makeup-tools", "beauty-tools"],
+    targets: ["beauty-makeup-essentials"],
+    exclude: { departments: ["pets"], textAny: PET_PRODUCT_TEXT_TERMS },
+  }),
   spec("blush-glow", "Blush & Glow", { textAny: ["blush", "cheek tint", "highlighter", "illuminator"], targets: ["blush-glow"] }),
   spec("senior-living-solutions", "Senior Living Solutions", {
     textAny: SENIOR_LIVING_TERMS,
@@ -265,7 +431,12 @@ const EXTRA_SEMANTIC_SPECS = [
   }),
   spec("sleep-essentials", "Sleep Essentials", { subcategories: ["sleep-relaxation"], rules: ["sleep-support-pillows"], targets: ["sleep-essentials"] }),
   spec("staff-picks", "Staff Picks", { dynamic: "staff-picks" }),
-  spec("stationery", "Stationery", { categories: ["office-school-supplies"], targets: ["stationery"] }),
+  spec("stationery", "Stationery", {
+    require: { departments: ["office-school"], subcategories: STATIONERY_SUBCATEGORIES },
+    subcategories: STATIONERY_SUBCATEGORIES,
+    targets: ["stationery"],
+    exclude: { textAny: STATIONERY_FALSE_POSITIVE_TERMS },
+  }),
   spec("storage-organization", "Storage & Organization", { subcategories: ["storage-organization", "food-storage-containers", "kitchen-storage"], targets: ["storage-organization"] }),
   spec("t-shirt", "T-Shirts", {
     subcategories: ["t-shirts"],
@@ -282,7 +453,6 @@ const EXTRA_SEMANTIC_SPECS = [
 const MERGED_COLLECTION_TAGS = Object.freeze({
   gifts: Object.freeze(["gifts", "holiday-gifts"]),
   "trending-finds": Object.freeze(["trending-finds", "viral-tiktok-products"]),
-  "artificial-plants": Object.freeze(["artificial-plants", "artificial-aquarium-decor-plants"]),
 });
 
 function buildPlanSpecs() {
@@ -310,6 +480,70 @@ function buildPlanSpecs() {
             taxonomyTags: [entry.ruleTag],
             targets: [entry.handle, ...entry.legacyHandles],
             exclude: { textAny: HATS_FALSE_POSITIVE_TERMS },
+          }
+      : entry.handle === "footwear"
+        ? {
+            require: {
+              departments: HUMAN_FOOTWEAR_DEPARTMENTS,
+              subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+              textAny: HUMAN_FOOTWEAR_TERMS,
+            },
+            subcategories: HUMAN_FOOTWEAR_SUBCATEGORIES,
+            targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { departments: ["pets"], textAny: FOOTWEAR_FALSE_POSITIVE_TERMS },
+          }
+      : entry.handle === "rings"
+        ? {
+            require: { departments: ["jewelry"], subcategories: ["rings"] },
+            subcategories: ["rings"],
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "necklaces"
+        ? {
+            require: { departments: ["jewelry"], subcategories: ["necklaces-pendants"] },
+            subcategories: ["necklaces-pendants"],
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "bracelets"
+        ? {
+            require: { departments: ["jewelry"], subcategories: ["bracelets"] },
+            subcategories: ["bracelets"],
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "earrings"
+        ? {
+            require: { departments: ["jewelry"], subcategories: ["earrings"] },
+            subcategories: ["earrings"],
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "everyday-jewelry"
+        ? {
+            require: { departments: ["jewelry"] },
+            departments: ["jewelry"],
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "school-bags"
+        ? {
+            require: {
+              subcategories: SCHOOL_BAG_SUBCATEGORIES,
+              textAnyGroups: [SCHOOL_CONTEXT_TERMS, SCHOOL_BAG_ITEM_TERMS],
+            },
+            subcategories: SCHOOL_BAG_SUBCATEGORIES,
+            targets: [entry.handle, ...entry.legacyHandles],
+          }
+      : entry.handle === "lunch-boxes"
+        ? {
+            require: { textAny: LUNCH_BOX_TERMS },
+            textAny: LUNCH_BOX_TERMS,
+            targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: LUNCH_BOX_FALSE_POSITIVE_TERMS },
+          }
+      : entry.handle === "water-bottles"
+        ? {
+            require: { textAny: WATER_BOTTLE_TERMS },
+            textAny: WATER_BOTTLE_TERMS,
+            targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: WATER_BOTTLE_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "mens-fashion" || entry.handle === "womens-fashion"
         ? {
@@ -393,6 +627,14 @@ function hasPhrase(text, phrase) {
   return ` ${text} `.includes(` ${normalized} `);
 }
 
+function isPetProductLike(product, knowledge) {
+  const department = normalizeCatalogText(knowledge?.departmentId);
+  const audience = normalizeCatalogText(knowledge?.audience?.id);
+  if (["pet", "pets", "pet supplies"].includes(department) || ["pet", "pets"].includes(audience)) return true;
+  const text = productText(product);
+  return PET_PRODUCT_TEXT_TERMS.some((term) => hasPhrase(text, term));
+}
+
 function isGardenToolLike(product) {
   const text = productText(product);
   const hasGardenContext = GARDEN_CONTEXT_TERMS.some((term) => hasPhrase(text, term));
@@ -432,6 +674,7 @@ function matchesExcludedSignals(exclusion, product, knowledge) {
 export function productMatchesSemanticCollection(policy, product, knowledge, dynamicAssignments = new Set()) {
   if (!policy || policy.kind !== "semantic") return false;
   const match = policy.match || {};
+  if (HUMAN_ONLY_COLLECTION_HANDLES.has(policy.handle) && isPetProductLike(product, knowledge)) return false;
   if (policy.handle === "home-decor" && isGardenToolLike(product)) return false;
   if (matchesExcludedSignals(match.exclude, product, knowledge)) return false;
   if (match.require && !matchesRequiredSignals(match.require, product, knowledge)) return false;
@@ -476,6 +719,11 @@ export function productMatchesSemanticCollection(policy, product, knowledge, dyn
 }
 
 export function buildProductCollectionTags(product, knowledge, dynamicAssignments = new Set()) {
+  // Review-required classifications are owned by the explicit fallback
+  // collection in the release planner. Do not let collection targets or stale
+  // taxonomy signals leak an unresolved product into a semantic collection.
+  if (knowledge?.reviewRequired) return [];
+
   const tags = SEMANTIC_COLLECTION_POLICIES
     .filter((policy) => productMatchesSemanticCollection(policy, product, knowledge, dynamicAssignments))
     .map((policy) => policy.tag);

@@ -291,10 +291,9 @@ describe("catalog collection governance", () => {
     expect(policy?.title).toBe("Artificial Plants");
     expect(resolveCollectionPolicyByLiveHandle("artificial-aquarium-decor-plants")?.handle).toBe("artificial-plants");
     const source = buildSemanticCollectionSource(policy);
-    expect(source.inclusion.matchType).toBe("ANY");
+    expect(source.inclusion.matchType).toBe("ALL");
     expect(source.inclusion.conditions.map((condition) => condition.productTag.values)).toEqual([
       ["artificial-plants"],
-      ["artificial-aquarium-decor-plants"],
     ]);
   });
 
@@ -326,6 +325,70 @@ describe("catalog collection governance", () => {
     expect(buildProductCollectionTags(product, knowledge)).not.toContain("hats");
   });
 
+  it("keeps pet products out of human collections without blocking cat-eye cosmetics", () => {
+    const staleBeautyKnowledge = {
+      departmentId: "beauty",
+      subcategoryId: "face-makeup",
+      proposedTags: ["beauty-makeup-essentials"],
+      collectionTargets: ["beauty-makeup-essentials"],
+      classificationRule: "face-makeup",
+    };
+
+    expect(buildProductCollectionTags({
+      title: "Dog Nail File and Clipper Set",
+      handle: "dog-nail-file-clipper-set",
+      product_type: "Beauty Tool",
+    }, staleBeautyKnowledge)).not.toContain("beauty-makeup-essentials");
+
+    expect(buildProductCollectionTags({
+      title: "Cat-Eye Liquid Eyeliner",
+      handle: "cat-eye-liquid-eyeliner",
+      product_type: "Eye Makeup",
+    }, staleBeautyKnowledge)).toContain("beauty-makeup-essentials");
+
+    expect(buildProductCollectionTags({
+      title: "Pet Makeup Brush for Dogs",
+      handle: "pet-makeup-brush-for-dogs",
+      product_type: "Makeup Brush",
+    }, staleBeautyKnowledge)).not.toContain("beauty-makeup-essentials");
+  });
+
+  it("blocks pet products from other human collections before stale assignments are considered", () => {
+    const petProduct = {
+      title: "Portable Dog Grooming Brush",
+      handle: "portable-dog-grooming-brush",
+      product_type: "Massage Tool",
+    };
+    const staleKnowledge = {
+      departmentId: "wellness",
+      subcategoryId: "massage-recovery",
+      proposedTags: ["massage-tools", "relaxation-products", "medical-accessories"],
+      collectionTargets: ["massage-tools", "relaxation-products", "medical-accessories"],
+    };
+    const tags = buildProductCollectionTags(petProduct, staleKnowledge);
+
+    expect(tags).not.toEqual(expect.arrayContaining([
+      "massage-tools",
+      "relaxation-products",
+      "medical-accessories",
+    ]));
+  });
+
+  it("holds review-required classifications out of semantic collections", () => {
+    const product = {
+      title: "School Supplies Product Pending Review",
+      handle: "school-supplies-product-pending-review",
+    };
+    const reviewKnowledge = {
+      reviewRequired: true,
+      subcategoryId: "writing-supplies",
+      proposedTags: [],
+      collectionTargets: ["stationery", "back-to-school"],
+    };
+
+    expect(buildProductCollectionTags(product, reviewKnowledge)).toEqual([]);
+  });
+
   it("uses recipient-plus-gift evidence for Dad and Mom collections", () => {
     const dad = { title: "Leather Gift Set for Dad", handle: "leather-gift-set-for-dad" };
     const mom = { title: "Personalized Birthday Present for Mom", handle: "personalized-birthday-present-for-mom" };
@@ -351,6 +414,204 @@ describe("catalog collection governance", () => {
       { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
       knowledge,
     )).toContain("candles");
+  });
+
+  it("routes human footwear into the four precise footwear collections", () => {
+    const men = {
+      title: "Men's Leather Running Sneakers",
+      handle: "mens-leather-running-sneakers",
+      product_type: "Men's Shoes",
+    };
+    const women = {
+      title: "Women's Formal Oxford Shoes",
+      handle: "womens-formal-oxford-shoes",
+      product_type: "Women's Footwear",
+    };
+    const kids = {
+      title: "Kids Breathable Running Shoes",
+      handle: "kids-breathable-running-shoes",
+      product_type: "Kids Footwear",
+    };
+    const pet = {
+      title: "Breathable Dog Mesh Shoes",
+      handle: "breathable-dog-mesh-shoes",
+      product_type: "Dog Mesh Shoes",
+    };
+
+    expect(buildProductCollectionTags(men, {
+      departmentId: "men",
+      subcategoryId: "footwear",
+      proposedTags: [],
+      collectionTargets: [],
+    })).toEqual(expect.arrayContaining(["mens-footwear"]));
+    expect(buildProductCollectionTags(women, {
+      departmentId: "women",
+      subcategoryId: "footwear",
+      proposedTags: [],
+      collectionTargets: [],
+    })).toEqual(expect.arrayContaining(["womens-footwear", "formal-footwear"]));
+    expect(buildProductCollectionTags(kids, {
+      departmentId: "kids",
+      subcategoryId: "kids-footwear",
+      proposedTags: [],
+      collectionTargets: [],
+    })).toContain("kids-footwear");
+    expect(buildProductCollectionTags(pet, {
+      departmentId: "pets",
+      subcategoryId: "footwear",
+      proposedTags: [],
+      collectionTargets: [],
+    })).not.toEqual(expect.arrayContaining(["mens-footwear", "womens-footwear", "kids-footwear", "formal-footwear"]));
+  });
+
+  it("excludes shoe mentions that are accessories or storage", () => {
+    const knowledge = { departmentId: "men", subcategoryId: "footwear", proposedTags: [], collectionTargets: [] };
+    expect(buildProductCollectionTags(
+      { title: "Travel Tote Bag with Shoe Compartment", handle: "travel-tote-bag-shoe-compartment" },
+      knowledge,
+    )).not.toContain("mens-footwear");
+    expect(buildProductCollectionTags(
+      { title: "Sports Insoles for Shoes", handle: "sports-insoles-for-shoes" },
+      knowledge,
+    )).not.toContain("mens-footwear");
+  });
+
+  it("routes human footwear into the common Footwear collection only", () => {
+    const footwear = {
+      title: "Women's Leather Walking Shoes",
+      handle: "womens-leather-walking-shoes",
+      product_type: "Women's Footwear",
+    };
+    const tags = buildProductCollectionTags(footwear, {
+      departmentId: "women",
+      subcategoryId: "footwear",
+      proposedTags: [],
+      collectionTargets: [],
+    });
+    expect(tags).toContain("footwear");
+    expect(tags).toContain("womens-footwear");
+    expect(tags).not.toContain("footwear-accessories");
+  });
+
+  it("keeps footwear accessories and non-human shoes out of common Footwear", () => {
+    const knowledge = {
+      departmentId: "general",
+      subcategoryId: "footwear-accessories",
+      proposedTags: ["footwear"],
+      collectionTargets: ["footwear"],
+    };
+    expect(buildProductCollectionTags({ title: "Shoe Storage Organizer", handle: "shoe-storage-organizer" }, knowledge))
+      .not.toContain("footwear");
+    expect(buildProductCollectionTags({ title: "Dog Mesh Shoes", handle: "dog-mesh-shoes" }, {
+      ...knowledge,
+      departmentId: "pets",
+      subcategoryId: "footwear",
+    })).not.toContain("footwear");
+  });
+
+  it("routes jewelry subcategories and the broad Everyday Jewelry collection", () => {
+    const examples = [
+      ["rings", "Gold Statement Ring", "gold-statement-ring"],
+      ["necklaces-pendants", "Sterling Silver Pendant Necklace", "sterling-silver-pendant-necklace"],
+      ["bracelets", "Charm Bracelet", "charm-bracelet"],
+      ["earrings", "Gold Hoop Earrings", "gold-hoop-earrings"],
+    ];
+    for (const [subcategoryId, title, handle] of examples) {
+      const tags = buildProductCollectionTags({ title, handle }, {
+        departmentId: "jewelry",
+        subcategoryId,
+        proposedTags: [],
+        collectionTargets: [],
+      });
+      expect(tags).toContain(subcategoryId === "necklaces-pendants" ? "necklaces" : subcategoryId);
+      expect(tags).toContain("everyday-jewelry");
+      expect(tags).toContain("jewelry-accessories");
+    }
+  });
+
+  it("separates school bags, lunch boxes, and water bottles from adjacent products", () => {
+    const schoolBag = buildProductCollectionTags(
+      { title: "Kids School Backpack with Laptop Sleeve", handle: "kids-school-backpack" },
+      { departmentId: "camping-travel", subcategoryId: "backpacks", proposedTags: [], collectionTargets: [] },
+    );
+    expect(schoolBag).toEqual(expect.arrayContaining(["school-bags", "back-to-school"]));
+    expect(schoolBag).not.toContain("stationery");
+
+    const travelBag = buildProductCollectionTags(
+      { title: "Lightweight Hiking Travel Backpack", handle: "lightweight-hiking-travel-backpack" },
+      { departmentId: "camping-travel", subcategoryId: "backpacks", proposedTags: [], collectionTargets: [] },
+    );
+    expect(travelBag).not.toEqual(expect.arrayContaining(["school-bags", "back-to-school"]));
+
+    const genericKidsBackpack = buildProductCollectionTags(
+      { title: "Cute Kids Backpack", handle: "cute-kids-backpack" },
+      { departmentId: "kids", subcategoryId: "backpacks", proposedTags: [], collectionTargets: [] },
+    );
+    expect(genericKidsBackpack).not.toEqual(expect.arrayContaining(["school-bags", "back-to-school"]));
+
+    const bagAccessory = buildProductCollectionTags(
+      { title: "Cartoon Backpack Pendant Keychain", handle: "cartoon-backpack-pendant-keychain" },
+      { departmentId: "camping-travel", subcategoryId: "backpacks", proposedTags: [], collectionTargets: [] },
+    );
+    expect(bagAccessory).not.toContain("back-to-school");
+
+    const lunchBox = buildProductCollectionTags(
+      { title: "Kids School Stainless Steel Bento Lunch Box", handle: "kids-school-stainless-steel-bento-lunch-box" },
+      { departmentId: "home-decor", subcategoryId: "food-storage-containers", proposedTags: [], collectionTargets: [] },
+    );
+    expect(lunchBox).toEqual(expect.arrayContaining(["lunch-boxes", "back-to-school"]));
+    expect(lunchBox).not.toContain("stationery");
+
+    const lunchBag = buildProductCollectionTags(
+      { title: "Insulated Lunch Box Bag", handle: "insulated-lunch-box-bag" },
+      { departmentId: "home-decor", subcategoryId: "food-storage-containers", proposedTags: [], collectionTargets: [] },
+    );
+    expect(lunchBag).not.toContain("lunch-boxes");
+
+    const lunchNotes = buildProductCollectionTags(
+      { title: "Cute Lunch Box Notes for Kids", handle: "cute-lunch-box-notes-for-kids" },
+      { departmentId: "home-decor", subcategoryId: "food-storage-containers", proposedTags: [], collectionTargets: [] },
+    );
+    expect(lunchNotes).not.toContain("lunch-boxes");
+
+    const coveredLunchBox = buildProductCollectionTags(
+      { title: "Bento Lunch Box with Removable Cover", handle: "bento-lunch-box-removable-cover" },
+      { departmentId: "home-decor", subcategoryId: "food-storage-containers", proposedTags: [], collectionTargets: [] },
+    );
+    expect(coveredLunchBox).toContain("lunch-boxes");
+
+    const waterBottle = buildProductCollectionTags(
+      { title: "Kids Leakproof School Water Bottle", handle: "kids-school-water-bottle" },
+      { departmentId: "home-decor", subcategoryId: "drinkware", proposedTags: [], collectionTargets: [] },
+    );
+    expect(waterBottle).toEqual(expect.arrayContaining(["water-bottles", "back-to-school"]));
+
+    const bottlePart = buildProductCollectionTags(
+      { title: "Replacement Water Bottle Lid", handle: "replacement-water-bottle-lid" },
+      { departmentId: "home-decor", subcategoryId: "drinkware", proposedTags: [], collectionTargets: [] },
+    );
+    expect(bottlePart).not.toContain("water-bottles");
+    expect(bottlePart).not.toContain("back-to-school");
+  });
+
+  it("keeps Stationery limited to office and school stationery subcategories", () => {
+    const stationery = buildProductCollectionTags(
+      { title: "Student Gel Pen Writing Set", handle: "student-gel-pen-writing-set" },
+      { departmentId: "office-school", subcategoryId: "writing-supplies", proposedTags: [], collectionTargets: [] },
+    );
+    expect(stationery).toContain("stationery");
+
+    const officeStorage = buildProductCollectionTags(
+      { title: "Desktop Storage Organizer", handle: "desktop-storage-organizer" },
+      { departmentId: "office-school", subcategoryId: "desk-office-accessories", proposedTags: [], collectionTargets: [] },
+    );
+    expect(officeStorage).not.toContain("stationery");
+
+    const typoedBottle = buildProductCollectionTags(
+      { title: "Flat Water Botlte Sports Drinking Bottle", handle: "flat-water-botlte-sports-drinking-bottle" },
+      { departmentId: "office-school", subcategoryId: "notebooks-planners", proposedTags: [], collectionTargets: [] },
+    );
+    expect(typoedBottle).not.toContain("stationery");
   });
 
   it("has no duplicate canonical handles or aliases", () => {

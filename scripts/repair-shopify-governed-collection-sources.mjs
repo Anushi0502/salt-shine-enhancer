@@ -12,12 +12,15 @@ import {
   buildPriceCollectionSource,
   buildSemanticCollectionSource,
   normalizeCollectionHandle,
+  productMatchesPricePolicy,
 } from "../src/lib/catalog-collection-governance.js";
 import { asArray, createShopifyAdminGraphQLClient, normalizeText } from "./shopify-admin-graphql-client.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const approvalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
 const outputPath = resolve(rootDir, "output", "shopify-governed-collection-source-repair.json");
+const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT ||
+  resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
 const sourcePollAttempts = Math.max(2, Math.min(8, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_POLL_ATTEMPTS || 5)));
 const sourcePollDelayMs = Math.max(500, Math.min(10_000, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_POLL_DELAY_MS || 1500)));
 const applyConcurrency = Math.max(1, Math.min(4, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_APPLY_CONCURRENCY || 3)));
@@ -143,21 +146,43 @@ async function fetchCollections() {
 }
 
 async function readExpectedMembership() {
+  const liveCheckpoint = JSON.parse(await readFile(liveInputCheckpointPath, "utf8"));
+  if (!liveCheckpoint?.complete || !Array.isArray(liveCheckpoint.liveProducts)) {
+    throw new Error(`Complete live variant checkpoint is required for price collection readback: ${liveInputCheckpointPath}`);
+  }
+  const expectedByHandle = new Map();
+
   try {
     const manifest = JSON.parse(await readFile(resolve(rootDir, "output", "shopify-catalog-integrity-applied-generation.json"), "utf8"));
-    const expectedByHandle = new Map();
+    const semanticHandles = new Set(SEMANTIC_COLLECTION_POLICIES.map((policy) => policy.handle));
     for (const classification of asArray(manifest?.classifications)) {
       const productId = normalizeText(classification?.productId).split("/").pop();
       if (!productId) continue;
-      for (const handle of asArray(classification?.collectionHandles).map(normalizeCollectionHandle)) {
+      for (const rawHandle of asArray(classification?.collectionHandles)) {
+        const handle = normalizeCollectionHandle(rawHandle);
+        // Price memberships are rebuilt exclusively from the complete live
+        // variant checkpoint below. The applied manifest must not widen or
+        // narrow a price collection during final source readback.
+        if (!semanticHandles.has(handle)) continue;
         if (!expectedByHandle.has(handle)) expectedByHandle.set(handle, new Set());
         expectedByHandle.get(handle).add(productId);
       }
     }
-    return expectedByHandle;
   } catch {
-    return new Map();
+    // The live product checkpoint remains sufficient for the price policies;
+    // semantic membership readback is omitted when no applied manifest exists.
   }
+
+  for (const product of liveCheckpoint.liveProducts) {
+    const productId = normalizeText(product?.id).split("/").pop();
+    if (!productId) continue;
+    for (const policy of PRICE_COLLECTION_POLICIES) {
+      if (!productMatchesPricePolicy(product, policy)) continue;
+      if (!expectedByHandle.has(policy.handle)) expectedByHandle.set(policy.handle, new Set());
+      expectedByHandle.get(policy.handle).add(productId);
+    }
+  }
+  return expectedByHandle;
 }
 
 async function fetchCollectionProductIds(collectionId, handle) {

@@ -17,6 +17,7 @@ const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
 const statePath = resolve(outputDir, "realtime-release-watcher-state.json");
 const releaseRunStatePath = resolve(outputDir, "release-run-state.json");
+const releaseCatalogSourcePath = resolve(outputDir, "release-catalog-source.json");
 const releaseRunStateMirrorDir = outputDir;
 const collectionShuffleProgressPath = resolve(outputDir, "shopify-collection-shuffle-progress.json");
 const collectionShuffleManifestPath = resolve(outputDir, "shopify-collection-shuffle-manifest.json");
@@ -174,8 +175,17 @@ export function shouldReclaimUnreadableWatcherLock({ lockAgeMs, monitorIntervalM
   return age >= Math.max(poll, 60_000);
 }
 
+export function shouldDeferWatcherCheck({ nextRetryAt, now = Date.now(), hasActionableRelease = false, scheduledDue = false } = {}) {
+  const retryAt = timestamp(nextRetryAt);
+  return retryAt > Number(now) && !hasActionableRelease && !scheduledDue;
+}
+
 function scheduledReleaseDue(state) {
   if (process.env.SALT_RELEASE_WATCHER_DAILY_RUN === "0") return null;
+  // A failed scheduled attempt already has a guarded retry deadline. Do not
+  // turn the daily due check into a tight notification/release loop while the
+  // underlying scope or network problem is backing off.
+  if (state?.nextRetryAt && timestamp(state.nextRetryAt) > Date.now()) return null;
   const now = new Date();
   const dueAt = new Date(now);
   dueAt.setHours(scheduledReleaseHour, scheduledReleaseMinute, 0, 0);
@@ -215,6 +225,34 @@ async function readJson(path, fallback) {
     }
   }
   throw lastError;
+}
+
+export function isMissingCatalogBaselineError(error) {
+  if (error?.code !== "ENOENT") return false;
+  const detail = String(error?.path || error?.message || "");
+  return /public[\\/]data[\\/]products\.json(?:['\"]|$)/.test(detail);
+}
+
+function catalogBaselineSourcePaths() {
+  return [
+    process.env.SALT_RELEASE_CATALOG_SOURCE_PATH,
+    releaseCatalogSourcePath,
+  ]
+    .filter(Boolean)
+    .map((path) => resolve(rootDir, String(path)))
+    .filter((path, index, paths) => paths.indexOf(path) === index);
+}
+
+async function readCatalogForBaseline() {
+  // The release snapshot is authoritative once the public shard manifest has
+  // been replaced or intentionally omitted. Prefer it so the watcher does
+  // not fall back to the retired public/data/products.json path.
+  for (const path of catalogBaselineSourcePaths()) {
+    const payload = await readJson(path, null);
+    if (Array.isArray(payload?.products) && payload.products.length) return payload;
+  }
+
+  return readProductCatalogPayload(resolve(rootDir, "public", "data"));
 }
 
 async function writeState(state) {
@@ -740,8 +778,19 @@ function governedHandles() {
 }
 
 async function readLocalBaseline() {
-  const [catalog, collections, recentOrders] = await Promise.all([
-    readProductCatalogPayload(resolve(rootDir, "public", "data")),
+  let catalog;
+  try {
+    catalog = await readCatalogForBaseline();
+  } catch (error) {
+    // A release can briefly have neither the authoritative snapshot nor the
+    // legacy public manifest while generated data is being replaced. This is
+    // a degraded read-only state, not a release failure or a reason to alert
+    // every polling cycle.
+    if (isMissingCatalogBaselineError(error)) return null;
+    throw error;
+  }
+
+  const [collections, recentOrders] = await Promise.all([
     readJson(resolve(rootDir, "public", "data", "collections.json"), { collections: [] }),
     readJson(resolve(rootDir, "public", "data", "recently-ordered-products.json"), { products: [] }),
   ]);
@@ -1705,6 +1754,48 @@ async function checkOnce(state) {
     };
   }
 
+  // A user-paused release is resumable, but must not be treated as drift or a
+  // scheduled repair until they explicitly run the release resume command.
+  if (releaseInspection.release?.status === "paused") {
+    const now = new Date().toISOString();
+    return {
+      ...state,
+      ...stageTelemetry(releaseInspection.release),
+      watcherPid: process.pid,
+      lastCheckedAt: now,
+      watcherHeartbeatAt: now,
+      activeReleasePid: 0,
+      releaseStatus: "paused",
+      releaseStepIndex: Number(releaseInspection.release.stepIndex || 0),
+      releaseTotalSteps: Number(releaseInspection.release.totalSteps || 0),
+      releaseStepLabel: String(releaseInspection.release.stepLabel || ""),
+      releaseHeartbeatAt: String(releaseInspection.release.heartbeatAt || ""),
+      lastError: "",
+    };
+  }
+
+  const scheduledRun = scheduledReleaseDue(state);
+  if (shouldDeferWatcherCheck({
+    nextRetryAt: state?.nextRetryAt,
+    hasActionableRelease: releaseInspection.reasons.length > 0,
+    scheduledDue: Boolean(scheduledRun),
+  })) {
+    const now = new Date().toISOString();
+    const release = releaseInspection.release;
+    const releaseStatus = String(release?.status || "idle");
+    return {
+      ...state,
+      watcherPid: process.pid,
+      lastCheckedAt: now,
+      watcherHeartbeatAt: now,
+      activeReleasePid: releaseStatus === "running" ? Number(release?.pid || 0) : 0,
+      releaseStatus,
+      releaseStepIndex: Number(release?.stepIndex || state?.releaseStepIndex || 0),
+      releaseTotalSteps: Number(release?.totalSteps || state?.releaseTotalSteps || 0),
+      releaseStepLabel: String(release?.stepLabel || state?.releaseStepLabel || ""),
+    };
+  }
+
   let baseline = null;
   try {
     baseline = await readLocalBaseline();
@@ -1715,8 +1806,10 @@ async function checkOnce(state) {
     if (!localCatalogRebuildInProgress) throw error;
     await log("local catalog snapshot is mid-rebuild; using the interrupted release checkpoint for resume");
   }
+  if (!baseline && state?.localBaselineStatus !== "unavailable") {
+    await log("local catalog baseline is unavailable; drift comparison is deferred until the release snapshot is available");
+  }
   const live = await readLiveFingerprint();
-  const scheduledRun = scheduledReleaseDue(state);
   const reasons = [
     ...releaseInspection.reasons,
     ...(scheduledRun ? [`scheduled daily release due at ${scheduledRun.dueAt}`] : []),
@@ -1735,6 +1828,7 @@ async function checkOnce(state) {
       watcherHeartbeatAt: new Date().toISOString(),
       activeReleasePid: 0,
       releaseStatus: "idle",
+      localBaselineStatus: baseline ? "available" : "unavailable",
       visualTaxonomyTraining: await readVisualTrainingStatus(),
       visualTaxonomyShardTraining: await readVisualShardTrainingState(),
       visualTaxonomyTrainingReadiness: await readVisualTrainingReadiness(),
@@ -1942,6 +2036,24 @@ async function main() {
           lastCheckedAt: new Date().toISOString(),
           watcherHeartbeatAt: new Date().toISOString(),
         };
+        try {
+          const latestRelease = await readJson(releaseRunStatePath, null);
+          const latestPid = Number(latestRelease?.pid || 0);
+          const liveReleaseOwner = latestRelease?.status === "running" && isProcessAlive(latestPid);
+          state = {
+            ...state,
+            activeReleasePid: liveReleaseOwner ? latestPid : 0,
+            releaseStatus: latestRelease?.status === "running"
+              ? (liveReleaseOwner ? "running" : "interrupted")
+              : String(latestRelease?.status || "idle"),
+            releaseStepIndex: Number(latestRelease?.stepIndex || state.releaseStepIndex || 0),
+            releaseTotalSteps: Number(latestRelease?.totalSteps || state.releaseTotalSteps || 0),
+            releaseStepLabel: String(latestRelease?.stepLabel || state.releaseStepLabel || ""),
+          };
+        } catch {
+          // Preserve the monitor error when the release checkpoint is itself
+          // mid-replacement; the next poll will reconcile it.
+        }
         state = await notifyUser(state, {
           key: `watcher-error:${String(error?.message || error).slice(0, 500)}`,
           title: "SALT watcher error",

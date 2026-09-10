@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -11,10 +11,14 @@ import {
   DEFAULT_COST_BASED_MIN_CONTRIBUTION_MARGIN,
   DEFAULT_COST_BASED_OVERHEAD,
   DEFAULT_COST_BASED_POLICY_ID,
+  DEFAULT_MARKET_PRICE_MARGIN_MODE,
+  DEFAULT_MARKET_PRICE_MARGIN_PERCENT,
+  DEFAULT_MARKET_PRICE_MARGIN_POLICY_ID,
   buildCostBasedVariantPricePlan,
   buildVariantCostPriceAlignmentPlan,
   costBasedTargetPrice,
   costProtectedMinimumPrice,
+  marketPriceMarginTarget,
   isClothingProduct,
 } from "../src/lib/shopify-variant-cost-pricing.js";
 import { validateCostBasedPricingApproval } from "../src/lib/shopify-cost-based-pricing-approval.js";
@@ -43,6 +47,25 @@ const costBasedPolicyId = String(process.env.SALT_VARIANT_COST_POLICY_ID || DEFA
 const costBasedBands = parseCostBands(process.env.SALT_VARIANT_COST_BANDS_JSON);
 const fetchMode = String(process.env.SALT_VARIANT_COST_FETCH_MODE || (pricingPolicy === "cost-band-v2" ? "bulk" : "paged")).trim();
 const requestedBulkOperationId = String(process.env.SALT_VARIANT_COST_BULK_OPERATION_ID || "").trim();
+const marketMarginPercent = Math.min(
+  0.99,
+  Math.max(0, Number(process.env.SALT_VARIANT_MARKET_PRICE_MARGIN_PERCENT || 0)),
+);
+const marketMarginMode = String(
+  process.env.SALT_VARIANT_MARKET_PRICE_MARGIN_MODE || DEFAULT_MARKET_PRICE_MARGIN_MODE,
+).trim().toLowerCase();
+const marketMarginPolicyId = String(
+  process.env.SALT_VARIANT_MARKET_PRICE_MARGIN_POLICY_ID || DEFAULT_MARKET_PRICE_MARGIN_POLICY_ID,
+).trim();
+const marketAnchorLedgerPath = resolve(
+  rootDir,
+  process.env.SALT_VARIANT_MARKET_PRICE_ANCHOR_LEDGER || "output/shopify-market-price-anchor-ledger.json",
+);
+const driftRecoveryPasses = Math.max(
+  0,
+  Math.min(5, Number(process.env.SALT_VARIANT_COST_DRIFT_RECOVERY_PASSES || 3)),
+);
+const marketMarginApprovalPath = resolve(rootDir, "docs", "catalog-market-price-margin-approval.json");
 
 function parseCostBands(raw) {
   if (!raw) return DEFAULT_COST_BASED_BANDS;
@@ -63,6 +86,35 @@ async function verifyCostBasedPricingApproval() {
     throw new Error(`Cost-based pricing approval could not be read: ${error.message}`);
   });
   return validateCostBasedPricingApproval(approval);
+}
+
+async function verifyMarketMarginApproval() {
+  const approval = await readFile(marketMarginApprovalPath, "utf8").then(JSON.parse).catch((error) => {
+    throw new Error(`Market-price margin approval could not be read: ${error.message}`);
+  });
+  const approvedPercent = Number(approval?.scope?.marginPercent);
+  if (approval?.approved !== true || !String(approval?.approvalId || "").trim()) {
+    throw new Error("Market-price margin approval is missing or not approved.");
+  }
+  if (approval?.scope?.policyId !== marketMarginPolicyId || Math.abs(approvedPercent - marketMarginPercent) >= 0.000001) {
+    throw new Error("Market-price margin approval does not match the active pricing policy.");
+  }
+  if (approval?.scope?.mode !== marketMarginMode) {
+    throw new Error("Market-price margin approval mode does not match the active pricing policy.");
+  }
+  if (Number(approval?.scope?.priceFloor) !== priceFloor) {
+    throw new Error("Market-price margin approval price floor does not match the active pricing policy.");
+  }
+  if (approval?.scope?.anchor !== "first governed live variant sell price; persisted per variant to prevent compounding") {
+    throw new Error("Market-price margin approval must define a non-compounding live-price anchor.");
+  }
+  if (process.env.SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVED !== "1") {
+    throw new Error("Set SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVED=1 only for the approved market-price margin run.");
+  }
+  if (String(process.env.SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVAL_ID || "").trim() !== String(approval.approvalId).trim()) {
+    throw new Error("SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVAL_ID does not match the market-price margin approval.");
+  }
+  return approval.approvalId;
 }
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_VARIANT_COST_PAGE_SIZE || 100)));
 const variantPageSize = Math.max(1, Math.min(250, Number(process.env.SALT_VARIANT_COST_VARIANT_PAGE_SIZE || 50)));
@@ -251,6 +303,62 @@ function normalizeMoney(value) {
   if (value === null || value === undefined || value === "") return "";
   const amount = Number(value);
   return Number.isFinite(amount) ? amount.toFixed(2) : "";
+}
+
+async function readMarketAnchorLedger() {
+  if (marketMarginPercent <= 0) return new Map();
+  let payload;
+  try {
+    payload = JSON.parse(await readFile(marketAnchorLedgerPath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return new Map();
+    throw new Error(`Market-price anchor ledger could not be read: ${error.message}`);
+  }
+  if (payload?.policyId !== marketMarginPolicyId ||
+    Number(payload?.marginPercent) !== marketMarginPercent ||
+    payload?.mode !== marketMarginMode) {
+    return new Map();
+  }
+  return new Map(
+    Object.entries(payload?.anchors || {})
+      .map(([variantId, entry]) => [variantId, entry])
+      .filter(([, entry]) => Number.isFinite(Number(entry?.price)) && Number(entry.price) > 0),
+  );
+}
+
+async function writeMarketAnchorLedger(products, marketAnchors) {
+  if (marketMarginPercent <= 0) return;
+  const capturedAt = new Date().toISOString();
+  const anchors = {};
+  for (const product of products) {
+    for (const variant of variantArray(product)) {
+      const variantId = String(variant?.id || "").trim();
+      if (!variantId) continue;
+      const raw = marketAnchors.get(variantId);
+      const price = Number(raw && typeof raw === "object" ? raw.price : raw);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      anchors[variantId] = {
+        price: normalizeMoney(price),
+        handle: normalizePlainText(product?.handle),
+        variantTitle: normalizePlainText(variant?.title),
+        capturedAt: raw && typeof raw === "object" && raw.capturedAt ? raw.capturedAt : capturedAt,
+      };
+    }
+  }
+  await mkdir(resolve(marketAnchorLedgerPath, ".."), { recursive: true });
+  const temporaryPath = `${marketAnchorLedgerPath}.tmp-${process.pid}`;
+  await writeFile(temporaryPath, `${JSON.stringify({
+    version: 1,
+    policyId: marketMarginPolicyId,
+    marginPercent: marketMarginPercent,
+    mode: marketMarginMode,
+    source: "first governed live variant sell price",
+    nonCompounding: true,
+    updatedAt: capturedAt,
+    anchors,
+  }, null, 2)}\n`, "utf8");
+  await rename(temporaryPath, marketAnchorLedgerPath);
+  process.stdout.write(`Market-price anchor ledger ready: ${Object.keys(anchors).length} variant anchor(s).\n`);
 }
 
 function normalizeProduct(product) {
@@ -448,23 +556,33 @@ function manifestForPlan(plan, mode) {
       variantPeerOutlierRatio,
       variantPeerOutlierMinimumDelta,
       targetPrice: pricingPolicy === "cost-band-v2"
-        ? "every variant receives an independent live-cost target; targets may raise or lower random prices, never below the price floor"
+        ? "every variant receives an independent cost target plus a non-compounding market-anchor margin target; targets may raise or lower prices, never below the price floor"
         : "cost protection never lowers prices; deterministic same-product peer outliers may be normalized to their verified peer anchor, while cost and margin floors are always enforced",
       wildPriceOutliers: "same-product non-quantity variants within the cost tolerance are normalized only when price ratio and absolute range both exceed the configured thresholds; every change is read back",
       quantityTiers: "same-quantity color/material peers are normalized only when live costs are within tolerance; ambiguous cost gaps are reported for review",
       compareAt: pricingPolicy === "cost-band-v2"
         ? "preserve an existing compare-at only when it remains strictly above the new target; clear invalid values; never invent compare-at prices"
         : "align deterministic peer outliers to the verified peer anchor; clear if it would become invalid after an increase",
-      sourceOfTruth: "live Shopify variant inventoryItem.unitCost and price",
+      sourceOfTruth: marketMarginPercent > 0
+        ? "live Shopify variant inventoryItem.unitCost and price; market anchor is persisted at first governed run"
+        : "live Shopify variant inventoryItem.unitCost and price",
       campaignCostPerOrder,
       overhead: costBasedOverhead,
       minContributionMargin,
       clothingMinContributionMargin,
+      marketMarginPercent,
+      marketMarginMode,
+      marketMarginPolicyId,
+      marketAnchorLedgerPath,
+      marketAnchorCount: plan.marketAnchorCount || 0,
       costBands: pricingPolicy === "cost-band-v2" ? costBasedBands : undefined,
       contributionFormula: "max(price floor, ceil((cost per item + campaign cost per order) / (1 - minimum contribution margin), cents))",
       clothingFormula: "clothing uses the higher contribution margin and rounds upward to the next .99 retail price",
       costBasedFormula: pricingPolicy === "cost-band-v2"
         ? "max(price floor, (cost per item + overhead) * cost-band multiplier, (cost per item + overhead) / (1 - contribution margin)); round upward to .99"
+        : undefined,
+      marketMarginFormula: marketMarginPercent > 0
+        ? `max(cost-based target, ${marketMarginMode === "gross-margin" ? "market anchor / (1 - margin)" : "market anchor * (1 + margin)"}, price floor); round upward to .99`
         : undefined,
     },
     summary: plan.summary,
@@ -484,6 +602,74 @@ async function writeApplyCheckpoint(path, payload) {
   const temporaryPath = `${path}.tmp-${process.pid}`;
   await writeFile(temporaryPath, `${JSON.stringify(payload)}\n`, "utf8");
   await rename(temporaryPath, path);
+}
+
+function captureMissingMarketAnchors(products, marketAnchors) {
+  if (!(marketAnchors instanceof Map)) return 0;
+  let captured = 0;
+  const capturedAt = new Date().toISOString();
+  for (const product of products || []) {
+    for (const variant of variantArray(product)) {
+      const variantId = String(variant?.id || "").trim();
+      const currentPrice = Number(variant?.price);
+      if (!variantId || marketAnchors.has(variantId) || !Number.isFinite(currentPrice) || currentPrice <= 0) continue;
+      marketAnchors.set(variantId, {
+        price: normalizeMoney(currentPrice),
+        handle: normalizePlainText(product?.handle),
+        variantTitle: normalizePlainText(variant?.title),
+        capturedAt,
+      });
+      captured += 1;
+    }
+  }
+  return captured;
+}
+
+function buildCostBasedRecoveryPlan(products, marketAnchors) {
+  const recoveryPlan = buildCostBasedVariantPricePlan(products, {
+    overhead: costBasedOverhead,
+    priceFloor,
+    minContributionMargin,
+    clothingMinContributionMargin,
+    bands: costBasedBands,
+    policyId: costBasedPolicyId,
+    marketMarginPercent,
+    marketMarginMode,
+    marketMarginPolicyId,
+    marketAnchors,
+    captureMissingMarketAnchors: false,
+  });
+  recoveryPlan.products = products;
+  return recoveryPlan;
+}
+
+function mergeRecoveryPlanIntoManifest(manifest, plan) {
+  const entriesByHandle = new Map(
+    asArray(manifest.products).map((entry) => [normalizePlainText(entry?.handle), {
+      ...entry,
+      updates: [...asArray(entry?.updates)],
+    }]),
+  );
+  for (const [handle, updates] of plan.byHandle.entries()) {
+    const existing = entriesByHandle.get(handle);
+    if (!existing) {
+      entriesByHandle.set(handle, { handle, updates: [...updates] });
+      continue;
+    }
+    const updatesByVariant = new Map(
+      existing.updates.map((update) => [String(update?.variantId || ""), update]),
+    );
+    for (const update of updates) updatesByVariant.set(String(update?.variantId || ""), update);
+    existing.updates = [...updatesByVariant.values()];
+  }
+  manifest.products = [...entriesByHandle.values()];
+  if (manifest.summary) {
+    manifest.summary.productsWithUpdates = manifest.products.length;
+    manifest.summary.variantsToUpdate = manifest.products.reduce(
+      (total, entry) => total + asArray(entry?.updates).length,
+      0,
+    );
+  }
 }
 
 function assertNoHeld(plan) {
@@ -530,9 +716,10 @@ function readbackFailures(product, updates) {
   });
 }
 
-function costProtectionFailures(product) {
+function costProtectionFailures(product, marketAnchors = new Map()) {
   if (pricingPolicy === "cost-band-v2") {
     return variantArray(product).flatMap((variant) => {
+      const variantId = String(variant?.id || "");
       const cost = Number(
         variant?.cost_per_item ??
           variant?.cost ??
@@ -548,28 +735,54 @@ function costProtectionFailures(product) {
         clothing: isClothingProduct(product),
         bands: costBasedBands,
       });
-      if (!expected || !Number.isFinite(price)) {
+      const rawMarketAnchor = marketAnchors.get(variantId);
+      const marketAnchor = Number(rawMarketAnchor && typeof rawMarketAnchor === "object"
+        ? rawMarketAnchor.price
+        : rawMarketAnchor);
+      if (marketMarginPercent > 0 && (!Number.isFinite(marketAnchor) || marketAnchor <= 0)) {
         return [{
-          variantId: String(variant?.id || ""),
+          variantId,
+          reason: "missing-market-price-anchor-for-market-margin",
+          actualPrice: normalizeMoney(price),
+        }];
+      }
+      const marketTarget = marketMarginPercent > 0
+        ? marketPriceMarginTarget(marketAnchor, {
+          marginPercent: marketMarginPercent,
+          mode: marketMarginMode,
+          priceFloor,
+        })
+        : null;
+      const expectedTarget = [expected, marketTarget]
+        .filter(Boolean)
+        .sort((left, right) => Number(left) - Number(right))
+        .at(-1) || null;
+      if (!expectedTarget || !Number.isFinite(price)) {
+        return [{
+          variantId,
           reason: "cost-based-price-invariant-missing-input",
           costPerItem: normalizeMoney(cost),
           actualPrice: normalizeMoney(price),
         }];
       }
       const failures = [];
-      if (normalizeMoney(price) !== normalizeMoney(expected)) {
+      if (normalizeMoney(price) !== normalizeMoney(expectedTarget)) {
         failures.push({
-          variantId: String(variant?.id || ""),
-          reason: "cost-based-price-readback-mismatch",
+          variantId,
+          reason: marketTarget && Number(marketTarget) >= Number(expected)
+            ? "market-price-margin-readback-mismatch"
+            : "cost-based-price-readback-mismatch",
           costPerItem: normalizeMoney(cost),
-          expectedPrice: expected,
+          expectedPrice: expectedTarget,
+          costBasedTargetPrice: expected,
+          marketTargetPrice: marketTarget,
           actualPrice: normalizeMoney(price),
         });
       }
       const compareAt = Number(variant?.compareAtPrice ?? variant?.compare_at_price);
       if (Number.isFinite(compareAt) && compareAt > 0 && compareAt <= price) {
         failures.push({
-          variantId: String(variant?.id || ""),
+          variantId,
           reason: "invalid-compare-at-price",
           actualPrice: normalizeMoney(price),
           compareAtPrice: normalizeMoney(compareAt),
@@ -794,9 +1007,18 @@ async function verifyBulkPricingResult(resultPath, part) {
   }
 }
 
-async function applyPlanBulk(plan, manifest, outputPath) {
+async function applyPlanBulk(
+  plan,
+  manifest,
+  outputPath,
+  marketAnchors = new Map(),
+  driftRecoveryPass = 0,
+  reprocessHandles = new Set(),
+) {
   assertNoHeld(plan);
-  const completed = new Set(asArray(manifest.appliedProducts));
+  const completed = new Set(
+    asArray(manifest.appliedProducts).filter((handle) => !reprocessHandles.has(handle)),
+  );
   const parts = buildBulkApplyParts(plan, outputPath, completed);
   const checkpointPath = `${outputPath}.checkpoint.json`;
   const remainingChunks = new Map();
@@ -863,6 +1085,43 @@ async function applyPlanBulk(plan, manifest, outputPath) {
 
   process.stdout.write("Reading the complete active catalog back after pricing bulk mutations.\n");
   const liveProducts = await fetchActiveProductsBulk({ reuseRequested: false });
+  if (pricingPolicy === "cost-band-v2" && marketMarginPercent > 0) {
+    const captured = captureMissingMarketAnchors(liveProducts, marketAnchors);
+    if (captured > 0) {
+      await writeMarketAnchorLedger(liveProducts, marketAnchors);
+      if (driftRecoveryPass < driftRecoveryPasses) {
+        const recoveryPlan = buildCostBasedRecoveryPlan(liveProducts, marketAnchors);
+        assertNoHeld(recoveryPlan);
+        if (recoveryPlan.byHandle.size) {
+          mergeRecoveryPlanIntoManifest(manifest, recoveryPlan);
+          manifest.policy.marketAnchorCount = marketAnchors.size;
+          manifest.driftRecovery = [
+            ...(manifest.driftRecovery || []),
+            {
+              pass: driftRecoveryPass + 1,
+              capturedMarketAnchors: captured,
+              productsWithUpdates: recoveryPlan.summary.productsWithUpdates,
+              variantsToUpdate: recoveryPlan.summary.variantsToUpdate,
+              capturedAt: new Date().toISOString(),
+            },
+          ];
+          await persistCheckpoint();
+          process.stdout.write(
+            `Live catalog drift detected after pricing apply; captured ${captured} new market anchor(s) and scheduling ${recoveryPlan.summary.variantsToUpdate} targeted update(s) in recovery pass ${driftRecoveryPass + 1}/${driftRecoveryPasses}.\n`,
+          );
+          await applyPlanBulk(
+            recoveryPlan,
+            manifest,
+            outputPath,
+            marketAnchors,
+            driftRecoveryPass + 1,
+            new Set(recoveryPlan.byHandle.keys()),
+          );
+          return;
+        }
+      }
+    }
+  }
   const liveByHandle = new Map(liveProducts.map((product) => [normalizePlainText(product.handle), product]));
   const failures = [];
   for (const [handle, updates] of plan.byHandle.entries()) {
@@ -871,7 +1130,7 @@ async function applyPlanBulk(plan, manifest, outputPath) {
     else failures.push(...readbackFailures(product, updates).map((failure) => ({ handle, ...failure })));
   }
   for (const product of liveProducts) {
-    failures.push(...costProtectionFailures(product).map((failure) => ({
+    failures.push(...costProtectionFailures(product, marketAnchors).map((failure) => ({
       handle: normalizePlainText(product?.handle),
       ...failure,
     })));
@@ -924,6 +1183,8 @@ async function main() {
   if (pricingPolicy === "cost-band-v2" && (args.mode === "apply" || args.mode === "verify")) {
     await verifyCostBasedPricingApproval();
   }
+  if (marketMarginPercent > 0) await verifyMarketMarginApproval();
+  const marketAnchors = await readMarketAnchorLedger();
   const products = pricingPolicy === "cost-band-v2" && fetchMode === "bulk"
     ? await fetchActiveProductsBulk({ reuseRequested: args.mode !== "verify" })
     : await fetchActiveProducts();
@@ -935,6 +1196,11 @@ async function main() {
       clothingMinContributionMargin,
       bands: costBasedBands,
       policyId: costBasedPolicyId,
+      marketMarginPercent,
+      marketMarginMode,
+      marketMarginPolicyId,
+      marketAnchors,
+      captureMissingMarketAnchors: args.mode !== "verify",
     })
     : buildVariantCostPriceAlignmentPlan(products, {
       tolerance,
@@ -948,6 +1214,7 @@ async function main() {
       variantPeerOutlierMinimumDelta,
     });
   plan.products = products;
+  plan.marketAnchorCount = marketAnchors.size;
   const manifest = manifestForPlan(plan, args.mode);
   if (args.mode === "apply") {
     const prior = await readPriorApplyManifest(args.output);
@@ -983,7 +1250,7 @@ async function main() {
       }
     }
     for (const product of products) {
-      failures.push(...costProtectionFailures(product).map((failure) => ({
+      failures.push(...costProtectionFailures(product, marketAnchors).map((failure) => ({
         handle: normalizePlainText(product?.handle),
         ...failure,
       })));
@@ -1006,6 +1273,13 @@ async function main() {
     return;
   }
 
+  if (marketMarginPercent > 0) {
+    if ((plan.blockingHeld || []).length) {
+      throw new Error(`Market-price margin planning held ${plan.blockingHeld.length} unsafe variant(s); anchor ledger was not changed.`);
+    }
+    await writeMarketAnchorLedger(products, marketAnchors);
+  }
+
   await writeManifest(args.output, manifest);
   if (args.mode === "dry-run") {
     if ((plan.blockingHeld || []).length) throw new Error(`Variant cost-price dry-run held ${plan.blockingHeld.length} unsafe group(s); review ${args.output}.`);
@@ -1014,7 +1288,7 @@ async function main() {
   }
 
   if (pricingPolicy === "cost-band-v2" && fetchMode === "bulk") {
-    await applyPlanBulk(plan, manifest, args.output);
+    await applyPlanBulk(plan, manifest, args.output, marketAnchors);
   } else {
     await applyPlan(plan, manifest, args.output);
   }

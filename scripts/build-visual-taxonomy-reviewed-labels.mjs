@@ -49,6 +49,7 @@ export function buildReviewedLabelManifest({ catalog, overrides = CATALOG_TAXONO
   const seenImageUrls = new Set();
   const seenProducts = new Set();
   const errors = [];
+  const warnings = [];
   const entries = [];
 
   for (const [index, override] of asArray(overrides).entries()) {
@@ -58,7 +59,7 @@ export function buildReviewedLabelManifest({ catalog, overrides = CATALOG_TAXONO
     const imageUrl = normalize(override?.imageUrl);
     const ruleId = normalize(override?.ruleId);
     if (!product) {
-      errors.push(`reviewed override ${index + 1} does not match the refreshed catalog: ${productId || override?.handle || "missing product"}`);
+      warnings.push(`reviewed override ${index + 1} was quarantined because it does not match the refreshed catalog: ${productId || override?.handle || "missing product"}`);
       continue;
     }
     const resolvedProductId = normalize(product?.id || product?.legacyResourceId || product?.productId || product?.handle);
@@ -93,7 +94,17 @@ export function buildReviewedLabelManifest({ catalog, overrides = CATALOG_TAXONO
   }
 
   entries.sort((left, right) => `${left.productId}\n${left.sourceUrl}`.localeCompare(`${right.productId}\n${right.sourceUrl}`));
-  return { entries, errors, summary: { products: products.length, reviewedOverrides: entries.length, errors: errors.length } };
+  return {
+    entries,
+    errors,
+    warnings,
+    summary: {
+      products: products.length,
+      reviewedOverrides: entries.length,
+      errors: errors.length,
+      warnings: warnings.length,
+    },
+  };
 }
 
 function parseArgs(argv) {
@@ -116,6 +127,9 @@ async function main() {
     throw new Error(`Reviewed visual label manifest rejected ${result.errors.length} record(s):\n${result.errors.slice(0, 10).join("\n")}`);
   }
   if (result.entries.length < 2) throw new Error("At least two reviewed visual labels are required to build a training manifest.");
+  if (result.warnings.length) {
+    process.stderr.write(`Quarantined ${result.warnings.length} stale reviewed visual label(s):\n${result.warnings.slice(0, 10).join("\n")}\n`);
+  }
   await mkdir(resolve(args.output, ".."), { recursive: true });
   const temporary = `${args.output}.tmp-${process.pid}-${Date.now()}`;
   await writeFile(temporary, `${result.entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");

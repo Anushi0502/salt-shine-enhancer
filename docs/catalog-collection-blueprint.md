@@ -1,8 +1,8 @@
 # SALT Full-Catalog Release Blueprint
 
 Taxonomy version: `2026-08-06.1`
-Collection plan version: `2026-08-06.1-collections.4`
-Collection governance version: `2026-08-20.2`
+Collection plan version: `2026-08-06.1-collections.8`
+Collection governance version: `2026-09-09.3`
 
 ## Release Boundary
 
@@ -18,15 +18,21 @@ Collection governance version: `2026-08-20.2`
 - SEO title, SEO description, product description, subtitle, highlights, collection signal, and search boosts must be specific to the product's own title, type, taxonomy, options, measurements, use, and visible evidence.
 - Generic filler, evidence-free content, and normalized duplicates across products fail the release.
 - Existing non-empty metafields are retained only when they pass the same product-specificity and uniqueness checks.
-- Product and variant prices, compare-at prices, inventory, and Shopify product category are never changed by this flow.
+- Product and variant prices use the separate approved cost-band plus non-compounding market-anchor pricing gate; compare-at values are validated independently.
 
 ## Collection Rules
 
-- The registry governs 96 semantic collections, six exact price collections, and the `all-products` catalog boundary.
+- The registry governs the checked-in semantic collections, six exact price collections, and the `all-products` catalog boundary.
 - Every semantic collection has one canonical condition: `TAGGED_WITH salt:collection:<handle>`.
 - Product tags are calculated from the checked-in taxonomy and dynamic merchandising assignments, then live collection membership is compared as an exact set.
 - New canonical collections are published to Online Store. Existing publication state is otherwise preserved.
 - Collection merges, archives, and deletions are not part of this release.
+- Human footwear is included in the common `footwear` collection and split into `mens-footwear`, `formal-footwear`, `womens-footwear`, and `kids-footwear`; pet footwear and footwear accessories are excluded.
+- Jewelry is included in `everyday-jewelry` and split into `rings`, `necklaces`, `bracelets`, and `earrings` using the classified jewelry subtype; unrelated accessories are excluded.
+- `school-bags` requires school or student context plus a bag signal; `lunch-boxes` requires lunch-container evidence and excludes lunch bags, notes, labels, and accessories; `water-bottles` requires beverage-container evidence and excludes pet products, hot-water bottles, parts, holders, and accessories.
+- `back-to-school` requires both school context and a school-product signal. `stationery` is limited to the office-school department and approved stationery subcategories, so generic home, travel, and fashion products cannot enter either collection.
+- Human-facing collections reject pet department/audience evidence and explicit pet-product phrases before stale tags, targets, or dynamic assignments are considered. Cosmetic phrases such as `cat-eye` remain valid because standalone `cat` is not treated as a pet signal.
+- Artificial Plants uses only the canonical `artificial-plants` source tag. The retired `artificial-aquarium-decor-plants` tag remains an alias for migration readback, not a second live rule condition.
 
 ## Special Collections
 

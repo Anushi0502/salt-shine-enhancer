@@ -277,6 +277,23 @@ function loadJson(path) {
   return readFile(resolve(rootDir, path), "utf8").then((value) => JSON.parse(value));
 }
 
+async function loadLivePriceCheckpoint() {
+  const path = resolve(
+    rootDir,
+    process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT || "output/.shopify-catalog-integrity-live-input.json",
+  );
+  try {
+    const checkpoint = await loadJson(path);
+    if (checkpoint?.complete && Array.isArray(checkpoint.liveProducts)) {
+      return { path, products: checkpoint.liveProducts };
+    }
+  } catch {
+    // Strict mode reports the missing live price source below. Non-strict mode
+    // remains useful for local diagnostics and explicitly records its fallback.
+  }
+  return { path, products: null };
+}
+
 function manifestExpectedByProduct(manifest) {
   const expected = new Map();
   for (const classification of asArray(manifest?.classifications)) {
@@ -363,9 +380,17 @@ function sourceMatchesPolicy(policy, collection) {
   return false;
 }
 
-function buildTaxonomyExpected(products) {
+function buildTaxonomyExpected(products, livePriceProducts = null) {
   const expectedByProduct = new Map();
   const deterministic = new Map();
+  const liveByKey = new Map();
+  for (const product of asArray(livePriceProducts)) {
+    const key = idKey(product?.id) || product?.handle;
+    if (key) liveByKey.set(key, product);
+    if (product?.handle) liveByKey.set(product.handle, product);
+  }
+  let livePriceProductsUsed = 0;
+  const missingLivePriceProducts = new Set();
   for (const product of products) {
     const classification = classifyCatalogTaxonomyWithoutOverrides(product);
     deterministic.set(idKey(product.id || product.legacyResourceId) || product.handle, classification);
@@ -374,8 +399,22 @@ function buildTaxonomyExpected(products) {
       if (policy.match?.dynamic) continue;
       if (productMatchesSemanticCollection(policy, product, classification)) expected.add(policy.handle);
     }
+    const key = idKey(product.id || product.legacyResourceId) || product.handle;
+    const liveProduct = liveByKey.get(key) || liveByKey.get(product.handle);
+    if (livePriceProducts) {
+      if (liveProduct) livePriceProductsUsed += 1;
+      else missingLivePriceProducts.add(key);
+    }
     for (const policy of PRICE_COLLECTION_POLICIES) {
-      const variants = Array.isArray(product.variants?.nodes) ? product.variants.nodes : Array.isArray(product.variants) ? product.variants : [];
+      const variants = Array.isArray(liveProduct?.variants?.nodes)
+        ? liveProduct.variants.nodes
+        : Array.isArray(liveProduct?.variants)
+          ? liveProduct.variants
+          : Array.isArray(product.variants?.nodes)
+            ? product.variants.nodes
+            : Array.isArray(product.variants)
+              ? product.variants
+              : [];
       if (variants.some((variant) => {
         const price = Number(variant?.price);
         return Number.isFinite(price) &&
@@ -385,7 +424,7 @@ function buildTaxonomyExpected(products) {
     }
     expectedByProduct.set(idKey(product.id || product.legacyResourceId) || product.handle, expected);
   }
-  return { expectedByProduct, deterministic };
+  return { expectedByProduct, deterministic, livePriceProductsUsed, missingLivePriceProducts: [...missingLivePriceProducts] };
 }
 
 function sortIssues(issues) {
@@ -406,7 +445,11 @@ async function run() {
   if (!products.length) throw new Error("Local active catalog is empty.");
 
   process.stdout.write(`Auditing ${products.length} local active products against live Shopify memberships.\n`);
-  const [liveCollections, membership] = await Promise.all([fetchCollections(), fetchMembership()]);
+  const [liveCollections, membership, livePriceCheckpoint] = await Promise.all([
+    fetchCollections(),
+    fetchMembership(),
+    loadLivePriceCheckpoint(),
+  ]);
   const liveByHandle = new Map(liveCollections.map((collection) => [handle(collection.handle), collection]));
 
   const productById = new Map();
@@ -434,7 +477,12 @@ async function run() {
   }
 
   const manifestExpected = manifestExpectedByProduct(manifest);
-  const { expectedByProduct: taxonomyExpected, deterministic } = buildTaxonomyExpected(products);
+  const {
+    expectedByProduct: taxonomyExpected,
+    deterministic,
+    livePriceProductsUsed,
+    missingLivePriceProducts,
+  } = buildTaxonomyExpected(products, livePriceCheckpoint.products);
   const appliedClassifications = new Map(asArray(manifest?.classifications).map((classification) => [
     idKey(classification?.productId) || classification?.handle,
     classification,
@@ -548,12 +596,34 @@ async function run() {
     "men-t-shirt",
     "home-decor",
     "home-safety",
+    "staff-picks",
+    "trending-finds",
+    "gifts-for-seniors",
+    "artificial-plants",
+    "housewarming-gifts",
+    "sleep-essentials",
+    "pet-toys",
+    "pet-grooming",
+    "pet-feeding",
+    "pet-travel",
+    "cat-supplies",
+    "dog-supplies",
     "hats",
     "gifts-for-dad",
     "gifts-for-mom",
     "daily-living-aids",
     "senior-living-solutions",
     "candles",
+    "school-bags",
+    "lunch-boxes",
+    "water-bottles",
+    "back-to-school",
+    "stationery",
+    "massage-tools",
+    "relaxation-products",
+    "medical-accessories",
+    "pet-essentials",
+    "garden-tools",
   ]) {
     const issue = collectionIssues.find((entry) => entry.handle === target);
     const evidence = evidenceConflicts.filter((entry) => entry.collectionHandle === target);
@@ -583,6 +653,13 @@ async function run() {
       membershipCollections: membership.collections.length,
       membershipObjects: membership.operation?.objectCount || null,
       outOfScopeMemberships,
+      priceCheckpoint: {
+        path: livePriceCheckpoint.path,
+        complete: Array.isArray(livePriceCheckpoint.products),
+        liveProducts: livePriceCheckpoint.products?.length || 0,
+        matchedLocalProducts: livePriceProductsUsed,
+        missingLocalProducts: missingLivePriceProducts.length,
+      },
     },
     namedCollections: Object.fromEntries(named),
     summary: {
@@ -592,6 +669,7 @@ async function run() {
       productsAffectedByMembershipDiff: mismatchProducts.size,
       collectionlessActiveProducts: collectionless.length,
       missingManifestProducts: missingManifestProducts.length,
+      missingLivePriceProducts: missingLivePriceProducts.length,
       ruleMismatches: collectionIssues.filter((issue) => issue.status === "rule-mismatch").length,
       deterministicEvidenceConflicts: evidenceConflicts.length,
       liveCollectionsNotInGovernance: liveCollections
@@ -609,6 +687,9 @@ async function run() {
       deterministicEvidenceConflictsAreDiagnostic: false,
       dynamicCollections: governed.filter((policy) => policy.kind === "semantic" && policy.match?.dynamic).map((policy) => policy.handle),
       productNotFoundInLocalCatalog: "excluded from product-level examples but retained in collection counts",
+      priceEvidence: livePriceCheckpoint.products
+        ? "complete live variant checkpoint"
+        : "local snapshot fallback (non-strict diagnostic only)",
     },
   };
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
@@ -622,6 +703,8 @@ async function run() {
   if (args.strict) {
     const strictFailures = [
       ...(missingManifestProducts.length ? [`manifest missing ${missingManifestProducts.length} active products`] : []),
+      ...(!livePriceCheckpoint.products ? ["complete live variant checkpoint is missing"] : []),
+      ...(missingLivePriceProducts.length ? [`live price checkpoint missing ${missingLivePriceProducts.length} local products`] : []),
       ...(collectionIssues.length ? [`${collectionIssues.length} governed collection live drift issue(s)`] : []),
       ...(evidenceConflicts.length ? [`${evidenceConflicts.length} deterministic collection evidence conflict(s)`] : []),
       ...(collectionless.length ? [`${collectionless.length} collectionless active products`] : []),

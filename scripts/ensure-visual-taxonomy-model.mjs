@@ -32,6 +32,7 @@ const defaultMetalPython = resolve(
   "bin",
   "python",
 );
+const compatibilityRefreshScriptPath = resolve(rootDir, "scripts", "refresh-visual-taxonomy-model-compatibility.mjs");
 
 function resolveMetalPython() {
   const configured = String(process.env.SALT_VISUAL_MLX_PYTHON || "").trim();
@@ -337,6 +338,26 @@ async function verifyModel() {
   });
 }
 
+async function refreshAppendOnlyCompatibility() {
+  await execFileAsync(process.execPath, [compatibilityRefreshScriptPath], {
+    cwd: rootDir,
+    env: process.env,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+}
+
+async function verifyOrRefreshModel() {
+  try {
+    await verifyModel();
+  } catch (error) {
+    const detail = `${error?.message || ""}\n${error?.stderr || ""}`;
+    if (!/taxonomy fingerprint does not match the checked-in taxonomy/i.test(detail)) throw error;
+    process.stdout.write("Installed visual taxonomy model has an exact append-only taxonomy drift; checking compatibility evidence before release.\n");
+    await refreshAppendOnlyCompatibility();
+    await verifyModel();
+  }
+}
+
 async function trainModel(inputs, { candidateOnly = false } = {}) {
   const args = [
     "run",
@@ -452,7 +473,7 @@ async function ensureModel() {
   }
   if (await modelExists()) {
     await writeTrainingStatus("verifying", { reason: "checking installed model artifact and purge evidence" });
-    await verifyModel();
+    await verifyOrRefreshModel();
     await writeTrainingStatus("verified", { reason: "installed model passed live artifact verification" });
     process.stdout.write(`Verified installed visual taxonomy model at ${modelPath}.\n`);
     return;
@@ -477,7 +498,7 @@ async function ensureModel() {
     const trainingCompleted = await waitForExistingTraining();
     if (trainingCompleted) {
       await writeTrainingStatus("verifying", { reason: "checking the model produced by the active training owner" });
-      await verifyModel();
+      await verifyOrRefreshModel();
       await writeTrainingStatus("verified", { reason: "active training owner produced a verified model" });
       process.stdout.write(`Verified visual taxonomy model produced by the active training owner at ${modelPath}.\n`);
       return;
@@ -488,7 +509,7 @@ async function ensureModel() {
     const trainingCompleted = await waitForExistingTraining();
     if (!trainingCompleted) throw error;
     await writeTrainingStatus("verifying", { reason: "checking the model produced by the active training owner" });
-    await verifyModel();
+    await verifyOrRefreshModel();
     await writeTrainingStatus("verified", { reason: "active training owner produced a verified model" });
     process.stdout.write(`Verified visual taxonomy model produced by the active training owner at ${modelPath}.\n`);
     return;

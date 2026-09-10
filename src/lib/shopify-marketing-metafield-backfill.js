@@ -1,5 +1,6 @@
 import { normalizePlainText, parseMoneyValue, toShopifyGid } from "./shopify-seo-batch.js";
 import { serializeListValue, serializeProductReferenceList } from "./shopify-product-metafield-backfill.js";
+import { canonicalCollectionHandle } from "./catalog-collection-governance.js";
 
 const COLLECTION_FIELD_IDS = {
   heroKicker: "salt-marketing.hero_kicker",
@@ -73,16 +74,36 @@ function getProductCompareAtPrice(product) {
   return values.length ? Math.max(...values) : null;
 }
 
+function collectionMembershipIds(collection, context) {
+  const handle = canonicalCollectionHandle(collection?.handle || "");
+  const membership = context.collectionProductIdsByHandle;
+  if (!(membership instanceof Map)) return null;
+  return membership.get(handle) || [];
+}
+
 function getCollectionProducts(collection, context) {
-  const handle = String(collection?.handle || "").trim().toLowerCase();
-  const candidateIds = Array.isArray(context.collectionProductIdsByHandle?.get(handle))
-    ? context.collectionProductIdsByHandle.get(handle)
-    : [];
-  const productIds = candidateIds.length > 0 ? candidateIds : Number(collection?.products_count || 0) > 0 ? context.products.map((product) => product.id) : [];
+  const candidateIds = collectionMembershipIds(collection, context);
+  // A complete membership snapshot is authoritative. Never broaden a missing
+  // collection entry to the full catalog, which can create cross-collection
+  // featured references when a source is empty or still propagating.
+  const productIds = candidateIds || (
+    Number(collection?.products_count || 0) > 0 ? context.products.map((product) => product.id) : []
+  );
 
   return productIds
     .map((productId) => context.productsById.get(Number(productId)))
     .filter(Boolean);
+}
+
+function productReferenceIds(value) {
+  return new Set((Array.isArray(value) ? value : [])
+    .map((entry) => {
+      if (typeof entry === "number") return entry;
+      const raw = entry?.legacyResourceId || entry?.id || entry;
+      const match = String(raw || "").match(/(\d+)$/);
+      return match ? Number(match[1]) : null;
+    })
+    .filter((value) => Number.isFinite(value) && value > 0));
 }
 
 function scoreFeaturedProduct(product, collection) {
@@ -135,7 +156,15 @@ function pickFeaturedProducts(collection, context, limit = 3) {
       return String(left.product.handle || "").localeCompare(String(right.product.handle || ""));
     });
 
-  return ranked.slice(0, limit).map((entry) => entry.product);
+  if (ranked.length > 0) {
+    return ranked.slice(0, limit).map((entry) => entry.product);
+  }
+
+  // Keep references inside the authoritative membership snapshot even when
+  // a valid collection member has no rating, image, or matching title token.
+  return [...candidates]
+    .sort((left, right) => String(left.handle || "").localeCompare(String(right.handle || "")))
+    .slice(0, limit);
 }
 
 function buildCollectionHeroKicker(collection) {
@@ -204,6 +233,11 @@ function buildShopTrustStrip() {
 function buildCollectionPlan(collection, context) {
   const customData = collection?.customData || null;
   const featuredProducts = pickFeaturedProducts(collection, context, 3);
+  const currentFeaturedIds = productReferenceIds(customData?.featuredProducts);
+  const currentMembershipIds = collectionMembershipIds(collection, context);
+  const currentMembershipSet = currentMembershipIds ? new Set(currentMembershipIds.map(Number)) : null;
+  const staleFeaturedProducts = currentMembershipSet && currentFeaturedIds.size > 0 &&
+    [...currentFeaturedIds].some((productId) => !currentMembershipSet.has(productId));
   const heroKicker = buildCollectionHeroKicker(collection);
   const heroSummary = buildCollectionHeroSummary(collection, featuredProducts, context.products.length);
   const trustStrip = buildCollectionTrustStrip(collection, featuredProducts);
@@ -248,7 +282,7 @@ function buildCollectionPlan(collection, context) {
     skipped.push({ fieldId: COLLECTION_FIELD_IDS.heroSummary, reason: "already set" });
   }
 
-  if (!hasMeaningfulValue(customData?.featuredProducts) && featuredProducts.length) {
+  if ((!hasMeaningfulValue(customData?.featuredProducts) || staleFeaturedProducts) && currentMembershipIds && featuredProducts.length) {
     writes.push({
       fieldId: COLLECTION_FIELD_IDS.featuredProducts,
       label: "Featured products",
@@ -257,7 +291,20 @@ function buildCollectionPlan(collection, context) {
       type: "list.product_reference",
       ownerId: toShopifyGid("Collection", collection.id),
       value: serializeProductReferenceList(featuredProducts.map((product) => toShopifyGid("Product", product.id))),
-      reason: `Selected ${featuredProducts.length} high-signal collection product(s)`,
+      reason: staleFeaturedProducts
+        ? `Replaced ${currentFeaturedIds.size} stale featured reference(s) with current collection members`
+        : `Selected ${featuredProducts.length} high-signal collection product(s)`,
+    });
+  } else if (staleFeaturedProducts && currentMembershipIds && !featuredProducts.length) {
+    writes.push({
+      fieldId: COLLECTION_FIELD_IDS.featuredProducts,
+      label: "Featured products",
+      namespace: "salt-marketing",
+      key: "featured_products",
+      type: "list.product_reference",
+      ownerId: toShopifyGid("Collection", collection.id),
+      value: "[]",
+      reason: `Cleared ${currentFeaturedIds.size} stale featured reference(s); collection has no eligible scored members`,
     });
   } else if (hasMeaningfulValue(customData?.featuredProducts)) {
     skipped.push({ fieldId: COLLECTION_FIELD_IDS.featuredProducts, reason: "already set" });
@@ -367,12 +414,16 @@ function buildMarketingBackfillPlan(input = {}) {
       .filter(Boolean),
   );
 
-  const collectionProductIdsByHandle = new Map(
-    Object.entries(collectionProducts.collections || {}).map(([handle, entry]) => [
-      String(handle || "").trim().toLowerCase(),
-      Array.isArray(entry?.productIds) ? entry.productIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0) : [],
-    ]),
-  );
+  const collectionProductIdsByHandle = new Map();
+  for (const [handle, entry] of Object.entries(collectionProducts.collections || {})) {
+    const canonicalHandle = canonicalCollectionHandle(handle);
+    const productIds = Array.isArray(entry?.productIds)
+      ? entry.productIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+      : [];
+    collectionProductIdsByHandle.set(canonicalHandle, [
+      ...new Set([...(collectionProductIdsByHandle.get(canonicalHandle) || []), ...productIds]),
+    ]);
+  }
 
   const context = {
     products,

@@ -1,11 +1,11 @@
 {
-  "approvalId": "salt-full-catalog-collections-2026-08-10-hats-approved",
+  "approvalId": "salt-full-catalog-collections-2026-09-09-school-products-approved",
   "approved": true,
-  "approvedAt": "2026-08-06T13:10:00Z",
-  "approvalSource": "User request to rerun the full catalog after new products were added, add governed Hats and Wigs collections, route women's wigs into Women's Accessories and men's wigs into Men's Accessories, reduce misclassification, repair every collection, and leave no product collectionless",
+  "approvedAt": "2026-09-09T12:43:00.000Z",
+  "approvalSource": "User request to repair the collection issues shown in the supplied Shopify screenshots, create one common Footwear collection with all human footwear, create Rings, Necklaces, Bracelets, Earrings, and Everyday Jewelry collections, add School Bags, Lunch Boxes, and Water Bottles, rework Back to School and Stationery, verify wrong-product exclusions including pet products in human collections, verify exact live price collection membership, and wire the verified rules into the release workflow",
   "taxonomyVersion": "2026-08-06.1",
-  "collectionPlanVersion": "2026-08-06.1-collections.4",
-  "governanceVersion": "2026-09-01.1",
+  "collectionPlanVersion": "2026-08-06.1-collections.8",
+  "governanceVersion": "2026-09-09.3",
   "scope": {
     "managedCollections": "create or repair only canonical collections in the checked-in full-catalog governance registry",
     "controlledRuleTags": "exactly one canonical simple collection tag condition per semantic collection, except approved union rules for gifts and trending-finds",
@@ -15,6 +15,10 @@
     "legacyMergesOrArchives": "not approved",
     "priceCollections": "repair exact variant-price conditions and verify exact live membership",
     "collectionlessProducts": "forbidden; every active product must be verified in at least one live collection",
-    "specialCollections": "Creator Essentials must contain at least 500 products and Anime Collectables at least 1000 products across the full catalog"
+    "specialCollections": "Creator Essentials must contain at least 500 products and Anime Collectables at least 1000 products across the full catalog",
+    "footwearCollections": "Footwear, Mens Footwear, Formal Footwear, Womens Footwear, and Kids Footwear use exact governed tags with verified human-footwear evidence; pet footwear and footwear accessories are excluded",
+    "jewelryCollections": "Rings, Necklaces, Bracelets, Earrings, and Everyday Jewelry use exact governed tags with jewelry department and subtype evidence; Everyday Jewelry is the broad jewelry collection",
+    "schoolCollections": "School Bags require school or student context plus bag evidence; Lunch Boxes require lunch-container evidence and exclude bags, labels, notes, and accessories; Water Bottles require beverage-container evidence and exclude pets, hot-water bottles, parts, holders, and accessories",
+    "schoolSeasonalCollections": "Back to School requires school context plus a school-product signal; Stationery requires an office-school department and an approved stationery subcategory"
   }
 }

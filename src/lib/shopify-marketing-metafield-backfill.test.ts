@@ -215,4 +215,110 @@ describe("shopify marketing metafield backfill planner", () => {
       "Discover 1 products across the full SALT catalog.",
     );
   });
+
+  it("replaces stale featured references with current collection members", () => {
+    const plan = buildMarketingBackfillPlan({
+      products: [
+        makeProduct({ id: 1, title: "Makeup Brush Set", handle: "makeup-brush-set" }),
+        makeProduct({ id: 2, title: "Dog Nail File", handle: "dog-nail-file" }),
+      ],
+      collections: [{
+        id: 10,
+        title: "Beauty Makeup Essentials",
+        handle: "beauty-makeup-essentials",
+        description: "",
+        products_count: 1,
+        customData: {
+          featuredProducts: ["gid://shopify/Product/2"],
+        },
+      }],
+      collectionProducts: {
+        collections: {
+          "beauty-makeup-essentials": { title: "Beauty Makeup Essentials", productIds: [1] },
+        },
+      },
+      shop: { id: "shop", name: "SALT", customData: null },
+    });
+
+    const featuredWrite = plan.collectionPlans[0]?.writes.find(
+      (entry) => entry.fieldId === COLLECTION_FIELD_IDS.featuredProducts,
+    );
+    expect(featuredWrite?.value).toContain("gid://shopify/Product/1");
+    expect(featuredWrite?.value).not.toContain("gid://shopify/Product/2");
+    expect(featuredWrite?.reason).toContain("stale featured");
+  });
+
+  it("clears stale featured references when a complete collection is empty", () => {
+    const plan = buildMarketingBackfillPlan({
+      products: [makeProduct({ id: 1, title: "Current product", handle: "current-product" })],
+      collections: [{
+        id: 10,
+        title: "Beauty Makeup Essentials",
+        handle: "beauty-makeup-essentials",
+        description: "",
+        products_count: 0,
+        customData: {
+          featuredProducts: ["gid://shopify/Product/999"],
+        },
+      }],
+      collectionProducts: {
+        collections: {
+          "beauty-makeup-essentials": { title: "Beauty Makeup Essentials", productIds: [] },
+        },
+      },
+      shop: { id: "shop", name: "SALT", customData: null },
+    });
+
+    const featuredWrite = plan.collectionPlans[0]?.writes.find(
+      (entry) => entry.fieldId === COLLECTION_FIELD_IDS.featuredProducts,
+    );
+    expect(featuredWrite?.value).toBe("[]");
+    expect(featuredWrite?.reason).toContain("Cleared");
+  });
+
+  it("never broadens a missing membership entry to the full catalog", () => {
+    const plan = buildMarketingBackfillPlan({
+      products: [makeProduct({ id: 1, title: "Unrelated product", handle: "unrelated-product" })],
+      collections: [{
+        id: 10,
+        title: "Beauty Makeup Essentials",
+        handle: "beauty-makeup-essentials",
+        description: "",
+        products_count: 1,
+        customData: null,
+      }],
+      collectionProducts: { collections: {} },
+      shop: { id: "shop", name: "SALT", customData: null },
+    });
+
+    expect(plan.collectionPlans[0]?.writes.some(
+      (entry) => entry.fieldId === COLLECTION_FIELD_IDS.featuredProducts,
+    )).toBe(false);
+  });
+
+  it("preserves valid editorial featured references", () => {
+    const plan = buildMarketingBackfillPlan({
+      products: [makeProduct({ id: 1, title: "Makeup Brush Set", handle: "makeup-brush-set" })],
+      collections: [{
+        id: 10,
+        title: "Beauty Makeup Essentials",
+        handle: "beauty-makeup-essentials",
+        description: "",
+        products_count: 1,
+        customData: {
+          featuredProducts: ["gid://shopify/Product/1"],
+        },
+      }],
+      collectionProducts: {
+        collections: {
+          "beauty-makeup-essentials": { title: "Beauty Makeup Essentials", productIds: [1] },
+        },
+      },
+      shop: { id: "shop", name: "SALT", customData: null },
+    });
+
+    expect(plan.collectionPlans[0]?.writes.some(
+      (entry) => entry.fieldId === COLLECTION_FIELD_IDS.featuredProducts,
+    )).toBe(false);
+  });
 });

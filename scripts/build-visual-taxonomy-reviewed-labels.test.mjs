@@ -38,4 +38,24 @@ describe("reviewed visual label manifest", () => {
     expect(result.entries).toEqual([]);
     expect(result.errors[0]).toMatch(/no longer present/);
   });
+
+  it("quarantines reviewed labels for products removed by a catalog refresh", () => {
+    const result = buildReviewedLabelManifest({
+      catalog: { products: [{ id: "p1", handle: "tripod", images: [{ src: "https://cdn.example/tripod.webp" }] }] },
+      overrides: [{
+        id: "orphan-review",
+        productId: "removed-product",
+        handle: "removed-product",
+        ruleId: "smartphone-video-rigs",
+        approved: true,
+        imageReviewed: true,
+        imageUrl: "https://cdn.example/removed.webp",
+        reviewedAt: "2026-08-01T00:00:00Z",
+        reason: "Reviewed before the product was removed from the catalog.",
+      }],
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.entries).toEqual([]);
+    expect(result.warnings[0]).toMatch(/quarantined/);
+  });
 });

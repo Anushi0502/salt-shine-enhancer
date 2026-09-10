@@ -1,0 +1,183 @@
+{
+  "kind": "salt-visual-taxonomy-shard-training-state",
+  "version": 1,
+  "planSha256": "16526f6ff5f57bbb5231e9f69f1a4039c431676a83f09d8944e9054b21d870a6",
+  "sourceManifestSha256": "c159945b2c930875c8474da145b81fff3aa9ab59465d4db08bf82b611ea218b2",
+  "targetBytes": 50000000000,
+  "maxShardBytes": 6000000000,
+  "phase": "complete",
+  "adapterShards": {
+    "1": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-001",
+      "adapterSha256": "1ad3b217fa3631d446d2e607728be31b7592ceb3b0e696bae52f52ab11ae6656",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-001.training.json",
+      "reportSha256": "fc18ac46cb8bb62e0dd905f77258773e319b9cb0834db1c185c130533d990671",
+      "steps": 8884,
+      "manifestSha256": "f0e9e7e87378fcf87c9f0276883ca442536cbedd1d46f3021fbb8dc921997138",
+      "purgedAt": "2026-08-30T05:45:55.083Z"
+    },
+    "2": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-002",
+      "adapterSha256": "901f6565202cab18ddf9aecdf2d1d9ad8c1da3a3047c924a08753d228795970b",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-002.training.json",
+      "reportSha256": "6fd51cdec33c8d44bc33e416e348508c373effb9f526f988b50c73ce07a1f577",
+      "steps": 4205,
+      "manifestSha256": "54205b535a082ecbf7a596f46cb6c63cf0db4556030a9ed0467530e97c298777",
+      "purgedAt": "2026-08-30T07:47:25.623Z"
+    },
+    "3": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-003",
+      "adapterSha256": "23887f9a3a07533dd5a51367a77a8bae557331515d59cca259d1791471b5f84f",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-003.training.json",
+      "reportSha256": "9db98f65ef9ab2e7dba5f2e44938bc704270241b295e6c1866e9b64e32acb65e",
+      "steps": 1203,
+      "manifestSha256": "ec3f6324b40c62320fe21068931c87e1751b1c57d3eb5ede0e1da68ef3f2d65b",
+      "purgedAt": "2026-08-30T09:59:28.756Z"
+    },
+    "4": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-004",
+      "adapterSha256": "d17e8a999a97a59e77fa880de8ecd42b18fe2c45fca8a1e1ea5573dc06eff41b",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-004.training.json",
+      "reportSha256": "801aeec93d98c0fa7e5434d2686db531f12cd20fa4337b43b019a6eeea100ea0",
+      "steps": 1242,
+      "manifestSha256": "e9d832abcc104dba763f34cce70a4dd1f1c78144581c9e21c4d8e3937ddd1904",
+      "purgedAt": "2026-08-30T12:58:00.838Z"
+    },
+    "5": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-005",
+      "adapterSha256": "e3561e097d16b02d342620fa6c7268dc1af4d507b08b00f88cea5d9c79118b12",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-005.training.json",
+      "reportSha256": "758aa49573745cd775a4b27d957ab23ac171d9d56d42d33c00909937d0421950",
+      "steps": 1223,
+      "manifestSha256": "bae378d201d5b3d94090d73b6456b5fc46c29713f11c6d0946217e5f5e0131bb",
+      "purgedAt": "2026-08-30T15:52:10.644Z"
+    },
+    "6": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-006",
+      "adapterSha256": "9acb697fde2a9c9ea012579026f381bf06765d395a00c873b0b1cd7a6036928d",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-006.training.json",
+      "reportSha256": "f890adcfe7ff23225a35dce2a9de529cc89760c3b8d16855815ed42dbb0c122b",
+      "steps": 1229,
+      "manifestSha256": "9d6e9ac3c572a7ffc79c9a41c1cc6572acc0a0f877ec6bd06171ca18aaa08222",
+      "purgedAt": "2026-08-30T18:44:06.711Z"
+    },
+    "7": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-007",
+      "adapterSha256": "44449bdd1c5c48ce8aa337460221afb0589a579acd929da2f6de19bfd6149123",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-007.training.json",
+      "reportSha256": "662ad51e97e1d97f32cac5fbcbe8a89f769570bea0999900a7a87bb6ef27eabf",
+      "steps": 1243,
+      "manifestSha256": "423b8c5aad5d20b419a3e6e8b243e0e2961ae769ec1e2247175ec9ee6af41c72",
+      "purgedAt": "2026-08-30T21:20:26.592Z"
+    },
+    "8": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-008",
+      "adapterSha256": "7066689d255e0c7c7bd45a0aef801017e8e58697030511a181befe664490fef6",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-008.training.json",
+      "reportSha256": "db080604f0d3721a0f196451bf355f5cf7097042fbdeda23ba1b707f261818eb",
+      "steps": 1224,
+      "manifestSha256": "d0b00988c50956c730201928c19649635150c8bd45231debd9544c3326a8c0f7",
+      "purgedAt": "2026-08-30T23:56:27.059Z"
+    },
+    "9": {
+      "status": "purged",
+      "adapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors",
+      "adapterSha256": "9f085f80916ee92733096e4f9af2e81069103be27da48e087cdf9ca1f9f8e942",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.training.json",
+      "reportSha256": "bbb85c57f4e70a354bc208c2d2b3aef9ab82b2e00c552e62885b8c754e0ee867",
+      "steps": 417,
+      "manifestSha256": "f186f4db15eb384ed0d73e8b39d79f297efabc8221a3ae233df1389b9e78f60f",
+      "purgedAt": "2026-08-31T00:52:37.745Z"
+    }
+  },
+  "embeddingShards": {
+    "1": {
+      "status": "purged",
+      "records": 71070,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-001.jsonl",
+      "manifestSha256": "f0e9e7e87378fcf87c9f0276883ca442536cbedd1d46f3021fbb8dc921997138",
+      "purgedAt": "2026-08-31T02:43:03.812Z"
+    },
+    "2": {
+      "status": "purged",
+      "records": 67280,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-002.jsonl",
+      "manifestSha256": "54205b535a082ecbf7a596f46cb6c63cf0db4556030a9ed0467530e97c298777",
+      "purgedAt": "2026-08-31T04:48:12.461Z"
+    },
+    "3": {
+      "status": "purged",
+      "records": 19236,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-003.jsonl",
+      "manifestSha256": "ec3f6324b40c62320fe21068931c87e1751b1c57d3eb5ede0e1da68ef3f2d65b",
+      "purgedAt": "2026-08-31T05:43:38.190Z"
+    },
+    "4": {
+      "status": "purged",
+      "records": 19858,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-004.jsonl",
+      "manifestSha256": "e9d832abcc104dba763f34cce70a4dd1f1c78144581c9e21c4d8e3937ddd1904",
+      "purgedAt": "2026-08-31T06:22:26.521Z"
+    },
+    "5": {
+      "status": "purged",
+      "records": 19558,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-005.jsonl",
+      "manifestSha256": "bae378d201d5b3d94090d73b6456b5fc46c29713f11c6d0946217e5f5e0131bb",
+      "purgedAt": "2026-08-31T07:03:25.925Z"
+    },
+    "6": {
+      "status": "purged",
+      "records": 19657,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-006.jsonl",
+      "manifestSha256": "9d6e9ac3c572a7ffc79c9a41c1cc6572acc0a0f877ec6bd06171ca18aaa08222",
+      "purgedAt": "2026-08-31T07:59:05.944Z"
+    },
+    "7": {
+      "status": "purged",
+      "records": 19875,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-007.jsonl",
+      "manifestSha256": "423b8c5aad5d20b419a3e6e8b243e0e2961ae769ec1e2247175ec9ee6af41c72",
+      "purgedAt": "2026-08-31T08:49:30.239Z"
+    },
+    "8": {
+      "status": "purged",
+      "records": 19571,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-008.jsonl",
+      "manifestSha256": "d0b00988c50956c730201928c19649635150c8bd45231debd9544c3326a8c0f7",
+      "purgedAt": "2026-08-31T09:12:09.231Z"
+    },
+    "9": {
+      "status": "purged",
+      "records": 6661,
+      "recordPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/records/shard-009.jsonl",
+      "manifestSha256": "f186f4db15eb384ed0d73e8b39d79f297efabc8221a3ae233df1389b9e78f60f",
+      "purgedAt": "2026-08-31T09:21:51.460Z"
+    }
+  },
+  "updatedAt": "2026-08-31T22:16:32.913Z",
+  "currentShard": null,
+  "currentAdapterPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors",
+  "currentManifestSha256": "2d21aa9e3a6dea962fc7eb073597980ab37c4bdebf7cb8ed341492462b35293a",
+  "currentProgressPath": "",
+  "resumeCheckpointPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-008",
+  "resumeEntriesProcessed": 0,
+  "resumeSteps": 0,
+  "currentShardDatasetDir": "/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-009",
+  "currentShardImageCount": 6661,
+  "currentShardBytes": 2001043786,
+  "currentEncoderOutput": "",
+  "embeddingRecordCount": 9,
+  "currentRecordsPath": "/Users/mac/.cache/salt-visual-taxonomy-training/work/all-embeddings.jsonl",
+  "modelPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model.json",
+  "modelSha256": "0a8fe03d657a856f17dfe9ad62983b91cbcb478bc41585b62935a2ad42862664",
+  "completedAt": "2026-08-31T22:16:32.913Z"
+}

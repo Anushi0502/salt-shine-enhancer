@@ -3,7 +3,11 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { CATALOG_COLLECTION_PLAN } from "../src/lib/catalog-collection-plan.js";
+import {
+  CATALOG_COLLECTION_PLAN,
+  CATALOG_COLLECTION_PLAN_VERSION,
+} from "../src/lib/catalog-collection-plan.js";
+import { manifestPendingCreationHandles } from "../src/lib/catalog-collection-pending.js";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 
@@ -11,13 +15,14 @@ const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
 const collectionsPath = resolve(dataDir, "collections.json");
 const collectionProductsPath = resolve(dataDir, "collection-products.json");
+const collectionReleaseManifestPath = resolve(rootDir, "output", "catalog-collection-release-manifest.json");
 const dryRun = process.argv.includes("--dry-run");
 const pageSize = Math.max(1, Math.min(250, Number(process.env.SALT_COLLECTION_MEMBERSHIP_PAGE_SIZE || 250)));
 const readConcurrency = Math.max(
   1,
   Math.min(6, Number(process.env.SALT_COLLECTION_MEMBERSHIP_READ_CONCURRENCY || 4) || 4),
 );
-const allowedPendingCreationHandles = new Set(
+const configuredPendingCreationHandles = new Set(
   String(process.env.SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS || "")
     .split(",")
     .map((handle) => handle.trim().toLowerCase())
@@ -60,6 +65,15 @@ function isShopifyAuthFailure(error) {
   return /Admin GraphQL HTTP (401|403)|invalid api key|access token|unauthori[sz]ed|access denied|No stored app authentication found|shopify store auth/i.test(
     String(error?.message || error),
   );
+}
+
+async function readManifestPendingCreationHandles() {
+  try {
+    const manifest = JSON.parse(await readFile(collectionReleaseManifestPath, "utf8"));
+    return manifestPendingCreationHandles(manifest, CATALOG_COLLECTION_PLAN_VERSION);
+  } catch {
+    return new Set();
+  }
 }
 
 function productIdsForControlledTags(products, tags, catalogProductIds) {
@@ -140,6 +154,15 @@ async function main() {
       .map((product) => Number(product?.id))
       .filter((id) => Number.isFinite(id) && id > 0),
   );
+  const manifestPendingCreationHandles = await readManifestPendingCreationHandles();
+  const pendingCreationSources = new Map(
+    [...manifestPendingCreationHandles].map((handle) => [handle, "version-matched-create-manifest"]),
+  );
+  for (const handle of configuredPendingCreationHandles) {
+    if (!pendingCreationSources.has(handle)) {
+      pendingCreationSources.set(handle, "explicit-approved-environment-exception");
+    }
+  }
   const nextCollections = Array.isArray(collectionsPayload.collections)
     ? collectionsPayload.collections.map((collection) => ({ ...collection }))
     : [];
@@ -159,8 +182,9 @@ async function main() {
       try {
         live = await fetchLiveCollectionProducts(entry.handle);
       } catch (error) {
+        const pendingCreationSource = pendingCreationSources.get(entry.handle);
         const isExpectedPendingCreation =
-          allowedPendingCreationHandles.has(entry.handle) &&
+          Boolean(pendingCreationSource) &&
           /Live Shopify collection not found for canonical handle/i.test(String(error?.message || error));
         if (isExpectedPendingCreation) {
           const taggedProductIds = productIdsForControlledTags(
@@ -172,9 +196,9 @@ async function main() {
             title: entry.title,
             productIds: taggedProductIds,
           };
-          source = "pending-creation-controlled-tag-fallback";
+          source = `pending-creation-controlled-tag-fallback:${pendingCreationSource}`;
           process.stdout.write(
-            `Canonical collection "${entry.handle}" is not live yet; retaining controlled-tag membership until the approved collection reconciliation creates it.\n`,
+            `Canonical collection "${entry.handle}" is not live yet; retaining controlled-tag membership until the approved collection reconciliation creates it (${pendingCreationSource}).\n`,
           );
         } else {
           if (!isShopifyAuthFailure(error)) throw error;

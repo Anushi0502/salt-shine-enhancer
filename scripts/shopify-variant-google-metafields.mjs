@@ -311,7 +311,17 @@ async function readCatalogCheckpoint(filePath) {
 }
 
 async function fetchAllVariants(checkpointPath, limit = 0) {
-  const checkpoint = await readCatalogCheckpoint(checkpointPath);
+  const forceLiveRefresh = process.env.SALT_VARIANT_GOOGLE_FORCE_LIVE_REFRESH === "1";
+  if (forceLiveRefresh) {
+    // Variant SEO depends on the live product title and price. A completed
+    // checkpoint from an earlier release can otherwise write stale profiles
+    // and fail the subsequent live readback gate.
+    await rm(checkpointPath, { force: true });
+    process.stdout.write("Forcing a fresh live variant catalog for variant-aware SEO\n");
+  }
+  const checkpoint = forceLiveRefresh
+    ? { variants: [], after: null, page: 0, complete: false }
+    : await readCatalogCheckpoint(checkpointPath);
   const variants = [...checkpoint.variants];
   let after = checkpoint.after;
   let page = checkpoint.page;

@@ -5,12 +5,55 @@ import {
   buildVariantCostPriceAlignmentPlan,
   costBasedTargetPrice,
   costProtectedMinimumPrice,
+  marketPriceMarginTarget,
 } from "@/lib/shopify-variant-cost-pricing.js";
 
 describe("variant cost-price alignment", () => {
   it("uses the approved cost band, overhead, and .99 rounding", () => {
     expect(costBasedTargetPrice("10.00")).toBe("49.99");
     expect(costBasedTargetPrice("15.00", { clothing: true })).toBe("54.99");
+  });
+
+  it("adds a non-compounding 20 percent market-anchor markup", () => {
+    expect(marketPriceMarginTarget("39.99", { marginPercent: 0.2 })).toBe("47.99");
+    expect(marketPriceMarginTarget("39.99", { marginPercent: 0.2, priceFloor: 50 })).toBe("50.99");
+  });
+
+  it("combines market margin with cost protection without flattening variants", () => {
+    const marketAnchors = new Map([
+      ["one", { price: "39.99", capturedAt: "2026-09-08T00:00:00Z" }],
+      ["two", { price: "79.99", capturedAt: "2026-09-08T00:00:00Z" }],
+    ]);
+    const plan = buildCostBasedVariantPricePlan([
+      {
+        handle: "market-margin-variants",
+        variants: [
+          { id: "one", title: "1pc", cost_per_item: "10.00", price: "39.99" },
+          { id: "two", title: "2pc", cost_per_item: "10.00", price: "79.99" },
+        ],
+      },
+    ], { marketMarginPercent: 0.2, marketAnchors });
+
+    expect(plan.blockingHeld).toHaveLength(0);
+    expect(plan.byHandle.get("market-margin-variants")).toEqual([
+      expect.objectContaining({ variantId: "one", price: "49.99", marketAnchorPrice: "39.99" }),
+      expect.objectContaining({ variantId: "two", price: "95.99", marketAnchorPrice: "79.99" }),
+    ]);
+  });
+
+  it("does not compound the market-anchor uplift on a later run", () => {
+    const plan = buildCostBasedVariantPricePlan([
+      {
+        handle: "market-margin-idempotent",
+        variants: [{ id: "one", title: "Default", cost_per_item: "10.00", price: "49.99" }],
+      },
+    ], {
+      marketMarginPercent: 0.2,
+      marketAnchors: new Map([["one", { price: "39.99" }]]),
+    });
+
+    expect(plan.summary.variantsToUpdate).toBe(0);
+    expect(plan.byHandle.size).toBe(0);
   });
 
   it("prices every variant independently and validates compare-at separately", () => {

@@ -10,11 +10,11 @@ import {
 
 describe("catalog collection plan", () => {
   it("keeps every canonical collection on a unique controlled tag", () => {
-    expect(CATALOG_COLLECTION_PLAN).toHaveLength(31);
+    expect(CATALOG_COLLECTION_PLAN).toHaveLength(44);
     expect(new Set(CATALOG_COLLECTION_PLAN.map((entry) => entry.handle)).size).toBe(CATALOG_COLLECTION_PLAN.length);
     expect(new Set(CATALOG_COLLECTION_RULE_TAGS).size).toBe(CATALOG_COLLECTION_RULE_TAGS.length);
     expect(CATALOG_COLLECTION_PLAN.every((entry) => !entry.ruleTag.includes(":"))).toBe(true);
-    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-06.1-collections.4");
+    expect(CATALOG_COLLECTION_PLAN_VERSION).toBe("2026-08-06.1-collections.8");
   });
 
   it("matches only the intended controlled tag source", () => {
@@ -53,5 +53,33 @@ describe("catalog collection plan", () => {
       title: "Wigs",
       ruleTag: "wigs",
     });
+  });
+
+  it("registers the four governed footwear collections", () => {
+    expect(CATALOG_COLLECTION_PLAN).toEqual(expect.arrayContaining([
+      expect.objectContaining({ handle: "mens-footwear", title: "Men's Footwear", ruleTag: "mens-footwear" }),
+      expect.objectContaining({ handle: "formal-footwear", title: "Formal Footwear", ruleTag: "formal-footwear" }),
+      expect.objectContaining({ handle: "womens-footwear", title: "Women's Footwear", ruleTag: "womens-footwear" }),
+      expect.objectContaining({ handle: "kids-footwear", title: "Kids Footwear", ruleTag: "kids-footwear" }),
+    ]));
+  });
+
+  it("registers the common footwear and jewelry collections", () => {
+    expect(CATALOG_COLLECTION_PLAN).toEqual(expect.arrayContaining([
+      expect.objectContaining({ handle: "footwear", title: "Footwear", ruleTag: "footwear" }),
+      expect.objectContaining({ handle: "rings", title: "Rings", ruleTag: "rings" }),
+      expect.objectContaining({ handle: "necklaces", title: "Necklaces", ruleTag: "necklaces" }),
+      expect.objectContaining({ handle: "bracelets", title: "Bracelets", ruleTag: "bracelets" }),
+      expect.objectContaining({ handle: "earrings", title: "Earrings", ruleTag: "earrings" }),
+      expect.objectContaining({ handle: "everyday-jewelry", title: "Everyday Jewelry", ruleTag: "everyday-jewelry" }),
+    ]));
+  });
+
+  it("registers the school shopping collections", () => {
+    expect(CATALOG_COLLECTION_PLAN).toEqual(expect.arrayContaining([
+      expect.objectContaining({ handle: "school-bags", title: "School Bags", ruleTag: "school-bags" }),
+      expect.objectContaining({ handle: "lunch-boxes", title: "Lunch Boxes", ruleTag: "lunch-boxes" }),
+      expect.objectContaining({ handle: "water-bottles", title: "Water Bottles", ruleTag: "water-bottles" }),
+    ]));
   });
 });

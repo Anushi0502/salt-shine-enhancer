@@ -88,6 +88,24 @@ describe("Shopify product taxonomy classifier", () => {
     });
   });
 
+  it("repairs category-fallback products with deterministic broad categories", () => {
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "replacement-shower-filter-for-held-showerhead-high-output-shower-water-filter",
+      title: "Replacement Shower Filter For Held Showerhead High Output Shower Water Filter",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/hg");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "miniature-household-multifunctional-sewing-machine",
+      title: "Miniature Household Multifunctional Sewing Machine",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/ae");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "portable-blender-with-usb-rechargeable-mini-kitchen-fruit-juice-mixer",
+      title: "Portable Blender With USB Rechargeable Mini Kitchen Fruit Juice Mixer",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/hg");
+  });
+
   it.each([
     ["artificial-potted-bonsai-trees-flowers-for-home-garden-decor", "hg"],
     ["new-halloween-plush-spider-decoration", "tg-5"],

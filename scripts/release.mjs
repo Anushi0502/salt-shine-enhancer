@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, copyFile, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
@@ -73,6 +74,15 @@ for (const [key, value] of Object.entries({
   SALT_VARIANT_COST_PRICING_POLICY: "cost-band-v2",
   SALT_VARIANT_COST_POLICY_ID: "cost-band-v2-2026-08-24",
   SALT_VARIANT_COST_OVERHEAD: "16",
+  SALT_VARIANT_COST_DRIFT_RECOVERY_PASSES: "3",
+  SALT_CATALOG_TAG_READBACK_RETRY_ATTEMPTS: "3",
+  SALT_CATALOG_TAG_READBACK_RETRY_DELAY_MS: "5000",
+  SALT_CATALOG_TAG_READBACK_RETRY_CONCURRENCY: "4",
+  SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVED: "1",
+  SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVAL_ID: "salt-market-price-margin-2026-09-08-approved",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_PERCENT: "0.20",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_MODE: "markup",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_POLICY_ID: "live-market-anchor-plus-20pct-2026-09-08",
   SALT_DELETE_MISSING_COST_PRODUCTS_APPROVED: "1",
   SALT_DELETE_MISSING_COST_PRODUCTS_APPROVAL_ID: "salt-missing-cost-deletion-2026-08-27-approved",
 })) {
@@ -305,6 +315,80 @@ export function hasCatalogBoundaryDrift(runState) {
   return /catalog integrity scope drifted|manifest has\s+\d+\s+active products\s+and\s+\d+\s+classifications;\s*shopify has\s+\d+/i.test(
     failureText,
   );
+}
+
+export function productBoundaryFromPayload(payload, recordsKey = "products") {
+  const records = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.[recordsKey])
+      ? payload[recordsKey]
+      : [];
+  const handles = records
+    .map((record) => String(record?.handle || "").trim().toLowerCase())
+    .filter(Boolean)
+    .sort();
+  if (!handles.length) return null;
+  return {
+    count: handles.length,
+    hash: createHash("sha256").update(handles.join("\n")).digest("hex"),
+  };
+}
+
+async function readProductBoundary(filePath, recordsKey = "products") {
+  try {
+    const payload = JSON.parse(await readFileWithRetry(filePath, "utf8"));
+    return productBoundaryFromPayload(payload, recordsKey);
+  } catch {
+    return null;
+  }
+}
+
+async function detectResumeCatalogBoundaryMismatch(resumeFromStep, profile) {
+  if (profile === "products" || resumeFromStep <= 10) return { drift: false, mismatches: [] };
+
+  const sourcePath = process.env.SALT_RELEASE_CATALOG_SOURCE_PATH ||
+    resolve(rootDir, "output", "release-catalog-source.json");
+  const source = await readProductBoundary(sourcePath);
+  if (!source) {
+    return {
+      drift: true,
+      mismatches: [`missing current catalog source (${sourcePath})`],
+    };
+  }
+
+  const dependencies = [
+    {
+      label: "shared release snapshot",
+      path: sharedCatalogSnapshotPath,
+      recordsKey: "products",
+    },
+    {
+      label: "taxonomy audit",
+      path: resolve(rootDir, "output", "catalog-taxonomy-audit.json"),
+      recordsKey: "products",
+    },
+    {
+      label: "catalog integrity manifest",
+      path: resolve(rootDir, "output", "shopify-catalog-integrity-manifest.json"),
+      recordsKey: "classifications",
+    },
+  ];
+  const boundaries = await Promise.all(
+    dependencies.map(async (dependency) => ({
+      ...dependency,
+      boundary: await readProductBoundary(dependency.path, dependency.recordsKey),
+    })),
+  );
+  const mismatches = boundaries
+    .filter((dependency) => !dependency.boundary ||
+      dependency.boundary.count !== source.count ||
+      dependency.boundary.hash !== source.hash)
+    .map((dependency) => {
+      if (!dependency.boundary) return `${dependency.label} missing or unreadable`;
+      return `${dependency.label} ${dependency.boundary.count} products does not match source ${source.count}`;
+    });
+
+  return { drift: mismatches.length > 0, source, mismatches };
 }
 
 export function shouldForceRestartFromStepOne(runState) {
@@ -1181,8 +1265,8 @@ async function main() {
       // Older watcher versions persisted `interrupted` directly. Treat it as
       // resumable just like the current `failed` representation so a manual
       // resume can recover the checkpoint instead of overwriting it.
-      if (!previousRunState || !["failed", "running", "interrupted"].includes(previousRunState.status)) {
-        throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed, running, or interrupted`);
+      if (!previousRunState || !["failed", "running", "interrupted", "paused"].includes(previousRunState.status)) {
+        throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed, running, interrupted, or paused`);
       }
       if (shouldRefreshSeoLiveCatalogOnResume(previousRunState)) {
         // A failed SEO apply may have written some products after the reusable
@@ -1405,6 +1489,17 @@ async function main() {
         `Explicit resume marker detected; resuming the catalog at step ${explicitResumeStep}.\n`,
       );
     }
+    if (args.resume && args.profile !== "products") {
+      const boundaryCheck = await detectResumeCatalogBoundaryMismatch(resumeFromStep, args.profile);
+      if (boundaryCheck.drift) {
+        resumeFromStep = 1;
+        process.env.SALT_RELEASE_CATALOG_SNAPSHOT_REFRESH = "1";
+        process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH = "1";
+        process.stdout.write(
+          `Resume dependency boundary drift detected (${boundaryCheck.mismatches.join("; ")}); restarting the full-catalog generation from step 1.\n`,
+        );
+      }
+    }
     if (resumeFromStep > steps.length) {
       throw new Error(`Cannot resume from step ${resumeFromStep}; release has ${steps.length} steps`);
     }
@@ -1421,6 +1516,12 @@ async function main() {
         step.label.startsWith("Refresh live merchandising data after final catalog writes:")
       ) {
         process.env.SALT_SHOPIFY_FORCE_LIVE_PRODUCT_ENRICHMENT = "1";
+      }
+      if (step.label === "Reconcile variant-aware SEO profiles after final catalog writes") {
+        // This stage must derive SEO from the same current live titles and
+        // prices that the following verifier reads, never from an older
+        // completed variant catalog checkpoint.
+        process.env.SALT_VARIANT_GOOGLE_FORCE_LIVE_REFRESH = "1";
       }
       if (step.label === "Final live-readback gate against the applied catalog generation") {
         // Make direct resume at the final gate deterministic too; skipped

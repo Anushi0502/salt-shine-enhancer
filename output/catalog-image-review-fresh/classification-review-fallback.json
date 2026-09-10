@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T15:43:21.246Z",
+  "generatedAt": "2026-09-10T11:16:24.604Z",
   "policy": "Every ambiguous product receives supervised evidence or an explicit non-semantic fallback; no pending review items remain.",
   "products": [
     {
@@ -1323,6 +1323,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8052555743331",
+      "handle": "mens-handbags-briefcase-canvas-shoulder-bag-man-for-documents-large-capacity-tote-laptop-bag-crossbody-travel-bags-vintage-k004",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8052555841635",
       "handle": "outdoor-men-waist-pack-bum-bag-pouch-waterproof-waist-bag-sport-hunting-belt-nylon-mobile-phone-bags-travel-tools-mens-bags",
       "title": "",
@@ -1413,6 +1424,17 @@
     {
       "productId": "gid://shopify/Product/8053911421027",
       "handle": "new-arrivel-men-travel-bags-large-capacity-women-luggage-travel-duffle-bags-nylon-traveling-hike-waterproof-bags-bolso",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8053917319267",
+      "handle": "60l-90l-travel-duffle-handbags-large-traveling-bag-for-women-men-gym-fitness-luggage-outdoor-bags-sack-trip-shoulder-pack-bolsos",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -2491,17 +2513,6 @@
     {
       "productId": "gid://shopify/Product/8094203117667",
       "handle": "direwolf-mens-t-shirt-game-of-nights-watch-snow-thrones-jon-tyrion-top-s-5xl",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8094210162787",
-      "handle": "womens-t-shirt-i-love-90s-the-mens-clothes-music-graphic-tees-men-clothing-birthday-gift-funny-gifts-vintageshirts-tees",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6955,17 +6966,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8133098569827",
-      "handle": "petkit-smart-cat-toilet-special-accessories-max2-automatic-cat-bedpans-parts-washable-easy-to-clean-magnetic-tilting-board-set",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8133098668131",
       "handle": "2-in-1-large-pet-feeder-water-dispenser-dry-wet-separation-durable-plastic-transparent-no-battery-for-cats-dogs-travel",
       "title": "",
@@ -7032,8 +7032,30 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8133101420643",
-      "handle": "pet-bag-accessories-anticlinal-belt-pet-bag-articles-for-going-out",
+      "productId": "gid://shopify/Product/8133190090851",
+      "handle": "waterproof-eyebrow-pen-microblading-eyebrow-pencil-with-4-split-head-natural-looking-brows-makeup-5-colors",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133190418531",
+      "handle": "soft-yarn-makeup-holding-foundation-liquid-foundation-matte-concealer-waterproof-moisturizing-air-cushion-female-base-makeup",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133190713443",
+      "handle": "womens-makeup-bag-black-embroidery-large-capacity-lipstick-mobile-phone-storage-bag-commuter-clutch-bag-travel-toiletry-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -7067,6 +7089,710 @@
     {
       "productId": "gid://shopify/Product/8133191663715",
       "handle": "3pcs-makeup-brush-set-blade-eyeliner-brush-fine-oblique-head-eyebrow-brush-outline-eyeliner-ultra-thin-eye-shadow-brush-makeup",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659033699",
+      "handle": "replacement-shower-filter-for-held-showerhead-high-output-shower-water-filter-to-remove-chlorine-fluoride-and-hard-water",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659132003",
+      "handle": "miniature-household-multifunctional-sewing-machine",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659230307",
+      "handle": "3d-printing-gravity-cub-jumping-small-radish-knife-mini-model-student-prize-pendant-decompression-toy-for-children-gift",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659263075",
+      "handle": "new-portable-pet-dog-water-bottle-soft-silicone-leaf-design-for-dog-pets-outdoor-travel-drinking-bowls-water-dispenser",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659394147",
+      "handle": "portable-blender-with-usb-rechargeable-mini-kitchen-fruit-juice-mixer-home-simple-portable-electric-mini-juicer",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659459683",
+      "handle": "portable-high-pressure-washing-water-gun-car-wash-nozzle-adjustable-nipple-type-direct-spray-home-garden-shower-watering-hose",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8133659623523",
+      "handle": "pet-dog-cat-ice-silk-cold-nest-pad-for-cooling-in-summer",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135034208355",
+      "handle": "printed-sports-and-leisure-mesh-running-shoes-for-men-and-women",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135072350307",
+      "handle": "outdoor-sports-running-shoes-table-tennis-shoes-badminton-shoes-couple-size-shoes",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135104692323",
+      "handle": "women-flats-round-toe-shallow-mouth-mary-jane-ankle-strap-buckle",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135106953315",
+      "handle": "clothing-pilling-trimmer-digital-pilling-remover-household-pilling-remover-shaving-machine-depilation-device-factory-cross-border",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135106986083",
+      "handle": "spring-and-autumn-new-mens-cowboy-siamese-stylish-multi-pocket-loose-solid-color",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135107706979",
+      "handle": "anti-lost-card-dog-identity-tag-dog-tag-metal-lettering-cat-tag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135108231267",
+      "handle": "work-badge-brooch-character-display-luminous-driving-license",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135149584483",
+      "handle": "charging-enabled-mini-carry-on-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135149748323",
+      "handle": "new-lightweight-suitcase-for-boarding-travel-luggage-womens-quiet-childrens-small-password-suitcase-mens-16-inch",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135150141539",
+      "handle": "four-wheel-rolling-suitcase-oxford-fabric-trolley-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135150436451",
+      "handle": "alloy-trolley-case-luggage-business-travel-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135150567523",
+      "handle": "aluminum-frame-carry-on-suitcase-drop-resistant-trolley-case-travel-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135150895203",
+      "handle": "pp-material-trolley-case-mute-universal-wheel-20-inch",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135150927971",
+      "handle": "front-open-luggage-20-inch-boarding-drop-resistant-trolley-case-extended-luggage-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135151157347",
+      "handle": "mini-boarding-trolley-case-small-boarding",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135151190115",
+      "handle": "solid-color-elastic-luggage-protection-cover",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135151288419",
+      "handle": "luggage-mens-and-womens-zipper-abs-material",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135152205923",
+      "handle": "aluminum-frame-luggage-solid-extra-thick-and-durable-trolley-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135152304227",
+      "handle": "luggage-bags-for-women-handbag-oxford-mens-fitness-gym-shoulder-bag-waterproof-sports-travel-backpack-with-shoes-compartment",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135154761827",
+      "handle": "round-toe-fishnet-hollow-out-ballet-flats-fashionable-and-flat",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135158005859",
+      "handle": "womens-stylish-ballet-flats-with-a-single-strap",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135165935715",
+      "handle": "large-capacity-canvas-tote",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135166132323",
+      "handle": "suitcase-trolley-for-girls-and-boys",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135166361699",
+      "handle": "vintage-crazy-horse-leather-mens-travel-large-capacity-tote",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135166591075",
+      "handle": "foldable-waterproof-checked-luggage-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135168655459",
+      "handle": "business-luggage-mens-oxford-cloth-luggage-travel-boarding-womens-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135171997795",
+      "handle": "womens-large-capacity-striped-aluminum-frame-rolling-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135172489315",
+      "handle": "16-inch-mini-cartoon-cute-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135174258787",
+      "handle": "front-half-opening-multifunctional-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135175700579",
+      "handle": "folding-rod-case-hole-hole-universal-wheel-rod-portable-storage-travel",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135176028259",
+      "handle": "travel-handbag-backpack-fitness-bag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135176814691",
+      "handle": "mens-and-womens-trolley-case-zipper-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135177109603",
+      "handle": "luggage-large-capacity-student-trolley-case-thickened-strong-durable-with-cornerite-password-suitcase",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135177240675",
+      "handle": "luggage-childrens-riding-and-boarding-machine-trolley-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135177961571",
+      "handle": "universal-wheel-portable-pet-travel-carrier",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135177994339",
+      "handle": "new-lightweight-suitcase-for-boarding-travel-luggage-womens-quiet-childrens-small-password-suitcase-mens-16-inch-1",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178059875",
+      "handle": "new-lightweight-suitcase-for-boarding-travel-luggage-womens-quiet-childrens-small-password-suitcase-mens-16-inch-2",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178158179",
+      "handle": "folding-korean-duffle-bag-outdoor-mens-bag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178518627",
+      "handle": "luggage-womens-luggage-internet-mens-password-trolley-case-genuine-leather",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178551395",
+      "handle": "aluminum-frame-of-suitcase-hard-rim-universal-wheel-trolley-box",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178584163",
+      "handle": "portable-travel-drop-resistant-aluminium-frame-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178715235",
+      "handle": "pc-travel-universal-wheel-multifunctional-large-capacity-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135178780771",
+      "handle": "trolley-password-universal-wheel-aluminum-frame-large-capacity-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135179370595",
+      "handle": "pu-leather-business-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135179927651",
+      "handle": "front-open-cover-multifunctional-trolley-case",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135179960419",
+      "handle": "new-full-opening-multi-functional-luggage-18-inch",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135180681315",
+      "handle": "carbon-fiber-suitcase-with-aluminum-frame-large-capacity-business-rolling-luggage",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135183040611",
+      "handle": "cute-candy-colored-rolling-luggage-for-kids",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135183958115",
+      "handle": "plus-size-air-cushioned-slip-on-flats",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135184744547",
+      "handle": "new-style-womens-herringbone-low-top-flats",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135644315747",
+      "handle": "portable-rechargeable-juice-blender-compact-handheld-electric-smoothie-maker-for-travel-office-home",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135654735971",
+      "handle": "autumn-and-winter-mens-slip-on-breathable-versatile-business",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135669940323",
+      "handle": "rippled-leather-leu-oxfords",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135675150435",
+      "handle": "mens-breathable-casual-business-leather-shoestrendy-and-versatile",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135676100707",
+      "handle": "low-cut-fashion-trendy-british-style-pumps",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135676756067",
+      "handle": "mens-business-suits-and-casual-leather-shoes",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135714013283",
+      "handle": "student-running-sports-white-daddy-shoes-women",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."

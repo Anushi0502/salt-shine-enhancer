@@ -3,13 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   assertVisualTaxonomyModel,
   buildVisualTaxonomyLabelIndex,
+  findAppendOnlyTaxonomyExtension,
   visualTaxonomyModelCompatibility,
   VISUAL_TAXONOMY_MIN_DATASET_BYTES,
   VISUAL_TAXONOMY_MODEL_BACKEND,
   VISUAL_TAXONOMY_MODEL_SCHEMA_VERSION,
   VISUAL_TAXONOMY_MODEL_TYPE,
 } from "../src/lib/visual-taxonomy-model.js";
-import { CATALOG_TAXONOMY_VERSION } from "../src/lib/catalog-taxonomy.js";
+import { CATALOG_TAXONOMY_VERSION, getCatalogTaxonomyDefinitions } from "../src/lib/catalog-taxonomy.js";
+import { taxonomyTrainingFingerprint } from "../src/lib/catalog-knowledge-model.js";
 
 function validModel(overrides = {}) {
   return {
@@ -67,6 +69,34 @@ describe("visual taxonomy model contract", () => {
   it("accepts only checked-in taxonomy labels", () => {
     expect(buildVisualTaxonomyLabelIndex(["phone-case", "airpods-earbuds-cases"])).toHaveLength(2);
     expect(() => buildVisualTaxonomyLabelIndex(["phone-case", "not-a-rule"])).toThrow(/checked-in taxonomy rule/);
+  });
+
+  it("detects a unique exact append-only taxonomy extension", () => {
+    const definitions = getCatalogTaxonomyDefinitions();
+    const sourceFingerprint = taxonomyTrainingFingerprint(definitions.filter((definition) => definition.id !== "cat-toilet-supplies"));
+    expect(findAppendOnlyTaxonomyExtension(sourceFingerprint, definitions)).toEqual(["cat-toilet-supplies"]);
+  });
+
+  it("accepts an explicitly verified append-only extension without using its label for vision", async () => {
+    const definitions = getCatalogTaxonomyDefinitions();
+    const sourceFingerprint = taxonomyTrainingFingerprint(definitions.filter((definition) => definition.id !== "cat-toilet-supplies"));
+    await expect(assertVisualTaxonomyModel(validModel({
+      taxonomy: {
+        version: CATALOG_TAXONOMY_VERSION,
+        fingerprint: sourceFingerprint,
+        labels: [{ index: 0, ruleId: "phone-case" }],
+        compatibility: {
+          mode: "append-only",
+          sourceFingerprint,
+          currentFingerprint: taxonomyTrainingFingerprint(definitions),
+          addedRuleIds: ["cat-toilet-supplies"],
+          removedRuleIds: [],
+          changedRuleIds: [],
+        },
+      },
+    }), {
+      taxonomyFingerprint: taxonomyTrainingFingerprint(definitions),
+    })).resolves.toBeDefined();
   });
 
   it("rejects a model that did not purge its raw training corpus", async () => {
