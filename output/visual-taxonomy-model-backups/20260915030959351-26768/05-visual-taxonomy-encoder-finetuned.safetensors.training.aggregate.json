@@ -1,0 +1,58 @@
+{
+  "kind": "salt-visual-fine-tuning-report",
+  "fineTuned": true,
+  "device": "metal",
+  "labelPolicy": "deterministic-candidate-only",
+  "steps": 20870,
+  "datasetManifestSha256": "2d21aa9e3a6dea962fc7eb073597980ab37c4bdebf7cb8ed341492462b35293a",
+  "baseCheckpointSha256": "4b80cf4164748c2eaae1cf59f32dfae47676d65deaa8760652e4418dc42b4ec3",
+  "outputCheckpointSha256": "9f085f80916ee92733096e4f9af2e81069103be27da48e087cdf9ca1f9f8e942",
+  "shardCount": 9,
+  "shards": [
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-001.training.json",
+      "reportSha256": "fc18ac46cb8bb62e0dd905f77258773e319b9cb0834db1c185c130533d990671",
+      "steps": 8884
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-002.training.json",
+      "reportSha256": "6fd51cdec33c8d44bc33e416e348508c373effb9f526f988b50c73ce07a1f577",
+      "steps": 4205
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-003.training.json",
+      "reportSha256": "9db98f65ef9ab2e7dba5f2e44938bc704270241b295e6c1866e9b64e32acb65e",
+      "steps": 1203
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-004.training.json",
+      "reportSha256": "801aeec93d98c0fa7e5434d2686db531f12cd20fa4337b43b019a6eeea100ea0",
+      "steps": 1242
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-005.training.json",
+      "reportSha256": "758aa49573745cd775a4b27d957ab23ac171d9d56d42d33c00909937d0421950",
+      "steps": 1223
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-006.training.json",
+      "reportSha256": "f890adcfe7ff23225a35dce2a9de529cc89760c3b8d16855815ed42dbb0c122b",
+      "steps": 1229
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-007.training.json",
+      "reportSha256": "662ad51e97e1d97f32cac5fbcbe8a89f769570bea0999900a7a87bb6ef27eabf",
+      "steps": 1243
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.shard-008.training.json",
+      "reportSha256": "db080604f0d3721a0f196451bf355f5cf7097042fbdeda23ba1b707f261818eb",
+      "steps": 1224
+    },
+    {
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.training.json",
+      "reportSha256": "bbb85c57f4e70a354bc208c2d2b3aef9ab82b2e00c552e62885b8c754e0ee867",
+      "steps": 417
+    }
+  ]
+}
