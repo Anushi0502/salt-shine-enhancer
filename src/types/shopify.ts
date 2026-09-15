@@ -136,6 +136,7 @@ export interface ShopifyProduct {
   images: ShopifyImage[];
   image?: ShopifyImage | null;
   knowledge?: ProductKnowledgeRecord | null;
+  gptSeoTypeAttributes?: unknown;
   total_reviews?: number;
   average_rating?: number;
   customData?: ShopifyProductCustomData | null;
