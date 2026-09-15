@@ -10,6 +10,7 @@ import {
 } from "@/lib/site-navigation";
 import { useShop } from "@/lib/shopify-data";
 import { getRuntimeContext } from "@/lib/theme-assets";
+import { getNewsletterTags } from "@/lib/newsletter-attribution";
 
 const footerLinkClass = "transition-colors hover:text-white";
 
@@ -190,6 +191,7 @@ const MainFooter = () => {
   const { data: shopPayload, isFetching, dataUpdatedAt } = useShop();
   const shopName = shopPayload?.shop?.name || "SALT";
   const [emailValue, setEmailValue] = useState("");
+  const newsletterTags = getNewsletterTags();
 
   const syncSecondsAgo = dataUpdatedAt ? Math.floor((Date.now() - dataUpdatedAt) / 1000) : null;
   const isLiveStale = syncSecondsAgo !== null && syncSecondsAgo > 120;
@@ -330,10 +332,21 @@ const MainFooter = () => {
                 <p className="text-[0.64rem] font-bold uppercase tracking-[0.22em] text-white/65">
                   Newsletter
                 </p>
-                <form action="/contact#contact_form" method="post" acceptCharset="UTF-8" className="mt-2 flex gap-2">
+                <p id="footer-newsletter-consent" className="mt-1 text-xs leading-5 text-white/58">
+                  Get SALT product updates. Unsubscribe anytime.
+                </p>
+                <form
+                  action="/contact#contact_form"
+                  method="post"
+                  acceptCharset="UTF-8"
+                  data-salt-newsletter-form="footer"
+                  data-salt-newsletter-tags={newsletterTags}
+                  aria-describedby="footer-newsletter-consent"
+                  className="mt-2 flex gap-2"
+                >
                   <input type="hidden" name="form_type" value="customer" />
                   <input type="hidden" name="utf8" value="✓" />
-                  <input type="hidden" name="contact[tags]" value="newsletter" />
+                  <input type="hidden" name="contact[tags]" value={newsletterTags} />
                     <input
                       type="email"
                       name="contact[email]"

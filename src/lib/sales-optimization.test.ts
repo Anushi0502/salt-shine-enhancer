@@ -291,7 +291,10 @@ describe("sales optimization", () => {
     product.variants[0].sku = "14:29#white;200007763:201336100";
 
     const structuredData = buildProductStructuredData(product, "https://example.com", null, "USD", product.variants[0]);
-    const offers = structuredData.offers as Record<string, any>;
+    const offers = structuredData.offers as {
+      shippingDetails: { shippingDestination: { addressCountry: string } };
+      hasMerchantReturnPolicy: { merchantReturnDays: number };
+    };
 
     expect(structuredData.sku).toBe("salt-43");
     expect(offers.shippingDetails.shippingDestination.addressCountry).toBe("US");

@@ -20,7 +20,7 @@ const supplementalManifestPath = resolve(process.env.SALT_OPEN_IMAGES_MANIFEST_O
 const supplementalReportPath = resolve(process.env.SALT_OPEN_IMAGES_MANIFEST_REPORT || resolve(supplementalRoot, "visual-taxonomy-open-images-candidate-report.json"));
 const supplementalHydratedManifestPath = resolve(process.env.SALT_OPEN_IMAGES_HYDRATED_MANIFEST_OUTPUT || resolve(supplementalRoot, "visual-taxonomy-open-images-candidate-hydrated-manifest.jsonl"));
 const supplementalHydrationStatePath = resolve(process.env.SALT_OPEN_IMAGES_HYDRATION_STATE || resolve(supplementalRoot, "visual-taxonomy-open-images-candidate-hydration-state.json"));
-const combinedHydratedManifestPath = resolve(supplementalRoot, "visual-taxonomy-combined-candidate-hydrated-manifest-50gb.jsonl");
+const combinedHydratedManifestPath = resolve(supplementalRoot, "visual-taxonomy-combined-candidate-hydrated-manifest-50gb-buffered.jsonl");
 const logPath = resolve(outputDir, "visual-taxonomy-candidate-training-supervisor.log");
 const candidateOutputDir = resolve(outputDir, "visual-taxonomy-candidate");
 const candidatePlanPath = resolve(candidateOutputDir, "visual-taxonomy-shard-plan.json");
@@ -45,6 +45,13 @@ const candidateHealthPath = resolve(
     resolve(homedir(), ".cache", "salt-visual-taxonomy-candidates", "siglip-large-patch16-384.health.json"),
 );
 const targetBytes = 50_000_000_000;
+// Keep a small verified reserve so a deleted CDN object can be quarantined
+// without dropping the final deduplicated corpus below the 50 GB gate.
+const combinedReserveBytes = Math.max(
+  10_000_000,
+  Number(process.env.SALT_VISUAL_CANDIDATE_COMBINED_RESERVE_BYTES || 250_000_000),
+);
+const combinedTargetBytes = targetBytes + combinedReserveBytes;
 // Hydrate past the training gate so cross-source duplicate images do not leave the
 // exact deduplicated corpus below 50 GB.
 const hydrationTargetBytes = Math.max(
@@ -205,15 +212,15 @@ async function buildCombinedHydratedManifest(catalogSummary, supplementalSummary
       await writeEntry(entry);
       totalBytes += bytes;
       records += 1;
-      if (totalBytes >= targetBytes) break outer;
+      if (totalBytes >= combinedTargetBytes) break outer;
     }
   }
 
-  if (totalBytes < targetBytes) {
+  if (totalBytes < combinedTargetBytes) {
     throw new Error(
       `Combined visual hydration contains ${totalBytes} bytes; `
       + `catalog=${catalogSummary.totalBytes}, supplemental=${supplementalSummary.totalBytes}, `
-      + `and ${targetBytes} bytes are required before Metal training can start.`,
+      + `and ${combinedTargetBytes} bytes are required before Metal training can start.`,
     );
   }
   if (outputError) throw outputError;
@@ -279,7 +286,7 @@ async function waitForCombinedCorpus(catalogSummary) {
       supplementalHydratedManifestPath,
       supplementalManifestPath,
     );
-    if (catalogSummary.totalBytes + supplementalSummary.totalBytes >= targetBytes) {
+    if (catalogSummary.totalBytes + supplementalSummary.totalBytes >= combinedTargetBytes) {
       try {
         const combined = await buildCombinedHydratedManifest(catalogSummary, supplementalSummary);
         await log(`combined candidate hydration ready: ${combined.records} records, ${combined.totalBytes} bytes`);
@@ -293,7 +300,7 @@ async function waitForCombinedCorpus(catalogSummary) {
       if (supplementalSummary.hydratedCount >= supplementalSummary.sourceCount && supplementalSummary.sourceCount > 0) {
         throw new Error(
           `Combined visual hydration exhausted at ${catalogSummary.totalBytes + supplementalSummary.totalBytes} bytes; `
-          + `${targetBytes} bytes are required.`,
+          + `${combinedTargetBytes} bytes are required.`,
         );
       }
       hydrationPid = await startSupplementalHydration();
@@ -356,6 +363,7 @@ async function runCombinedTraining(catalogSummary) {
     "--work-root", candidateWorkRoot,
     "--state-output", candidateStatePath,
     "--fine-tuned-checkpoint", candidateCheckpointPath,
+    "--target-bytes", String(combinedTargetBytes),
   ], {
     SALT_VISUAL_STAGING_MAX_SHARD_BYTES: process.env.SALT_VISUAL_STAGING_MAX_SHARD_BYTES || "6000000000",
   });

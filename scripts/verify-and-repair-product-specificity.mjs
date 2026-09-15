@@ -101,8 +101,12 @@ const repair = runNode(BACKFILL_SCRIPT, [
   // lifecycle name, so point the backfill at the shared catalog boundary.
   SALT_RELEASE_CATALOG_SOURCE_PATH:
     process.env.SALT_RELEASE_CATALOG_SOURCE_PATH || resolve(OUTPUT_DIR, "release-catalog-source.json"),
-  SALT_BACKFILL_FORCE_LIVE_SELECTED_CATALOG: "1",
+  // The failed-product handles come from the fresh live specificity export.
+  // Reuse the release snapshot for stable IDs and fetch live custom data only
+  // for those handles instead of downloading the entire Admin catalog again.
+  SALT_BACKFILL_FORCE_LIVE_SELECTED_CATALOG: "0",
   SALT_BACKFILL_USE_CATALOG_CHECKPOINT: "0",
+  SALT_BACKFILL_FORCE_LIVE_CUSTOM_DATA_REFRESH: "1",
 });
 
 if (exitCode(repair) !== 0) {

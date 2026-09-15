@@ -26,7 +26,14 @@ const query = /* GraphQL */ `
 type CachedFeed = { expiresAt: number; payload: unknown };
 let cachedFeed: CachedFeed | null = null;
 
-export default async function handler(req: any, res: any) {
+type ApiRequest = { method?: string };
+type ApiResponse = {
+  status: (code: number) => ApiResponse;
+  json: (body: unknown) => void;
+  setHeader: (name: string, value: string) => void;
+};
+
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -61,9 +68,12 @@ export default async function handler(req: any, res: any) {
     },
     body: JSON.stringify({ query }),
   });
-  const body: any = await response.json();
+  const body = (await response.json()) as {
+    errors?: unknown[];
+    data?: { orders?: unknown };
+  };
 
-  if (!response.ok || body.errors?.length) {
+  if (!response.ok || (Array.isArray(body.errors) && body.errors.length > 0)) {
     res.status(502).json({ error: "Unable to load Shopify order products" });
     return;
   }

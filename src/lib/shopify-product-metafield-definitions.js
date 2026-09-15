@@ -252,6 +252,21 @@ const PRODUCT_METAFIELD_DEFINITIONS = [
     pin: true,
     description: "Versioned high-confidence catalog taxonomy used for search, filters, and collection mapping.",
   },
+  {
+    id: "salt-gpt-seo.type_attributes",
+    kind: "custom",
+    name: "GPT Product Type Attributes",
+    namespace: "salt-gpt-seo",
+    key: "type_attributes",
+    type: "json",
+    ownerType: "PRODUCT",
+    access: {
+      admin: "MERCHANT_READ_WRITE",
+      storefront: "PUBLIC_READ",
+    },
+    pin: true,
+    description: "Evidence-backed GPT SEO category and product-type attributes for product-specific search and merchandising.",
+  },
 ];
 
 function getProductMetafieldDefinitionId(definition) {

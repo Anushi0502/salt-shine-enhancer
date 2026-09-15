@@ -104,6 +104,34 @@ describe("shopify SEO batch intelligence", () => {
     expect(seoTitle.length).toBeLessThanOrEqual(70);
   });
 
+  it("repairs short footwear titles with handle-backed product qualifiers", async () => {
+    const plan = await buildSeoBatchPlan([
+      {
+        Handle: "safety-shoes",
+        Title: "Safety Shoes",
+        Type: "Safety Shoes",
+        "Variant SKU": "SAFETY-1",
+        "Variant Price": "49.99",
+      },
+      {
+        Handle: "men-casual-shoes",
+        Title: "Casual Shoes",
+        Type: "Casual Shoes",
+        "Variant SKU": "CASUAL-1",
+        "Variant Price": "49.99",
+      },
+    ]);
+
+    const [safety, casual] = plan.products;
+
+    expect(safety.intelligence.canonicalTitle).toBe("Safety Shoes for Protective Work");
+    expect(safety.intelligence.canonicalSeoTitle).toBe("Safety Shoes | Protective Work Footwear");
+    expect(safety.intelligence.canonicalSeoTitle.length).toBeGreaterThanOrEqual(35);
+    expect(casual.intelligence.canonicalTitle).toBe("Casual Shoes for Men");
+    expect(casual.intelligence.canonicalSeoTitle).toBe("Casual Shoes for Men | Men's Casual Footwear");
+    expect(casual.intelligence.canonicalSeoTitle.length).toBeGreaterThanOrEqual(35);
+  });
+
   it("removes generic marketplace claims from SEO descriptions", async () => {
     const plan = await buildSeoBatchPlan([{
       Handle: "must-have-perfect-gift-blue-green-photo-accessory",

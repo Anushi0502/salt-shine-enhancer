@@ -20,6 +20,8 @@ import { filterMembershipToActiveProducts } from "./shopify-catalog-integrity.mj
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputPath = resolve(rootDir, "output", "shopify-collection-classification-audit.json");
+const cleanupSnapshotPath = resolve(rootDir, "output", "shopify-tag-collection-cleanup-snapshot.json");
+const cleanupSnapshotMaxAgeMs = Math.max(60_000, Math.min(86_400_000, Number(process.env.SALT_COLLECTION_AUDIT_SNAPSHOT_MAX_AGE_MS || 86_400_000)));
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "collection-classification-audit" });
 
 function parseArgs(argv) {
@@ -64,6 +66,15 @@ const COLLECTIONS_QUERY = /* GraphQL */ `
           }
         }
       }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+const ACTIVE_PRODUCT_TAGS_QUERY = /* GraphQL */ `
+  query CollectionClassificationAuditActiveProductTags($first: Int!, $after: String) {
+    products(first: $first, after: $after, query: "status:active") {
+      nodes { id tags }
       pageInfo { hasNextPage endCursor }
     }
   }
@@ -176,6 +187,36 @@ async function fetchCollections() {
     if (!after) throw new Error("Collection pagination returned no cursor.");
   }
   return collections;
+}
+
+async function fetchActiveProductTags() {
+  const products = [];
+  let after = null;
+  while (true) {
+    const data = await client.run(ACTIVE_PRODUCT_TAGS_QUERY, { first: 250, after }, {
+      operation: `collection classification audit active product tags page ${Math.floor(products.length / 250) + 1}`,
+    });
+    const connection = data?.products;
+    if (!connection) throw new Error("Shopify returned no active product tag connection.");
+    products.push(...asArray(connection.nodes));
+    if (!connection.pageInfo?.hasNextPage) return products;
+    after = connection.pageInfo.endCursor;
+    if (!after) throw new Error("Active product tag pagination returned no cursor.");
+  }
+}
+
+async function loadApprovedAliasProducts() {
+  try {
+    const snapshot = JSON.parse(await readFile(cleanupSnapshotPath, "utf8"));
+    const generatedAt = Date.parse(snapshot?.generatedAt || "");
+    const isFresh = snapshot?.source?.freshLiveRead === true &&
+      Number.isFinite(generatedAt) && Date.now() - generatedAt <= cleanupSnapshotMaxAgeMs &&
+      Array.isArray(snapshot?.products);
+    if (isFresh) return snapshot.products;
+  } catch {
+    // A standalone audit may not have a cleanup snapshot; use a live read.
+  }
+  return fetchActiveProductTags();
 }
 
 async function waitForBulkOperation(operationId) {
@@ -302,6 +343,22 @@ function manifestExpectedByProduct(manifest) {
     ));
   }
   return expected;
+}
+
+function addApprovedSemanticAliasMemberships(expectedByHandle, liveProducts, activeProductIds) {
+  for (const policy of SEMANTIC_COLLECTION_POLICIES) {
+    const aliases = new Set(semanticCollectionRuleTags(policy).map(normalizeCollectionHandle).filter(Boolean));
+    // Only explicit governance merges may widen the manifest membership set.
+    // A lone canonical tag remains diagnostic evidence, never an authority.
+    if (aliases.size < 2) continue;
+    const expected = expectedByHandle.get(policy.handle) || new Set();
+    for (const product of asArray(liveProducts)) {
+      const id = idKey(product?.id);
+      if (!id || !activeProductIds.has(id)) continue;
+      if (asArray(product?.tags).some((tag) => aliases.has(normalizeCollectionHandle(tag)))) expected.add(id);
+    }
+    expectedByHandle.set(policy.handle, expected);
+  }
 }
 
 function appliedClassificationEvidence(classification) {
@@ -445,10 +502,11 @@ async function run() {
   if (!products.length) throw new Error("Local active catalog is empty.");
 
   process.stdout.write(`Auditing ${products.length} local active products against live Shopify memberships.\n`);
-  const [liveCollections, membership, livePriceCheckpoint] = await Promise.all([
+  const [liveCollections, membership, livePriceCheckpoint, approvedAliasProducts] = await Promise.all([
     fetchCollections(),
     fetchMembership(),
     loadLivePriceCheckpoint(),
+    loadApprovedAliasProducts(),
   ]);
   const liveByHandle = new Map(liveCollections.map((collection) => [handle(collection.handle), collection]));
 
@@ -458,6 +516,8 @@ async function run() {
     productById.set(key, product);
   }
   const activeProductIds = new Set(productById.keys());
+  const approvedAliasMembership = new Map();
+  addApprovedSemanticAliasMemberships(approvedAliasMembership, approvedAliasProducts, activeProductIds);
   const liveMembersByHandle = new Map();
   const outOfScopeMemberships = [];
   for (const collection of membership.collections) {
@@ -508,6 +568,7 @@ async function run() {
     const expected = policy.kind === "price"
       ? new Set([...taxonomyExpected].filter(([, handles]) => handles.has(collectionHandle)).map(([key]) => key))
       : expectedFromPlan;
+    for (const id of approvedAliasMembership.get(policy.handle) || []) expected.add(id);
     let missing = [...expected].filter((id) => !actual.has(id));
     let extra = [...actual].filter((id) => !expected.has(id));
     let ruleMatches = sourceMatchesPolicy(policy, liveCollection);

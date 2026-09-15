@@ -4,6 +4,13 @@ import { classifyCatalogTaxonomy } from "./catalog-taxonomy.js";
 const CATEGORY_RULES = [
   // These families were previously falling through to an empty category even
   // though the product evidence identifies a safe Shopify root category.
+  [/(?:\bluggage\b|\bsuitcases?\b|\btrolley(?:\s+case)?\b|\bcarry[-\s]?on\b|\btravel\s+(?:case|luggage|storage)\b|\b(?:case|storage)\b.{0,45}\b(?:travel|luggage)\b|\bbusiness\s+case\b)/i, "lb", "Luggage & Bags"],
+  [/^(?!(?:.*\b(?:baby|toddler|kids?|children)\b.*\b(?:flats?|ballet|oxfords?|derbys?|loafers?|moccasins?|heels?|pumps?|mules?|slip[-\s]?ons?|shoes?|footwear)\b)).*?(?:\b(?:women|womens|men|mens|girls|boys)\b.{0,50}\b(?:flats?|ballet|oxfords?|derbys?|loafers?|moccasins?|heels?|pumps?|mules?|slip[-\s]?ons?)\b|\b(?:flats?|ballet\s+flats?|oxfords?|derbys?|loafers?|moccasins?|heels?|pumps?|mules?|slip[-\s]?ons?|footwear)\b|\bshoes?(?=[a-z]|\b))/i, "aa-8", "Shoes"],
+  [/(?:\bcowboy\b.{0,70}\b(?:jumpsuit|siamese|multi[-\s]?pocket|loose|clothing|wear)\b|\b(?:jumpsuit|siamese)\b)/i, "aa", "Apparel & Accessories"],
+  [/(?:\b(?:dog|puppy|cat|kitten)\b.{0,45}\b(?:identity\s+)?tags?\b|\b(?:identity\s+)?tags?\b.{0,45}\b(?:dog|puppy|cat|kitten)\b)/i, "ap", "Animals & Pet Supplies"],
+  [/\b(?:brooch|badge)\b/i, "aa", "Apparel & Accessories"],
+  [/(?:\begg\b.{0,50}\b(?:cooker|steamer|mold|mould|omelette)\b|\b(?:cooker|steamer|mold|mould|omelette)\b.{0,50}\begg\b|\bcheese\s+cutter\b)/i, "hg-11-8", "Kitchen Tools & Utensils"],
+  [/(?:\bled\s+strip\b|\bstrip\s+led\b|\bled\s+light(?:ing)?\b)/i, "el", "Electronics"],
   [/(?:\begg\s+(?:slicer|cutter|dicer)\b|\b(?:cooking|mixing|beating)\s+basin\b|\bsalad\s+mixing\s+basin\b)/i, "hg-11-8", "Kitchen Tools & Utensils"],
   [/\bcurtains?\b|\bwindow\s+valance\b|\bcurtain\s+straps?\b/i, "hg", "Home & Garden"],
   [/\b(?:4k\s+)?projector\b|\bhome\s+cinema\s+projector\b/i, "el", "Electronics"],

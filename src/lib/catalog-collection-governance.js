@@ -154,6 +154,12 @@ const SCHOOL_BAG_ITEM_TERMS = Object.freeze([
   "school rucksack", "student bag", "satchel",
 ]);
 
+const SCHOOL_BAG_FALSE_POSITIVE_TERMS = Object.freeze([
+  "school bag cover", "school backpack cover", "backpack cover", "backpack rain cover",
+  "bag pendant", "backpack pendant", "bag ornament", "backpack ornament", "bag keyring", "bag keychain",
+  "backpack keyring", "backpack keychain", "bag trinket", "bag charm", "backpack charm", "name tag",
+]);
+
 const LUNCH_BOX_TERMS = Object.freeze([
   "lunch box", "lunchbox", "bento box", "bento", "tiffin", "lunch container", "meal prep container",
 ]);
@@ -233,6 +239,38 @@ const HUMAN_ONLY_COLLECTION_HANDLES = new Set([
   "stationery", "womens-accessories", "womens-fashion", "womens-footwear",
 ]);
 
+// Supplier feeds often use `male` and `female` for connector geometry rather
+// than shopper audience. Keep those phrases from activating a gendered
+// collection through stale audience/category tags.
+const CONNECTOR_GENDER_CONTEXT = Object.freeze([
+  "connector", "connectors", "adapter", "adapters", "plug", "plugs", "socket", "sockets",
+  "jack", "jacks", "port", "ports", "cable", "cables", "wire", "wires", "fitting", "fittings",
+  "usb", "hdmi", "aux", "audio", "thread", "threads", "coupler", "couplers",
+]);
+
+const DIRECT_AUDIENCE_TERMS = Object.freeze({
+  women: Object.freeze(["woman", "women", "womens", "female", "lady", "ladies", "maternity"]),
+  men: Object.freeze(["man", "men", "mens", "male", "gentleman", "gents"]),
+  kids: Object.freeze(["kid", "kids", "child", "children", "toddler", "boy", "boys", "girl", "girls", "teen"]),
+});
+
+const AUDIENCE_SCOPED_COLLECTIONS = Object.freeze({
+  women: Object.freeze([
+    "women", "womens-fashion", "womens-accessories", "women-bags-and-wallets", "womens-beauty-essentials",
+    "womens-footwear",
+  ]),
+  men: Object.freeze([
+    "men-collection", "mens-fashion", "mens-accessories", "mens-bags-wallets", "mens-beauty-skincare",
+    "mens-footwear", "men-t-shirt",
+  ]),
+  kids: Object.freeze(["kids", "kids-wear", "kids-footwear"]),
+});
+
+const AUDIENCE_BY_COLLECTION_HANDLE = new Map(
+  Object.entries(AUDIENCE_SCOPED_COLLECTIONS).flatMap(([audience, handles]) =>
+    handles.map((handle) => [handle, audience])),
+);
+
 const GIFT_RECIPIENT_TERMS = Object.freeze({
   dad: Object.freeze([
     "dad", "daddy", "father", "fathers day", "father s day", "husband", "grandpa", "grandfather", "for him",
@@ -253,7 +291,8 @@ const DAILY_LIVING_AID_TERMS = Object.freeze([
   "daily living", "daily-living", "elderly", "senior care", "caregiver", "assistive", "adaptive", "mobility aid",
   "pill organizer", "pill box", "medicine organizer", "medication organizer", "reacher grabber", "dressing aid",
   "bed rail", "shower chair", "grab bar", "safety rail", "walker", "walking cane", "wheelchair accessory",
-  "hearing aid accessory", "vision aid",
+  "hearing aid accessory", "vision aid", "adult bib", "adult bibs", "adult mealtime bib", "adult mealtime bibs",
+  "adult clothing protector", "clothing protector",
 ]);
 
 const SENIOR_LIVING_TERMS = Object.freeze([
@@ -399,11 +438,12 @@ const EXTRA_SEMANTIC_SPECS = [
       departments: ["pets"],
       textAny: ["feeding", "feeder", "bowl", "food", "fountain", "water bottle", "water dispenser", "food mat", "food dispenser"],
     },
+    subcategories: ["pet-feeding-accessories"],
   }),
   spec("pet-grooming", "Pet Grooming", {
     require: {
       departments: ["pets"],
-      textAny: ["groom", "brush", "comb", "nail", "clipper", "trimmer", "shampoo", "conditioner", "detangler", "bathing"],
+      textAny: ["groom", "grooming", "groomer", "brush", "comb", "nail", "clipper", "trimmer", "shampoo", "conditioner", "detangler", "bathing"],
     },
   }),
   spec("pet-toys", "Pet Toys", { textAll: ["pet"], textAny: ["toy", "ball", "chew"] }),
@@ -530,6 +570,7 @@ function buildPlanSpecs() {
             },
             subcategories: SCHOOL_BAG_SUBCATEGORIES,
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: SCHOOL_BAG_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "lunch-boxes"
         ? {
@@ -627,6 +668,53 @@ function hasPhrase(text, phrase) {
   return ` ${text} `.includes(` ${normalized} `);
 }
 
+export function isConnectorGenderPhrase(value) {
+  const text = normalizeCatalogText(value);
+  if (!text || !/(?:male|female)/.test(text)) return false;
+  const tokens = text.split(" ");
+  const connectorIndexes = tokens
+    .map((token, index) => CONNECTOR_GENDER_CONTEXT.includes(token) ? index : -1)
+    .filter((index) => index >= 0);
+  const genderIndexes = tokens
+    .map((token, index) => ["male", "female"].includes(token) ? index : -1)
+    .filter((index) => index >= 0);
+  return genderIndexes.some((genderIndex) => connectorIndexes.some((connectorIndex) =>
+    Math.abs(genderIndex - connectorIndex) <= 4));
+}
+
+export function hasDirectAudienceEvidence(product, expectedAudience) {
+  const audience = normalizeCatalogText(expectedAudience);
+  const terms = DIRECT_AUDIENCE_TERMS[audience] || [];
+  if (!terms.length) return false;
+  const text = productText(product);
+  if (isConnectorGenderPhrase(text)) return false;
+  return terms.some((term) => hasPhrase(text, term));
+}
+
+function audienceScopedCollectionIsSafe(policy, product, knowledge) {
+  const expectedAudience = AUDIENCE_BY_COLLECTION_HANDLE.get(policy?.handle);
+  if (!expectedAudience) return true;
+
+  const text = productText(product);
+  if (isConnectorGenderPhrase(text)) return false;
+
+  const directAudiences = Object.keys(DIRECT_AUDIENCE_TERMS)
+    .filter((audience) => hasDirectAudienceEvidence(product, audience));
+  if (directAudiences.some((audience) => audience !== expectedAudience)) return false;
+  if (directAudiences.includes(expectedAudience)) return true;
+
+  // A taxonomy rule with an explicit audience override is a deterministic
+  // classification decision, not a stale supplier tag. Accept it only when
+  // the resolved audience agrees with the collection and no direct conflicting
+  // audience evidence was found above.
+  if (knowledge?.audience?.id === expectedAudience && Number(knowledge?.audience?.confidence) >= 100) return true;
+
+  // A missing gender phrase is intentionally not enough. A stale audience,
+  // category, target, or supplier tag must not manufacture a gendered
+  // collection membership. Neutral collections remain available instead.
+  return false;
+}
+
 function isPetProductLike(product, knowledge) {
   const department = normalizeCatalogText(knowledge?.departmentId);
   const audience = normalizeCatalogText(knowledge?.audience?.id);
@@ -675,6 +763,7 @@ export function productMatchesSemanticCollection(policy, product, knowledge, dyn
   if (!policy || policy.kind !== "semantic") return false;
   const match = policy.match || {};
   if (HUMAN_ONLY_COLLECTION_HANDLES.has(policy.handle) && isPetProductLike(product, knowledge)) return false;
+  if (!audienceScopedCollectionIsSafe(policy, product, knowledge)) return false;
   if (policy.handle === "home-decor" && isGardenToolLike(product)) return false;
   if (matchesExcludedSignals(match.exclude, product, knowledge)) return false;
   if (match.require && !matchesRequiredSignals(match.require, product, knowledge)) return false;
@@ -737,6 +826,12 @@ export function buildProductCollectionTags(product, knowledge, dynamicAssignment
   const audienceId = normalizeCatalogText(knowledge?.audience?.id);
   if (isWig && audienceId === "men") tags.push(collectionTagForHandle("mens-accessories"));
   if (isWig && audienceId === "women") tags.push(collectionTagForHandle("womens-accessories"));
+
+  // Keep unresolved products out of semantic collections, but do not allow a
+  // resolved classification to fail the release because a new taxonomy rule
+  // omitted a target. This neutral destination is governed, auditable, and
+  // intentionally less specific than any semantic collection.
+  if (!tags.length) tags.push(collectionTagForHandle("general-merchandise"));
 
   return [...new Set(tags)];
 }

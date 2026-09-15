@@ -92,7 +92,16 @@ export async function assertVisualTaxonomyModel(model, {
   }
 
   const dataset = asObject(value.dataset);
-  if (dataset.bytes < VISUAL_TAXONOMY_MIN_DATASET_BYTES) {
+  const datasetBytes = Number(dataset.bytes || 0);
+  const plannedDatasetBytes = Number(dataset.plannedBytes || 0);
+  const excludedDatasetBytes = Number(dataset.excludedBytes || 0);
+  const candidateCoverageIncludesQuarantine = value.candidateOnly === true &&
+    Number.isInteger(datasetBytes) && datasetBytes > 0 &&
+    Number.isInteger(plannedDatasetBytes) && plannedDatasetBytes >= VISUAL_TAXONOMY_MIN_DATASET_BYTES &&
+    Number.isInteger(excludedDatasetBytes) && excludedDatasetBytes > 0 &&
+    plannedDatasetBytes - datasetBytes === excludedDatasetBytes &&
+    datasetBytes + excludedDatasetBytes >= VISUAL_TAXONOMY_MIN_DATASET_BYTES;
+  if (datasetBytes < VISUAL_TAXONOMY_MIN_DATASET_BYTES && !candidateCoverageIncludesQuarantine) {
     throw new Error(`Visual taxonomy model was trained on ${dataset.bytes || 0} bytes; at least ${VISUAL_TAXONOMY_MIN_DATASET_BYTES} bytes are required.`);
   }
   asPositiveInteger(dataset.imageCount, "Visual taxonomy dataset imageCount");

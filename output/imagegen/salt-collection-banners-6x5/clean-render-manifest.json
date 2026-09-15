@@ -1,0 +1,1037 @@
+{
+  "generatedAt": "2026-09-11T13:13:23.417Z",
+  "scope": "all",
+  "ratio": "6x5",
+  "width": 1200,
+  "height": 1000,
+  "source": "clean generated category scenes with deterministic SALT reference-style typography overlay",
+  "count": 114,
+  "collections": [
+    {
+      "number": 1,
+      "handle": "everyday-jewelry",
+      "title": "Everyday Jewelry",
+      "collectionId": 300515623011,
+      "fileName": "01-everyday-jewelry.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 2,
+      "handle": "back-to-school",
+      "title": "Back to School",
+      "collectionId": 299371954275,
+      "fileName": "02-back-to-school.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 3,
+      "handle": "travel-outdoor",
+      "title": "Camping & Travel Essentials",
+      "collectionId": 288268320867,
+      "fileName": "03-travel-outdoor.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 4,
+      "handle": "kids",
+      "title": "Kids",
+      "collectionId": 299470585955,
+      "fileName": "04-kids.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 5,
+      "handle": "new-arrivals",
+      "title": "New Arrivals",
+      "collectionId": 286183784547,
+      "fileName": "05-new-arrivals.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 6,
+      "handle": "school-bags",
+      "title": "School Bags",
+      "collectionId": 300515786851,
+      "fileName": "06-school-bags.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 7,
+      "handle": "footwear",
+      "title": "Footwear",
+      "collectionId": 300515655779,
+      "fileName": "07-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 8,
+      "handle": "womens-footwear",
+      "title": "Women's Footwear",
+      "collectionId": 300451233891,
+      "fileName": "08-womens-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 9,
+      "handle": "womens-fashion",
+      "title": "Women's Fashion",
+      "collectionId": 299470454883,
+      "fileName": "09-womens-fashion.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 10,
+      "handle": "mens-fashion",
+      "title": "Men's Fashion",
+      "collectionId": 299392565347,
+      "fileName": "10-mens-fashion.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 11,
+      "handle": "home-decor",
+      "title": "Home & Decor",
+      "collectionId": 285123412067,
+      "fileName": "11-home-decor.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 12,
+      "handle": "cookware",
+      "title": "Kitchen & Cookware",
+      "collectionId": 285291511907,
+      "fileName": "12-cookware.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 13,
+      "handle": "portable-gadgets",
+      "title": "Electronic Accessories",
+      "collectionId": 298389209187,
+      "fileName": "13-portable-gadgets.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 14,
+      "handle": "general-merchandise",
+      "title": "General Merchandise",
+      "collectionId": 299506434147,
+      "fileName": "14-general-merchandise.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 15,
+      "handle": "storage-organization",
+      "title": "Storage & Organization",
+      "collectionId": 298388422755,
+      "fileName": "15-storage-organization.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 16,
+      "handle": "mens-footwear",
+      "title": "Men's Footwear",
+      "collectionId": 300451201123,
+      "fileName": "16-mens-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 17,
+      "handle": "formal-footwear",
+      "title": "Formal Footwear",
+      "collectionId": 300451070051,
+      "fileName": "17-formal-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 18,
+      "handle": "men-collection",
+      "title": "Men",
+      "collectionId": 287928680547,
+      "fileName": "18-men-collection.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 19,
+      "handle": "cleaning-tools",
+      "title": "Cleaning Tools",
+      "collectionId": 298388521059,
+      "fileName": "19-cleaning-tools.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 20,
+      "handle": "men-t-shirt",
+      "title": "Men's T-Shirts",
+      "collectionId": 299448205411,
+      "fileName": "20-men-t-shirt.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 21,
+      "handle": "t-shirt",
+      "title": "T-Shirts",
+      "collectionId": 287618007139,
+      "fileName": "21-t-shirt.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 22,
+      "handle": "coffee-tea-accessories",
+      "title": "Coffee & Tea Accessories",
+      "collectionId": 298388455523,
+      "fileName": "22-coffee-tea-accessories.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 23,
+      "handle": "dining-essentials",
+      "title": "Dining Essentials",
+      "collectionId": 298388488291,
+      "fileName": "23-dining-essentials.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 24,
+      "handle": "trending-finds",
+      "title": "Trending Finds",
+      "collectionId": 288888127587,
+      "fileName": "24-trending-finds.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 25,
+      "handle": "women",
+      "title": "Women",
+      "collectionId": 299470422115,
+      "fileName": "25-women.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 26,
+      "handle": "audio",
+      "title": "Audio & Earbuds",
+      "collectionId": 299470782563,
+      "fileName": "26-audio.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 27,
+      "handle": "earbuds-and-cases",
+      "title": "Earbuds & Cases",
+      "collectionId": 299373396067,
+      "fileName": "27-earbuds-and-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 28,
+      "handle": "mens-bags-wallets",
+      "title": "Men's Bags & Wallets",
+      "collectionId": 299470487651,
+      "fileName": "28-mens-bags-wallets.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 29,
+      "handle": "covers-cases",
+      "title": "Covers & Cases",
+      "collectionId": 299470717027,
+      "fileName": "29-covers-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 30,
+      "handle": "fitness-equipment",
+      "title": "Sports & Fitness",
+      "collectionId": 299470848099,
+      "fileName": "30-fitness-equipment.png",
+      "group": "sports",
+      "background": "sports.png"
+    },
+    {
+      "number": 31,
+      "handle": "womens-accessories",
+      "title": "Women's Accessories",
+      "collectionId": 298712432739,
+      "fileName": "31-womens-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 32,
+      "handle": "jewelry-accessories",
+      "title": "Jewelry & Accessories",
+      "collectionId": 299506466915,
+      "fileName": "32-jewelry-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 33,
+      "handle": "rings",
+      "title": "Rings",
+      "collectionId": 300515754083,
+      "fileName": "33-rings.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 34,
+      "handle": "car-accessories",
+      "title": "Home & Car Accessories",
+      "collectionId": 298389143651,
+      "fileName": "34-car-accessories.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 35,
+      "handle": "mens-accessories",
+      "title": "Men's Accessories",
+      "collectionId": 299470520419,
+      "fileName": "35-mens-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 36,
+      "handle": "luxury-fragrances",
+      "title": "Luxury Fragrances",
+      "collectionId": 298739171427,
+      "fileName": "36-luxury-fragrances.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 37,
+      "handle": "dog-supplies",
+      "title": "Dog Supplies",
+      "collectionId": 298388750435,
+      "fileName": "37-dog-supplies.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 38,
+      "handle": "necklaces",
+      "title": "Necklaces",
+      "collectionId": 300515721315,
+      "fileName": "38-necklaces.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 39,
+      "handle": "kids-footwear",
+      "title": "Kids Footwear",
+      "collectionId": 300451135587,
+      "fileName": "39-kids-footwear.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 40,
+      "handle": "face-creams-moisturizers",
+      "title": "Face Creams & Moisturizers",
+      "collectionId": 298741792867,
+      "fileName": "40-face-creams-moisturizers.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 41,
+      "handle": "lips-and-care",
+      "title": "Lip Care",
+      "collectionId": 298713153635,
+      "fileName": "41-lips-and-care.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 42,
+      "handle": "beauty-makeup-essentials",
+      "title": "Beauty Makeup Essentials",
+      "collectionId": 298791632995,
+      "fileName": "42-beauty-makeup-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 43,
+      "handle": "kitchen-gadgets",
+      "title": "Kitchen Gadgets",
+      "collectionId": 298388389987,
+      "fileName": "43-kitchen-gadgets.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 44,
+      "handle": "under-44-99",
+      "title": "Under $44.99",
+      "collectionId": 298216882275,
+      "fileName": "44-under-44-99.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 45,
+      "handle": "artificial-plants",
+      "title": "Artificial Plants",
+      "collectionId": 284296872035,
+      "fileName": "45-artificial-plants.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 46,
+      "handle": "garden-tools",
+      "title": "Garden & Tools",
+      "collectionId": 286183522403,
+      "fileName": "46-garden-tools.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 47,
+      "handle": "medical-accessories",
+      "title": "Medical Accessories",
+      "collectionId": 286768169059,
+      "fileName": "47-medical-accessories.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 48,
+      "handle": "jeans",
+      "title": "Jeans",
+      "collectionId": 287803244643,
+      "fileName": "48-jeans.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 49,
+      "handle": "health-wellness",
+      "title": "Health & Wellness",
+      "collectionId": 287952797795,
+      "fileName": "49-health-wellness.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 50,
+      "handle": "best-sellers",
+      "title": "Best Sellers",
+      "collectionId": 291396354147,
+      "fileName": "50-best-sellers.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 51,
+      "handle": "gifts",
+      "title": "Gifts Collection",
+      "collectionId": 296701886563,
+      "fileName": "51-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 52,
+      "handle": "senior-living-solutions",
+      "title": "Senior Living Solutions",
+      "collectionId": 298109960291,
+      "fileName": "52-senior-living-solutions.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 53,
+      "handle": "housewarming-gifts",
+      "title": "Housewarming Gifts",
+      "collectionId": 298217046115,
+      "fileName": "53-housewarming-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 54,
+      "handle": "holiday-gifts",
+      "title": "Holiday Gifts",
+      "collectionId": 298217209955,
+      "fileName": "54-holiday-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 55,
+      "handle": "wall-art",
+      "title": "Wall Art",
+      "collectionId": 298388619363,
+      "fileName": "55-wall-art.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 56,
+      "handle": "seasonal-decor",
+      "title": "Seasonal Decor",
+      "collectionId": 298388652131,
+      "fileName": "56-seasonal-decor.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 57,
+      "handle": "smart-lighting",
+      "title": "Lighting & Decor",
+      "collectionId": 298388684899,
+      "fileName": "57-smart-lighting.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 58,
+      "handle": "decorative-accessories",
+      "title": "Decorative Accessories",
+      "collectionId": 298388717667,
+      "fileName": "58-decorative-accessories.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 59,
+      "handle": "cat-supplies",
+      "title": "Cat Supplies",
+      "collectionId": 298388783203,
+      "fileName": "59-cat-supplies.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 60,
+      "handle": "pet-travel",
+      "title": "Pet Travel",
+      "collectionId": 298388815971,
+      "fileName": "60-pet-travel.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 61,
+      "handle": "pet-feeding",
+      "title": "Pet Feeding",
+      "collectionId": 298388848739,
+      "fileName": "61-pet-feeding.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 62,
+      "handle": "pet-grooming",
+      "title": "Pet Grooming",
+      "collectionId": 298388881507,
+      "fileName": "62-pet-grooming.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 63,
+      "handle": "pet-toys",
+      "title": "Pet Toys",
+      "collectionId": 298388914275,
+      "fileName": "63-pet-toys.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 64,
+      "handle": "sleep-essentials",
+      "title": "Sleep Essentials",
+      "collectionId": 298388979811,
+      "fileName": "64-sleep-essentials.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 65,
+      "handle": "relaxation-products",
+      "title": "Relaxation Products",
+      "collectionId": 298389012579,
+      "fileName": "65-relaxation-products.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 66,
+      "handle": "daily-living-aids",
+      "title": "Daily Living Aids",
+      "collectionId": 298389274723,
+      "fileName": "66-daily-living-aids.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 67,
+      "handle": "home-safety",
+      "title": "Home Safety",
+      "collectionId": 298389307491,
+      "fileName": "67-home-safety.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 68,
+      "handle": "memory-organization",
+      "title": "Memory & Organization",
+      "collectionId": 298389340259,
+      "fileName": "68-memory-organization.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 69,
+      "handle": "gifts-for-mom",
+      "title": "Gifts for Mom",
+      "collectionId": 298389438563,
+      "fileName": "69-gifts-for-mom.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 70,
+      "handle": "gifts-for-dad",
+      "title": "Gifts for Dad",
+      "collectionId": 298389471331,
+      "fileName": "70-gifts-for-dad.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 71,
+      "handle": "gifts-for-seniors",
+      "title": "Gifts for Seniors",
+      "collectionId": 298389504099,
+      "fileName": "71-gifts-for-seniors.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 72,
+      "handle": "viral-tiktok-products",
+      "title": "Viral TikTok Products",
+      "collectionId": 298389569635,
+      "fileName": "72-viral-tiktok-products.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 73,
+      "handle": "staff-picks",
+      "title": "Staff Picks",
+      "collectionId": 298389602403,
+      "fileName": "73-staff-picks.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 74,
+      "handle": "womens-beauty-essentials",
+      "title": "Women's Beauty & Skincare",
+      "collectionId": 298712039523,
+      "fileName": "74-womens-beauty-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 75,
+      "handle": "women-bags-and-wallets",
+      "title": "Women's Bags & Wallets",
+      "collectionId": 298712137827,
+      "fileName": "75-women-bags-and-wallets.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 76,
+      "handle": "watches",
+      "title": "Watches",
+      "collectionId": 298713383011,
+      "fileName": "76-watches.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 77,
+      "handle": "hair-wash-essentials",
+      "title": "Hair Wash Essentials",
+      "collectionId": 298733994083,
+      "fileName": "77-hair-wash-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 78,
+      "handle": "hair-nourishment",
+      "title": "Hair Nourishment",
+      "collectionId": 298734092387,
+      "fileName": "78-hair-nourishment.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 79,
+      "handle": "repair-shine-serums",
+      "title": "Repair & Shine Serums",
+      "collectionId": 298734518371,
+      "fileName": "79-repair-shine-serums.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 80,
+      "handle": "blush-glow",
+      "title": "Blush & Glow",
+      "collectionId": 298740777059,
+      "fileName": "80-blush-glow.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 81,
+      "handle": "glam-eye-palettes",
+      "title": "Glam Eye Palettes",
+      "collectionId": 298791665763,
+      "fileName": "81-glam-eye-palettes.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 82,
+      "handle": "eye-beauty-collection",
+      "title": "Eye Beauty Collection",
+      "collectionId": 298791731299,
+      "fileName": "82-eye-beauty-collection.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 83,
+      "handle": "mascara-collection",
+      "title": "Mascara Collection",
+      "collectionId": 298791764067,
+      "fileName": "83-mascara-collection.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 84,
+      "handle": "dramatic-lashes",
+      "title": "Dramatic Lashes",
+      "collectionId": 298791796835,
+      "fileName": "84-dramatic-lashes.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 85,
+      "handle": "iphone-cases",
+      "title": "iPhone Cases",
+      "collectionId": 299372740707,
+      "fileName": "85-iphone-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 86,
+      "handle": "stationery",
+      "title": "Stationery",
+      "collectionId": 299373887587,
+      "fileName": "86-stationery.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 87,
+      "handle": "kids-wear",
+      "title": "Kids Wear",
+      "collectionId": 299470618723,
+      "fileName": "87-kids-wear.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 88,
+      "handle": "wall-lights",
+      "title": "Wall Lights",
+      "collectionId": 298388553827,
+      "fileName": "88-wall-lights.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 89,
+      "handle": "pet-essentials",
+      "title": "Pet Essentials",
+      "collectionId": 286315872355,
+      "fileName": "89-pet-essentials.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 90,
+      "handle": "candles",
+      "title": "Candles",
+      "collectionId": 289742487651,
+      "fileName": "90-candles.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 91,
+      "handle": "robe",
+      "title": "Robes",
+      "collectionId": 293177589859,
+      "fileName": "91-robe.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 92,
+      "handle": "wigs",
+      "title": "Wigs",
+      "collectionId": 299900534883,
+      "fileName": "92-wigs.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 93,
+      "handle": "massage-tools",
+      "title": "Massage Tools",
+      "collectionId": 298389045347,
+      "fileName": "93-massage-tools.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 94,
+      "handle": "creator-essentials",
+      "title": "Creator Essentials",
+      "collectionId": 299506401379,
+      "fileName": "94-creator-essentials.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 95,
+      "handle": "bedsheets-handlooms-towels",
+      "title": "Bedsheets, Handlooms & Towels",
+      "collectionId": 299470684259,
+      "fileName": "95-bedsheets-handlooms-towels.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 96,
+      "handle": "kids-toys-games",
+      "title": "Kids Toys & Games",
+      "collectionId": 299470651491,
+      "fileName": "96-kids-toys-games.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 97,
+      "handle": "mens-beauty-skincare",
+      "title": "Men's Beauty & Skincare",
+      "collectionId": 299470553187,
+      "fileName": "97-mens-beauty-skincare.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 98,
+      "handle": "office-school-supplies",
+      "title": "Office & School Supplies",
+      "collectionId": 299470815331,
+      "fileName": "98-office-school-supplies.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 99,
+      "handle": "trousers",
+      "title": "Trousers",
+      "collectionId": 287618138211,
+      "fileName": "99-trousers.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 100,
+      "handle": "under-25",
+      "title": "Under $25",
+      "collectionId": 299900502115,
+      "fileName": "100-under-25.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 101,
+      "handle": "all-products",
+      "title": "All Products",
+      "collectionId": 286483873891,
+      "fileName": "101-all-products.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 102,
+      "handle": "under-50",
+      "title": "Under $50",
+      "collectionId": 298216849507,
+      "fileName": "102-under-50.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 103,
+      "handle": "under-60",
+      "title": "Under $60",
+      "collectionId": 285389160547,
+      "fileName": "103-under-60.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 104,
+      "handle": "premium-picks",
+      "title": "Premium Picks",
+      "collectionId": 298216915043,
+      "fileName": "104-premium-picks.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 105,
+      "handle": "lunch-boxes",
+      "title": "Lunch Boxes",
+      "collectionId": 300515688547,
+      "fileName": "105-lunch-boxes.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 106,
+      "handle": "water-bottles",
+      "title": "Water Bottles",
+      "collectionId": 300515819619,
+      "fileName": "106-water-bottles.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 107,
+      "handle": "test",
+      "title": "Salt Specials",
+      "collectionId": 299785584739,
+      "fileName": "107-test.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 108,
+      "handle": "earrings",
+      "title": "Earrings",
+      "collectionId": 300515590243,
+      "fileName": "108-earrings.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 109,
+      "handle": "bracelets",
+      "title": "Bracelets",
+      "collectionId": 300515524707,
+      "fileName": "109-bracelets.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 110,
+      "handle": "hats",
+      "title": "Hats",
+      "collectionId": 299646910563,
+      "fileName": "110-hats.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 111,
+      "handle": "magsafe-gadgets",
+      "title": "MagSafe Gadgets",
+      "collectionId": 299475239011,
+      "fileName": "111-magsafe-gadgets.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 112,
+      "handle": "under-35",
+      "title": "Under $35",
+      "collectionId": 298110353507,
+      "fileName": "112-under-35.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 113,
+      "handle": "mouse-keyboard",
+      "title": "Mouse & Keyboard",
+      "collectionId": 299470749795,
+      "fileName": "113-mouse-keyboard.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 114,
+      "handle": "anime-collectables",
+      "title": "Anime Collectables",
+      "collectionId": 299506368611,
+      "fileName": "114-anime-collectables.png",
+      "group": "anime",
+      "background": "anime.png"
+    }
+  ]
+}

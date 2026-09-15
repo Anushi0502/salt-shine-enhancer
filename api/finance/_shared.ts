@@ -33,17 +33,18 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://0309d3-72.myshopify.com",
 ];
 
-type FinanceRequest = {
+export type FinanceRequest = {
   headers?: Record<string, string | string[] | undefined>;
   body?: unknown;
   method?: string;
+  query?: Record<string, string | string[] | undefined>;
   socket?: { remoteAddress?: string };
 };
 
-type FinanceResponse = {
+export type FinanceResponse = {
   status: (code: number) => FinanceResponse;
   json: (body: unknown) => void;
-  end: () => void;
+  end: (body?: unknown) => void;
   setHeader: (name: string, value: string) => void;
 };
 
@@ -643,7 +644,7 @@ function isInvalidShopifyToken(message: string, status?: number): boolean {
   return status === 401 || /invalid api key|invalid.*access token|unrecognized login|wrong password/i.test(message);
 }
 
-async function requestShopifyIdentityToken(body: Record<string, string>): Promise<Record<string, any>> {
+async function requestShopifyIdentityToken(body: Record<string, string>): Promise<Record<string, unknown>> {
   const response = await fetch("https://accounts.shopify.com/oauth/token", {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
@@ -652,7 +653,7 @@ async function requestShopifyIdentityToken(body: Record<string, string>): Promis
   const payload = await response.json().catch(() => ({}));
   const message = errorMessage(payload?.errors ?? payload?.error ?? payload?.message);
   if (!response.ok) throw new Error(`Shopify CLI identity token request failed: ${message || `HTTP ${response.status}`}`);
-  return payload as Record<string, any>;
+  return payload as Record<string, unknown>;
 }
 
 async function useShopifyIdentityAdminToken(): Promise<string> {
@@ -749,7 +750,7 @@ async function currentShopifyAccessToken(): Promise<string> {
   return refreshShopifyAccessToken();
 }
 
-async function queryShopify(query: string, variables: Record<string, unknown>): Promise<any> {
+async function queryShopify(query: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!hasShopifyCredentials()) throw new Error("Shopify Admin credentials are not configured");
 
   let token = await currentShopifyAccessToken();
@@ -957,7 +958,7 @@ async function loadCampaignCosts(orders: ShopifyOrder[], start: string, end: str
       campaign: group.campaign,
     };
     const data = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm });
-    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, any>>;
+    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, unknown>>;
     const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(activity.adSpend), 0);
     const orderRows = [...group.orderRows].sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id));
     const base = orderRows.length ? Math.floor(adSpendCents / orderRows.length) : 0;
@@ -1204,7 +1205,7 @@ function sumMoneyCents(values: Array<ShopifyMoney | null | undefined>): number {
   return values.reduce((sum, value) => sum + simpleMoneyCents(value), 0);
 }
 
-function normalizeGraphqlPayouts(nodes: Array<Record<string, any>>): FinancePayout[] {
+function normalizeGraphqlPayouts(nodes: Array<Record<string, unknown>>): FinancePayout[] {
   return nodes.map((payout) => {
     const summary = payout.summary || {};
     const feeCents = sumMoneyCents([
@@ -1470,9 +1471,9 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
   try {
     const data = await queryShopify(APP_SUBSCRIPTION_QUERY, {});
     const days = periodDays(start, end);
-    const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, any>) => {
+    const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, unknown>) => {
       if (subscription.test) return [];
-      return (subscription.lineItems || []).flatMap((lineItem: Record<string, any>, index: number) => {
+      return (subscription.lineItems || []).flatMap((lineItem: Record<string, unknown>, index: number) => {
         const pricing = lineItem?.plan?.pricingDetails;
         if (pricing?.__typename !== "AppRecurringPricing" || pricing.price?.amount == null) return [];
         const interval = String(pricing.interval || "EVERY_30_DAYS").toLowerCase().replaceAll("every_30_days", "monthly");

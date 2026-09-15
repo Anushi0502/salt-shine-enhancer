@@ -140,6 +140,102 @@ const AppShell = () => (
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/pages/resources" element={<ResourcesPage />} />
+                <Route
+                  path="/pages/interactive-stem-assembly-activities-for-kids"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "interactive-stem-assembly-activities-for-kids"}
+                      loadingTitle="Loading activity guide"
+                      loadingSubtitle="Building the curated STEM activity page."
+                      errorTitle="Activity guide unavailable"
+                      errorSubtitle="Please retry to refresh the activity guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/digital-circus-lunch-box-for-kids"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "digital-circus-lunch-box-for-kids"}
+                      loadingTitle="Loading lunch-box guide"
+                      loadingSubtitle="Building the current lunch-box discovery page."
+                      errorTitle="Lunch-box guide unavailable"
+                      errorSubtitle="Please retry to refresh the lunch-box guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/kitchen-cookware-buying-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "kitchen-cookware-buying-guide"}
+                      loadingTitle="Loading kitchen guide"
+                      loadingSubtitle="Building the current kitchen and cookware guide."
+                      errorTitle="Kitchen guide unavailable"
+                      errorSubtitle="Please retry to refresh the kitchen guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/jeans-denim-fit-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "jeans-denim-fit-guide"}
+                      loadingTitle="Loading denim guide"
+                      loadingSubtitle="Building the current jeans and denim guide."
+                      errorTitle="Denim guide unavailable"
+                      errorSubtitle="Please retry to refresh the denim guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/mobwol-watch-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "mobwol-watch-guide"}
+                      loadingTitle="Loading watch guide"
+                      loadingSubtitle="Building the current watch comparison guide."
+                      errorTitle="Watch guide unavailable"
+                      errorSubtitle="Please retry to refresh the watch guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/realme-buds-case-compatibility-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "realme-buds-case-compatibility-guide"}
+                      loadingTitle="Loading case guide"
+                      loadingSubtitle="Building the current Realme Buds compatibility guide."
+                      errorTitle="Case guide unavailable"
+                      errorSubtitle="Please retry to refresh the case compatibility guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/salt-earbuds-buying-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "salt-earbuds-buying-guide"}
+                      loadingTitle="Loading earbuds guide"
+                      loadingSubtitle="Building the current earbuds buying guide."
+                      errorTitle="Earbuds guide unavailable"
+                      errorSubtitle="Please retry to refresh the earbuds guide."
+                    />
+                  }
+                />
+                <Route
+                  path="/pages/canvas-belt-sizing-style-guide"
+                  element={
+                    <RouteEditorialPage
+                      resolveHandle={() => "canvas-belt-sizing-style-guide"}
+                      loadingTitle="Loading belt guide"
+                      loadingSubtitle="Building the current canvas belt sizing guide."
+                      errorTitle="Belt guide unavailable"
+                      errorSubtitle="Please retry to refresh the belt guide."
+                    />
+                  }
+                />
                 <Route path="/pages/finance" element={<FinancePage />} />
                 <Route path="/apps:finance" element={<FinancePage />} />
                 <Route path="/apps/finance" element={<FinancePage />} />

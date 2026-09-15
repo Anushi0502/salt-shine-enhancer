@@ -1060,6 +1060,79 @@ function titleHandleOverlap(title, signals) {
   return countOverlap(handleTokens, buildTokenSet(title));
 }
 
+function footwearEvidenceText(signals) {
+  return normalizePlainText([
+    signals.handle,
+    signals.handlePhrase,
+    signals.sourceProductType,
+    signals.catalogProductType,
+    signals.productTypeText,
+  ].filter(Boolean).join(" ")).toLowerCase();
+}
+
+function buildShortFootwearTitle(title, signals) {
+  const normalizedTitle = normalizePlainText(title);
+  if (normalizedTitle.length >= 20) {
+    return normalizedTitle;
+  }
+
+  const evidence = footwearEvidenceText(signals);
+  if (!/\b(?:shoe|shoes|footwear|sneaker|sneakers|boot|boots|sandal|sandals|slipper|slippers|heel|heels)\b/.test(evidence)) {
+    return normalizedTitle;
+  }
+
+  if (/\b(?:safety|steel toe|protective|work)\b/.test(evidence)) {
+    return enforceMarketplaceTitle(`${normalizedTitle} for Protective Work`, 68);
+  }
+
+  const audience = /\b(?:men|mens|male)\b/.test(evidence)
+    ? "Men"
+    : /\b(?:women|womens|female)\b/.test(evidence)
+      ? "Women"
+      : /\b(?:kids|children|child|boys|girls)\b/.test(evidence)
+        ? "Kids"
+        : "";
+  if (audience && !new RegExp(`\\b${audience}s?\\b`, "i").test(normalizedTitle)) {
+    return enforceMarketplaceTitle(`${normalizedTitle} for ${audience}`, 68);
+  }
+
+  return enforceMarketplaceTitle(`${normalizedTitle} Footwear`, 68);
+}
+
+function buildFootwearSeoTitleCandidate(title, signals) {
+  const evidence = footwearEvidenceText(signals);
+  if (!/\b(?:shoe|shoes|footwear|sneaker|sneakers|boot|boots|sandal|sandals|slipper|slippers|heel|heels)\b/.test(evidence)) {
+    return "";
+  }
+
+  if (/\b(?:safety|steel toe|protective|work)\b/.test(evidence)) {
+    const compactTitle = title.replace(/\s+for\s+protective\s+work$/i, "").trim();
+    return `${compactTitle} | Protective Work Footwear`;
+  }
+
+  const audience = /\b(?:men|mens|male)\b/.test(evidence)
+    ? "Men's"
+    : /\b(?:women|womens|female)\b/.test(evidence)
+      ? "Women's"
+      : /\b(?:kids|children|child|boys|girls)\b/.test(evidence)
+        ? "Kids"
+        : "";
+  const modifier = /\bcasual\b/.test(evidence)
+    ? "Casual"
+    : /\b(?:formal|office|dress)\b/.test(evidence)
+      ? "Formal"
+      : /\b(?:sport|sports|running|athletic|sneaker|sneakers)\b/.test(evidence)
+        ? "Sports"
+        : "";
+  if (audience && modifier) {
+    return `${title} | ${audience} ${modifier} Footwear`;
+  }
+  if (audience) {
+    return `${title} | ${audience} Footwear Options`;
+  }
+  return `${title} | Footwear Options | SALT Online`;
+}
+
 function buildCanonicalSeoTitle(canonicalTitle, signals) {
   const title = normalizePlainText(canonicalTitle);
   if (!title) {
@@ -1104,6 +1177,13 @@ function buildCanonicalSeoTitle(canonicalTitle, signals) {
 
   if (evidenceWords.length) {
     shortened = `${shortened} | ${titleCase(evidenceWords.join(" "))}`;
+  }
+  const footwearCandidate = buildFootwearSeoTitleCandidate(shortened, signals);
+  if (
+    footwearCandidate.length >= MARKETPLACE_CONTENT_POLICY.seo.titleLength[0] &&
+    footwearCandidate.length <= MARKETPLACE_CONTENT_POLICY.seo.titleLength[1]
+  ) {
+    return footwearCandidate;
   }
   return shortened;
 }
@@ -2177,9 +2257,10 @@ function buildProductProfile(signals) {
     68,
   );
   const safeGuardedTitle = enforceMarketplaceTitle(safeHandleTitle, 68);
-  const canonicalTitle = guardedTitle.length >= 20 || safeGuardedTitle.length <= guardedTitle.length
+  let canonicalTitle = guardedTitle.length >= 20 || safeGuardedTitle.length <= guardedTitle.length
     ? guardedTitle
     : safeGuardedTitle;
+  canonicalTitle = buildShortFootwearTitle(canonicalTitle, signals);
   const searchPhrases = buildSearchPhrases(signals);
   const seoTitle = buildCanonicalSeoTitle(canonicalTitle, signals);
   const seoDescription = buildSeoDescription(canonicalTitle, signals, searchPhrases);

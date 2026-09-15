@@ -113,8 +113,10 @@ def resume_embedding_records(path: Path, entries):
     if not path.is_file():
         return 0
     count = 0
+    stable_offset = 0
+    batch_size = max(1, int(os.environ.get("SALT_VISUAL_ENCODER_BATCH_SIZE", "16")))
     try:
-        with path.open() as handle:
+        with path.open("rb") as handle:
             for line_number, line in enumerate(handle, 1):
                 if not line.strip():
                     continue
@@ -122,12 +124,17 @@ def resume_embedding_records(path: Path, entries):
                 if count >= len(entries) or record.get("imageSha256") != entries[count].get("imageSha256"):
                     raise ValueError(f"partial embedding order mismatch at record {line_number}")
                 count += 1
+                if count % batch_size == 0:
+                    stable_offset = handle.tell()
     except (OSError, ValueError, json.JSONDecodeError):
         path.unlink(missing_ok=True)
         return 0
-    if count < len(entries) and count % max(1, int(os.environ.get("SALT_VISUAL_ENCODER_BATCH_SIZE", "16"))) != 0:
-        path.unlink(missing_ok=True)
-        return 0
+    if count < len(entries) and count % batch_size != 0:
+        # A prior run may have used a different batch size. Preserve the
+        # verified full-batch prefix and discard only the incomplete tail.
+        with path.open("r+b") as handle:
+            handle.truncate(stable_offset)
+        return count - (count % batch_size)
     return count
 
 

@@ -4,9 +4,13 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, copyFile, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { lookup } from "node:dns/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { retryDelayMs, recommendedConcurrency, sleep, stableJson } from "./lib/performance-runtime.mjs";
 import { readFileWithRetry } from "./reliable-file-read.mjs";
+import { runReleasePreflight } from "./release-preflight.mjs";
+import { writeReleaseBottleneckReport } from "./release-bottleneck-report.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,8 +27,10 @@ const RELEASE_PERFORMANCE_MINIMUMS = {
   SALT_CATALOG_TAXONOMY_CONCURRENCY: 4,
   SALT_COLLECTION_SOURCE_APPLY_CONCURRENCY: 6,
   SALT_COLLECTION_MEMBERSHIP_READ_CONCURRENCY: 6,
+  SALT_COLLECTION_MEMBERSHIP_REFRESH_CONCURRENCY: 6,
   SALT_BACKFILL_APPLY_CONCURRENCY: 6,
   SALT_VARIANT_COST_READ_CONCURRENCY: 6,
+  SALT_CATALOG_VARIANT_CONTINUATION_CONCURRENCY: 6,
   SALT_VARIANT_IMAGE_PLAN_CONCURRENCY: 48,
   SALT_VARIANT_IMAGE_FETCH_CONCURRENCY: 6,
   SALT_VARIANT_IMAGE_APPLY_CONCURRENCY: 3,
@@ -32,15 +38,52 @@ const RELEASE_PERFORMANCE_MINIMUMS = {
   SALT_COLLECTION_SHUFFLE_READ_CONCURRENCY: 8,
   SALT_SHOPIFY_PUBLICATION_CONCURRENCY: 6,
   SALT_SHOPIFY_SEO_READ_CONCURRENCY: 4,
+  SALT_SHOPIFY_SEO_READBACK_CONCURRENCY: 4,
   SALT_SHOPIFY_SEO_HYDRATE_CONCURRENCY: 8,
+  SALT_BACKFILL_READ_CONCURRENCY: 4,
   SALT_SHOPIFY_READ_CONCURRENCY: 4,
   SALT_SHOPIFY_ENRICHMENT_CONCURRENCY: 4,
   SALT_COLLECTION_PRODUCT_READ_CONCURRENCY: 4,
 };
+const explicitPerformanceSettings = new Set(
+  Object.keys(RELEASE_PERFORMANCE_MINIMUMS)
+    .filter((key) => {
+      const value = Number(process.env[key]);
+      return Number.isFinite(value) && value > 0;
+    }),
+);
 for (const [key, minimum] of Object.entries(RELEASE_PERFORMANCE_MINIMUMS)) {
   const current = Number(process.env[key]);
-  if (!Number.isFinite(current) || current < minimum) process.env[key] = String(minimum);
+  if (Number.isFinite(current) && current < minimum) process.env[key] = String(minimum);
+  if (!explicitPerformanceSettings.has(key)) {
+    const kind = /MEMBERSHIP|READ|ENRICHMENT|PUBLICATION|SEO|FETCH|SHUFFLE|SOURCE|BACKFILL/.test(key)
+      ? "io"
+      : "cpu";
+    const tuned = recommendedConcurrency({
+      kind,
+      reserve: kind === "io" ? 2 : 1,
+      max: kind === "io" ? 8 : 16,
+    });
+    process.env[key] = String(Math.max(minimum, tuned));
+  }
 }
+const setAutoTunedConcurrency = (key, value) => {
+  if (!process.env[key] || /^(auto|adaptive|tuned)$/i.test(String(process.env[key]).trim())) {
+    process.env[key] = String(value);
+  }
+};
+setAutoTunedConcurrency(
+  "SALT_VARIANT_IMAGE_VISION_CONCURRENCY",
+  recommendedConcurrency({ kind: "vision", reserve: 1, max: 2, min: 1 }),
+);
+setAutoTunedConcurrency(
+  "SALT_SHOPIFY_REQUEST_CONCURRENCY",
+  recommendedConcurrency({ kind: "io", reserve: 2, max: 8, min: 1 }),
+);
+setAutoTunedConcurrency(
+  "SALT_CATEGORY_READ_CONCURRENCY",
+  recommendedConcurrency({ kind: "io", reserve: 2, max: 8, min: 1 }),
+);
 const configuredRequestDelay = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS);
 if (!Number.isFinite(configuredRequestDelay) || configuredRequestDelay > 200) {
   process.env.SALT_SHOPIFY_REQUEST_DELAY_MS = "200";
@@ -52,6 +95,23 @@ const releaseHeartbeatMs = Math.max(10_000, Number(process.env.SALT_RELEASE_HEAR
 const releaseStageTelemetryMs = Math.max(1_000, Number(process.env.SALT_RELEASE_STAGE_TELEMETRY_MS || 5_000));
 const releaseStageRetries = Math.max(0, Math.min(3, Number(process.env.SALT_RELEASE_STAGE_RETRIES || 2)));
 const releaseStageRetryDelayMs = Math.max(1000, Number(process.env.SALT_RELEASE_STAGE_RETRY_DELAY_MS || 5000));
+const releaseStageRetryDelayMaxMs = Math.max(
+  releaseStageRetryDelayMs,
+  Number(process.env.SALT_RELEASE_STAGE_RETRY_DELAY_MAX_MS || 30_000),
+);
+const releaseNetworkPollMs = Math.max(5_000, Number(process.env.SALT_RELEASE_NETWORK_POLL_MS || 30_000));
+const releaseNetworkProbeTimeoutMs = Math.max(2_000, Number(process.env.SALT_RELEASE_NETWORK_PROBE_TIMEOUT_MS || 15_000));
+const releaseNetworkFailureBackoffMs = Math.max(1_000, Number(process.env.SALT_RELEASE_NETWORK_FAILURE_BACKOFF_MS || 2_000));
+const releaseNetworkFailureBackoffMaxMs = Math.max(
+  releaseNetworkFailureBackoffMs,
+  Number(process.env.SALT_RELEASE_NETWORK_FAILURE_BACKOFF_MAX_MS || 30_000),
+);
+const releaseNetworkRetryLimit = Math.max(0, Math.min(100, Number(process.env.SALT_RELEASE_NETWORK_RETRY_LIMIT || 0)));
+const releaseFailureOutputLimit = 24_000;
+const releaseFailureStateLimit = 4_000;
+const networkFailurePattern = /429|rate limit|throttl|timeout|timed out|network|socket|temporar|aborted|econnreset|econnrefused|econnaborted|enetunreach|ehostunreach|enotfound|eai_again|getaddrinfo|dns|err_network|und_err|fetch failed|could not resolve host|name resolution|no such host|connection refused|connection reset|service unavailable|bad gateway|gateway timeout/i;
+const retryableStageFailurePattern = /429|too many requests|rate limit|throttl|timeout|timed out|network|socket|temporar|aborted|econn|enet|ehost|enotfound|eai_again|getaddrinfo|dns|fetch failed|service unavailable|bad gateway|gateway timeout|\bHTTP\s+5\d\d\b|\b5\d\d\s+(?:error|response)|bulk operation .*?(?:did not finish|failed to complete|timed out)|readback .*?(?:pending|temporar|not ready)|temporar(?:y|ily) unavailable/i;
+const remoteReleaseStagePattern = /shopify|sync:data|seo:new-products:apply|catalog-integrity|collection|publication/i;
 const sharedCatalogSnapshotPath = resolve(rootDir, "output", "release-catalog-snapshot.json");
 const appliedIntegrityManifestPath = resolve(rootDir, "output", "shopify-catalog-integrity-applied-generation.json");
 const missingCostDeletionManifestPath = resolve(rootDir, "output", "shopify-missing-cost-product-deletion-manifest.json");
@@ -64,6 +124,91 @@ const releaseWatcherScriptPath = resolve(rootDir, "scripts", "realtime-release-w
 // Keep this requirement in the orchestrator so every entrypoint, including
 // the watcher and future package aliases, inherits the same gate.
 process.env.SALT_REQUIRE_VISUAL_TAXONOMY_MODEL ||= "1";
+
+// Keep the public npm entrypoints thin. These defaults used to be duplicated
+// in `package.json`, which made `release`, `release:daily`, and watcher retries
+// drift apart. Environment variables still win, so operators can tune a run
+// without creating another release command.
+const CANONICAL_RELEASE_DEFAULTS = Object.freeze({
+  SALT_RELEASE_SKIP_MOBILE: "1",
+  SALT_SHOPIFY_SYNC_ACTIVE_CATALOG: "1",
+  SALT_SHOPIFY_USE_COMPLETE_CUSTOM_DATA_CACHE: "1",
+  SALT_ALLOW_MISSING_CANONICAL_COLLECTIONS: "hats,wigs",
+  SALT_REQUIRE_KNOWLEDGE_MODEL: "1",
+  SALT_KNOWLEDGE_ACCELERATOR: "auto",
+  SALT_CATALOG_DETERMINISTIC_FALLBACK_ALLOWED: "1",
+  SALT_CATALOG_TAXONOMY_APPROVED: "1",
+  SALT_CATALOG_TAXONOMY_APPROVAL_ID: "salt-full-catalog-release-2026-08-06-approved",
+  SALT_CATALOG_COLLECTIONS_APPROVED: "1",
+  SALT_CATALOG_COLLECTIONS_APPROVAL_ID: "salt-full-catalog-collections-2026-09-09-school-products-approved",
+  SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVED: "1",
+  SALT_CATALOG_MARKET_PRICE_MARGIN_APPROVAL_ID: "salt-market-price-margin-2026-09-08-approved",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_PERCENT: "0.20",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_MODE: "markup",
+  SALT_VARIANT_MARKET_PRICE_MARGIN_POLICY_ID: "live-market-anchor-plus-20pct-2026-09-08",
+  SALT_CATALOG_PRICE_REWORK_APPROVED: "1",
+  SALT_CATALOG_PRICE_REWORK_APPROVAL_ID: "salt-price-rework-2026-08-03-tiered-multipliers-approved",
+  SALT_CATALOG_COLLECTION_MERGES_APPROVED: "1",
+  SALT_CATALOG_FORCE_COLLECTION_SOURCE_REFRESH: "1",
+  SALT_VARIANT_COST_CAMPAIGN_COST_PER_ORDER: "18",
+  SALT_VARIANT_COST_MIN_CONTRIBUTION_MARGIN: "0.30",
+  SALT_VARIANT_COST_CLOTHING_MIN_CONTRIBUTION_MARGIN: "0.43",
+  SALT_VARIANT_PRICE_OUTLIER_RATIO: "2.5",
+  SALT_VARIANT_PRICE_OUTLIER_MINIMUM_DELTA: "25",
+  SALT_VARIANT_IMAGE_RESUME: "1",
+  SALT_VARIANT_IMAGE_REPROCESS_VISION_ERRORS: "1",
+  SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS: "10",
+  SALT_SHOPIFY_MAX_RETRY_DELAY_MS: "120000",
+  SALT_COLLECTION_MERGE_APPLY_CONCURRENCY: "4",
+  SALT_COLLECTION_MERGE_VERIFY_CONCURRENCY: "6",
+  SALT_COLLECTION_MERGE_MUTATION_BATCH_SIZE: "25",
+  SALT_COLLECTION_MERGE_PROGRESS_EVERY: "25",
+  SALT_COLLECTION_MEMBERSHIP_REFRESH_CONCURRENCY: "6",
+  SALT_CATALOG_VARIANT_CONTINUATION_CONCURRENCY: "6",
+  SALT_SHOPIFY_SEO_READ_CONCURRENCY: "4",
+  SALT_SHOPIFY_SEO_READBACK_CONCURRENCY: "4",
+  SALT_SHOPIFY_SEO_CONNECTION_CONCURRENCY: "3",
+  SALT_BACKFILL_READ_CONCURRENCY: "4",
+  SALT_SHOPIFY_SEO_REUSE_LIVE_CATALOG: "1",
+  SALT_RELEASE_SEO_MODE: "deterministic",
+  SALT_RELEASE_SEO_SCOPE: "all-products",
+  SALT_GPT_SEO_PROVIDER: "applescript",
+  SALT_GPT_SEO_BATCH_SIZE: "500",
+  SALT_GPT_SEO_CONCURRENCY: "8",
+  SALT_GPT_SEO_REUSE_SHARED_SNAPSHOT: "1",
+  // MLX batches are checkpointed as stable prefixes; 32 improves Metal
+  // throughput without changing the resume or verification contract.
+  SALT_VISUAL_ENCODER_BATCH_SIZE: "32",
+  SALT_CATALOG_PRODUCT_ANOMALY_REPAIR_APPROVED: "1",
+  SALT_PRODUCT_ANOMALY_REPAIR_APPROVAL_ID: "salt-product-anomaly-repair-2026-09-12-approved",
+  SALT_PRODUCT_ANOMALY_REPAIR_POLICY_ID: "cost-peer-outlier-draft-2026-09-12",
+  SALT_PRODUCT_ANOMALY_APPLY_CONCURRENCY: "4",
+  SALT_PRODUCT_ANOMALY_REPAIR_REUSE_SHARED_SNAPSHOT: "1",
+  SALT_SHOPIFY_REQUEST_DELAY_MS: "200",
+});
+
+function applyCanonicalReleaseDefaults(profile) {
+  const defaults = {
+    ...CANONICAL_RELEASE_DEFAULTS,
+    ...(["catalog", "daily"].includes(profile) ? { SALT_CATALOG_VISION_SUPERVISED: "1" } : {}),
+  };
+  for (const [key, value] of Object.entries(defaults)) {
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+export function assertReleaseModePrerequisites(args, env = process.env) {
+  const mode = String(args?.seoMode || "").trim().toLowerCase();
+  const provider = String(env.SALT_GPT_SEO_PROVIDER || "applescript").trim().toLowerCase();
+  if (mode === "gpt" && !["applescript", "api"].includes(provider)) {
+    throw new Error(`Unsupported GPT SEO provider ${provider}; expected applescript or api.`);
+  }
+  if (mode === "gpt" && provider === "api" && !String(env.OPENAI_API_KEY || "").trim()) {
+    throw new Error(
+      "GPT SEO mode requires OPENAI_API_KEY; release stopped before preflight and no model work or Shopify writes were started.",
+    );
+  }
+}
 
 // The canonical release uses the separately approved cost-band policy. Direct
 // invocation of the alignment script remains legacy-compatible unless callers
@@ -100,7 +245,10 @@ const unmanagedLiveCollections = new Set(
 );
 unmanagedLiveCollections.add("test");
 process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS = [...unmanagedLiveCollections].join(",");
-process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE ||= "bulk";
+// Let integrity retries refresh only failed collections when the mismatch is
+// local; it still falls back to a complete export for global/all-products
+// failures. This avoids repeating a 100k+ membership export unnecessarily.
+process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE ||= "adaptive";
 
 const catalogIntegrityArgs = [
   "--reclassify",
@@ -121,9 +269,229 @@ function formatCommand(command, args) {
   return [command, ...args].join(" ");
 }
 
+function stripAnsi(value) {
+  return String(value || "").replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
+}
+
+export function isNetworkFailureText(value) {
+  return networkFailurePattern.test(redactFailureText(value));
+}
+
+export function isRetryableStageFailure(value) {
+  return retryableStageFailurePattern.test(redactFailureText(value));
+}
+
+export function isRemoteReleaseStage(command, args = []) {
+  return remoteReleaseStagePattern.test(`${command} ${args.join(" ")}`);
+}
+
+export function shouldRepairKnowledgeModel(label, failureText) {
+  return label === "Verify trained 128M-record catalog knowledge model" &&
+    /Catalog knowledge model training fingerprint does not match the checked-in taxonomy\./i.test(
+      stripAnsi(String(failureText || "")),
+    );
+}
+
+async function runReleasePreflightWithModelRepair(profile) {
+  let repairAttempted = false;
+  while (true) {
+    try {
+      return await runReleasePreflight({ rootDir, profile });
+    } catch (error) {
+      const failureText = String(error?.message || error || "");
+      if (repairAttempted || !shouldRepairKnowledgeModel(
+        "Verify trained 128M-record catalog knowledge model",
+        failureText,
+      )) {
+        throw error;
+      }
+
+      repairAttempted = true;
+      process.stdout.write(
+        "Preflight knowledge-model fingerprint drift detected; retraining the approved deterministic model before retrying preflight.\n",
+      );
+      execFileSync(npmBin, ["run", "catalog:knowledge:model:train"], {
+        cwd: rootDir,
+        env: process.env,
+        stdio: "inherit",
+      });
+      process.stdout.write("Catalog knowledge model retrained; retrying release preflight.\n");
+    }
+  }
+}
+
+export function releaseStepFingerprint(step, profile) {
+  return createHash("sha256")
+    .update(stableJson({
+      // `catalog` and `daily` are aliases for the same governed graph. Keep
+      // their fingerprints identical so a scheduled run can safely resume a
+      // manually started full-catalog run, and vice versa.
+      profile: ["catalog", "daily"].includes(String(profile || "").trim().toLowerCase())
+        ? "unified-catalog"
+        : profile,
+      label: step?.label,
+      command: step?.command,
+      args: step?.args,
+      cwd: step?.cwd,
+    }))
+    .digest("hex");
+}
+
+function releaseRunStateMirrorPath(profile) {
+  const safeProfile = String(profile || "").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+  return safeProfile ? resolve(releaseRunStateMirrorDir, `release-run-state.${safeProfile}.json`) : null;
+}
+
+function releaseStateTimestamp(state) {
+  return Math.max(
+    0,
+    ...[
+      state?.heartbeatAt,
+      state?.completedAt,
+      state?.failedAt,
+      state?.startedAt,
+    ]
+      .map((value) => Date.parse(String(value || "")))
+      .filter((value) => Number.isFinite(value)),
+  );
+}
+
+async function readJsonFile(path) {
+  if (!path) return null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return JSON.parse(await readFileWithRetry(path, "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT" || attempt === 3) return null;
+      await sleep(Math.min(500, 50 * 2 ** attempt));
+    }
+  }
+  return null;
+}
+
+export async function readReleaseRunState(profile = "") {
+  const candidates = (await Promise.all([
+    readJsonFile(releaseRunStatePath),
+    readJsonFile(releaseRunStateMirrorPath(profile)),
+  ])).filter(Boolean);
+  const requestedProfile = String(profile || "").trim().toLowerCase();
+  const exactProfileCandidates = candidates.filter((candidate) =>
+    !requestedProfile || !candidate.profile || String(candidate.profile).trim().toLowerCase() === requestedProfile,
+  );
+  return (exactProfileCandidates.length ? exactProfileCandidates : candidates)
+    .sort((left, right) => releaseStateTimestamp(right) - releaseStateTimestamp(left))[0] || null;
+}
+
+export function findReleaseGraphDrift(steps, completedSteps, profile) {
+  if (!Array.isArray(steps) || !Array.isArray(completedSteps)) return null;
+  for (const entry of completedSteps) {
+    const index = Number(entry?.index || 0);
+    const recordedFingerprint = String(entry?.fingerprint || "");
+    if (!Number.isInteger(index) || index < 1 || !recordedFingerprint) continue;
+    const step = steps[index - 1];
+    if (!step || releaseStepFingerprint(step, profile) !== recordedFingerprint) {
+      return {
+        index,
+        label: String(entry?.label || step?.label || "unknown"),
+      };
+    }
+  }
+  return null;
+}
+
+const RELEASE_REPAIR_ROUTES = Object.freeze([
+  {
+    failedLabel: "Validate refreshed catalog taxonomy",
+    startLabel: "Regenerate catalog taxonomy and preserved-tag audit",
+    matches: /taxonomy|override|classification|knowledge|image/i,
+    reason: "taxonomy validation failed; replaying the catalog taxonomy generation before validation",
+  },
+  {
+    failedLabel: "Require image-backed taxonomy evidence",
+    startLabel: "Build visual taxonomy review queue",
+    matches: /visual|classification|review|image|evidence/i,
+    reason: "image-backed taxonomy evidence was incomplete; rebuilding the persisted review queue",
+  },
+  {
+    failedLabel: "Apply exact full-catalog collection reconciliation",
+    startLabel: "Dry-run exact full-catalog collection reconciliation",
+    matches: /collection|classification|tag|membership|govern/i,
+    reason: "collection reconciliation failed; replaying its guarded dry-run and apply pair",
+  },
+  {
+    failedLabel: "Verify exact collection membership and price rules",
+    startLabel: "Apply final current-generation collection reconciliation",
+    matches: /collection|classification|price|membership|collectionless|govern/i,
+    reason: "collection or price membership readback found drift; replaying the final governed collection apply",
+  },
+  {
+    failedLabel: "Reconcile and verify Shopify SEO/product fields",
+    startLabel: "Reconcile and verify Shopify SEO/product fields",
+    matches: /seo|product|metafield|specificity|readback/i,
+    reason: "SEO/product-field verification failed; replaying the guarded SEO stage",
+  },
+  {
+    failedLabel: "Verify every active product has product-specific SEO and metafields",
+    startLabel: "Reconcile and verify Shopify SEO/product fields",
+    matches: /seo|product|metafield|specificity|readback/i,
+    reason: "product-specificity verification failed; replaying the live SEO/product-field stage",
+  },
+  {
+    failedLabel: "Verify full-catalog cost-band variant pricing and compare-at values",
+    startLabel: "Dry-run full-catalog cost-band variant pricing",
+    matches: /pricing|price|cost|compare-at|variant/i,
+    reason: "pricing readback failed; replaying the approved cost-band dry-run and apply stages",
+  },
+  {
+    failedLabel: "Verify variant-aware SEO profiles for every active variant",
+    startLabel: "Reconcile variant-aware SEO profiles after final catalog writes",
+    matches: /variant|seo|readback|metafield/i,
+    reason: "variant-aware SEO readback failed; replaying the final variant SEO reconciliation",
+  },
+  {
+    failedLabel: "Verify daily manual collection shuffle",
+    startLabel: "Dry-run daily manual collection shuffle",
+    matches: /shuffle|order|collection|readback/i,
+    reason: "collection shuffle readback failed; replaying the same-seed shuffle plan",
+  },
+  {
+    failedLabel: "Strict live audit of repaired collection classification",
+    startLabel: "Repair final governed collection sources before strict audit",
+    matches: /collection|classification|membership|source|audit/i,
+    reason: "strict collection audit found drift; replaying the final governed source repair",
+  },
+  {
+    failedLabel: "Final live-readback gate against the applied catalog generation",
+    startLabel: "Repair final governed collection sources before strict audit",
+    matches: /readback|collection|classification|membership|price|tag/i,
+    reason: "final live readback found governed drift; replaying the bounded final repair gates",
+  },
+]);
+
+export function getReleaseRepairRoute(steps, previousRunState, requestedResumeFromStep) {
+  if (previousRunState?.status !== "failed") return null;
+  const failureText = `${previousRunState?.stepLabel || ""}\n${previousRunState?.error || ""}`;
+  for (const route of RELEASE_REPAIR_ROUTES) {
+    const failedStep = steps.findIndex((step) => step?.label === route.failedLabel) + 1;
+    const startStep = steps.findIndex((step) => step?.label === route.startLabel) + 1;
+    if (failedStep < 1 || startStep < 1 || requestedResumeFromStep !== failedStep || startStep >= requestedResumeFromStep) {
+      continue;
+    }
+    if (!route.matches.test(failureText)) continue;
+    return {
+      fromStep: startStep,
+      failedStep,
+      reason: route.reason,
+      message: `Repair-aware resume: replaying steps ${startStep}-${failedStep} before retrying the failed gate.\n`,
+    };
+  }
+  return null;
+}
+
 let releaseRunState = {};
 let releaseOwnerLockAcquired = false;
 let releaseRunStateOwned = false;
+let releaseStateWriteQueue = Promise.resolve();
 
 function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
@@ -184,9 +552,15 @@ async function ensureEmbeddedWatcher(profile) {
   }
 
   try {
+    const embeddedReleaseScript = process.env.SALT_RELEASE_WATCHER_RELEASE_SCRIPT ||
+      (profile === "daily" ? "release:daily" : "release:core");
     const watcher = spawn(nodeBin, [releaseWatcherScriptPath], {
       cwd: rootDir,
-      env: { ...process.env, SALT_RELEASE_WATCHER_EMBEDDED: "1" },
+      env: {
+        ...process.env,
+        SALT_RELEASE_WATCHER_EMBEDDED: "1",
+        SALT_RELEASE_WATCHER_RELEASE_SCRIPT: embeddedReleaseScript,
+      },
       detached: true,
       stdio: "ignore",
     });
@@ -213,7 +587,7 @@ async function acquireReleaseOwnerLock() {
   try {
     const current = JSON.parse(await readFileWithRetry(releaseRunStatePath, "utf8"));
     const currentPid = Number(current?.pid || 0);
-    if (current?.status === "running" && currentPid > 0 && currentPid !== process.pid && isProcessAlive(currentPid)) {
+    if (["running", "waiting_for_network"].includes(current?.status) && currentPid > 0 && currentPid !== process.pid && isProcessAlive(currentPid)) {
       throw new Error(`Cannot start release while release process ${currentPid} is still running`);
     }
   } catch (error) {
@@ -445,50 +819,38 @@ async function writeReleaseRunState(patch = {}) {
     heartbeatAt: new Date().toISOString(),
   };
 
-  try {
-    await mkdir(resolve(rootDir, "output"), { recursive: true });
-    const tempPath = `${releaseRunStatePath}.tmp-${process.pid}`;
-    await writeFile(tempPath, `${JSON.stringify(releaseRunState, null, 2)}\n`, "utf8");
-    await rename(tempPath, releaseRunStatePath);
-    const profile = String(releaseRunState.profile || "").trim().toLowerCase();
-    if (["catalog", "daily", "products"].includes(profile)) {
-      const mirrorPath = resolve(releaseRunStateMirrorDir, `release-run-state.${profile}.json`);
-      const mirrorTempPath = `${mirrorPath}.tmp-${process.pid}`;
-      await writeFile(mirrorTempPath, `${JSON.stringify(releaseRunState, null, 2)}\n`, "utf8");
-      await rename(mirrorTempPath, mirrorPath);
+  const snapshot = { ...releaseRunState };
+  const persist = async () => {
+    try {
+      await mkdir(resolve(rootDir, "output"), { recursive: true });
+      const targets = [releaseRunStatePath, releaseRunStateMirrorPath(snapshot.profile)].filter(Boolean);
+      for (const targetPath of targets) {
+        const tempPath = `${targetPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await writeFile(tempPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+        await rename(tempPath, targetPath);
+      }
+    } catch {
+      // Run-state telemetry must never turn a valid release into a failed release.
     }
-  } catch {
-    // Run-state telemetry must never turn a valid release into a failed release.
-  }
+  };
+
+  // Heartbeat, stage telemetry, retry, and completion updates can overlap.
+  // Serialize atomic snapshots so a late heartbeat cannot overwrite a newer
+  // checkpoint or leave the profile mirror at a different generation.
+  releaseStateWriteQueue = releaseStateWriteQueue.then(persist, persist);
+  await releaseStateWriteQueue;
 }
 
 async function readResumeRunState(profile) {
   const requestedProfile = String(profile || "").trim().toLowerCase();
   const candidates = [
-    resolve(releaseRunStateMirrorDir, `release-run-state.${requestedProfile}.json`),
+    releaseRunStateMirrorPath(requestedProfile),
     releaseRunStatePath,
   ];
-  const states = [];
-  for (const statePath of candidates) {
-    try {
-      const state = JSON.parse(await readFileWithRetry(statePath, "utf8"));
-      if (!state || String(state.profile || "").trim().toLowerCase() !== requestedProfile) continue;
-      const timestamps = [state.heartbeatAt, state.failedAt, state.completedAt, state.startedAt]
-        .map((value) => Date.parse(value || ""))
-        .filter((value) => Number.isFinite(value));
-      const timestamp = timestamps.length ? Math.max(...timestamps) : 0;
-      states.push({ state, timestamp });
-    } catch {
-      // A missing or partially synced profile mirror is not a resume blocker.
-    }
-  }
-  states.sort((left, right) => right.timestamp - left.timestamp);
-  return states[0]?.state || null;
-}
-
-function isRetryableStageFailure(error) {
-  const message = String(error?.message || error || "");
-  return /429|throttl|rate limit|network|enotfound|econnreset|etimedout|timeout|socket|temporar|readback mismatch|job .* did not finish|pending/i.test(message);
+  const states = (await Promise.all(candidates.filter(Boolean).map((statePath) => readJsonFile(statePath))))
+    .filter((state) => state && String(state.profile || "").trim().toLowerCase() === requestedProfile)
+    .sort((left, right) => releaseStateTimestamp(right) - releaseStateTimestamp(left));
+  return states[0] || null;
 }
 
 export function standbyRepairModes(label) {
@@ -564,123 +926,367 @@ async function runStandbyRepairs({ label, error, index, total, cwd }) {
   });
 }
 
+function redactFailureText(value, limit = releaseFailureOutputLimit) {
+  const redacted = stripAnsi(value)
+    .replace(/(authorization|x-shopify-access-token|access[_-]?token|api[_-]?key|secret|password|token)\s*[:=]\s*[^\s,;]+/gi, "$1=[redacted]")
+    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]")
+    .trim();
+  return redacted.length > limit ? `…${redacted.slice(-limit)}` : redacted;
+}
+
+async function probeReleaseNetwork() {
+  const shopUrl = String(process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com").trim();
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(shopUrl);
+  } catch {
+    return { available: false, reason: "release store URL is unavailable" };
+  }
+
+  try {
+    await lookup(parsedUrl.hostname);
+  } catch (error) {
+    return { available: false, reason: `DNS lookup unavailable (${error?.code || "lookup failure"})` };
+  }
+
+  try {
+    const response = await fetch(parsedUrl.origin, {
+      method: "HEAD",
+      redirect: "manual",
+      signal: AbortSignal.timeout(releaseNetworkProbeTimeoutMs),
+    });
+    response.body?.cancel?.();
+    return { available: true, status: response.status };
+  } catch (error) {
+    return {
+      available: false,
+      reason: redactFailureText(error?.message || error, 300) || "store network probe failed",
+    };
+  }
+}
+
+async function waitForNetworkBeforeRetry({
+  label,
+  commandLine,
+  cwd,
+  index,
+  total,
+  attempt,
+  initialProbe = null,
+}) {
+  const startedAt = releaseRunState.networkWait?.active && releaseRunState.networkWait?.startedAt
+    ? releaseRunState.networkWait.startedAt
+    : new Date().toISOString();
+  const baseWait = retryDelayMs({
+    attempt: Math.max(0, attempt - 1),
+    baseMs: releaseNetworkFailureBackoffMs,
+    maxMs: releaseNetworkFailureBackoffMaxMs,
+    jitterMs: 500,
+  });
+  let pollCount = 0;
+  let probe = initialProbe;
+
+  await writeReleaseRunState({
+    status: "waiting_for_network",
+    networkWait: {
+      active: true,
+      stepIndex: index,
+      totalSteps: total,
+      stepLabel: label,
+      command: commandLine,
+      cwd,
+      attempt,
+      startedAt,
+      pollCount,
+      reason: releaseRunState.networkWait?.reason || "transient network or DNS failure",
+      nextProbeAt: new Date(Date.now() + baseWait).toISOString(),
+    },
+  });
+  process.stdout.write(
+    `Network/DNS failure at step ${index}/${total}; entering waiting_for_network before retry ${attempt}.\n`,
+  );
+  await sleep(baseWait);
+
+  while (true) {
+    probe ||= await probeReleaseNetwork();
+    const now = new Date().toISOString();
+    if (probe.available) {
+      await writeReleaseRunState({
+        status: "running",
+        networkWait: {
+          active: false,
+          stepIndex: index,
+          totalSteps: total,
+          stepLabel: label,
+          command: commandLine,
+          cwd,
+          attempt,
+          startedAt,
+          pollCount,
+          lastProbeAt: now,
+          restoredAt: now,
+          nextProbeAt: null,
+          reason: "network restored; retrying the same guarded step",
+        },
+      });
+      process.stdout.write(`Network restored; retrying step ${index}/${total} (${label}) from its checkpoint.\n`);
+      return;
+    }
+
+    pollCount += 1;
+    const nextProbeAt = new Date(Date.now() + releaseNetworkPollMs).toISOString();
+    await writeReleaseRunState({
+      status: "waiting_for_network",
+      networkWait: {
+        active: true,
+        stepIndex: index,
+        totalSteps: total,
+        stepLabel: label,
+        command: commandLine,
+        cwd,
+        attempt,
+        startedAt,
+        pollCount,
+        lastProbeAt: now,
+        nextProbeAt,
+        reason: probe.reason || "store network probe failed",
+      },
+    });
+    process.stdout.write(
+      `Network still unavailable; next probe in ${Math.round(releaseNetworkPollMs / 1000)}s (poll ${pollCount}).\n`,
+    );
+    await sleep(releaseNetworkPollMs);
+    probe = null;
+  }
+}
+
+function stageFailureError({ label, commandLine, cwd, index, total, result }) {
+  const exitDetail = result?.error
+    ? `process error ${result.error.code || result.error.message || result.error}`
+    : result?.signal
+      ? `signal ${result.signal}`
+      : `exit code ${result?.code}`;
+  const output = redactFailureText(result?.output || "");
+  return new Error([
+    `Release stopped at step ${index}/${total} (${label}) with ${exitDetail}.`,
+    `Command: ${commandLine}`,
+    `Working directory: ${cwd}`,
+    output ? `Output tail: ${redactFailureText(output, releaseFailureStateLimit)}` : "",
+  ].filter(Boolean).join("\n"));
+}
+
+function runStageAttempt({ command, args, cwd, index, total, label, attempt, stageRunId }) {
+  return new Promise((resolveAttempt) => {
+    let output = "";
+    let outputBytes = 0;
+    let settled = false;
+    let child;
+    let telemetryTimer;
+    const stageStartedAt = new Date().toISOString();
+    let lastOutputAt = stageStartedAt;
+
+    const appendOutput = (chunk) => {
+      const text = String(chunk || "");
+      outputBytes += Buffer.byteLength(text);
+      lastOutputAt = new Date().toISOString();
+      output = `${output}${text}`;
+      if (output.length > releaseFailureOutputLimit) output = output.slice(-releaseFailureOutputLimit);
+    };
+
+    const writeStageTelemetry = (patch = {}) => {
+      // A timer callback from a completed child can fire after the next stage
+      // has already started. Do not let that late callback overwrite the new
+      // stage's checkpoint or exit fields.
+      if (releaseRunState.stageRunId && releaseRunState.stageRunId !== stageRunId) return;
+      void writeReleaseRunState({
+        stageStatus: "running",
+        stageRunId,
+        stageLabel: label,
+        stageAttempt: attempt,
+        stageStartedAt,
+        stageLastOutputAt: lastOutputAt,
+        stageLastActivityAt: lastOutputAt,
+        stageOutputBytes: outputBytes,
+        ...patch,
+      }).catch(() => {});
+    };
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      if (telemetryTimer) clearInterval(telemetryTimer);
+      writeStageTelemetry({
+        stageStatus: result.code === 0 ? "completed" : "failed",
+        stageFinishedAt: new Date().toISOString(),
+        stageExitCode: result.code ?? null,
+        stageSignal: result.signal || "",
+        stageChildPid: 0,
+        stageLastActivityAt: new Date().toISOString(),
+      });
+      resolveAttempt({ ...result, output, index, total });
+    };
+
+    child = spawn(command, args, {
+      cwd,
+      env: process.env,
+      stdio: ["inherit", "pipe", "pipe"],
+    });
+    writeStageTelemetry({
+      stageChildPid: child.pid || 0,
+      stageFinishedAt: null,
+      stageExitCode: null,
+      stageSignal: "",
+    });
+    telemetryTimer = setInterval(() => {
+      writeStageTelemetry({ stageChildPid: child.pid || 0 });
+    }, releaseStageTelemetryMs);
+    telemetryTimer.unref?.();
+
+    child.stdout?.on("data", (chunk) => {
+      process.stdout.write(chunk);
+      appendOutput(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      process.stderr.write(chunk);
+      appendOutput(chunk);
+    });
+    child.on("error", (error) => finish({ error }));
+    // Wait for stdout/stderr to drain before the stage result is published.
+    // This prevents a late child error from overwriting a newer checkpoint.
+    child.on("close", (code, signal) => finish({ code, signal }));
+  });
+}
+
 async function runStage({ label, command, args, cwd, index, total }) {
   const commandLine = formatCommand(command, args);
 
   process.stdout.write(`\n[${index}/${total}] ${label}\n`);
   process.stdout.write(`$ ${commandLine}\n`);
 
-  async function runAttempt(attempt) {
-    await writeReleaseRunState({ stepAttempt: attempt });
-    return new Promise((resolveStep, rejectStep) => {
-      const child = spawn(command, args, {
-        cwd,
-        env: process.env,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      let outputTail = "";
-      const stageStartedAt = new Date().toISOString();
-      let stageLastOutputAt = stageStartedAt;
-      let stageLastActivityAt = stageStartedAt;
-      let stageOutputBytes = 0;
-      let stageTelemetryTimer = null;
-      let stageTelemetryWriteInFlight = false;
-
-      const flushStageTelemetry = async () => {
-        if (stageTelemetryWriteInFlight) return;
-        stageTelemetryWriteInFlight = true;
-        try {
-          stageLastActivityAt = new Date().toISOString();
-          await writeReleaseRunState({
-            stageStatus: "running",
-            stageChildPid: Number(child.pid || 0),
-            stageStartedAt,
-            stageLastOutputAt,
-            stageLastActivityAt,
-            stageOutputBytes,
-          });
-        } finally {
-          stageTelemetryWriteInFlight = false;
-        }
-      };
-
-      const scheduleStageTelemetry = () => {
-        if (stageTelemetryTimer) return;
-        stageTelemetryTimer = setTimeout(() => {
-          stageTelemetryTimer = null;
-          void flushStageTelemetry().catch(() => {});
-        }, releaseStageTelemetryMs);
-        stageTelemetryTimer.unref?.();
-      };
-
-      const finishStageTelemetry = (status, code = null, signal = "") => {
-        if (stageTelemetryTimer) clearTimeout(stageTelemetryTimer);
-        stageTelemetryTimer = null;
-        void writeReleaseRunState({
-          stageStatus: status,
-          stageChildPid: 0,
-          stageStartedAt,
-          stageLastOutputAt,
-          stageLastActivityAt: new Date().toISOString(),
-          stageOutputBytes,
-          stageFinishedAt: new Date().toISOString(),
-          stageExitCode: code,
-          stageSignal: signal || "",
-        }).catch(() => {});
-      };
-
-      void flushStageTelemetry().catch(() => {});
-      const forward = (chunk, target) => {
-        target.write(chunk);
-        outputTail = `${outputTail}${String(chunk)}`.slice(-24_000);
-        stageLastOutputAt = new Date().toISOString();
-        stageOutputBytes += Number(chunk?.length || String(chunk).length || 0);
-        scheduleStageTelemetry();
-      };
-      child.stdout.on("data", (chunk) => forward(chunk, process.stdout));
-      child.stderr.on("data", (chunk) => forward(chunk, process.stderr));
-
-      child.on("error", (error) => {
-        finishStageTelemetry("failed");
-        rejectStep(
-          new Error(
-            `Release stopped at step ${index}/${total} (${label}).\nCommand: ${commandLine}\nWorking directory: ${cwd}\nReason: ${error.message}\n${outputTail}`,
-          ),
-        );
-      });
-
-      child.on("exit", (code, signal) => {
-        finishStageTelemetry(code === 0 ? "completed" : "failed", code, signal || "");
-        if (code === 0) {
-          process.stdout.write(`[ok] ${label}\n`);
-          resolveStep();
-          return;
-        }
-
-        const exitDetail = signal ? `signal ${signal}` : `exit code ${code}`;
-        rejectStep(
-          new Error(
-            `Release stopped at step ${index}/${total} (${label}) with ${exitDetail}.\nCommand: ${commandLine}\nWorking directory: ${cwd}\n${outputTail}`,
-          ),
-        );
-      });
+  let stageAttempt = 0;
+  let networkAttempt = 0;
+  let knowledgeModelRepairAttempted = false;
+  while (true) {
+    stageAttempt += 1;
+    const stageRunId = `${process.pid}:${index}:${stageAttempt}:${Date.now()}`;
+    await writeReleaseRunState({
+      status: "running",
+      stageStatus: "starting",
+      stageRunId,
+      stageAttempt,
+      stageRetryLimit: releaseStageRetries,
+      stageRetryable: false,
+      stageFinishedAt: null,
+      stageExitCode: null,
+      stageSignal: "",
+      stageChildPid: 0,
     });
-  }
 
-  for (let attempt = 0; attempt <= releaseStageRetries; attempt += 1) {
-    try {
-      await runAttempt(attempt + 1);
+    const result = await runStageAttempt({
+      command,
+      args,
+      cwd,
+      index,
+      total,
+      label,
+      attempt: stageAttempt,
+      stageRunId,
+    });
+    if (result.code === 0) {
+      await writeReleaseRunState({
+        status: "running",
+        stageStatus: "completed",
+        stageRunId,
+        stageAttempt,
+        stageFinishedAt: new Date().toISOString(),
+      });
+      process.stdout.write(`[ok] ${label}\n`);
       return;
-    } catch (error) {
-      const canRetry = attempt < releaseStageRetries && isRetryableStageFailure(error);
-      if (!canRetry) throw error;
-      await runStandbyRepairs({ label, error, index, total, cwd });
-      const delayMs = Math.min(120_000, releaseStageRetryDelayMs * 2 ** attempt);
-      process.stderr.write(
-        `Transient failure in step ${index}/${total}; checkpointed retry ${attempt + 2}/${releaseStageRetries + 1} in ${Math.round(delayMs / 1000)}s.\n`,
-      );
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, delayMs));
     }
+
+    const failureText = `${result.error?.code || ""} ${result.error?.message || ""} ${result.output || ""}`;
+    const failure = stageFailureError({ label, commandLine, cwd, index, total, result });
+    if (!knowledgeModelRepairAttempted && shouldRepairKnowledgeModel(label, failureText)) {
+      knowledgeModelRepairAttempted = true;
+      process.stdout.write(
+        "Knowledge model fingerprint drift detected; retraining the approved 128M-record local model before retrying verification.\n",
+      );
+      try {
+        execFileSync(npmBin, ["run", "catalog:knowledge:model:train"], {
+          cwd,
+          env: process.env,
+          stdio: "inherit",
+        });
+      } catch (repairError) {
+        throw new Error(`Knowledge model fingerprint repair failed: ${repairError?.message || repairError}`);
+      }
+      process.stdout.write("Catalog knowledge model retrained; retrying the original verification gate.\n");
+      continue;
+    }
+
+    let initialProbe = null;
+    let networkFailure = isNetworkFailureText(failureText);
+    if (!networkFailure && isRemoteReleaseStage(command, args)) {
+      initialProbe = await probeReleaseNetwork();
+      networkFailure = !initialProbe.available;
+    }
+    if (networkFailure) {
+      networkAttempt += 1;
+      if (releaseNetworkRetryLimit > 0 && networkAttempt > releaseNetworkRetryLimit) {
+        await writeReleaseRunState({
+          status: "failed",
+          networkWait: {
+            ...(releaseRunState.networkWait || {}),
+            active: false,
+            exhausted: true,
+            attempts: networkAttempt,
+            exhaustedAt: new Date().toISOString(),
+          },
+        });
+        throw failure;
+      }
+      releaseRunState = {
+        ...releaseRunState,
+        networkWait: {
+          ...(releaseRunState.networkWait || {}),
+          reason: redactFailureText(failureText, releaseFailureStateLimit) ||
+            initialProbe?.reason || "transient network or DNS failure",
+          lastFailureAt: new Date().toISOString(),
+        },
+      };
+      await waitForNetworkBeforeRetry({
+        label,
+        commandLine,
+        cwd,
+        index,
+        total,
+        attempt: networkAttempt,
+        initialProbe,
+      });
+      continue;
+    }
+
+    if (stageAttempt > releaseStageRetries || !isRetryableStageFailure(failureText)) throw failure;
+    await runStandbyRepairs({ label, error: failure, index, total, cwd });
+    const delayMs = retryDelayMs({
+      attempt: stageAttempt - 1,
+      baseMs: releaseStageRetryDelayMs,
+      maxMs: releaseStageRetryDelayMaxMs,
+      jitterMs: Math.min(500, Math.floor(releaseStageRetryDelayMs / 2)),
+    });
+    await writeReleaseRunState({
+      status: "running",
+      stageStatus: "retrying",
+      stageRunId,
+      stageAttempt,
+      stageRetryable: true,
+      stageRetryAt: new Date(Date.now() + delayMs).toISOString(),
+      stageRetryReason: redactFailureText(failureText, releaseFailureStateLimit),
+    });
+    process.stderr.write(
+      `Transient failure in step ${index}/${total}; checkpointed retry ${stageAttempt + 1}/${releaseStageRetries + 1} in ${Math.round(delayMs / 1000)}s.\n`,
+    );
+    await sleep(delayMs);
   }
 }
 
@@ -773,6 +1379,28 @@ function buildCatalogReleaseSteps({
     ...buildSyncDataSteps({
       releaseRootDir,
       labelPrefix: "Refresh Shopify data",
+    }),
+    {
+      label: "Dry-run active product option and unit-cost anomaly repair",
+      command: npmBin,
+      args: ["run", "shopify:product-anomalies:repair:dry-run"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Apply deterministic option repairs and draft high-cost outliers",
+      command: npmBin,
+      args: ["run", "shopify:product-anomalies:repair:apply"],
+      cwd: releaseRootDir,
+    },
+    {
+      label: "Verify product anomaly repairs with live readback",
+      command: npmBin,
+      args: ["run", "shopify:product-anomalies:repair:verify"],
+      cwd: releaseRootDir,
+    },
+    ...buildSyncDataSteps({
+      releaseRootDir,
+      labelPrefix: "Refresh Shopify data after product anomaly repairs",
     }),
     {
       label: "Build shared full-catalog release snapshot",
@@ -900,6 +1528,22 @@ function buildCatalogReleaseSteps({
       args: ["run", "shopify:variant-cost-price:verify"],
       cwd: releaseRootDir,
     },
+    ...(process.env.SALT_RELEASE_SEO_MODE === "gpt" ? [
+      {
+        label: "Prepare GPT SEO enrichment in 500-product checkpoints",
+        command: npmBin,
+        args: [
+          "run",
+          "catalog:seo:gpt:prepare",
+          "--",
+          "--scope",
+          process.env.SALT_RELEASE_SEO_SCOPE || "all-products",
+          "--batch-size",
+          process.env.SALT_GPT_SEO_BATCH_SIZE || "500",
+        ],
+        cwd: releaseRootDir,
+      },
+    ] : []),
     {
       label: "Reconcile and verify Shopify SEO/product fields",
       command: npmBin,
@@ -932,6 +1576,14 @@ function buildCatalogReleaseSteps({
       releaseRootDir,
       labelPrefix: "Refresh Shopify data after merchandising backfill",
     }),
+    ...(process.env.SALT_RELEASE_SEO_MODE === "gpt" ? [
+      {
+        label: "Apply and verify GPT product-type metafields in 500-product checkpoints",
+        command: npmBin,
+        args: ["run", "shopify:gpt-seo:metafields:apply"],
+        cwd: releaseRootDir,
+      },
+    ] : []),
     {
       label: "Verify every active product has product-specific SEO and metafields",
       command: npmBin,
@@ -1155,9 +1807,11 @@ export function buildReleaseSteps({
   includeMobile = process.env.SALT_RELEASE_SKIP_MOBILE !== "1",
   profile = "catalog",
 } = {}) {
-  // The full catalog release opts into the local candidate as a review assist.
-  // Daily remains deterministic-only unless its caller explicitly enables it.
-  if (profile === "catalog") process.env.SALT_RELEASE_ALLOW_CANDIDATE_VISUAL_EVIDENCE ||= "1";
+  const unifiedCatalogProfile = ["catalog", "daily"].includes(profile);
+  // Full catalog and scheduled daily runs intentionally share one graph. The
+  // candidate-review stages may produce audit evidence, but the integrity
+  // resolver cannot consume it unless an explicit supervised-vision flag is
+  // present; deterministic releases therefore remain safe by default.
   if (profile === "products") {
     return buildProductReleaseSteps({ releaseRootDir, includeMobile });
   }
@@ -1169,11 +1823,11 @@ export function buildReleaseSteps({
   return buildCatalogReleaseSteps({
     releaseRootDir,
     includeMobile,
-    candidateVisualReview: profile === "catalog",
+    candidateVisualReview: unifiedCatalogProfile,
     // A trained visual adapter may contribute evidence only through its
     // verified artifact, confidence, cross-image, and taxonomy-alignment
     // gates. The existing supervised Ollama path remains opt-in.
-    supervisedVision: profile === "catalog" &&
+    supervisedVision: unifiedCatalogProfile &&
       process.env.SALT_CATALOG_VISION_SUPERVISED === "1" &&
       process.env.SALT_RELEASE_ALLOW_AUTOMATED_VISION === "1",
   });
@@ -1183,6 +1837,8 @@ function parseArgs(argv) {
   const args = {
     profile: process.env.SALT_RELEASE_PROFILE || "catalog",
     resume: process.env.SALT_RELEASE_RESUME === "1",
+    seoMode: String(process.env.SALT_RELEASE_SEO_MODE || "deterministic").trim().toLowerCase(),
+    seoScope: String(process.env.SALT_RELEASE_SEO_SCOPE || "all-products").trim().toLowerCase(),
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -1210,11 +1866,32 @@ function parseArgs(argv) {
 
     if (token === "--resume") {
       args.resume = true;
+      continue;
+    }
+
+    if (token === "--seo-mode") {
+      if (!next) throw new Error("Missing value for --seo-mode");
+      args.seoMode = String(next).trim().toLowerCase();
+      index += 1;
+      continue;
+    }
+
+    if (token === "--seo-scope") {
+      if (!next) throw new Error("Missing value for --seo-scope");
+      args.seoScope = String(next).trim().toLowerCase();
+      index += 1;
+      continue;
     }
   }
 
   if (!["catalog", "daily", "products"].includes(args.profile)) {
     throw new Error(`Invalid release profile ${args.profile}; expected catalog, daily, or products`);
+  }
+  if (!["deterministic", "gpt"].includes(args.seoMode)) {
+    throw new Error(`Invalid SEO mode ${args.seoMode}; expected deterministic or gpt`);
+  }
+  if (!["all-products", "new-products"].includes(args.seoScope)) {
+    throw new Error(`Invalid SEO scope ${args.seoScope}; expected all-products or new-products`);
   }
 
   return args;
@@ -1223,9 +1900,14 @@ function parseArgs(argv) {
 async function main() {
   let args = { profile: process.env.SALT_RELEASE_PROFILE || "catalog" };
   let heartbeatTimer;
+  let preflightResult = null;
+  let selectedRepairRoute = null;
   try {
     args = parseArgs(process.argv);
-    await acquireReleaseOwnerLock();
+    applyCanonicalReleaseDefaults(args.profile);
+    assertReleaseModePrerequisites(args);
+    process.env.SALT_RELEASE_SEO_MODE = args.seoMode;
+    process.env.SALT_RELEASE_SEO_SCOPE = args.seoScope;
     if (args.profile !== "products") {
       // Release stages need a full catalog for audits and Shopify mutations,
       // but the storefront must not materialize the old product/search/home
@@ -1240,6 +1922,11 @@ async function main() {
       // every collection from Shopify rather than reusing a stale local map.
       process.env.SALT_SHOPIFY_FORCE_LIVE_COLLECTION_MEMBERSHIPS = "1";
     }
+    // Validate the target, approval manifests, trained model, collection
+    // registry, and listing-intelligence contract before taking the owner lock.
+    // A failed preflight therefore preserves the previous resumable checkpoint.
+    preflightResult = await runReleasePreflightWithModelRepair(args.profile);
+    await acquireReleaseOwnerLock();
     process.env.SALT_SHOPIFY_PUBLICATION_CONCURRENCY ||= "4";
     if (args.resume) {
       process.env.SALT_VARIANT_IMAGE_RESUME = "1";
@@ -1265,8 +1952,8 @@ async function main() {
       // Older watcher versions persisted `interrupted` directly. Treat it as
       // resumable just like the current `failed` representation so a manual
       // resume can recover the checkpoint instead of overwriting it.
-      if (!previousRunState || !["failed", "running", "interrupted", "paused"].includes(previousRunState.status)) {
-        throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed, running, interrupted, or paused`);
+      if (!previousRunState || !["failed", "running", "interrupted", "paused", "waiting_for_network"].includes(previousRunState.status)) {
+        throw new Error(`Cannot resume release: run state is ${previousRunState?.status || "missing"}, not failed, running, interrupted, paused, or waiting_for_network`);
       }
       if (shouldRefreshSeoLiveCatalogOnResume(previousRunState)) {
         // A failed SEO apply may have written some products after the reusable
@@ -1312,7 +1999,7 @@ async function main() {
         process.env.SALT_BACKFILL_FORCE_LIVE_CUSTOM_DATA_REFRESH = "1";
       }
       const previousPid = Number(previousRunState.pid || 0);
-      if (previousRunState.status === "running" && previousPid > 0 && previousPid !== process.pid) {
+      if (["running", "waiting_for_network"].includes(previousRunState.status) && previousPid > 0 && previousPid !== process.pid) {
         try {
           process.kill(previousPid, 0);
           throw new Error(`Cannot resume while release process ${previousPid} is still running`);
@@ -1349,6 +2036,10 @@ async function main() {
       status: "running",
       pid: process.pid,
       profile: args.profile,
+      seoMode: args.seoMode,
+      seoScope: args.seoScope,
+      gptSeoProvider: args.seoMode === "gpt" ? String(process.env.SALT_GPT_SEO_PROVIDER || "applescript") : "",
+      gptSeoBatchSize: args.seoMode === "gpt" ? Number(process.env.SALT_GPT_SEO_BATCH_SIZE || 500) : 0,
       startedAt: new Date().toISOString(),
       stepIndex: resumeFromStep - (args.resume ? 0 : 1),
       totalSteps: 0,
@@ -1356,6 +2047,9 @@ async function main() {
       heartbeatAt: new Date().toISOString(),
       resumed: args.resume,
       resumedFromStep: args.resume ? resumeFromStep : null,
+      completedSteps: [],
+      completedStepFingerprint: "",
+      preflight: preflightResult,
     };
     await writeReleaseRunState();
     releaseRunStateOwned = true;
@@ -1382,6 +2076,11 @@ async function main() {
     process.stdout.write(`  mobile-sync: ${process.env.SALT_RELEASE_SKIP_MOBILE === "1" ? "skipped" : "included"}\n`);
     process.stdout.write(`  profile: ${args.profile}\n`);
     process.stdout.write(`  execution: ${args.resume ? `resume from step ${resumeFromStep}` : "full run"}\n`);
+    process.stdout.write(
+      `  preflight: verified ${preflightResult?.target?.host || "unknown target"}; ` +
+      `${preflightResult?.listingIntelligence?.catalogProducts || 0} catalog products` +
+      `${preflightResult?.reused ? " (cached)" : ""}\n`,
+    );
 
     if (args.profile === "products") {
       const { productCohortCatalog, productCohortHandles } = getReleasePaths(rootDir);
@@ -1391,7 +2090,18 @@ async function main() {
     }
 
     const steps = buildReleaseSteps({ rootDir, profile: args.profile });
-    if (args.resume && previousRunState?.stepLabel) {
+    const graphDrift = args.resume && args.profile !== "products"
+      ? findReleaseGraphDrift(steps, previousRunState?.completedSteps, args.profile)
+      : null;
+    if (graphDrift) {
+      resumeFromStep = 1;
+      process.env.SALT_RELEASE_CATALOG_SNAPSHOT_REFRESH = "1";
+      process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH = "1";
+      process.stdout.write(
+        `Completed-step fingerprint drift at ${graphDrift.index}/${steps.length} (${graphDrift.label}); restarting the full-catalog generation from step 1.\n`,
+      );
+    }
+    if (args.resume && previousRunState?.stepLabel && !graphDrift) {
       const resolvedResume = resolveResumeStep(steps, previousRunState, resumeFromStep);
       resumeFromStep = resolvedResume.resumeFromStep;
       if (resolvedResume.reason === "collection-audit-source-repair") {
@@ -1483,11 +2193,22 @@ async function main() {
       );
     }
     const explicitResumeStep = getExplicitResumeStep(previousRunState);
-    if (args.resume && explicitResumeStep && args.profile !== "products") {
+    if (args.resume && explicitResumeStep && args.profile !== "products" && !graphDrift) {
       resumeFromStep = explicitResumeStep;
       process.stdout.write(
         `Explicit resume marker detected; resuming the catalog at step ${explicitResumeStep}.\n`,
       );
+    }
+    if (args.resume && !explicitResumeStep && args.profile !== "products" && !graphDrift) {
+      selectedRepairRoute = getReleaseRepairRoute(steps, previousRunState, resumeFromStep);
+      if (selectedRepairRoute) {
+        resumeFromStep = selectedRepairRoute.fromStep;
+        process.env.SALT_RELEASE_REPAIR_ROUTE = selectedRepairRoute.reason;
+        process.stdout.write(selectedRepairRoute.message);
+      }
+    }
+    if (selectedRepairRoute) {
+      await writeReleaseRunState({ repairRoute: selectedRepairRoute });
     }
     if (args.resume && args.profile !== "products") {
       const boundaryCheck = await detectResumeCatalogBoundaryMismatch(resumeFromStep, args.profile);
@@ -1500,16 +2221,65 @@ async function main() {
         );
       }
     }
+    if (
+      args.resume &&
+      !selectedRepairRoute &&
+      previousRunState?.stepFingerprint &&
+      Number(previousRunState?.stepIndex || 0) === resumeFromStep
+    ) {
+      const currentStep = steps[resumeFromStep - 1];
+      const currentFingerprint = currentStep ? releaseStepFingerprint(currentStep, args.profile) : "";
+      if (currentFingerprint && currentFingerprint !== previousRunState.stepFingerprint) {
+        resumeFromStep = 1;
+        process.env.SALT_RELEASE_CATALOG_SNAPSHOT_REFRESH = "1";
+        process.env.SALT_SHOPIFY_SEO_FORCE_LIVE_CATALOG_REFRESH = "1";
+        process.stdout.write(
+          "Resume gate definition changed since the checkpoint; restarting the full-catalog generation from step 1.\n",
+        );
+      }
+    }
+    if (graphDrift) {
+      // A changed completed gate invalidates every downstream artifact. Do
+      // not let a later label-specific repair route override the full restart.
+      resumeFromStep = 1;
+      selectedRepairRoute = null;
+    }
     if (resumeFromStep > steps.length) {
       throw new Error(`Cannot resume from step ${resumeFromStep}; release has ${steps.length} steps`);
     }
-    await writeReleaseRunState({ totalSteps: steps.length });
+    const priorCompletedSteps = args.resume && Array.isArray(previousRunState?.completedSteps)
+      ? previousRunState.completedSteps
+      : [];
+    const completedStepsForResume = resumeFromStep > 1
+      ? priorCompletedSteps
+        .filter((entry) => Number(entry?.index || 0) > 0 && Number(entry.index) < resumeFromStep)
+        .map((entry) => ({
+          index: Number(entry.index),
+          label: String(entry.label || ""),
+          fingerprint: String(entry.fingerprint || ""),
+          completedAt: String(entry.completedAt || ""),
+          durationMs: Number(entry.durationMs || 0),
+        }))
+      : [];
+    releaseRunState = {
+      ...releaseRunState,
+      completedSteps: completedStepsForResume,
+    };
+    await writeReleaseRunState({ totalSteps: steps.length, completedSteps: completedStepsForResume });
 
     for (const [index, step] of steps.entries()) {
-      if (index + 1 < resumeFromStep) continue;
+      const stepIndex = index + 1;
+      const stepFingerprint = releaseStepFingerprint(step, args.profile);
+      if (stepIndex < resumeFromStep) {
+        process.stdout.write(`[reuse] ${stepIndex}/${steps.length} ${step.label}\n`);
+        continue;
+      }
+      const stepStartedAt = Date.now();
       await writeReleaseRunState({
-        stepIndex: index + 1,
+        stepIndex,
         stepLabel: step.label,
+        stepFingerprint,
+        stageStatus: "starting",
       });
       if (
         step.label === "Refresh live merchandising data after final catalog writes" ||
@@ -1593,7 +2363,46 @@ async function main() {
       if (step.label === "Build web app") {
         await ensurePathExists(resolve(rootDir, "dist", "index.html"), "Vite build output");
       }
-      await writeReleaseRunState({ completedStepIndex: index + 1, stepAttempt: 0 });
+      const completedSteps = [
+        ...(Array.isArray(releaseRunState.completedSteps) ? releaseRunState.completedSteps : []),
+        {
+          index: stepIndex,
+          label: step.label,
+          fingerprint: stepFingerprint,
+          completedAt: new Date().toISOString(),
+          durationMs: Math.max(0, Date.now() - stepStartedAt),
+        },
+      ].filter((entry, entryIndex, entries) =>
+        entries.findIndex((candidate) => candidate.index === entry.index) === entryIndex,
+      );
+      await writeReleaseRunState({
+        completedStepIndex: stepIndex,
+        completedStepFingerprint: stepFingerprint,
+        completedSteps,
+        stepAttempt: 0,
+      });
+      try {
+        const report = await writeReleaseBottleneckReport({
+          steps,
+          completedSteps,
+          releaseState: {
+            ...releaseRunState,
+            status: "running",
+            stepIndex,
+            completedStepIndex: stepIndex,
+            totalSteps: steps.length,
+          },
+          outputDir: resolve(rootDir, "output"),
+        });
+        const top = report.topBottlenecks[0];
+        if (top) {
+          process.stdout.write(
+            `[telemetry] top bottleneck: step ${top.index} ${top.durationMinutes}m (${top.category})\n`,
+          );
+        }
+      } catch (reportError) {
+        process.stderr.write(`[telemetry] bottleneck report unavailable: ${reportError?.message || reportError}\n`);
+      }
     }
 
     await writeReleaseRunState({
@@ -1601,6 +2410,16 @@ async function main() {
       completedAt: new Date().toISOString(),
       stepLabel: "complete",
     });
+    try {
+      await writeReleaseBottleneckReport({
+        steps,
+        completedSteps: releaseRunState.completedSteps,
+        releaseState: { ...releaseRunState, status: "completed", stepIndex: steps.length },
+        outputDir: resolve(rootDir, "output"),
+      });
+    } catch (reportError) {
+      process.stderr.write(`[telemetry] final bottleneck report unavailable: ${reportError?.message || reportError}\n`);
+    }
     process.stdout.write("\nRelease complete.\n");
   } catch (error) {
     // Resume validation happens before the new run state is initialized. Keep

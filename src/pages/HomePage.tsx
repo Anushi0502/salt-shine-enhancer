@@ -7,7 +7,10 @@ import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero from "@/components/storefront/HomeHero";
 import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
+import { FreeGiftFinder } from "@/components/salt/FreeGiftFinder";
+import { SaltFinds } from "@/components/salt/SaltFinds";
 import { polishPlainText } from "@/lib/formatters";
+import { toGiftFinderProduct } from "@/lib/gift-finder-catalog";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
@@ -184,6 +187,13 @@ const HomePage = () => {
     [homeFeaturedProductsPayload?.bestSellerProducts],
   );
   const bestSellerDisplayTiles = bestSellerTiles;
+  const giftFinderProducts = useMemo(
+    () =>
+      (homeFeaturedProductsPayload?.bestSellerProducts || [])
+        .slice(0, HOME_PRODUCT_DISPLAY_LIMIT)
+        .map((product, index) => toGiftFinderProduct(product, index)),
+    [homeFeaturedProductsPayload?.bestSellerProducts],
+  );
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
     const sections = homeCollectionProductsPayload?.sections;
     if (!sections) {
@@ -415,7 +425,35 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
-        <h1 className="sr-only">Shop Cookware, Clothing, Decor &amp; Gifts | SALT Online Store</h1>
+        <header className="mx-auto w-full max-w-[1360px] px-1 py-1 sm:px-2 sm:py-2 lg:px-4">
+          <div className="salt-section-shell rounded-[1.75rem] px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-9">
+            <div className="max-w-3xl">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-primary sm:text-xs">
+                Curated discovery
+              </p>
+              <h1 className="mt-2 max-w-3xl font-display text-[clamp(2rem,5vw,4.35rem)] leading-[0.95] tracking-[-0.055em] text-foreground">
+                Curated essentials and giftable finds for everyday life
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+                Shop practical products across cookware, home, beauty, apparel, gadgets, and gifts — then use SALT guides to choose with more confidence.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  to="/pages/resources"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Explore buying guides
+                </Link>
+                <Link
+                  to="/collections/gifts"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-border bg-background/80 px-5 py-3 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Shop gifts
+                </Link>
+              </div>
+            </div>
+          </div>
+        </header>
         <HomeHero
           slides={homeHeroSlides}
           loading={homeCollectionProductsQuery.isPending}
@@ -487,6 +525,22 @@ const HomePage = () => {
           <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
             <GiftBanner />
           </section>
+        </Reveal>
+
+        {giftFinderProducts.length > 0 ? (
+          <Reveal delayMs={150}>
+            <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+              <FreeGiftFinder
+                products={giftFinderProducts}
+                title="Find a live SALT gift in four quick picks"
+                description="Choose a recipient, occasion, budget, and interest to see current Best Seller links matched by simple, transparent rules."
+              />
+            </section>
+          </Reveal>
+        ) : null}
+
+        <Reveal delayMs={210}>
+          <SaltFinds />
         </Reveal>
 
         <Reveal delayMs={280}>

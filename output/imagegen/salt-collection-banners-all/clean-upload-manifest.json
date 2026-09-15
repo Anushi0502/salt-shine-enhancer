@@ -1,0 +1,755 @@
+{
+  "generatedAt": "2026-09-11T11:36:56.605Z",
+  "scope": "35 remaining customer-facing collections including Salt Specials; classification collections excluded and product membership untouched",
+  "source": "clean generated category scene plus deterministic SALT reference-style typography overlay",
+  "targets": [
+    {
+      "number": 80,
+      "handle": "everyday-jewelry",
+      "title": "Everyday Jewelry",
+      "collectionId": 300515623011,
+      "fileName": "80-everyday-jewelry.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/80-everyday-jewelry.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_57.png?v=1789126283",
+      "existingAltText": "Everyday Jewelry collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_57.png?v=1789126283",
+      "altText": "Everyday Jewelry collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 81,
+      "handle": "new-arrivals",
+      "title": "New Arrivals",
+      "collectionId": 286183784547,
+      "fileName": "81-new-arrivals.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/81-new-arrivals.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/new-arrivals-products-banner-with-asurased-cash-back.png?v=1789124590",
+      "existingAltText": "New Arrivals collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/new-arrivals-products-banner-with-asurased-cash-back.png?v=1789124590",
+      "altText": "New Arrivals collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 82,
+      "handle": "school-bags",
+      "title": "School Bags",
+      "collectionId": 300515786851,
+      "fileName": "82-school-bags.png",
+      "group": "office",
+      "background": "office.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/82-school-bags.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_16_00_34.png?v=1789124668",
+      "existingAltText": "School Bags collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_16_00_34.png?v=1789124668",
+      "altText": "School Bags collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 83,
+      "handle": "footwear",
+      "title": "Footwear",
+      "collectionId": 300515655779,
+      "fileName": "83-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/83-footwear.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_13_40.png?v=1789124648",
+      "existingAltText": "Footwear collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_13_40.png?v=1789124648",
+      "altText": "Footwear collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 84,
+      "handle": "womens-footwear",
+      "title": "Women's Footwear",
+      "collectionId": 300451233891,
+      "fileName": "84-womens-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/84-womens-footwear.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/womens-footwear-banner.png?v=1789124571",
+      "existingAltText": "Women's Footwear collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/womens-footwear-banner.png?v=1789124571",
+      "altText": "Women's Footwear collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 85,
+      "handle": "womens-fashion",
+      "title": "Women's Fashion",
+      "collectionId": 299470454883,
+      "fileName": "85-womens-fashion.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/85-womens-fashion.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-0b83dea4-67bf-4444-b917-57a579ba32e7.png?v=1789124556",
+      "existingAltText": "Women's Fashion collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-0b83dea4-67bf-4444-b917-57a579ba32e7.png?v=1789124556",
+      "altText": "Women's Fashion collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 86,
+      "handle": "mens-fashion",
+      "title": "Men's Fashion",
+      "collectionId": 299392565347,
+      "fileName": "86-mens-fashion.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/86-mens-fashion.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/mens-collection.png?v=1789124655",
+      "existingAltText": "Men's Fashion collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/mens-collection.png?v=1789124655",
+      "altText": "Men's Fashion collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 87,
+      "handle": "portable-gadgets",
+      "title": "Electronic Accessories",
+      "collectionId": 298389209187,
+      "fileName": "87-portable-gadgets.png",
+      "group": "tech",
+      "background": "tech.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/87-portable-gadgets.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/need-to-create-banner-image-or-portable-item-and-gagdage-pick-items-form-this-collcetion-all-theis-item-will-here-and-get-good.png?v=1789124584",
+      "existingAltText": "Electronic Accessories collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/need-to-create-banner-image-or-portable-item-and-gagdage-pick-items-form-this-collcetion-all-theis-item-will-here-and-get-good.png?v=1789124584",
+      "altText": "Electronic Accessories collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 88,
+      "handle": "general-merchandise",
+      "title": "General Merchandise",
+      "collectionId": 299506434147,
+      "fileName": "88-general-merchandise.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/88-general-merchandise.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/general-merchantdise.png?v=1789124616",
+      "existingAltText": "General Merchandise collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/general-merchantdise.png?v=1789124616",
+      "altText": "General Merchandise collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 89,
+      "handle": "formal-footwear",
+      "title": "Formal Footwear",
+      "collectionId": 300451070051,
+      "fileName": "89-formal-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/89-formal-footwear.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/formal-footwear-banner.png?v=1789124662",
+      "existingAltText": "Formal Footwear collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/formal-footwear-banner.png?v=1789124662",
+      "altText": "Formal Footwear collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 90,
+      "handle": "men-collection",
+      "title": "Men",
+      "collectionId": 287928680547,
+      "fileName": "90-men-collection.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/90-men-collection.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_55_32_PM.png?v=1789124635",
+      "existingAltText": "Men collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_55_32_PM.png?v=1789124635",
+      "altText": "Men collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 91,
+      "handle": "trending-finds",
+      "title": "Trending Finds",
+      "collectionId": 288888127587,
+      "fileName": "91-trending-finds.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/91-trending-finds.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_14_05_53.png?v=1789124531",
+      "existingAltText": "Trending Finds collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_14_05_53.png?v=1789124531",
+      "altText": "Trending Finds collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 92,
+      "handle": "women",
+      "title": "Women",
+      "collectionId": 299470422115,
+      "fileName": "92-women.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/92-women.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c7bd9da6-c925-4e73-bc97-74c960a687dd.png?v=1789124563",
+      "existingAltText": "Women collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c7bd9da6-c925-4e73-bc97-74c960a687dd.png?v=1789124563",
+      "altText": "Women collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 93,
+      "handle": "fitness-equipment",
+      "title": "Sports & Fitness",
+      "collectionId": 299470848099,
+      "fileName": "93-fitness-equipment.png",
+      "group": "sports",
+      "background": "sports.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/93-fitness-equipment.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-d6d2d2ce-1d4b-4ebb-8aa3-c417797df472.png?v=1789124544",
+      "existingAltText": "Sports & Fitness collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-d6d2d2ce-1d4b-4ebb-8aa3-c417797df472.png?v=1789124544",
+      "altText": "Sports & Fitness collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 94,
+      "handle": "rings",
+      "title": "Rings",
+      "collectionId": 300515754083,
+      "fileName": "94-rings.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/94-rings.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_54_26.png?v=1789124642",
+      "existingAltText": "Rings collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_54_26.png?v=1789124642",
+      "altText": "Rings collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 95,
+      "handle": "luxury-fragrances",
+      "title": "Luxury Fragrances",
+      "collectionId": 298739171427,
+      "fileName": "95-luxury-fragrances.png",
+      "group": "beauty",
+      "background": "beauty.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/95-luxury-fragrances.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-image-banner-for-the-luxury-perfumes-collections.png?v=1789124505",
+      "existingAltText": "Luxury Fragrances collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-image-banner-for-the-luxury-perfumes-collections.png?v=1789124505",
+      "altText": "Luxury Fragrances collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 96,
+      "handle": "dog-supplies",
+      "title": "Dog Supplies",
+      "collectionId": 298388750435,
+      "fileName": "96-dog-supplies.png",
+      "group": "pets",
+      "background": "pets.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/96-dog-supplies.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c1b91440-8229-4bc9-912c-4a9034826427.png?v=1789124511",
+      "existingAltText": "Dog Supplies collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c1b91440-8229-4bc9-912c-4a9034826427.png?v=1789124511",
+      "altText": "Dog Supplies collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 97,
+      "handle": "necklaces",
+      "title": "Necklaces",
+      "collectionId": 300515721315,
+      "fileName": "97-necklaces.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/97-necklaces.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_15_48_19.png?v=1789124518",
+      "existingAltText": "Necklaces collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_15_48_19.png?v=1789124518",
+      "altText": "Necklaces collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 98,
+      "handle": "kids-footwear",
+      "title": "Kids Footwear",
+      "collectionId": 300451135587,
+      "fileName": "98-kids-footwear.png",
+      "group": "kids",
+      "background": "kids.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/98-kids-footwear.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/kids-footwear-banner.png?v=1789124525",
+      "existingAltText": "Kids Footwear collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/kids-footwear-banner.png?v=1789124525",
+      "altText": "Kids Footwear collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 99,
+      "handle": "trousers",
+      "title": "Trousers",
+      "collectionId": 287618138211,
+      "fileName": "99-trousers.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/99-trousers.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_03_07_36_PM.png?v=1789124538",
+      "existingAltText": "Trousers collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_03_07_36_PM.png?v=1789124538",
+      "altText": "Trousers collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 100,
+      "handle": "under-25",
+      "title": "Under $25",
+      "collectionId": 299900502115,
+      "fileName": "100-under-25.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/100-under-25.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/under-25-banner.png?v=1789124550",
+      "existingAltText": "Under $25 collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/under-25-banner.png?v=1789124550",
+      "altText": "Under $25 collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 101,
+      "handle": "all-products",
+      "title": "All Products",
+      "collectionId": 286483873891,
+      "fileName": "101-all-products.png",
+      "group": "utility",
+      "background": "utility.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/101-all-products.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/GCS_static_post_3a6d798b-2959-4be9-b251-8fee258c96d3.png?v=1789124577",
+      "existingAltText": "All Products collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/GCS_static_post_3a6d798b-2959-4be9-b251-8fee258c96d3.png?v=1789124577",
+      "altText": "All Products collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 102,
+      "handle": "under-50",
+      "title": "Under $50",
+      "collectionId": 298216849507,
+      "fileName": "102-under-50.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/102-under-50.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/with-store-theme.png?v=1789124597",
+      "existingAltText": "Under $50 collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/with-store-theme.png?v=1789124597",
+      "altText": "Under $50 collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 103,
+      "handle": "under-60",
+      "title": "Under $60",
+      "collectionId": 285389160547,
+      "fileName": "103-under-60.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/103-under-60.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_43_23_PM.png?v=1789124603",
+      "existingAltText": "Under $60 collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_43_23_PM.png?v=1789124603",
+      "altText": "Under $60 collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 104,
+      "handle": "premium-picks",
+      "title": "Premium Picks",
+      "collectionId": 298216915043,
+      "fileName": "104-premium-picks.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/104-premium-picks.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/the-premium-picks-collection-text-is-not-entered.png?v=1789124610",
+      "existingAltText": "Premium Picks collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/the-premium-picks-collection-text-is-not-entered.png?v=1789124610",
+      "altText": "Premium Picks collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 105,
+      "handle": "lunch-boxes",
+      "title": "Lunch Boxes",
+      "collectionId": 300515688547,
+      "fileName": "105-lunch-boxes.png",
+      "group": "office",
+      "background": "office.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/105-lunch-boxes.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/lunch.png?v=1789124622",
+      "existingAltText": "Lunch Boxes collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/lunch.png?v=1789124622",
+      "altText": "Lunch Boxes collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 106,
+      "handle": "water-bottles",
+      "title": "Water Bottles",
+      "collectionId": 300515819619,
+      "fileName": "106-water-bottles.png",
+      "group": "utility",
+      "background": "utility.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/106-water-bottles.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_13_00_19.png?v=1789124629",
+      "existingAltText": "Water Bottles collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_13_00_19.png?v=1789124629",
+      "altText": "Water Bottles collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 107,
+      "handle": "test",
+      "title": "Salt Specials",
+      "collectionId": 299785584739,
+      "fileName": "107-test.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/107-test.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_12_28_28.png?v=1789023548",
+      "existingAltText": null,
+      "status": "applied",
+      "resourceUrl": "https://shopify-staged-uploads.storage.googleapis.com/tmp/58076594275/files/d8252061-cfba-4aa1-a4e1-dfce560cf000/107-test.png",
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_12_28_28.png?v=1789126623",
+      "altText": "Salt Specials collection banner"
+    },
+    {
+      "number": 108,
+      "handle": "earrings",
+      "title": "Earrings",
+      "collectionId": 300515590243,
+      "fileName": "108-earrings.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/108-earrings.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_35.png?v=1789124675",
+      "existingAltText": "Earrings collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_35.png?v=1789124675",
+      "altText": "Earrings collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 109,
+      "handle": "bracelets",
+      "title": "Bracelets",
+      "collectionId": 300515524707,
+      "fileName": "109-bracelets.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/109-bracelets.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_55_46.png?v=1789124681",
+      "existingAltText": "Bracelets collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_55_46.png?v=1789124681",
+      "altText": "Bracelets collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 110,
+      "handle": "hats",
+      "title": "Hats",
+      "collectionId": 299646910563,
+      "fileName": "110-hats.png",
+      "group": "fashion",
+      "background": "fashion.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/110-hats.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/hats-collection-banner.png?v=1789124688",
+      "existingAltText": "Hats collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/hats-collection-banner.png?v=1789124688",
+      "altText": "Hats collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 111,
+      "handle": "magsafe-gadgets",
+      "title": "MagSafe Gadgets",
+      "collectionId": 299475239011,
+      "fileName": "111-magsafe-gadgets.png",
+      "group": "tech",
+      "background": "tech.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/111-magsafe-gadgets.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-magsafe-products.png?v=1789124694",
+      "existingAltText": "MagSafe Gadgets collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-magsafe-products.png?v=1789124694",
+      "altText": "MagSafe Gadgets collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 112,
+      "handle": "under-35",
+      "title": "Under $35",
+      "collectionId": 298110353507,
+      "fileName": "112-under-35.png",
+      "group": "gifts",
+      "background": "gifts.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/112-under-35.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_11_55_57.png?v=1789124700",
+      "existingAltText": "Under $35 collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_11_55_57.png?v=1789124700",
+      "altText": "Under $35 collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 113,
+      "handle": "mouse-keyboard",
+      "title": "Mouse & Keyboard",
+      "collectionId": 299470749795,
+      "fileName": "113-mouse-keyboard.png",
+      "group": "tech",
+      "background": "tech.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/113-mouse-keyboard.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-7f1a0019-f1dd-4353-8c8f-5472f77fad32.png?v=1789124706",
+      "existingAltText": "Mouse & Keyboard collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-7f1a0019-f1dd-4353-8c8f-5472f77fad32.png?v=1789124706",
+      "altText": "Mouse & Keyboard collection banner",
+      "status": "applied"
+    },
+    {
+      "number": 114,
+      "handle": "anime-collectables",
+      "title": "Anime Collectables",
+      "collectionId": 299506368611,
+      "fileName": "114-anime-collectables.png",
+      "group": "anime",
+      "background": "anime.png",
+      "filePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/imagegen/salt-collection-banners-all/114-anime-collectables.png",
+      "existingImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/anime-collectables-banner.png?v=1789124713",
+      "existingAltText": "Anime Collectables collection banner",
+      "resourceUrl": null,
+      "shopifyImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/anime-collectables-banner.png?v=1789124713",
+      "altText": "Anime Collectables collection banner",
+      "status": "applied"
+    }
+  ],
+  "summary": {
+    "requested": 35,
+    "applied": 35,
+    "failed": 0
+  },
+  "completedAt": "2026-09-11T11:37:05.126Z",
+  "readback": {
+    "verified": 35,
+    "allImagesPresent": true,
+    "allAltTextExact": true,
+    "collections": [
+      {
+        "handle": "everyday-jewelry",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_57.png?v=1789126283",
+        "altText": "Everyday Jewelry collection banner"
+      },
+      {
+        "handle": "new-arrivals",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/new-arrivals-products-banner-with-asurased-cash-back.png?v=1789124590",
+        "altText": "New Arrivals collection banner"
+      },
+      {
+        "handle": "school-bags",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_16_00_34.png?v=1789124668",
+        "altText": "School Bags collection banner"
+      },
+      {
+        "handle": "footwear",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_13_40.png?v=1789124648",
+        "altText": "Footwear collection banner"
+      },
+      {
+        "handle": "womens-footwear",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/womens-footwear-banner.png?v=1789124571",
+        "altText": "Women's Footwear collection banner"
+      },
+      {
+        "handle": "womens-fashion",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-0b83dea4-67bf-4444-b917-57a579ba32e7.png?v=1789124556",
+        "altText": "Women's Fashion collection banner"
+      },
+      {
+        "handle": "mens-fashion",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/mens-collection.png?v=1789124655",
+        "altText": "Men's Fashion collection banner"
+      },
+      {
+        "handle": "portable-gadgets",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/need-to-create-banner-image-or-portable-item-and-gagdage-pick-items-form-this-collcetion-all-theis-item-will-here-and-get-good.png?v=1789124584",
+        "altText": "Electronic Accessories collection banner"
+      },
+      {
+        "handle": "general-merchandise",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/general-merchantdise.png?v=1789124616",
+        "altText": "General Merchandise collection banner"
+      },
+      {
+        "handle": "formal-footwear",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/formal-footwear-banner.png?v=1789124662",
+        "altText": "Formal Footwear collection banner"
+      },
+      {
+        "handle": "men-collection",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_55_32_PM.png?v=1789124635",
+        "altText": "Men collection banner"
+      },
+      {
+        "handle": "trending-finds",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_14_05_53.png?v=1789124531",
+        "altText": "Trending Finds collection banner"
+      },
+      {
+        "handle": "women",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c7bd9da6-c925-4e73-bc97-74c960a687dd.png?v=1789124563",
+        "altText": "Women collection banner"
+      },
+      {
+        "handle": "fitness-equipment",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-d6d2d2ce-1d4b-4ebb-8aa3-c417797df472.png?v=1789124544",
+        "altText": "Sports & Fitness collection banner"
+      },
+      {
+        "handle": "rings",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_54_26.png?v=1789124642",
+        "altText": "Rings collection banner"
+      },
+      {
+        "handle": "luxury-fragrances",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-image-banner-for-the-luxury-perfumes-collections.png?v=1789124505",
+        "altText": "Luxury Fragrances collection banner"
+      },
+      {
+        "handle": "dog-supplies",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c1b91440-8229-4bc9-912c-4a9034826427.png?v=1789124511",
+        "altText": "Dog Supplies collection banner"
+      },
+      {
+        "handle": "necklaces",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_15_48_19.png?v=1789124518",
+        "altText": "Necklaces collection banner"
+      },
+      {
+        "handle": "kids-footwear",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/kids-footwear-banner.png?v=1789124525",
+        "altText": "Kids Footwear collection banner"
+      },
+      {
+        "handle": "trousers",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_03_07_36_PM.png?v=1789124538",
+        "altText": "Trousers collection banner"
+      },
+      {
+        "handle": "under-25",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/under-25-banner.png?v=1789124550",
+        "altText": "Under $25 collection banner"
+      },
+      {
+        "handle": "all-products",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/GCS_static_post_3a6d798b-2959-4be9-b251-8fee258c96d3.png?v=1789124577",
+        "altText": "All Products collection banner"
+      },
+      {
+        "handle": "under-50",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/with-store-theme.png?v=1789124597",
+        "altText": "Under $50 collection banner"
+      },
+      {
+        "handle": "under-60",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_43_23_PM.png?v=1789124603",
+        "altText": "Under $60 collection banner"
+      },
+      {
+        "handle": "premium-picks",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/the-premium-picks-collection-text-is-not-entered.png?v=1789124610",
+        "altText": "Premium Picks collection banner"
+      },
+      {
+        "handle": "lunch-boxes",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/lunch.png?v=1789124622",
+        "altText": "Lunch Boxes collection banner"
+      },
+      {
+        "handle": "water-bottles",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_13_00_19.png?v=1789124629",
+        "altText": "Water Bottles collection banner"
+      },
+      {
+        "handle": "test",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_12_28_28.png?v=1789126623",
+        "altText": "Salt Specials collection banner"
+      },
+      {
+        "handle": "earrings",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_11_Sept_2026_12_57_35.png?v=1789124675",
+        "altText": "Earrings collection banner"
+      },
+      {
+        "handle": "bracelets",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_17_55_46.png?v=1789124681",
+        "altText": "Bracelets collection banner"
+      },
+      {
+        "handle": "hats",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/hats-collection-banner.png?v=1789124688",
+        "altText": "Hats collection banner"
+      },
+      {
+        "handle": "magsafe-gadgets",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-magsafe-products.png?v=1789124694",
+        "altText": "MagSafe Gadgets collection banner"
+      },
+      {
+        "handle": "under-35",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/Codex_Image_10_Sept_2026_11_55_57.png?v=1789124700",
+        "altText": "Under $35 collection banner"
+      },
+      {
+        "handle": "mouse-keyboard",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-7f1a0019-f1dd-4353-8c8f-5472f77fad32.png?v=1789124706",
+        "altText": "Mouse & Keyboard collection banner"
+      },
+      {
+        "handle": "anime-collectables",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/anime-collectables-banner.png?v=1789124713",
+        "altText": "Anime Collectables collection banner"
+      }
+    ]
+  }
+}

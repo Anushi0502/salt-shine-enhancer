@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import {
   normalizeCollectionCustomData,
   normalizeProductCustomData,
@@ -14,18 +11,15 @@ import {
 } from "../src/lib/product-custom-data.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { filterOnlineStoreProducts, filterProductIdsToCatalog } from "./shopify-publication.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const baseUrl = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
-const shopDomain = new URL(baseUrl).hostname;
 const limit = Number(process.env.SALT_PAGE_LIMIT || 250);
 const adminAccessToken =
   process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 const adminGraphqlUrl = `${new URL(baseUrl).origin}/admin/api/${adminApiVersion}/graphql.json`;
-const shopifyCliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
-const shopifyCliAgentIds =
-  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-shine-enhancer`;
 const aboutHandle = process.env.SALT_ABOUT_HANDLE || "about-us";
 const blogHandleInput = process.env.SALT_BLOG_HANDLE || "posts,news,blog,journal,updates,whom-we-serve";
 const blogHandles = Array.from(
@@ -62,7 +56,7 @@ const maxRetryDelayMs = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 60
 const publicRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_PUBLIC_RETRY_BASE_DELAY_MS ?? 2000);
 const adminRetryBaseDelayMs = Number(process.env.SALT_SHOPIFY_ADMIN_RETRY_BASE_DELAY_MS ?? 1500);
 const storefrontBoundaryMode = String(process.env.SALT_SHOPIFY_STOREFRONT_BOUNDARY || "live").trim().toLowerCase();
-const runningCanonicalRelease = /^(?:release|release:daily|release:product|release:products)$/.test(
+const runningCanonicalRelease = /^(?:release|release:core|release:daily|release:product|release:products)$/.test(
   process.env.npm_lifecycle_event || "",
 );
 const skipGeneratedListingPayloads =
@@ -111,7 +105,10 @@ let requestActive = 0;
 let requestLastStartAt = 0;
 let requestPumpTimer = null;
 const requestWaiters = [];
-const execFileAsync = promisify(execFile);
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir: process.cwd(),
+  agentName: "sync",
+});
 
 async function removeGeneratedListingPayloads() {
   let entries;
@@ -420,93 +417,18 @@ async function fetchAdminGraphQL(query, variables = {}, { attempt = 0, maxAttemp
   return payload.data || {};
 }
 
-function getShopifyCliEnv() {
-  return {
-    ...process.env,
-    SHOPIFY_CLI_AGENT_INFO: shopifyCliAgentInfo,
-    SHOPIFY_CLI_AGENT_IDS: shopifyCliAgentIds,
-  };
+function runShopifyStoreGraphQL(query, variables = {}, options = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    ...options,
+    maxAttempts: options.maxAttempts || maxRequestAttempts,
+    maxRetryDelayMs: options.maxRetryDelayMs || maxRetryDelayMs,
+  });
 }
 
-async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false } = {}) {
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-sync-"));
-  const queryFile = join(tempDir, "operation.graphql");
-  const outputFile = join(tempDir, "result.json");
-  const variableFile = join(tempDir, "variables.json");
-  const serializedVariables = variables && Object.keys(variables).length ? variables : null;
-
-  try {
-    await writeFile(queryFile, query, "utf8");
-    if (serializedVariables) {
-      await writeFile(variableFile, JSON.stringify(serializedVariables, null, 2), "utf8");
-    }
-
-    const args = [
-      "store",
-      "execute",
-      "--store",
-      shopDomain,
-      "--version",
-      adminApiVersion,
-      "--query-file",
-      queryFile,
-      "--output-file",
-      outputFile,
-      "--json",
-    ];
-
-    if (serializedVariables) {
-      args.push("--variable-file", variableFile);
-    }
-
-    if (allowMutations) {
-      args.push("--allow-mutations");
-    }
-
-    await execFileAsync("shopify", args, {
-      env: getShopifyCliEnv(),
-      maxBuffer: 10 * 1024 * 1024,
-      timeout: requestTimeoutMs,
-    });
-
-    const rawOutput = await readFile(outputFile, "utf8");
-    const parsedOutput = JSON.parse(rawOutput);
-    if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
-      const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
-      throw new Error(`Shopify CLI GraphQL errors for ${shopDomain}: ${message}`);
-    }
-
-    return parsedOutput.data || parsedOutput || {};
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
-function isRetryableShopifyCliError(error) {
-  const message = String(error?.message || error || "").toLowerCase();
-  return /network|socket|tls|econn|enotfound|timed out|timeout|429|rate limit|502|503|504|temporar/.test(message);
-}
-
-async function runShopifyStoreGraphQLWithRetry(query, variables, { label }) {
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      return await runShopifyStoreGraphQL(query, variables);
-    } catch (error) {
-      if (!isRetryableShopifyCliError(error) || attempt >= maxRequestAttempts - 1) {
-        throw error;
-      }
-
-      const delayMs = Math.min(
-        maxRetryDelayMs,
-        adminRetryBaseDelayMs * 2 ** attempt + Math.floor(Math.random() * 500),
-      );
-      process.stdout.write(
-        `${label} transient failure; retrying batch in ${Math.round(delayMs / 1000)}s ` +
-          `(attempt ${attempt + 1}/${maxRequestAttempts - 1})\n`,
-      );
-      await sleep(delayMs);
-    }
-  }
+function runShopifyStoreGraphQLWithRetry(query, variables, { label } = {}) {
+  return runShopifyStoreGraphQL(query, variables, {
+    operation: label || "Shopify sync GraphQL request",
+  });
 }
 
 function enrichmentFingerprint(productIds) {

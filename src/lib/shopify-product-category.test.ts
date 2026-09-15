@@ -104,6 +104,30 @@ describe("Shopify product taxonomy classifier", () => {
       title: "Portable Blender With USB Rechargeable Mini Kitchen Fruit Juice Mixer",
       tags: ["classification-fallback"],
     })?.id).toBe("gid://shopify/TaxonomyCategory/hg");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "women-flats-round-toe-mary-jane-ankle-strap",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/aa-8");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "new-lightweight-suitcase-for-boarding-travel-luggage",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/lb");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "anti-lost-card-dog-identity-tag-metal-lettering",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/ap");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "work-badge-brooch-character-display",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/aa");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "folding-rod-case-hole-hole-universal-wheel-rod-portable-storage-travel",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/lb");
+    expect(inferDeterministicShopifyTaxonomyCategory({
+      handle: "mens-breathable-casual-business-leather-shoestrendy-and-versatile",
+      tags: ["classification-fallback"],
+    })?.id).toBe("gid://shopify/TaxonomyCategory/aa-8");
   });
 
   it.each([

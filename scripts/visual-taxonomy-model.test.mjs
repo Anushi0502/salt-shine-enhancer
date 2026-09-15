@@ -99,6 +99,23 @@ describe("visual taxonomy model contract", () => {
     })).resolves.toBeDefined();
   });
 
+  it("accepts candidate coverage when quarantined bytes exactly complete the signed target", async () => {
+    await expect(assertVisualTaxonomyModel(validModel({
+      candidateOnly: true,
+      dataset: {
+        ...validModel().dataset,
+        bytes: VISUAL_TAXONOMY_MIN_DATASET_BYTES - 10,
+        plannedBytes: VISUAL_TAXONOMY_MIN_DATASET_BYTES,
+        excludedImageCount: 1,
+        excludedBytes: 10,
+      },
+      retention: {
+        ...validModel().retention,
+        purgedBytes: VISUAL_TAXONOMY_MIN_DATASET_BYTES - 10,
+      },
+    }))).resolves.toBeDefined();
+  });
+
   it("rejects a model that did not purge its raw training corpus", async () => {
     await expect(assertVisualTaxonomyModel(validModel({ retention: { rawDataPurged: false } }), {
       taxonomyFingerprint: "fingerprint",

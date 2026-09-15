@@ -1,24 +1,20 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 import { normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { normalizeProductCustomData, normalizeCollectionCustomData, normalizeShopCustomData } from "../src/lib/product-custom-data.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
-const execFileAsync = promisify(execFile);
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const DEFAULT_INPUT_DIR = resolve(process.cwd(), "public", "data");
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
-const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
-const SHOPIFY_ADMIN_API_VERSION = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
-const SHOPIFY_CLI_AGENT_INFO = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
-const SHOPIFY_CLI_AGENT_IDS =
-  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-shine-enhancer`;
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir: process.cwd(),
+  agentName: "merchandising-verification",
+});
 const PRODUCT_FIELDS = [
   ["subtitle", "descriptors", "subtitle"],
   ["badgeText", "salt-marketing", "badge_text"],
@@ -88,59 +84,12 @@ function normalizeProductDataForVerification(input) {
   };
 }
 
-function getShopifyCliEnv() {
-  return {
-    ...process.env,
-    SHOPIFY_CLI_AGENT_INFO,
-    SHOPIFY_CLI_AGENT_IDS,
-  };
-}
-
-async function runShopifyStoreGraphQL(query, variables = {}) {
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-verify-"));
-  const queryFile = join(tempDir, "operation.graphql");
-  const outputFile = join(tempDir, "result.json");
-  const variableFile = join(tempDir, "variables.json");
-
-  try {
-    await writeFile(queryFile, query, "utf8");
-    if (variables && Object.keys(variables).length) {
-      await writeFile(variableFile, JSON.stringify(variables, null, 2), "utf8");
-    }
-
-    const args = [
-      "store",
-      "execute",
-      "--store",
-      SHOP_DOMAIN,
-      "--version",
-      SHOPIFY_ADMIN_API_VERSION,
-      "--query-file",
-      queryFile,
-      "--output-file",
-      outputFile,
-      "--json",
-    ];
-
-    if (variables && Object.keys(variables).length) {
-      args.push("--variable-file", variableFile);
-    }
-
-    await execFileAsync("shopify", args, {
-      env: getShopifyCliEnv(),
-      maxBuffer: 10 * 1024 * 1024,
-    });
-
-    const parsedOutput = JSON.parse(await readFile(outputFile, "utf8"));
-    if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
-      const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
-      throw new Error(message);
-    }
-
-    return parsedOutput.data || parsedOutput || {};
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+function runShopifyStoreGraphQL(query, variables = {}, { operation = "Shopify request" } = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    operation,
+    maxAttempts: Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 8),
+    maxRetryDelayMs: Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 120_000),
+  });
 }
 
 function loadJson(relativePath) {

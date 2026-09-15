@@ -14,7 +14,7 @@ function withKey(props: Record<string, unknown> | null | undefined, key: unknown
 }
 
 function createJsxElement(
-  type: any,
+  type: unknown,
   props: Record<string, unknown> | null | undefined,
   key: unknown,
 ) {

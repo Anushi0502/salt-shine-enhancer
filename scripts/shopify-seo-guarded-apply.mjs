@@ -56,13 +56,16 @@ async function readCurrentCatalogBoundary() {
   return null;
 }
 
-async function hasReusableSeoDryRun(manifestPath) {
+async function hasReusableSeoDryRun(manifestPath, { mode = "deterministic", scope = "all-products" } = {}) {
   try {
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     const current = await readCurrentCatalogBoundary();
     const summary = manifest.summary || {};
     const products = Array.isArray(manifest.products) ? manifest.products : [];
     const audited = Number(summary.exactMatches || 0) + Number(summary.wouldUpdate || 0);
+    const gptExpected = mode === "gpt";
+    const gptPolicy = manifest.policy?.gptSeo || {};
+    const manifestScope = gptPolicy.scope || (manifest.policy?.newProductsOnly ? "new-products" : "all-products");
     return manifest.mode === "dry-run"
       && Boolean(manifest.completedAt)
       && Array.isArray(manifest.failures)
@@ -72,6 +75,9 @@ async function hasReusableSeoDryRun(manifestPath) {
       && manifest.policy?.catalogBoundary === current.hash
       && products.length === current.count
       && audited === current.count
+      && manifestScope === scope
+      && Boolean(gptPolicy.enabled) === gptExpected
+      && (!gptExpected || gptPolicy.scope === scope)
       && products.every((entry) => !String(entry.status || "").startsWith("failed"));
   } catch {
     return false;
@@ -113,6 +119,53 @@ const resumeAfterProductSeo = process.env.SALT_SEO_GUARDED_RESUME_AFTER_PRODUCT_
   && await hasCompletedProductSeoManifest();
 const seoDryRunManifestPath = process.env.SALT_SHOPIFY_SEO_DRY_RUN_MANIFEST_PATH
   || resolve(root, "output", "shopify-seo-release-dry-run-manifest.json");
+const releaseSeoMode = String(process.env.SALT_RELEASE_SEO_MODE || "deterministic").trim().toLowerCase();
+const releaseSeoScope = String(process.env.SALT_RELEASE_SEO_SCOPE || "all-products").trim().toLowerCase();
+if (!["deterministic", "gpt"].includes(releaseSeoMode)) {
+  throw new Error(`Unsupported guarded SEO mode: ${releaseSeoMode}`);
+}
+if (!["all-products", "new-products"].includes(releaseSeoScope)) {
+  throw new Error(`Unsupported guarded SEO scope: ${releaseSeoScope}`);
+}
+const gptEnrichmentPath = resolve(
+  root,
+  process.env.SALT_GPT_SEO_ENRICHMENT_PATH || "output/gpt-seo-enrichment.json",
+);
+const gptSelectedHandlesPath = resolve(
+  root,
+  process.env.SALT_GPT_SEO_NEW_PRODUCTS_HANDLES_PATH || "output/gpt-seo-selected-handles.json",
+);
+const seoScopeArgs = releaseSeoScope === "new-products"
+  ? ["--new-products-only", ...(releaseSeoMode === "gpt" ? ["--product-handles-file", gptSelectedHandlesPath] : [])]
+  : ["--full-catalog"];
+const guardedSeoEnv = {
+  ...process.env,
+  SALT_GPT_SEO_ENRICHMENT_PATH: gptEnrichmentPath,
+  ...(releaseSeoScope === "new-products"
+    ? { SALT_GPT_SEO_NEW_PRODUCTS_HANDLES_PATH: gptSelectedHandlesPath }
+    : {}),
+};
+if (releaseSeoMode === "gpt") {
+  let enrichment;
+  try {
+    enrichment = JSON.parse(await readFile(gptEnrichmentPath, "utf8"));
+  } catch (error) {
+    throw new Error(`GPT SEO mode requires a readable completed enrichment manifest at ${gptEnrichmentPath}: ${error.message}`);
+  }
+  if (enrichment?.status !== "completed" || enrichment?.scope !== releaseSeoScope) {
+    throw new Error(`GPT SEO enrichment is not complete for ${releaseSeoScope}; no Shopify SEO dry-run or apply was started.`);
+  }
+  if (releaseSeoScope === "new-products") {
+    try {
+      const handles = JSON.parse(await readFile(gptSelectedHandlesPath, "utf8"));
+      if (!Array.isArray(handles?.handles) || handles.handles.length !== Number(enrichment.summary?.selected || 0)) {
+        throw new Error("selected handle count does not match the enrichment manifest");
+      }
+    } catch (error) {
+      throw new Error(`GPT SEO new-product scope requires a matching handle manifest at ${gptSelectedHandlesPath}: ${error.message}`);
+    }
+  }
+}
 const variantImageCachePath = process.env.SALT_VARIANT_IMAGE_MEDIA_CACHE_PATH
   || resolve(tmpdir(), "salt-variant-image-live-media-cache.json");
 const variantImageCheckpointPath = process.env.SALT_VARIANT_IMAGE_CHECKPOINT_PATH
@@ -141,7 +194,7 @@ if (!resumeAtVariantImage && !resumeAfterProductSeo) {
   run("5. Require image-backed evidence for every review-required product", npmBin, ["run", "catalog:image-review:validate"]);
   run("6. Full local catalog SEO audit", npmBin, ["run", "shopify:seo:local-review"]);
   run("7. Live taxonomy tags and metafields dry-run", npmBin, ["run", "shopify:taxonomy:dry-run"]);
-  if (await hasReusableSeoDryRun(seoDryRunManifestPath)) {
+  if (await hasReusableSeoDryRun(seoDryRunManifestPath, { mode: releaseSeoMode, scope: releaseSeoScope })) {
     process.stdout.write(`8. Reusing verified full-catalog SEO dry-run: ${seoDryRunManifestPath}\n`);
   } else {
     run(
@@ -150,15 +203,21 @@ if (!resumeAtVariantImage && !resumeAfterProductSeo) {
       [
         "scripts/shopify-seo-release.mjs",
         "--dry-run",
-        "--full-catalog",
+        ...seoScopeArgs,
         "--preserve-prices",
         "--preserve-tags",
         "--output",
         seoDryRunManifestPath,
       ],
+      guardedSeoEnv,
     );
   }
-  run("9. Guarded full-catalog Shopify SEO apply with prices and tags preserved", nodeBin, ["scripts/shopify-seo-release.mjs", "--apply", "--full-catalog", "--preserve-prices", "--preserve-tags"]);
+  run(
+    `9. Guarded ${releaseSeoScope} Shopify SEO apply (${releaseSeoMode}) with prices and tags preserved`,
+    nodeBin,
+    ["scripts/shopify-seo-release.mjs", "--apply", ...seoScopeArgs, "--preserve-prices", "--preserve-tags"],
+    guardedSeoEnv,
+  );
   run("10. Apply taxonomy tags and metafields with live readback", npmBin, ["run", "shopify:taxonomy:apply"]);
 } else if (resumeAtVariantImage) {
   process.stdout.write("Reusing completed guarded SEO and taxonomy stages; resuming at variant image mapping.\n");

@@ -2,10 +2,9 @@
 
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 import {
@@ -25,10 +24,17 @@ import {
   assessProductContentSpecificity,
   findCatalogContentCollisions,
 } from "../src/lib/product-content-specificity.js";
+import {
+  mergeGptSeoIntoPlan,
+  productGptEvidence,
+  validateGptSeoRecord,
+} from "../src/lib/gpt-seo-enrichment.js";
 import { isEarbudsCaseEvidence } from "../src/lib/catalog-content-evidence.js";
 import { PRICE_REWORK_RULES } from "../src/lib/shopify-price-rework-policy.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
+import { mapWithConcurrency } from "./lib/performance-runtime.mjs";
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -67,13 +73,6 @@ export function assertBaseSeoPriceFloor(products, threshold = PRICE_REWORK_RULES
   }
   return { threshold, productsChecked: Array.isArray(products) ? products.length : 0, variantsChecked, violations: 0 };
 }
-const adminAccessToken =
-  process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
-const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
-const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
-const cliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
-const cliAgentIds =
-  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-seo-release`;
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
 const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
@@ -82,7 +81,17 @@ const uploadTimeoutMs = Math.max(30_000, Number(process.env.SALT_SHOPIFY_UPLOAD_
 const readbackAttempts = Math.max(1, Math.min(6, Number(process.env.SALT_SHOPIFY_SEO_READBACK_ATTEMPTS || 4)));
 const seoApplyBatchSize = Math.max(1, Math.min(5, Number(process.env.SALT_SHOPIFY_SEO_BATCH_SIZE || 5)));
 const seoReadConcurrency = Math.max(1, Number(process.env.SALT_SHOPIFY_SEO_READ_CONCURRENCY || 4));
+const seoHydrateConcurrency = Math.max(
+  1,
+  Math.min(8, Number(process.env.SALT_SHOPIFY_SEO_HYDRATE_CONCURRENCY || seoReadConcurrency)),
+);
+const seoConnectionConcurrency = Math.max(
+  1,
+  Math.min(3, Number(process.env.SALT_SHOPIFY_SEO_CONNECTION_CONCURRENCY || 3)),
+);
+const seoReadbackConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_SHOPIFY_SEO_READBACK_CONCURRENCY || seoReadConcurrency)));
 const ACTIVE_PRODUCT_QUERY = "status:active";
+const shopifyAdminClient = createShopifyAdminGraphQLClient({ rootDir, agentName: "seo-release" });
 
 const PRODUCT_SELECTION = /* GraphQL */ `
   id
@@ -98,6 +107,10 @@ const PRODUCT_SELECTION = /* GraphQL */ `
   publishedAt
   category {
     id
+  }
+  gptSeoTypeAttributes: metafield(namespace: "salt-gpt-seo", key: "type_attributes") {
+    jsonValue
+    value
   }
   resourcePublications(first: 250) {
     nodes {
@@ -185,6 +198,10 @@ const PRODUCT_VERIFY_SELECTION = /* GraphQL */ `
   tags
   category {
     id
+  }
+  gptSeoTypeAttributes: metafield(namespace: "salt-gpt-seo", key: "type_attributes") {
+    jsonValue
+    value
   }
   resourcePublications(first: 250) {
     nodes {
@@ -514,35 +531,6 @@ async function readProductHandles(filePath) {
   return new Set(handles.map((handle) => normalizeHandleValue(handle)).filter(Boolean));
 }
 
-function getCliEnv() {
-  return {
-    ...process.env,
-    SHOPIFY_CLI_AGENT_INFO: cliAgentInfo,
-    SHOPIFY_CLI_AGENT_IDS: cliAgentIds,
-  };
-}
-
-function parseGraphQlPayload(raw) {
-  const text = String(raw || "").trim();
-  const jsonStart = text.indexOf("{");
-  if (jsonStart < 0) {
-    throw new Error(text || "Shopify CLI returned no JSON payload");
-  }
-
-  const payload = JSON.parse(text.slice(jsonStart));
-  if (Array.isArray(payload?.errors) && payload.errors.length) {
-    throw new Error(payload.errors.map((entry) => entry.message || "GraphQL error").join(" | "));
-  }
-
-  if (Array.isArray(payload?.data?.errors) && payload.data.errors.length) {
-    throw new Error(payload.data.errors.map((entry) => entry.message || "GraphQL error").join(" | "));
-  }
-
-  return payload?.data || payload;
-}
-
-let lastRequestFinishedAt = 0;
-
 function catalogBoundary(products) {
   const handles = (Array.isArray(products) ? products : [])
     .map((product) => normalizeHandleValue(product?.handle))
@@ -551,132 +539,12 @@ function catalogBoundary(products) {
   return `sha256-${createHash("sha256").update(handles.join("\n")).digest("hex")}`;
 }
 
-async function runShopifyCliGraphQL(query, variables, { allowMutations = false, operation, retryInfo } = {}) {
-  const now = Date.now();
-  const waitFor = requestDelayMs - (now - lastRequestFinishedAt);
-  if (waitFor > 0) {
-    await sleep(waitFor);
-  }
-
-  if (adminAccessToken) {
-    let attempt = 0;
-    while (true) {
-      try {
-        const response = await fetch(adminGraphqlUrl, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": adminAccessToken,
-          },
-          body: JSON.stringify({ query, variables: variables || {} }),
-        });
-        const rawOutput = await response.text();
-        if (!response.ok) {
-          throw new Error(`Admin GraphQL HTTP ${response.status}: ${rawOutput.slice(0, 500)}`);
-        }
-
-        lastRequestFinishedAt = Date.now();
-        return parseGraphQlPayload(rawOutput);
-      } catch (error) {
-        lastRequestFinishedAt = Date.now();
-        const message = String(error?.message || error);
-        const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(
-          message,
-        );
-        if (!transient || attempt >= maxAttempts - 1) {
-          throw new Error(`${operation || "Shopify Admin GraphQL request"} failed: ${message.trim()}`);
-        }
-
-        const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
-        retryInfo?.push({
-          operation: operation || "Shopify Admin GraphQL request",
-          attempt: attempt + 1,
-          delayMs,
-          message: message.trim().slice(0, 500),
-          at: new Date().toISOString(),
-        });
-        process.stdout.write(
-          `Shopify Admin GraphQL request failed for ${operation || "operation"}; retrying in ${Math.ceil(delayMs / 1000)}s\n`,
-        );
-        await sleep(delayMs);
-        attempt += 1;
-      }
-    }
-  }
-
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-seo-release-"));
-  const queryFile = join(tempDir, "operation.graphql");
-  const variablesFile = join(tempDir, "variables.json");
-  const outputFile = join(tempDir, "result.json");
-
-  try {
-    await writeFile(queryFile, query, "utf8");
-    await writeFile(variablesFile, JSON.stringify(variables || {}, null, 2), "utf8");
-
-    const cliArgs = [
-      "store",
-      "execute",
-      "--store",
-      storeDomain,
-      "--version",
-      apiVersion,
-      "--query-file",
-      queryFile,
-      "--variable-file",
-      variablesFile,
-      "--output-file",
-      outputFile,
-      "--json",
-    ];
-    if (allowMutations) {
-      cliArgs.push("--allow-mutations");
-    }
-
-    let attempt = 0;
-    while (true) {
-      try {
-        const result = await execFileAsync(cliBinary, cliArgs, {
-          cwd: rootDir,
-          env: getCliEnv(),
-          maxBuffer: 20 * 1024 * 1024,
-          timeout: cliTimeoutMs,
-          killSignal: "SIGTERM",
-        });
-        lastRequestFinishedAt = Date.now();
-        let rawOutput = "";
-        try {
-          rawOutput = await readFile(outputFile, "utf8");
-        } catch {
-          rawOutput = result.stdout || "";
-        }
-        return parseGraphQlPayload(rawOutput);
-      } catch (error) {
-        lastRequestFinishedAt = Date.now();
-        const message = String(error?.stderr || error?.stdout || error?.message || error);
-        const transient = /429|rate limit|throttl|timeout|timed out|5\d\d|network|socket|temporar|aborted|enotfound|eai_again|getaddrinfo|dns/i.test(message);
-        if (!transient || attempt >= maxAttempts - 1) {
-          throw new Error(`${operation || "Shopify CLI request"} failed: ${message.trim()}`);
-        }
-
-        const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
-        retryInfo?.push({
-          operation: operation || "Shopify CLI request",
-          attempt: attempt + 1,
-          delayMs,
-          message: message.trim().slice(0, 500),
-          at: new Date().toISOString(),
-        });
-        process.stdout.write(
-          `Shopify CLI request failed for ${operation || "operation"}; retrying in ${Math.ceil(delayMs / 1000)}s\n`,
-        );
-        await sleep(delayMs);
-        attempt += 1;
-      }
-    }
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+function runShopifyCliGraphQL(query, variables, options = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    ...options,
+    maxAttempts: options.maxAttempts || maxAttempts,
+    maxRetryDelayMs: options.maxRetryDelayMs || maxRetryDelayMs,
+  });
 }
 
 async function readJson(relativePath, { required = false } = {}) {
@@ -689,6 +557,88 @@ async function readJson(relativePath, { required = false } = {}) {
     }
     throw new Error(`Could not read ${filePath}: ${error.message}`);
   }
+}
+
+async function loadGptSeoEnrichment({ liveProducts, selectedHandles, scope }) {
+  const mode = String(process.env.SALT_RELEASE_SEO_MODE || "deterministic").trim().toLowerCase();
+  if (mode !== "gpt") return null;
+
+  const enrichmentPath = resolve(
+    rootDir,
+    process.env.SALT_GPT_SEO_ENRICHMENT_PATH || "output/gpt-seo-enrichment.json",
+  );
+  let enrichment;
+  try {
+    enrichment = JSON.parse(await readFile(enrichmentPath, "utf8"));
+  } catch (error) {
+    throw new Error(`GPT SEO mode requires a readable enrichment manifest at ${enrichmentPath}: ${error.message}`);
+  }
+  if (enrichment?.status !== "completed") {
+    throw new Error(`GPT SEO enrichment is ${enrichment?.status || "missing"}; no Shopify SEO plan may be applied.`);
+  }
+  if (enrichment.scope !== scope) {
+    throw new Error(`GPT SEO enrichment scope ${enrichment.scope || "missing"} does not match requested ${scope}.`);
+  }
+
+  const liveByHandle = new Map(
+    liveProducts
+      .map((product) => [normalizeHandleValue(product?.handle), product])
+      .filter(([handle]) => Boolean(handle)),
+  );
+  let scopeHandles = selectedHandles;
+  if (scope === "new-products" && !scopeHandles?.size) {
+    const handlesPath = resolve(
+      rootDir,
+      process.env.SALT_GPT_SEO_NEW_PRODUCTS_HANDLES_PATH || "output/gpt-seo-selected-handles.json",
+    );
+    scopeHandles = await readProductHandles(handlesPath);
+  }
+  const expectedProducts = scope === "new-products"
+    ? [...(scopeHandles || [])].map((handle) => liveByHandle.get(handle)).filter(Boolean)
+    : liveProducts;
+  const expectedHandles = new Set(expectedProducts.map((product) => normalizeHandleValue(product?.handle)).filter(Boolean));
+  const recordByHandle = new Map();
+  const issues = [];
+  for (const entry of Array.isArray(enrichment.records) ? enrichment.records : []) {
+    const handle = normalizeHandleValue(entry?.handle || entry?.record?.handle);
+    if (!handle || recordByHandle.has(handle)) {
+      issues.push(`${handle || "missing-handle"}: duplicate or missing enrichment handle`);
+      continue;
+    }
+    if (!expectedHandles.has(handle)) {
+      issues.push(`${handle}: enrichment handle is outside the current ${scope} live boundary`);
+      continue;
+    }
+    if (entry.accepted !== true) {
+      issues.push(`${handle}: enrichment record is not accepted`);
+      continue;
+    }
+    const product = liveByHandle.get(handle);
+    const validation = validateGptSeoRecord(product, entry.record || entry);
+    if (!validation.accepted) {
+      issues.push(`${handle}: ${validation.issues.join(", ")}`);
+      continue;
+    }
+    recordByHandle.set(handle, { ...entry, record: validation.record });
+  }
+  const missing = [...expectedHandles].filter((handle) => !recordByHandle.has(handle));
+  if (missing.length) issues.push(`missing enrichment records for ${missing.length} live product(s)`);
+  const expectedBoundary = catalogBoundary(expectedProducts);
+  if (enrichment.catalogBoundary !== expectedBoundary) {
+    issues.push(`catalog boundary mismatch (manifest ${enrichment.catalogBoundary || "missing"}, live ${expectedBoundary})`);
+  }
+  if (issues.length) {
+    throw new Error(`GPT SEO evidence gate failed: ${issues.slice(0, 12).join(" | ")}`);
+  }
+
+  return {
+    ...enrichment,
+    records: [...recordByHandle.values()],
+    model: String(enrichment.model || process.env.SALT_GPT_SEO_MODEL || process.env.OPENAI_MODEL || "").trim(),
+    evidenceProducts: expectedProducts.length,
+    sourcePath: enrichmentPath,
+    evidenceFields: Object.keys(productGptEvidence(expectedProducts[0] || {})),
+  };
 }
 
 async function loadCatalogSnapshot() {
@@ -879,7 +829,6 @@ export async function fetchAllProducts(retryInfo = []) {
   const hydrationIndexes = products
     .map((product, index) => (hasNestedPaginationGap(product) ? index : -1))
     .filter((index) => index >= 0);
-  const hydrationConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_SHOPIFY_SEO_HYDRATE_CONCURRENCY || seoReadConcurrency)));
   let nextHydrationIndex = 0;
   let hydratedCount = 0;
   const hydrateWorker = async () => {
@@ -898,7 +847,7 @@ export async function fetchAllProducts(retryInfo = []) {
     }
   };
   await Promise.all(
-    Array.from({ length: Math.min(hydrationConcurrency, hydrationIndexes.length) }, () => hydrateWorker()),
+    Array.from({ length: Math.min(seoHydrateConcurrency, hydrationIndexes.length) }, () => hydrateWorker()),
   );
 
   const excluded = products.filter((product) => !isActiveShopifyProduct(product));
@@ -960,10 +909,13 @@ async function fetchProductsById(ids, retryInfo, operation = "read product batch
   };
   await Promise.all(Array.from({ length: Math.min(seoReadConcurrency, batches.length) }, () => worker()));
   const products = results.flat();
-  const hydratedProducts = [];
-  for (const product of products) {
-    hydratedProducts.push(hasNestedPaginationGap(product) ? await hydrateNestedProductConnections(product, retryInfo) : product);
-  }
+  const hydratedProducts = await mapWithConcurrency(
+    products,
+    seoHydrateConcurrency,
+    async (product) => hasNestedPaginationGap(product)
+      ? hydrateNestedProductConnections(product, retryInfo)
+      : product,
+  );
   return new Map(hydratedProducts.map((product) => [product.id, product]));
 }
 
@@ -1006,28 +958,40 @@ async function hydrateNestedProductConnections(product, retryInfo) {
     },
   ];
 
-  for (const connection of pendingConnections) {
-    let pageInfo = hydrated[connection.key]?.pageInfo || {};
-    let after = pageInfo.endCursor || null;
-    while (pageInfo.hasNextPage) {
-      const data = await runShopifyCliGraphQL(
-        connection.query,
-        { id: product.id, after },
-        { operation: `${connection.operation} ${product.handle}`, retryInfo },
-      );
-      const nextConnection = data?.node?.[connection.key];
-      if (!nextConnection) {
-        throw new Error(`Missing ${connection.key} pagination response for ${product.handle}`);
-      }
+  const hydratedConnections = await mapWithConcurrency(
+    pendingConnections,
+    seoConnectionConcurrency,
+    async (connection) => {
+      let pageInfo = hydrated[connection.key]?.pageInfo || {};
+      let after = pageInfo.endCursor || null;
+      const nodes = [...(hydrated[connection.key]?.nodes || [])];
+      while (pageInfo.hasNextPage) {
+        const data = await runShopifyCliGraphQL(
+          connection.query,
+          { id: product.id, after },
+          { operation: `${connection.operation} ${product.handle}`, retryInfo },
+        );
+        const nextConnection = data?.node?.[connection.key];
+        if (!nextConnection) {
+          throw new Error(`Missing ${connection.key} pagination response for ${product.handle}`);
+        }
 
-      hydrated[connection.key].nodes.push(...(nextConnection.nodes || []));
-      pageInfo = nextConnection.pageInfo || {};
-      hydrated[connection.key].pageInfo = pageInfo;
-      if (pageInfo.hasNextPage && !pageInfo.endCursor) {
-        throw new Error(`Missing ${connection.key} pagination cursor for ${product.handle}`);
+        nodes.push(...(nextConnection.nodes || []));
+        pageInfo = nextConnection.pageInfo || {};
+        if (pageInfo.hasNextPage && !pageInfo.endCursor) {
+          throw new Error(`Missing ${connection.key} pagination cursor for ${product.handle}`);
+        }
+        after = pageInfo.endCursor || null;
       }
-      after = pageInfo.endCursor || null;
-    }
+      return { key: connection.key, nodes, pageInfo };
+    },
+  );
+  for (const connection of hydratedConnections) {
+    hydrated[connection.key] = {
+      ...(hydrated[connection.key] || {}),
+      nodes: connection.nodes,
+      pageInfo: connection.pageInfo,
+    };
   }
 
   return hydrated;
@@ -2139,7 +2103,8 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
     "SEO final mutation readback",
   );
   const verificationFailures = [];
-  for (const [index, task] of tasks.entries()) {
+  let verifiedCount = 0;
+  await mapWithConcurrency(tasks, seoReadbackConcurrency, async (task) => {
     let finalLive = finalById.get(task.liveProduct.id);
     try {
       if (!finalLive) throw new Error("Final verification product missing");
@@ -2164,11 +2129,13 @@ async function applyPlanBulk({ plan, manifest, output, liveProducts = [] }) {
     } catch (error) {
       verificationFailures.push(`${task.entry.handle}: ${error.message}`);
       markFailure(manifest, task.entry, "failed", error);
+    } finally {
+      verifiedCount += 1;
+      if (verifiedCount % 250 === 0 || verifiedCount === tasks.length) {
+        process.stdout.write(`SEO bulk readback verified ${verifiedCount}/${tasks.length} updated product(s).\n`);
+      }
     }
-    if ((index + 1) % 250 === 0 || index + 1 === tasks.length) {
-      process.stdout.write(`SEO bulk readback verified ${index + 1}/${tasks.length} updated product(s).\n`);
-    }
-  }
+  });
   manifest.retryInfo.push(...retryInfo);
   refreshSummary(manifest);
   await writeManifest(output.path, manifest);
@@ -2401,6 +2368,18 @@ export async function runShopifySeoRelease({
   productHandlesFile = "",
   newProductsOnly = false,
 } = {}) {
+  const seoMode = String(process.env.SALT_RELEASE_SEO_MODE || "deterministic").trim().toLowerCase();
+  const configuredSeoScope = String(process.env.SALT_RELEASE_SEO_SCOPE || "").trim().toLowerCase();
+  const seoScope = configuredSeoScope || (newProductsOnly ? "new-products" : "all-products");
+  if (!["deterministic", "gpt"].includes(seoMode)) {
+    throw new Error(`Unsupported SEO mode ${seoMode}; expected deterministic or gpt.`);
+  }
+  if (!["all-products", "new-products"].includes(seoScope)) {
+    throw new Error(`Unsupported SEO scope ${seoScope}; expected all-products or new-products.`);
+  }
+  if (newProductsOnly && seoScope !== "new-products") {
+    throw new Error(`--new-products-only requires SALT_RELEASE_SEO_SCOPE=new-products, not ${seoScope}.`);
+  }
   const priorManifest = await readPriorManifest(output);
   const localSnapshot = await loadCatalogSnapshot();
   const sharedCatalogPath = frozenCatalog || process.env.SALT_RELEASE_CATALOG_SNAPSHOT_PATH || "";
@@ -2453,6 +2432,15 @@ export async function runShopifySeoRelease({
   manifest.policy.frozenCatalog = frozenCatalog || null;
   manifest.policy.productHandlesFile = productHandlesFile || null;
   manifest.policy.newProductsOnly = newProductsOnly;
+  manifest.policy.gptSeo = {
+    enabled: seoMode === "gpt",
+    mode: seoMode,
+    scope: seoScope,
+    provider: seoMode === "gpt" ? String(process.env.SALT_GPT_SEO_PROVIDER || "applescript") : "",
+    model: seoMode === "gpt" ? String(process.env.SALT_GPT_SEO_MODEL || process.env.OPENAI_MODEL || "gpt-5-mini") : "",
+    enrichmentPath: seoMode === "gpt" ? resolve(rootDir, process.env.SALT_GPT_SEO_ENRICHMENT_PATH || "output/gpt-seo-enrichment.json") : "",
+    applied: 0,
+  };
   manifest.summary.sourceProducts = localPlan?.summary.sourceProducts || sourceProducts.length;
   manifest.summary.localCatalogProducts = localPlan?.summary.sourceProducts || sourceProducts.length;
   await writeManifest(output, manifest);
@@ -2490,11 +2478,25 @@ export async function runShopifySeoRelease({
     total: mergedSnapshot.products.length,
     products: mergedSnapshot.products,
   });
-  const mergedPlan = await buildShopifySeoReleasePlan(mergedSnapshot, {
+  const gptEnrichment = await loadGptSeoEnrichment({
+    liveProducts,
+    selectedHandles: explicitNewProductHandles,
+    scope: seoScope,
+  });
+  const mergedPlanBase = await buildShopifySeoReleasePlan(mergedSnapshot, {
     forceExplicitSeo: true,
     repairVariantPricing,
     knowledgeModel,
   });
+  const mergedPlan = gptEnrichment
+    ? mergeGptSeoIntoPlan(mergedPlanBase, gptEnrichment, { scope: seoScope })
+    : mergedPlanBase;
+  if (gptEnrichment && Number(mergedPlan.gptSeo?.applied || 0) !== gptEnrichment.evidenceProducts) {
+    throw new Error(
+      `GPT SEO plan merge applied ${mergedPlan.gptSeo?.applied || 0}/${gptEnrichment.evidenceProducts} ` +
+      `validated records; no Shopify SEO writes may start.`,
+    );
+  }
   const selectedHandles = localPlanSelection
     ? new Set(localPlanSelection.products.map((entry) => entry.handle))
     : null;
@@ -2519,6 +2521,16 @@ export async function runShopifySeoRelease({
   manifest.policy.frozenCatalog = frozenCatalog || null;
   manifest.policy.productHandlesFile = productHandlesFile || null;
   manifest.policy.newProductsOnly = newProductsOnly;
+  manifest.policy.gptSeo = {
+    enabled: seoMode === "gpt",
+    mode: seoMode,
+    scope: seoScope,
+    provider: seoMode === "gpt" ? String(process.env.SALT_GPT_SEO_PROVIDER || "applescript") : "",
+    model: gptEnrichment?.model || (seoMode === "gpt" ? String(process.env.SALT_GPT_SEO_MODEL || process.env.OPENAI_MODEL || "gpt-5-mini") : ""),
+    enrichmentPath: gptEnrichment?.sourcePath || "",
+    evidenceProducts: gptEnrichment?.evidenceProducts || 0,
+    applied: mergedPlan.gptSeo?.applied || 0,
+  };
   manifest.policy.catalogAugmentedFromLive = true;
   manifest.retryInfo = retryInfo;
   manifest.summary.sourceProducts = plan.summary.sourceProducts;

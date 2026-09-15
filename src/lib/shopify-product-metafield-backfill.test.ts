@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   BACKFILL_FIELD_IDS,
+  GPT_SEO_PROTECTED_FIELD_IDS,
   buildBackfillPlan,
   buildMetafieldSetBatches,
   inferDiaperTypeReference,
@@ -278,6 +279,35 @@ describe("shopify product metafield backfill planner", () => {
       false,
     );
     expect(productSeven?.skipped.some((entry) => entry.fieldId === BACKFILL_FIELD_IDS.googleCustomProduct)).toBe(true);
+  });
+
+  it("never overwrites GPT-owned SEO and merchandising metafields", () => {
+    const product = makeProduct({
+      id: 99,
+      title: "GPT Curated Travel Bottle",
+      handle: "gpt-curated-travel-bottle",
+      product_type: "Travel Bottle",
+      tags: ["travel", "bottle"],
+      customData: {
+        highlights: ["GPT travel bottle", "Portable bottle design"],
+        collectionSignal: "Travel bottle",
+        searchProductBoosts: ["GPT travel bottle", "portable travel bottle", "travel bottle"],
+      },
+    });
+    product.gptSeoTypeAttributes = {
+      schemaVersion: 2,
+      generatedBy: "salt-gpt-seo",
+      category: { category: "Travel Accessories" },
+    };
+    const plan = buildBackfillPlan({
+      products: [product],
+      collections: [],
+      collectionProducts: { collections: {} },
+      enforceProductSpecificity: true,
+      forceManagedMetafields: true,
+    });
+    const writes = plan.productPlans[0]?.writes || [];
+    expect(writes.some((entry) => GPT_SEO_PROTECTED_FIELD_IDS.has(entry.fieldId))).toBe(false);
   });
 
   it("uses product handles to generate search boosts for generic catalog titles", () => {

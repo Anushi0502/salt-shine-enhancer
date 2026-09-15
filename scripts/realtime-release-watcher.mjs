@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { buildProcessTerminationTargets, parseProcessTable } from "./lib/process-runtime.mjs";
 
 import { COLLECTION_GOVERNANCE_POLICIES } from "../src/lib/catalog-collection-governance.js";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
@@ -107,6 +108,35 @@ const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const execFileAsync = promisify(execFile);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "realtime-release-watcher" });
 
+function normalizeSeoMode(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  return mode === "deterministic" ? "deterministic" : "gpt";
+}
+
+function normalizeSeoScope(value) {
+  return String(value || "").trim().toLowerCase() === "new-products" ? "new-products" : "all-products";
+}
+
+export function resolveReleaseLaunchConfig(release = {}, watcherState = {}) {
+  const profile = ["catalog", "daily", "products"].includes(String(release?.profile || "").trim().toLowerCase())
+    ? String(release.profile).trim().toLowerCase()
+    : "catalog";
+  const seoMode = normalizeSeoMode(
+    release?.seoMode || watcherState?.releaseSeoMode || process.env.SALT_RELEASE_SEO_MODE || "gpt",
+  );
+  const seoScope = normalizeSeoScope(
+    release?.seoScope || watcherState?.releaseSeoScope || process.env.SALT_RELEASE_SEO_SCOPE || "all-products",
+  );
+  return {
+    script: "release:core",
+    profile,
+    seoMode,
+    seoScope,
+    provider: seoMode === "gpt" ? "applescript" : "",
+    batchSize: seoMode === "gpt" ? 500 : 0,
+  };
+}
+
 const WATCH_QUERY = /* GraphQL */ `
   query RealtimeReleaseWatcher {
     products(first: 1, query: "status:active", sortKey: UPDATED_AT, reverse: true) {
@@ -152,6 +182,27 @@ function stageTelemetry(release) {
   };
 }
 
+export function mergeActiveReleaseTelemetry(watcherState = {}, release = {}) {
+  const releasePid = Number(release?.pid || 0);
+  if (!isActiveReleaseCheckpointStatus(release?.status) || releasePid <= 0) return watcherState;
+  const launch = resolveReleaseLaunchConfig(release, watcherState);
+  return {
+    ...watcherState,
+    ...stageTelemetry(release),
+    activeReleasePid: releasePid,
+    releaseStatus: String(release.status),
+    releaseSeoMode: launch.seoMode,
+    releaseSeoScope: launch.seoScope,
+    gptSeoProvider: launch.provider,
+    gptSeoBatchSize: launch.batchSize,
+    releaseStepIndex: Number(release.stepIndex || 0),
+    releaseTotalSteps: Number(release.totalSteps || 0),
+    releaseStepLabel: String(release.stepLabel || ""),
+    releaseHeartbeatAt: String(release.heartbeatAt || ""),
+    lastError: "",
+  };
+}
+
 function operationProgressAgeMs(progress) {
   const updatedAt = timestamp(progress?.updatedAt);
   return updatedAt > 0 ? Math.max(0, Date.now() - updatedAt) : 0;
@@ -165,7 +216,27 @@ function localDateKey(date = new Date()) {
 }
 
 export function isResumableReleaseCheckpointStatus(status) {
-  return ["failed", "interrupted"].includes(String(status || "").trim().toLowerCase());
+  return ["failed", "interrupted", "waiting_for_network"].includes(String(status || "").trim().toLowerCase());
+}
+
+export function isActiveReleaseCheckpointStatus(status) {
+  return ["running", "waiting_for_network"].includes(String(status || "").trim().toLowerCase());
+}
+
+export function isManualStopSuppressed(release = {}, watcherState = {}) {
+  const releasePid = Number(release?.pid || 0);
+  const stoppedReleasePid = Number(watcherState?.manualStopReleasePid || 0);
+  return releasePid > 0 && stoppedReleasePid > 0 && releasePid === stoppedReleasePid;
+}
+
+export function releaseProgressLogKey(release = {}) {
+  return [
+    String(release?.pid || "unknown"),
+    String(release?.startedAt || "unknown"),
+    String(release?.stepIndex || "unknown"),
+    String(release?.totalSteps || "unknown"),
+    String(release?.stepLabel || "unknown"),
+  ].join(":");
 }
 
 export function shouldReclaimUnreadableWatcherLock({ lockAgeMs, monitorIntervalMs } = {}) {
@@ -178,6 +249,18 @@ export function shouldReclaimUnreadableWatcherLock({ lockAgeMs, monitorIntervalM
 export function shouldDeferWatcherCheck({ nextRetryAt, now = Date.now(), hasActionableRelease = false, scheduledDue = false } = {}) {
   const retryAt = timestamp(nextRetryAt);
   return retryAt > Number(now) && !hasActionableRelease && !scheduledDue;
+}
+
+export function shouldTrustLiveReleaseStage({
+  releaseAlive = false,
+  stageAlive = false,
+  stageStatus = "",
+  heartbeatAgeMs = 0,
+  staleMs = releaseStateStaleMs,
+} = {}) {
+  const heartbeatFresh = Number.isFinite(Number(heartbeatAgeMs)) && Number(heartbeatAgeMs) <= Number(staleMs);
+  const stageRunning = stageAlive && ["running", "waiting_for_network"].includes(normalize(stageStatus));
+  return Boolean(releaseAlive) && (heartbeatFresh || stageRunning);
 }
 
 function scheduledReleaseDue(state) {
@@ -337,12 +420,12 @@ function summarizeVisualShardProgress(progress) {
     ? completed.length
     : completed && typeof completed === "object"
       ? Object.keys(completed).length
-      : Number(progress.completedImages || progress.completed || 0);
+      : Number(progress.completedImages || progress.recordsWritten || progress.entriesProcessed || progress.imagesProcessed || progress.completed || 0);
   return {
     status: String(progress.status || "running"),
     sourceManifestSha256: String(progress.sourceManifestSha256 || ""),
     completedImages: Number.isFinite(completedImages) ? completedImages : 0,
-    totalImages: Number(progress.totalImages || progress.imageCount || 0),
+    totalImages: Number(progress.totalImages || progress.totalRecords || progress.totalEntries || progress.imageCount || 0),
     completedBytes: Number(progress.completedBytes || progress.bytes || 0),
     updatedAt: String(progress.updatedAt || ""),
   };
@@ -561,7 +644,7 @@ async function markInterruptedRelease(release, reason) {
   const current = await readJson(releaseRunStatePath, null);
   if (
     !current ||
-    current.status !== "running" ||
+    !isActiveReleaseCheckpointStatus(current.status) ||
     Number(current.pid || 0) !== Number(release?.pid || 0) ||
     String(current.heartbeatAt || "") !== String(release?.heartbeatAt || "")
   ) {
@@ -605,6 +688,8 @@ async function restoreLostReleaseCheckpoint(release, watcherState) {
   const restored = {
     ...release,
     profile: ["catalog", "daily"].includes(String(release.profile || "")) ? release.profile : "daily",
+    seoMode: normalizeSeoMode(release.seoMode || watcherState?.releaseSeoMode || process.env.SALT_RELEASE_SEO_MODE),
+    seoScope: normalizeSeoScope(release.seoScope || watcherState?.releaseSeoScope || process.env.SALT_RELEASE_SEO_SCOPE),
     stepIndex,
     completedStepIndex: Math.max(0, stepIndex - 1),
     totalSteps,
@@ -673,11 +758,24 @@ function isProcessAlive(pid) {
   }
 }
 
+function releaseSupervisorFor(release, state) {
+  const releasePid = Number(release?.pid || 0);
+  const supervisorPid = Number(state?.releaseSupervisorPid || 0);
+  if (
+    !state?.releaseSupervisorDetached ||
+    releasePid <= 0 ||
+    Number(state?.releaseSupervisorReleasePid || 0) !== releasePid
+  ) {
+    return 0;
+  }
+  return supervisorPid;
+}
+
 async function recoverLiveReleaseAfterMonitorError(state, error) {
   try {
     const release = await readJson(releaseRunStatePath, null);
     const pid = Number(release?.pid || 0);
-    if (release?.status !== "running" || !isProcessAlive(pid)) return null;
+    if (!isActiveReleaseCheckpointStatus(release?.status) || !isProcessAlive(pid)) return null;
     const now = new Date().toISOString();
     const detail = String(error?.message || error || "monitor read failed").split("\n")[0];
     const recovered = await notifyUser({
@@ -685,7 +783,8 @@ async function recoverLiveReleaseAfterMonitorError(state, error) {
       ...stageTelemetry(release),
       watcherPid: process.pid,
       activeReleasePid: pid,
-      releaseStatus: "running",
+      releaseStatus: String(release.status),
+      networkWait: release.networkWait || null,
       releaseStepIndex: Number(release.stepIndex || 0),
       releaseTotalSteps: Number(release.totalSteps || 0),
       releaseStepLabel: String(release.stepLabel || ""),
@@ -708,17 +807,50 @@ async function recoverLiveReleaseAfterMonitorError(state, error) {
   }
 }
 
-async function stopStaleRelease(pid) {
-  if (!isProcessAlive(pid) || pid === process.pid) return;
+async function readProcessTerminationTargets(pid) {
   try {
-    process.kill(pid, "SIGTERM");
+    const { stdout } = await execFileAsync("/bin/ps", ["-axo", "pid=,ppid="], { timeout: 5_000 });
+    return buildProcessTerminationTargets(pid, parseProcessTable(stdout), process.pid);
   } catch {
-    return;
+    return buildProcessTerminationTargets(pid, [], process.pid);
   }
-  await sleep(5_000);
-  if (isProcessAlive(pid)) {
+}
+
+async function stopStaleRelease(pid, { processGroupPid = 0 } = {}) {
+  const rootPid = Number(pid);
+  const groupPid = Number(processGroupPid);
+  const targets = await readProcessTerminationTargets(rootPid);
+  const groupIsSafe = Number.isInteger(groupPid) && groupPid > 0 && groupPid !== process.pid;
+  let groupSignaled = false;
+  if (groupIsSafe && isProcessAlive(groupPid)) {
     try {
-      process.kill(pid, "SIGKILL");
+      process.kill(-groupPid, "SIGTERM");
+      groupSignaled = true;
+    } catch {
+      // Fall back to the process table below if the group is already gone.
+    }
+  }
+  for (const target of targets) {
+    if (!isProcessAlive(target)) continue;
+    try {
+      process.kill(target, "SIGTERM");
+    } catch {
+      // The process may have exited between the liveness check and the kill.
+    }
+  }
+  if (!groupSignaled && !targets.some((target) => isProcessAlive(target))) return;
+  await sleep(5_000);
+  if (groupSignaled) {
+    try {
+      process.kill(-groupPid, "SIGKILL");
+    } catch {
+      // The group may have exited after SIGTERM.
+    }
+  }
+  for (const target of targets) {
+    if (!isProcessAlive(target)) continue;
+    try {
+      process.kill(target, "SIGKILL");
     } catch {
       // The process may have exited between the liveness check and the kill.
     }
@@ -730,19 +862,33 @@ async function inspectReleaseRun(state) {
   release = await restoreLostReleaseCheckpoint(release, state);
   if (!release?.status) return { active: false, reasons: [] };
 
-  if (release.status === "running") {
+  if (isActiveReleaseCheckpointStatus(release.status)) {
     const pid = Number(release.pid || 0);
     const ageMs = Date.now() - timestamp(release.heartbeatAt || release.startedAt);
-    if (isProcessAlive(pid) && ageMs <= releaseStateStaleMs) {
+    const releaseAlive = isProcessAlive(pid);
+    const supervisorPid = releaseSupervisorFor(release, state);
+    const stageChildPid = Number(release.stageChildPid || 0);
+    const stageAlive = stageChildPid > 0 && isProcessAlive(stageChildPid);
+    if (shouldTrustLiveReleaseStage({
+      releaseAlive,
+      stageAlive,
+      stageStatus: release.stageStatus,
+      heartbeatAgeMs: ageMs,
+    })) {
       return { active: true, release, reasons: [] };
     }
 
-    const interruptionReason = isProcessAlive(pid)
+    const interruptionReason = releaseAlive
       ? `release heartbeat stale for ${Math.round(ageMs / 1000)}s`
       : `release process ${pid || "unknown"} is no longer running`;
-    if (isProcessAlive(pid) && ageMs > releaseStateStaleMs) {
+    if (releaseAlive && ageMs > releaseStateStaleMs) {
       await log(`release heartbeat stale for ${Math.round(ageMs / 1000)}s; stopping pid ${pid}`);
-      await stopStaleRelease(pid);
+      await stopStaleRelease(pid, {
+        processGroupPid: supervisorPid,
+      });
+    } else if (!releaseAlive && supervisorPid > 0 && isProcessAlive(supervisorPid)) {
+      await log(`release owner pid ${pid || "unknown"} exited; stopping orphan supervisor pid ${supervisorPid}`);
+      await stopStaleRelease(supervisorPid, { processGroupPid: supervisorPid });
     }
     const interrupted = await markInterruptedRelease(release, interruptionReason);
     return {
@@ -980,13 +1126,35 @@ async function releaseLock() {
   await rm(lockPath, { recursive: true, force: true });
 }
 
-async function runDailyRelease({ resume = false, state = {}, script = releaseScript } = {}) {
-  const args = ["run", script];
-  if (resume) args.push("--", "--resume");
+async function runDailyRelease({ resume = false, state = {}, launch = {} } = {}) {
+  const config = resolveReleaseLaunchConfig(launch.release || launch, state);
+  const args = [
+    "run",
+    config.script,
+    "--",
+    "--profile",
+    config.profile,
+    "--seo-mode",
+    config.seoMode,
+    "--seo-scope",
+    config.seoScope,
+  ];
+  if (resume) args.push("--resume");
   const child = spawn(npmBin, args, {
     cwd: rootDir,
-    env: { ...process.env, SALT_RELEASE_WATCHER_CHILD: "1" },
+    env: {
+      ...process.env,
+      SALT_RELEASE_WATCHER_CHILD: "1",
+      SALT_RELEASE_SEO_MODE: config.seoMode,
+      SALT_RELEASE_SEO_SCOPE: config.seoScope,
+      ...(config.seoMode === "gpt" ? {
+        SALT_GPT_SEO_PROVIDER: config.provider,
+        SALT_GPT_SEO_BATCH_SIZE: String(config.batchSize),
+        SALT_VISUAL_ENCODER_BATCH_SIZE: "32",
+      } : {}),
+    },
     stdio: "inherit",
+    detached: true,
   });
   const exitPromise = new Promise((resolvePromise, rejectPromise) => {
     child.once("error", rejectPromise);
@@ -997,15 +1165,23 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
     ...state,
     watcherPid: process.pid,
     activeReleasePid: Number(child.pid || 0),
+    releaseSupervisorPid: Number(child.pid || 0),
+    releaseSupervisorReleasePid: 0,
+    releaseSupervisorDetached: true,
     releaseStatus: "running",
+    releaseSeoMode: config.seoMode,
+    releaseSeoScope: config.seoScope,
+    gptSeoProvider: config.provider,
+    gptSeoBatchSize: config.batchSize,
     lastError: "",
     lastCheckedAt: new Date().toISOString(),
     watcherHeartbeatAt: new Date().toISOString(),
   };
   await writeState(monitorState);
-  await log(`guarded release child started; pid=${child.pid || "unknown"}; script=${script}; resume=${resume}`);
+  await log(`guarded release child started; pid=${child.pid || "unknown"}; script=${config.script}; mode=${config.seoMode}; scope=${config.seoScope}; resume=${resume}`);
 
   let lastProgressKey = "";
+  let liveStageNoticeKey = "";
   let childExited = false;
   while (!childExited) {
     const waitResult = await Promise.race([
@@ -1015,7 +1191,7 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
     childExited = waitResult.done;
 
     const release = await readJson(releaseRunStatePath, null);
-    if (release?.status === "running") {
+    if (isActiveReleaseCheckpointStatus(release?.status)) {
       // Keep the parallel training owner visible while a network-heavy release
       // is running so a watcher reload can adopt the live training lock.
       monitorState = await reconcileParallelVisualTraining(monitorState);
@@ -1026,7 +1202,7 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
       ) {
         monitorState = await maybeRunVisualTraining(monitorState, { releaseActive: true, detached: true });
       }
-      const progressKey = `${release.stepIndex || "?"}/${release.totalSteps || "?"}:${release.stepLabel || "unknown"}`;
+      const progressKey = `${release.status}:${release.stepIndex || "?"}/${release.totalSteps || "?"}:${release.stepLabel || "unknown"}`;
       if (progressKey !== lastProgressKey) {
         await log(`release progress; step=${progressKey}; heartbeat=${release.heartbeatAt || "unknown"}`);
         lastProgressKey = progressKey;
@@ -1042,7 +1218,11 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
         visualTaxonomyTrainingReadiness: await readVisualTrainingReadiness(),
         watcherPid: process.pid,
         activeReleasePid: Number(child.pid || release.pid || 0),
-        releaseStatus: "running",
+        releaseSupervisorPid: Number(child.pid || monitorState.releaseSupervisorPid || 0),
+        releaseSupervisorReleasePid: Number(release.pid || monitorState.releaseSupervisorReleasePid || 0),
+        releaseSupervisorDetached: true,
+        releaseStatus: String(release.status),
+        networkWait: release.networkWait || null,
         releaseStepIndex: Number(release.stepIndex || 0),
         releaseTotalSteps: Number(release.totalSteps || 0),
         releaseStepLabel: String(release.stepLabel || ""),
@@ -1053,7 +1233,16 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
       };
       await writeState(monitorState);
 
-      if (heartbeatAgeMs > releaseStateStaleMs) {
+      const releaseOwnerAlive = isProcessAlive(Number(release?.pid || 0)) || isProcessAlive(Number(child.pid || 0));
+      const stageChildPid = Number(release.stageChildPid || 0);
+      const stageChildAlive = stageChildPid > 0 && isProcessAlive(stageChildPid);
+      const stageIsLive = shouldTrustLiveReleaseStage({
+        releaseAlive: releaseOwnerAlive,
+        stageAlive: stageChildAlive,
+        stageStatus: release.stageStatus,
+        heartbeatAgeMs,
+      });
+      if (heartbeatAgeMs > releaseStateStaleMs && !stageIsLive) {
         const staleMessage = `Release heartbeat is stale at step ${release.stepIndex || "unknown"}/${release.totalSteps || "unknown"}. The watcher will resume it safely.`;
         await log(`${staleMessage} age=${Math.round(heartbeatAgeMs / 1000)}s`);
         monitorState = await notifyUser(monitorState, {
@@ -1062,15 +1251,23 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
           message: staleMessage,
         });
         await writeState(monitorState);
-        await stopStaleRelease(Number(release.pid || child.pid || 0));
+        await stopStaleRelease(Number(release.pid || child.pid || 0), {
+          processGroupPid: Number(monitorState.releaseSupervisorPid || child.pid || 0),
+        });
         throw new Error(`release heartbeat stale for ${Math.round(heartbeatAgeMs / 1000)}s`);
+      }
+      if (heartbeatAgeMs > releaseStateStaleMs && stageIsLive) {
+        const nextLiveStageNoticeKey = `${release.stepIndex || "unknown"}:${stageChildPid}:${release.stageStartedAt || ""}`;
+        if (nextLiveStageNoticeKey !== liveStageNoticeKey) {
+          const liveStageMessage = `Release heartbeat is stale at step ${release.stepIndex || "unknown"}, but stage child ${stageChildPid} is still running; leaving the release active.`;
+          await log(liveStageMessage);
+          liveStageNoticeKey = nextLiveStageNoticeKey;
+        }
       }
 
       const shuffleProgress = monitorState.collectionShuffleProgress;
       const isShuffleStage = /shuffle/i.test(String(release.stepLabel || ""));
       const shuffleProgressAgeMs = operationProgressAgeMs(shuffleProgress);
-      const stageChildPid = Number(release.stageChildPid || 0);
-      const stageChildAlive = stageChildPid > 0 && isProcessAlive(stageChildPid);
       const stageOutputAgeMs = Math.max(
         0,
         Date.now() - timestamp(release.stageLastActivityAt || release.stageLastOutputAt || release.stageStartedAt || release.heartbeatAt),
@@ -1090,7 +1287,9 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
           message: staleMessage,
         });
         await writeState(monitorState);
-        await stopStaleRelease(Number(release.pid || child.pid || 0));
+        await stopStaleRelease(Number(release.pid || child.pid || 0), {
+          processGroupPid: Number(monitorState.releaseSupervisorPid || child.pid || 0),
+        });
         throw new Error(`collection shuffle progress stale for ${Math.round(shuffleProgressAgeMs / 1000)}s`);
       }
       if (
@@ -1110,6 +1309,9 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
         ...stageTelemetry(release),
         watcherPid: process.pid,
         activeReleasePid: 0,
+        releaseSupervisorPid: 0,
+        releaseSupervisorReleasePid: 0,
+        releaseSupervisorDetached: false,
         releaseStatus: "failed",
         lastCheckedAt: new Date().toISOString(),
         lastError: String(release.error || "release failed"),
@@ -1120,6 +1322,9 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
         ...monitorState,
         watcherPid: process.pid,
         activeReleasePid: 0,
+        releaseSupervisorPid: 0,
+        releaseSupervisorReleasePid: 0,
+        releaseSupervisorDetached: false,
         releaseStatus: "completed",
         lastCheckedAt: new Date().toISOString(),
       };
@@ -1135,7 +1340,13 @@ async function runDailyRelease({ resume = false, state = {}, script = releaseScr
   if (finalRelease?.status !== "completed") {
     throw new Error(`release child exited successfully but checkpoint status is ${finalRelease?.status || "missing"}`);
   }
-  return monitorState;
+  return {
+    ...monitorState,
+    activeReleasePid: 0,
+    releaseSupervisorPid: 0,
+    releaseSupervisorReleasePid: 0,
+    releaseSupervisorDetached: false,
+  };
 }
 
 function spawnVisualTrainingChild() {
@@ -1715,10 +1926,18 @@ async function reconcileCandidateTrainingSupervisor(state) {
   return failed;
 }
 
+let lastLoggedReleaseProgressKey = "";
+
 async function checkOnce(state) {
+  const persistedState = await readJson(statePath, {});
+  state = { ...state, ...persistedState };
   const releaseInspection = await inspectReleaseRun(state);
   if (releaseInspection.active) {
-    await log(`release active; step=${releaseInspection.release.stepIndex || "unknown"}/${releaseInspection.release.totalSteps || "unknown"} ${releaseInspection.release.stepLabel || "unknown"}`);
+    const progressKey = releaseProgressLogKey(releaseInspection.release);
+    if (progressKey !== lastLoggedReleaseProgressKey) {
+      await log(`release active; step=${releaseInspection.release.stepIndex || "unknown"}/${releaseInspection.release.totalSteps || "unknown"} ${releaseInspection.release.stepLabel || "unknown"}`);
+      lastLoggedReleaseProgressKey = progressKey;
+    }
     const now = new Date().toISOString();
     const persisted = await readJson(statePath, {});
     let activeState = await reconcileParallelVisualTraining({ ...state, ...persisted });
@@ -1735,11 +1954,16 @@ async function checkOnce(state) {
     return {
       ...activeState,
       ...stageTelemetry(releaseInspection.release),
+      networkWait: releaseInspection.release.networkWait || null,
       collectionShuffleProgress: await readCollectionShuffleProgress(),
       watcherPid: process.pid,
       lastCheckedAt: now,
       activeReleasePid: Number(releaseInspection.release.pid || 0),
-      releaseStatus: "running",
+      releaseStatus: String(releaseInspection.release.status),
+      releaseSeoMode: resolveReleaseLaunchConfig(releaseInspection.release, activeState).seoMode,
+      releaseSeoScope: resolveReleaseLaunchConfig(releaseInspection.release, activeState).seoScope,
+      gptSeoProvider: resolveReleaseLaunchConfig(releaseInspection.release, activeState).provider,
+      gptSeoBatchSize: resolveReleaseLaunchConfig(releaseInspection.release, activeState).batchSize,
       visualTaxonomyTraining: await readVisualTrainingStatus(),
       visualTaxonomyShardTraining: await readVisualShardTrainingState(),
       visualTaxonomyTrainingReadiness: await readVisualTrainingReadiness(),
@@ -1750,6 +1974,30 @@ async function checkOnce(state) {
       releaseStepLabel: String(releaseInspection.release.stepLabel || ""),
       releaseHeartbeatAt: String(releaseInspection.release.heartbeatAt || ""),
       watcherHeartbeatAt: now,
+      lastError: "",
+    };
+  }
+
+  // A manual Stop action is an explicit override for this release instance.
+  // Preserve the checkpoint without letting the autonomous watcher launch an
+  // immediate retry; a new Start/Resume request clears this instance marker.
+  if (isManualStopSuppressed(releaseInspection.release, state)) {
+    const now = new Date().toISOString();
+    const release = releaseInspection.release;
+    return {
+      ...state,
+      ...stageTelemetry(release),
+      watcherPid: process.pid,
+      lastCheckedAt: now,
+      watcherHeartbeatAt: now,
+      activeReleasePid: 0,
+      releaseStatus: String(release?.status || "interrupted"),
+      releaseStepIndex: Number(release?.stepIndex || state?.releaseStepIndex || 0),
+      releaseTotalSteps: Number(release?.totalSteps || state?.releaseTotalSteps || 0),
+      releaseStepLabel: String(release?.stepLabel || state?.releaseStepLabel || ""),
+      releaseHeartbeatAt: String(release?.heartbeatAt || state?.releaseHeartbeatAt || ""),
+      lastDriftReasons: [],
+      nextRetryAt: "",
       lastError: "",
     };
   }
@@ -1788,7 +2036,7 @@ async function checkOnce(state) {
       watcherPid: process.pid,
       lastCheckedAt: now,
       watcherHeartbeatAt: now,
-      activeReleasePid: releaseStatus === "running" ? Number(release?.pid || 0) : 0,
+      activeReleasePid: isActiveReleaseCheckpointStatus(releaseStatus) ? Number(release?.pid || 0) : 0,
       releaseStatus,
       releaseStepIndex: Number(release?.stepIndex || state?.releaseStepIndex || 0),
       releaseTotalSteps: Number(release?.totalSteps || state?.releaseTotalSteps || 0),
@@ -1867,16 +2115,15 @@ async function checkOnce(state) {
   }
 
   try {
-    await log(`deterministic drift detected; starting guarded release: ${reasons.join("; ")}`);
-    const resume = ["failed", "running", "interrupted"].includes(releaseInspection.release?.status);
+    const releaseLaunch = resolveReleaseLaunchConfig(releaseInspection.release, state);
+    await log(`${releaseLaunch.seoMode} drift detected; starting guarded release: ${reasons.join("; ")}`);
+    const resume = ["failed", "running", "interrupted", "waiting_for_network"].includes(releaseInspection.release?.status);
     // Preserve the source profile checkpoint before the child can write the
     // shared state file. This prevents a daily retry from hiding a catalog
     // failure when both profiles use the same output directory.
     await writeProfileReleaseCheckpoint(releaseInspection.release);
     await log(`release mode: ${resume ? "resume from checkpoint" : "full catalog run"}`);
-    const releaseProfile = String(releaseInspection.release?.profile || "").toLowerCase();
-    const releaseCommand = releaseProfile === "catalog" ? "release" : releaseScript;
-    await log(`release profile: ${releaseProfile || "default"}; command=${releaseCommand}`);
+    await log(`release profile: ${releaseLaunch.profile}; command=${releaseLaunch.script}; mode=${releaseLaunch.seoMode}; scope=${releaseLaunch.seoScope}`);
     const scheduledReleaseDate = scheduledRun?.dateKey || "";
     let monitorState = await notifyUser(state, {
       key: `repair-start:${resume ? "resume" : "full"}:${reasons.join("|").slice(0, 300)}`,
@@ -1888,7 +2135,7 @@ async function checkOnce(state) {
       scheduledReleaseInProgressDate: scheduledReleaseDate,
       scheduledReleaseTarget: scheduledReleaseDate ? `${scheduledReleaseHour}:${String(scheduledReleaseMinute).padStart(2, "0")}` : "",
     };
-    monitorState = await runDailyRelease({ resume, state: monitorState, script: releaseCommand });
+    monitorState = await runDailyRelease({ resume, state: monitorState, launch: { release: releaseLaunch } });
     const refreshed = await readLiveFingerprint();
     await log(`guarded release completed and live fingerprint refreshed`);
     monitorState = await notifyUser(monitorState, {
@@ -1966,10 +2213,15 @@ async function main() {
       try {
         const persisted = await readJson(statePath, {});
         const heartbeatAt = new Date().toISOString();
+        const release = await readJson(releaseRunStatePath, null);
+        const releaseIsLive = isActiveReleaseCheckpointStatus(release?.status) &&
+          isProcessAlive(Number(release?.pid || 0));
+        const heartbeatState = releaseIsLive
+          ? mergeActiveReleaseTelemetry({ ...persisted, watcherHeartbeatAt: heartbeatAt }, release)
+          : { ...persisted, watcherHeartbeatAt: heartbeatAt };
         await writeState({
-          ...persisted,
+          ...heartbeatState,
           watcherPid: process.pid,
-          watcherHeartbeatAt: heartbeatAt,
         });
       } catch (error) {
         await log(`watcher heartbeat write failed: ${String(error?.message || error).slice(0, 500)}`);
@@ -1984,7 +2236,7 @@ async function main() {
     while (true) {
       if (passiveMode) {
         const release = await readJson(releaseRunStatePath, null);
-        if (release?.status && release.status !== "running") {
+        if (release?.status && !isActiveReleaseCheckpointStatus(release.status)) {
           const terminalState = {
             ...state,
             watcherPid: process.pid,
@@ -2039,12 +2291,12 @@ async function main() {
         try {
           const latestRelease = await readJson(releaseRunStatePath, null);
           const latestPid = Number(latestRelease?.pid || 0);
-          const liveReleaseOwner = latestRelease?.status === "running" && isProcessAlive(latestPid);
+          const liveReleaseOwner = isActiveReleaseCheckpointStatus(latestRelease?.status) && isProcessAlive(latestPid);
           state = {
             ...state,
             activeReleasePid: liveReleaseOwner ? latestPid : 0,
-            releaseStatus: latestRelease?.status === "running"
-              ? (liveReleaseOwner ? "running" : "interrupted")
+            releaseStatus: isActiveReleaseCheckpointStatus(latestRelease?.status)
+              ? (liveReleaseOwner ? String(latestRelease.status) : "interrupted")
               : String(latestRelease?.status || "idle"),
             releaseStepIndex: Number(latestRelease?.stepIndex || state.releaseStepIndex || 0),
             releaseTotalSteps: Number(latestRelease?.totalSteps || state.releaseTotalSteps || 0),

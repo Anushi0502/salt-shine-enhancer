@@ -34,6 +34,37 @@ const REPAIR_CASES = Object.freeze([
     forbidden: ["hats"],
   },
   {
+    id: "connector-gender-phrase-exclusion",
+    product: {
+      title: "Male to Female USB C Connector Adapter Cable",
+      handle: "male-to-female-usb-c-connector-adapter-cable",
+      product_type: "Electronic Accessory",
+    },
+    knowledge: {
+      audience: { id: "men" },
+      proposedTags: ["mens-accessories", "men-fashion"],
+      collectionTargets: ["mens-accessories", "mens-fashion", "men-collection"],
+      classificationRule: "mens-accessories",
+    },
+    forbidden: ["mens-accessories", "mens-fashion", "men-collection"],
+  },
+  {
+    id: "direct-mens-apparel-preserved",
+    product: {
+      title: "Men's Cotton Crew Neck T-Shirt",
+      handle: "mens-cotton-crew-neck-t-shirt",
+      product_type: "Men's T-Shirt",
+    },
+    knowledge: {
+      audience: { id: "men" },
+      subcategoryId: "t-shirts",
+      proposedTags: ["men", "men-fashion"],
+      collectionTargets: ["men-collection"],
+      classificationRule: "t-shirts",
+    },
+    required: ["men-t-shirt", "mens-fashion", "men-collection"],
+  },
+  {
     id: "gifts-for-dad-evidence",
     product: { title: "Leather Gift Set for Dad", handle: "leather-gift-set-for-dad" },
     knowledge: EMPTY_KNOWLEDGE,
@@ -62,6 +93,18 @@ const REPAIR_CASES = Object.freeze([
     product: { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
     knowledge: EMPTY_KNOWLEDGE,
     required: ["candles"],
+  },
+  {
+    id: "pet-feeding-subcategory-evidence",
+    product: { title: "Portable Dog Feeder Bowl", handle: "portable-dog-feeder-bowl" },
+    knowledge: { departmentId: "pets", subcategoryId: "pet-feeding-accessories", proposedTags: [], collectionTargets: [] },
+    required: ["pet-feeding"],
+  },
+  {
+    id: "pet-grooming-wording-evidence",
+    product: { title: "Pet Grooming Brush and Nail Trimmer", handle: "pet-grooming-brush-nail-trimmer" },
+    knowledge: { departmentId: "pets", subcategoryId: "pet-grooming-tools", proposedTags: [], collectionTargets: [] },
+    required: ["pet-grooming"],
   },
 ]);
 

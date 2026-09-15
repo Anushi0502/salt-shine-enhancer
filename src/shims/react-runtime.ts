@@ -1,5 +1,18 @@
-type ReactRuntime = any;
-type ReactDomRuntime = any;
+type ReactRuntime = {
+  [key: string]: unknown;
+  Fragment: unknown;
+  createElement: (
+    type: unknown,
+    props?: Record<string, unknown> | null,
+    ...children: unknown[]
+  ) => unknown;
+};
+
+type ReactDomRuntime = {
+  [key: string]: unknown;
+  createRoot: (...args: unknown[]) => unknown;
+  hydrateRoot?: (...args: unknown[]) => unknown;
+};
 
 const globalScope = window as Window &
   typeof globalThis & {

@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { promisify } from "node:util";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -17,7 +15,10 @@ const shopDomain = new URL(baseUrl).hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
 const adminAccessToken = (process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "").trim();
 const allowSnapshotFallback = process.argv.includes("--allow-snapshot-fallback");
-const execFileAsync = promisify(execFile);
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir,
+  agentName: "tag-inventory",
+});
 
 const PRODUCT_TAGS_QUERY = /* GraphQL */ `
   query ProductTags($first: Int!, $after: String) {
@@ -43,81 +44,8 @@ function uniqueSortedTags(values) {
   return [...new Set(values.map(normalizeTag).filter(Boolean))].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }));
 }
 
-function formatGraphqlErrors(errors) {
-  return asArray(errors)
-    .map((entry) => String(entry?.message || "Unknown GraphQL error").trim())
-    .filter(Boolean)
-    .join(" | ");
-}
-
-async function fetchAdminGraphql(query, variables) {
-  const response = await fetch(`${new URL(baseUrl).origin}/admin/api/${apiVersion}/graphql.json`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": adminAccessToken,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Shopify Admin request failed (${response.status}).`);
-  }
-
-  const payload = await response.json();
-  if (payload?.errors?.length) {
-    throw new Error(formatGraphqlErrors(payload.errors));
-  }
-  return payload?.data || {};
-}
-
-async function fetchCliGraphql(query, variables) {
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-tag-inventory-"));
-  const queryPath = join(tempDir, "operation.graphql");
-  const variablesPath = join(tempDir, "variables.json");
-  const outputFile = join(tempDir, "result.json");
-
-  try {
-    await Promise.all([
-      writeFile(queryPath, query, "utf8"),
-      writeFile(variablesPath, JSON.stringify(variables, null, 2), "utf8"),
-    ]);
-    await execFileAsync(
-      process.env.SHOPIFY_CLI_BINARY || "shopify",
-      [
-        "store",
-        "execute",
-        "--store",
-        shopDomain,
-        "--version",
-        apiVersion,
-        "--query-file",
-        queryPath,
-        "--variable-file",
-        variablesPath,
-        "--output-file",
-        outputFile,
-        "--json",
-      ],
-      {
-        env: {
-          ...process.env,
-          SHOPIFY_CLI_AGENT_INFO: process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:catalog-tag-inventory",
-          SHOPIFY_CLI_AGENT_IDS:
-            process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:catalog-tag-inventory`,
-        },
-        maxBuffer: 10 * 1024 * 1024,
-      },
-    );
-    const payload = JSON.parse(await readFile(outputFile, "utf8"));
-    if (payload?.errors?.length) {
-      throw new Error(formatGraphqlErrors(payload.errors));
-    }
-    return payload?.data || payload || {};
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+function fetchShopifyGraphql(query, variables, operation) {
+  return shopifyAdminClient.run(query, variables, { operation });
 }
 
 async function fetchLiveProductTags() {
@@ -128,9 +56,11 @@ async function fetchLiveProductTags() {
 
   do {
     const variables = { first: 250, after };
-    const data = adminAccessToken
-      ? await fetchAdminGraphql(PRODUCT_TAGS_QUERY, variables)
-      : await fetchCliGraphql(PRODUCT_TAGS_QUERY, variables);
+    const data = await fetchShopifyGraphql(
+      PRODUCT_TAGS_QUERY,
+      variables,
+      `read Shopify tag inventory page ${page + 1}`,
+    );
     const connection = data?.productTags;
 
     if (!connection) {

@@ -1,4 +1,5 @@
 import { minPrice } from "@/lib/formatters";
+import { trackAnalyticsEvent } from "@/lib/analytics-events";
 import { getRuntimeContext } from "@/lib/theme-assets";
 import type { ShopifyProduct, ShopifyVariant } from "@/types/shopify";
 
@@ -200,13 +201,28 @@ export function trackMetaPixelPageView(): void {
 export function trackMetaPixelViewContent(product: ShopifyProduct, variant?: ShopifyVariant | null): void {
   const contentId = normalizeContentId(variant?.id, product.id || product.handle);
   const value = asNumber(variant?.price) || minPrice(product);
+  const currency = getStoreCurrencyCode();
+
+  trackAnalyticsEvent("view_item", {
+    currency,
+    value,
+    items: [
+      {
+        item_id: contentId || product.handle,
+        item_name: product.title,
+        item_category: product.product_type || undefined,
+        price: value,
+        quantity: 1,
+      },
+    ],
+  });
 
   trackMetaPixel("ViewContent", {
     content_ids: contentId ? [contentId] : undefined,
     content_name: product.title,
     content_category: product.product_type || undefined,
     content_type: "product",
-    currency: getStoreCurrencyCode(),
+    currency,
     value,
   });
 }
@@ -227,6 +243,21 @@ export function trackMetaPixelAddToCart(item: MetaPixelCartItem): void {
   const contentId = normalizeContentId(item.shopifyVariantId, item.handle || item.id);
   const quantity = Math.max(1, Math.floor(item.quantity || 1));
   const unitPrice = asNumber(item.unitPrice);
+  const currency = getStoreCurrencyCode();
+
+  trackAnalyticsEvent("add_to_cart", {
+    currency,
+    value: unitPrice * quantity,
+    items: [
+      {
+        item_id: contentId || item.handle,
+        item_name: item.title,
+        item_category: item.productType || undefined,
+        price: unitPrice,
+        quantity,
+      },
+    ],
+  });
 
   trackMetaPixel("AddToCart", {
     content_ids: contentId ? [contentId] : undefined,
@@ -242,7 +273,7 @@ export function trackMetaPixelAddToCart(item: MetaPixelCartItem): void {
           },
         ]
       : undefined,
-    currency: getStoreCurrencyCode(),
+    currency,
     value: unitPrice * quantity,
   });
 }
@@ -259,12 +290,25 @@ export function trackMetaPixelInitiateCheckout(items: MetaPixelCartItem[]): void
     (sum, item) => sum + asNumber(item.unitPrice) * Math.max(1, Math.floor(item.quantity || 1)),
     0,
   );
+  const currency = getStoreCurrencyCode();
+
+  trackAnalyticsEvent("begin_checkout", {
+    currency,
+    value,
+    items: items.map((item) => ({
+      item_id: normalizeContentId(item.shopifyVariantId, item.handle || item.id) || item.handle,
+      item_name: item.title,
+      item_category: item.productType || undefined,
+      price: asNumber(item.unitPrice),
+      quantity: Math.max(1, Math.floor(item.quantity || 1)),
+    })),
+  });
 
   trackMetaPixel("InitiateCheckout", {
     content_ids: contentIds,
     contents,
     content_type: "product",
-    currency: getStoreCurrencyCode(),
+    currency,
     num_items: quantity,
     value,
   });

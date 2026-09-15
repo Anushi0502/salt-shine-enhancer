@@ -9,6 +9,7 @@ import { pathToFileURL } from "node:url";
 import {
   ALL_PRODUCTS_COLLECTION_POLICY,
   COLLECTION_GOVERNANCE_VERSION,
+  DEFAULT_READ_ONLY_LIVE_COLLECTION_HANDLES,
   PRICE_COLLECTION_POLICIES,
   RETIRED_COLLECTION_HANDLE_MAP,
   SEMANTIC_COLLECTION_POLICIES,
@@ -31,12 +32,14 @@ import {
 } from "../src/lib/catalog-simple-tags.js";
 import {
   classifyCatalogTaxonomyByRuleId,
+  classifyCatalogTaxonomy,
   classifyCatalogTaxonomyWithoutOverrides,
   CATALOG_TAXONOMY_VERSION,
   getCatalogTaxonomyDefinitions,
   normalizeCatalogText,
   tokenizeCatalogText,
 } from "../src/lib/catalog-taxonomy.js";
+import { resolveVisualTaxonomyHint } from "../src/lib/catalog-visual-taxonomy.js";
 import {
   buildProductKnowledgeFromTaxonomy,
   classifyProductKnowledge,
@@ -69,14 +72,14 @@ const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOI
 const collectionApprovalPath = resolve(rootDir, "docs", "catalog-collection-approval.json");
 const membershipPollAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_ATTEMPTS || 12));
 const membershipPollDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_DELAY_MS || 10_000));
-const membershipRefreshConcurrency = Math.max(1, Math.min(4, Number(process.env.SALT_COLLECTION_MEMBERSHIP_REFRESH_CONCURRENCY || 3)));
+const membershipRefreshConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_COLLECTION_MEMBERSHIP_REFRESH_CONCURRENCY || 6)));
 const membershipPulseConcurrency = Math.max(1, Math.min(3, Number(process.env.SALT_COLLECTION_MEMBERSHIP_PULSE_CONCURRENCY || 2)));
 const membershipPulseProductLimit = Math.max(1, Math.min(100, Number(process.env.SALT_COLLECTION_MEMBERSHIP_PULSE_PRODUCT_LIMIT || 25)));
-const membershipRetryMode = ["bulk", "targeted"].includes(
-  String(process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE || "bulk").trim().toLowerCase(),
+const membershipRetryMode = ["bulk", "targeted", "adaptive"].includes(
+  String(process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE || "adaptive").trim().toLowerCase(),
 )
-  ? String(process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE || "bulk").trim().toLowerCase()
-  : "bulk";
+  ? String(process.env.SALT_COLLECTION_MEMBERSHIP_RETRY_MODE || "adaptive").trim().toLowerCase()
+  : "adaptive";
 const tagReadbackRetryAttempts = Math.max(
   0,
   Math.min(4, Number(process.env.SALT_CATALOG_TAG_READBACK_RETRY_ATTEMPTS || 3)),
@@ -84,6 +87,18 @@ const tagReadbackRetryAttempts = Math.max(
 const tagReadbackRetryDelayMs = Math.max(
   1000,
   Number(process.env.SALT_CATALOG_TAG_READBACK_RETRY_DELAY_MS || 5000),
+);
+const tagBulkRepairAttempts = Math.max(
+  1,
+  Math.min(5, Number(process.env.SALT_CATALOG_TAG_BULK_REPAIR_ATTEMPTS || 3)),
+);
+const tagBulkRepairDelayMs = Math.max(
+  1000,
+  Number(process.env.SALT_CATALOG_TAG_BULK_REPAIR_DELAY_MS || 5000),
+);
+const tagBulkRepairConcurrency = Math.max(
+  1,
+  Math.min(4, Number(process.env.SALT_CATALOG_TAG_BULK_REPAIR_CONCURRENCY || 2)),
 );
 const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
@@ -102,6 +117,10 @@ const classificationConcurrency = Math.max(
 const collectionSourceApplyConcurrency = Math.max(
   1,
   Math.min(6, Number(process.env.SALT_COLLECTION_SOURCE_APPLY_CONCURRENCY || 3)),
+);
+const variantContinuationConcurrency = Math.max(
+  1,
+  Math.min(8, Number(process.env.SALT_CATALOG_VARIANT_CONTINUATION_CONCURRENCY || 6)),
 );
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "catalog-integrity" });
 const GOVERNED_COLLECTION_TAGS = new Set(
@@ -558,6 +577,13 @@ async function writeVisualReviewCheckpoint(path, fingerprint, entries) {
   }, null, 2)}\n`, "utf8");
 }
 
+export function visualEvidenceMatchesProduct(product, entry) {
+  const currentImages = productImageUrls(product).slice(0, visionImageLimit);
+  const savedImages = asArray(entry?.imageUrls).filter(Boolean);
+  return currentImages.length > 0 && currentImages.length === savedImages.length &&
+    currentImages.every((url, index) => url === savedImages[index]);
+}
+
 async function completeVariants(product, retryInfo) {
   const nodes = [...asArray(product?.variants?.nodes)];
   let after = product?.variants?.pageInfo?.endCursor || null;
@@ -589,9 +615,16 @@ async function fetchActiveProducts(retryInfo) {
     });
     const connection = data?.products;
     if (!connection) throw new Error("Shopify returned no active product connection.");
-    for (const product of asArray(connection.nodes)) {
-      products.push(product?.variants?.pageInfo?.hasNextPage ? await completeVariants(product, retryInfo) : product);
-    }
+    const pageProducts = asArray(connection.nodes);
+    const completedPageProducts = await mapWithConcurrency(
+      pageProducts,
+      variantContinuationConcurrency,
+      (product) => product?.variants?.pageInfo?.hasNextPage
+        ? completeVariants(product, retryInfo)
+        : product,
+      "Catalog integrity hydrated",
+    );
+    products.push(...completedPageProducts);
     process.stdout.write(`Catalog integrity fetched ${products.length} active products.\n`);
     if (!connection.pageInfo?.hasNextPage) break;
     after = connection.pageInfo?.endCursor;
@@ -796,36 +829,129 @@ function parseVisionJson(rawContent) {
   }
 }
 
-async function imageAsBase64(url) {
-  let lastError = null;
-  for (let attempt = 1; attempt <= visionImageAttempts; attempt += 1) {
-    for (const candidate of visionImageCandidates(url)) {
-      try {
-        const response = await fetch(candidate, {
-          headers: {
-            Accept: "image/avif,image/webp,image/jpeg,image/png,*/*",
-            "User-Agent": "SALT-catalog-supervised-vision/1.0",
-          },
-          signal: AbortSignal.timeout(visionImageTimeoutMs),
-        });
-        if (!response.ok) throw new Error(`image HTTP ${response.status}`);
-        const bytes = await response.arrayBuffer();
-        if (!bytes.byteLength) throw new Error("image response was empty");
-        return Buffer.from(bytes).toString("base64");
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    if (attempt < visionImageAttempts) await sleep(visionImageRetryDelayMs * attempt);
+const inFlightImageFetches = new Map();
+const configuredVisionImageCacheEntries = Number(
+  process.env.SALT_CATALOG_VISION_IMAGE_CACHE_ENTRIES || 256,
+);
+const visionImageCacheMaxEntries = Math.max(
+  0,
+  Math.min(
+    512,
+    Number.isFinite(configuredVisionImageCacheEntries)
+      ? configuredVisionImageCacheEntries
+      : 256,
+  ),
+);
+const configuredVisionImageCacheMb = Number(
+  process.env.SALT_CATALOG_VISION_IMAGE_CACHE_MB || 64,
+);
+const visionImageCacheMaxBytes = Math.max(
+  0,
+  Number.isFinite(configuredVisionImageCacheMb) ? configuredVisionImageCacheMb : 64,
+) * 1024 * 1024;
+const visionImageCache = new Map();
+let visionImageCacheBytes = 0;
+let visionSerialFallback = false;
+let activeVisionRequests = 0;
+const visionRequestWaiters = [];
+
+async function acquireVisionRequestSlot() {
+  while (activeVisionRequests >= (visionSerialFallback ? 1 : classificationConcurrency)) {
+    await new Promise((resolvePromise) => visionRequestWaiters.push(resolvePromise));
   }
-  throw lastError || new Error("image fetch failed");
+  activeVisionRequests += 1;
+}
+
+function releaseVisionRequestSlot() {
+  activeVisionRequests = Math.max(0, activeVisionRequests - 1);
+  visionRequestWaiters.shift()?.();
+}
+
+function isVisionTimeout(error) {
+  return /abort|timeout|timed out/i.test(String(error?.message || error || ""));
+}
+
+function readVisionImageCache(cacheKey) {
+  const cached = visionImageCache.get(cacheKey);
+  if (!cached) return null;
+  // Refresh LRU order so repeated supplier images remain hot during a batch.
+  visionImageCache.delete(cacheKey);
+  visionImageCache.set(cacheKey, cached);
+  return cached.data;
+}
+
+function writeVisionImageCache(cacheKey, data) {
+  if (!cacheKey || !data || visionImageCacheMaxEntries === 0 || visionImageCacheMaxBytes === 0) return;
+  const bytes = Buffer.byteLength(data, "base64");
+  if (bytes > visionImageCacheMaxBytes) return;
+  while (
+    visionImageCache.size >= visionImageCacheMaxEntries ||
+    visionImageCacheBytes + bytes > visionImageCacheMaxBytes
+  ) {
+    const oldestKey = visionImageCache.keys().next().value;
+    if (!oldestKey) break;
+    const oldest = visionImageCache.get(oldestKey);
+    visionImageCache.delete(oldestKey);
+    visionImageCacheBytes -= oldest?.bytes || 0;
+  }
+  visionImageCache.set(cacheKey, { data, bytes });
+  visionImageCacheBytes += bytes;
+}
+
+async function imageAsBase64(url) {
+  const cacheKey = resizeImageUrl(url);
+  const cached = readVisionImageCache(cacheKey);
+  if (cached) return cached;
+  if (inFlightImageFetches.has(cacheKey)) return inFlightImageFetches.get(cacheKey);
+  const promise = (async () => {
+    let lastError = null;
+    for (let attempt = 1; attempt <= visionImageAttempts; attempt += 1) {
+      for (const candidate of visionImageCandidates(url)) {
+        try {
+          const response = await fetch(candidate, {
+            headers: {
+              Accept: "image/avif,image/webp,image/jpeg,image/png,*/*",
+              "User-Agent": "SALT-catalog-supervised-vision/1.0",
+            },
+            signal: AbortSignal.timeout(visionImageTimeoutMs),
+          });
+          if (!response.ok) throw new Error(`image HTTP ${response.status}`);
+          const bytes = await response.arrayBuffer();
+          if (!bytes.byteLength) throw new Error("image response was empty");
+          const encoded = Buffer.from(bytes).toString("base64");
+          writeVisionImageCache(cacheKey, encoded);
+          return encoded;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (attempt < visionImageAttempts) await sleep(visionImageRetryDelayMs * attempt);
+    }
+    throw lastError || new Error("image fetch failed");
+  })();
+  inFlightImageFetches.set(cacheKey, promise);
+  try {
+    return await promise;
+  } finally {
+    inFlightImageFetches.delete(cacheKey);
+  }
 }
 
 function classifyVisionEvidence(product, content, imageUrl = null, imageUrls = []) {
   const evidenceConfidence = Number(content?.evidenceConfidence);
   const imageAgreement = Number(content?.imageAgreement);
   const ambiguity = normalizeText(content?.ambiguity);
-  const hasAmbiguity = ambiguity && !/^(none|no ambiguity|no apparent ambiguity|not applicable|n\/a|low(?:\s|[-:])|minimal(?:\s|[-:])|minor(?:\s|[-:])|negligible(?:\s|[-:]))/i.test(ambiguity);
+  const lowAmbiguity = /^(?:none|no ambiguity|no apparent ambiguity|not applicable|n\/a|low|minimal|minor|negligible)(?:\s|[-:]|$)/i.test(ambiguity) ||
+    /^(?:the\s+)?ambiguity\s+(?:is|appears|seems)\s+(?:low|minimal|minor|negligible)\b/i.test(ambiguity) ||
+    /\b(?:clear(?:ly)?|unambiguous|high degree of certainty|consistently depicted|standard (?:set|product|device|retro handheld)|primary function|simple cable management|designed for|based on (?:the )?(?:visible )?features|clear and unambiguous|no specific branding|standard set of)\b/i.test(ambiguity);
+  const materialUncertainty = /\b(?:not explicitly (?:stated|visible)|not specified|difficult to ascertain|difficult to determine|unclear|uncertain|unknown|approx(?:imately|\.)?|suggests|likely)\b/i.test(ambiguity);
+  const taxonomyUncertainty = /\b(?:could be|might be|may be|either .* or|multiple possible|cannot (?:identify|determine)|unable to (?:identify|determine)|intended use .*\b(?:unclear|ambiguous)|ambiguous between)\b/i.test(ambiguity);
+  // Hold ambiguity only when it can change the product family/category. A
+  // missing material, size, or color detail should not discard otherwise
+  // consistent multi-image evidence.
+  const hasAmbiguity = Boolean(ambiguity && !lowAmbiguity && taxonomyUncertainty && !(
+    materialUncertainty && /\b(?:size|dimension|capacity|storage|material|fabric|shade|color|game (?:title|library)|branding|specific .*detail)\b/i.test(ambiguity)
+  ));
   const visualText = [content?.productName, content?.productCategory, ...asArray(content?.visibleAttributes)]
     .map(normalizeText).filter(Boolean).join(" ");
   if (!visualText || !Number.isFinite(evidenceConfidence) || !Number.isFinite(imageAgreement)) {
@@ -848,7 +974,15 @@ function classifyVisionEvidence(product, content, imageUrl = null, imageUrls = [
     tags: [],
   };
   const visualClassification = classifyCatalogTaxonomyWithoutOverrides(visualProduct);
-  if (visualClassification.ruleId === "unclassified") {
+  const visualHintRuleId = resolveVisualTaxonomyHint(content, product);
+  const hintedVisualClassification = visualHintRuleId
+    ? classifyCatalogTaxonomyByRuleId(visualProduct, visualHintRuleId, {
+      source: "visual-category-hint",
+      reason: `Supervised visual evidence matched the governed retail label ${visualHintRuleId}.`,
+    })
+    : null;
+  const resolvedVisualClassification = hintedVisualClassification || visualClassification;
+  if (resolvedVisualClassification.ruleId === "unclassified") {
     return {
       error: "Visual evidence did not satisfy a checked-in taxonomy rule (unclassified)",
       imageUrl,
@@ -857,7 +991,7 @@ function classifyVisionEvidence(product, content, imageUrl = null, imageUrls = [
       suggestedRuleId: lexicalBestRule(product, visualText).ruleId,
     };
   }
-  const bestRule = visualClassification.ruleId;
+  const bestRule = resolvedVisualClassification.ruleId;
   const visionAlignment = assessVisionTaxonomyAlignment(product, bestRule);
   if (!visionAlignment.accepted) {
     process.stdout.write(`Vision enrichment rejected for ${product.handle}: ${visionAlignment.reason}\n`);
@@ -928,20 +1062,32 @@ async function classifyWithVision(product) {
       });
     let response = null;
     let requestError = null;
-    for (let attempt = 1; attempt <= visionRequestAttempts; attempt += 1) {
-      try {
-        response = await fetch(`${ollamaUrl}/api/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(visionRequestTimeoutMs),
-          body: requestBody,
-        });
-        if (response.ok) break;
-        requestError = new Error(`Ollama HTTP ${response.status}`);
-      } catch (error) {
-        requestError = error;
+    await acquireVisionRequestSlot();
+    try {
+      for (let attempt = 1; attempt <= visionRequestAttempts; attempt += 1) {
+        try {
+          response = await fetch(`${ollamaUrl}/api/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(visionRequestTimeoutMs),
+            body: requestBody,
+          });
+          if (response.ok) break;
+          requestError = new Error(`Ollama HTTP ${response.status}`);
+        } catch (error) {
+          requestError = error;
+        }
+        if (isVisionTimeout(requestError)) {
+          // A timeout is a capacity signal, not a transient HTTP failure.
+          // Hold this product for the guarded review lane and serialize the
+          // remaining requests so the local model can recover.
+          visionSerialFallback = true;
+          break;
+        }
+        if (attempt < visionRequestAttempts) await sleep(visionImageRetryDelayMs * attempt);
       }
-      if (attempt < visionRequestAttempts) await sleep(visionImageRetryDelayMs * attempt);
+    } finally {
+      releaseVisionRequestSlot();
     }
     if (!response?.ok) throw requestError || new Error("Ollama vision request failed");
     const payload = await response.json();
@@ -975,12 +1121,83 @@ async function mapWithConcurrency(items, concurrency, mapper, progressLabel = "P
   return results;
 }
 
-function resolveDeterministicKnowledge(product, knowledgeModel = null, modelEvidence = undefined) {
+export function resolveDeterministicKnowledge(product, knowledgeModel = null, modelEvidence = undefined) {
   const regularKnowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
   if (!regularKnowledge.reviewRequired) {
     return {
       knowledge: regularKnowledge,
       source: regularKnowledge.override ? "approved-override" : "taxonomy",
+    };
+  }
+
+  // Some supplier records contain an exact product-family noun in the title
+  // or handle but no matching legacy taxonomy term. Use only the checked-in
+  // label map above; this is evidence-backed classification, not a release
+  // guess, and it never overrides a reliable trained-model conflict.
+  const regularReasons = new Set(regularKnowledge.reviewReasons || []);
+  const hasReliableModelConflict = [...regularReasons].some((reason) =>
+    String(reason).startsWith("Trained knowledge model disagrees"));
+  const directHintRuleId = resolveVisualTaxonomyHint(null, product);
+  const imageCount = productImageUrls(product).length;
+  if (directHintRuleId && (!hasReliableModelConflict || imageCount === 0)) {
+    const hintedTaxonomy = classifyCatalogTaxonomyByRuleId(product, directHintRuleId, {
+      source: "deterministic-direct-hint",
+      reason: `Exact product-family wording in the title or handle matched the governed rule ${directHintRuleId}.`,
+    });
+    const completePath = Boolean(
+      hintedTaxonomy?.departmentId &&
+      hintedTaxonomy?.categoryId &&
+      hintedTaxonomy?.subcategoryId &&
+      hintedTaxonomy?.canonicalTypeId &&
+      hintedTaxonomy?.shopifyCategory,
+    );
+    if (completePath && !hintedTaxonomy.reviewRequired) {
+      return {
+        knowledge: buildProductKnowledgeFromTaxonomy(product, hintedTaxonomy, { knowledgeModel, modelEvidence }),
+        source: "evidence-fallback",
+        evidenceFallback: true,
+        reason: "Strong direct title/handle product-family evidence resolved a missing legacy taxonomy term.",
+      };
+    }
+  }
+
+  // A complete direct taxonomy path with only the single-evidence warning is
+  // safe to retain. This prevents obvious image-less products from entering
+  // the review queue solely because a supplier feed omitted a second signal.
+  const taxonomy = classifyCatalogTaxonomy(product);
+  const taxonomyReasons = new Set(taxonomy?.reviewReasons || []);
+  const directFields = new Set(taxonomy?.evidence?.directFields || []);
+  const directEvidence = directFields.has("title") || directFields.has("handle");
+  const onlySingleLane = [...taxonomyReasons].every((reason) => reason === "single-evidence-lane");
+  const completePath = Boolean(
+    taxonomy?.departmentId &&
+    taxonomy?.categoryId &&
+    taxonomy?.subcategoryId &&
+    taxonomy?.canonicalTypeId &&
+    taxonomy?.shopifyCategory,
+  );
+  if (
+    !hasReliableModelConflict &&
+    directEvidence &&
+    completePath &&
+    Number(taxonomy?.confidence || 0) >= 72 &&
+    onlySingleLane
+  ) {
+    const evidenceBackedTaxonomy = {
+      ...taxonomy,
+      reviewRequired: false,
+      seoEligible: true,
+      reviewReasons: [],
+      evidence: {
+        ...taxonomy.evidence,
+        lanes: [...new Set([...(taxonomy.evidence?.lanes || []), "deterministic-direct-text"])],
+      },
+    };
+    return {
+      knowledge: buildProductKnowledgeFromTaxonomy(product, evidenceBackedTaxonomy, { knowledgeModel, modelEvidence }),
+      source: "evidence-fallback",
+      evidenceFallback: true,
+      reason: "Strong direct title/handle evidence resolved the only remaining single-evidence-lane hold.",
     };
   }
   return null;
@@ -1055,6 +1272,10 @@ function resolveCandidateVisualKnowledge(product, visualModelEvidence, knowledge
   };
 }
 
+export function canUseVisualTaxonomyEvidence({ deterministicOnly = false, supervisedVision = false } = {}) {
+  return supervisedVision && !deterministicOnly;
+}
+
 async function resolveKnowledge(product, { skipVision, deterministicOnly, supervisedVision, knowledgeModel = null, modelEvidence = undefined, priorVisualEvidence = null, visualModelEvidence = null }) {
   const directTaxonomy = classifyCatalogTaxonomyWithoutOverrides(product);
   const deterministic = resolveDeterministicKnowledge(product, knowledgeModel, modelEvidence);
@@ -1063,10 +1284,15 @@ async function resolveKnowledge(product, { skipVision, deterministicOnly, superv
   const existingVision = resolveExistingVisionKnowledge(product, knowledgeModel);
   if (existingVision) return existingVision;
 
-  const trainedVisual = resolveTrainedVisualKnowledge(product, visualModelEvidence, knowledgeModel);
+  const allowVisualEvidence = canUseVisualTaxonomyEvidence({ deterministicOnly, supervisedVision });
+  const trainedVisual = allowVisualEvidence
+    ? resolveTrainedVisualKnowledge(product, visualModelEvidence, knowledgeModel)
+    : null;
   if (trainedVisual) return trainedVisual;
 
-  const candidateVisual = resolveCandidateVisualKnowledge(product, visualModelEvidence, knowledgeModel);
+  const candidateVisual = allowVisualEvidence
+    ? resolveCandidateVisualKnowledge(product, visualModelEvidence, knowledgeModel)
+    : null;
   if (candidateVisual) return candidateVisual;
 
   if (deterministicOnly && !supervisedVision) {
@@ -1252,20 +1478,40 @@ async function waitForBulkOperation(operationId, retryInfo, label) {
   }
 }
 
+export function isRetryableTagBulkMessage(message) {
+  return /internal error|something went wrong|temporar|timeout|timed out|rate limit|too many requests|throttl|service unavailable|gateway|network|socket|aborted|\b5\d{2}\b/i.test(
+    normalizeText(message),
+  );
+}
+
 async function verifyTagBulkResult(resultPath, actionable) {
   const lines = (await readFile(resultPath, "utf8")).split(/\r?\n/).filter(Boolean);
   const completedLines = new Set();
+  const retryableFailures = [];
   for (const [fallbackIndex, line] of lines.entries()) {
     const payload = JSON.parse(line);
     const lineNumber = Number.isInteger(Number(payload.__lineNumber)) ? Number(payload.__lineNumber) : fallbackIndex;
     const task = actionable[lineNumber];
     if (!task) throw new Error(`Catalog tag bulk result returned unknown input line ${lineNumber}.`);
+    if (completedLines.has(lineNumber)) {
+      throw new Error(`Catalog tag bulk result returned duplicate input line ${lineNumber}.`);
+    }
     if (asArray(payload?.errors).length) {
-      throw new Error(`${task.handle}: ${asArray(payload.errors).map((error) => normalizeText(error?.message)).join(" | ")}`);
+      const detail = asArray(payload.errors).map((error) => normalizeText(error?.message)).join(" | ");
+      if (!isRetryableTagBulkMessage(detail)) throw new Error(`${task.handle}: ${detail}`);
+      retryableFailures.push({ task, detail });
+      completedLines.add(lineNumber);
+      continue;
     }
     const response = payload?.data?.productUpdate;
     const errors = asArray(response?.userErrors);
-    if (errors.length) throw new Error(`${task.handle}: ${formatUserErrors(errors)}`);
+    if (errors.length) {
+      const detail = formatUserErrors(errors);
+      if (!isRetryableTagBulkMessage(detail)) throw new Error(`${task.handle}: ${detail}`);
+      retryableFailures.push({ task, detail });
+      completedLines.add(lineNumber);
+      continue;
+    }
     if (!response?.product?.id) throw new Error(`${task.handle}: catalog tag bulk result returned no product id.`);
     task.status = "updated";
     completedLines.add(lineNumber);
@@ -1273,6 +1519,42 @@ async function verifyTagBulkResult(resultPath, actionable) {
   if (completedLines.size !== actionable.length) {
     throw new Error(`Catalog tag bulk result covered ${completedLines.size}/${actionable.length} product inputs.`);
   }
+  return retryableFailures;
+}
+
+async function repairTagBulkFailures(failures, retryInfo) {
+  if (!failures.length) return;
+  await mapWithConcurrency(
+    failures,
+    tagBulkRepairConcurrency,
+    async ({ task, detail }) => {
+      for (let attempt = 1; attempt <= tagBulkRepairAttempts; attempt += 1) {
+        try {
+          process.stdout.write(
+            `Retrying transient catalog tag failure for ${task.handle} (${attempt}/${tagBulkRepairAttempts}).\n`,
+          );
+          await updateProductTags(
+            task.productId,
+            task.desiredTags,
+            retryInfo,
+            `targeted catalog tag repair for ${task.handle}`,
+          );
+          task.status = "updated";
+          return;
+        } catch (error) {
+          if (attempt >= tagBulkRepairAttempts) {
+            throw new Error(
+              `${task.handle}: bulk result reported ${detail}; targeted repair failed after ${tagBulkRepairAttempts} attempt(s): ${normalizeText(error?.message || error)}`,
+            );
+          }
+          const delayMs = tagBulkRepairDelayMs * attempt;
+          process.stdout.write(`Targeted catalog tag repair retrying in ${delayMs}ms for ${task.handle}.\n`);
+          await sleep(delayMs);
+        }
+      }
+    },
+    "Targeted catalog tag repairs completed",
+  );
 }
 
 async function applyExactTags(tasks, retryInfo, output, manifest) {
@@ -1300,7 +1582,6 @@ async function applyExactTags(tasks, retryInfo, output, manifest) {
     cwd: rootDir,
     maxBuffer: 20 * 1024 * 1024,
   });
-  await verifyTagBulkResult(resultPath, actionable);
   manifest.tagBulkOperation = {
     id: operation.id,
     status: operation.status,
@@ -1310,6 +1591,16 @@ async function applyExactTags(tasks, retryInfo, output, manifest) {
     resultPath,
   };
   await writeManifest(output, manifest);
+  const retryableFailures = await verifyTagBulkResult(resultPath, actionable);
+  if (retryableFailures.length) {
+    process.stdout.write(
+      `Shopify bulk tag result contains ${retryableFailures.length} transient failure(s); applying bounded targeted repairs.\n`,
+    );
+    await repairTagBulkFailures(retryableFailures, retryInfo);
+    manifest.tagBulkOperation.targetedRepairCount = retryableFailures.length;
+    manifest.tagBulkOperation.targetedRepairCompletedAt = new Date().toISOString();
+    await writeManifest(output, manifest);
+  }
   process.stdout.write(`Exact tags applied through Shopify bulk mutation to ${actionable.length} products.\n`);
 }
 
@@ -1404,15 +1695,20 @@ function sourceConditionSummary(source) {
   return { matchType: source?.inclusion?.matchType, targetType: source?.targetType, conditions };
 }
 
-function collectionSourceMatches(policy, collection) {
+export function collectionSourceMatches(policy, collection) {
   const source = asArray(collection?.sources).length === 1 ? collection.sources[0] : null;
   if (!source || source.__typename !== "CollectionConditionsSource" || source.targetType !== "PRODUCTS") return false;
   const summary = sourceConditionSummary(source);
   if (policy.kind === "semantic") {
     const expectedTags = new Set(semanticCollectionRuleTags(policy).map(normalizeTag));
-    const actualTags = new Set(summary.conditions
-      .filter((condition) => condition.type === "tag" && condition.relation === "TAGGED_WITH" && condition.matchType === "ANY")
-      .flatMap((condition) => condition.values));
+    if (
+      summary.conditions.length !== expectedTags.size ||
+      summary.conditions.some((condition) =>
+        condition.type !== "tag" ||
+        condition.relation !== "TAGGED_WITH" ||
+        condition.matchType !== "ANY")
+    ) return false;
+    const actualTags = new Set(summary.conditions.flatMap((condition) => condition.values));
     return summary.matchType === (expectedTags.size > 1 ? "ANY" : "ALL") &&
       actualTags.size === expectedTags.size && [...expectedTags].every((tag) => actualTags.has(tag));
   }
@@ -1421,9 +1717,13 @@ function collectionSourceMatches(policy, collection) {
     const desired = [];
     if (Number.isFinite(policy.maximumExclusive)) desired.push({ relation: "LESS_THAN", amount: policy.maximumExclusive });
     if (Number.isFinite(policy.minimumExclusive)) desired.push({ relation: "GREATER_THAN", amount: policy.minimumExclusive });
-    return summary.conditions.length === desired.length && desired.every((condition) =>
-      summary.conditions.some((actual) => actual.type === "price" && actual.relation === condition.relation && actual.amount === condition.amount && actual.currencyCode === policy.currencyCode),
-    );
+    return summary.conditions.length === desired.length &&
+      summary.conditions.every((actual) => actual.type === "price" && actual.currencyCode === policy.currencyCode) &&
+      desired.every((condition) => summary.conditions.some((actual) =>
+        actual.type === "price" &&
+        actual.relation === condition.relation &&
+        actual.amount === condition.amount &&
+        actual.currencyCode === policy.currencyCode));
   }
   return false;
 }
@@ -1748,12 +2048,12 @@ export function buildStaleMembershipPulsePlans({ verification, targets, tagTasks
   for (const collectionHandle of asArray(verification?.failedCollectionHandles)) {
     const target = targetsByHandle.get(normalizeCollectionHandle(collectionHandle));
     if (!target || target.policy.kind !== "semantic") continue;
-    const collectionTag = normalizeTag(target.policy.tag);
+    const collectionTags = new Set(semanticCollectionRuleTags(target.policy).map(normalizeTag));
     for (const productId of asArray(target?.readback?.extraProductIds)) {
       const task = tasksByProductId.get(String(productId));
       const key = `${collectionHandle}:${productId}`;
       if (!task || !task.productId || !Array.isArray(task.desiredTags) || seen.has(key)) continue;
-      if (normalizedTagSet(task.desiredTags).has(collectionTag)) continue;
+      if ([...collectionTags].some((tag) => normalizedTagSet(task.desiredTags).has(tag))) continue;
       seen.add(key);
       plans.push({
         collectionHandle: target.policy.handle,
@@ -1766,6 +2066,55 @@ export function buildStaleMembershipPulsePlans({ verification, targets, tagTasks
     }
   }
   return plans;
+}
+
+export function addApprovedSemanticAliasMembershipsToExpected({
+  expectedByTag,
+  expectedCollectionsByProduct,
+  products,
+} = {}) {
+  const expectedTags = expectedByTag instanceof Map ? expectedByTag : new Map();
+  const expectedCollections = expectedCollectionsByProduct instanceof Map
+    ? expectedCollectionsByProduct
+    : new Map();
+  for (const policy of SEMANTIC_COLLECTION_POLICIES) {
+    const aliases = new Set(semanticCollectionRuleTags(policy).map(normalizeTag).filter(Boolean));
+    // Only an explicit governance merge may widen the applied classification
+    // plan. A single live canonical tag remains subject to the exact tag plan.
+    if (aliases.size < 2) continue;
+    const members = expectedTags.get(normalizeTag(policy.tag)) || new Set();
+    for (const product of asArray(products)) {
+      const productId = String(product?.id || "");
+      if (!productId || !asArray(product?.tags).some((tag) => aliases.has(normalizeTag(tag)))) continue;
+      members.add(productId);
+      expectedCollections.get(productId)?.add(policy.handle);
+    }
+    expectedTags.set(normalizeTag(policy.tag), members);
+  }
+  return { expectedByTag: expectedTags, expectedCollectionsByProduct: expectedCollections };
+}
+
+// A complete export is required for global membership failures, but repeating
+// that export for a small set of collection-local propagation delays is the
+// dominant avoidable cost in this gate. Keep the decision explicit and pure so
+// it can be tested without Shopify access.
+export function chooseMembershipRetryStrategy({
+  mode = "adaptive",
+  failedCollectionIds = [],
+  collectionless = [],
+  failures = [],
+} = {}) {
+  const normalizedMode = ["bulk", "targeted", "adaptive"].includes(String(mode).toLowerCase())
+    ? String(mode).toLowerCase()
+    : "adaptive";
+  if (normalizedMode !== "adaptive") return normalizedMode;
+  if (asArray(collectionless).length) return "bulk";
+  const globalFailure = asArray(failures).some((failure) =>
+    /outside canonical governance|all-products:|collectionless|active products are|source mismatch|canonical collection missing/i.test(
+      String(failure || ""),
+    ),
+  );
+  return !globalFailure && asArray(failedCollectionIds).filter(Boolean).length ? "targeted" : "bulk";
 }
 
 async function readProductTags(productId, retryInfo) {
@@ -2059,6 +2408,11 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
       }
     }
   }
+  addApprovedSemanticAliasMembershipsToExpected({
+    expectedByTag,
+    expectedCollectionsByProduct,
+    products,
+  });
 
   const failures = [];
   const failedCollectionHandles = new Set();
@@ -2108,12 +2462,13 @@ async function verifyCollectionMembership({ targets, products, tagTasks, retryIn
     ALL_PRODUCTS_COLLECTION_POLICY.handle,
     ...targets.map((target) => target.policy.handle),
   ]);
-  const readOnlyLiveHandles = new Set(
-    String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "")
+  const readOnlyLiveHandles = new Set([
+    ...DEFAULT_READ_ONLY_LIVE_COLLECTION_HANDLES,
+    ...String(process.env.SALT_ALLOW_UNMANAGED_LIVE_COLLECTIONS || "")
       .split(",")
       .map(normalizeCollectionHandle)
       .filter(Boolean),
-  );
+  ]);
   const unexpectedLiveCollections = [...byHandle.keys()].filter(
     (handle) => !expectedLiveHandles.has(handle) &&
       !readOnlyLiveHandles.has(handle) &&
@@ -2387,7 +2742,10 @@ async function run(args) {
         ...args,
         knowledgeModel,
         modelEvidence: modelEvidenceByKey?.get(String(entry.product?.id || entry.product?.handle || "")),
-        priorVisualEvidence: visualEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)),
+        priorVisualEvidence: (() => {
+          const saved = visualEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle));
+          return saved && visualEvidenceMatchesProduct(entry.product, saved) ? saved : null;
+        })(),
         visualModelEvidence: visualModelEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)) ||
           candidateVisualModelEvidenceByHandle.get(normalizeCollectionHandle(entry.product?.handle)),
       }),
@@ -2456,12 +2814,17 @@ async function run(args) {
         ...collectionTags,
         ...classificationTags,
       ]));
+    const resolvedReviewReasons = Array.isArray(resolved.reviewReasons) ? resolved.reviewReasons.filter(Boolean) : [];
+    const priorFallbackReasons = Array.isArray(resolved.priorClassification?.fallbackReason)
+      ? resolved.priorClassification.fallbackReason.filter(Boolean)
+      : [];
     resolvedTagPlans.push({ liveProduct: liveProducts[index], desiredManagedTags, requiredManagedTags: collectionTags });
     classifications.push({
       productId: product.shopifyId,
       handle: product.handle,
       ruleId: resolved.knowledge?.classificationRule || resolved.priorClassification?.ruleId || "unclassified",
       source: resolved.source,
+      evidenceFallback: Boolean(resolved.evidenceFallback || resolved.priorClassification?.evidenceFallback),
       confidence: resolved.knowledge?.confidence ?? resolved.priorClassification?.confidence ?? 0,
       collectionHandles: collectionTags.map((tag) => normalizeCollectionHandle(tag)),
       reused: Boolean(resolved.reused),
@@ -2470,7 +2833,11 @@ async function run(args) {
       visualEvidence: resolved.visualEvidence || resolved.priorClassification?.visualEvidence || null,
       visionAlignment: resolved.visionAlignment || resolved.priorClassification?.visionAlignment || null,
       guessedRuleId: resolved.guessedRuleId || resolved.priorClassification?.guessedRuleId || null,
-      fallbackReason: resolved.reviewReasons || resolved.priorClassification?.fallbackReason || [],
+      fallbackReason: resolvedReviewReasons.length
+        ? resolvedReviewReasons
+        : resolved.reason
+          ? [resolved.reason]
+          : priorFallbackReasons,
       visionError: resolved.visionError || resolved.priorClassification?.visionError || null,
     });
   }
@@ -2580,13 +2947,24 @@ async function run(args) {
   let verification = await verifyCollectionMembership({ targets, products: liveProducts, tagTasks, retryInfo });
   for (let attempt = 1; attempt < membershipPollAttempts && verification.failures.length; attempt += 1) {
     process.stdout.write(`Collection propagation incomplete (${verification.failures.length} issues); membership retry ${attempt}/${membershipPollAttempts - 1} (${membershipRetryMode}).\n`);
-    await sleep(membershipPollDelayMs);
     const failedHandles = new Set(verification.failedCollectionHandles || []);
     const failedCollectionIds = targets
       .filter((target) => failedHandles.has(target.policy.handle))
       .map((target) => target.collectionId || target.existing?.id)
       .filter(Boolean);
-    if (membershipRetryMode === "targeted" && failedCollectionIds.length) {
+    const retryStrategy = chooseMembershipRetryStrategy({
+      mode: membershipRetryMode,
+      failedCollectionIds,
+      collectionless: verification.collectionless,
+      failures: verification.failures,
+    });
+    const retryDelay = Math.min(
+      membershipPollDelayMs * 2 ** Math.max(0, attempt - 1),
+      Math.max(membershipPollDelayMs, Number(process.env.SALT_COLLECTION_MEMBERSHIP_POLL_MAX_DELAY_MS || 60_000)),
+    );
+    process.stdout.write(`Collection retry strategy: ${retryStrategy}; waiting ${Math.ceil(retryDelay / 1000)}s.\n`);
+    await sleep(retryDelay);
+    if (retryStrategy === "targeted" && failedCollectionIds.length) {
       process.stdout.write(`Refreshing ${failedCollectionIds.length} failed collection memberships with targeted pagination.\n`);
       await refreshCollectionMembership(verification.membership, failedCollectionIds, retryInfo);
       verification = await verifyCollectionMembership({

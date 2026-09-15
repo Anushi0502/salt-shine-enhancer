@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addApprovedSemanticAliasMembershipsToExpected,
   buildStaleMembershipPulsePlans,
   filterMembershipToActiveProducts,
 } from "./shopify-catalog-integrity.mjs";
@@ -71,5 +72,34 @@ describe("stale collection membership repair planning", () => {
     });
 
     expect(plans).toHaveLength(1);
+  });
+});
+
+describe("approved merged collection membership expectations", () => {
+  it("widens only the explicit merged alias cohort", () => {
+    const expectedByTag = new Map([["gifts", new Set(["gid://shopify/Product/1"])] ]);
+    const expectedCollectionsByProduct = new Map([
+      ["gid://shopify/Product/2", new Set(["all-products"])],
+      ["gid://shopify/Product/3", new Set(["all-products"])],
+      ["gid://shopify/Product/4", new Set(["all-products"])],
+    ]);
+
+    addApprovedSemanticAliasMembershipsToExpected({
+      expectedByTag,
+      expectedCollectionsByProduct,
+      products: [
+        { id: "gid://shopify/Product/2", tags: ["gifts"] },
+        { id: "gid://shopify/Product/3", tags: ["holiday-gifts"] },
+        { id: "gid://shopify/Product/4", tags: ["gifts-for-mom"] },
+      ],
+    });
+
+    expect([...expectedByTag.get("gifts")].sort()).toEqual([
+      "gid://shopify/Product/1",
+      "gid://shopify/Product/2",
+      "gid://shopify/Product/3",
+    ]);
+    expect(expectedCollectionsByProduct.get("gid://shopify/Product/2")).toEqual(new Set(["all-products", "gifts"]));
+    expect(expectedCollectionsByProduct.get("gid://shopify/Product/4")).toEqual(new Set(["all-products"]));
   });
 });

@@ -13,6 +13,7 @@ import {
   buildSemanticCollectionSource,
   normalizeCollectionHandle,
   productMatchesPricePolicy,
+  semanticCollectionRuleTags,
 } from "../src/lib/catalog-collection-governance.js";
 import { asArray, createShopifyAdminGraphQLClient, normalizeText } from "./shopify-admin-graphql-client.mjs";
 
@@ -21,8 +22,10 @@ const approvalPath = resolve(rootDir, "docs", "catalog-collection-approval.json"
 const outputPath = resolve(rootDir, "output", "shopify-governed-collection-source-repair.json");
 const liveInputCheckpointPath = process.env.SALT_CATALOG_INTEGRITY_LIVE_CHECKPOINT ||
   resolve(rootDir, "output", ".shopify-catalog-integrity-live-input.json");
-const sourcePollAttempts = Math.max(2, Math.min(8, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_POLL_ATTEMPTS || 5)));
+const cleanupSnapshotPath = resolve(rootDir, "output", "shopify-tag-collection-cleanup-snapshot.json");
+const sourcePollAttempts = Math.max(2, Math.min(8, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_POLL_ATTEMPTS || 8)));
 const sourcePollDelayMs = Math.max(500, Math.min(10_000, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_POLL_DELAY_MS || 1500)));
+const cleanupSnapshotMaxAgeMs = Math.max(60_000, Math.min(86_400_000, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_SNAPSHOT_MAX_AGE_MS || 86_400_000)));
 const applyConcurrency = Math.max(1, Math.min(4, Number(process.env.SALT_FINAL_COLLECTION_SOURCE_APPLY_CONCURRENCY || 3)));
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "final-governed-collection-source-repair" });
 
@@ -72,6 +75,15 @@ const COLLECTION_PRODUCTS_QUERY = /* GraphQL */ `
           pageInfo { hasNextPage endCursor }
         }
       }
+    }
+  }
+`;
+
+const ACTIVE_PRODUCT_TAGS_QUERY = /* GraphQL */ `
+  query FinalGovernedActiveProductTags($first: Int!, $after: String) {
+    products(first: $first, after: $after, query: "status:active") {
+      nodes { id tags }
+      pageInfo { hasNextPage endCursor }
     }
   }
 `;
@@ -145,6 +157,59 @@ async function fetchCollections() {
   }
 }
 
+function productId(product) {
+  const id = normalizeText(product?.id).split("/").pop();
+  return id || null;
+}
+
+export function addApprovedSemanticAliasMemberships(expectedByHandle, liveProducts, policies = SEMANTIC_COLLECTION_POLICIES) {
+  for (const policy of asArray(policies)) {
+    const aliases = new Set(semanticCollectionRuleTags(policy).map(normalizeTag).filter(Boolean));
+    // Only merged aliases are allowed to widen expected membership. A lone
+    // canonical tag must still come from the applied classification manifest,
+    // otherwise this gate could hide stale or merchant-authored tags.
+    if (aliases.size < 2) continue;
+    const expected = expectedByHandle.get(policy.handle) || new Set();
+    for (const product of asArray(liveProducts)) {
+      const id = productId(product);
+      if (!id) continue;
+      if (asArray(product?.tags).some((tag) => aliases.has(normalizeTag(tag)))) expected.add(id);
+    }
+    expectedByHandle.set(policy.handle, expected);
+  }
+  return expectedByHandle;
+}
+
+async function fetchActiveProductTags() {
+  const products = [];
+  let after = null;
+  while (true) {
+    const data = await client.run(ACTIVE_PRODUCT_TAGS_QUERY, { first: 250, after }, {
+      operation: `final source repair active product tags page ${Math.floor(products.length / 250) + 1}`,
+    });
+    const connection = data?.products;
+    if (!connection) throw new Error("Shopify returned no active product tag connection.");
+    products.push(...asArray(connection.nodes));
+    if (!connection.pageInfo?.hasNextPage) return products;
+    after = connection.pageInfo.endCursor;
+    if (!after) throw new Error("Active product tag pagination returned no cursor.");
+  }
+}
+
+async function readApprovedAliasProducts() {
+  try {
+    const snapshot = JSON.parse(await readFile(cleanupSnapshotPath, "utf8"));
+    const generatedAt = Date.parse(snapshot?.generatedAt || "");
+    const isFresh = snapshot?.source?.freshLiveRead === true &&
+      Number.isFinite(generatedAt) && Date.now() - generatedAt <= cleanupSnapshotMaxAgeMs &&
+      Array.isArray(snapshot?.products);
+    if (isFresh) return snapshot.products;
+  } catch {
+    // A standalone run may not have a cleanup snapshot; use a fresh live read.
+  }
+  return fetchActiveProductTags();
+}
+
 async function readExpectedMembership() {
   const liveCheckpoint = JSON.parse(await readFile(liveInputCheckpointPath, "utf8"));
   if (!liveCheckpoint?.complete || !Array.isArray(liveCheckpoint.liveProducts)) {
@@ -173,13 +238,16 @@ async function readExpectedMembership() {
     // semantic membership readback is omitted when no applied manifest exists.
   }
 
+  const approvedAliasProducts = await readApprovedAliasProducts();
+  addApprovedSemanticAliasMemberships(expectedByHandle, approvedAliasProducts);
+
   for (const product of liveCheckpoint.liveProducts) {
-    const productId = normalizeText(product?.id).split("/").pop();
-    if (!productId) continue;
+    const id = productId(product);
+    if (!id) continue;
     for (const policy of PRICE_COLLECTION_POLICIES) {
       if (!productMatchesPricePolicy(product, policy)) continue;
       if (!expectedByHandle.has(policy.handle)) expectedByHandle.set(policy.handle, new Set());
-      expectedByHandle.get(policy.handle).add(productId);
+      expectedByHandle.get(policy.handle).add(id);
     }
   }
   return expectedByHandle;
@@ -230,13 +298,29 @@ async function readApproval() {
 }
 
 async function applySourceRepair(target) {
-  const data = await client.run(COLLECTION_UPDATE_MUTATION, {
-    collection: {
-      id: target.collection.id,
-      sourcesToDelete: asArray(target.collection.sources).map((entry) => entry.id).filter(Boolean),
-      sourcesToCreate: [{ source: buildSource(target.policy) }],
-    },
-  }, { allowMutations: true, operation: `final source repair ${target.policy.handle}` });
+  const currentSource = asArray(target.collection.sources).find((entry) => entry?.__typename === "CollectionConditionsSource");
+  const desiredSource = buildSource(target.policy);
+  const collection = { id: target.collection.id };
+  if (currentSource?.id) {
+    collection.sourcesToUpdate = [{
+      condition: {
+        id: currentSource.id,
+        title: desiredSource.title,
+        description: desiredSource.description,
+        inclusion: {
+          matchType: desiredSource.inclusion.matchType,
+          conditionsToDelete: asArray(currentSource.inclusion?.conditions).map((condition) => condition.id).filter(Boolean),
+          conditionsToCreate: asArray(desiredSource.inclusion?.conditions),
+        },
+      },
+    }];
+  } else {
+    collection.sourcesToCreate = [{ source: desiredSource }];
+  }
+  const data = await client.run(COLLECTION_UPDATE_MUTATION, { collection }, {
+    allowMutations: true,
+    operation: `final source repair ${target.policy.handle}`,
+  });
   const errors = asArray(data?.collectionUpdate?.userErrors);
   if (errors.length) throw new Error(`${target.policy.handle}: ${errors.map((error) => normalizeText(error.message)).join(" | ")}`);
   if (!data?.collectionUpdate?.collection?.id) throw new Error(`${target.policy.handle}: Shopify returned no collection after source repair.`);

@@ -592,6 +592,14 @@ export function buildOrganizationStructuredData(shop: ShopifyShop | null | undef
     "@type": "Organization",
     name: shop?.name || "SALT",
     url: origin,
+    description: "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "help@saltonlinestore.com",
+      telephone: "+1 888-835-7211",
+      availableLanguage: ["English"],
+    },
     sameAs: [
       "https://instagram.com/saltonlinestore",
       "https://www.facebook.com/profile.php?id=61573199456052",

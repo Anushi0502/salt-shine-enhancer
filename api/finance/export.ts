@@ -1,11 +1,11 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { buildFinanceSummary, handleFinanceOptions, normalizePeriod, requireFinanceSession, setFinanceCors } from "./_shared.js";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { buildFinanceSummary, handleFinanceOptions, normalizePeriod, requireFinanceSession, setFinanceCors, type FinanceRequest, type FinanceResponse } from "./_shared.js";
 
 function money(cents: number, currency: string): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(cents / 100);
 }
 
-function writeLine(page: any, text: string, x: number, y: number, size: number, font: any, color = rgb(0.08, 0.16, 0.34)) {
+function writeLine(page: PDFPage, text: string, x: number, y: number, size: number, font: PDFFont, color = rgb(0.08, 0.16, 0.34)) {
   page.drawText(text, { x, y, size, font, color });
 }
 
@@ -25,7 +25,7 @@ function wrap(text: string, maxLength = 96): string[] {
   return lines;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: FinanceRequest, res: FinanceResponse) {
   if (handleFinanceOptions(req, res, "GET, OPTIONS")) return;
   setFinanceCors(req, res);
   if (req.method !== "GET") {

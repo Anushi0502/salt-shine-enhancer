@@ -20,6 +20,7 @@ import TrustStrip from "@/components/storefront/TrustStrip";
 import EverydayCarryEssentials from "@/components/storefront/EverydayCarryEssentials";
 
 import { minPrice, savingsPercent } from "@/lib/formatters";
+import { isDesignedCollectionBanner } from "@/lib/collection-banner";
 import { trackMetaPixelSearch } from "@/lib/meta-pixel";
 import { resolveShopBannerImageSelection } from "@/lib/shop-banner";
 import {
@@ -29,6 +30,7 @@ import {
   resolveCollectionShopifyHandle,
   SITE_COLLECTIONS,
 } from "@/lib/site-navigation";
+import { getCollectionGuideLinks, getCollectionGuideSummary } from "@/lib/collection-guide-links";
 import { useLiveProductListing } from "@/lib/live-product-listings";
 import { useCollections } from "@/lib/shopify-data";
 import {
@@ -387,18 +389,38 @@ const ShopPage = () => {
     return base;
   }, [products, sort]);
 
+  const selectedCollectionHandleCandidates = new Set(
+    [
+      collectionHandle,
+      routeCollectionAlias,
+      routeCuratedCollection?.handle,
+      routeCuratedCollection?.shopifyHandle,
+      activeCollectionParam,
+    ]
+      .map(normalizeHandle)
+      .filter(Boolean),
+  );
   const selectedCollection = isVirtualPriceSubcollection
     ? undefined
-    : collections.find(
-        (collection) => normalizeHandle(collection.handle) === normalizeHandle(collectionHandle),
-      );
+    : collections.find((collection) => selectedCollectionHandleCandidates.has(normalizeHandle(collection.handle))) ||
+      (routeCuratedCollection
+        ? collections.find(
+            (collection) => normalizeSearchText(collection.title) === normalizeSearchText(routeCuratedCollection.title),
+          )
+        : undefined);
   const collectionHeroKicker =
     selectedCollection?.customData?.heroKicker ||
     curatedSubcollection?.title ||
     curatedCollection?.title ||
     "Explore the full SALT catalog";
+  const collectionDiscoveryHandle = normalizeHandle(routeCollectionAlias || selectedCollection?.handle || collectionHandle);
+  const collectionDiscoverySummary =
+    !hasSearchQuery && !isVirtualPriceSubcollection && !routeSubcollectionAlias
+      ? getCollectionGuideSummary(collectionDiscoveryHandle)
+      : "";
   const collectionHeroSummary =
     selectedCollection?.customData?.heroSummary ||
+    collectionDiscoverySummary ||
     formatCollectionDescription(
       curatedSubcollection?.description ||
         curatedCollection?.description ||
@@ -426,6 +448,11 @@ const ShopPage = () => {
     curatedCollection?.title ||
     selectedCollection?.title ||
     "Collection preview";
+  const showDesignedCollectionBanner = Boolean(
+    selectedCollectionImage &&
+      bannerImageSelection.source === "selected-collection" &&
+      isDesignedCollectionBanner(selectedCollection),
+  );
 
   const totalResults = productsPayload?.total ?? sortedProducts.length;
   const totalPages = productsPayload?.totalPages ?? Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
@@ -440,8 +467,12 @@ const ShopPage = () => {
   const understoodIntent = searchIntelligence?.intent ?? null;
   const pageProgressPercent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const origin = typeof window === "undefined" ? "" : window.location.origin;
-  const aeoCollectionHandle = normalizeHandle(routeCollectionAlias || selectedCollection?.handle || collectionHandle);
+  const aeoCollectionHandle = collectionDiscoveryHandle;
   const showEverydayCarryEssentials = !hasSearchQuery && EVERYDAY_CARRY_COLLECTION_HANDLES.has(aeoCollectionHandle);
+  const collectionDiscoveryGuides =
+    !hasSearchQuery && !isVirtualPriceSubcollection && !routeSubcollectionAlias
+      ? getCollectionGuideLinks(aeoCollectionHandle)
+      : [];
   const seoStructuredData = useMemo(() => {
     if (!origin) {
       return [];
@@ -963,64 +994,105 @@ const ShopPage = () => {
 
       {!hasSearchQuery ? (
         <Reveal>
-          <div
-            className="salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6"
-          >
-          <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
-          <div
-            className={`grid gap-4 lg:gap-5${selectedCollectionImage ? " lg:grid-cols-[minmax(0,1.1fr)_minmax(17rem,0.9fr)] lg:items-center" : ""}`}
-          >
-            <div className="relative z-10">
-              <SectionHeading
-                className="mt-3"
-                kicker={collectionHeroKicker}
-                title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
-                description={collectionHeroSummary}
-                as="h1"
+          {showDesignedCollectionBanner ? (
+            <div className="salt-editorial-shell salt-shop-channel-shell mt-3 overflow-hidden rounded-[1.35rem] p-0 shadow-[0_18px_45px_-30px_rgba(12,32,72,0.32)] sm:rounded-[1.7rem]">
+              <img
+                src={selectedCollectionImage}
+                alt={selectedCollectionImageAlt}
+                className="block h-auto w-full"
+                decoding="async"
+                fetchPriority="high"
+                loading="eager"
               />
-              <TrustStrip
-                className="mt-4"
-                items={collectionTrustStrip.slice(0, 3).map((label, index) => ({
-                  icon: [Truck, ShieldCheck, Sparkles][index] || Sparkles,
-                  label,
-                }))}
-              />
-              <div className="mt-5 flex flex-wrap gap-2">
-                {[
-                  { label: "Results", value: `${totalResults.toLocaleString()} products` },
-                  {
-                    label: "Route",
-                    value: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "All products",
-                  },
-                  { label: "Sort", value: sortLabel },
-                ].map((item) => (
-                  <div
-                    key={`${item.label}-${item.value}`}
-                    className="salt-editorial-meta inline-flex items-baseline gap-2 px-3 py-1 text-xs"
-                  >
-                    <span className="font-semibold text-muted-foreground">{item.label}</span>
-                    <span className="max-w-[12rem] truncate font-semibold text-foreground">{item.value}</span>
+            </div>
+          ) : (
+            <div
+              className="salt-editorial-shell salt-shop-channel-shell relative mt-3 overflow-hidden rounded-[1.35rem] p-4 sm:rounded-[1.7rem] sm:p-5 lg:p-6"
+            >
+              <div className="pointer-events-none absolute left-0 top-10 h-20 w-1 rounded-r-full bg-primary/55" />
+              <div
+                className={`grid gap-4 lg:gap-5${selectedCollectionImage ? " lg:grid-cols-[minmax(0,1.1fr)_minmax(17rem,0.9fr)] lg:items-center" : ""}`}
+              >
+                <div className="relative z-10">
+                  <SectionHeading
+                    className="mt-3"
+                    kicker={collectionHeroKicker}
+                    title={curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "Explore the full SALT catalog"}
+                    description={collectionHeroSummary}
+                    as="h1"
+                  />
+                  <TrustStrip
+                    className="mt-4"
+                    items={collectionTrustStrip.slice(0, 3).map((label, index) => ({
+                      icon: [Truck, ShieldCheck, Sparkles][index] || Sparkles,
+                      label,
+                    }))}
+                  />
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {[
+                      { label: "Results", value: `${totalResults.toLocaleString()} products` },
+                      {
+                        label: "Route",
+                        value: curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || "All products",
+                      },
+                      { label: "Sort", value: sortLabel },
+                    ].map((item) => (
+                      <div
+                        key={`${item.label}-${item.value}`}
+                        className="salt-editorial-meta inline-flex items-baseline gap-2 px-3 py-1 text-xs"
+                      >
+                        <span className="font-semibold text-muted-foreground">{item.label}</span>
+                        <span className="max-w-[12rem] truncate font-semibold text-foreground">{item.value}</span>
+                      </div>
+                    ))}
                   </div>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {heroActions.map(renderHeroAction)}
+                  </div>
+                </div>
+
+                {selectedCollectionImage ? (
+                  <div className="relative order-first aspect-[6/5] overflow-hidden rounded-[1.15rem] border border-border/70 bg-background/92 shadow-[0_16px_34px_-28px_rgba(12,32,72,0.18)] lg:order-none">
+                    <img
+                      src={selectedCollectionImage}
+                      alt={selectedCollectionImageAlt}
+                      className="h-full w-full object-cover object-center transition duration-500"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.04)_54%,hsl(var(--foreground)/0.16))]" />
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </Reveal>
+      ) : null}
+      {collectionDiscoveryGuides.length ? (
+        <Reveal delayMs={45}>
+          <section className="salt-editorial-shell mt-4 rounded-[1.35rem] p-4 sm:rounded-[1.6rem] sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">Helpful before you shop</p>
+                <h2 className="mt-2 font-display text-[clamp(1.45rem,2.8vw,2.15rem)] leading-none text-foreground">
+                  Use a focused guide to narrow this collection
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  {collectionDiscoverySummary ||
+                    "Compare the live category signals first, then open the products that fit your task, style, or use case."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {collectionDiscoveryGuides.map((guide) => (
+                  <Link
+                    key={guide.handle}
+                    to={`/pages/${guide.handle}`}
+                    className="inline-flex min-h-10 items-center rounded-full border border-border px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.09em] text-foreground transition hover:-translate-y-[1px] hover:border-primary/30 hover:text-primary"
+                  >
+                    {guide.title}
+                  </Link>
                 ))}
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {heroActions.map(renderHeroAction)}
-              </div>
-              
             </div>
-
-            {selectedCollectionImage ? (
-              <div className="relative order-first aspect-[5/4] overflow-hidden rounded-[1.15rem] border border-border/70 bg-background/92 shadow-[0_16px_34px_-28px_rgba(12,32,72,0.18)] lg:order-none">
-                <img
-                  src={selectedCollectionImage}
-                  alt={selectedCollectionImageAlt}
-                  className="h-full w-full object-cover object-center transition duration-500"
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background)/0.02),hsl(var(--foreground)/0.04)_54%,hsl(var(--foreground)/0.16))]" />
-              </div>
-            ) : null}
-          </div>
-          </div>
+          </section>
         </Reveal>
       ) : null}
       <div className={desktopFiltersVisible ? "mt-4 grid gap-4 lg:grid-cols-[252px_minmax(0,1fr)] lg:items-start" : "mt-4 grid gap-4 lg:grid-cols-1"}>

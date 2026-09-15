@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-09-10T11:16:24.604Z",
+  "generatedAt": "2026-09-11T23:51:37.135Z",
   "policy": "Every ambiguous product receives supervised evidence or an explicit non-semantic fallback; no pending review items remain.",
   "summary": {
-    "totalClassifications": 17494,
-    "reviewed": 16785,
-    "fallbackResolved": 709,
-    "fallbackWithEvidence": 709,
+    "totalClassifications": 17748,
+    "reviewed": 17019,
+    "evidenceBacked": 116,
+    "fallbackResolved": 613,
+    "fallbackWithEvidence": 613,
     "pending": 0
   },
   "fallbackProducts": [
@@ -65,8 +66,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/7750002737251",
-      "handle": "air-fryer-parchment-paper-liners-non-stick-heat-resistant",
+      "productId": "gid://shopify/Product/7750016139363",
+      "handle": "mini-train-shape-aromatherapy-diffuser-with-led-lamp-1",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -76,8 +77,19 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/7750016139363",
-      "handle": "mini-train-shape-aromatherapy-diffuser-with-led-lamp-1",
+      "productId": "gid://shopify/Product/7751227605091",
+      "handle": "adjustable-folding-walking-cane-for-seniors",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/7751227637859",
+      "handle": "golden-freemasonry-walking-cane-93cm-gentlemans-fashion-stick",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -155,17 +167,6 @@
     {
       "productId": "gid://shopify/Product/7776172540003",
       "handle": "jute-drawstring-bags-multi-size-jewelry-gift-bags",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/7776172605539",
-      "handle": "burlap-wine-bags-jute-wine-bottle-bags-with-drawstrings",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -285,52 +286,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8036975050851",
-      "handle": "1pc-usb-rechargeable-electric-salt-pepper-grinder-set-automatic-one-hand-operation-adjustable-coarseness-mill-for-home-kitchen",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8036975968355",
       "handle": "6piece-stainless-steel-handle-kitchen-knife-set-suitable-for-home-kitchen-and-dining-room-including-steak-knife-forks-and-spoons",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8036978229347",
-      "handle": "100-300-500pcs-cherry-blossom-rose-flowers-wedding-petals-fake-artificial-silk-flowers-home-decoration-party-supplies",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8037094293603",
-      "handle": "multifunctional-knife-sharpening-tool-stainless-steel-blade-quick-sharpener-handheld-multifunction-kitchenware-4-in-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8037094326371",
-      "handle": "kitchen-electric-knife-sharpener-multifunctional-automatic-professional-4-gears-electric-knife-sharpener-kitchen-accessories",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -375,17 +332,6 @@
     {
       "productId": "gid://shopify/Product/8039686406243",
       "handle": "3pcs-dollhouse-diy-miniature-model-home-decor-flower-pot-ornament-living-room-decoration-table-flowers-hydroponic-vase-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8039686439011",
-      "handle": "modern-vase-home-decoration-flower-vases-aesthetic-elegant-flower-bottle-unusual-shape-flowerpots-room-design-office-decor",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -661,17 +607,6 @@
     {
       "productId": "gid://shopify/Product/8051182829667",
       "handle": "women-watches-top-brand-luxury-hollow-ladies-wrist-watches-women-transparent-leather-strap-watch-for-female-relogio-feminino-hot",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8051183714403",
-      "handle": "new-fashion-heart-shaped-ribbon-strap-diamond-studded-flower-watch-for-women-with-adjustable-bracelet",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -1330,17 +1265,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8052555743331",
-      "handle": "mens-handbags-briefcase-canvas-shoulder-bag-man-for-documents-large-capacity-tote-laptop-bag-crossbody-travel-bags-vintage-k004",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8052555841635",
       "handle": "outdoor-men-waist-pack-bum-bag-pouch-waterproof-waist-bag-sport-hunting-belt-nylon-mobile-phone-bags-travel-tools-mens-bags",
       "title": "",
@@ -1354,17 +1278,6 @@
     {
       "productId": "gid://shopify/Product/8052556562531",
       "handle": "male-handbags-pu-leather-mens-tote-briefcase-business-shoulder-bag-for-men-2026-brand-laptop-bags-man-organizer-for-documents",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8052559380579",
-      "handle": "lips-love-heart-patch-cartoon-embroidery-patch-diy-iron-on-patches-for-clothing-thermoadhesive-patches-on-clothes-sewing-sticker",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -1957,17 +1870,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8060578955363",
-      "handle": "7-14-inch-soft-sleeve-protective-pouch-for-laptop-pc-tablet",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8065641447523",
       "handle": "ienens-kids-baby-boys-clothing-girls-denim-jumpers-jeans-children-overalls-toddler-infant-playsuit-dungarees-trousers-1-4-years",
       "title": "",
@@ -2144,17 +2046,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8069097947235",
-      "handle": "50pcs-lot-kawaii-stationery-stickers-childhood-party-junk-journaling-stickers-planner-decorative-mobile-scrapbooking-supplies",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8069098471523",
       "handle": "office-back-to-school-supplies-kawaii-stationery-for-school-cute-panda-pencil-sharpener-school-supplies-stationery-school-useful",
       "title": "",
@@ -2289,17 +2180,6 @@
     {
       "productId": "gid://shopify/Product/8076879691875",
       "handle": "dollhouse-miniature-sparkling-water-drink-bottles-pretend-play-kitchen-game-party-toys",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8076881363043",
-      "handle": "funny-bottles-cartoon-animals-cat-rabbit-water-stickers-3d-scrapbooking-diy-journal-cute-stickers-stationery-decor-school-gift",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -3090,17 +2970,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8113422139491",
-      "handle": "1-4-1-6bjd-mohair-wig-soft-high-layered-long-hair-air-bangs-cute-short-straight-hair-for30-40cm-sd-dd-doll-wig-accessories-6-8in",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8113422303331",
       "handle": "game-blue-archive-shimoe-koharu-ponytail-pinkl-wig-cosplay-heat-resistant-synthetic-hair-halloween-party-carnival-free-wig-cap",
       "title": "",
@@ -3167,28 +3036,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8122376454243",
-      "handle": "womens-elegant-round-neck-summer-short-sleeve-solid-a-line-knee-length-dress-high-waist-swagger-party-wedding-casual-departure",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122377109603",
-      "handle": "womens-high-neck-long-sleeve-leggings-solid-color-casual-autumn-and-winter-warm-womens-tights",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8122377306211",
       "handle": "elegant-high-waisted-office-lady-pencil-skirt-korean-fashion-slim-fit-package-hip-midi-skirts-women-solid-color-all-match-skirts",
       "title": "",
@@ -3211,118 +3058,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8122377568355",
-      "handle": "butter-slicer-cutter-stainless-steel-cheese-slicer-multipurpose-wire-cheese-slicer-handheld-butter-slicing-tool-kitchen-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122378190947",
-      "handle": "pizza-cutter-stainless-steel-knife-cake-tools-pizza-wheels-scissors-ideal-pizza-pies-waffles-dough-cookies-kitchen-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122378453091",
-      "handle": "1-2pcs-stainless-steel-fish-bone-tweezers-pincer-clip-puller-remover-tongs-fish-bone-plucking-clamp-kitchen-gadgets-tools",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122379141219",
-      "handle": "500ml-2-in-1-plastic-olive-oil-sprayer-dispenser-spray-pour-bottle-vinegar-mister-for-air-fryer-bbq-salad-baking-kitchen-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122380124259",
-      "handle": "16oz-470ml-olive-oil-sprayer-for-cooking-2-in-1-glass-olive-oil-dispenser-for-kitchen-gadgets-air-fryer-salad-and-bbq",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122381008995",
-      "handle": "silicone-vegetable-and-fruit-cleaning-and-drainage-basket-cleaning-basket-1pcs-folding-water-filter-net-kitchen-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8122381336675",
       "handle": "essager-magnetic-wireless-charger-with-holder-15w-fast-charging-for-iphone16-15-14-13pro-max-airpods-mini-wireless-phone-charger",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122381697123",
-      "handle": "the-three-in-one-wireless-charging-stand-for-mobile-phones-and-headphones-offers-15w-fast-charging-and-is-suitable-for-ios-watch",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122383106147",
-      "handle": "silicone-vegetable-and-fruit-cleaning-and-drainage-basket-cleaning-basket-folding-water-filter-net-kitchen-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122383138915",
-      "handle": "stainless-steel-kitchen-scissors-black-titanium-chicken-bones-scissors-bottle-opener-multifunctional-kitchen-tools",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122383892579",
-      "handle": "cycling-dustproof-adjustable-motorcycle-goggles-breathable-full-face-protective-sunglasses-riding-outdoor-sport-windproof-mask",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -3345,17 +3082,6 @@
     {
       "productId": "gid://shopify/Product/8122384220259",
       "handle": "28-30-32-34-36cm-stainless-steel-steamer-rack-round-thickened-steaming-tray-for-dumplings-fish-household-kitchen-cooking-gadgets",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8122384449635",
-      "handle": "2-in-1-pour-spray-sprayer-kitchen-glass-oil-kettle-470ml-olive-oil-dispenser-healthy-oil-control-kitchen-gadgets-for-bbq",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -3554,17 +3280,6 @@
     {
       "productId": "gid://shopify/Product/8123474051171",
       "handle": "wrist-thumb-support-brace-with-flexible-splint-compression-stabilizer-for-carpal-tunnel-pain-relief-left-right-hand-fit",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123474083939",
-      "handle": "1pcs-finger-support-splint-adjustable-thumb-toe-separator-hand-brace-tape-for-straighten-curved-pain-relief-foot-care-pedicure",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -3915,17 +3630,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123475329123",
-      "handle": "1pcs-thumb-brace-wrist-stabilizer-fits-left-right-thumb-spica-splint-for-arthritis-tendonitis-support-wrap-for-men-women",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123475361891",
       "handle": "p-adjustable-splint-wrist-thumb-support-brace-for-arthritis-breathable-thumb-protector-guard-fits-right-and-left-hand",
       "title": "",
@@ -4124,17 +3828,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123476115555",
-      "handle": "elastic-wristband-safety-wrist-support-adjustable-wrist-joint-wrist-brace-wraps-thin-sports-bracers-gym-anti-sprain-wrist-brace",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123476181091",
       "handle": "1pcs-finger-thumb-splint-adjustable-thumb-spica-support-stabilizer-for-sprains-arthritis-tendonitis-tenosynovitis-cmc-joint",
       "title": "",
@@ -4300,17 +3993,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123477426275",
-      "handle": "sports-compression-wrist-brace-with-wrist-support-bracket-adjustable-wrist-stabilizer-wrist-band-protector-for-left-right-hand-fitness-office-pain-relief",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123477557347",
       "handle": "652d-breathable-wrist-support-brace-suitable-for-carpals-tunnel-relief-with-adjustable-closures-right-left-hand-option",
       "title": "",
@@ -4399,17 +4081,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123478081635",
-      "handle": "1pair-elastic-wristband-wrist-palm-brace-carpal-protector-for-basketball-football-sports-gym-gray",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123478114403",
       "handle": "aolikes-1pcs-wrist-brace-thumb-brace-with-thumb-splins-support-for-men-and-women-wrist-stabilizer-for-sprains-tendonitis",
       "title": "",
@@ -4445,17 +4116,6 @@
     {
       "productId": "gid://shopify/Product/8123478311011",
       "handle": "ergonomic-wrist-brace-with-thumb-support-relieves-arthritis-and-finger-pain-perfect-for-extended-use",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123478343779",
-      "handle": "breathable-wrist-support-brace-adjustable-thumb-loop-wrist-wrap-for-gym-sports-pain-relief",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4542,28 +4202,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123478966371",
-      "handle": "portable-moisturizing-facial-essence-liquid-soft-texture-with-long-lasting-hydration-gentle-skin-friendly-daily-skin-care-liqu",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123478999139",
-      "handle": "face-mister-moisturizing-handheld-mist-sprayer-manual-steamer-hydrating-skin-care-tools-portable-humidifier-for-home-daily-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123479031907",
       "handle": "facial-moisturizing-lotion-replenishes-moisture-and-restores-the-protective-barrier-rich-in-ceramides-shea-butter-and-hyaluronic-acid-50ml-suitable-for-sensitive-skin",
       "title": "",
@@ -4599,28 +4237,6 @@
     {
       "productId": "gid://shopify/Product/8123479228515",
       "handle": "wrist-brace-for-carpal-tunnel-adjustable-night-wrist-support-brace-with-splints-right-hand-hand-support-for-arthritis-tendonitis",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123479261283",
-      "handle": "wrist-support-brace-wrist-stabilizer-adjustable-wrist-bandages-protector-left-right-hand-wrist-wraps-fitness-office-pain-relief",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123479326819",
-      "handle": "wrist-support-brace-stabilizer-adjustable-wrist-bandages-protector-left-right-hand-wraps-fitness-office-pain-relief",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4707,52 +4323,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123479752803",
-      "handle": "wrist-support-brace-wrist-stabilizer-adjustable-wrist-bandages-protector-left-righthand-wrist-wraps-fitness-office-pain-relief",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123479883875",
       "handle": "wrist-brace-for-men-women-adjustable-wrist-support-splint-for-wrist-pain-carpal-tunnel-arthritis-tendonitis-rsi-sprain",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123479982179",
-      "handle": "wrist-brace-support-for-men-women-breathable-sports-wristband-for-gym-volleyball-basketball-tendon-joint-pain-relief",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123480113251",
-      "handle": "wrist-support-brace-wrist-stabilizer-adjustable-wrist-bandages-protector-left-right-hand-wrist-wraps-fitness-office-pain-relief-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123480178787",
-      "handle": "wrist-support-brace-wrist-stabilizer-adjustable-wrist-bandages-protector-left-right-hand-wrist-wraps-fitness-office-pain-relief-2",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4775,17 +4347,6 @@
     {
       "productId": "gid://shopify/Product/8123480440931",
       "handle": "wrist-brace-for-carpel-tunnel-comfortable-wrist-support-band-for-sprain-prevention-joint-protection-3",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123480604771",
-      "handle": "moisturizing-cream-20-panthenol-ceramide-infused-daily-face-moisturizer-with-hyaluronic-acid-long-lasting-hydration-for-dr",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4839,39 +4400,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123481423971",
-      "handle": "formbo-3-in-1-fragrance-lotion-set-plant-derived-fragrance-thats-not-overpowering-shea-butter-body-lotion-that-wont-cause-skin-irritation-8-hour-fragrance-that-creates-anatural-body-scent-for-you-one-bottle-that-provi",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123481522275",
-      "handle": "all-over-body-nourish-cream-gentle-hydrating-texture-relieve-flaky-rough-skin-daily-full-body-moisturizer-lotion",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123481849955",
-      "handle": "multi-functional-moisturizing-cream-absorbs-instantly-deep-hydration-reduce-fine-lines-brighten-lifting-firming-dual-serum-cream-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123481981027",
       "handle": "100g-tattoo-butter-naturally-extracted-brightens-tattoos-and-moisturizes-skin",
       "title": "",
@@ -4905,30 +4433,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123482669155",
-      "handle": "moisturizing-correcting-cc-cream-waterproof-anti-sweat-makeup-before-concealer-lasting-women-makeup-protect-skin-erborian-make",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123483521123",
       "handle": "tea-tree-essential-oil-nature-for-aromatherapy-diffuser-humidifier-woody-relieving-stress-massage-muscle",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123484504163",
-      "handle": "natural-shea-butter-organic-removes-dry-skin-on-the-legs-arm-buttocks-deep-hydration-moisturizing-skin-crack-remover-moisturizer",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -4951,17 +4457,6 @@
     {
       "productId": "gid://shopify/Product/8123484668003",
       "handle": "tea-tree-oil-handmade-soap-fresh-aroma-moisturizing-formula-cleanses-the-skin-suitable-for-hair-face-and-body",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123484733539",
-      "handle": "tea-tree-soap-for-face-body-acne-100g-tea-tree-oil-soap-bar-for-face-body-natural-skin-cleanser-for-oily-dry-itchy-skin",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5015,107 +4510,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123485388899",
-      "handle": "ailke-shea-butter-oil-whitening-soap-bar-for-all-skin-types-anti-acne-dark-spots-moisturizing-body-wash-for-bath-or-shower",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123485421667",
-      "handle": "akarz-unrefined-shea-butter-highquality-origin-west-africa-yellow-solid-skin-care-products-cosmetic-raw-materials-base-oil",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123485519971",
-      "handle": "natural-shea-butter-cream-improve-dry-skin-on-legs-arms-deep-hydrating-moisturizing-skin-cracks-organic-face-body-moisturizer",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123485618275",
-      "handle": "crude-shea-butter-cream-for-extremely-dry-skin-deep-moisturizing-nourishing-multi-purpose-skin-care-face-hand-body-cream-120g-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123566456931",
-      "handle": "removes-lint-from-clothes-pet-hair-removal-roller-removes-hairs-cat-hair-brush-take-out-of-clothes-for-cleaning-remover-tools-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123566489699",
       "handle": "vintage-portable-led-lantern-handheld-emergency-lamp-with-charger-for-camping-tent-outdoor-atmosphere-lighting",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123566653539",
-      "handle": "self-cleaning-lint-sticking-roller-2-sides-dedusting-brush-pet-hair-remover-brush-removing-dog-cat-hair-from-sofa-carpet-clothes",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123566817379",
-      "handle": "reusable-electrostatic-dusting-brush-ergonomic-grip-quickly-removes-hair-lint-from-fabric-household-lint-roller",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123567177827",
-      "handle": "1pcself-cleaning-lint-sticking-roller-2-sides-removes-lint-from-clothes-reusable-pet-hair-remover-brush-from-sofa-carpet-clothe",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123567636579",
-      "handle": "1-multifunctional-long-handled-window-brush-wet-and-dry-dual-use-cleaning-brush-glass-brush-sofa-wall-pet-hair-carpet-clea",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5149,28 +4545,6 @@
     {
       "productId": "gid://shopify/Product/8123567964259",
       "handle": "solar-lanterns-solar-lights-outdoor-waterproof-boho-light-for-outside-hanging-rattan-lantern-decoration-for-garden-yard-patio",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123567997027",
-      "handle": "solar-flame-rope-lantern-type-c-fast-charging-waterproof-hanging-lamp-with-flickering-3d-flame-for-garden-patio-camping-decor",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123568029795",
-      "handle": "solar-flame-rope-lantern-type-c-fast-charging-waterproof-hanging-lamp-with-flickering-3d-flame-for-garden-patio-camping-decor-1",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5235,52 +4609,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123568586851",
-      "handle": "health-medicine-first-aid-kit-oxford-cloth-portable-travel-storage-emergency-kit-tote-bag-outdoor-medical-bag-storage-case-red",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123568685155",
       "handle": "soft-pillow-cushion-laptop-lap-desk-ergonomic-portable-design-writing-padded-tray-padded-tray-foam-particles-filled",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123568783459",
-      "handle": "outdoor-emergency-survival-medicine-bag-pill-case-first-aid-kit-organizer-portable-storage-bag",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123568881763",
-      "handle": "anti-epidemic-first-aid-kit-hygiene-emergency-medicine-kit-portable-family-storage-bag-convenient-for-vehicle-carry",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123568947299",
-      "handle": "portable-portable-medical-kit-home-first-aid-kit-outdoor-travel-medical-kit-large-capacity-medicine-storage-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5312,17 +4642,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123569274979",
-      "handle": "soft-pillow-cushion-laptop-lap-desk-padded-tray-portable-design-writing-padded-tray-ergonomic-hard-mouse-pad-small-pillow-table",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123569307747",
       "handle": "solar-lanterns-solar-lights-outdoor-waterproof-boho-light-for-outside-hanging-rattan-lantern-decoration-for-garden-yard-patio-1",
       "title": "",
@@ -5336,17 +4655,6 @@
     {
       "productId": "gid://shopify/Product/8123569340515",
       "handle": "laptop-lap-desk-with-soft-pillow-cushion-portable-laptop-desk-writing-padded-tray-for-13-15inch-laptops",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123569373283",
-      "handle": "elevating-bed-desk-top-laptop-writing-table-student-dormitory-upper-bed-computer-desk-small-table-bedroom-storage-organizer",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5400,30 +4708,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123569537123",
-      "handle": "portable-folding-laptop-table-bed-tray-adjustable-height-lightweight-small-student-dorm-bunk-study-home-bedroom-dining-table",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123569569891",
       "handle": "500ml-kitchen-sink-detergent-dispensers-stainless-steel-head-liquid-dispenser-soap-pe-bottle-for-bathroom-soap-dispensers-chrome",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123569766499",
-      "handle": "first-aid-kit-emergency-survival-bag-handbag-durable-trauma-bag-compact-rescue-tote-bag-portable-medicine-storage-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5446,17 +4732,6 @@
     {
       "productId": "gid://shopify/Product/8123570389091",
       "handle": "automatic-liquid-soap-dispenser-touchless-infrared-sensor-hand-free-soap-hand-sensor-dispenser-smart-foam-machine-usb-charging",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123570421859",
-      "handle": "soap-despenser-portable-foam-pumps-bottle-250-450-650ml-manually-press-soap-foaming-mousses-liquid-dispensers-bathroom-bottling",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5521,17 +4796,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123570716771",
-      "handle": "1pc-soap-dispenser-300ml-10oz-ceramic-liquid-soap-pump-dispenser-refillable-dish-soap-dispenser-for-kitchen-bathroom-washroom",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123570749539",
       "handle": "automatic-soap-dispenser-usb-charging-cute-cartoon-style-touchless-sensor-children-washing-hand-machine-soap-foam-dispenser",
       "title": "",
@@ -5556,17 +4820,6 @@
     {
       "productId": "gid://shopify/Product/8123571175523",
       "handle": "ceramics-portable-soap-dispensers-handwashing-fluid-bottle-terrazzo-pattern-lotion-bottle-soap-bottle-bathroom-soap-dispensers",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123571241059",
-      "handle": "ceramic-yellow-duck-soap-dispenser-cartoon-hand-sanitizer-bottle-shower-gel-shampoo-soap-dispenser-bathroom-shampoo-dispenser",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5631,41 +4884,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8123572584547",
-      "handle": "fashion-design-womens-pink-silk-square-scarf-with-designer-signature-letter-logo-wraps-luxury-brand-lady-one-side-beach-skirts",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123573076067",
-      "handle": "amber-glass-soap-dispenser-with-black-pump-liquid-hand-soap-dispenser-for-bathroom-kitchen-dish-soap-dispenser-2pc-16oz-500ml",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8123573305443",
       "handle": "1pc-adorable-soap-dish-self-draining-solid-tray-for-kitchen-and-bathroom",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8123573469283",
-      "handle": "soap-dish-in-the-shape-of-a-boat-wall-mounted-no-drilling-required-suitable-for-bathrooms-soap-storage-box",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5688,39 +4908,6 @@
     {
       "productId": "gid://shopify/Product/8127762497635",
       "handle": "rare-beauty-3d-contour-stick-waterproof-bronzer-natural-skin-shading-slimming-face-sculpting-gift-for-women-daily-party-makeup-1",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127762661475",
-      "handle": "f33-new-handheld-5colors-mini-fan-usb-portable-desktop-fan-beauty-eyelash-mini-fan",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127763251299",
-      "handle": "rare-beauty-always-sunny-happy-sol-silky-three-dimensional-bronze-contour-stick-natural-matte-blusher-highlight-gloss-mirror",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127763513443",
-      "handle": "japanese-chopsticks-holder-earthenware-ingot-chopstick-rest-home-restaurant-dining-table-accessories-supplies-chopsticks-pillow",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5840,17 +5027,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8127785795683",
-      "handle": "cozy-pajama-set-3-piece-lounge-set-cute-loungewear-warm-suit-sets-matching-set-lounge-set-3-piece-pant-sets-women-winter-dress",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8127786287203",
       "handle": "plug-and-play-ecoobd2-gasoline-car-fuel-economy-eco-obd2-driver",
       "title": "",
@@ -5873,17 +5049,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8127789072483",
-      "handle": "3pcs-womens-clothing-long-sleeve-crop-tank-top-and-drawstring-shorts-pajama-set",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8127802474595",
       "handle": "4-in-1-fast-charging-station",
       "title": "",
@@ -5897,17 +5062,6 @@
     {
       "productId": "gid://shopify/Product/8127802605667",
       "handle": "540-rotate-luminous-magnetic-cable-3a-fast-charging-mobile-phone-charge-cable-for-led-micro-usb-type-c-for-i-phone-cable",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127802769507",
-      "handle": "multifunctional-five-in-one-magnetic-wireless-charging-watch-headset-desktop-mobile-phone-holder-charger-15w-fast-charge",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6005,28 +5159,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8127817777251",
-      "handle": "multi-functional-u-shaped-arm-strengthener-chest-trainer-adjustable-forearm-strength-exerciser-home-gym-equipment-bodybuilding",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127818367075",
-      "handle": "crocheted-star-shaped-bodysuit-starfish-baby-sleeping-bag-newborn-baby-boy-girl-kids-cartoon-hooded-romper-jumpsuit-bodysuit-clothes-outfits-long-sleeve-playsuit-toddler-one-piece-outfit",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8127818399843",
       "handle": "quilted-paper-illustration-material-package-set-lobby-decoration-painting-slot",
       "title": "",
@@ -6040,17 +5172,6 @@
     {
       "productId": "gid://shopify/Product/8127818563683",
       "handle": "added-extension-tupe-water-dispenser-automatic-water-bottle-desktop-rechargeable-water-dispenser-with-stand",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8127818596451",
-      "handle": "smart-trash-can-with-lid-for-bedroom-and-living-room-kitchen-storage-box-trash-can-induction-small-car-box-automatic-smart-dustbin-smart-trash-bin",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6082,50 +5203,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8127820103779",
-      "handle": "v-neck-sleeveless-jumpsuit-with-belt-design-summer-fashion-trousers-womens-clothing",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8128426901603",
-      "handle": "professonal-grade-curved-fascia-gun-scalablen-for-body-neck-back-deep-muscle-relaxation-fitness-slimming-type-c-fast-charging",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8128427065443",
-      "handle": "vbosi-1-piece-unisex-elastic-compression-wrist-sleeve-breathable-palm-support-for-sports-fitness-daily-wear-for-men-women",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8128427229283",
-      "handle": "1pc-heart-rate-monitor-replacement-strap-compatible-with-polar-h7-h9-h10-coospo-wahoo-tick-garmin-magene-fitness-sensor-band-bel",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8128427851875",
       "handle": "cooling-hoodie-towel-hood-towel-evaporative-cool-technology-cools-instantly-when-wet-great-for-sports-fitness-gym",
       "title": "",
@@ -6148,17 +5225,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8128429391971",
-      "handle": "ankle-protection-lightweight-sports-ankle-sleeve-compression-anti-sprain-fitness-adjustable-ankle-socks-basketball-ankle",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8128429785187",
       "handle": "non-slip-half-finger-training-gloves-shock-absorbing-breathable-design-for-cycling-gym-workouts-fitness",
       "title": "",
@@ -6170,41 +5236,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8128430866531",
-      "handle": "wrels-summer-ice-cooling-wrist-sweatband-sport-wristband-tennis-wrist-guard-protector-strap-fitness-run-gym-towel-wrist-protect",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8128431161443",
-      "handle": "adjustable-wrist-support-brace-stabilizer-with-bandages-protector-for-left-right-hand-wrist-wraps-pain-relief-fitness-office",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8128431226979",
       "handle": "42-heads-fascia-gun-9-modes-99-gear-high-frequency-vibration-wireless-deep-tissue-massager-neck-shoulder-thigh-fascia-masajeador",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8128431685731",
-      "handle": "getinfit-1pcs-honeycomb-anti-collision-elbow-guard-sports-pressurized-sleeves-fitness-skiing-basketball-cycling-protective-gear",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6379,94 +5412,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8129635713123",
-      "handle": "kitchen-silicone-cream-butter-cake-spatula-mixing-batter-pastry-scraper-brush-butter-mixer-cake-brushes-baking-tool-kitchenware",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129635778659",
-      "handle": "stainless-steel-taco-holder-set-taco-shell-holder-stand-with-2-sauce-cups-taco-stand-hold-3-tortillas-kitchen-gadget",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129635811427",
-      "handle": "kitchen-drain-rack-stainless-steel-extendable-sink-frame-storage-rack-kitchen-utensil-storage-bowl-and-dish-sorting-rack",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129636040803",
-      "handle": "stainless-steel-flour-filter-screen-soybean-milk-filter-screen-cooking-spoon-double-ear-screen-snack-french-fries-kitchen-tools",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129636073571",
-      "handle": "mortar-and-pestle-set-manual-food-grinder-grinder-bowl-manual-garlic-press-pepper-seasoning-spice-grinder-kitchen-cooking-tools",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129636139107",
-      "handle": "leeseph-bamboo-mortar-and-pestle-set-garlic-grinder-herb-spice-masher-seasoning-crusher-kitchen-tool-for-mash-spices-pepper",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129636597859",
-      "handle": "logitech-g321-wireless-bluetooth-gaming-headset-for-pc-ps5-switch-40mm-audio-drivers-lightspeed-low-latency",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129636663395",
-      "handle": "soundcore-original-vr-p10-wireless-gaming-headset-30ms-low-latency-dual-connection-bluetooth-gaming-headset",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8129637253219",
       "handle": "square-household-folding-plate-western-food-fruit-dessert-plate-european-creative-ceramic-breakfast-plate-cold-vegetable-plate",
       "title": "",
@@ -6489,17 +5434,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8129637548131",
-      "handle": "logitech-g321-wireless-bluetooth-dual-mode-gaming-headset-cat-ear-headphones-for-laptop-desktop-e-sports-use",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8129637646435",
       "handle": "120-adjustable-microphone-3-5mm-wired-gaming-headphones-stereo-bass-gamer-headset-for-ps5-xbox-laptop-smartphone",
       "title": "",
@@ -6513,50 +5447,6 @@
     {
       "productId": "gid://shopify/Product/8129637974115",
       "handle": "qcy-vn200-pro-wired-gaming-headset-with-mic-40mm-driver-7-1-surround-over-ear-headphones-for-pc-ps4-ps5-gamer-headphones",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129638006883",
-      "handle": "used-dongle-receiver-for-logitech-gaming-headset-g933-g935-g933s-wireless-gaming-headset",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129638039651",
-      "handle": "2019-edition-steelseries-arctis-7-gaming-headset-high-dtsxv2-0-7-1-wireless-game-headset-headphone-wear-belt-wheat",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129638137955",
-      "handle": "tws-wireless-bluetooth-5-3-gm20-gaming-headset-dual-mode-high-range-hifi-stereo-audio-headset-for-music",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129638203491",
-      "handle": "epomaker-gx1-gaming-headset-wired-bt-2-4ghz-wireless-50mm-dynamic-drivers-headset-rgb-light-environmental-noise-cancellation",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6599,41 +5489,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8129638662243",
-      "handle": "gx60-gaming-headset-bluetooth-wireless-2-4g-four-mode-metal-anc-active-noise-reduction-low-latency-e-sports-gamer-headphone",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129639186531",
-      "handle": "haayot-professional-wireless-gaming-bluetooth-6-0-headset-7-1-virtual-surround-sound-low-latency-15ms-for-pc-ps5-mobile-switch",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8129639219299",
       "handle": "gaming-headset-gs410-wired-over-ear-headphones-3-5mm-rgb-with-mic-stereo-bass-noise-cancelling-for-pc-ps4-ps5-xbox-laptop-gaming",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8129639284835",
-      "handle": "logitech-g435-wireless-gaming-headset-with-bluetooth-virtual-surround-sound-low-latency-long-battery-life-comfortable-to-wear",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -6841,28 +5698,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8130786918499",
-      "handle": "higurashi-when-they-cry-cartoon-tapestry-science-fiction-room-home-decor-art-home-decor-home-decoration-home-dorm-tapestry",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8130786984035",
-      "handle": "yg300-home-4k-hd-projector-suitable-for-bedroom-living-room-home-cinema-usb-powered-home-office-outdoor-use",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8130787049571",
       "handle": "home-hotel-wired-desktop-wall-phone-landline-telephone-home-phone-home-telephone-hotel-telephone-landline-phone-telephone",
       "title": "",
@@ -7052,17 +5887,6 @@
     {
       "productId": "gid://shopify/Product/8133190418531",
       "handle": "soft-yarn-makeup-holding-foundation-liquid-foundation-matte-concealer-waterproof-moisturizing-air-cushion-female-base-makeup",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8133190713443",
-      "handle": "womens-makeup-bag-black-embroidery-large-capacity-lipstick-mobile-phone-storage-bag-commuter-clutch-bag-travel-toiletry-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -7380,17 +6204,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8135152304227",
-      "handle": "luggage-bags-for-women-handbag-oxford-mens-fitness-gym-shoulder-bag-waterproof-sports-travel-backpack-with-shoes-compartment",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8135154761827",
       "handle": "round-toe-fishnet-hollow-out-ballet-flats-fashionable-and-flat",
       "title": "",
@@ -7426,17 +6239,6 @@
     {
       "productId": "gid://shopify/Product/8135166132323",
       "handle": "suitcase-trolley-for-girls-and-boys",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8135166361699",
-      "handle": "vintage-crazy-horse-leather-mens-travel-large-capacity-tote",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -7556,6 +6358,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8135177306211",
+      "handle": "dry-wet-separation-shoe-warehouse-large-capacity-handbag-travel-luggage-bag",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8135177961571",
       "handle": "universal-wheel-portable-pet-travel-carrier",
       "title": "",
@@ -7580,17 +6393,6 @@
     {
       "productId": "gid://shopify/Product/8135178059875",
       "handle": "new-lightweight-suitcase-for-boarding-travel-luggage-womens-quiet-childrens-small-password-suitcase-mens-16-inch-2",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8135178158179",
-      "handle": "folding-korean-duffle-bag-outdoor-mens-bag",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -7721,8 +6523,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8135184744547",
-      "handle": "new-style-womens-herringbone-low-top-flats",
+      "productId": "gid://shopify/Product/8135218298979",
+      "handle": "school-rolling-backpacks-school-bags-for-boys-trolley-bag-with-wheels-waterproof-orthopedic-school-bag-student-wheeled-backpack",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -7800,6 +6602,149 @@
     {
       "productId": "gid://shopify/Product/8135714013283",
       "handle": "student-running-sports-white-daddy-shoes-women",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135845937251",
+      "handle": "women-sneakers-casual-running-sports-shoes-lace-up-flat-shoes",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135854030947",
+      "handle": "summer-sports-running-shoes-new-breathable-net-shoes-women",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8135949025379",
+      "handle": "new-ankle-wrap-cotton-shoes-men-and-women",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136158543971",
+      "handle": "fashion-nut-nail-synthetic-zirconia-women-ring-exquisite-daily-jewelry",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136162836579",
+      "handle": "durable-stainless-steel-egg-cooker-heart-shaped-3-in-1-omelette-mold-egg-steamer-kitchen-cooking-tool",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136163000419",
+      "handle": "cheese-cutter-manual-cheese-slicer-with-a-set-of-4-spare-wires-stainless-steel-casters-adjustable-thickness",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136167030883",
+      "handle": "electric-facial-cleansing-brush-deep-pore-cleaning-sonic-vibration-waterproof-acne-blackhead-remover-pore-cleaner-silicone",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136167325795",
+      "handle": "creative-mini-handheld-small-fan-usb-charging-portable-3-speed-high-wind-desktop-office-travel-pocket-fan-student-quiet-chroma",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136167686243",
+      "handle": "2pcs-seasoning-shaker-set-glass-bottles-with-metal-shaker-tops-for-salt-pepper-and-barbecue-condiments-spice-storage-kitchen-org",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136168374371",
+      "handle": "110v-220v-cob-led-strip-light-super-bright-waterproof-with-eu-us-power-supply-switch-288-leds-m-warm-neutral-white-outdoor-decor",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136169750627",
+      "handle": "10-5pcs-mini-12v-led-light-dimming-3-keys-controller-dimmer-driver-and-switch-3528-5050-5630-newest-control-led-strip-light",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136175190115",
+      "handle": "380ml-electric-coffee-self-mixing-mug-ip67-waterproof-coffee-stirring-mug-usb-charging-digital-display-automatic-magnetic-cup",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8136176435299",
+      "handle": "desktop-cable-organizer-mobile-phone-charging-cable-data-cable-organizer-network-wiring-fixture-storage-bundle-buckle",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."

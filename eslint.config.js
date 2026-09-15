@@ -5,7 +5,9 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // Build caches, previews, and generated release evidence are not authored
+  // source and may contain bundled third-party code or stale snapshots.
+  { ignores: ["dist", ".vite", "tmp", "output"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

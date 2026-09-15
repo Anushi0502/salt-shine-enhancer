@@ -497,19 +497,27 @@ export function installSaltPumperBridge(): void {
     return fiberKey ? (root as unknown as Record<string, unknown>)[fiberKey] : null;
   };
 
-  const findFiber = (node: unknown, predicate: (fiber: any) => boolean) => {
+  type ReactFiberNode = {
+    child?: unknown;
+    sibling?: unknown;
+    memoizedProps?: { value?: unknown };
+  };
+
+  const findFiber = (node: unknown, predicate: (fiber: ReactFiberNode) => boolean) => {
     const seen = new Set<object>();
 
-    const visit = (current: any): any => {
-      if (!current || seen.has(current)) return null;
-      seen.add(current);
+    const visit = (current: unknown): ReactFiberNode | null => {
+      if (!current || typeof current !== "object") return null;
+      const fiber = current as ReactFiberNode;
+      if (seen.has(fiber)) return null;
+      seen.add(fiber);
 
-      if (predicate(current)) return current;
+      if (predicate(fiber)) return fiber;
 
-      const child = visit(current.child);
+      const child = visit(fiber.child);
       if (child) return child;
 
-      return visit(current.sibling);
+      return visit(fiber.sibling);
     };
 
     return visit(node);
