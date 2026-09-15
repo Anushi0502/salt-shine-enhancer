@@ -220,7 +220,7 @@ const OrderHistoryPage = () => {
   const [filter, setFilter] = useState<OrderFilter>("all");
   const [loginHint, setLoginHint] = useState(sessionHint?.loginHint ?? "");
 
-  const orders = account?.orders ?? [];
+  const orders = useMemo(() => account?.orders ?? [], [account?.orders]);
   const currencyCode = orders[0]?.currencyCode ?? "USD";
 
   const orderStats = useMemo(() => {

@@ -45,6 +45,7 @@ export type SaltRuntimeContext = {
 const LOCAL_ASSET_PREFIXES = ["/assets/", "/src/assets/", "/favicon", "/vite.svg"];
 const DEFAULT_BRANDED_SHOP_BASE = "https://www.saltonlinestore.com";
 const DEFAULT_CANONICAL_SHOP_BASE = "https://0309d3-72.myshopify.com";
+export const SUPPORT_EMAIL = "help@saltonlinestore.com";
 
 function normalizeBaseUrl(input: string | undefined | null): string | null {
   const raw = String(input || "").trim();
@@ -169,6 +170,9 @@ function readRuntimeContext(): SaltRuntimeContext {
     ...fromScript,
     ...fromRoot,
     ...fromWindow,
+    // Keep the public support address consistent even when an older host shell
+    // still provides the previous value through runtime context.
+    supportEmail: SUPPORT_EMAIL,
   };
 }
 

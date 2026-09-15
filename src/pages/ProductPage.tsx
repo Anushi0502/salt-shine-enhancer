@@ -1078,7 +1078,7 @@ const ProductPage = () => {
                             : "border-border/75 hover:border-primary/45"
                         }`}
                         aria-label={`View product image ${index + 1}`}
-                      >
+                      >d
                         <img
                           src={productImageAtWidth(source, 180)}
                           alt={`${product.title} view ${index + 1}`}

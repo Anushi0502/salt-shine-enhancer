@@ -422,8 +422,8 @@ const ShopPage = () => {
     selectedCollection?.customData?.heroSummary ||
     collectionDiscoverySummary ||
     formatCollectionDescription(
-      curatedSubcollection?.description ||
-        curatedCollection?.description ||
+      curatedSubcollection?.summary ||
+        curatedCollection?.summary ||
         selectedCollection?.description ||
         "",
     );

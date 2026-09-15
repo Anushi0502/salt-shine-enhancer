@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
+import { basename, dirname, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const rootDir = resolve(import.meta.dirname, "..");
@@ -79,14 +79,22 @@ function resolveMetalPython() {
   return configured || (existsSync(defaultMetalPython) ? defaultMetalPython : "python3");
 }
 
+function resolveHomePath(homeDir, ...segments) {
+  const normalizedHome = String(homeDir || "");
+  if (process.platform === "win32" && normalizedHome.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(normalizedHome)) {
+    return posix.join(normalizedHome, ...segments);
+  }
+  return resolve(normalizedHome, ...segments);
+}
+
 export function resolveCandidateBaseCheckpoint(env = process.env, homeDir = process.env.HOME || "/tmp") {
   const configured = String(env.SALT_VISUAL_CANDIDATE_BASE_CHECKPOINT || "").trim();
   if (configured) {
     const candidatePath = resolve(configured);
-    return isHealthyCandidate(candidatePath, env) ? candidatePath : resolve(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
+    return isHealthyCandidate(candidatePath, env) ? candidatePath : resolveHomePath(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
   }
-  const candidatePath = resolve(homeDir, ".cache", "salt-visual-taxonomy-candidates", "siglip-large-patch16-384.checkpoint.json");
-  const productionPath = resolve(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
+  const candidatePath = resolveHomePath(homeDir, ".cache", "salt-visual-taxonomy-candidates", "siglip-large-patch16-384.checkpoint.json");
+  const productionPath = resolveHomePath(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
   return isHealthyCandidate(candidatePath, env) ? candidatePath : productionPath;
 }
 

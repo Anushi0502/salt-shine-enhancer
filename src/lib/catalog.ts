@@ -310,7 +310,7 @@ function collectionScopeMatches(productText: string, scope?: CollectionScopeRule
   return scope.include.some((term) => scopeTextMatchesTerm(productText, term));
 }
 
-function tokenize(input: string): string[] {
+function tokenize(input: unknown): string[] {
   return normalize(input)
     .replace(/[^a-z0-9]+/g, " ")
     .split(/\s+/)

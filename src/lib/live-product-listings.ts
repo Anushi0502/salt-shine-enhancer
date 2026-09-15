@@ -54,6 +54,10 @@ type PredictiveSearchPayload = {
   };
 };
 
+type ListingPayloadInput = Omit<Partial<LiveProductListingPayload>, "products"> & {
+  products?: unknown[];
+};
+
 function normalizeBaseUrl(input: string | null | undefined): string | null {
   const raw = String(input || "").trim();
   if (!raw) return null;
@@ -212,7 +216,7 @@ export function normalizeLiveListingProduct(value: unknown): ShopifyProduct | nu
 }
 
 function normalizeListingPayload(
-  input: Partial<LiveProductListingPayload> | null | undefined,
+  input: ListingPayloadInput | null | undefined,
   fallback: LiveProductListingParams,
   source: string,
 ): LiveProductListingPayload {
@@ -345,7 +349,7 @@ function getInlineListing(params: LiveProductListingParams): LiveProductListingP
       page,
       pageSize: LIVE_PRODUCT_PAGE_SIZE,
       total: Number(inline.total || 0),
-      products: inline.products as ShopifyProduct[],
+      products: inline.products,
     },
     params,
     `shopify-liquid:${handle}`,

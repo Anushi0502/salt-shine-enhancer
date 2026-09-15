@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+﻿import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import {
@@ -17,7 +17,6 @@ import { buildJudgeMeProxyUrl } from "@/lib/judgeme-proxy";
 import { useProductSearchIndex } from "@/lib/shopify-data";
 import { getRuntimeContext, getShopBaseOrigin } from "@/lib/theme-assets";
 import { toast } from "sonner";
-
 type ParsedReviewRow = {
   rowNumber: number;
   productIdRaw: string;
@@ -64,7 +63,9 @@ type BulkSubmitStats = {
   datedUnknown: number;
 };
 
-const DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
+const
+
+DEFAULT_JUDGEME_SHOP_DOMAIN = "0309d3-72.myshopify.com";
 const DEFAULT_JUDGEME_PUBLIC_TOKEN = "TQ0rk940ADN89zj_f83SKuTYIfY";
 
 const templateCsv = [
@@ -617,7 +618,7 @@ const BulkReviewPage = () => {
   });
 
   const { data: productsPayload } = useProductSearchIndex();
-  const products = productsPayload?.products || [];
+  const products = useMemo(() => productsPayload?.products || [], [productsPayload?.products]);
   const judgeMeConfig = useMemo(() => getJudgeMeConfig(), []);
 
   const productById = useMemo(() => {

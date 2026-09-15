@@ -166,7 +166,7 @@ function normalizeBaseUrl(input: string | undefined | null): string | null {
 export async function primeLiveShopifyData(queryClient: Pick<QueryClient, "fetchQuery">): Promise<void> {
   const results = await Promise.allSettled(
     LIVE_SHOPIFY_PRIME_QUERIES.map((query) =>
-      queryClient.fetchQuery({
+      queryClient.fetchQuery<unknown>({
         queryKey: query.queryKey,
         queryFn: query.queryFn,
         staleTime: CATALOG_STALE_TIME_MS,
@@ -888,7 +888,7 @@ function getCurrentCollectionPageContext(): { handle: string; page: number } | n
 }
 
 async function fetchCollectionPageProducts(handle: string, page: number): Promise<CollectionPageProductsPayload> {
-  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const normalizedHandle = resolveCollectionShopifyHandle(String(handle || "").trim());
   if (!normalizedHandle) {
     throw new Error("Collection handle is required");
   }
@@ -898,6 +898,9 @@ async function fetchCollectionPageProducts(handle: string, page: number): Promis
   for (const base of getLiveCatalogBases()) {
     try {
       const productsById = new Map<number, ShopifyProduct>();
+      // This loader hydrates one visible Shopify collection page. Route aliases
+      // are resolved above, so fetching their legacy source handles here would
+      // duplicate requests and can make a slow alias block the current page.
       // A visible collection page must preserve that collection's manual order
       // and bounded page size. Legacy route aliases are only for full
       // membership reads, not for adding unrelated products to this page.
@@ -1521,7 +1524,7 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
   return normalizeBlogPayload({
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: payload.source || BLOG_POSTS_DATA_PATH,
-    blogHandle: payload.blogHandle || BLOG_HANDLE,
+    blogHandle: String(payload.blogHandle || BLOG_HANDLE),
     total: payload.total || posts.length,
     posts,
   });

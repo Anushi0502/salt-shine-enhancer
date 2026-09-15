@@ -5,14 +5,22 @@ import type { ShopifyProduct, ShopifyVariant } from "@/types/shopify";
 
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void;
-    _fbq?: (...args: unknown[]) => void;
+    fbq?: MetaPixelFunction;
+    _fbq?: MetaPixelFunction;
     SALT_META_PIXEL_ID?: string;
     __saltMetaPixelBootstrapped?: boolean;
     __saltMetaPixelManagedExternally?: boolean;
     Shopify?: { currency?: { active?: string } };
   }
 }
+
+type MetaPixelFunction = ((...args: unknown[]) => number) & {
+  callMethod?: (...args: unknown[]) => void;
+  push?: (...args: unknown[]) => number;
+  loaded?: boolean;
+  version?: string;
+  queue?: unknown[];
+};
 
 export type MetaPixelCartItem = {
   id: number;
@@ -59,6 +67,13 @@ export function getStoreCurrencyCode(): string {
 function asNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function callMetaPixel(...args: unknown[]): void {
+  const fbq = (window as unknown as { fbq?: (...values: unknown[]) => unknown }).fbq;
+  if (typeof fbq === "function") {
+    void fbq(...args);
+  }
 }
 
 function normalizeContentId(primary: unknown, fallback: unknown): string | null {
@@ -116,20 +131,15 @@ export function ensureMetaPixel(): boolean {
 
   window.__saltMetaPixelBootstrapped = true;
 
-  ((f: Window, d: Document, tagName: string, scriptUrl: string) => {
-    const n = function (...args: unknown[]) {
+  ((f: Window, d: Document, scriptUrl: string) => {
+    const n = function (...args: unknown[]): number {
       if (n.callMethod) {
         n.callMethod(...args);
       } else {
         n.queue?.push(args);
       }
-    } as ((...args: unknown[]) => void) & {
-      callMethod?: (...args: unknown[]) => void;
-      push?: (...args: unknown[]) => number;
-      loaded?: boolean;
-      version?: string;
-      queue?: unknown[];
-    };
+      return 0;
+    } as MetaPixelFunction;
 
     if (f.fbq) {
       return;
@@ -145,20 +155,20 @@ export function ensureMetaPixel(): boolean {
     n.version = "2.0";
     n.queue = [];
 
-    const script = d.createElement(tagName);
+    const script = d.createElement("script");
     script.async = true;
     script.src = scriptUrl;
     script.id = "salt-meta-pixel-script";
     script.setAttribute("fetchpriority", "low");
 
-    const firstScript = d.getElementsByTagName(tagName)[0];
+    const firstScript = d.getElementsByTagName("script")[0];
     firstScript?.parentNode?.insertBefore(script, firstScript);
-  })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+  })(window, document, "https://connect.facebook.net/en_US/fbevents.js");
 
   // Keep explicit commerce events while disabling Meta's large automatic DOM
   // scrape payload, which can overflow Safari's keepalive beacon queue.
-  window.fbq?.("set", "autoConfig", false, pixelId);
-  window.fbq?.("init", pixelId);
+  callMetaPixel("set", "autoConfig", false, pixelId);
+  callMetaPixel("init", pixelId);
   return true;
 }
 
@@ -187,11 +197,11 @@ export function trackMetaPixel(eventName: string, params?: Record<string, unknow
   }
 
   if (params && Object.keys(params).length > 0) {
-    window.fbq?.("track", eventName, params);
+    callMetaPixel("track", eventName, params);
     return;
   }
 
-  window.fbq?.("track", eventName);
+  callMetaPixel("track", eventName);
 }
 
 export function trackMetaPixelPageView(): void {

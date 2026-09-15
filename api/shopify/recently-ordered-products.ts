@@ -24,16 +24,15 @@ const query = /* GraphQL */ `
 `;
 
 type CachedFeed = { expiresAt: number; payload: unknown };
+type RecentlyOrderedRequest = { method?: string };
+type RecentlyOrderedResponse = {
+  setHeader: (name: string, value: string) => void;
+  status: (code: number) => RecentlyOrderedResponse;
+  json: (body: unknown) => void;
+};
 let cachedFeed: CachedFeed | null = null;
 
-type ApiRequest = { method?: string };
-type ApiResponse = {
-  status: (code: number) => ApiResponse;
-  json: (body: unknown) => void;
-  setHeader: (name: string, value: string) => void;
-};
-
-export default async function handler(req: ApiRequest, res: ApiResponse) {
+export default async function handler(req: RecentlyOrderedRequest, res: RecentlyOrderedResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -68,7 +67,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     },
     body: JSON.stringify({ query }),
   });
-  const body = (await response.json()) as {
+  const body = await response.json() as {
     errors?: unknown[];
     data?: { orders?: unknown };
   };

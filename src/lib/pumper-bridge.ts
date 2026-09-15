@@ -178,7 +178,7 @@ export function installSaltPumperBridge(): void {
   const getPumperRadioInputs = () =>
     Array.from(document.querySelectorAll<HTMLInputElement>('#pumper_bundle_svelte input[type="radio"][name="cb"]'));
 
-  const getPumperRadioLabel = (input: HTMLInputElement | null) => {
+  const getPumperRadioLabel = (input: HTMLInputElement | null): HTMLElement | null => {
     if (!input) return null;
 
     const selectors: string[] = [];
@@ -187,7 +187,7 @@ export function installSaltPumperBridge(): void {
     if (input.id) selectors.push(`label[for="${input.id.replaceAll('"', '\\"')}"]`);
 
     for (const selector of selectors) {
-      const label = document.querySelector(selector);
+      const label = document.querySelector<HTMLElement>(selector);
       if (label) return label;
     }
 
@@ -523,7 +523,12 @@ export function installSaltPumperBridge(): void {
     return visit(node);
   };
 
-  const isCartApi = (value: unknown) =>
+  type CartApi = {
+    items: unknown[];
+    replaceItems: (items: unknown[]) => void;
+  };
+
+  const isCartApi = (value: unknown): value is CartApi =>
     value &&
     typeof value === "object" &&
     Array.isArray((value as { items?: unknown[] }).items) &&
@@ -538,7 +543,8 @@ export function installSaltPumperBridge(): void {
     if (!rootFiber) return null;
 
     const providerFiber = findFiber(rootFiber, (fiber) => isCartApi(fiber.memoizedProps?.value));
-    return providerFiber?.memoizedProps?.value || null;
+    const value = providerFiber?.memoizedProps?.value;
+    return isCartApi(value) ? value : null;
   };
 
   const getBundlePricingSnapshot = () => {

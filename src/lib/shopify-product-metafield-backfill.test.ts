@@ -40,6 +40,7 @@ function makeProduct(input: {
     images: [],
     image: null,
     customData: input.customData || null,
+    gptSeoTypeAttributes: undefined as unknown,
   };
 }
 
