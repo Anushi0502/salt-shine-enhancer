@@ -12,7 +12,9 @@ export default async function handler(req: FinanceRequest, res: FinanceResponse)
   if (!requireFinanceSession(req, res)) return;
 
   try {
-    const period = normalizePeriod(req.query?.start, req.query?.end);
+    const start = typeof req.query?.start === "string" ? req.query.start : undefined;
+    const end = typeof req.query?.end === "string" ? req.query.end : undefined;
+    const period = normalizePeriod(start, end);
     const summary = await buildFinanceSummary(period.start, period.end);
     res.status(200).json(summary);
   } catch (error) {
