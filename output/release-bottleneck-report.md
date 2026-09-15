@@ -1,46 +1,38 @@
 # SALT Release Bottleneck Report
 
-Generated: 2026-09-15T07:35:21.234Z
+Generated: 2026-09-15T12:29:32.017Z
 Profile: catalog
 Status: running
-Measured: 10/66 steps (24.44 minutes)
-Bottleneck threshold: 1.22 minutes
+Measured: 4/66 steps (0.2 minutes)
+Bottleneck threshold: 1.00 minutes
 
 ## Top Bottlenecks
 
 | Step | Category | Duration | Share | Status |
 | ---: | --- | ---: | ---: | --- |
-| 6 | shopify-io | 11.42 min | 46.72% | bottleneck |
-  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
-| 2 | local-model | 8.44 min | 34.55% | bottleneck |
+| 1 | local-model | 0.15 min | 78.82% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 5 | shopify-io | 2.96 min | 12.12% | bottleneck |
-  Recommendation: Reuse the complete variant map, process cost bands in bounded batches, and read back only changed variants.
-| 7 | shopify-io | 1.36 min | 5.57% | bottleneck |
-  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
-| 8 | shopify-io | 0.22 min | 0.88% | bottleneck |
-  Recommendation: Keep stage checkpoints and telemetry enabled; parallelize only independent work.
-| 1 | local-model | 0.02 min | 0.07% | bottleneck |
+| 2 | local-model | 0.02 min | 10.68% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 3 | local-model | 0.01 min | 0.02% | bottleneck |
+| 3 | local-model | 0.02 min | 8.15% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 9 | shopify-io | 0.01 min | 0.02% | bottleneck |
-  Recommendation: Keep stage checkpoints and telemetry enabled; parallelize only independent work.
+| 4 | local-model | 0 min | 2.36% | bottleneck |
+  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
 
 ## All Steps
 
 | Step | Label | Duration | Status |
 | ---: | --- | ---: | --- |
-| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.02 min | bottleneck |
-| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 8.44 min | bottleneck |
-| 3 | Verify trained 128M-record catalog knowledge model | 0.01 min | bottleneck |
-| 4 | Verify approved catalog taxonomy release | 0 min | normal |
-| 5 | Scan and remove active products missing live variant cost | 2.96 min | bottleneck |
-| 6 | Refresh Shopify data: Shopify product and collection data | 11.42 min | bottleneck |
-| 7 | Refresh Shopify data: recently ordered products and managed collection membership (parallel) | 1.36 min | bottleneck |
-| 8 | Dry-run active product option and unit-cost anomaly repair | 0.22 min | bottleneck |
-| 9 | Apply deterministic option repairs and draft high-cost outliers | 0.01 min | bottleneck |
-| 10 | Verify product anomaly repairs with live readback | 0.01 min | normal |
+| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.15 min | bottleneck |
+| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 0.02 min | bottleneck |
+| 3 | Verify trained 128M-record catalog knowledge model | 0.02 min | bottleneck |
+| 4 | Verify approved catalog taxonomy release | 0 min | bottleneck |
+| 5 | Scan and remove active products missing live variant cost | - min | pending |
+| 6 | Refresh Shopify data: Shopify product and collection data | - min | pending |
+| 7 | Refresh Shopify data: recently ordered products and managed collection membership (parallel) | - min | pending |
+| 8 | Dry-run active product option and unit-cost anomaly repair | - min | pending |
+| 9 | Apply deterministic option repairs and draft high-cost outliers | - min | pending |
+| 10 | Verify product anomaly repairs with live readback | - min | pending |
 | 11 | Refresh Shopify data after product anomaly repairs: Shopify product and collection data | - min | pending |
 | 12 | Refresh Shopify data after product anomaly repairs: recently ordered products and managed collection membership (parallel) | - min | pending |
 | 13 | Build shared full-catalog release snapshot | - min | pending |

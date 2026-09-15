@@ -616,7 +616,7 @@ const ShopPage = () => {
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label || "Featured";
 
   const filterChips = [
-    collectionHandle
+    !isAllProductsCollection && collectionHandle
       ? {
           key: "collection",
           label: `Collection: ${curatedSubcollection?.title || curatedCollection?.title || selectedCollection?.title || collectionHandle}`,
@@ -676,7 +676,7 @@ const ShopPage = () => {
         <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Collection</p>
         <select
           aria-label="Collection filter"
-          value={collectionHandle}
+          value={isAllProductsCollection ? "" : collectionHandle}
           onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
           className="salt-filter-field salt-filter-field-compact"
         >
@@ -741,9 +741,9 @@ const ShopPage = () => {
 
       <div className="grid gap-1.5 border-t border-border/70 pt-2.5">
         <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Custom price</p>
-        <label htmlFor="min_price" className="sr-only">Minimum price</label>
+        <label htmlFor="min_price_desktop" className="sr-only">Minimum price</label>
         <input
-          id="min_price"
+          id="min_price_desktop"
           name="min_price"
           type="number"
           min={0}
@@ -754,9 +754,9 @@ const ShopPage = () => {
           className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
-        <label htmlFor="max_price" className="sr-only">Maximum price</label>
+        <label htmlFor="max_price_desktop" className="sr-only">Maximum price</label>
         <input
-          id="max_price"
+          id="max_price_desktop"
           name="max_price"
           type="number"
           min={0}
@@ -790,7 +790,7 @@ const ShopPage = () => {
       <div className="salt-filter-grid sm:grid-cols-2 lg:grid-cols-4">
         <select
           aria-label="Collection filter"
-          value={collectionHandle}
+          value={isAllProductsCollection ? "" : collectionHandle}
           onChange={(event) => updateParams({ collection: event.target.value || null }, true)}
           className="salt-filter-field salt-filter-field-compact"
         >
@@ -842,9 +842,9 @@ const ShopPage = () => {
       </div>
 
       <div className="salt-filter-grid sm:grid-cols-[1fr_1fr_auto]">
-        <label htmlFor="min_price" className="sr-only">Minimum price</label>
+        <label htmlFor="min_price_mobile" className="sr-only">Minimum price</label>
         <input
-          id="min_price"
+          id="min_price_mobile"
           name="min_price"
           type="number"
           min={0}
@@ -855,9 +855,9 @@ const ShopPage = () => {
           className="salt-filter-field salt-filter-field-compact"
           aria-label="Minimum price"
         />
-        <label htmlFor="max_price" className="sr-only">Maximum price</label>
+        <label htmlFor="max_price_mobile" className="sr-only">Maximum price</label>
         <input
-          id="max_price"
+          id="max_price_mobile"
           name="max_price"
           type="number"
           min={0}
@@ -1178,7 +1178,7 @@ const ShopPage = () => {
           </Reveal>
 
           <Reveal delayMs={70} className="lg:hidden">
-            <div className="salt-filter-shell rounded-[1.1rem] p-3">
+            <div className="salt-filter-shell sticky top-20 z-20 rounded-[1.1rem] p-3">
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen((current) => !current)}

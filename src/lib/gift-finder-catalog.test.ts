@@ -14,6 +14,7 @@ describe("toGiftFinderProduct", () => {
     ).toMatchObject({
       slug: "realme-buds-air-8",
       href: "/products/realme-buds-air-8",
+      price: 39.99,
       budget: ["25-50"],
       interest: ["tech"],
     });
@@ -27,4 +28,3 @@ describe("toGiftFinderProduct", () => {
     expect(product.interest).toEqual(["home"]);
   });
 });
-

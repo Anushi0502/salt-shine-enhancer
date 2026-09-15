@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T23:51:37.135Z",
+  "generatedAt": "2026-09-15T10:29:09.829Z",
   "policy": "Every ambiguous product receives supervised evidence or an explicit non-semantic fallback; no pending review items remain.",
   "products": [
     {
@@ -597,17 +597,6 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8051182829667",
-      "handle": "women-watches-top-brand-luxury-hollow-ladies-wrist-watches-women-transparent-leather-strap-watch-for-female-relogio-feminino-hot",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
       "productId": "gid://shopify/Product/8051856015459",
       "handle": "cappuvini-crystal-ice-concealer-cream-covers-dark-circles-and-acne-scars-brightens-skin-tone-and-contours-for-daily-makeup",
       "title": "",
@@ -643,17 +632,6 @@
     {
       "productId": "gid://shopify/Product/8051870204003",
       "handle": "makeup-brush-set-with-bag-for-foundation-concealers-eye-shadows-powder-blush-blending-5pcs-beauty-tools",
-      "title": "",
-      "reason": [
-        "Deterministic taxonomy did not reach a safe classification."
-      ],
-      "collectionHandle": "classification-fallback",
-      "managedTag": "classification-fallback",
-      "semanticAssignmentAllowed": false
-    },
-    {
-      "productId": "gid://shopify/Product/8051904479331",
-      "handle": "smael-top-men-military-watches-clock-for-man-sport-watch-mens-brand-luxury-analog-digital-quartz-wristwatch-waterproof",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."

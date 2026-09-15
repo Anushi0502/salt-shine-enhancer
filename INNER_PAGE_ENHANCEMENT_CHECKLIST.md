@@ -9,10 +9,10 @@ Scope: improve all non-home pages while preserving the homepage UI exactly as-is
 - [x] Desktop filters are hidden by default.
 - [x] Mobile filter interaction is inline (not full-screen popup).
 - [x] Product card duplicate price/action block issue fixed.
-- [ ] Collection page sticky toolbar polish + chips refinement pass.
-- [ ] Product page conversion layout pass.
-- [ ] Search relevance/predictive suggestions pass.
-- [ ] Cart reassurance + hierarchy pass.
+- [x] Collection page sticky toolbar polish + chips refinement pass.
+- [x] Product page conversion layout pass (source-verified; live route remains heavy for browser readback).
+- [x] Search relevance/predictive suggestions pass.
+- [x] Cart reassurance + hierarchy pass.
 
 ## 0) Hard Guardrail (Must Pass First)
 
@@ -116,7 +116,7 @@ Scope: improve all non-home pages while preserving the homepage UI exactly as-is
 ## 5) Cart + Pre-Checkout (`src/pages/CartPage.tsx`)
 
 - [ ] Improve visual hierarchy for thumbnail/title/variant/qty/price.
-- [ ] Add trust messaging near subtotal (shipping, secure checkout, returns).
+- [x] Add trust messaging near subtotal (shipping, secure checkout, returns).
 - [ ] Improve checkout CTA prominence.
 - [ ] Add optional add-on/recommendation area.
 - [ ] Reduce dead space and visual clutter.
@@ -167,3 +167,11 @@ Scope: improve all non-home pages while preserving the homepage UI exactly as-is
 - [ ] Responsive QA passed on key viewport tiers.
 - [ ] Accessibility pass complete for focus order, contrast, and interaction states.
 - [ ] No performance regressions from added UI modules.
+
+## 2026-09-15 Verification Readback
+
+- Live `/shop?inner_qa=20260915`: `All Products` is no longer rendered as an active filter chip; the page reports `NO ACTIVE FILTERS` and the responsive price fields have unique IDs.
+- Live `/shop?q=earbuds&inner_qa=20260915`: current catalog returned 410 exact results, Electronics & Accessories classification, and four relevant category suggestions; no console warnings/errors were recorded.
+- Live `/cart?inner_qa=20260915`: empty-cart state, navigation, and footer read back cleanly. The populated-cart confidence block is present in the published source and is intentionally rendered only when cart lines exist.
+- Build and focused storefront tests passed. The standalone accessibility helper could not run because the local Chrome binary is not installed; this is tracked separately from the live browser readback.
+- Theme Check after publish: 0 errors and 10 existing warnings (orphaned review snippet warnings plus one layout complexity warning); no new warning was introduced by this pass.

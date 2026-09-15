@@ -61,6 +61,10 @@ function inferBudget(price: number): NonNullable<GiftFinderProduct["budget"]> {
   return ["over-50"];
 }
 
+function formatCatalogPrice(price: number): string {
+  return `$${price.toFixed(2)}`;
+}
+
 export function toGiftFinderProduct(
   source: GiftFinderCatalogSource,
   index = 0,
@@ -74,8 +78,9 @@ export function toGiftFinderProduct(
   return {
     slug: handle,
     label: title,
-    description: "A live SALT best seller selected from the current catalog.",
+    description: `Current catalog price: ${formatCatalogPrice(safePrice)}.`,
     href: `/products/${handle}`,
+    price: safePrice,
     recipient: inferRecipients(text),
     occasion: ALL_OCCASIONS,
     budget: inferBudget(safePrice),
@@ -83,4 +88,3 @@ export function toGiftFinderProduct(
     priority: Math.max(0, 100 - index),
   };
 }
-

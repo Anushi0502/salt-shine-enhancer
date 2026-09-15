@@ -491,6 +491,23 @@ const CartPage = () => {
             </div>
           </div>
 
+          <div className="mt-4 rounded-[1rem] border border-primary/15 bg-primary/[0.035] p-3.5">
+            <p className="text-[0.64rem] font-bold uppercase tracking-[0.12em] text-primary">
+              Checkout confidence
+            </p>
+            <div className="mt-2 grid gap-2 text-xs font-semibold text-foreground sm:grid-cols-3">
+              <span className="inline-flex items-center gap-1.5">
+                <Truck className="h-3.5 w-3.5 text-primary" /> US shipping
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Secure payment
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <PackageCheck className="h-3.5 w-3.5 text-primary" /> 30-day returns
+              </span>
+            </div>
+          </div>
+
           {hasUnresolvedCheckoutItems ? (
             <div className="mt-4 rounded-[1rem] border border-amber-500/20 bg-amber-500/8 p-4 text-sm leading-6 text-amber-900">
               <p>

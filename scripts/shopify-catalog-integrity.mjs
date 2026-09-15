@@ -1616,6 +1616,7 @@ async function verifyExactTags(tasks, retryInfo) {
   let failures = [];
   const taskById = new Map(tasks.map((task) => [task.productId, task]));
   const managedTagUniverse = new Set(tasks.flatMap((task) => task.desiredManagedTags).map(normalizeTag));
+  const readbackTagsByProductId = new Map();
   const seen = new Set();
   let after = null;
   while (true) {
@@ -1632,6 +1633,10 @@ async function verifyExactTags(tasks, retryInfo) {
         continue;
       }
       seen.add(product.id);
+      readbackTagsByProductId.set(product.id, {
+        handle: product.handle,
+        tags: asArray(product.tags),
+      });
       const actual = new Set(asArray(product.tags).map(normalizeTag).filter((tag) => isManagedTag(tag, managedTagUniverse)));
       const desired = new Set(task.desiredManagedTags.map(normalizeTag));
       const missing = [...desired].filter((tag) => !actual.has(tag));
@@ -1645,7 +1650,7 @@ async function verifyExactTags(tasks, retryInfo) {
     if (!after) throw new Error("Exact tag readback pagination has no cursor.");
   }
   for (const task of tasks) if (!seen.has(task.productId)) failures.push({ handle: task.handle, missingActiveProduct: true });
-  if (!failures.length) return;
+  if (!failures.length) return readbackTagsByProductId;
 
   const retryable = failures.filter((failure) => failure?.productId && !failure.missingActiveProduct);
   for (let attempt = 1; attempt <= tagReadbackRetryAttempts && retryable.length; attempt += 1) {
@@ -1659,6 +1664,10 @@ async function verifyExactTags(tasks, retryInfo) {
       async (failure) => {
         const task = taskById.get(failure.productId);
         const live = await readProductTags(failure.productId, retryInfo);
+        readbackTagsByProductId.set(failure.productId, {
+          handle: live.handle,
+          tags: asArray(live.tags),
+        });
         const actual = new Set(live.tags.map(normalizeTag).filter((tag) => managedTagUniverse.has(tag)));
         const desired = new Set(task.desiredManagedTags.map(normalizeTag));
         return {
@@ -1674,12 +1683,22 @@ async function verifyExactTags(tasks, retryInfo) {
     failures = failures.filter((failure) => failure.missingActiveProduct || !failure.productId).concat(persistentRetryable);
     if (!persistentRetryable.length && !failures.length) {
       process.stdout.write("Targeted tag consistency retry resolved the transient live readback mismatch(es).\n");
-      return;
+      return readbackTagsByProductId;
     }
   }
 
   const detail = failures.slice(0, 10).map(describeTagReadbackFailure).join("; ");
   throw new Error(`${failures.length} products failed exact managed-tag readback: ${detail}`);
+}
+
+export function applyExactTagReadbackToProducts(products, readbackTagsByProductId) {
+  if (!(readbackTagsByProductId instanceof Map)) return products;
+  for (const product of asArray(products)) {
+    const readback = readbackTagsByProductId.get(product?.id);
+    if (!readback) continue;
+    product.tags = asArray(readback.tags);
+  }
+  return products;
 }
 
 function sourceConditionSummary(source) {
@@ -2938,7 +2957,11 @@ async function run(args) {
 
   if (args.mode === "apply") {
     await applyExactTags(tagTasks, retryInfo, args.output, manifest);
-    await verifyExactTags(tagTasks, retryInfo);
+    const exactTagReadback = await verifyExactTags(tagTasks, retryInfo);
+    // Membership verification must use the post-mutation tag snapshot. The
+    // pre-write snapshot can still contain removed merged-alias tags and make
+    // a valid smart collection look incomplete.
+    applyExactTagReadbackToProducts(liveProducts, exactTagReadback);
     await applyCollectionTargets(targets, onlineStorePublication, retryInfo, args.output, manifest);
   }
 

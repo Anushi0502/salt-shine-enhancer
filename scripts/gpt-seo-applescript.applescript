@@ -39,5 +39,12 @@ on run argv
     end tell
   end tell
 
+  -- Return focus to the operator surface after submitting the GPT batch.
+  -- ChatGPT continues the work in its own conversation while SALT keeps
+  -- displaying the live checkpoint and child-process output.
+  try
+    tell application "SALT Release Control" to activate
+  end try
+
   return "submitted:" & responsePath
 end run

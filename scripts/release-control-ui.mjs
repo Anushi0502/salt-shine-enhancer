@@ -13,6 +13,8 @@ const releaseStatePath = resolve(outputDir, "release-run-state.json");
 const watcherStatePath = resolve(outputDir, "realtime-release-watcher-state.json");
 const visualTrainingStatusPath = resolve(outputDir, "visual-taxonomy-training-status.json");
 const visualShardTrainingStatePath = resolve(outputDir, "visual-taxonomy-shard-training-state.json");
+const gptSeoProgressPath = resolve(outputDir, "gpt-seo-enrichment.json");
+const gptSeoQueueDir = resolve(outputDir, "gpt-seo-applescript");
 const logPath = resolve(outputDir, "release-control-ui.log");
 const watcherLogPath = resolve(outputDir, "realtime-release-watcher.log");
 const supervisorPath = resolve(rootDir, "scripts", "run-release-foreground.mjs");
@@ -70,6 +72,22 @@ const HTML = String.raw`<!doctype html>
     .status-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; color: #6e6e73; font-size: 12px; }
     .status-meta span { border-radius: 999px; background: rgba(118,118,128,.12); padding: 5px 9px; }
     .checkpoint-note { margin: 12px 0 0; border-left: 3px solid #0071e3; border-radius: 8px; background: rgba(0,113,227,.08); padding: 9px 11px; color: #005bb5; font-size: 13px; line-height: 1.4; }
+    .gpt-progress { margin: 12px 0 0; border-left: 3px solid #af52de; border-radius: 8px; background: rgba(175,82,222,.1); padding: 9px 11px; color: #8e44ad; font-size: 13px; line-height: 1.4; }
+    .release-summary { display: grid; gap: 11px; margin: 0 0 12px; border: 1px solid rgba(0,113,227,.2); border-radius: 15px; background: linear-gradient(135deg, rgba(0,113,227,.1), rgba(118,118,128,.08)); padding: 13px 14px; }
+    .release-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .release-summary-status { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .release-summary-status strong { overflow-wrap: anywhere; }
+    .release-summary-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #8e8e93; }
+    .release-summary-dot.running { background: #34c759; box-shadow: 0 0 0 4px rgba(52,199,89,.14); }
+    .release-summary-dot.failed { background: #ff3b30; }
+    .release-summary-dot.waiting_for_network { background: #ff9f0a; }
+    .release-freshness { color: #6e6e73; font-size: 11px; text-align: right; }
+    .release-activity { display: grid; gap: 3px; }
+    .release-activity span, .release-summary-meta span { color: #6e6e73; font-size: 11px; }
+    .release-activity strong { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+    .release-summary-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+    .release-summary-meta span { border-radius: 999px; background: rgba(118,118,128,.12); padding: 5px 8px; }
+    .release-summary-error { margin: 0; border-left: 3px solid #ff3b30; border-radius: 7px; background: rgba(255,59,48,.1); padding: 8px 10px; color: #c9342b; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
     .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
     .metric:nth-child(3) { grid-column: 1 / -1; }
     .metric { border-radius: 13px; background: rgba(118,118,128,.12); padding: 12px; }
@@ -109,13 +127,20 @@ const HTML = String.raw`<!doctype html>
         <div class="status-line"><span class="dot" id="dot" aria-hidden="true"></span><strong id="status">unknown</strong></div>
         <div class="status-meta"><span id="watcher">Watcher: unknown</span><span id="model">Metal model: unknown</span><span id="workflow">Workflow: unified catalog</span></div>
         <p class="muted" id="step">No checkpoint loaded.</p>
-        <p class="checkpoint-note" id="checkpoint" role="status" aria-live="polite">Checkpoint state is loading.</p>
-        <p class="muted" id="model-detail" aria-live="polite"></p>
+          <p class="checkpoint-note" id="checkpoint" role="status" aria-live="polite">Checkpoint state is loading.</p>
+          <p class="muted" id="model-detail" aria-live="polite"></p>
+          <p class="gpt-progress" id="gpt-progress" role="status" aria-live="polite" hidden></p>
         <div class="metrics"><div class="metric"><strong id="index">-</strong><span>step</span></div><div class="metric"><strong id="pid">-</strong><span>release PID</span></div><div class="metric"><strong id="heartbeat">-</strong><span>heartbeat</span></div></div>
       </section>
       </div>
       <section class="card log-card" aria-labelledby="log-heading">
         <h2 id="log-heading">Release log</h2>
+        <div class="release-summary" role="status" aria-live="polite">
+          <div class="release-summary-head"><div class="release-summary-status"><span class="release-summary-dot" id="log-state-dot" aria-hidden="true"></span><strong id="log-state">Checking release state...</strong></div><span class="release-freshness" id="log-freshness">Waiting for heartbeat</span></div>
+          <div class="release-activity"><span>Current operation</span><strong id="release-activity">Loading current operation...</strong><span class="gpt-progress" id="release-gpt-progress" role="status" aria-live="polite" hidden></span></div>
+          <div class="release-summary-meta"><span id="release-step-meta">Step -</span><span id="release-heartbeat-meta">Heartbeat -</span><span id="release-sync-meta">State source -</span></div>
+          <p class="release-summary-error" id="release-error" hidden></p>
+        </div>
         <div class="log-toolbar"><button class="secondary" id="show-earlier" type="button" aria-controls="log" hidden>Show earlier</button><span class="muted" id="log-count">Showing latest 15 messages</span></div>
         <pre id="log" aria-label="Release log" aria-live="polite">Loading release log...</pre>
       </section>
@@ -161,21 +186,64 @@ const HTML = String.raw`<!doctype html>
       if (current) return 'Shard ' + current + ' - ' + (phase || 'running');
       return phase ? 'Visual training - ' + phase : '';
     }
+    function formatLocalTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '-' : date.toLocaleTimeString();
+    }
+    function formatHeartbeatAge(value) {
+      if (!value) return 'No heartbeat';
+      const timestamp = new Date(value).getTime();
+      if (!Number.isFinite(timestamp)) return 'Heartbeat unavailable';
+      const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+      if (seconds < 60) return 'Updated ' + seconds + 's ago';
+      const minutes = Math.floor(seconds / 60);
+      return 'Updated ' + minutes + 'm ago';
+    }
+    function formatGptSeoProgress(progress) {
+      if (!progress || !Number(progress.total)) return '';
+      return String(progress.message || '').trim();
+    }
+    function updateReleaseSummary(run, state, active, gptProgress) {
+      const status = String(run?.status || 'unknown').trim().toLowerCase();
+      const statusLabel = status === 'waiting_for_network' ? 'Waiting for network' : status.charAt(0).toUpperCase() + status.slice(1);
+      const step = run?.stepIndex ? (run.stepIndex + '/' + (run.totalSteps || '?')) : '-';
+      const activity = run?.stepLabel || run?.stageLabel || (active ? 'Release is starting...' : 'No active release');
+      const heartbeat = run?.heartbeatAt || run?.stageLastActivityAt || run?.stageLastOutputAt || '';
+      const errorText = String(run?.error || run?.stageError || run?.stageStderr || run?.lastError || '').trim();
+      const errorLines = errorText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const error = errorLines.find((line) => /release stopped|catalog integrity|failed|error:/i.test(line)) || errorLines[0] || '';
+      $('log-state').textContent = statusLabel;
+      $('log-state-dot').className = 'release-summary-dot ' + status;
+      $('release-activity').textContent = activity;
+      const gptMessage = formatGptSeoProgress(gptProgress);
+      $('release-gpt-progress').textContent = gptMessage;
+      $('release-gpt-progress').hidden = !gptMessage;
+      $('release-step-meta').textContent = 'Step ' + step;
+      $('release-heartbeat-meta').textContent = 'Heartbeat ' + formatLocalTime(heartbeat);
+      $('log-freshness').textContent = formatHeartbeatAge(heartbeat);
+      $('release-sync-meta').textContent = 'State source ' + (state.releaseStateSource || 'release checkpoint');
+      $('release-error').textContent = error;
+      $('release-error').hidden = !error || !['failed', 'interrupted', 'waiting_for_network'].includes(status);
+    }
     async function refresh() {
       try {
-        const response = await fetch('/api/state');
+        const response = await fetch('/api/state?ts=' + Date.now(), { cache: 'no-store' });
         const state = await response.json();
         const run = state.release || {};
         const model = state.visualTaxonomyTraining || {};
         const shard = state.visualTaxonomyShardTraining || {};
+        const gptProgress = state.gptSeoProgress || {};
         const modelView = formatModelStatus(model);
         const shardDetail = formatShardProgress(shard);
         const status = run.status || 'unknown';
         const seoMode = String(run.seoMode || 'unknown').toLowerCase();
         const active = Boolean(state.process?.active);
+        updateReleaseSummary(run, state, active, gptProgress);
         $('status').textContent = status;
         $('dot').className = 'dot ' + status;
-        $('watcher').textContent = 'Watcher: ' + (state.watcher?.releaseStatus || state.watcher?.status || 'unknown');
+        $('watcher').textContent = 'Watcher: ' + (state.watcher?.processActive ? 'running' : 'stopped');
+        $('release-sync-meta').textContent = 'Release state ' + (state.watcher?.releaseStatus || status || 'unknown');
         $('model').textContent = 'Metal model: ' + modelView.label;
         $('step').textContent = run.stepLabel ? (run.stepIndex || '?') + '/' + (run.totalSteps || '?') + ' ' + run.stepLabel : 'No checkpoint loaded.';
         $('checkpoint').textContent = active
@@ -187,6 +255,9 @@ const HTML = String.raw`<!doctype html>
               : 'No active release process detected.';
         $('workflow').textContent = 'Workflow: ' + (seoMode === 'gpt' ? 'GPT SEO' : seoMode === 'deterministic' ? 'legacy deterministic' : 'SEO mode pending') + ' - ' + (run.seoScope === 'new-products' ? 'new products' : 'all products');
         $('model-detail').textContent = [modelView.detail ? ('Model gate: ' + modelView.detail) : '', shardDetail].filter(Boolean).join(' - ');
+        const gptMessage = formatGptSeoProgress(gptProgress);
+        $('gpt-progress').textContent = gptMessage;
+        $('gpt-progress').hidden = !gptMessage;
         $('index').textContent = run.stepIndex ? (run.stepIndex + '/' + (run.totalSteps || '?')) : '-';
         $('pid').textContent = active ? (state.process?.pid || run.pid || '-') : '-';
         $('heartbeat').textContent = run.heartbeatAt ? new Date(run.heartbeatAt).toLocaleTimeString() : '-';
@@ -319,13 +390,27 @@ export function compactReleaseLog(value) {
 }
 
 async function readOperationalLog(limit = maxLogChars) {
-  const [releaseLog, watcherLog] = await Promise.all([
+  const [releaseLog, watcherLog, releaseState] = await Promise.all([
     readTail(logPath, limit),
     readTail(watcherLogPath, limit),
+    readJsonIfPresent(releaseStatePath),
   ]);
-  if (!watcherLog) return compactReleaseLog(releaseLog);
-  if (!releaseLog) return compactReleaseLog(`[watcher-daemon]\n${watcherLog}`);
-  return compactReleaseLog(`${releaseLog}\n\n[watcher-daemon tail]\n${watcherLog}`).slice(-limit);
+  const stateStatus = String(releaseState?.status || "").trim().toLowerCase();
+  const stateStep = releaseState?.stepIndex ? `${releaseState.stepIndex}/${releaseState.totalSteps || "?"}` : "-";
+  const stateLabel = String(releaseState?.stepLabel || releaseState?.stageLabel || "").trim() || "unknown";
+  const stateLine = releaseState && !releaseState.readError
+    ? `[release-state] ${stateStatus || "unknown"}; step=${stateStep}; ${stateLabel}; heartbeat=${releaseState.heartbeatAt || "-"}`
+    : "";
+  const error = releaseState && !releaseState.readError ? summarizeReleaseError(releaseState) : "";
+  const errorLine = error ? `[release-error] ${error}` : "";
+  return mergeOperationalLogs(releaseLog, watcherLog, stateLine, errorLine, limit);
+}
+
+export function mergeOperationalLogs(releaseLog = "", watcherLog = "", stateLine = "", errorLine = "", limit = maxLogChars) {
+  const sharedLogHasWatcherEvents = /\[(?:watcher|watcher:error)\]/i.test(String(releaseLog));
+  const watcherFallback = watcherLog && !sharedLogHasWatcherEvents ? `[watcher-daemon tail]\n${watcherLog}` : "";
+  const sections = [releaseLog, watcherFallback, stateLine, errorLine].filter(Boolean);
+  return compactReleaseLog(sections.join("\n\n")).slice(-limit);
 }
 
 async function controlUiAlreadyRunning(port) {
@@ -358,6 +443,41 @@ async function fileMtime(path) {
     if (error?.code === "ENOENT") return 0;
     throw error;
   }
+}
+
+async function readGptSeoProgress() {
+  const checkpoint = await readJsonIfPresent(gptSeoProgressPath);
+  if (!checkpoint || checkpoint.readError || typeof checkpoint !== "object") return null;
+  const total = Number(checkpoint.total || 0);
+  const processed = Number(checkpoint.processed || 0);
+  const batchSize = Math.max(1, Number(checkpoint.batchSize || 500));
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const batchCount = Math.max(1, Math.ceil(total / batchSize));
+  const currentBatch = Math.min(batchCount, Math.floor(processed / batchSize) + 1);
+  const inputPath = resolve(gptSeoQueueDir, `batch-${String(currentBatch).padStart(4, "0")}.input.json`);
+  const responsePath = resolve(gptSeoQueueDir, `batch-${String(currentBatch).padStart(4, "0")}.response.json`);
+  const [inputMtime, responseMtime] = await Promise.all([fileMtime(inputPath), fileMtime(responsePath)]);
+  const pending = processed < total;
+  const waitingForResponse = pending && inputMtime > responseMtime;
+  const state = pending ? (waitingForResponse ? "awaiting-chatgpt" : "starting-batch") : "complete";
+  const rejected = Number(checkpoint.rejected || 0);
+  const message = pending
+    ? `GPT SEO batch ${currentBatch}/${batchCount} - ${waitingForResponse ? "waiting for ChatGPT response" : "starting"}; ${processed.toLocaleString()}/${total.toLocaleString()} processed; ${Number(checkpoint.accepted || 0).toLocaleString()} accepted; ${rejected.toLocaleString()} queued for retry.`
+    : `GPT SEO complete - ${total.toLocaleString()}/${total.toLocaleString()} processed; ${Number(checkpoint.accepted || 0).toLocaleString()} accepted; ${rejected.toLocaleString()} rejected.`;
+  return {
+    status: String(checkpoint.status || "checkpoint"),
+    state,
+    provider: String(checkpoint.provider || "applescript"),
+    processed,
+    total,
+    accepted: Number(checkpoint.accepted || 0),
+    rejected,
+    batchSize,
+    currentBatch,
+    batchCount,
+    generatedAt: String(checkpoint.generatedAt || ""),
+    message,
+  };
 }
 
 async function ensureNativeMacApp() {
@@ -427,6 +547,39 @@ export function isProcessAlive(pid) {
 export function isActiveReleaseState(state = {}) {
   return ["running", "waiting_for_network"].includes(String(state?.status || "").trim().toLowerCase())
     && Number(state?.pid || 0) > 0;
+}
+
+export function summarizeReleaseError(release = {}) {
+  const details = [release?.error, release?.stageError, release?.stageStderr, release?.lastError]
+    .filter(Boolean)
+    .join("\n");
+  const line = details
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .find((value) => /release stopped|catalog integrity|failed|error:/i.test(value)) || "";
+  return line.length > 320 ? `${line.slice(0, 317)}...` : line;
+}
+
+export function buildReleaseActivity(release = {}, { processActive = false } = {}) {
+  const savedStatus = String(release?.status || "unknown").trim().toLowerCase();
+  const status = savedStatus === "running" && !processActive ? "stale" : savedStatus;
+  const step = release?.stepIndex ? `${release.stepIndex}/${release.totalSteps || "?"}` : "-";
+  const activity = String(release?.stepLabel || release?.stageLabel || "").trim()
+    || (status === "stale" ? "Release process is no longer running" : processActive ? "Release is starting..." : "No active release");
+  const heartbeatAt = String(release?.heartbeatAt || release?.stageLastActivityAt || release?.stageLastOutputAt || "").trim();
+  return {
+    status,
+    step,
+    activity,
+    heartbeatAt,
+    error: summarizeReleaseError(release),
+  };
+}
+
+export function formatGptSeoProgress(progress = {}) {
+  if (!progress || !Number(progress.total)) return "";
+  return String(progress.message || "").trim();
 }
 
 export function resolveReleaseStopPid({ release = {}, watcher = {}, activeChildPid = 0 } = {}) {
@@ -550,32 +703,41 @@ export function validateStartRequest(payload) {
 }
 
 async function readState() {
-  const [release, watcher, visualTaxonomyTraining, visualTaxonomyShardTraining, log] = await Promise.all([
+  const [release, watcher, visualTaxonomyTraining, visualTaxonomyShardTraining, gptSeoProgress, log] = await Promise.all([
     readJsonIfPresent(releaseStatePath),
     readJsonIfPresent(watcherStatePath),
     readJsonIfPresent(visualTrainingStatusPath),
     readVisualShardTrainingState(),
+    readGptSeoProgress(),
     readOperationalLog(),
   ]);
-  const persistedReleaseActive = ["running", "waiting_for_network"].includes(String(release?.status || "").toLowerCase()) && isProcessAlive(release?.pid);
+  const releaseStatus = String(release?.status || "").trim().toLowerCase();
+  const persistedReleaseActive = isActiveReleaseState(release) && isProcessAlive(release?.pid);
   const liveProcess = Boolean(activeChild && activeChild.exitCode === null) || persistedReleaseActive;
   const watcherPid = Number(watcher?.watcherPid || 0);
   const watcherAlive = isProcessAlive(watcherPid);
+  const watcherReleaseStatus = String(watcher?.releaseStatus || "").trim().toLowerCase();
+  const stateSource = releaseStatus ? "release checkpoint" : watcherAlive ? "watcher heartbeat" : "no checkpoint";
   const watcherView = watcher && typeof watcher === "object"
     ? {
       ...watcher,
       processActive: watcherAlive,
-      releaseStatus: watcherAlive
-        ? String(watcher.releaseStatus || (persistedReleaseActive ? release.status : "idle"))
-        : "stopped",
-      activeReleasePid: watcherAlive ? Number(watcher.activeReleasePid || (persistedReleaseActive ? release.pid : 0)) : 0,
+      // The release checkpoint is authoritative once it exists. A watcher
+      // can remain alive briefly after a release exits and must not resurrect
+      // a stale "running" status in the operator surface.
+      releaseStatus: releaseStatus || (watcherAlive ? watcherReleaseStatus : "stopped"),
+      releaseStatusSource: stateSource,
+      releaseStatusMismatch: Boolean(releaseStatus && watcherReleaseStatus && releaseStatus !== watcherReleaseStatus),
+      activeReleasePid: persistedReleaseActive ? Number(release.pid || 0) : 0,
     }
     : watcher;
   return {
     release,
     watcher: watcherView,
+    releaseStateSource: stateSource,
     visualTaxonomyTraining,
     visualTaxonomyShardTraining,
+    gptSeoProgress,
     log,
     process: {
       active: liveProcess,

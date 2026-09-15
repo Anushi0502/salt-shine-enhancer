@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addApprovedSemanticAliasMembershipsToExpected,
+  applyExactTagReadbackToProducts,
   buildStaleMembershipPulsePlans,
   filterMembershipToActiveProducts,
 } from "./shopify-catalog-integrity.mjs";
@@ -76,6 +77,17 @@ describe("stale collection membership repair planning", () => {
 });
 
 describe("approved merged collection membership expectations", () => {
+  it("refreshes membership inputs from the post-write tag readback", () => {
+    const products = [{ id: "gid://shopify/Product/1", tags: ["gifts", "stale-tag"] }];
+    const readback = new Map([
+      ["gid://shopify/Product/1", { tags: ["beauty-makeup-essentials"] }],
+    ]);
+
+    applyExactTagReadbackToProducts(products, readback);
+
+    expect(products[0].tags).toEqual(["beauty-makeup-essentials"]);
+  });
+
   it("widens only the explicit merged alias cohort", () => {
     const expectedByTag = new Map([["gifts", new Set(["gid://shopify/Product/1"])] ]);
     const expectedCollectionsByProduct = new Map([

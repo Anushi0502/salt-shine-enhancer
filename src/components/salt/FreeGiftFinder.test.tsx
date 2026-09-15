@@ -26,9 +26,9 @@ describe("recommendGifts", () => {
 
   it("uses priority and source order to break exact-score ties", () => {
     const products: readonly GiftFinderProduct[] = [
-      { slug: "second", label: "Second", priority: 1 },
-      { slug: "first", label: "First", priority: 2 },
-      { slug: "third", label: "Third", priority: 0 },
+      { slug: "second", label: "Second", priority: 1, budget: ["25-50"] },
+      { slug: "first", label: "First", priority: 2, budget: ["25-50"] },
+      { slug: "third", label: "Third", priority: 0, budget: ["25-50"] },
     ];
 
     expect(recommendGifts(answers, products).map(({ slug }) => slug)).toEqual([
@@ -51,5 +51,14 @@ describe("recommendGifts", () => {
       "Find 2",
     ]);
   });
-});
 
+  it("never recommends a known product outside the selected budget", () => {
+    const products: readonly GiftFinderProduct[] = [
+      { slug: "under", label: "Under", price: 19.99, budget: ["under-25"], interest: ["tech"] },
+      { slug: "over", label: "Over", price: 59.99, budget: ["over-50"], interest: ["tech"] },
+    ];
+
+    expect(recommendGifts({ ...answers, budget: "under-25" }, products).map(({ slug }) => slug)).toEqual(["under"]);
+    expect(recommendGifts({ ...answers, budget: "25-50" }, products)).toEqual([]);
+  });
+});

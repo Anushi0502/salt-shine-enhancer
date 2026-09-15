@@ -10,10 +10,15 @@ final class ReleaseStore: ObservableObject {
     @Published private(set) var model = "unknown"
     @Published private(set) var modelDetail = ""
     @Published private(set) var shardProgress = ""
+    @Published private(set) var gptProgress = ""
     @Published private(set) var step = "No checkpoint loaded."
     @Published private(set) var stepIndex = "-"
     @Published private(set) var pid = "-"
     @Published private(set) var heartbeat = "-"
+    @Published private(set) var heartbeatAge = "Waiting for heartbeat"
+    @Published private(set) var activity = "Loading current operation..."
+    @Published private(set) var releaseError = ""
+    @Published private(set) var releaseStateSource = "release checkpoint"
     @Published private(set) var workflow = "GPT SEO"
     @Published private(set) var log = "Loading release log..."
     @Published private(set) var checkpointMessage = "Checkpoint state is loading."
@@ -62,8 +67,13 @@ final class ReleaseStore: ObservableObject {
     }
 
     func refresh() {
-        let url = baseURL.appendingPathComponent("api/state")
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/state"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "ts", value: String(Int(Date().timeIntervalSince1970 * 1000)))]
+        guard let url = components?.url else { return }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             guard let data, error == nil,
                   let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 if let error {
@@ -78,12 +88,16 @@ final class ReleaseStore: ObservableObject {
             let watcher = root["watcher"] as? [String: Any] ?? [:]
             let model = root["visualTaxonomyTraining"] as? [String: Any] ?? [:]
             let shard = root["visualTaxonomyShardTraining"] as? [String: Any] ?? [:]
+            let gpt = root["gptSeoProgress"] as? [String: Any] ?? [:]
             let process = root["process"] as? [String: Any] ?? [:]
             let status = Self.string(release, "status", fallback: "unknown")
-            let watcherStatus = Self.string(watcher, "releaseStatus", fallback: Self.string(watcher, "status", fallback: "unknown"))
+            let watcherStatus = (watcher["processActive"] as? Bool) == true ? "running" : "stopped"
             let index = Self.int(release, "stepIndex")
             let total = Self.int(release, "totalSteps")
             let stepLabel = Self.string(release, "stepLabel", fallback: "No checkpoint loaded.")
+            let heartbeatValue = Self.string(release, "heartbeatAt", fallback: "")
+            let stateSource = Self.string(root, "releaseStateSource", fallback: "release checkpoint")
+            let releaseError = Self.releaseError(release)
             let modelStatus = Self.string(model, "status", fallback: "unknown")
             let rawModelDetail = Self.string(model, "reason", fallback: Self.string(model, "error", fallback: ""))
             let modelLabel = ["failed", "blocked"].contains(modelStatus.lowercased()) && rawModelDetail.range(of: "taxonomy mismatch|retrain|incompatible|stale", options: [.regularExpression, .caseInsensitive]) != nil
@@ -94,6 +108,7 @@ final class ReleaseStore: ObservableObject {
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .first { $0.range(of: "taxonomy|retrain|incompatible|Metal model", options: [.regularExpression, .caseInsensitive]) != nil && !$0.lowercased().hasPrefix("command failed:") } ?? ""
             let shardProgress = Self.shardProgress(shard)
+            let gptProgress = Self.string(gpt, "message", fallback: "")
             let seoMode = Self.string(release, "seoMode", fallback: "unknown").lowercased()
             let seoScope = Self.string(release, "seoScope", fallback: "all-products")
             let active = (process["active"] as? Bool) ?? false
@@ -115,12 +130,17 @@ final class ReleaseStore: ObservableObject {
                 self.model = modelLabel
                 self.modelDetail = modelDetail.replacingOccurrences(of: "^Error:\\s*", with: "", options: .regularExpression)
                 self.shardProgress = shardProgress
+                self.gptProgress = gptProgress
                 let workflowLabel = seoMode == "gpt" ? "GPT SEO" : seoMode == "deterministic" ? "legacy deterministic" : "SEO mode pending"
                 self.workflow = "\(workflowLabel) - \(seoScope == "new-products" ? "new products" : "all products")"
                 self.step = index > 0 ? "\(index)/\(max(total, index)) \(stepLabel)" : stepLabel
                 self.stepIndex = index > 0 ? "\(index)/\(max(total, index))" : "-"
                 self.pid = active && Self.int(release, "pid") > 0 ? String(Self.int(release, "pid")) : "-"
-                self.heartbeat = Self.localDateTime(Self.string(release, "heartbeatAt", fallback: "-"))
+                self.heartbeat = Self.localDateTime(heartbeatValue.isEmpty ? "-" : heartbeatValue)
+                self.heartbeatAge = Self.heartbeatAge(heartbeatValue)
+                self.activity = stepLabel
+                self.releaseError = ["failed", "interrupted", "waiting_for_network"].contains(status.lowercased()) ? releaseError : ""
+                self.releaseStateSource = stateSource
                 self.updateLog(log)
                 self.checkpointMessage = checkpointMessage
                 self.processActive = active
@@ -262,6 +282,32 @@ final class ReleaseStore: ObservableObject {
         formatter.dateStyle = .short
         formatter.timeStyle = .medium
         return formatter.string(from: date)
+    }
+
+    private static func heartbeatAge(_ value: String) -> String {
+        guard !value.isEmpty else { return "No heartbeat" }
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let date = parser.date(from: value) ?? ISO8601DateFormatter().date(from: value) else { return "Heartbeat unavailable" }
+        let seconds = max(0, Int(Date().timeIntervalSince(date)))
+        if seconds < 60 { return "Updated \(seconds)s ago" }
+        return "Updated \(seconds / 60)m ago"
+    }
+
+    private static func releaseError(_ object: [String: Any]) -> String {
+        let details = [
+            string(object, "error", fallback: ""),
+            string(object, "stageError", fallback: ""),
+            string(object, "stageStderr", fallback: ""),
+            string(object, "lastError", fallback: ""),
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: "\n")
+        let line = details
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { $0.range(of: "release stopped|catalog integrity|failed|error:", options: [.regularExpression, .caseInsensitive]) != nil } ?? ""
+        return line.count > 320 ? String(line.prefix(317)) + "..." : line
     }
 
     private func updateLog(_ value: String) {
@@ -442,6 +488,39 @@ struct ReleaseControlView: View {
                                         .foregroundColor(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
+                                if !store.gptProgress.isEmpty {
+                                    Label(store.gptProgress, systemImage: "sparkles.rectangle.stack")
+                                        .font(.caption2)
+                                        .foregroundColor(.purple)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Current operation")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                    Text(store.activity)
+                                        .font(.subheadline.weight(.semibold))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    if !store.gptProgress.isEmpty {
+                                        Text(store.gptProgress)
+                                            .font(.caption2)
+                                            .foregroundColor(.purple)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    Text("Heartbeat \(store.heartbeatAge) - \(store.releaseStateSource)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.primary.opacity(0.05))
+                                .cornerRadius(10)
+                                if !store.releaseError.isEmpty {
+                                    Text(store.releaseError)
+                                        .font(.caption2)
+                                        .foregroundColor(.red)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
                                 Text(store.step).font(.subheadline).foregroundColor(.secondary).lineLimit(2)
                                 Text(store.checkpointMessage)
                                     .font(.caption)
@@ -467,6 +546,38 @@ struct ReleaseControlView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         GroupBox("Release log") {
                             VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 7) {
+                                    HStack(spacing: 8) {
+                                        Circle()
+                                            .fill(store.statusColor)
+                                            .frame(width: 9, height: 9)
+                                        Text(store.status.capitalized)
+                                            .font(.headline)
+                                        Spacer()
+                                        Text(store.heartbeatAge)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Text(store.activity)
+                                        .font(.subheadline.weight(.semibold))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    HStack(spacing: 7) {
+                                        Text("Step \(store.stepIndex)")
+                                        Text("Heartbeat \(store.heartbeat)")
+                                        Text(store.releaseStateSource)
+                                    }
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    if !store.releaseError.isEmpty {
+                                        Text(store.releaseError)
+                                            .font(.caption2)
+                                            .foregroundColor(.red)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                                .padding(10)
+                                .background(Color.primary.opacity(0.05))
+                                .cornerRadius(10)
                                 HStack(spacing: 10) {
                                     if store.canShowEarlier {
                                         Button("Show earlier") { store.showEarlier() }

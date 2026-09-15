@@ -299,6 +299,10 @@ describe("sales optimization", () => {
     expect(structuredData.sku).toBe("salt-43");
     expect(offers.shippingDetails.shippingDestination.addressCountry).toBe("US");
     expect(offers.hasMerchantReturnPolicy.merchantReturnDays).toBe(30);
+    expect((offers.shippingDetails as { deliveryTime?: { handlingTime?: { minValue: number; maxValue: number }; transitTime?: { minValue: number; maxValue: number } } }).deliveryTime).toMatchObject({
+      handlingTime: { minValue: 1, maxValue: 3 },
+      transitTime: { minValue: 5, maxValue: 8 },
+    });
   });
 
   it("keeps product structured-data URLs aligned with the canonical product route", () => {

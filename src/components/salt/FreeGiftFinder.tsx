@@ -40,6 +40,7 @@ export type GiftFinderProduct = {
   label: string;
   description?: string;
   href?: string;
+  price?: number;
   recipient?: readonly GiftFinderAnswer["recipient"][];
   occasion?: readonly GiftFinderAnswer["occasion"][];
   budget?: readonly GiftFinderAnswer["budget"][];
@@ -94,11 +95,25 @@ function scoreProduct(product: GiftFinderProduct, answers: GiftFinderAnswer): nu
   return score;
 }
 
+function hasBudgetMatch(product: GiftFinderProduct, budget: GiftFinderAnswer["budget"]): boolean {
+  return Boolean(product.budget?.includes(budget));
+}
+
 export function recommendGifts(
   answers: GiftFinderAnswer,
   products: readonly GiftFinderProduct[] = DEFAULT_GIFT_PRODUCTS,
 ): GiftFinderRecommendation[] {
-  return products
+  const budgetMatches = products.filter((product) => hasBudgetMatch(product, answers.budget));
+  // A live catalog product always receives a budget during mapping. Keep the
+  // metadata-free fallback only for generic caller-supplied recommendations;
+  // never use a known product from another price band as a “match.”
+  const candidates = budgetMatches.length
+    ? budgetMatches
+    : products.every((product) => !product.budget)
+      ? products
+      : [];
+
+  return candidates
     .map((product, index) => ({
       ...product,
       matchScore: scoreProduct(product, answers),
@@ -140,6 +155,7 @@ export function FreeGiftFinder({
 }: FreeGiftFinderProps) {
   const [answers, setAnswers] = useState<Partial<GiftFinderAnswer>>(initialAnswers);
   const [recommendations, setRecommendations] = useState<GiftFinderRecommendation[]>([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const isComplete = (Object.keys(QUESTION_COPY) as QuestionKey[]).every(
     (key) => Boolean(answers[key]),
@@ -148,6 +164,7 @@ export function FreeGiftFinder({
   function handleAnswer(key: QuestionKey, value: string) {
     setAnswers((current) => ({ ...current, [key]: value } as Partial<GiftFinderAnswer>));
     setRecommendations([]);
+    setHasSubmitted(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -155,6 +172,7 @@ export function FreeGiftFinder({
     if (!isComplete) return;
 
     setRecommendations(recommendGifts(answers as GiftFinderAnswer, products));
+    setHasSubmitted(true);
   }
 
   return (
@@ -225,7 +243,25 @@ export function FreeGiftFinder({
         </button>
       </form>
 
-      {recommendations.length > 0 ? (
+      {hasSubmitted && recommendations.length === 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-8 border-t border-slate-200 pt-6"
+        >
+          <h3 className="text-lg font-semibold text-slate-950">No exact match in that budget yet</h3>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+            We could not find a live product in that price range for this selection. Try another budget or browse
+            the current gift collection.
+          </p>
+          <a
+            href="/collections/gifts"
+            className="mt-3 inline-flex text-sm font-semibold text-slate-950 underline underline-offset-4"
+          >
+            Browse gift collection
+          </a>
+        </div>
+      ) : recommendations.length > 0 ? (
         <div
           aria-live="polite"
           aria-labelledby="free-gift-finder-results-title"
@@ -238,6 +274,9 @@ export function FreeGiftFinder({
             {recommendations.map((recommendation) => (
               <li key={recommendation.slug} className="rounded-2xl bg-slate-50 p-4">
                 <p className="font-semibold text-slate-900">{recommendation.label}</p>
+                {Number.isFinite(recommendation.price) && Number(recommendation.price) > 0 ? (
+                  <p className="mt-1 text-sm font-medium text-slate-700">${Number(recommendation.price).toFixed(2)}</p>
+                ) : null}
                 {recommendation.description ? (
                   <p className="mt-1 text-sm leading-5 text-slate-600">{recommendation.description}</p>
                 ) : null}

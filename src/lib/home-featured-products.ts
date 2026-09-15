@@ -22,10 +22,12 @@ export type HomeFeaturedProductsPayload = {
     bestSellerProducts?: string;
     quirkyGiftPicks?: string;
     everydayEssentialProducts?: string;
+    giftFinderProducts?: string;
   };
   bestSellerProducts: HomeFeaturedProduct[];
   quirkyGiftPicks: HomeFeaturedProduct[];
   everydayEssentialProducts: HomeFeaturedProduct[];
+  giftFinderProducts: HomeFeaturedProduct[];
 };
 
 type SaltHomePreloadWindow = Window & {
@@ -85,6 +87,17 @@ function normalizeProducts(input: unknown): HomeFeaturedProduct[] {
     : [];
 }
 
+function dedupeProducts(products: HomeFeaturedProduct[]): HomeFeaturedProduct[] {
+  const seen = new Set<string>();
+
+  return products.filter((product) => {
+    const key = `${product.id}:${product.handle}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
   if (typeof window === "undefined" || window.location.pathname !== "/") {
     return undefined;
@@ -98,7 +111,13 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
   const bestSellerProducts = normalizeProducts(payload.bestSellerProducts);
   const quirkyGiftPicks = normalizeProducts(payload.quirkyGiftPicks);
   const everydayEssentialProducts = normalizeProducts(payload.everydayEssentialProducts);
-  if (!bestSellerProducts.length && !quirkyGiftPicks.length && !everydayEssentialProducts.length) {
+  const giftFinderProducts = dedupeProducts(normalizeProducts(payload.giftFinderProducts));
+  if (
+    !bestSellerProducts.length &&
+    !quirkyGiftPicks.length &&
+    !everydayEssentialProducts.length &&
+    !giftFinderProducts.length
+  ) {
     return undefined;
   }
 
@@ -110,22 +129,41 @@ function getInlineHomeProducts(): HomeFeaturedProductsPayload | undefined {
     bestSellerProducts,
     quirkyGiftPicks,
     everydayEssentialProducts,
+    giftFinderProducts,
   };
 }
 
 export async function loadHomeFeaturedProducts(): Promise<HomeFeaturedProductsPayload> {
-  const bestSellerProducts = (await loadCollectionPreviewProducts("best-sellers", 12))
-    .map(toHomeFeaturedProduct)
-    .filter((product): product is HomeFeaturedProduct => Boolean(product));
+  const [bestSellerResult, underFiftyResult, giftCollectionResult] = await Promise.allSettled([
+    loadCollectionPreviewProducts("best-sellers", 12),
+    loadCollectionPreviewProducts("under-50", 24),
+    loadCollectionPreviewProducts("gifts", 12),
+  ]);
+  const toHomeProducts = (result: PromiseSettledResult<ShopifyProduct[]>): HomeFeaturedProduct[] =>
+    result.status === "fulfilled"
+      ? result.value.map(toHomeFeaturedProduct).filter((product): product is HomeFeaturedProduct => Boolean(product))
+      : [];
+  const bestSellerProducts = toHomeProducts(bestSellerResult);
+  const underFiftyProducts = toHomeProducts(underFiftyResult);
+  const giftCollectionProducts = toHomeProducts(giftCollectionResult);
+  const giftFinderProducts = dedupeProducts([
+    ...underFiftyProducts,
+    ...giftCollectionProducts,
+    ...bestSellerProducts,
+  ]);
 
   return {
     generatedAt: new Date().toISOString(),
-    source: "shopify-live:best-sellers",
+    source: "shopify-live:best-sellers+under-50+gifts",
     total: bestSellerProducts.length,
-    sources: { bestSellerProducts: "best-sellers" },
+    sources: {
+      bestSellerProducts: "best-sellers",
+      giftFinderProducts: "under-50+gifts+best-sellers",
+    },
     bestSellerProducts,
     quirkyGiftPicks: [],
     everydayEssentialProducts: [],
+    giftFinderProducts,
   };
 }
 

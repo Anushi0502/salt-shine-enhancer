@@ -4,10 +4,14 @@ import {
   compactReleaseLog,
   paginateReleaseLog,
   formatVisualShardProgress,
+  formatGptSeoProgress,
+  mergeOperationalLogs,
+  buildReleaseActivity,
   formatVisualTrainingStatus,
   isActiveReleaseState,
   isProcessAlive,
   resolveReleaseStopPid,
+  summarizeReleaseError,
   validateStartRequest,
 } from "./release-control-ui.mjs";
 
@@ -61,6 +65,28 @@ describe("release control UI start contract", () => {
     expect(isActiveReleaseState({ pid: 81022, status: "completed" })).toBe(false);
   });
 
+  it("uses the live checkpoint for the operator activity summary", () => {
+    expect(buildReleaseActivity({
+      status: "failed",
+      stepIndex: 25,
+      totalSteps: 66,
+      stepLabel: "Apply exact full-catalog collection reconciliation",
+      heartbeatAt: "2026-09-15T08:39:47.145Z",
+      error: "Release stopped at step 25/66 with exit code 1.",
+    })).toEqual({
+      status: "failed",
+      step: "25/66",
+      activity: "Apply exact full-catalog collection reconciliation",
+      heartbeatAt: "2026-09-15T08:39:47.145Z",
+      error: "Release stopped at step 25/66 with exit code 1.",
+    });
+    expect(buildReleaseActivity({ status: "running", stepIndex: 4, totalSteps: 66 }, { processActive: false }).status).toBe("stale");
+  });
+
+  it("keeps the visible failure reason short", () => {
+    expect(summarizeReleaseError({ error: "first line\nCatalog integrity verification failed: 1,156 issues remain" })).toBe("Catalog integrity verification failed: 1,156 issues remain");
+  });
+
   it("compacts unchanged progress only in the operator display", () => {
     const log = [
       "[2026-09-12T10:00:00.000Z] release active; step=30/59 SEO",
@@ -93,6 +119,8 @@ describe("release control UI start contract", () => {
     expect(source).toContain("Metal model:");
     expect(source).toContain("/api/stop");
     expect(source).toContain("Stop release");
+    const appleScript = await import("node:fs/promises").then(({ readFile }) => readFile("./scripts/gpt-seo-applescript.applescript", "utf8"));
+    expect(appleScript).toContain('tell application "SALT Release Control" to activate');
   });
 
   it("turns stale taxonomy failures into an actionable retrain status", () => {
@@ -125,5 +153,21 @@ describe("release control UI start contract", () => {
       currentProgress: { recordsWritten: 10272, totalRecords: 71070 },
     })).toBe("Embedding pass - shard 1/9 - 10272/71070 images - adapter training 9/9 complete");
     expect(formatVisualShardProgress({ phase: "complete" })).toContain("All visual shards complete");
+  });
+
+  it("shows the live GPT batch checkpoint instead of a stale step-only status", () => {
+    expect(formatGptSeoProgress({
+      total: 17747,
+      message: "GPT SEO batch 3/36 - waiting for ChatGPT response; 1,000/17,747 processed; 997 accepted; 3 queued for retry.",
+    })).toContain("batch 3/36");
+    expect(formatGptSeoProgress({})).toBe("");
+  });
+
+  it("keeps the newest release child output when the watcher tail is large", () => {
+    const releaseLog = "[watcher] heartbeat\n[release] GPT SEO batch 5/36 - waiting for ChatGPT response";
+    const watcherLog = Array.from({ length: 200 }, (_, index) => `[watcher] heartbeat ${index}`).join("\n");
+    const merged = mergeOperationalLogs(releaseLog, watcherLog, "[release-state] running; step=35/66", "", 5000);
+    expect(merged).toContain("[release] GPT SEO batch 5/36");
+    expect(merged).not.toContain("[watcher-daemon tail]");
   });
 });

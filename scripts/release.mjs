@@ -174,6 +174,9 @@ const CANONICAL_RELEASE_DEFAULTS = Object.freeze({
   SALT_RELEASE_SEO_SCOPE: "all-products",
   SALT_GPT_SEO_PROVIDER: "applescript",
   SALT_GPT_SEO_BATCH_SIZE: "500",
+  // A rejected GPT record must be regenerated on the next guarded resume;
+  // never let a failed quality record become a reusable checkpoint.
+  SALT_GPT_SEO_REPROCESS_REJECTED: "1",
   SALT_GPT_SEO_CONCURRENCY: "8",
   SALT_GPT_SEO_REUSE_SHARED_SNAPSHOT: "1",
   // MLX batches are checkpointed as stable prefixes; 32 improves Metal

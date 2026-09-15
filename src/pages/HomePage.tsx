@@ -188,11 +188,22 @@ const HomePage = () => {
   );
   const bestSellerDisplayTiles = bestSellerTiles;
   const giftFinderProducts = useMemo(
-    () =>
-      (homeFeaturedProductsPayload?.bestSellerProducts || [])
-        .slice(0, HOME_PRODUCT_DISPLAY_LIMIT)
-        .map((product, index) => toGiftFinderProduct(product, index)),
-    [homeFeaturedProductsPayload?.bestSellerProducts],
+    () => {
+      const sourceProducts =
+        homeFeaturedProductsPayload?.giftFinderProducts?.length
+          ? homeFeaturedProductsPayload.giftFinderProducts
+          : homeFeaturedProductsPayload?.bestSellerProducts || [];
+      const seen = new Set<string>();
+
+      return sourceProducts
+        .map((product, index) => toGiftFinderProduct(product, index))
+        .filter((product) => {
+          if (seen.has(product.slug)) return false;
+          seen.add(product.slug);
+          return true;
+        });
+    },
+    [homeFeaturedProductsPayload?.bestSellerProducts, homeFeaturedProductsPayload?.giftFinderProducts],
   );
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
     const sections = homeCollectionProductsPayload?.sections;
@@ -533,7 +544,7 @@ const HomePage = () => {
               <FreeGiftFinder
                 products={giftFinderProducts}
                 title="Find a live SALT gift in four quick picks"
-                description="Choose a recipient, occasion, budget, and interest to see current Best Seller links matched by simple, transparent rules."
+                description="Choose a recipient, occasion, budget, and interest to see live catalog picks that stay inside your selected price range."
               />
             </section>
           </Reveal>

@@ -876,6 +876,21 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
               "shippingDestination": {
                 "@type": "DefinedRegion",
                 "addressCountry": "US"
+              },
+              "deliveryTime": {
+                "@type": "ShippingDeliveryTime",
+                "handlingTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 1,
+                  "maxValue": 3,
+                  "unitCode": "DAY"
+                },
+                "transitTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 5,
+                  "maxValue": 8,
+                  "unitCode": "DAY"
+                }
               }
             },
             "hasMerchantReturnPolicy": {
@@ -1190,18 +1205,38 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
           };
 
           {% assign salt_best_sellers = collections["best-sellers"] %}
+          {% assign salt_under_fifty = collections["under-50"] %}
+          {% assign salt_gift_collection = collections["gifts"] %}
           window.__SALT_HOME_PREFETCH__ = {
             generatedAt: {{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' | json }},
             source: 'shopify-liquid:best-sellers',
             total: {{ salt_best_sellers.products_count | default: 0 | json }},
-            sources: { bestSellerProducts: 'best-sellers' },
+            sources: {
+              bestSellerProducts: 'best-sellers',
+              giftFinderProducts: 'under-50+gifts+best-sellers'
+            },
             bestSellerProducts: [
               {% for item in salt_best_sellers.products limit: 12 %}
                 ${buildHomeProductRecord("item")}{% unless forloop.last %},{% endunless %}
               {% endfor %}
             ],
             quirkyGiftPicks: [],
-            everydayEssentialProducts: []
+            everydayEssentialProducts: [],
+            giftFinderProducts: [
+              {% assign salt_gift_candidate_written = false %}
+              {% for item in salt_under_fifty.products limit: 24 %}
+                {% if salt_gift_candidate_written %},{% endif %}${buildHomeProductRecord("item")}
+                {% assign salt_gift_candidate_written = true %}
+              {% endfor %}
+              {% for item in salt_gift_collection.products limit: 12 %}
+                {% if salt_gift_candidate_written %},{% endif %}${buildHomeProductRecord("item")}
+                {% assign salt_gift_candidate_written = true %}
+              {% endfor %}
+              {% for item in salt_best_sellers.products limit: 12 %}
+                {% if salt_gift_candidate_written %},{% endif %}${buildHomeProductRecord("item")}
+                {% assign salt_gift_candidate_written = true %}
+              {% endfor %}
+            ]
           };
         })();
       </script>
