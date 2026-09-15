@@ -14,17 +14,20 @@ function sleep(milliseconds) {
 
 export async function readCatalogKnowledgeModel({ required = false } = {}) {
   let lastError = null;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      const raw = (await readFile(catalogKnowledgeModelPath, "utf8")).trim();
-      if (!raw) throw new Error("knowledge model file is empty");
-      const model = JSON.parse(raw);
-      if (!model || typeof model !== "object") throw new Error("knowledge model is not an object");
-      return model;
-    } catch (error) {
-      lastError = error;
-      if (attempt < 4) await sleep(500 * 2 ** attempt);
+  const candidates = [...new Set([catalogKnowledgeModelPath, `${catalogKnowledgeModelPath}.bak`])];
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    for (const candidatePath of candidates) {
+      try {
+        const raw = (await readFile(candidatePath, "utf8")).trim();
+        if (!raw) throw new Error("knowledge model file is empty");
+        const model = JSON.parse(raw);
+        if (!model || typeof model !== "object") throw new Error("knowledge model is not an object");
+        return model;
+      } catch (error) {
+        lastError = error;
+      }
     }
+    await sleep(Math.min(4_000, 250 * 2 ** attempt));
   }
   if (required) {
     throw new Error(`Catalog knowledge model is required but could not be read from ${catalogKnowledgeModelPath}: ${lastError?.message || "unknown error"}`);

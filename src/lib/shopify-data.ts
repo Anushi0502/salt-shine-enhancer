@@ -473,6 +473,7 @@ type StorefrontVariantNode = {
   id?: string | null;
   title?: string | null;
   sku?: string | null;
+  selectedOptions?: Array<{ name?: string | null; value?: string | null }> | null;
   price?: { amount?: string | null } | null;
   compareAtPrice?: { amount?: string | null } | null;
   availableForSale?: boolean | null;
@@ -546,6 +547,11 @@ function normalizeStorefrontGraphqlProduct(node: StorefrontProductNode): Shopify
     sku: variant.sku || undefined,
     requires_shipping: variant.requiresShipping !== false,
     featured_image: storefrontImageRecord(variant.image, index),
+    selected_options: Array.isArray(variant.selectedOptions)
+      ? variant.selectedOptions
+        .map((option) => ({ name: String(option?.name || "").trim(), value: String(option?.value || "").trim() }))
+        .filter((option) => option.name && option.value)
+      : undefined,
   }));
 
   return {
@@ -587,6 +593,7 @@ const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
           id
           title
           sku
+          selectedOptions { name value }
           price { amount }
           compareAtPrice { amount }
           availableForSale
@@ -894,6 +901,9 @@ async function fetchCollectionPageProducts(handle: string, page: number): Promis
       // This loader hydrates one visible Shopify collection page. Route aliases
       // are resolved above, so fetching their legacy source handles here would
       // duplicate requests and can make a slow alias block the current page.
+      // A visible collection page must preserve that collection's manual order
+      // and bounded page size. Legacy route aliases are only for full
+      // membership reads, not for adding unrelated products to this page.
       const handlesToFetch = [normalizedHandle];
       let liveTotal: number | null = null;
 

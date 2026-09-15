@@ -2,12 +2,13 @@ import { stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
 import { CATALOG_TAXONOMY_VERSION, getCatalogTaxonomyDefinitions } from "./catalog-taxonomy.js";
+import { taxonomyTrainingFingerprint } from "./catalog-knowledge-model.js";
 
 export const VISUAL_TAXONOMY_MODEL_SCHEMA_VERSION = 1;
 export const VISUAL_TAXONOMY_MODEL_TYPE = "mlx-metal-finetuned-visual-taxonomy-classifier";
 export const VISUAL_TAXONOMY_MODEL_BACKEND = "mlx-metal";
 export const VISUAL_TAXONOMY_MIN_DATASET_BYTES = 50_000_000_000;
-export const VISUAL_TAXONOMY_MODEL_VERSION = `${CATALOG_TAXONOMY_VERSION}.visual-finetuned.1`;
+export const VISUAL_TAXONOMY_MODEL_VERSION = `${CATALOG_TAXONOMY_VERSION}.visual-finetuned.2`;
 
 function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -27,6 +28,43 @@ function asNonNegativeNumber(value, label) {
 
 export function sha256Text(value) {
   return createHash("sha256").update(String(value), "utf8").digest("hex");
+}
+
+function normalizedRuleIds(value) {
+  return [...new Set((Array.isArray(value) ? value : []).map(String).map((entry) => entry.trim()).filter(Boolean))].sort();
+}
+
+/**
+ * Return the only exact append-only extension that can explain a model
+ * fingerprint mismatch. A release must not infer compatibility from a loose
+ * label overlap or from a manually edited fingerprint.
+ */
+export function findAppendOnlyTaxonomyExtension(sourceFingerprint, definitions = getCatalogTaxonomyDefinitions()) {
+  const source = String(sourceFingerprint || "").trim();
+  if (!source || !Array.isArray(definitions) || !definitions.length) return [];
+  const matches = [];
+  for (const definition of definitions) {
+    const reduced = definitions.filter((candidate) => candidate.id !== definition.id);
+    if (taxonomyTrainingFingerprint(reduced) === source) matches.push(definition.id);
+  }
+  return normalizedRuleIds(matches);
+}
+
+function appendOnlyTaxonomyCompatibility(model, currentFingerprint, definitions) {
+  const compatibility = model?.taxonomy?.compatibility;
+  if (!compatibility || compatibility.mode !== "append-only") return false;
+  if (String(compatibility.sourceFingerprint || "") !== String(model?.taxonomy?.fingerprint || "")) return false;
+  if (String(compatibility.currentFingerprint || "") !== String(currentFingerprint || "")) return false;
+  if (normalizedRuleIds(compatibility.removedRuleIds).length || normalizedRuleIds(compatibility.changedRuleIds).length) return false;
+  const addedRuleIds = normalizedRuleIds(compatibility.addedRuleIds);
+  if (!addedRuleIds.length) return false;
+  const definitionIds = new Set((Array.isArray(definitions) ? definitions : []).map((definition) => definition.id));
+  if (addedRuleIds.some((ruleId) => !definitionIds.has(ruleId))) return false;
+  const modelLabelIds = normalizedRuleIds((model?.taxonomy?.labels || []).map((entry) => entry?.ruleId));
+  if (addedRuleIds.some((ruleId) => modelLabelIds.includes(ruleId))) return false;
+  return taxonomyTrainingFingerprint(
+    definitions.filter((definition) => !addedRuleIds.includes(definition.id)),
+  ) === String(model?.taxonomy?.fingerprint || "");
 }
 
 export async function assertVisualTaxonomyModel(model, {
@@ -49,12 +87,21 @@ export async function assertVisualTaxonomyModel(model, {
   if (taxonomyVersion && value.taxonomy?.version !== taxonomyVersion) {
     throw new Error(`Visual taxonomy model taxonomy version ${value.taxonomy?.version || "missing"} does not match ${taxonomyVersion}.`);
   }
-  if (taxonomyFingerprint && value.taxonomy?.fingerprint !== taxonomyFingerprint) {
+  if (taxonomyFingerprint && value.taxonomy?.fingerprint !== taxonomyFingerprint && !appendOnlyTaxonomyCompatibility(value, taxonomyFingerprint, getCatalogTaxonomyDefinitions())) {
     throw new Error("Visual taxonomy model taxonomy fingerprint does not match the checked-in taxonomy.");
   }
 
   const dataset = asObject(value.dataset);
-  if (dataset.bytes < VISUAL_TAXONOMY_MIN_DATASET_BYTES) {
+  const datasetBytes = Number(dataset.bytes || 0);
+  const plannedDatasetBytes = Number(dataset.plannedBytes || 0);
+  const excludedDatasetBytes = Number(dataset.excludedBytes || 0);
+  const candidateCoverageIncludesQuarantine = value.candidateOnly === true &&
+    Number.isInteger(datasetBytes) && datasetBytes > 0 &&
+    Number.isInteger(plannedDatasetBytes) && plannedDatasetBytes >= VISUAL_TAXONOMY_MIN_DATASET_BYTES &&
+    Number.isInteger(excludedDatasetBytes) && excludedDatasetBytes > 0 &&
+    plannedDatasetBytes - datasetBytes === excludedDatasetBytes &&
+    datasetBytes + excludedDatasetBytes >= VISUAL_TAXONOMY_MIN_DATASET_BYTES;
+  if (datasetBytes < VISUAL_TAXONOMY_MIN_DATASET_BYTES && !candidateCoverageIncludesQuarantine) {
     throw new Error(`Visual taxonomy model was trained on ${dataset.bytes || 0} bytes; at least ${VISUAL_TAXONOMY_MIN_DATASET_BYTES} bytes are required.`);
   }
   asPositiveInteger(dataset.imageCount, "Visual taxonomy dataset imageCount");
@@ -71,6 +118,18 @@ export async function assertVisualTaxonomyModel(model, {
   if (training.precision !== "float16") throw new Error("Visual taxonomy training must use float16 weights.");
   if (!training.metrics || typeof training.metrics !== "object") throw new Error("Visual taxonomy training metrics are missing.");
   if (training.metrics.qualityGate?.passed !== true) throw new Error("Visual taxonomy quality gate was not passed by the trainer.");
+  if (value.modelVersion === VISUAL_TAXONOMY_MODEL_VERSION) {
+    const qualityGate = asObject(training.metrics.qualityGate);
+    if (qualityGate.decisionMode !== "selective-high-margin-only") {
+      throw new Error("Visual taxonomy v2 models must use the selective high-margin decision policy.");
+    }
+    if (Number(qualityGate.minimumTestSelectiveAccuracy || 0) < 0.85 || Number(qualityGate.minimumTestSelectiveMacroF1 || 0) < 0.55) {
+      throw new Error("Visual taxonomy v2 model quality thresholds are below the required selective accuracy or macro-F1 floor.");
+    }
+    if (!Number.isFinite(Number(qualityGate.selectiveMargin)) || Number(qualityGate.selectiveMargin) < 2) {
+      throw new Error("Visual taxonomy v2 model is missing its conservative selective margin calibration.");
+    }
+  }
   asNonNegativeNumber(training.metrics.test?.coverage, "Visual taxonomy test coverage");
   asNonNegativeNumber(training.metrics.test?.macroF1, "Visual taxonomy test macroF1");
   asNonNegativeNumber(training.metrics.test?.accuracy, "Visual taxonomy test accuracy");

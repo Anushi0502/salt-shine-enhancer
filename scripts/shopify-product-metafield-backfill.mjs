@@ -2,9 +2,8 @@
 
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { normalizeHandleValue, normalizePlainText, toShopifyGid } from "../src/lib/shopify-seo-batch.js";
@@ -22,6 +21,7 @@ import {
   buildMetafieldSetBatches,
 } from "../src/lib/shopify-product-metafield-backfill.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
 const DEFAULT_SHOP_BASE = "https://0309d3-72.myshopify.com";
 const DEFAULT_OUTPUT_FILE = resolve(process.cwd(), "output", "product-metafield-backfill-manifest.json");
@@ -34,9 +34,6 @@ const PRODUCT_CUSTOM_DATA_BULK_RESULT = resolve(process.cwd(), "output", ".shopi
 const SHOP_BASE = process.env.SALT_SHOP_URL || DEFAULT_SHOP_BASE;
 const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
 const SHOPIFY_ADMIN_API_VERSION = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
-const SHOPIFY_CLI_AGENT_INFO = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
-const SHOPIFY_CLI_AGENT_IDS =
-  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-shine-enhancer`;
 const JUDGEME_PROXY_BASE_URL = process.env.SALT_JUDGEME_PROXY_BASE_URL || "https://www.saltonlinestore.com";
 const JUDGEME_PUBLIC_TOKEN =
   process.env.VITE_JUDGEME_PUBLIC_TOKEN ||
@@ -44,6 +41,10 @@ const JUDGEME_PUBLIC_TOKEN =
   process.env.SALT_JUDGEME_PUBLIC_TOKEN ||
   "TQ0rk940ADN89zj_f83SKuTYIfY";
 const BACKFILL_APPLY_CONCURRENCY = Math.max(1, Number(process.env.SALT_BACKFILL_APPLY_CONCURRENCY || 4));
+const BACKFILL_READ_CONCURRENCY = Math.max(
+  1,
+  Number(process.env.SALT_BACKFILL_READ_CONCURRENCY || process.env.SALT_SHOPIFY_READ_CONCURRENCY || 4),
+);
 const BACKFILL_BULK_THRESHOLD = Math.max(1, Number(process.env.SALT_BACKFILL_BULK_THRESHOLD || 500));
 const SHOPIFY_MAX_REQUEST_ATTEMPTS = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 10));
 const SHOPIFY_MAX_RETRY_DELAY_MS = Math.max(1_000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 120_000));
@@ -65,6 +66,10 @@ const JUDGEME_FETCH_ENABLED = process.env.SALT_BACKFILL_LIVE_JUDGEME !== "0";
 const JUDGEME_CONCURRENCY = Number(process.env.SALT_BACKFILL_JUDGEME_CONCURRENCY || 8);
 const DIAPER_METAOBJECT_DEFINITION_ID = "gid://shopify/MetaobjectDefinition/9632874595";
 const execFileAsync = promisify(execFile);
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir: process.cwd(),
+  agentName: "metafield-backfill",
+});
 
 const STAGED_UPLOAD_CREATE_MUTATION = /* GraphQL */ `
   mutation BackfillStagedUpload($input: [StagedUploadInput!]!) {
@@ -156,6 +161,7 @@ const BULK_PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           badgeText: metafield(namespace: "salt-marketing", key: "badge_text") { jsonValue value }
           highlights: metafield(namespace: "salt-marketing", key: "highlights") { jsonValue value }
           collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") { jsonValue value }
+          gptSeoTypeAttributes: metafield(namespace: "salt-gpt-seo", key: "type_attributes") { jsonValue value }
           classification: metafield(namespace: "salt_taxonomy", key: "classification") { jsonValue value }
           rating: metafield(namespace: "reviews", key: "rating") { jsonValue value }
           ratingCount: metafield(namespace: "reviews", key: "rating_count") { jsonValue value }
@@ -318,14 +324,6 @@ function normalizeDomain(value) {
   }
 }
 
-function getShopifyCliEnv() {
-  return {
-    ...process.env,
-    SHOPIFY_CLI_AGENT_INFO,
-    SHOPIFY_CLI_AGENT_IDS,
-  };
-}
-
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -338,30 +336,6 @@ function chunkArray(items, size) {
   }
 
   return chunks;
-}
-
-function isRetryableShopifyCliError(error) {
-  const text = [error?.message, error?.stderr, error?.stdout, error?.code].filter(Boolean).join("\n").toLowerCase();
-
-  return [
-    "429",
-    "throttled",
-    "rate limit",
-    "rate_limited",
-    "too many requests",
-    "retry-after",
-    "temporarily unavailable",
-    "service unavailable",
-    "gateway timeout",
-    "timeout",
-    "aborted before it completed",
-    "enotfound",
-    "eai_again",
-    "etimedout",
-    "econnreset",
-    "socket hang up",
-    "fetch failed",
-  ].some((needle) => text.includes(needle));
 }
 
 function formatMetafieldUserErrors(userErrors = []) {
@@ -388,77 +362,12 @@ function partitionMetafieldUserErrors(userErrors = [], entryCount = 0) {
   return { failedIndexes, nonEntryErrors };
 }
 
-function computeCliRetryDelayMs(attempt) {
-  const jitterMs = Math.floor(Math.random() * 500);
-  return Math.min(SHOPIFY_MAX_RETRY_DELAY_MS, 1500 * 2 ** attempt + jitterMs);
-}
-
-async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false } = {}) {
-  const serializedVariables = variables && Object.keys(variables).length ? variables : null;
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-cli-"));
-  const queryFile = join(tempDir, "operation.graphql");
-  const outputFile = join(tempDir, "result.json");
-  const variableFile = join(tempDir, "variables.json");
-
-  try {
-    await writeFile(queryFile, query, "utf8");
-    if (serializedVariables) {
-      await writeFile(variableFile, JSON.stringify(serializedVariables, null, 2), "utf8");
-    }
-
-    const args = [
-      "store",
-      "execute",
-      "--store",
-      SHOP_DOMAIN,
-      "--version",
-      SHOPIFY_ADMIN_API_VERSION,
-      "--query-file",
-      queryFile,
-      "--output-file",
-      outputFile,
-      "--json",
-    ];
-
-    if (serializedVariables) {
-      args.push("--variable-file", variableFile);
-    }
-
-    if (allowMutations) {
-      args.push("--allow-mutations");
-    }
-
-    for (let attempt = 0; attempt < SHOPIFY_MAX_REQUEST_ATTEMPTS; attempt += 1) {
-      try {
-        await execFileAsync("shopify", args, {
-          env: getShopifyCliEnv(),
-          maxBuffer: 10 * 1024 * 1024,
-        });
-        const rawOutput = await readFile(outputFile, "utf8");
-        const parsedOutput = JSON.parse(rawOutput);
-        if (Array.isArray(parsedOutput.errors) && parsedOutput.errors.length) {
-          const message = parsedOutput.errors.map((entry) => entry.message || "Unknown GraphQL error").join(" | ");
-          throw new Error(`Shopify CLI GraphQL errors for ${SHOP_DOMAIN}: ${message}`);
-        }
-
-        return parsedOutput.data || parsedOutput || {};
-      } catch (error) {
-        if (attempt < SHOPIFY_MAX_REQUEST_ATTEMPTS - 1 && isRetryableShopifyCliError(error)) {
-          const delayMs = computeCliRetryDelayMs(attempt);
-          process.stdout.write(
-            `Shopify CLI request failed; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${SHOPIFY_MAX_REQUEST_ATTEMPTS})\n`,
-          );
-          await sleep(delayMs);
-          continue;
-        }
-
-        throw error;
-      }
-    }
-    throw new Error(`Shopify CLI request exhausted ${SHOPIFY_MAX_REQUEST_ATTEMPTS} attempts`);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+function runShopifyStoreGraphQL(query, variables = {}, options = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    ...options,
+    maxAttempts: options.maxAttempts || SHOPIFY_MAX_REQUEST_ATTEMPTS,
+    maxRetryDelayMs: options.maxRetryDelayMs || SHOPIFY_MAX_RETRY_DELAY_MS,
+  });
 }
 
 function parseBadgeNumber(html, pattern) {
@@ -531,6 +440,10 @@ const PRODUCT_CUSTOM_DATA_QUERY = /* GraphQL */ `
           value
         }
         collectionSignal: metafield(namespace: "salt-marketing", key: "collection_signal") {
+          jsonValue
+          value
+        }
+        gptSeoTypeAttributes: metafield(namespace: "salt-gpt-seo", key: "type_attributes") {
           jsonValue
           value
         }
@@ -811,6 +724,17 @@ function parseRatingValue(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function parseJsonMetafieldValue(field) {
+  const value = field?.jsonValue ?? field?.value ?? null;
+  if (value && typeof value === "object") return value;
+  if (!value) return null;
+  try {
+    return JSON.parse(String(value));
+  } catch {
+    return null;
+  }
+}
+
 function normalizeLiveProductCustomDataNode(node) {
   if (!node) {
     return null;
@@ -850,30 +774,31 @@ function normalizeLiveProductCustomDataNode(node) {
 async function fetchLiveProductCustomDataMapBatched(products, productIds, fingerprint) {
   const records = new Map();
   const batches = chunkArray(productIds, 50);
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-    const batch = batches[batchIndex];
-    if (!batch.length) {
-      continue;
-    }
+  let nextBatchIndex = 0;
+  let completedBatches = 0;
+  const worker = async () => {
+    while (true) {
+      const batchIndex = nextBatchIndex;
+      nextBatchIndex += 1;
+      if (batchIndex >= batches.length) return;
+      const batch = batches[batchIndex];
+      if (!batch.length) continue;
 
-    const payload = await runShopifyStoreGraphQL(PRODUCT_CUSTOM_DATA_QUERY, {
-      ids: batch,
-    });
-
-    const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
-    for (const node of nodes) {
-      if (!node?.legacyResourceId) {
-        continue;
+      const payload = await runShopifyStoreGraphQL(PRODUCT_CUSTOM_DATA_QUERY, { ids: batch });
+      const nodes = Array.isArray(payload?.nodes) ? payload.nodes : [];
+      for (const node of nodes) {
+        if (!node?.legacyResourceId) continue;
+        const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
+        records.set(Number(node.legacyResourceId), buildLiveCustomDataRecord(node, customData));
       }
 
-      const customData = normalizeLiveProductCustomDataNode(node) || normalizeProductCustomData({});
-      records.set(Number(node.legacyResourceId), buildLiveCustomDataRecord(node, customData));
+      completedBatches += 1;
+      if (completedBatches % 10 === 0 || completedBatches === batches.length) {
+        process.stdout.write(`Read live metafields batch ${completedBatches}/${batches.length} (${records.size} products)\n`);
+      }
     }
-
-    if ((batchIndex + 1) % 10 === 0 || batchIndex + 1 === batches.length) {
-      process.stdout.write(`Read live metafields batch ${batchIndex + 1}/${batches.length} (${records.size} products)\n`);
-    }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(BACKFILL_READ_CONCURRENCY, batches.length) }, () => worker()));
 
   await writeProductCustomDataCheckpoint(fingerprint, records);
   return records;
@@ -904,6 +829,7 @@ function buildLiveCustomDataRecord(node, customData) {
       })),
     },
     customData,
+    gptSeoTypeAttributes: parseJsonMetafieldValue(node.gptSeoTypeAttributes),
     category: node.category
       ? {
           id: String(node.category.id || ""),
@@ -2206,7 +2132,8 @@ async function main() {
   if (args.allActive && (hasExplicitSelection || args.limitProducts > 0)) {
     throw new Error("--all-active cannot be combined with a limited product selection");
   }
-  const liveCatalogProducts = hasExplicitSelection
+  const forceLiveSelectedCatalog = process.env.SALT_BACKFILL_FORCE_LIVE_SELECTED_CATALOG === "1";
+  const liveCatalogProducts = hasExplicitSelection && !forceLiveSelectedCatalog
     ? releaseCatalogPayload?.products
     : await fetchLiveProductCatalog();
   const allProducts = mergeReleaseCatalogProducts(localProducts, liveCatalogProducts);
@@ -2233,6 +2160,7 @@ async function main() {
       ...product,
       ...liveRecord.liveProduct,
       customData: mergeProductCustomData(product.customData, liveRecord.customData),
+      gptSeoTypeAttributes: liveRecord.gptSeoTypeAttributes,
       shopifyCategory: liveRecord.category,
       disclosures: liveRecord.disclosures,
     };

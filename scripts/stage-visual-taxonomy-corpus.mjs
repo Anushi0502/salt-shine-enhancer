@@ -5,7 +5,6 @@ import { createReadStream } from "node:fs";
 import {
   copyFile,
   mkdir,
-  readFile,
   realpath,
   rename,
   rm,
@@ -14,6 +13,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, extname, resolve, sep } from "node:path";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const allowedImageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".heic"]);
@@ -21,7 +21,9 @@ const trustedLabelSources = new Set(["human", "human-reviewed", "verified", "cur
 const candidateLabelSources = new Set(["deterministic-candidate", "external-human-verified-candidate"]);
 const markerName = ".salt-visual-corpus.json";
 const progressName = ".salt-visual-staging-progress.json";
-const defaultConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_VISUAL_STAGING_CONCURRENCY || 8)));
+// Staging is network-bound; keep it bounded, but do not leave throughput
+// artificially capped at eight workers on machines that can sustain more.
+const defaultConcurrency = Math.max(1, Math.min(24, Number(process.env.SALT_VISUAL_STAGING_CONCURRENCY || 16)));
 const progressCheckpointInterval = Math.max(
   16,
   Math.min(2_048, Number(process.env.SALT_VISUAL_STAGING_PROGRESS_INTERVAL || 128)),
@@ -30,8 +32,13 @@ const progressCheckpointMs = Math.max(
   1_000,
   Number(process.env.SALT_VISUAL_STAGING_PROGRESS_MS || 5_000),
 );
-const requestAttempts = Math.max(1, Math.min(6, Number(process.env.SALT_VISUAL_STAGING_ATTEMPTS || 4)));
+// A single CDN/DNS hiccup must not abort an entire shard. Completed entries
+// remain checkpointed, while this bounded retry budget absorbs short outages.
+const requestAttempts = Math.max(1, Math.min(8, Number(process.env.SALT_VISUAL_STAGING_ATTEMPTS || 6)));
 const requestTimeoutMs = Math.max(5_000, Number(process.env.SALT_VISUAL_STAGING_TIMEOUT_MS || 60_000));
+const maxRetryDelayMs = Math.max(1_000, Math.min(120_000, Number(process.env.SALT_VISUAL_STAGING_MAX_RETRY_DELAY_MS || 30_000)));
+const quarantinableImageStatuses = new Set([404, 410]);
+const duplicateAuditVersion = 1;
 const defaultMaxShardBytes = Math.max(
   1_000_000_000,
   Number(process.env.SALT_VISUAL_STAGING_MAX_SHARD_BYTES || 25_000_000_000),
@@ -41,7 +48,6 @@ const minimumFreeOverheadBytes = Math.max(
   2 * 1024 ** 3,
   Number(process.env.SALT_VISUAL_STAGING_FREE_OVERHEAD_BYTES || 8 * 1024 ** 3),
 );
-
 function parseArgs(argv) {
   const args = {
     sourceManifest: process.env.SALT_VISUAL_TRAINING_SOURCE_MANIFEST || "",
@@ -231,7 +237,7 @@ function planVisualCorpusShards(entries, { maxShardBytes = defaultMaxShardBytes,
 
 async function readJson(path, fallback) {
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    return JSON.parse(await readFileWithRetry(path, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") return fallback;
     throw error;
@@ -256,6 +262,14 @@ async function assertSafePaths(args) {
   const sourcePath = await realpath(resolve(args.sourceManifest));
   if (isInside(sourcePath, datasetPath)) throw new Error("The raw visual corpus cannot contain its source manifest.");
   return { datasetPath, sourcePath };
+}
+
+function parseRetryAfterMs(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  if (/^\d+(?:\.\d+)?$/.test(text)) return Math.max(0, Number(text) * 1_000);
+  const timestamp = Date.parse(text);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : 0;
 }
 
 async function normalizeEntries(rawEntries, sourceManifestPath, datasetPath) {
@@ -304,47 +318,265 @@ async function normalizeEntries(rawEntries, sourceManifestPath, datasetPath) {
   });
 }
 
-async function fetchBytes(url) {
+function concatenateBytes(chunks, totalBytes) {
+  const output = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
+}
+
+async function fetchBytes(url, expectedBytes = 0) {
   let lastError = null;
+  const chunks = [];
+  let receivedBytes = 0;
+  const expected = Number(expectedBytes || 0);
+  let forceFullRequest = false;
+  let usedRangeFallback = false;
+
   for (let attempt = 1; attempt <= requestAttempts; attempt += 1) {
+    const rangeStart = forceFullRequest ? 0 : receivedBytes;
+    forceFullRequest = false;
+    const attemptChunks = [];
+    let attemptBytes = 0;
+    let preservePartial = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
     try {
+      const headers = { Accept: "image/avif,image/webp,image/jpeg,image/png,*/*" };
+      if (rangeStart > 0) headers.Range = `bytes=${rangeStart}-`;
       const response = await fetch(url, {
-        headers: { Accept: "image/avif,image/webp,image/jpeg,image/png,*/*" },
-        signal: AbortSignal.timeout(requestTimeoutMs),
+        headers,
+        signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`image HTTP ${response.status}`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      if (!bytes.byteLength) throw new Error("image response was empty");
-      return bytes;
+      if (!response.ok) {
+        const retryAfter = response.headers.get("retry-after");
+        const error = new Error(`image HTTP ${response.status} for ${url}`);
+        error.status = response.status;
+        error.url = url;
+        error.retryAfterMs = retryAfter ? parseRetryAfterMs(retryAfter) : 0;
+        error.discardPartial = true;
+        // A CDN can reject a resumed range after an interrupted response when
+        // its cached object changed or the offset is no longer satisfiable.
+        // Restart once from byte zero instead of retrying the same invalid
+        // range until the whole shard fails.
+        if (response.status === 416 && rangeStart > 0 && !usedRangeFallback) {
+          usedRangeFallback = true;
+          chunks.length = 0;
+          receivedBytes = 0;
+          forceFullRequest = true;
+          error.retryWithoutRange = true;
+        } else if (response.status === 416 && rangeStart > 0) {
+          // The object changed between the initial body and the resumed range.
+          // Candidate-only staging can refresh it instead of retrying forever.
+          error.sourceBodyChanged = true;
+        }
+        throw error;
+      }
+
+      // Some hosts ignore Range. Restart from the returned full body instead
+      // of appending duplicate bytes to the verified partial response.
+      if (rangeStart > 0 && response.status === 200) {
+        chunks.length = 0;
+        receivedBytes = 0;
+      } else if (rangeStart > 0 && response.status !== 206) {
+        const error = new Error(`image range request returned HTTP ${response.status}`);
+        error.discardPartial = true;
+        throw error;
+      }
+      if (response.status === 206) {
+        const contentRange = String(response.headers.get("content-range") || "");
+        const match = contentRange.match(/^bytes\s+(\d+)-(\d+)\/(\d+|\*)$/i);
+        const responseStart = Number(match?.[1]);
+        const responseTotal = match?.[3] === "*" ? 0 : Number(match?.[3]);
+        if (!match || responseStart !== rangeStart || (expected && responseTotal && responseTotal !== expected)) {
+          const error = new Error(`image range response did not match requested offset ${rangeStart}`);
+          error.discardPartial = true;
+          throw error;
+        }
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        const error = new Error("image response had no readable body");
+        error.discardPartial = true;
+        throw error;
+      }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+          if (!chunk.byteLength) continue;
+          attemptChunks.push(chunk);
+          attemptBytes += chunk.byteLength;
+          if (expected && receivedBytes + attemptBytes > expected) {
+            const error = new Error(`image response exceeded the expected ${expected} bytes`);
+            error.discardPartial = true;
+            error.sourceBodyChanged = true;
+            throw error;
+          }
+        }
+      } finally {
+        reader.releaseLock?.();
+      }
+
+      if (!attemptBytes) throw new Error("image response was empty");
+      chunks.push(...attemptChunks);
+      receivedBytes += attemptBytes;
+      if (!expected || receivedBytes === expected) return concatenateBytes(chunks, receivedBytes);
+      lastError = new Error(`image response ended at ${receivedBytes}/${expected} bytes`);
     } catch (error) {
       lastError = error;
-      if (attempt < requestAttempts) await new Promise((resolveSleep) => setTimeout(resolveSleep, 250 * 2 ** (attempt - 1)));
+      preservePartial = error?.discardPartial !== true;
+      if (preservePartial && attemptBytes) {
+        chunks.push(...attemptChunks);
+        receivedBytes += attemptBytes;
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (lastError?.retryWithoutRange) continue;
+    if (lastError?.sourceBodyChanged || quarantinableImageStatuses.has(Number(lastError?.status))) break;
+    if (attempt < requestAttempts) {
+      const exponentialDelay = Math.min(maxRetryDelayMs, 250 * 2 ** (attempt - 1));
+      const serverDelay = Number(lastError?.retryAfterMs || 0);
+      const jitter = Math.floor(Math.random() * Math.max(1, Math.min(1_000, exponentialDelay / 2)));
+      const delay = Math.min(maxRetryDelayMs, Math.max(exponentialDelay, serverDelay) + jitter);
+      await new Promise((resolveSleep) => setTimeout(resolveSleep, delay));
     }
   }
   throw lastError || new Error("image download failed");
 }
 
-async function stageEntry(entry, datasetPath) {
+function isQuarantinableImageError(error) {
+  return quarantinableImageStatuses.has(Number(error?.status)) ||
+    /image HTTP (?:404|410)\b/i.test(String(error?.message || error));
+}
+
+export function isReusableQuarantinedStagingFailure(failure = {}, entry = {}) {
+  return quarantinableImageStatuses.has(Number(failure?.status || 0)) &&
+    String(failure?.source || "") === String(entry?.source || "") &&
+    String(failure?.target || "") === String(entry?.target || "") &&
+    String(failure?.sha256 || "").trim().toLowerCase() === String(entry?.sha256 || "").trim().toLowerCase();
+}
+
+export function isVerifiedStagingCheckpoint(checkpoint = {}, entry = {}) {
+  return String(checkpoint?.target || "") === String(entry?.target || "") &&
+    Number(checkpoint?.bytes || 0) === Number(entry?.bytes || 0) &&
+    String(checkpoint?.sha256 || "").trim().toLowerCase() === String(entry?.sha256 || "").trim().toLowerCase();
+}
+
+function targetForDigest(entry, sha256) {
+  return `images/${sanitize(entry.productId)}-${sha256.slice(0, 16)}${imageExtension(entry, entry.source)}`;
+}
+
+async function stageEntry(entry, datasetPath, checkpoint = {}, { refreshMutatedSource = false } = {}) {
   const outputPath = resolve(datasetPath, entry.target);
   await mkdir(dirname(outputPath), { recursive: true });
   try {
     const existing = await stat(outputPath);
     if (existing.isFile() && existing.size === entry.bytes) {
+      if (isVerifiedStagingCheckpoint(checkpoint, entry)) return { ...entry, reused: true };
       const digest = await hashFile(outputPath);
       if (digest.sha256 === entry.sha256 && digest.bytes === entry.bytes) return { ...entry, reused: true };
     }
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
-  const bytes = entry.localSource ? await readFile(entry.localSource) : await fetchBytes(entry.source);
+  let bytes;
+  let sourceDrift = false;
+  try {
+    bytes = entry.localSource ? await readFileWithRetry(entry.localSource) : await fetchBytes(entry.source, entry.bytes);
+  } catch (error) {
+    if (!refreshMutatedSource || entry.localSource || error?.sourceBodyChanged !== true) throw error;
+    // Fetch without a byte expectation once. Candidate-only training may use
+    // the current object, but trusted visual evidence remains strict.
+    bytes = await fetchBytes(entry.source, 0);
+    sourceDrift = true;
+  }
   const digest = { sha256: sha256Bytes(bytes), bytes: bytes.byteLength };
   if (digest.sha256 !== entry.sha256 || digest.bytes !== entry.bytes) {
-    throw new Error(`Checksum or byte count mismatch for ${entry.source}; expected ${entry.sha256}/${entry.bytes}, received ${digest.sha256}/${digest.bytes}.`);
+    if (!refreshMutatedSource || entry.localSource) {
+      throw new Error(`Checksum or byte count mismatch for ${entry.source}; expected ${entry.sha256}/${entry.bytes}, received ${digest.sha256}/${digest.bytes}.`);
+    }
+    sourceDrift = true;
   }
-  const temporaryPath = `${outputPath}.part-${process.pid}`;
+  const resolvedEntry = sourceDrift
+    ? {
+      ...entry,
+      target: targetForDigest(entry, digest.sha256),
+      sha256: digest.sha256,
+      bytes: digest.bytes,
+      sourceDrift: {
+        source: entry.source,
+        productId: entry.productId,
+        ruleId: entry.ruleId,
+        originalSha256: entry.sha256,
+        originalBytes: entry.bytes,
+        actualSha256: digest.sha256,
+        actualBytes: digest.bytes,
+        target: targetForDigest(entry, digest.sha256),
+        recordedAt: new Date().toISOString(),
+      },
+    }
+    : entry;
+  const resolvedOutputPath = resolve(datasetPath, resolvedEntry.target);
+  await mkdir(dirname(resolvedOutputPath), { recursive: true });
+  const temporaryPath = `${resolvedOutputPath}.part-${process.pid}`;
   await writeFile(temporaryPath, bytes);
-  await rename(temporaryPath, outputPath);
-  return { ...entry, reused: false };
+  await rename(temporaryPath, resolvedOutputPath);
+  return { ...resolvedEntry, reused: false };
+}
+
+export function deduplicateStagedResults(stagedResults, { quarantineDuplicates = false } = {}) {
+  const owners = new Map();
+  const results = [];
+  const duplicates = [];
+  for (const result of stagedResults) {
+    if (result?.skipped) {
+      results.push(result);
+      continue;
+    }
+    const sha256 = String(result?.sha256 || "").trim().toLowerCase();
+    const owner = owners.get(sha256);
+    if (!owner) {
+      owners.set(sha256, result);
+      results.push(result);
+      continue;
+    }
+    if (!quarantineDuplicates) {
+      throw new Error(`Duplicate image content detected in visual training corpus: ${result.target}.`);
+    }
+    const failure = {
+      source: result.source,
+      target: result.target,
+      productId: result.productId,
+      ruleId: result.ruleId,
+      sha256,
+      bytes: Number(result.bytes),
+      status: 409,
+      reason: `Duplicate image content; retained ${owner.productId}/${owner.target}.`,
+      duplicateOf: {
+        productId: owner.productId,
+        target: owner.target,
+        sha256: String(owner.sha256 || "").trim().toLowerCase(),
+      },
+      ...(result.sourceDrift ? {
+        originalSha256: result.sourceDrift.originalSha256,
+        originalBytes: result.sourceDrift.originalBytes,
+      } : {}),
+      recordedAt: new Date().toISOString(),
+    };
+    const quarantined = { ...result, skipped: true, failure };
+    results.push(quarantined);
+    duplicates.push(quarantined);
+  }
+  return { results, duplicates };
 }
 
 async function mapWithConcurrency(items, concurrency, mapper) {
@@ -365,7 +597,7 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 async function main() {
   const args = parseArgs(process.argv);
   const { datasetPath, sourcePath } = await assertSafePaths(args);
-  const sourceBytes = await readFile(sourcePath);
+  const sourceBytes = await readFileWithRetry(sourcePath);
   const sourceManifestSha256 = sha256Bytes(sourceBytes);
   const entries = await normalizeEntries(parseManifestText(sourceBytes.toString("utf8")), sourcePath, datasetPath);
   const expectedBytes = entries.reduce((total, entry) => total + entry.bytes, 0);
@@ -401,6 +633,25 @@ async function main() {
     throw new Error("Visual staging progress belongs to a different source manifest.");
   }
   progress.completed ||= {};
+  progress.failures ||= {};
+  progress.sourceDrift ||= {};
+  progress.sourceManifestSha256 = sourceManifestSha256;
+  const sourceDriftPath = `${resolve(args.labelsOutput)}.source-drift.json`;
+  const priorSourceDrift = await readJson(sourceDriftPath, null);
+  if (priorSourceDrift?.sourceManifestSha256 === sourceManifestSha256 && Array.isArray(priorSourceDrift.entries)) {
+    for (const drift of priorSourceDrift.entries) {
+      const originalSha256 = String(drift?.originalSha256 || "").trim().toLowerCase();
+      if (originalSha256) progress.sourceDrift[originalSha256] ||= drift;
+    }
+  }
+  const quarantineMissingSources = process.env.SALT_VISUAL_STAGING_QUARANTINE_MISSING === "1";
+  const refreshMutatedSources = process.env.SALT_VISUAL_STAGING_REFRESH_MUTATED === "1";
+  if (refreshMutatedSources && process.env.SALT_VISUAL_ALLOW_CANDIDATE_LABELS !== "1") {
+    throw new Error("Mutated-image refresh is restricted to explicitly enabled candidate visual training.");
+  }
+  if (quarantineMissingSources && process.env.SALT_VISUAL_ALLOW_CANDIDATE_LABELS !== "1") {
+    throw new Error("Missing-image quarantine is restricted to explicitly enabled candidate visual training.");
+  }
   let completedSinceCheckpoint = 0;
   let lastProgressCheckpointAt = Date.now();
   let progressCheckpointPromise = Promise.resolve();
@@ -414,21 +665,92 @@ async function main() {
     progressCheckpointPromise = progressCheckpointPromise.then(() => writeJsonAtomic(progressPath, {
       sourceManifestSha256,
       completed: progress.completed,
+      failures: progress.failures,
+      sourceDrift: progress.sourceDrift,
       updatedAt: new Date().toISOString(),
     }));
     await progressCheckpointPromise;
   };
-  const staged = await mapWithConcurrency(entries, defaultConcurrency, async (entry, index) => {
-    const result = await stageEntry(entry, datasetPath);
-    progress.completed[entry.sha256] = { target: entry.target, bytes: entry.bytes };
+  const stagedResults = await mapWithConcurrency(entries, defaultConcurrency, async (entry, index) => {
+    let result;
+    const cachedFailure = progress.failures[entry.sha256];
+    if (quarantineMissingSources && isReusableQuarantinedStagingFailure(cachedFailure, entry)) {
+      result = { ...entry, skipped: true, failure: cachedFailure, reused: true };
+    } else {
+      try {
+        const originalKey = entry.sha256;
+        const refreshed = progress.sourceDrift[originalKey];
+        const effectiveEntry = refreshed
+          ? {
+            ...entry,
+            target: String(refreshed.target || entry.target),
+            sha256: String(refreshed.actualSha256 || entry.sha256),
+            bytes: Number(refreshed.actualBytes || entry.bytes),
+          }
+          : entry;
+        result = await stageEntry(effectiveEntry, datasetPath, progress.completed[originalKey], {
+          refreshMutatedSource: refreshMutatedSources,
+        });
+        if (result.sourceDrift) progress.sourceDrift[originalKey] = result.sourceDrift;
+      } catch (error) {
+        if (!quarantineMissingSources || !isQuarantinableImageError(error)) throw error;
+        const failure = {
+          source: entry.source,
+          target: entry.target,
+          productId: entry.productId,
+          ruleId: entry.ruleId,
+          sha256: entry.sha256,
+          bytes: entry.bytes,
+          status: Number(error?.status || String(error?.message || "").match(/image HTTP (\d+)/i)?.[1] || 0),
+          reason: String(error?.message || error),
+          recordedAt: new Date().toISOString(),
+        };
+        progress.failures[entry.sha256] = failure;
+        delete progress.completed[entry.sha256];
+        process.stderr.write(`Visual corpus staging: quarantined unavailable candidate image ${entry.productId} (${failure.status || "unknown"}).\n`);
+        result = { ...entry, skipped: true, failure };
+      }
+    }
+    if (!result.skipped) {
+      progress.completed[entry.sha256] = { target: result.target, bytes: result.bytes, sha256: result.sha256 };
+      delete progress.failures[entry.sha256];
+    }
     completedSinceCheckpoint += 1;
     await checkpointProgress();
     if ((index + 1) % Math.max(1, Math.floor(entries.length / 20)) === 0 || index + 1 === entries.length) {
       process.stdout.write(`Visual corpus staging: ${index + 1}/${entries.length}\n`);
     }
-    return result;
+    return { ...result, stagingKey: entry.sha256 };
   });
   await checkpointProgress(true);
+  const deduplicated = deduplicateStagedResults(stagedResults, {
+    quarantineDuplicates: quarantineMissingSources,
+  });
+  for (const duplicate of deduplicated.duplicates) {
+    delete progress.completed[duplicate.stagingKey];
+    await rm(resolve(datasetPath, duplicate.target), { force: true });
+    process.stderr.write(`Visual corpus staging: quarantined duplicate candidate image ${duplicate.productId}; retained ${duplicate.failure.duplicateOf.productId}.\n`);
+  }
+  await checkpointProgress(true);
+  const staged = deduplicated.results.filter((entry) => !entry.skipped);
+  const exclusions = deduplicated.results.filter((entry) => entry.skipped).map((entry) => entry.failure);
+  const exclusionsPath = `${resolve(args.labelsOutput)}.exclusions.json`;
+  const sourceDrifts = Object.values(progress.sourceDrift).sort((left, right) =>
+    `${left.productId}\n${left.originalSha256}`.localeCompare(`${right.productId}\n${right.originalSha256}`));
+  await writeJsonAtomic(exclusionsPath, {
+    kind: "salt-visual-staging-exclusions",
+    version: 1,
+    sourceManifestSha256,
+    entries: exclusions,
+    updatedAt: new Date().toISOString(),
+  });
+  await writeJsonAtomic(sourceDriftPath, {
+    kind: "salt-visual-staging-source-drift",
+    version: 1,
+    sourceManifestSha256,
+    entries: sourceDrifts,
+    updatedAt: new Date().toISOString(),
+  });
   const labels = staged.map((entry) => ({
     image: entry.target,
     productId: entry.productId,
@@ -446,14 +768,26 @@ async function main() {
     status: "ready",
     imageCount: staged.length,
     labelsPath: resolve(args.labelsOutput),
+    exclusionsPath,
+    sourceDriftPath,
+    duplicateAuditVersion,
+    sourceEntryCount: entries.length,
+    excludedImageCount: exclusions.length,
+    excludedBytes: exclusions.reduce((total, entry) => total + Number(entry.bytes || 0), 0),
+    duplicateExclusionCount: exclusions.filter((entry) => Number(entry.status) === 409).length,
+    sourceDriftCount: sourceDrifts.length,
     stagedAt: existingMarker?.stagedAt || new Date().toISOString(),
     readyAt: new Date().toISOString(),
   });
   await rm(progressPath, { force: true });
-  process.stdout.write(`Visual corpus ready at ${datasetPath}; ${staged.length} images staged and labels written to ${resolve(args.labelsOutput)}.\n`);
+  process.stdout.write(
+    `Visual corpus ready at ${datasetPath}; ${staged.length} images staged`
+    + (exclusions.length ? `, ${exclusions.length} unavailable candidate image(s) quarantined` : "")
+    + ` and labels written to ${resolve(args.labelsOutput)}.\n`,
+  );
 }
 
-export { normalizeEntries, parseManifestText, planVisualCorpusShards };
+export { fetchBytes, isQuarantinableImageError, normalizeEntries, parseManifestText, planVisualCorpusShards };
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename)) {
   main().catch((error) => {

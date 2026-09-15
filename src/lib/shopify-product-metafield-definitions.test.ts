@@ -25,6 +25,7 @@ describe("shopify product metafield definitions", () => {
       "mm-google-shopping.custom_product",
       "salt-marketing.shop_channel_minimum_quantity",
       "salt_taxonomy.classification",
+      "salt-gpt-seo.type_attributes",
     ]);
   });
 
@@ -78,6 +79,23 @@ describe("shopify product metafield definitions", () => {
       kind: "custom",
       namespace: "salt_taxonomy",
       key: "classification",
+      type: "json",
+      ownerType: "PRODUCT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ",
+      },
+      pin: true,
+    });
+  });
+
+  it("includes the GPT product-type attributes definition without replacing deterministic taxonomy", () => {
+    expect(
+      PRODUCT_METAFIELD_DEFINITIONS.find((definition) => definition.id === "salt-gpt-seo.type_attributes"),
+    ).toMatchObject({
+      kind: "custom",
+      namespace: "salt-gpt-seo",
+      key: "type_attributes",
       type: "json",
       ownerType: "PRODUCT",
       access: {

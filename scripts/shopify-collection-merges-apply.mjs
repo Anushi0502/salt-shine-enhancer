@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   buildManagedTagAdditions,
@@ -9,6 +10,11 @@ import {
   isOnlineStorePublishedLiveProduct,
 } from "../src/lib/catalog-taxonomy-release.js";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
+import {
+  boundedInteger,
+  mapWithConcurrency,
+  recommendedConcurrency,
+} from "./lib/performance-runtime.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const dataDir = resolve(rootDir, "public", "data");
@@ -16,6 +22,21 @@ const approvalPath = resolve(rootDir, "docs", "catalog-collection-merge-approval
 const outputPath = resolve(rootDir, "output", "catalog-collection-merge-manifest.json");
 const dryRun = process.argv.includes("--dry-run");
 const batchSize = Math.max(1, Math.min(50, Number(process.env.SALT_COLLECTION_MERGE_BATCH_SIZE || 25)));
+const applyConcurrency = boundedInteger(
+  process.env.SALT_COLLECTION_MERGE_APPLY_CONCURRENCY,
+  recommendedConcurrency({ kind: "io", reserve: 2, max: 6, min: 2 }),
+  { min: 1, max: 8 },
+);
+const verifyConcurrency = boundedInteger(
+  process.env.SALT_COLLECTION_MERGE_VERIFY_CONCURRENCY,
+  recommendedConcurrency({ kind: "io", reserve: 2, max: 8, min: 2 }),
+  { min: 1, max: 8 },
+);
+const progressEvery = boundedInteger(
+  process.env.SALT_COLLECTION_MERGE_PROGRESS_EVERY,
+  25,
+  { min: 1, max: 250 },
+);
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "collection-merges" });
 
 const MERGE_PLAN = Object.freeze([
@@ -120,13 +141,25 @@ const PRODUCT_TAGS_QUERY = /* GraphQL */ `
   }
 `;
 
-const TAGS_ADD_MUTATION = /* GraphQL */ `
-  mutation MergeTagsAdd($id: ID!, $tags: [String!]!) {
-    tagsAdd(id: $id, tags: $tags) {
-      userErrors { field message }
-    }
-  }
-`;
+export function buildTagsAddBatchMutation(tasks) {
+  const entries = asArray(tasks);
+  if (!entries.length) throw new Error("Cannot build an empty tagsAdd batch.");
+  const declarations = entries
+    .flatMap((_, index) => [`$id${index}: ID!`, `$tags${index}: [String!]!`])
+    .join(", ");
+  const fields = entries
+    .map((_, index) => `p${index}: tagsAdd(id: $id${index}, tags: $tags${index}) { userErrors { field message } }`)
+    .join("\n");
+  const variables = {};
+  entries.forEach((task, index) => {
+    variables[`id${index}`] = task.productId;
+    variables[`tags${index}`] = task.tagsToAdd;
+  });
+  return {
+    query: `mutation MergeTagsAddBatch(${declarations}) {\n${fields}\n}`,
+    variables,
+  };
+}
 
 const COLLECTION_UPDATE_MUTATION = /* GraphQL */ `
   mutation MergeCollectionUpdate($collection: CollectionUpdateInput!) {
@@ -306,29 +339,159 @@ async function fetchPublications() {
   return asArray(data?.publications?.nodes);
 }
 
-async function addTags(tasks) {
-  for (let index = 0; index < tasks.length; index += batchSize) {
-    for (const task of tasks.slice(index, index + batchSize)) {
-      const data = await client.run(TAGS_ADD_MUTATION, { id: task.productId, tags: task.tagsToAdd }, {
-        allowMutations: true,
-        operation: `add merge taxonomy tag ${task.handle}`,
+async function addTags(tasks, manifest, previousManifest) {
+  return addTagsWithCheckpoint(tasks, manifest, previousManifest);
+}
+
+export function mergeProgressSnapshot({ phase, total, completedIds, concurrency, verified = 0 }) {
+  const ids = [...completedIds].map(String).sort();
+  return {
+    phase,
+    totalTasks: total,
+    completedTasks: ids.length,
+    pendingTasks: Math.max(0, total - ids.length),
+    verifiedTasks: verified,
+    concurrency,
+    completedProductIds: ids,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function writeManifest(manifest) {
+  const tempPath = `${outputPath}.tmp-${process.pid}`;
+  await writeFile(tempPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await rename(tempPath, outputPath);
+}
+
+async function addTagsWithCheckpoint(tasks, manifest, previousManifest) {
+  if (!tasks.length) return;
+  const taskIds = new Set(tasks.map((task) => String(task.productId)));
+  const completedIds = new Set(
+    asArray(previousManifest?.applyProgress?.completedProductIds)
+      .map(String)
+      .filter((id) => taskIds.has(id)),
+  );
+  const pending = tasks.filter((task) => !completedIds.has(String(task.productId)));
+  if (manifest) {
+    manifest.applyProgress = mergeProgressSnapshot({
+      phase: pending.length ? "adding-tags" : "tags-complete",
+      total: tasks.length,
+      completedIds,
+      concurrency: applyConcurrency,
+    });
+    await writeManifest(manifest);
+  }
+  process.stdout.write(
+    `Merge tag progress: ${completedIds.size}/${tasks.length} ready; ` +
+    `${pending.length} pending with concurrency ${applyConcurrency}.\n`,
+  );
+  if (!pending.length) return;
+
+  const mutationBatchSize = Math.max(
+    1,
+    Math.min(25, Number(process.env.SALT_COLLECTION_MERGE_MUTATION_BATCH_SIZE || batchSize)),
+  );
+  const pendingBatches = [];
+  for (let index = 0; index < pending.length; index += mutationBatchSize) {
+    pendingBatches.push(pending.slice(index, index + mutationBatchSize));
+  }
+  let nextIndex = 0;
+  let firstError = null;
+  let checkpointQueue = Promise.resolve();
+  let checkpointError = null;
+  const queueCheckpoint = () => {
+    if (!manifest) return;
+    const snapshot = mergeProgressSnapshot({
+      phase: "adding-tags",
+      total: tasks.length,
+      completedIds,
+      concurrency: applyConcurrency,
+    });
+    checkpointQueue = checkpointQueue
+      .then(() => writeManifest({ ...manifest, applyProgress: snapshot }))
+      .catch((error) => {
+        checkpointError ||= error;
       });
-      const errors = asArray(data?.tagsAdd?.userErrors);
-      if (errors.length) throw new Error(`${task.handle}: ${formatUserErrors(errors)}`);
+  };
+  const worker = async () => {
+    while (!firstError) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= pendingBatches.length) return;
+      const batch = pendingBatches[index];
+      try {
+        const mutation = buildTagsAddBatchMutation(batch);
+        const data = await client.run(mutation.query, mutation.variables, {
+          allowMutations: true,
+          operation: `add merge taxonomy tags ${index + 1}/${pendingBatches.length}`,
+        });
+        const batchErrors = [];
+        batch.forEach((task, taskIndex) => {
+          const errors = asArray(data?.[`p${taskIndex}`]?.userErrors);
+          if (errors.length) {
+            batchErrors.push(`${task.handle}: ${formatUserErrors(errors)}`);
+          } else {
+            completedIds.add(String(task.productId));
+          }
+        });
+        queueCheckpoint();
+        if (batchErrors.length) throw new Error(batchErrors.join(" | "));
+        if (completedIds.size === tasks.length || completedIds.size % progressEvery < batch.length) {
+          process.stdout.write(
+            `Merge tag progress: ${completedIds.size}/${tasks.length} ` +
+            `(${Math.round((completedIds.size / tasks.length) * 100)}%).\n`,
+          );
+        }
+      } catch (error) {
+        firstError = error;
+      }
     }
+  };
+  await Promise.all(Array.from({ length: Math.min(applyConcurrency, pendingBatches.length) }, worker));
+  await checkpointQueue;
+  if (checkpointError) throw checkpointError;
+  if (firstError) throw firstError;
+  if (manifest) {
+    manifest.applyProgress = mergeProgressSnapshot({
+      phase: "tags-complete",
+      total: tasks.length,
+      completedIds,
+      concurrency: applyConcurrency,
+    });
+    await writeManifest(manifest);
   }
 }
 
-async function verifyAddedTags(tasks) {
+async function verifyAddedTags(tasks, manifest = null) {
+  const batches = [];
   for (let index = 0; index < tasks.length; index += batchSize) {
-    const ids = tasks.slice(index, index + batchSize).map((task) => task.productId);
+    batches.push(tasks.slice(index, index + batchSize));
+  }
+  let verified = 0;
+  await mapWithConcurrency(batches, verifyConcurrency, async (batch) => {
+    const ids = batch.map((task) => task.productId);
     const data = await client.run(PRODUCT_TAGS_QUERY, { ids }, { operation: "verify merge taxonomy tags" });
     const byId = new Map(asArray(data?.nodes).map((product) => [product?.id, product]));
-    for (const task of tasks.slice(index, index + batchSize)) {
+    for (const task of batch) {
       const tags = new Set(asArray(byId.get(task.productId)?.tags).map(normalize));
       const missing = task.tagsToAdd.filter((tag) => !tags.has(normalize(tag)));
       if (missing.length) throw new Error(`${task.handle}: missing merge tag ${missing.join(", ")}`);
     }
+    verified += batch.length;
+    if (verified === tasks.length || verified % (batchSize * 4) === 0) {
+      process.stdout.write(`Merge tag readback: ${verified}/${tasks.length} products.\n`);
+    }
+  });
+  if (manifest) {
+    const completedIds = new Set(asArray(manifest.applyProgress?.completedProductIds).map(String));
+    manifest.applyProgress = mergeProgressSnapshot({
+      phase: "tags-verified",
+      total: tasks.length,
+      completedIds,
+      concurrency: verifyConcurrency,
+      verified,
+    });
+    await writeManifest(manifest);
   }
 }
 
@@ -368,10 +531,6 @@ async function unpublishCollection(collectionId, publicationId, handle) {
   }, { allowMutations: true, operation: `remove merged collection ${handle} from Online Store` });
   const errors = asArray(data?.publishableUnpublish?.userErrors);
   if (errors.length) throw new Error(`${handle}: ${formatUserErrors(errors)}`);
-}
-
-async function writeManifest(manifest) {
-  await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
 async function readPreviousManifest() {
@@ -442,6 +601,20 @@ async function main() {
   const tagTasks = [];
   const unionActions = [];
 
+  const productHandlesToPrefetch = [...new Set(
+    MERGE_PLAN
+      .flatMap((plan) => [plan.sourceHandle, plan.targetHandle])
+      .filter((handle) => byHandle.has(handle)),
+  )];
+  const prefetchedProducts = await mapWithConcurrency(
+    productHandlesToPrefetch,
+    verifyConcurrency,
+    async (handle) => [handle, await fetchCollectionProducts(handle)],
+  );
+  for (const [handle, products] of prefetchedProducts) {
+    targetProductsCache.set(handle, products);
+  }
+
   for (const plan of MERGE_PLAN) {
     const source = byHandle.get(plan.sourceHandle);
     const target = byHandle.get(plan.targetHandle);
@@ -449,9 +622,6 @@ async function main() {
     if (!source) {
       if (target.sources?.length !== 1 || target.sources[0]?.__typename !== "CollectionConditionsSource") {
         throw new Error(`Missing source ${plan.sourceHandle} cannot be treated as retired because target ${plan.targetHandle} has no single conditions source.`);
-      }
-      if (!targetProductsCache.has(plan.targetHandle)) {
-        targetProductsCache.set(plan.targetHandle, await fetchCollectionProducts(plan.targetHandle));
       }
       const targetProducts = targetProductsCache.get(plan.targetHandle);
       rows.push({
@@ -475,10 +645,7 @@ async function main() {
       });
       continue;
     }
-    const sourceProducts = await fetchCollectionProducts(plan.sourceHandle);
-    if (!targetProductsCache.has(plan.targetHandle)) {
-      targetProductsCache.set(plan.targetHandle, await fetchCollectionProducts(plan.targetHandle));
-    }
+    const sourceProducts = targetProductsCache.get(plan.sourceHandle) || [];
     const targetProducts = targetProductsCache.get(plan.targetHandle);
     const targetIds = new Set(targetProducts.map((product) => String(product.id)));
     const expectedTargetIds = new Set();
@@ -580,17 +747,24 @@ async function main() {
 
   if (dryRun) return;
 
-  await addTags(tagTasks);
-  await verifyAddedTags(tagTasks);
-  for (const action of unionActions) {
+  await addTags(tagTasks, manifest, previousManifest);
+  await verifyAddedTags(tagTasks, manifest);
+  await mapWithConcurrency(unionActions, applyConcurrency, async (action) => {
     action.changed = await unionTargetSource(action.target, action.expectedSource);
-  }
+  });
 
   const afterTargetCollections = await fetchCollections();
   const afterByHandle = new Map(afterTargetCollections.map((collection) => [collection.handle, collection]));
+  const targetHandles = [...new Set(rows.map((row) => row.targetHandle))];
+  const targetProductsByHandle = new Map(
+    await mapWithConcurrency(targetHandles, verifyConcurrency, async (handle) => [
+      handle,
+      await fetchCollectionProducts(handle),
+    ]),
+  );
   for (const row of rows) {
     const target = afterByHandle.get(row.targetHandle);
-    const targetProducts = await fetchCollectionProducts(row.targetHandle);
+    const targetProducts = targetProductsByHandle.get(row.targetHandle) || [];
     const targetIds = new Set(targetProducts.map((product) => product.id));
     if (row.sourceMissing) {
       if (!target?.sources?.length || target.sources.length !== 1 || target.sources[0]?.__typename !== "CollectionConditionsSource") {
@@ -613,12 +787,12 @@ async function main() {
     row.targetRuleVerified = true;
   }
 
-  for (const plan of MERGE_PLAN) {
+  await mapWithConcurrency(MERGE_PLAN, applyConcurrency, async (plan) => {
     const source = afterByHandle.get(plan.sourceHandle);
     if (source && isOnlineStoreCollection(source)) {
       await unpublishCollection(source.id, onlineStorePublication.id, plan.sourceHandle);
     }
-  }
+  });
 
   const finalCollections = await fetchCollections();
   const finalByHandle = new Map(finalCollections.map((collection) => [collection.handle, collection]));
@@ -636,7 +810,9 @@ async function main() {
   process.stdout.write("Six collection merges verified; source collections are preserved in Admin and removed from Online Store publication\n");
 }
 
-main().catch(async (error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  main().catch(async (error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

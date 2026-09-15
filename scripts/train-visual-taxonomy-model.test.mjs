@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { assertPurgeReady } from "./train-visual-taxonomy-model.mjs";
+import { assertPurgeReady, validateEmbeddings } from "./train-visual-taxonomy-model.mjs";
 import {
   VISUAL_TAXONOMY_MIN_DATASET_BYTES,
   VISUAL_TAXONOMY_MODEL_BACKEND,
@@ -100,6 +100,40 @@ describe("visual taxonomy purge recovery", () => {
         modelPath,
         weightsPath,
       })).rejects.toThrow(/weight checksum/);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("creates a missing nested records directory during embedding validation", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "salt-visual-embedding-test-"));
+    try {
+      const embeddingsPath = join(directory, "encoder.jsonl");
+      const outputPath = join(directory, "records", "shard-001.jsonl");
+      const entry = {
+        image: "image.jpg",
+        imageSha256: "e".repeat(64),
+        productId: "product-1",
+        ruleId: "rule-1",
+        split: "train",
+        bytes: 1,
+      };
+      const manifest = {
+        entries: [entry],
+        imageCount: 1,
+      };
+      await writeFile(embeddingsPath, `${JSON.stringify({
+        imageSha256: entry.imageSha256,
+        productId: entry.productId,
+        ruleId: entry.ruleId,
+        split: entry.split,
+        embedding: Array.from({ length: 8 }, (_, index) => index + 1),
+      })}\n`);
+
+      await expect(validateEmbeddings({ embeddingsPath, manifest, outputPath })).resolves.toMatchObject({
+        records: 1,
+        embeddingDimensions: 8,
+      });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

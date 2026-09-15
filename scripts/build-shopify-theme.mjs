@@ -236,7 +236,24 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
+    {% assign salt_product_canonical_alias = '' %}
     {% assign salt_social_image = 'brand-salt-logo.png' | asset_url %}
+    {% assign salt_is_product_reviews_route = false %}
+    {% assign salt_route_segments = salt_route | split: '/' %}
+    {% assign salt_route_prefix = salt_route_segments[1] | default: '' %}
+    {% assign salt_route_resource = salt_route_segments[2] | default: '' %}
+    {% assign salt_is_localized_catalog_route = false %}
+    {% if salt_route_prefix.size == 2 or salt_route_prefix.size == 5 %}
+      {% if salt_route_resource == 'products' or salt_route_resource == 'product' or salt_route_resource == 'collections' or salt_route_resource == 'collection' %}
+        {% assign salt_is_localized_catalog_route = true %}
+      {% endif %}
+    {% endif %}
+    {% if salt_is_localized_catalog_route %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
+    {% if salt_route contains '/products/' and salt_route contains '/reviews' %}
+      {% assign salt_is_product_reviews_route = true %}
+    {% endif %}
     {% # theme-check-disable ContentForHeaderModification %}
     {% capture salt_content_for_header %}{{ content_for_header }}{% endcapture %}
     {% # theme-check-enable ContentForHeaderModification %}
@@ -302,12 +319,101 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     {% elsif request.page_type == 'product' and product %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
       {% assign salt_custom_canonical = true %}
+      {% assign salt_product_path_handle = salt_route | split: '/products/' | last | split: '/' | first %}
+      {% case salt_product_path_handle %}
+        {% when 'winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer' %}
+          {% assign salt_product_canonical_alias = 'tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable' %}
+        {% when 'ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1' %}
+          {% assign salt_product_canonical_alias = 'ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men' %}
+        {% when 'children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil-1' %}
+          {% assign salt_product_canonical_alias = 'children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil' %}
+        {% when 'black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-2' %}
+          {% assign salt_product_canonical_alias = 'black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-3' %}
+        {% when 'anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l-2' %}
+          {% assign salt_product_canonical_alias = 'anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l' %}
+        {% when 'jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot-1' %}
+          {% assign salt_product_canonical_alias = 'jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot' %}
+        {% when 'car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-rv-motorcycle' %}
+          {% assign salt_product_canonical_alias = 'car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-for-motorcycle' %}
+        {% when 'women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands-2' %}
+          {% assign salt_product_canonical_alias = 'women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands' %}
+        {% when 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset-1' %}
+          {% assign salt_product_canonical_alias = 'buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset' %}
+        {% when 'mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook-1' %}
+          {% assign salt_product_canonical_alias = 'mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook' %}
+        {% when 'laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case-1' %}
+          {% assign salt_product_canonical_alias = 'laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case' %}
+        {% when 'school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks-1' %}
+          {% assign salt_product_canonical_alias = 'school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks' %}
+        {% when 'covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover-1' %}
+          {% assign salt_product_canonical_alias = 'covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover' %}
+        {% when 'mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags-1' %}
+          {% assign salt_product_canonical_alias = 'mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags' %}
+        {% when 'turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care-1' %}
+          {% assign salt_product_canonical_alias = 'turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care' %}
+        {% when 'mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme-1' %}
+          {% assign salt_product_canonical_alias = 'mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme' %}
+        {% when 'facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home-1' %}
+          {% assign salt_product_canonical_alias = 'facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home' %}
+        {% when 'turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m-1' %}
+          {% assign salt_product_canonical_alias = 'turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m' %}
+        {% when 'causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women-1' %}
+          {% assign salt_product_canonical_alias = 'causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women' %}
+        {% when '4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush-1' %}
+          {% assign salt_product_canonical_alias = '4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush' %}
+        {% when 'hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair-1' %}
+          {% assign salt_product_canonical_alias = 'hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair' %}
+        {% when 'body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing-1' %}
+          {% assign salt_product_canonical_alias = 'body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing' %}
+        {% when 'blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright-1' %}
+          {% assign salt_product_canonical_alias = 'blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright' %}
+      {% endcase %}
     {% elsif salt_route == '/cart' or salt_route == '/wishlist' or salt_route == '/recently-viewed' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
     {% elsif salt_route == '/pages/wishlist' %}
       {% assign salt_seo_title = 'Wishlist | SALT Online Store' %}
       {% assign salt_seo_description = 'Save SALT products for later and keep track of items you love.' %}
       {% assign salt_seo_robots = 'noindex,follow' %}
+    {% elsif salt_route == '/pages/interactive-stem-assembly-activities-for-kids' %}
+      {% assign salt_seo_title = 'Interactive STEM Assembly Activities for Kids | SALT' %}
+      {% assign salt_seo_description = 'Explore educational assembly toys and science-inspired build activities for kids, with wooden DIY projects and school-friendly creative play from SALT.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/interactive-stem-assembly-activities-for-kids' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/digital-circus-lunch-box-for-kids' %}
+      {% assign salt_seo_title = 'Amazing Digital Circus Lunch Box for Kids | SALT' %}
+      {% assign salt_seo_description = "Explore SALT's Amazing Digital Circus lunch box listing for school, picnic, camping, and travel use. Review current options and product details before ordering." %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/digital-circus-lunch-box-for-kids' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/kitchen-cookware-buying-guide' %}
+      {% assign salt_seo_title = 'Kitchen & Cookware Buying Guide | SALT' %}
+      {% assign salt_seo_description = "Use SALT's Kitchen & Cookware collection to compare cookware, food-preparation tools, dining essentials, and practical kitchen helpers by task." %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/kitchen-cookware-buying-guide' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/jeans-denim-fit-guide' %}
+      {% assign salt_seo_title = 'Jeans & Denim Fit Guide | SALT' %}
+      {% assign salt_seo_description = "Compare the live SALT Jeans collection by the fit and style wording in current product titles, then check size details before ordering." %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/jeans-denim-fit-guide' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/mobwol-watch-guide' %}
+      {% assign salt_seo_title = 'Mobwol 40mm Quartz Watch Guide | SALT' %}
+      {% assign salt_seo_description = "Compare the SALT Mobwol-handle 40mm quartz watch with current mechanical, smart, and women's watch listings, then review options before ordering." %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/mobwol-watch-guide' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/realme-buds-case-compatibility-guide' %}
+      {% assign salt_seo_title = 'Realme Buds Case Compatibility Guide | SALT' %}
+      {% assign salt_seo_description = 'Compare live SALT Realme Buds cases by supported model wording, silicone material, and current options before ordering.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/realme-buds-case-compatibility-guide' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/salt-earbuds-buying-guide' %}
+      {% assign salt_seo_title = 'Earbuds Buying Guide: Cases, Tips & Wireless Earbuds | SALT' %}
+      {% assign salt_seo_description = 'Compare SALT wireless earbuds, protective cases, and replacement tips by product type, compatibility wording, and listed features.' %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/salt-earbuds-buying-guide' %}
+      {% assign salt_custom_canonical = true %}
+    {% elsif salt_route == '/pages/canvas-belt-sizing-style-guide' %}
+      {% assign salt_seo_title = 'Canvas Belt Sizing & Style Guide | SALT' %}
+      {% assign salt_seo_description = "Compare SALT men's canvas belts by listed length, color option, buckle style, and fit before ordering." %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/pages/canvas-belt-sizing-style-guide' %}
+      {% assign salt_custom_canonical = true %}
     {% elsif salt_route == '/pages/resources' %}
       {% assign salt_seo_title = 'Resource Hub | SALT Online Store' %}
       {% assign salt_seo_description = 'Practical guides that help shoppers discover the right SALT products, collections, and everyday solutions.' %}
@@ -367,6 +473,17 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         {% assign salt_seo_description = salt_variant_description | append: ' Selected option: ' | append: salt_variant_label | append: '.' %}
       {% endunless %}
     {% endif %}
+    {% if salt_is_product_reviews_route %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
+    {% if salt_product_canonical_alias != blank %}
+      {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/products/' | append: salt_product_canonical_alias %}
+      {% assign salt_custom_canonical = true %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
+    {% if salt_route contains '/pages/track-order' %}
+      {% assign salt_seo_robots = 'noindex,follow' %}
+    {% endif %}
     {% unless salt_social_image contains '://' %}
       {% assign salt_social_image = 'https:' | append: salt_social_image %}
     {% endunless %}
@@ -403,7 +520,36 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         var hasQuery = query.length > 1;
         var isFinance = path === '/pages/finance' || path === '/apps:finance' || path === '/apps/finance' || (path === '/' && /(?:^|&)finance=1(?:&|$)/.test(query.slice(1)));
         var isQuerySurface = path === '/' || path === '/shop' || path === '/search';
-        if (!isFinance && !(hasQuery && isQuerySurface)) return;
+        var isProductQueryVariant = hasQuery && /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/[^/]+\\/?$/i.test(path);
+        var isLocalizedCatalogDuplicate = /^\\/(?:[a-z]{2}(?:-[a-z]{2})?)\\/(?:products?|collections)(?:\\/|$)/i.test(path);
+        var isProductReviewRoute = /^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?products?\\/[^/]+\\/reviews\\/?$/i.test(path);
+        var productCanonicalAliases = {
+          '/products/winter-motorcycle-face-mask-balaclava-windproof-thermal-neck-warmer': '/products/tactical-motorcycle-face-mask-neck-gaiter-windproof-breathable',
+          '/products/ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men-1': '/products/ruyi-men-face-cream-moisturizing-nourishing-lotion-face-firming-lifting-anti-puffiness-facial-skin-care-50g-for-men',
+          '/products/children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil-1': '/products/children-school-bags-girls-boys-primary-school-backpack-schoolbag-kids-book-bag-mochila-infantil',
+          '/products/black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-2': '/products/black-fashion-adult-waterproof-long-raincoat-women-men-rain-coat-hooded-for-outdoor-hiking-travel-fishing-climbing-thickened-3',
+          '/products/anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l-2': '/products/anti-frizz-hair-oil-spray-perfumed-smoothing-lightweight-non-greasy-hair-care-oil-for-color-treated-perm-damaged-hair-long-l',
+          '/products/jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot-1': '/products/jackets-for-women-quilted-padded-lightweight-puffer-woman-coat-hoodie-short-yellow-thick-padding-feather-cropped-cute-modern-hot',
+          '/products/car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-rv-motorcycle': '/products/car-battery-trickle-charger-and-maintainer-1-5a-6v-12v-truck-trickle-battery-charger-automatic-tender-maintainer-for-motorcycle',
+          '/products/women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands-2': '/products/women-dark-hair-accessories-set-elastic-seamless-ponytail-scrunchies-small-rubber-bands-fashion-hair-ties-headbands',
+          '/products/buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset-1': '/products/buds-4-pro-wireless-earbuds-bluetooth-earphones-noise-reduction-headphones-hifi-stereo-sound-built-in-mic-headset',
+          '/products/mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook-1': '/products/mini-optical-wired-mouse-usb-led-ergonomic-design-mice-for-pc-laptop-notebook',
+          '/products/laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case-1': '/products/laptop-sleeve-bag-for-macbook-air-pro-13-13-3-14-15-4-15-6-inch-notebook-pouch-for-lenovo-asus-hp-dell-portable-bag-cover-case',
+          '/products/school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks-1': '/products/school-troilley-bag-set-for-boys-school-trolley-backpack-set-lunch-bag-school-wheeled-backpack-for-boys-school-bookbag-rucksacks',
+          '/products/covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover-1': '/products/covering-god-almighty-always-loves-me-flame-phone-case-for-iphone-17-15-16-14-13-12-11-pro-max-xr-x-xs-7-plus-transparent-cover',
+          '/products/mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags-1': '/products/mens-bag-fashion-oxford-small-casual-men-mini-handbags-male-cross-body-shoulder-messenger-bags-for-men-purses-and-handbags',
+          '/products/turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care-1': '/products/turmeric-face-moisturizing-cream-hydrating-skin-nourishing-glow-locking-anti-oxidant-soothing-daily-facial-lotion-self-care',
+          '/products/mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme-1': '/products/mens-wallet-leather-men-wallets-premium-product-artificial-leather-wallets-for-man-short-black-walet-portefeuille-homme',
+          '/products/facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home-1': '/products/facial-mister-moisturizing-handheld-mist-sprayer-small-skin-care-tools-portable-humidifier-steamer-for-outdoor-makeup-home',
+          '/products/turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m-1': '/products/turmeric-essential-oil-facial-body-massage-oil-moisturizing-diffuser-aromatherapy-brightening-smoothing-body-face-skin-care-200m',
+          '/products/causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women-1': '/products/causal-simple-travel-school-bags-portable-large-capacity-waterproof-school-books-pencil-case-water-bottle-bookbag-for-men-women',
+          '/products/4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush-1': '/products/4-colors-blush-powder-face-makeup-sweet-warm-colors-matte-cheek-powder-facial-beauty-cosmetic-makeup-blush',
+          '/products/hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair-1': '/products/hair-trimmer-oil-clippers-oil-lubricating-oils-rust-prevention-reduces-friction-barber-oil-for-clippers-shaver-oil-hair',
+          '/products/body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing-1': '/products/body-exfoliator-towel-bath-scrubber-exfoliating-scrub-back-wash-cloth-soft-shower-sponge-bathroom-accessory-full-body-cleansing',
+          '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright-1': '/products/blush-palette-makeup-blush-palette-makeup-multi-colored-bright-light-long-lasting-natural-glow-complexion-face-blushes-bright'
+        };
+        var productCanonicalAlias = productCanonicalAliases[path] || '';
+        if (!isFinance && !isProductQueryVariant && !isProductReviewRoute && !isLocalizedCatalogDuplicate && !productCanonicalAlias && !(hasQuery && isQuerySurface)) return;
 
         function ensureMeta(name, content) {
           var tag = document.querySelector('meta[name="' + name + '"]');
@@ -421,7 +567,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         } else if (/^\\/(?:[a-z]{2}(?:-[a-z]{2})?\\/)?collections\\/(?:winter-wear|clearance-archive)\\/?$/i.test(path)) {
           collectionAliasTarget = '/collections/under-50';
         }
-        if (collectionAliasTarget) {
+        if (collectionAliasTarget && !isLocalizedCatalogDuplicate) {
           var indexableRobots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
           ensureMeta('robots', indexableRobots);
           ensureMeta('googlebot', indexableRobots);
@@ -432,6 +578,72 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             document.head.appendChild(aliasCanonical);
           }
           aliasCanonical.setAttribute('href', window.location.origin + collectionAliasTarget);
+          return;
+        }
+
+        if (isLocalizedCatalogDuplicate) {
+          var applyLocalizedNoIndex = function () {
+            ensureMeta('robots', 'noindex,follow');
+            ensureMeta('googlebot', 'noindex,follow');
+          };
+          applyLocalizedNoIndex();
+          new MutationObserver(applyLocalizedNoIndex).observe(document.head, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['name', 'content']
+          });
+          return;
+        }
+
+        if (isProductReviewRoute) {
+          ensureMeta('robots', 'noindex,follow');
+          ensureMeta('googlebot', 'noindex,follow');
+          return;
+        }
+
+        if (productCanonicalAlias) {
+          var canonicalTarget = window.location.origin + productCanonicalAlias;
+          var applyProductCanonical = function () {
+            var canonicalAliasLink = document.querySelector('link[rel="canonical"]');
+            if (!canonicalAliasLink) {
+              canonicalAliasLink = document.createElement('link');
+              canonicalAliasLink.setAttribute('rel', 'canonical');
+              document.head.appendChild(canonicalAliasLink);
+            }
+            canonicalAliasLink.setAttribute('href', canonicalTarget);
+            ensureMeta('robots', 'noindex,follow');
+            ensureMeta('googlebot', 'noindex,follow');
+          };
+          applyProductCanonical();
+          new MutationObserver(applyProductCanonical).observe(document.head, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['href', 'rel', 'content']
+          });
+          return;
+        }
+
+        if (isProductQueryVariant) {
+          var applyProductQueryNoIndex = function () {
+            ensureMeta('robots', 'noindex,follow');
+            ensureMeta('googlebot', 'noindex,follow');
+            var productQueryCanonical = document.querySelector('link[rel="canonical"]');
+            if (!productQueryCanonical) {
+              productQueryCanonical = document.createElement('link');
+              productQueryCanonical.setAttribute('rel', 'canonical');
+              document.head.appendChild(productQueryCanonical);
+            }
+            productQueryCanonical.setAttribute('href', window.location.origin + path);
+          };
+          applyProductQueryNoIndex();
+          new MutationObserver(applyProductQueryNoIndex).observe(document.head, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['href', 'rel', 'content']
+          });
           return;
         }
 
@@ -462,6 +674,14 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         "name": {{ shop.name | json }},
         "url": "https://{{ request.host }}/",
         "logo": {{ 'brand-salt-logo.png' | asset_url | json }},
+        "description": "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "help@saltonlinestore.com",
+          "telephone": "+1 888-835-7211",
+          "availableLanguage": ["English"]
+        },
         "sameAs": [
           "https://instagram.com/saltonlinestore",
           "https://www.facebook.com/profile.php?id=61573199456052",
@@ -608,7 +828,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% endif %}
     {% endif %}
     {% if request.page_type == 'product' and product %}
-      {% assign salt_schema_url = 'https://' | append: request.host | append: '/products/' | append: product.handle %}
+      {% assign salt_schema_url = salt_seo_canonical %}
       {% assign salt_schema_product_name = product.title %}
       {% assign salt_schema_description = product.description | strip_html | strip_newlines | truncate: 500 %}
       {% assign salt_schema_variant = product.selected_or_first_available_variant %}
@@ -619,6 +839,9 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% assign salt_schema_judgeme_badge = product.metafields.judgeme.badge | default: '' %}
       {% assign salt_schema_judgeme_rating = salt_schema_judgeme_badge | split: "data-average-rating='" | last | split: "'" | first %}
       {% assign salt_schema_judgeme_review_count = salt_schema_judgeme_badge | split: "data-number-of-reviews='" | last | split: "'" | first %}
+      {% assign salt_schema_judgeme_rating_value = salt_schema_judgeme_rating | plus: 0 %}
+      {% assign salt_schema_judgeme_review_count_value = salt_schema_judgeme_review_count | plus: 0 %}
+      {% assign salt_schema_sku = 'salt-' | append: product.id %}
       <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -634,7 +857,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             "@type": "Brand",
             "name": {{ product.vendor | default: shop.name | json }}
           },
-          "sku": {{ salt_schema_variant.sku | default: product.handle | json }},
+          "sku": {{ salt_schema_sku | json }},
           "url": {{ salt_schema_url | json }},
           "offers": {
             "@type": "Offer",
@@ -642,12 +865,32 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
             "priceCurrency": {{ shop.currency | json }},
             "price": {{ salt_schema_variant.price | divided_by: 100.0 | json }},
             "availability": "{% if salt_schema_variant.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
-            "itemCondition": "https://schema.org/NewCondition"
-          }{% if salt_schema_judgeme_badge contains "data-average-rating='" and salt_schema_judgeme_badge contains "data-number-of-reviews='" %},
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": {{ salt_schema_judgeme_rating | plus: 0 | json }},
-            "reviewCount": {{ salt_schema_judgeme_review_count | plus: 0 | json }}
+            "itemCondition": "https://schema.org/NewCondition",
+            "shippingDetails": {
+              "@type": "OfferShippingDetails",
+              "shippingRate": {
+                "@type": "MonetaryAmount",
+                "value": 0,
+                "currency": {{ shop.currency | json }}
+              },
+              "shippingDestination": {
+                "@type": "DefinedRegion",
+                "addressCountry": "US"
+              }
+            },
+            "hasMerchantReturnPolicy": {
+              "@type": "MerchantReturnPolicy",
+              "applicableCountry": "US",
+              "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+              "merchantReturnDays": 30,
+              "returnMethod": "https://schema.org/ReturnByMail",
+              "returnFees": "https://schema.org/FreeReturn"
+            }
+          }{% if salt_schema_judgeme_rating_value > 0 and salt_schema_judgeme_review_count_value > 0 %},
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": {{ salt_schema_judgeme_rating_value | json }},
+              "reviewCount": {{ salt_schema_judgeme_review_count_value | json }}
           }{% endif %}
         }
       </script>
@@ -1067,9 +1310,20 @@ const sectionLiquid = `<div
   <main>
     {% if request.page_type == 'product' and product %}
       <h1>{{ product.title | escape }}</h1>
-      {% if product.description != blank %}
-        <p>{{ product.description | strip_html | strip_newlines | truncate: 320 | escape }}</p>
+      {% if product.featured_image %}
+        <img src="{{ product.featured_image | image_url: width: 800 }}" alt="{{ product.title | escape }}" loading="lazy" width="800" height="800">
       {% endif %}
+      <p>
+        {% if product.vendor != blank %}Brand: {{ product.vendor | escape }}{% endif %}
+        {% if product.type != blank %}{% if product.vendor != blank %} · {% endif %}Category: {{ product.type | escape }}{% endif %}
+      </p>
+      {% if product.description != blank %}
+        <p>{{ product.description | strip_html | strip_newlines | truncate: 600 | escape }}</p>
+      {% endif %}
+      {% assign salt_noscript_variant = product.selected_or_first_available_variant %}
+      <p>Price: {{ salt_noscript_variant.price | money }}</p>
+      <p>Availability: {% if product.available %}In stock{% else %}Currently unavailable{% endif %}</p>
+      <p><a href="{{ product.url }}">View product details</a></p>
     {% elsif request.page_type == 'collection' and collection %}
       <h1>{{ collection.title | escape }}</h1>
       {% if collection.description != blank %}
@@ -1095,6 +1349,38 @@ const sectionLiquid = `<div
     {% elsif request.path == '/pages/contact-us' %}
       <h1>Contact SALT Support</h1>
       <p>Reach the SALT support team for delivery questions, product advice, returns, or order help.</p>
+    {% elsif request.path == '/pages/interactive-stem-assembly-activities-for-kids' %}
+      <h1>Interactive STEM Assembly Activities for Kids</h1>
+      <p>Explore educational assembly toys and science-inspired build activities for kids, with wooden DIY projects and creative play from SALT.</p>
+      <p><a href="{{ routes.collections_url }}/kids-toys-games">Browse Kids Toys &amp; Games</a></p>
+    {% elsif request.path == '/pages/digital-circus-lunch-box-for-kids' %}
+      <h1>Digital Circus Lunch Box for Kids</h1>
+      <p>Explore a current SALT lunch box listing for school, picnic, camping, and travel use. Review the live product details before ordering.</p>
+      <p><a href="/products/the-amazing-digital-circus-lunch-box-for-kids-school-cute-food-storage-containers-boys-girls-picnic-bento-children-birthday-gift">View the live lunch-box listing</a></p>
+    {% elsif request.path == '/pages/kitchen-cookware-buying-guide' %}
+      <h1>Kitchen &amp; Cookware Buying Guide</h1>
+      <p>Use SALT's Kitchen &amp; Cookware collection to compare cookware, food-preparation tools, dining essentials, and practical kitchen helpers by task.</p>
+      <p><a href="{{ routes.collections_url }}/cookware">Browse Kitchen &amp; Cookware</a></p>
+    {% elsif request.path == '/pages/jeans-denim-fit-guide' %}
+      <h1>Jeans &amp; Denim Fit Guide</h1>
+      <p>Compare the live SALT Jeans collection by current product-title style signals, then check size details before ordering.</p>
+      <p><a href="{{ routes.collections_url }}/jeans">Browse Jeans</a></p>
+    {% elsif request.path == '/pages/mobwol-watch-guide' %}
+      <h1>Mobwol 40mm Watch Guide</h1>
+      <p>Compare the SALT Mobwol-handle 40mm quartz watch with current watch listings, then review options and supplied details before ordering.</p>
+      <p><a href="{{ routes.collections_url }}/watches">Browse Watches</a></p>
+    {% elsif request.path == '/pages/realme-buds-case-compatibility-guide' %}
+      <h1>Realme Buds Case Compatibility Guide</h1>
+      <p>Compare live SALT Realme Buds cases by model wording, then review the selected option and supplied details before ordering.</p>
+      <p><a href="{{ routes.collections_url }}/audio">Browse Audio</a></p>
+    {% elsif request.path == '/pages/salt-earbuds-buying-guide' %}
+      <h1>Earbuds Buying Guide: Cases, Tips &amp; Wireless Earbuds</h1>
+      <p>Separate complete wireless earbuds from protective cases and replacement tips, then review the live listing before ordering.</p>
+      <p><a href="{{ routes.collections_url }}/audio">Browse Audio</a></p>
+    {% elsif request.path == '/pages/canvas-belt-sizing-style-guide' %}
+      <h1>Canvas Belt Sizing &amp; Style Guide</h1>
+      <p>Compare the live canvas belt listing by length and option wording, then check the selected details before ordering.</p>
+      <p><a href="{{ routes.collections_url }}/mens-accessories">Browse Men's Accessories</a></p>
     {% elsif request.path == '/pages/blog' %}
       <h1>SALT Journal</h1>
       <p>Fresh stories, product education, and practical ideas from SALT.</p>
@@ -1122,10 +1408,11 @@ const sectionLiquid = `<div
 </noscript>
 <script>
   (function () {
-    var path = window.location.pathname.replace(/\/+$/, '') || '/';
-    var isHome = path === '/' || /^\/[a-z]{2}(?:-[a-z]{2})?$/.test(path);
-    var isCollection = /\/collections\/[^/]+$/.test(path);
-    if (!isHome && !isCollection) return;
+    var path = window.location.pathname;
+    while (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+    var pathParts = path.split('/').filter(Boolean);
+    var isCollection = pathParts.length === 2 && pathParts[0] === 'collections' && pathParts[1].length > 0;
+    if (!isCollection) return;
 
     var root = document.getElementById('root');
     if (!root) return;
@@ -1148,9 +1435,7 @@ const sectionLiquid = `<div
 
       var heading = document.createElement('h1');
       heading.className = 'sr-only';
-      heading.textContent = isHome
-        ? 'Shop Cookware, Clothing, Decor & Gifts | SALT Online Store'
-        : document.title.replace(/\s*\|\s*SALT Online Store.*$/, '') || 'SALT Collection';
+      heading.textContent = document.title.split('|')[0].trim() || 'SALT Collection';
       shell.insertBefore(heading, shell.firstChild);
       if (observer) observer.disconnect();
     };
@@ -1339,7 +1624,7 @@ const productDataSectionLiquid = `{% if request.page_type == 'collection' and co
   await writeFile(
     resolve(themeDir, "templates", "robots.txt.liquid"),
     `{% for group in robots.default_groups %}
-{{- group.user_agent_name -}}
+{{- group.user_agent -}}
 {% for rule in group.rules %}
 {{- rule -}}
 {% endfor %}

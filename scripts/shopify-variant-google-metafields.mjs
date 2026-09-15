@@ -11,14 +11,14 @@ import {
   normalizeSingleLineText,
 } from "../src/lib/shopify-variant-google-metafields.js";
 import { buildVariantSeoProfiles } from "../src/lib/shopify-variant-seo.js";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
 const storeDomain = new URL(process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com").hostname;
 const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
-const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
-const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
 const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 6));
+const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
 const defaultManifestPath = resolve(rootDir, "output", "shopify-variant-google-metafield-manifest.json");
 const defaultStatePath = resolve(rootDir, "output", "shopify-variant-google-metafield-state.json");
 const defaultHandlesPath = resolve(rootDir, "output", "shopify-seo-scope-handles.json");
@@ -27,6 +27,10 @@ const maxVariantsPerMutation = Math.max(1, Math.min(250, Number(process.env.SALT
 const maxProductOperationsPerMutation = Math.max(1, Math.min(25, Number(process.env.SALT_SHOPIFY_VARIANT_PRODUCT_OPERATIONS || 25)));
 const bulkOperationThreshold = Math.max(1, Number(process.env.SALT_SHOPIFY_VARIANT_BULK_OPERATION_THRESHOLD || 5000));
 const maxBulkInputBytes = Math.max(10 * 1024 * 1024, Math.min(90 * 1024 * 1024, Number(process.env.SALT_SHOPIFY_BULK_INPUT_MAX_BYTES || 80 * 1024 * 1024)));
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir,
+  agentName: "variant-google-metafields",
+});
 
 const VARIANT_FIELDS = /* GraphQL */ `
   id
@@ -175,49 +179,14 @@ function chunks(values, size) {
   return result;
 }
 
-function parsePayload(raw) {
-  const text = String(raw || "").trim();
-  const start = text.indexOf("{");
-  if (start < 0) throw new Error(text || "Shopify CLI returned no JSON payload");
-  const payload = JSON.parse(text.slice(start));
-  if (payload.errors?.length) throw new Error(payload.errors.map((error) => error.message).join(" | "));
-  return payload.data || payload;
-}
-
-let lastRequestAt = 0;
-async function executeGraphQl(query, variables = {}, { mutation = false, operation = "Shopify request" } = {}) {
-  const waitMs = requestDelayMs - (Date.now() - lastRequestAt);
-  if (waitMs > 0) await sleep(waitMs);
-  const cliArgs = [
-    "store", "execute", "--store", storeDomain, "--version", apiVersion,
-    "--query", query, "--variables", JSON.stringify(variables), "--json",
-  ];
-  if (mutation) cliArgs.push("--allow-mutations");
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    try {
-      const result = await execFileAsync(cliBinary, cliArgs, {
-        cwd: rootDir,
-        env: {
-          ...process.env,
-          SHOPIFY_CLI_AGENT_INFO: process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai",
-          SHOPIFY_CLI_AGENT_IDS: process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:variant-google-metafields`,
-        },
-        maxBuffer: 40 * 1024 * 1024,
-      });
-      lastRequestAt = Date.now();
-      return parsePayload(result.stdout);
-    } catch (error) {
-      lastRequestAt = Date.now();
-      const message = String(error?.stderr || error?.stdout || error?.message || error);
-      const transient = /429|throttl|rate limit|timeout|5\d\d|network|socket|temporar|aborted/i.test(message);
-      if (!transient || attempt === maxAttempts - 1) throw new Error(`${operation} failed: ${message.trim()}`);
-      const retryMs = Math.min(30_000, 1000 * 2 ** attempt);
-      process.stdout.write(`${operation} throttled; retrying in ${retryMs / 1000}s\n`);
-      await sleep(retryMs);
-    }
-  }
-  throw new Error(`${operation} failed`);
+function executeGraphQl(query, variables = {}, { mutation = false, operation = "Shopify request", retryInfo = [] } = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    allowMutations: mutation,
+    operation,
+    retryInfo,
+    maxAttempts,
+    maxRetryDelayMs,
+  });
 }
 
 async function writeJsonAtomic(filePath, value) {
@@ -311,7 +280,17 @@ async function readCatalogCheckpoint(filePath) {
 }
 
 async function fetchAllVariants(checkpointPath, limit = 0) {
-  const checkpoint = await readCatalogCheckpoint(checkpointPath);
+  const forceLiveRefresh = process.env.SALT_VARIANT_GOOGLE_FORCE_LIVE_REFRESH === "1";
+  if (forceLiveRefresh) {
+    // Variant SEO depends on the live product title and price. A completed
+    // checkpoint from an earlier release can otherwise write stale profiles
+    // and fail the subsequent live readback gate.
+    await rm(checkpointPath, { force: true });
+    process.stdout.write("Forcing a fresh live variant catalog for variant-aware SEO\n");
+  }
+  const checkpoint = forceLiveRefresh
+    ? { variants: [], after: null, page: 0, complete: false }
+    : await readCatalogCheckpoint(checkpointPath);
   const variants = [...checkpoint.variants];
   let after = checkpoint.after;
   let page = checkpoint.page;

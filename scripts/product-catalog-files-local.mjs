@@ -5,13 +5,16 @@ import { resolve } from "node:path";
 import { join } from "node:path";
 
 export async function readProductCatalogPayload(dataDir) {
-  const sharedSnapshotPath = process.env.SALT_RELEASE_CATALOG_SNAPSHOT_PATH;
-  if (sharedSnapshotPath) {
+  const sharedCatalogPaths = [
+    process.env.SALT_RELEASE_CATALOG_SOURCE_PATH,
+    process.env.SALT_RELEASE_CATALOG_SNAPSHOT_PATH,
+  ].filter((path, index, paths) => path && paths.indexOf(path) === index);
+  for (const sharedCatalogPath of sharedCatalogPaths) {
     try {
-      const shared = JSON.parse(await readFile(resolve(sharedSnapshotPath), "utf8"));
+      const shared = JSON.parse(await readFile(resolve(sharedCatalogPath), "utf8"));
       if (Array.isArray(shared?.products) && shared.products.length) return shared.products;
     } catch {
-      // The release falls back to the normal shard reader until the snapshot exists.
+      // Try the next canonical release catalog before falling back to shards.
     }
   }
   const names = (await readdir(dataDir))

@@ -1,0 +1,30 @@
+{
+  "kind": "salt-visual-taxonomy-model-backup",
+  "reason": "taxonomy fingerprint drift requires retraining",
+  "createdAt": "2026-09-13T21:52:02.952Z",
+  "modelPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model.json",
+  "weightsPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-weights.npz",
+  "completionPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-training-completion.json",
+  "files": [
+    {
+      "sourcePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model.json",
+      "backupPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-backups/20260913215202939-7008/01-visual-taxonomy-model.json"
+    },
+    {
+      "sourcePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-weights.npz",
+      "backupPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-backups/20260913215202939-7008/02-visual-taxonomy-model-weights.npz"
+    },
+    {
+      "sourcePath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-training-completion.json",
+      "backupPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-backups/20260913215202939-7008/03-visual-taxonomy-training-completion.json"
+    },
+    {
+      "sourcePath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors",
+      "backupPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-backups/20260913215202939-7008/04-visual-taxonomy-encoder-finetuned.safetensors"
+    },
+    {
+      "sourcePath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.training.aggregate.json",
+      "backupPath": "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/visual-taxonomy-model-backups/20260913215202939-7008/05-visual-taxonomy-encoder-finetuned.safetensors.training.aggregate.json"
+    }
+  ]
+}

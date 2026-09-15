@@ -49,7 +49,7 @@ const CollectionCard = ({
         >
           <div className="relative overflow-hidden">
             {image ? (
-              <div className="aspect-[1.04/0.93] overflow-hidden sm:aspect-[1/0.9]">
+              <div className="aspect-[6/5] overflow-hidden">
                 <img
                   src={image}
                   alt={collection.title}
@@ -58,7 +58,7 @@ const CollectionCard = ({
                 />
               </div>
             ) : (
-              <div className="grid aspect-[1.04/0.93] w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)/0.96)_0%,hsl(var(--muted)/0.86)_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:aspect-[1/0.9]">
+              <div className="grid aspect-[6/5] w-full place-items-center bg-[linear-gradient(180deg,hsl(var(--background)/0.96)_0%,hsl(var(--muted)/0.86)_100%)] text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Image unavailable
               </div>
             )}

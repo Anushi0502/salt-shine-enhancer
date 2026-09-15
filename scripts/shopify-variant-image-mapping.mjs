@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 
 import { normalizeHandleValue, normalizePlainText } from "../src/lib/shopify-seo-batch.js";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(import.meta.dirname, "..");
@@ -22,15 +24,7 @@ const defaultCheckpointPath = resolve(
   rootDir,
   process.env.SALT_VARIANT_IMAGE_CHECKPOINT_PATH || "output/shopify-variant-image-mapping-checkpoint.json",
 );
-const shopBase = process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com";
-const storeDomain = new URL(shopBase).hostname;
-const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
-const adminAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "";
-const adminGraphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
-const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
 const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 0));
-const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
-const maxRetryDelayMs = Math.max(1_000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
 const maxBatchProducts = Math.max(1, Math.min(25, Number(process.env.SALT_VARIANT_IMAGE_BATCH_SIZE || 25)));
 const applyConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_APPLY_CONCURRENCY || 2));
 const fetchConcurrency = Math.max(1, Number(process.env.SALT_VARIANT_IMAGE_FETCH_CONCURRENCY || 2));
@@ -89,10 +83,10 @@ const mediaCachePersistInterval = Math.max(
   1,
   Number(process.env.SALT_VARIANT_IMAGE_MEDIA_CACHE_PERSIST_INTERVAL || checkpointInterval),
 );
-
-// Shopify throttles are shared across concurrent requests. Without a shared
-// cooldown, workers retry together and can keep the same media page hot.
-let throttleGateUntil = 0;
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir,
+  agentName: "variant-image-mapping",
+});
 
 const LIVE_PRODUCT_SELECTION = /* GraphQL */ `
   id
@@ -321,11 +315,6 @@ function parseArgs(argv) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForThrottleGate() {
-  const waitMs = throttleGateUntil - Date.now();
-  if (waitMs > 0) await sleep(waitMs);
 }
 
 function withTimeout(promise, timeoutMs, label) {
@@ -808,94 +797,18 @@ function scoreImageMatch(variant, image) {
   return { score, signals };
 }
 
-async function executeGraphQl(query, variables = {}, { mutation = false, operation = "Shopify request" } = {}) {
-  const cliArgs = [
-    "store",
-    "execute",
-    "--store",
-    storeDomain,
-    "--version",
-    apiVersion,
-    "--query",
-    query,
-    "--variables",
-    JSON.stringify(variables),
-    "--json",
-  ];
-  if (mutation) cliArgs.push("--allow-mutations");
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    await waitForThrottleGate();
-    try {
-      let payload;
-      if (adminAccessToken) {
-        const response = await fetch(adminGraphqlUrl, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": adminAccessToken,
-          },
-          body: JSON.stringify({ query, variables }),
-          signal: AbortSignal.timeout(graphqlTimeoutMs),
-        });
-        const raw = await response.text();
-        try {
-          payload = JSON.parse(raw);
-        } catch {
-          throw new Error(`${operation} returned invalid JSON: ${raw.slice(0, 500)}`);
-        }
-        if (!response.ok) {
-          throw new Error(`Admin GraphQL HTTP ${response.status}: ${raw.slice(0, 500)}`);
-        }
-      } else {
-        const result = await execFileAsync(cliBinary, cliArgs, {
-          cwd: rootDir,
-          timeout: graphqlTimeoutMs,
-          env: {
-            ...process.env,
-            SHOPIFY_CLI_AGENT_INFO: process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai",
-            SHOPIFY_CLI_AGENT_IDS: process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:variant-image-mapping`,
-          },
-          maxBuffer: 40 * 1024 * 1024,
-        });
-        const text = String(result.stdout || "").trim();
-        const startIndex = text.indexOf("{");
-        if (startIndex === -1) {
-          throw new Error(`${operation} returned no JSON payload: ${text.slice(0, 500)}`);
-        }
-        payload = JSON.parse(text.slice(startIndex));
-      }
-
-      // Check for throttled/rate-limited errors first as they are transient
-      if (payload.errors?.length) {
-        const throttled = payload.errors.some(
-          (e) => /throttled|rate limit|429/i.test(e?.message || e?.extensions?.code || "")
-        );
-        if (throttled) {
-          throw new Error(`Throttled`);
-        }
-        throw new Error(payload.errors.map((error) => error.message).join(" | "));
-      }
-      return payload.data || payload;
-    } catch (error) {
-      const message = String(error?.stderr || error?.stdout || error?.message || error);
-      const transient = /429|throttl|rate limit|timeout|5\d\d|network|socket|temporar|aborted|MAX_COST_EXCEEDED|Query cost|ENOTFOUND|EAI_AGAIN|getaddrinfo|ECONNRESET|ECONNREFUSED|fetch failed|DNS/i.test(message);
-      if (!transient || attempt === maxAttempts - 1) {
-        throw new Error(`${operation} failed: ${message.trim()}`);
-      }
-      // Use a longer base delay for "Throttled" errors and add jitter to avoid thundering herd
-      const baseDelay = /throttled|THROTTLED/i.test(message) ? 2000 * 2 ** attempt : 1000 * 2 ** attempt;
-      const jitter = Math.floor(Math.random() * baseDelay * 0.3);
-      const retryMs = Math.min(maxRetryDelayMs, baseDelay + jitter);
-      if (/throttled|THROTTLED|rate limit|429/i.test(message)) {
-        throttleGateUntil = Math.max(throttleGateUntil, Date.now() + retryMs);
-      }
-      process.stdout.write(`${operation} throttled; retrying in ${(retryMs / 1000).toFixed(1)}s\n`);
-      await sleep(retryMs);
-    }
-  }
-  throw new Error(`${operation} failed`);
+async function executeGraphQl(query, variables = {}, {
+  mutation = false,
+  operation = "Shopify request",
+  retryInfo = [],
+} = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    allowMutations: mutation,
+    operation,
+    retryInfo,
+    maxRetryDelayMs: Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000),
+    requestTimeoutMs: graphqlTimeoutMs,
+  });
 }
 
 async function loadHandles(handlesPath) {
@@ -1237,7 +1150,7 @@ function planFingerprint(snapshotProducts, liveProducts, scopeHandles) {
 async function loadPlanCheckpoint(checkpointPath, fingerprint, resume) {
   if (!resume) return null;
   try {
-    const parsed = JSON.parse(await readFile(checkpointPath, "utf8"));
+    const parsed = JSON.parse(await readFileWithRetry(checkpointPath, "utf8", 16));
     if (parsed?.version !== 2 || parsed?.fingerprint !== fingerprint || !Array.isArray(parsed?.plans)) return null;
     process.stdout.write(`Resuming ${parsed.plans.length} completed variant-image product plans from checkpoint\n`);
     return parsed;

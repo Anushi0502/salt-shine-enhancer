@@ -924,4 +924,20 @@ describe("catalog taxonomy release", () => {
 
     expect(classification).toMatchObject({ ruleId, reviewRequired: false });
   });
+
+  it("classifies automatic cat toilet parts into cat supplies", () => {
+    const classification = classifyCatalogTaxonomy({
+      title: "Petkit Smart Cat Toilet Special Accessories Max2 Automatic Cat",
+      handle: "petkit-smart-cat-toilet-special-accessories-max2-automatic-cat-bedpans-parts-washable-easy-to-clean-magnetic-tilting-board-set",
+      product_type: "Smart Cat",
+    });
+
+    expect(classification).toMatchObject({
+      ruleId: "cat-toilet-supplies",
+      subcategoryId: "cat-supplies",
+      shopifyCategory: "Animals & Pet Supplies > Pet Supplies > Cat Supplies",
+      reviewRequired: false,
+    });
+    expect(classification.collectionTargets).toContain("cat-supplies");
+  });
 });

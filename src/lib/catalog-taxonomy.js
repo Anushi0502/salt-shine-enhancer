@@ -798,7 +798,9 @@ const TAXONOMY_RULES = Object.freeze([
     terms: ["anime plush doll", "anime stuffed doll", "evangelion plush doll", "cosplay doll plush", "character plush doll"],
     requires: [["anime", "naruto", "demon slayer", "evangelion", "code geass", "genshin"], ["plush doll", "stuffed doll", "soft doll"]],
     aliases: ["anime soft doll", "character stuffed doll"],
-    collectionTargets: ["soft-toys"],
+    // Soft toys are governed by the canonical Kids Toys & Games collection;
+    // `soft-toys` remains the Shopify product-category/subcategory signal.
+    collectionTargets: ["kids-toys-games"],
     shopifyCategory: "Toys & Games > Toys > Stuffed Animals",
   }),
   rule("anime-wigs", {
@@ -1732,6 +1734,21 @@ const TAXONOMY_RULES = Object.freeze([
     collectionTargets: ["hats"],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories > Hats",
   }),
+  rule("hijabs", {
+    priority: 105,
+    familyId: "jewelry-accessories",
+    audienceCategory: "accessories",
+    audienceOverride: "women",
+    subcategoryId: "scarves-wraps",
+    subcategoryLabel: "Scarves & Wraps",
+    canonicalType: "Hijab",
+    terms: ["hijab", "islamic headscarf", "islamic scarf", "forehead hijab", "modest head covering"],
+    primaryTerms: ["hijab", "islamic headscarf", "islamic scarf", "forehead hijab", "modest head covering"],
+    excludes: ["hijab tutorial", "hijab pattern"],
+    aliases: ["modest headscarf", "islamic head covering", "jersey hijab"],
+    collectionTargets: ["womens-accessories"],
+    shopifyCategory: "Apparel & Accessories > Clothing Accessories > Scarves & Wraps",
+  }),
   rule("scarves", {
     priority: 92,
     familyId: "jewelry-accessories",
@@ -1743,7 +1760,9 @@ const TAXONOMY_RULES = Object.freeze([
     primaryTerms: ["scarf", "shawl", "wrap", "hijab", "headscarf"],
     excludes: ["corset", "lingerie", "underwear", "bra", "skirt", "garter"],
     aliases: ["shawl", "head scarf", "fashion scarf"],
-    collectionTargets: [],
+    // Generic scarves are neutral accessories; explicit hijab evidence is
+    // handled by the higher-specificity women-only hijab rule above.
+    collectionTargets: ["general-merchandise"],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories > Scarves",
   }),
   rule("hair-accessories", {
@@ -1757,6 +1776,21 @@ const TAXONOMY_RULES = Object.freeze([
     excludes: ["hair clipper", "hair trimmer", "hair dryer", "hair brush", "hair comb"],
     aliases: ["hair clip", "hairpin", "scrunchie", "headband"],
     collectionTargets: [],
+    shopifyCategory: "Apparel & Accessories > Clothing Accessories > Hair Accessories",
+  }),
+  rule("sleeping-hair-bonnets", {
+    priority: 104,
+    familyId: "jewelry-accessories",
+    audienceCategory: "accessories",
+    audienceOverride: "women",
+    subcategoryId: "hair-accessories",
+    subcategoryLabel: "Hair Accessories",
+    canonicalType: "Sleeping Hair Bonnet",
+    terms: ["satin sleeping hat", "sleeping hair bonnet", "satin hair bonnet", "sleep bonnet", "sleeping bonnet", "hair bonnet"],
+    primaryTerms: ["satin sleeping hat", "sleeping hair bonnet", "satin hair bonnet", "sleep bonnet", "sleeping bonnet", "hair bonnet"],
+    excludes: ["car bonnet", "bonnet hood", "bonnet cover for car"],
+    aliases: ["satin sleep cap", "night hair bonnet", "satin sleeping cap"],
+    collectionTargets: ["womens-accessories"],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories > Hair Accessories",
   }),
   rule("hair-extensions", {
@@ -2327,7 +2361,7 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryLabel: "Ties & Formal Accessories",
     canonicalType: "Tie",
     terms: ["necktie", "neckties", "bow tie", "bowtie", "tie clip", "tie clips", "skinny tie", "silk tie", "formal tie", "mens tie", "men tie", "pilot tie", "zipper tie", "clip tie", "tie", "ties"],
-    excludes: ["tie dye", "tie dyed", "cable tie", "zip tie", "twist tie", "tie waist", "tie waist jeans", "flare jeans", "bell bottom jeans"],
+    excludes: ["tie dye", "tie dyed", "cable tie", "zip tie", "twist tie", "tie waist", "tie waist jeans", "flare jeans", "bell bottom jeans", "sleeping hat", "hair bonnet", "sleep bonnet", "satin bonnet", "satin sleeping"],
     aliases: ["formal necktie", "bow tie", "tie accessory"],
     collectionTargets: [],
     shopifyCategory: "Apparel & Accessories > Clothing Accessories",
@@ -2370,7 +2404,9 @@ const TAXONOMY_RULES = Object.freeze([
     canonicalType: "Soft Toy",
     terms: ["plush toy", "stuffed toy", "soft toy", "teddy bear", "plushies", "stuffed animal"],
     aliases: ["plush", "stuffed animal", "teddy bear"],
-    collectionTargets: ["soft-toys"],
+    // Keep the taxonomy-specific subcategory while routing membership through
+    // the governed canonical collection.
+    collectionTargets: ["kids-toys-games"],
     shopifyCategory: "Toys & Games > Toys > Stuffed Animals",
   }),
   rule("board-games", {
@@ -3192,8 +3228,15 @@ const TAXONOMY_RULES = Object.freeze([
     subcategoryId: "mobility-support",
     subcategoryLabel: "Mobility & Support",
     canonicalType: "Mobility Aid",
-    terms: ["walking cane", "mobility aid", "walking stick", "adult bib", "clothing protector", "elderly support"],
-    aliases: ["walking cane", "mobility support", "daily living aid"],
+    terms: [
+      "walking cane", "mobility aid", "walking stick", "adult bib", "adult bibs",
+      "adult mealtime bib", "adult mealtime bibs", "adult clothing protector",
+      "clothing protector", "bib", "elderly support",
+    ],
+    aliases: ["walking cane", "mobility support", "daily living aid", "adult protective bib"],
+    excludes: ["cooking apron", "kitchen apron", "chef apron", "barista apron", "nail art apron"],
+    primaryTerms: ["adult bib", "adult bibs", "adult mealtime bib", "adult clothing protector"],
+    preferSpecificHandle: true,
     collectionTargets: ["mobility-support", "daily-living-aids"],
     shopifyCategory: "Health & Beauty > Health Care",
   }),
@@ -3786,6 +3829,37 @@ const TAXONOMY_RULES = Object.freeze([
     aliases: ["dog supplies", "puppy accessory", "dog care"],
     collectionTargets: ["dog-supplies"],
     shopifyCategory: "Animals & Pet Supplies > Pet Supplies > Dog Supplies",
+  }),
+  rule("cat-toilet-supplies", {
+    priority: 92,
+    familyId: "pet-care",
+    departmentId: "pets",
+    categoryId: "pet-care",
+    categoryLabel: "Pet Care",
+    subcategoryId: "cat-supplies",
+    subcategoryLabel: "Cat Toilets & Litter Supplies",
+    canonicalType: "Cat Toilet & Litter Supply",
+    terms: [
+      "cat toilet",
+      "cat toilets",
+      "cat litter box",
+      "cat litter boxes",
+      "litter box",
+      "litterbox",
+      "litter tray",
+      "bedpan",
+      "bedpans",
+      "cat toilet accessories",
+      "automatic cat toilet",
+      "automatic cat litter box",
+    ],
+    requires: [
+      ["cat", "kitten"],
+      ["toilet", "litter box", "litterbox", "litter tray", "bedpan", "bedpans", "litter"],
+    ],
+    aliases: ["cat toilet supplies", "cat litter toilet", "automatic cat toilet parts"],
+    collectionTargets: ["cat-supplies"],
+    shopifyCategory: "Animals & Pet Supplies > Pet Supplies > Cat Supplies",
   }),
   rule("cat-products", {
     priority: 87,
@@ -8832,14 +8906,34 @@ function resolveAudienceTaxonomy(entry, audience) {
 }
 
 function resolveCollectionTargets(entry, audience) {
-  return unique(entry.collectionTargets.filter((target) => {
-    if (LEGACY_COLLECTION_TARGETS_REQUIRING_REBUILD.has(target)) return false;
-    if (target === "women-bags-and-wallets" || target === "womens-beauty-essentials") {
-      return audience.id === "women";
+  const resolved = unique(entry.collectionTargets.flatMap((target) => {
+    if (LEGACY_COLLECTION_TARGETS_REQUIRING_REBUILD.has(target)) return [];
+    // `gloves` was historically also used as the under-$60 collection alias,
+    // but gloves are a real apparel accessory and need a governed destination.
+    // Keep the price policy independent while routing semantic membership by
+    // the strongest available audience signal.
+    if (target === "gloves") {
+      const audienceSignals = new Set((audience?.signals || []).map(normalizeCatalogText));
+      if (audienceSignals.has("men") && audienceSignals.has("women")) {
+        return ["general-merchandise"];
+      }
+      if (audience.id === "men") return ["mens-accessories"];
+      if (audience.id === "women") return ["womens-accessories"];
+      if (audience.id === "kids") return ["kids"];
+      return ["general-merchandise"];
     }
-    if (target === "men-collection") return audience.id === "men";
-    return true;
+    if (target === "women-bags-and-wallets" || target === "womens-beauty-essentials") {
+      return audience.id === "women" ? [target] : [];
+    }
+    if (target === "men-collection") return audience.id === "men" ? [target] : [];
+    return [target];
   }));
+
+  // A resolved product must never become collectionless just because a rule
+  // has an empty/retired target or an audience guard removed its target. Keep
+  // the specific targets above when they are valid; otherwise use the
+  // governed neutral collection instead of inventing a semantic assignment.
+  return resolved.length ? resolved : ["general-merchandise"];
 }
 
 function normalizeTaxonomyId(value) {

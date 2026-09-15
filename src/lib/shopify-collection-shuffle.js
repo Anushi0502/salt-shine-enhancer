@@ -7,23 +7,26 @@ function hashSeed(value) {
   return hash >>> 0;
 }
 
-function nextRandom(state) {
-  let value = state.value || 1;
-  value ^= value << 13;
-  value ^= value >>> 17;
-  value ^= value << 5;
-  state.value = value >>> 0;
-  return state.value / 0x100000000;
-}
-
 export function shuffleCollectionProductIds(productIds, seed) {
   const values = [...new Set((Array.isArray(productIds) ? productIds : []).map((value) => String(value || "")).filter(Boolean))];
-  const state = { value: hashSeed(seed) || 1 };
-  for (let index = values.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(nextRandom(state) * (index + 1));
-    [values[index], values[swapIndex]] = [values[swapIndex], values[index]];
-  }
-  return values;
+  if (values.length < 2) return values;
+  // A small seeded rotation produces a different daily storefront order while
+  // changing only a bounded prefix. Full Fisher-Yates permutations force
+  // hundreds of Shopify reorder jobs for large collections and are not worth
+  // the extra API churn when the collection is already manually curated.
+  const offset = 1 + (hashSeed(seed) % Math.min(values.length - 1, 24));
+  return [...values.slice(-offset), ...values.slice(0, -offset)];
+}
+
+export function buildLiveMembershipTarget(currentIds, plannedIds) {
+  const current = [...new Set((Array.isArray(currentIds) ? currentIds : []).map((id) => String(id || "")).filter(Boolean))];
+  const planned = [...new Set((Array.isArray(plannedIds) ? plannedIds : []).map((id) => String(id || "")).filter(Boolean))];
+  const currentSet = new Set(current);
+  const plannedSet = new Set(planned);
+  return [
+    ...planned.filter((id) => currentSet.has(id)),
+    ...current.filter((id) => !plannedSet.has(id)),
+  ];
 }
 
 export function buildCollectionReorderMoves(currentIds, desiredIds, maxMoves = 250) {

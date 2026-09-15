@@ -25,6 +25,26 @@ import { buildVariantSeoProfiles } from "./shopify-variant-seo.js";
 const PRODUCT_FIELDS = ["title", "descriptionHtml", "productType"];
 const SEO_FIELDS = ["title", "description"];
 
+export function isGptSeoProtectedProduct(product) {
+  const marker = product?.gptSeoTypeAttributes;
+  if (!marker) return false;
+  if (typeof marker === "string") {
+    try {
+      return isGptSeoProtectedProduct({ gptSeoTypeAttributes: JSON.parse(marker) });
+    } catch {
+      return false;
+    }
+  }
+  if (marker && typeof marker === "object" && ("jsonValue" in marker || "value" in marker)) {
+    return isGptSeoProtectedProduct({ gptSeoTypeAttributes: marker.jsonValue ?? marker.value });
+  }
+  return Boolean(
+    marker &&
+    typeof marker === "object" &&
+    (marker.generatedBy === "salt-gpt-seo" || Number(marker.schemaVersion) >= 2),
+  );
+}
+
 function asArray(value, key = "") {
   if (Array.isArray(value)) {
     return value;
@@ -749,6 +769,7 @@ function buildProductDiff(liveProduct, productPlan) {
   const input = { id: liveProduct?.id || productPlan?.productId || "" };
   const changedFields = [];
   const skippedFields = [];
+  const gptSeoProtected = isGptSeoProtectedProduct(liveProduct);
 
   const productComparisons = [
     ["title", desired.title, liveProduct?.title, normalizePlainText],
@@ -757,6 +778,10 @@ function buildProductDiff(liveProduct, productPlan) {
   ];
 
   for (const [field, desiredValue, liveValue, normalizer] of productComparisons) {
+    if (gptSeoProtected && ["title", "body", "product-type"].includes(field)) {
+      skippedFields.push({ field, reason: "GPT SEO protected; deterministic release cannot overwrite" });
+      continue;
+    }
     if (!normalizePlainText(desiredValue)) {
       skippedFields.push({ field, reason: "no high-confidence desired value" });
       continue;
@@ -780,7 +805,11 @@ function buildProductDiff(liveProduct, productPlan) {
   const effectiveProductTitle = normalizePlainText(desired.title || liveProduct?.title || "");
   const effectiveLiveSeoTitle = normalizePlainText(liveSeo.title || effectiveProductTitle);
   const seoInput = {};
+  if (gptSeoProtected) {
+    for (const field of SEO_FIELDS) skippedFields.push({ field: `seo-${field}`, reason: "GPT SEO protected; deterministic release cannot overwrite" });
+  }
   for (const field of SEO_FIELDS) {
+    if (gptSeoProtected) continue;
     if (!normalizePlainText(desiredSeo[field])) {
       skippedFields.push({ field: `seo-${field}`, reason: "no medium-confidence desired value" });
       continue;
@@ -813,6 +842,9 @@ function buildProductDiff(liveProduct, productPlan) {
   }
 
   if (productPlan?.categoryAuthoritative && normalizePlainText(desired.category)) {
+    if (gptSeoProtected) {
+      skippedFields.push({ field: "category", reason: "GPT SEO protected; deterministic release cannot overwrite" });
+    } else {
     const desiredCategory = normalizePlainText(desired.category);
     const liveCategory = normalizePlainText(liveProduct?.category?.id || "");
     if (desiredCategory === liveCategory) {
@@ -820,6 +852,7 @@ function buildProductDiff(liveProduct, productPlan) {
     } else {
       input.category = desiredCategory;
       changedFields.push("category");
+    }
     }
   }
 

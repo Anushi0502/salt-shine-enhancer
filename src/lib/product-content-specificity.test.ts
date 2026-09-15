@@ -59,7 +59,7 @@ describe("product content specificity", () => {
     ];
     const fields = [{
       id: "subtitle",
-      getValue: (product: { customData: { subtitle: string } }) => product.customData.subtitle,
+      getValue: (product: { customData?: { subtitle?: string } }) => product.customData?.subtitle,
     }];
     const collisions = findCatalogContentCollisions(products, fields);
     const index = buildCatalogContentCollisionIndex(products, fields);

@@ -1,0 +1,619 @@
+{
+  "generatedAt": "2026-09-11T09:57:04.587Z",
+  "source": "clean generated category scenes with deterministic SALT typography overlay",
+  "count": 68,
+  "collections": [
+    {
+      "number": 12,
+      "handle": "pet-essentials",
+      "title": "Pet Essentials",
+      "collectionId": "gid://shopify/Collection/286315872355",
+      "fileName": "12-pet-essentials.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 13,
+      "handle": "wall-lights",
+      "title": "Wall Lights",
+      "collectionId": "gid://shopify/Collection/298388553827",
+      "fileName": "13-wall-lights.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 14,
+      "handle": "kids-wear",
+      "title": "Kids Wear",
+      "collectionId": "gid://shopify/Collection/299470618723",
+      "fileName": "14-kids-wear.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 15,
+      "handle": "mens-accessories",
+      "title": "Men's Accessories",
+      "collectionId": "gid://shopify/Collection/299470520419",
+      "fileName": "15-mens-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 16,
+      "handle": "mens-bags-wallets",
+      "title": "Men's Bags & Wallets",
+      "collectionId": "gid://shopify/Collection/299470487651",
+      "fileName": "16-mens-bags-wallets.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 17,
+      "handle": "men-t-shirt",
+      "title": "Men's T-Shirts",
+      "collectionId": "gid://shopify/Collection/299448205411",
+      "fileName": "17-men-t-shirt.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 18,
+      "handle": "stationery",
+      "title": "Stationery",
+      "collectionId": "gid://shopify/Collection/299373887587",
+      "fileName": "18-stationery.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 19,
+      "handle": "earbuds-and-cases",
+      "title": "Earbuds & Cases",
+      "collectionId": "gid://shopify/Collection/299373396067",
+      "fileName": "19-earbuds-and-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 20,
+      "handle": "iphone-cases",
+      "title": "iPhone Cases",
+      "collectionId": "gid://shopify/Collection/299372740707",
+      "fileName": "20-iphone-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 21,
+      "handle": "dramatic-lashes",
+      "title": "Dramatic Lashes",
+      "collectionId": "gid://shopify/Collection/298791796835",
+      "fileName": "21-dramatic-lashes.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 22,
+      "handle": "mascara-collection",
+      "title": "Mascara Collection",
+      "collectionId": "gid://shopify/Collection/298791764067",
+      "fileName": "22-mascara-collection.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 23,
+      "handle": "eye-beauty-collection",
+      "title": "Eye Beauty Collection",
+      "collectionId": "gid://shopify/Collection/298791731299",
+      "fileName": "23-eye-beauty-collection.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 24,
+      "handle": "glam-eye-palettes",
+      "title": "Glam Eye Palettes",
+      "collectionId": "gid://shopify/Collection/298791665763",
+      "fileName": "24-glam-eye-palettes.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 25,
+      "handle": "blush-glow",
+      "title": "Blush & Glow",
+      "collectionId": "gid://shopify/Collection/298740777059",
+      "fileName": "25-blush-glow.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 26,
+      "handle": "repair-shine-serums",
+      "title": "Repair & Shine Serums",
+      "collectionId": "gid://shopify/Collection/298734518371",
+      "fileName": "26-repair-shine-serums.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 27,
+      "handle": "hair-nourishment",
+      "title": "Hair Nourishment",
+      "collectionId": "gid://shopify/Collection/298734092387",
+      "fileName": "27-hair-nourishment.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 28,
+      "handle": "hair-wash-essentials",
+      "title": "Hair Wash Essentials",
+      "collectionId": "gid://shopify/Collection/298733994083",
+      "fileName": "28-hair-wash-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 29,
+      "handle": "watches",
+      "title": "Watches",
+      "collectionId": "gid://shopify/Collection/298713383011",
+      "fileName": "29-watches.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 30,
+      "handle": "womens-accessories",
+      "title": "Women's Accessories",
+      "collectionId": "gid://shopify/Collection/298712432739",
+      "fileName": "30-womens-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 31,
+      "handle": "women-bags-and-wallets",
+      "title": "Women's Bags & Wallets",
+      "collectionId": "gid://shopify/Collection/298712137827",
+      "fileName": "31-women-bags-and-wallets.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 32,
+      "handle": "womens-beauty-essentials",
+      "title": "Women's Beauty & Skincare",
+      "collectionId": "gid://shopify/Collection/298712039523",
+      "fileName": "32-womens-beauty-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 33,
+      "handle": "staff-picks",
+      "title": "Staff Picks",
+      "collectionId": "gid://shopify/Collection/298389602403",
+      "fileName": "33-staff-picks.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 34,
+      "handle": "viral-tiktok-products",
+      "title": "Viral TikTok Products",
+      "collectionId": "gid://shopify/Collection/298389569635",
+      "fileName": "34-viral-tiktok-products.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 35,
+      "handle": "gifts-for-seniors",
+      "title": "Gifts for Seniors",
+      "collectionId": "gid://shopify/Collection/298389504099",
+      "fileName": "35-gifts-for-seniors.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 36,
+      "handle": "gifts-for-dad",
+      "title": "Gifts for Dad",
+      "collectionId": "gid://shopify/Collection/298389471331",
+      "fileName": "36-gifts-for-dad.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 37,
+      "handle": "gifts-for-mom",
+      "title": "Gifts for Mom",
+      "collectionId": "gid://shopify/Collection/298389438563",
+      "fileName": "37-gifts-for-mom.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 38,
+      "handle": "memory-organization",
+      "title": "Memory & Organization",
+      "collectionId": "gid://shopify/Collection/298389340259",
+      "fileName": "38-memory-organization.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 39,
+      "handle": "home-safety",
+      "title": "Home Safety",
+      "collectionId": "gid://shopify/Collection/298389307491",
+      "fileName": "39-home-safety.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 40,
+      "handle": "daily-living-aids",
+      "title": "Daily Living Aids",
+      "collectionId": "gid://shopify/Collection/298389274723",
+      "fileName": "40-daily-living-aids.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 41,
+      "handle": "relaxation-products",
+      "title": "Relaxation Products",
+      "collectionId": "gid://shopify/Collection/298389012579",
+      "fileName": "41-relaxation-products.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 42,
+      "handle": "sleep-essentials",
+      "title": "Sleep Essentials",
+      "collectionId": "gid://shopify/Collection/298388979811",
+      "fileName": "42-sleep-essentials.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 43,
+      "handle": "pet-toys",
+      "title": "Pet Toys",
+      "collectionId": "gid://shopify/Collection/298388914275",
+      "fileName": "43-pet-toys.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 44,
+      "handle": "pet-grooming",
+      "title": "Pet Grooming",
+      "collectionId": "gid://shopify/Collection/298388881507",
+      "fileName": "44-pet-grooming.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 45,
+      "handle": "pet-feeding",
+      "title": "Pet Feeding",
+      "collectionId": "gid://shopify/Collection/298388848739",
+      "fileName": "45-pet-feeding.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 46,
+      "handle": "pet-travel",
+      "title": "Pet Travel",
+      "collectionId": "gid://shopify/Collection/298388815971",
+      "fileName": "46-pet-travel.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 47,
+      "handle": "cat-supplies",
+      "title": "Cat Supplies",
+      "collectionId": "gid://shopify/Collection/298388783203",
+      "fileName": "47-cat-supplies.png",
+      "group": "pets",
+      "background": "pets.png"
+    },
+    {
+      "number": 48,
+      "handle": "decorative-accessories",
+      "title": "Decorative Accessories",
+      "collectionId": "gid://shopify/Collection/298388717667",
+      "fileName": "48-decorative-accessories.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 49,
+      "handle": "smart-lighting",
+      "title": "Lighting & Decor",
+      "collectionId": "gid://shopify/Collection/298388684899",
+      "fileName": "49-smart-lighting.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 50,
+      "handle": "seasonal-decor",
+      "title": "Seasonal Decor",
+      "collectionId": "gid://shopify/Collection/298388652131",
+      "fileName": "50-seasonal-decor.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 51,
+      "handle": "wall-art",
+      "title": "Wall Art",
+      "collectionId": "gid://shopify/Collection/298388619363",
+      "fileName": "51-wall-art.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 52,
+      "handle": "holiday-gifts",
+      "title": "Holiday Gifts",
+      "collectionId": "gid://shopify/Collection/298217209955",
+      "fileName": "52-holiday-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 53,
+      "handle": "housewarming-gifts",
+      "title": "Housewarming Gifts",
+      "collectionId": "gid://shopify/Collection/298217046115",
+      "fileName": "53-housewarming-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 54,
+      "handle": "senior-living-solutions",
+      "title": "Senior Living Solutions",
+      "collectionId": "gid://shopify/Collection/298109960291",
+      "fileName": "54-senior-living-solutions.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 55,
+      "handle": "gifts",
+      "title": "Gifts Collection",
+      "collectionId": "gid://shopify/Collection/296701886563",
+      "fileName": "55-gifts.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 56,
+      "handle": "best-sellers",
+      "title": "Best Sellers",
+      "collectionId": "gid://shopify/Collection/291396354147",
+      "fileName": "56-best-sellers.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 57,
+      "handle": "health-wellness",
+      "title": "Health & Wellness",
+      "collectionId": "gid://shopify/Collection/287952797795",
+      "fileName": "57-health-wellness.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 58,
+      "handle": "jeans",
+      "title": "Jeans",
+      "collectionId": "gid://shopify/Collection/287803244643",
+      "fileName": "58-jeans.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 59,
+      "handle": "medical-accessories",
+      "title": "Medical Accessories",
+      "collectionId": "gid://shopify/Collection/286768169059",
+      "fileName": "59-medical-accessories.png",
+      "group": "wellness",
+      "background": "wellness.png"
+    },
+    {
+      "number": 60,
+      "handle": "garden-tools",
+      "title": "Garden & Tools",
+      "collectionId": "gid://shopify/Collection/286183522403",
+      "fileName": "60-garden-tools.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 61,
+      "handle": "artificial-plants",
+      "title": "Artificial Plants",
+      "collectionId": "gid://shopify/Collection/284296872035",
+      "fileName": "61-artificial-plants.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 62,
+      "handle": "covers-cases",
+      "title": "Covers & Cases",
+      "collectionId": "gid://shopify/Collection/299470717027",
+      "fileName": "62-covers-cases.png",
+      "group": "tech",
+      "background": "tech.png"
+    },
+    {
+      "number": 63,
+      "handle": "car-accessories",
+      "title": "Home & Car Accessories",
+      "collectionId": "gid://shopify/Collection/298389143651",
+      "fileName": "63-car-accessories.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 64,
+      "handle": "cleaning-tools",
+      "title": "Cleaning Tools",
+      "collectionId": "gid://shopify/Collection/298388521059",
+      "fileName": "64-cleaning-tools.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 65,
+      "handle": "home-decor",
+      "title": "Home & Decor",
+      "collectionId": "gid://shopify/Collection/285123412067",
+      "fileName": "65-home-decor.png",
+      "group": "home",
+      "background": "home-decor.png"
+    },
+    {
+      "number": 66,
+      "handle": "dining-essentials",
+      "title": "Dining Essentials",
+      "collectionId": "gid://shopify/Collection/298388488291",
+      "fileName": "66-dining-essentials.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 67,
+      "handle": "coffee-tea-accessories",
+      "title": "Coffee & Tea Accessories",
+      "collectionId": "gid://shopify/Collection/298388455523",
+      "fileName": "67-coffee-tea-accessories.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 68,
+      "handle": "under-44-99",
+      "title": "Under $44.99",
+      "collectionId": "gid://shopify/Collection/298216882275",
+      "fileName": "68-under-44-99.png",
+      "group": "gifts",
+      "background": "gifts.png"
+    },
+    {
+      "number": 69,
+      "handle": "cookware",
+      "title": "Kitchen & Cookware",
+      "collectionId": "gid://shopify/Collection/285291511907",
+      "fileName": "69-cookware.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 70,
+      "handle": "kitchen-gadgets",
+      "title": "Kitchen Gadgets",
+      "collectionId": "gid://shopify/Collection/298388389987",
+      "fileName": "70-kitchen-gadgets.png",
+      "group": "kitchen",
+      "background": "kitchen.png"
+    },
+    {
+      "number": 71,
+      "handle": "beauty-makeup-essentials",
+      "title": "Beauty Makeup Essentials",
+      "collectionId": "gid://shopify/Collection/298791632995",
+      "fileName": "71-beauty-makeup-essentials.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 72,
+      "handle": "lips-and-care",
+      "title": "Lip Care",
+      "collectionId": "gid://shopify/Collection/298713153635",
+      "fileName": "72-lips-and-care.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 73,
+      "handle": "kids",
+      "title": "Kids",
+      "collectionId": "gid://shopify/Collection/299470585955",
+      "fileName": "73-kids.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 74,
+      "handle": "back-to-school",
+      "title": "Back to School",
+      "collectionId": "gid://shopify/Collection/299371954275",
+      "fileName": "74-back-to-school.png",
+      "group": "kids",
+      "background": "kids.png"
+    },
+    {
+      "number": 75,
+      "handle": "storage-organization",
+      "title": "Storage & Organization",
+      "collectionId": "gid://shopify/Collection/298388422755",
+      "fileName": "75-storage-organization.png",
+      "group": "office",
+      "background": "office.png"
+    },
+    {
+      "number": 76,
+      "handle": "travel-outdoor",
+      "title": "Camping & Travel Essentials",
+      "collectionId": "gid://shopify/Collection/288268320867",
+      "fileName": "76-travel-outdoor.png",
+      "group": "utility",
+      "background": "utility.png"
+    },
+    {
+      "number": 77,
+      "handle": "face-creams-moisturizers",
+      "title": "Face Creams & Moisturizers",
+      "collectionId": "gid://shopify/Collection/298741792867",
+      "fileName": "77-face-creams-moisturizers.png",
+      "group": "beauty",
+      "background": "beauty.png"
+    },
+    {
+      "number": 78,
+      "handle": "jewelry-accessories",
+      "title": "Jewelry & Accessories",
+      "collectionId": "gid://shopify/Collection/299506466915",
+      "fileName": "78-jewelry-accessories.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    },
+    {
+      "number": 79,
+      "handle": "mens-footwear",
+      "title": "Men's Footwear",
+      "collectionId": "gid://shopify/Collection/300451201123",
+      "fileName": "79-mens-footwear.png",
+      "group": "fashion",
+      "background": "fashion.png"
+    }
+  ]
+}

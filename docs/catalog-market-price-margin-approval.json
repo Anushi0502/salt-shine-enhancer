@@ -1,0 +1,20 @@
+{
+  "approvalId": "salt-market-price-margin-2026-09-08-approved",
+  "approved": true,
+  "approvedAt": "2026-09-08",
+  "approvalSource": "User request: read back live prices, rebalance the full active catalog, and add a 20% market-price margin",
+  "scope": {
+    "products": "all active Shopify products and every live variant",
+    "policyId": "live-market-anchor-plus-20pct-2026-09-08",
+    "marginPercent": 0.2,
+    "mode": "markup",
+    "anchor": "first governed live variant sell price; persisted per variant to prevent compounding",
+    "priceFloor": 35,
+    "combination": "final target is the maximum of the approved cost-band target, the market-anchor target, and the price floor",
+    "variantDifferences": "calculate each variant independently and preserve option and quantity differences",
+    "compareAtPrices": "preserve only valid existing compare-at prices above the final target; clear invalid values; never invent compare-at prices",
+    "dryRunApplyReadback": "required in order",
+    "missingAnchorData": "capture the first live sell price only during dry-run or apply; verification fails if an anchor is missing",
+    "status": "do not change product status or sales-channel inclusion"
+  }
+}

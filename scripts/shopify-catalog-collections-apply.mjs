@@ -12,12 +12,15 @@ import {
   normalizeCollectionPlanTag,
   normalizeCollectionPlanText,
 } from "../src/lib/catalog-collection-plan.js";
+import { COLLECTION_GOVERNANCE_VERSION } from "../src/lib/catalog-collection-governance.js";
+import { CATALOG_TAXONOMY_VERSION } from "../src/lib/catalog-taxonomy.js";
 import {
   buildManagedTagAdditions,
   isActiveShopifyProduct,
   isOnlineStorePublishedLiveProduct,
 } from "../src/lib/catalog-taxonomy-release.js";
 import { classifyProductKnowledge } from "../src/lib/product-knowledge-base.js";
+import { scoreCatalogKnowledgeModelBatch } from "./catalog-knowledge-model-accelerator.mjs";
 import { readCatalogKnowledgeModel } from "./catalog-knowledge-model-files.mjs";
 import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 import { readProductCatalogPayload } from "./product-catalog-files.mjs";
@@ -403,14 +406,20 @@ async function verifyCollectionApproval() {
   if (!approvalId) {
     throw new Error("Collection approval manifest has no approvalId.");
   }
-  if (normalizeCollectionPlanText(approval?.taxonomyVersion) !== CATALOG_COLLECTION_PLAN_VERSION.replace(/-collections\.1$/, "")) {
+  if (normalizeCollectionPlanText(approval?.taxonomyVersion) !== CATALOG_TAXONOMY_VERSION) {
     throw new Error("Collection approval targets a different taxonomy version than the active plan.");
   }
-  if (approval?.scope?.managedCollections !== "create or rebuild only the canonical collections in the checked-in collection plan") {
-    throw new Error("Collection approval does not restrict writes to the checked-in canonical collection plan.");
+  if (normalizeCollectionPlanText(approval?.collectionPlanVersion) !== CATALOG_COLLECTION_PLAN_VERSION) {
+    throw new Error("Collection approval targets a different collection plan version than the active plan.");
   }
-  if (approval?.scope?.controlledRuleTags !== "canonical department and category tags only") {
-    throw new Error("Collection approval does not restrict collection rules to controlled department/category tags.");
+  if (normalizeCollectionPlanText(approval?.governanceVersion) !== COLLECTION_GOVERNANCE_VERSION) {
+    throw new Error("Collection approval targets a different governance version than the active plan.");
+  }
+  if (approval?.scope?.managedCollections !== "create or repair only canonical collections in the checked-in full-catalog governance registry") {
+    throw new Error("Collection approval does not restrict writes to the checked-in governance registry.");
+  }
+  if (approval?.scope?.controlledRuleTags !== "exactly one canonical simple collection tag condition per semantic collection, except approved union rules for gifts and trending-finds") {
+    throw new Error("Collection approval does not require exact semantic collection tag conditions.");
   }
   if (approval?.scope?.existingTags !== "preserve unmanaged tags exactly; exact-replace checked-in canonical managed tags") {
     throw new Error("Collection approval does not preserve existing tags.");
@@ -512,7 +521,7 @@ function mergeProductForClassification(localProduct, liveProduct) {
   };
 }
 
-function buildCollectionTagPlan(
+async function buildCollectionTagPlan(
   catalog,
   liveProducts,
   reviewOverrides = new Map(),
@@ -532,9 +541,19 @@ function buildCollectionTagPlan(
   const excludedFromOnlineStore = [];
   const nonOnlineManagedTagProducts = [];
 
-  for (const liveProduct of asArray(liveProducts)) {
-    const localProduct = localByHandle.get(normalizeHandle(liveProduct.handle)) || {};
-    const product = mergeProductForClassification(localProduct, liveProduct);
+  const preparedProducts = asArray(liveProducts).map((liveProduct) => ({
+    liveProduct,
+    product: mergeProductForClassification(
+      localByHandle.get(normalizeHandle(liveProduct.handle)) || {},
+      liveProduct,
+    ),
+  }));
+  const modelEvidenceByKey = await scoreCatalogKnowledgeModelBatch(
+    knowledgeModel,
+    preparedProducts.map((entry) => entry.product),
+  );
+
+  for (const { liveProduct, product } of preparedProducts) {
     const existingControlledTags = asArray(liveProduct.tags)
       .map(normalizeCollectionPlanTag)
       .filter((tag) => controlledTags.has(tag));
@@ -552,7 +571,8 @@ function buildCollectionTagPlan(
       continue;
     }
 
-    const baseKnowledge = classifyProductKnowledge(product, { knowledgeModel });
+    const modelEvidence = modelEvidenceByKey?.get(String(product.id || product.handle));
+    const baseKnowledge = classifyProductKnowledge(product, { knowledgeModel, modelEvidence });
     const reviewOverride = reviewOverrides.get(normalizeHandle(liveProduct.handle));
     const knowledge = reviewOverride
       ? {
@@ -955,7 +975,7 @@ async function runRelease({
   const scope = productHandlesFile
     ? `active products in supplied cohort only; ${scopedLiveProducts.length} live products selected`
     : "full active catalog";
-  const tagPlan = buildCollectionTagPlan(catalog, scopedLiveProducts, reviewOverrides, additionalTags, knowledgeModel);
+  const tagPlan = await buildCollectionTagPlan(catalog, scopedLiveProducts, reviewOverrides, additionalTags, knowledgeModel);
   const manifest = buildManifest({
     mode,
     collections,

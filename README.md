@@ -195,6 +195,9 @@ Configure these deployment-only variables before publishing it:
 - `SHOPIFY_ADMIN_ACCESS_TOKEN`: server-only Admin API token with order, inventory/cost, `read_shopify_payments_payouts`, `read_marketing_events`, and Shopify app billing access. Shopify Payments payout access also requires merchant approval in Shopify.
 - `SHOPIFY_ADMIN_REFRESH_TOKEN`: server-only Shopify CLI refresh token. The finance API rotates the short-lived access token automatically when Shopify returns an authorization failure.
 - `SHOPIFY_CLI_CLIENT_ID`: Shopify CLI/app client ID used with the refresh token. Defaults to the connected SALT finance app client ID.
+- `SHOPIFY_IDENTITY_ACCESS_TOKEN` and `SHOPIFY_IDENTITY_REFRESH_TOKEN`: preferred Shopify CLI identity-session pair. The finance API refreshes this pair and uses the resulting store-scoped Admin session as a Bearer token automatically, so a short-lived CLI Admin token is not pinned in production.
+- `SHOPIFY_IDENTITY_ACCESS_TOKEN_EXPIRES_AT`: optional ISO timestamp from the CLI session; it prevents unnecessary identity refresh-token rotation on cold starts.
+- `SHOPIFY_IDENTITY_CLIENT_ID`: optional Shopify CLI identity client ID; defaults to the production CLI client.
 - `FINANCE_APP_PASSWORD_HASH`: scrypt hash generated with `npm run finance:hash-password -- '<password>'`.
 - `FINANCE_SESSION_SECRET`: long random value used to sign the HTTP-only finance session cookie.
 - `FINANCE_TIMEZONE`: reporting timezone, for example `America/New_York`.

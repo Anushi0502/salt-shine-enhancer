@@ -11,7 +11,7 @@ import {
 const PRODUCT_SHARD_FILE_PATTERN = /^products-\d{4}\.json$/;
 
 export async function readProductCatalogPayload(dataDir) {
-  const runningCanonicalRelease = /^(?:release|release:daily|release:product|release:products)$/.test(
+  const runningCanonicalRelease = /^(?:release|release:core|release:daily|release:product|release:products)$/.test(
     process.env.npm_lifecycle_event || "",
   );
   const sharedSnapshotPaths = [

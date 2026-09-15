@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const rootDir = resolve(import.meta.dirname, "..");
@@ -14,7 +14,6 @@ const defaultConfigPath = resolve(outputDir, "visual-taxonomy-training-config.js
 const defaultCorpusRoot = resolve(process.env.SALT_VISUAL_TRAINING_EXTERNAL_ROOT || resolve(process.env.HOME || "/tmp", ".cache", "salt-visual-taxonomy-training"), "corpus");
 const defaultLabelsRoot = resolve(process.env.SALT_VISUAL_TRAINING_EXTERNAL_ROOT || resolve(process.env.HOME || "/tmp", ".cache", "salt-visual-taxonomy-training"), "labels");
 const defaultWorkRoot = resolve(process.env.SALT_VISUAL_TRAINING_EXTERNAL_ROOT || resolve(process.env.HOME || "/tmp", ".cache", "salt-visual-taxonomy-training"), "work");
-const defaultBaseCheckpoint = resolve(process.env.HOME || "/tmp", ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
 const defaultFineTunedCheckpoint = resolve(process.env.SALT_VISUAL_TRAINING_EXTERNAL_ROOT || resolve(process.env.HOME || "/tmp", ".cache", "salt-visual-taxonomy-training"), "checkpoints", "visual-taxonomy-encoder-finetuned.safetensors");
 const defaultMetalPython = resolve(
   process.env.HOME || "/tmp",
@@ -34,7 +33,8 @@ function parseArgs(argv) {
     corpusRoot: defaultCorpusRoot,
     labelsRoot: defaultLabelsRoot,
     workRoot: defaultWorkRoot,
-    baseCheckpoint: defaultBaseCheckpoint,
+    stateOutput: resolve(outputDir, "visual-taxonomy-shard-training-state.json"),
+    baseCheckpoint: resolveCandidateBaseCheckpoint(),
     fineTunedCheckpoint: defaultFineTunedCheckpoint,
     // Keep the corpus within the 25 GB contract while adapting to this Mac's
     // current free-space budget; the full target is still 50 GB cumulative.
@@ -43,7 +43,7 @@ function parseArgs(argv) {
   };
   const flags = new Map([
     ["--manifest", "manifest"], ["--plan", "plan"], ["--config", "config"],
-    ["--corpus-root", "corpusRoot"], ["--labels-root", "labelsRoot"], ["--work-root", "workRoot"],
+    ["--corpus-root", "corpusRoot"], ["--labels-root", "labelsRoot"], ["--work-root", "workRoot"], ["--state-output", "stateOutput"],
     ["--base-checkpoint", "baseCheckpoint"], ["--fine-tuned-checkpoint", "fineTunedCheckpoint"],
     ["--max-shard-bytes", "maxShardBytes"], ["--target-bytes", "targetBytes"],
   ]);
@@ -79,6 +79,42 @@ function resolveMetalPython() {
   return configured || (existsSync(defaultMetalPython) ? defaultMetalPython : "python3");
 }
 
+export function resolveCandidateBaseCheckpoint(env = process.env, homeDir = process.env.HOME || "/tmp") {
+  const configured = String(env.SALT_VISUAL_CANDIDATE_BASE_CHECKPOINT || "").trim();
+  if (configured) {
+    const candidatePath = resolve(configured);
+    return isHealthyCandidate(candidatePath, env) ? candidatePath : resolve(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
+  }
+  const candidatePath = resolve(homeDir, ".cache", "salt-visual-taxonomy-candidates", "siglip-large-patch16-384.checkpoint.json");
+  const productionPath = resolve(homeDir, ".cache", "salt-visual-taxonomy", "siglip-base.checkpoint.json");
+  return isHealthyCandidate(candidatePath, env) ? candidatePath : productionPath;
+}
+
+function candidateHealthPath(checkpointPath, env) {
+  const configured = String(env.SALT_VISUAL_CANDIDATE_HEALTH_PATH || "").trim();
+  if (configured) return resolve(configured);
+  return resolve(dirname(checkpointPath), `${basename(checkpointPath, ".json")}.health.json`);
+}
+
+function isHealthyCandidate(checkpointPath, env) {
+  if (!existsSync(checkpointPath)) return false;
+  const healthPath = candidateHealthPath(checkpointPath, env);
+  if (!existsSync(healthPath)) return false;
+  try {
+    const checkpoint = JSON.parse(readFileSync(checkpointPath, "utf8"));
+    const health = JSON.parse(readFileSync(healthPath, "utf8"));
+    return checkpoint.kind === "salt-visual-base-checkpoint" &&
+      health.kind === "salt-visual-candidate-health" &&
+      health.status === "passed" &&
+      resolve(String(health.checkpointPath || "")) === checkpointPath &&
+      String(health.modelFingerprint || "") === String(checkpoint.modelFingerprint || "") &&
+      health.runtime?.device === "metal" &&
+      Number(health.runtime?.embeddingDimensions) > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function prepareCandidateTraining(args) {
   if (!(await fileExists(args.manifest))) throw new Error(`Hydrated candidate manifest is missing: ${args.manifest}`);
   if (!(await fileExists(args.baseCheckpoint))) throw new Error(`Base Metal checkpoint manifest is missing: ${args.baseCheckpoint}`);
@@ -107,7 +143,7 @@ export async function prepareCandidateTraining(args) {
     corpusRoot: args.corpusRoot,
     labelsRoot: args.labelsRoot,
     workRoot: args.workRoot,
-    stateOutput: resolve(outputDir, "visual-taxonomy-shard-training-state.json"),
+    stateOutput: args.stateOutput,
     baseCheckpoint: args.baseCheckpoint,
     encoderCommandJson: JSON.stringify([resolveMetalPython(), commandPath("visual-taxonomy-encoder-mlx.py"), "encode"]),
     encoderTrainCommandJson: JSON.stringify([resolveMetalPython(), commandPath("visual-taxonomy-encoder-mlx.py"), "fine-tune"]),

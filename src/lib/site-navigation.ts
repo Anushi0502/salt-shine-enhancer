@@ -262,6 +262,7 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
     handle: "face-mask",
     label: "Health & Wellness",
     childHandles: [
+      "posture-support",
       "sleep-essentials",
       "relaxation-products",
       "massage-tools",
@@ -271,7 +272,7 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
   {
     handle: "shopping-bags-jute-bags",
     label: "Travel & Outdoor",
-    childHandles: ["travel-organizers", "car-accessories", "portable-gadgets", "outdoor-essentials"],
+    childHandles: ["travel-organizers", "car-accessories", "camping-gear", "portable-gadgets", "outdoor-essentials"],
   },
   {
     handle: "books",
@@ -280,18 +281,34 @@ export const SITE_HOME_COLLECTION_GROUPS: SiteHomeCollectionGroup[] = [
       "daily-living-aids",
       "home-safety",
       "memory-organization",
+      "caregiver-essentials",
       "gifts-for-seniors",
+      "mobility-support",
     ],
   },
   {
     handle: "gifts",
     label: "Gifts Collection",
-    childHandles: ["gifts-for-mom", "gifts-for-dad", "gifts-for-seniors", "housewarming-gifts", "birthday-gifts"],
+    childHandles: [
+      "gifts-for-mom",
+      "gifts-for-dad",
+      "gifts-for-seniors",
+      "housewarming-gifts",
+      "birthday-gifts",
+      "holiday-gifts",
+    ],
   },
   {
     handle: "unique-products",
     label: "Trending Finds",
-    childHandles: ["appplaza-best-sellers", "new-arrivals", "staff-picks", "under-25", "under-50"],
+    childHandles: [
+      "viral-tiktok-products",
+      "appplaza-best-sellers",
+      "new-arrivals",
+      "staff-picks",
+      "under-25",
+      "under-50",
+    ],
   },
   {
     handle: "hats",

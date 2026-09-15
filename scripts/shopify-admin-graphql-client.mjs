@@ -3,6 +3,14 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
+import {
+  boundedInteger,
+  createInFlightCache,
+  createRequestScheduler,
+  parseRetryAfterMs,
+  retryDelayMs,
+  stableJson,
+} from "./lib/performance-runtime.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,19 +59,35 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
   const accessToken = (process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SALT_SHOPIFY_ADMIN_ACCESS_TOKEN || "").trim();
   const graphqlUrl = `${new URL(shopBase).origin}/admin/api/${apiVersion}/graphql.json`;
   const cliBinary = process.env.SHOPIFY_CLI_BINARY || "shopify";
-  const requestDelayMs = Math.max(0, Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS || 300));
-  const requestTimeoutMs = Math.max(10_000, Number(process.env.SALT_SHOPIFY_REQUEST_TIMEOUT_MS || 180_000));
-  const maxAttempts = Math.max(1, Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 5));
-  const maxRetryDelayMs = Math.max(1000, Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 30_000));
+  const requestDelayValue = Number(process.env.SALT_SHOPIFY_REQUEST_DELAY_MS ?? 300);
+  const requestTimeoutValue = Number(process.env.SALT_SHOPIFY_REQUEST_TIMEOUT_MS ?? 180_000);
+  const maxRetryDelayValue = Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS ?? 30_000);
+  const requestDelayMs = Number.isFinite(requestDelayValue) ? Math.max(0, requestDelayValue) : 300;
+  const requestTimeoutMs = Number.isFinite(requestTimeoutValue) ? Math.max(10_000, requestTimeoutValue) : 180_000;
+  const maxAttempts = boundedInteger(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS, 5, { min: 1, max: 20 });
+  const maxRetryDelayMs = Number.isFinite(maxRetryDelayValue) ? Math.max(1000, maxRetryDelayValue) : 30_000;
+  const requestConcurrency = boundedInteger(process.env.SALT_SHOPIFY_REQUEST_CONCURRENCY, 4, { min: 1, max: 32 });
   const cliAgentInfo = process.env.SHOPIFY_CLI_AGENT_INFO || `n:salt-shine-enhancer|v:1|p:${agentName}`;
   const cliAgentIds =
     process.env.SHOPIFY_CLI_AGENT_IDS ||
     `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:${agentName}`;
-  let lastRequestFinishedAt = 0;
+  const requestScheduler = createRequestScheduler({
+    concurrency: requestConcurrency,
+    minIntervalMs: requestDelayMs,
+  });
+  const inFlightReads = createInFlightCache();
 
-  async function run(query, variables = {}, { allowMutations = false, operation = "Shopify request", retryInfo = [] } = {}) {
-    const waitFor = requestDelayMs - (Date.now() - lastRequestFinishedAt);
-    if (waitFor > 0) await sleep(waitFor);
+  async function runRequest(query, variables = {}, {
+    allowMutations = false,
+    operation = "Shopify request",
+    retryInfo = [],
+    maxAttempts: requestedMaxAttempts = maxAttempts,
+    maxRetryDelayMs: requestedMaxRetryDelayMs = maxRetryDelayMs,
+    requestTimeoutMs: requestedRequestTimeoutMs = requestTimeoutMs,
+  } = {}) {
+    const requestMaxAttempts = Math.max(1, Number(requestedMaxAttempts) || maxAttempts);
+    const requestMaxRetryDelayMs = Math.max(1000, Number(requestedMaxRetryDelayMs) || maxRetryDelayMs);
+    const effectiveRequestTimeoutMs = Math.max(10_000, Number(requestedRequestTimeoutMs) || requestTimeoutMs);
 
     let attempt = 0;
     while (true) {
@@ -77,13 +101,15 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
               "X-Shopify-Access-Token": accessToken,
             },
             body: JSON.stringify({ query, variables }),
-            signal: AbortSignal.timeout(requestTimeoutMs),
+            signal: AbortSignal.timeout(effectiveRequestTimeoutMs),
           });
           const raw = await response.text();
           if (!response.ok) {
-            throw new Error(`Admin GraphQL HTTP ${response.status}: ${raw.slice(0, 500)}`);
+            const error = new Error(`Admin GraphQL HTTP ${response.status}: ${raw.slice(0, 500)}`);
+            error.retryAfterMs = parseRetryAfterMs(response.headers?.get?.("retry-after"));
+            error.status = response.status;
+            throw error;
           }
-          lastRequestFinishedAt = Date.now();
           return parseGraphQlPayload(raw);
         }
 
@@ -122,7 +148,7 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
               SHOPIFY_CLI_AGENT_IDS: cliAgentIds,
             },
             maxBuffer: 20 * 1024 * 1024,
-            timeout: requestTimeoutMs,
+            timeout: effectiveRequestTimeoutMs,
             killSignal: "SIGTERM",
           });
           let raw = result.stdout || "";
@@ -131,17 +157,20 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
           } catch {
             // Older Shopify CLI builds only emit JSON on stdout.
           }
-          lastRequestFinishedAt = Date.now();
           return parseGraphQlPayload(raw);
         } finally {
           await rm(tempDir, { recursive: true, force: true });
         }
       } catch (error) {
-        lastRequestFinishedAt = Date.now();
-        if (!isRetryable(error) || attempt >= maxAttempts - 1) {
+        if (!isRetryable(error) || attempt >= requestMaxAttempts - 1) {
           throw new Error(`${operation} failed: ${normalizeText(error?.message || error)}`);
         }
-        const delayMs = Math.min(maxRetryDelayMs, Math.max(requestDelayMs, 1000 * 2 ** attempt));
+        const delayMs = retryDelayMs({
+          attempt,
+          baseMs: Math.max(requestDelayMs, 1000),
+          maxMs: requestMaxRetryDelayMs,
+          retryAfterMs: error?.retryAfterMs,
+        });
         retryInfo.push({
           operation,
           attempt: attempt + 1,
@@ -155,9 +184,23 @@ export function createShopifyAdminGraphQLClient({ rootDir, agentName }) {
     }
   }
 
+  function run(query, variables = {}, options = {}) {
+    const allowMutations = options?.allowMutations === true;
+    const schedule = () => requestScheduler.run(() => runRequest(query, variables, options));
+    if (allowMutations || process.env.SALT_SHOPIFY_DISABLE_READ_DEDUPLICATION === "1") return schedule();
+    const key = `${query}\n${stableJson(variables || {})}\n${stableJson({
+      maxAttempts: options?.maxAttempts ?? null,
+      maxRetryDelayMs: options?.maxRetryDelayMs ?? null,
+      requestTimeoutMs: options?.requestTimeoutMs ?? null,
+    })}`;
+    return inFlightReads.getOrCreate(key, schedule);
+  }
+
   return {
     run,
     storeDomain,
     apiVersion,
+    requestConcurrency,
+    requestDelayMs,
   };
 }

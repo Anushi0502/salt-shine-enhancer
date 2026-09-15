@@ -1,0 +1,619 @@
+{
+  "generatedAt": "2026-09-11T09:04:41.344Z",
+  "source": "live Shopify collection artwork composed in a SALT reference-style template",
+  "count": 68,
+  "collections": [
+    {
+      "number": 12,
+      "handle": "pet-essentials",
+      "title": "Pet Essentials",
+      "collectionId": "gid://shopify/Collection/286315872355",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_51_29_PM.png?v=1775208276",
+      "fileName": "12-pet-essentials.png",
+      "group": "pets"
+    },
+    {
+      "number": 13,
+      "handle": "wall-lights",
+      "title": "Wall Lights",
+      "collectionId": "gid://shopify/Collection/298388553827",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/add-some-wall-lights-also.png?v=1785420242",
+      "fileName": "13-wall-lights.png",
+      "group": "home"
+    },
+    {
+      "number": 14,
+      "handle": "kids-wear",
+      "title": "Kids Wear",
+      "collectionId": "gid://shopify/Collection/299470618723",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-ad24cb55-04a2-406c-871f-15d8738e03f0.png?v=1786452361",
+      "fileName": "14-kids-wear.png",
+      "group": "kids"
+    },
+    {
+      "number": 15,
+      "handle": "mens-accessories",
+      "title": "Men's Accessories",
+      "collectionId": "gid://shopify/Collection/299470520419",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-f4ec3eef-9729-4bc4-aa6a-b0fd4f3ec961.png?v=1786021448",
+      "fileName": "15-mens-accessories.png",
+      "group": "fashion"
+    },
+    {
+      "number": 16,
+      "handle": "mens-bags-wallets",
+      "title": "Men's Bags & Wallets",
+      "collectionId": "gid://shopify/Collection/299470487651",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-1b4c9cf6-007e-43bd-9052-33b2ad79c3c6.png?v=1786022578",
+      "fileName": "16-mens-bags-wallets.png",
+      "group": "fashion"
+    },
+    {
+      "number": 17,
+      "handle": "men-t-shirt",
+      "title": "Men's T-Shirts",
+      "collectionId": "gid://shopify/Collection/299448205411",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Aug_3_2026_05_12_13_PM.png?v=1786022705",
+      "fileName": "17-men-t-shirt.png",
+      "group": "fashion"
+    },
+    {
+      "number": 18,
+      "handle": "stationery",
+      "title": "Stationery",
+      "collectionId": "gid://shopify/Collection/299373887587",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/enhance.png?v=1785421087",
+      "fileName": "18-stationery.png",
+      "group": "home"
+    },
+    {
+      "number": 19,
+      "handle": "earbuds-and-cases",
+      "title": "Earbuds & Cases",
+      "collectionId": "gid://shopify/Collection/299373396067",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/earbuds-collection.png?v=1786019451",
+      "fileName": "19-earbuds-and-cases.png",
+      "group": "tech"
+    },
+    {
+      "number": 20,
+      "handle": "iphone-cases",
+      "title": "iPhone Cases",
+      "collectionId": "gid://shopify/Collection/299372740707",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-i-phone-covers.png?v=1785416720",
+      "fileName": "20-iphone-cases.png",
+      "group": "tech"
+    },
+    {
+      "number": 21,
+      "handle": "dramatic-lashes",
+      "title": "Dramatic Lashes",
+      "collectionId": "gid://shopify/Collection/298791796835",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-false-eyelashes.png?v=1786449526",
+      "fileName": "21-dramatic-lashes.png",
+      "group": "beauty"
+    },
+    {
+      "number": 22,
+      "handle": "mascara-collection",
+      "title": "Mascara Collection",
+      "collectionId": "gid://shopify/Collection/298791764067",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-the-text_a2695a32-e5ef-4b7a-a835-a9e377467da6.png?v=1786020837",
+      "fileName": "22-mascara-collection.png",
+      "group": "beauty"
+    },
+    {
+      "number": 23,
+      "handle": "eye-beauty-collection",
+      "title": "Eye Beauty Collection",
+      "collectionId": "gid://shopify/Collection/298791731299",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-all-eyemakeup-collection.png?v=1789041956",
+      "fileName": "23-eye-beauty-collection.png",
+      "group": "beauty"
+    },
+    {
+      "number": 24,
+      "handle": "glam-eye-palettes",
+      "title": "Glam Eye Palettes",
+      "collectionId": "gid://shopify/Collection/298791665763",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-the-text_b20afab2-951e-4201-a76e-8ad5f0193720.png?v=1786449394",
+      "fileName": "24-glam-eye-palettes.png",
+      "group": "beauty"
+    },
+    {
+      "number": 25,
+      "handle": "blush-glow",
+      "title": "Blush & Glow",
+      "collectionId": "gid://shopify/Collection/298740777059",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-an-image-for-the-blush-collection.png?v=1786448980",
+      "fileName": "25-blush-glow.png",
+      "group": "beauty"
+    },
+    {
+      "number": 26,
+      "handle": "repair-shine-serums",
+      "title": "Repair & Shine Serums",
+      "collectionId": "gid://shopify/Collection/298734518371",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remmove-text.png?v=1783591585",
+      "fileName": "26-repair-shine-serums.png",
+      "group": "beauty"
+    },
+    {
+      "number": 27,
+      "handle": "hair-nourishment",
+      "title": "Hair Nourishment",
+      "collectionId": "gid://shopify/Collection/298734092387",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/generate-a-image-for-the-hair-oil-and-hair-mask-for-the-collectionof-hair-nourishment.png?v=1783590889",
+      "fileName": "27-hair-nourishment.png",
+      "group": "beauty"
+    },
+    {
+      "number": 28,
+      "handle": "hair-wash-essentials",
+      "title": "Hair Wash Essentials",
+      "collectionId": "gid://shopify/Collection/298733994083",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/highlight-shampoo-nd-conditioner.png?v=1786020705",
+      "fileName": "28-hair-wash-essentials.png",
+      "group": "beauty"
+    },
+    {
+      "number": 29,
+      "handle": "watches",
+      "title": "Watches",
+      "collectionId": "gid://shopify/Collection/298713383011",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-black-watch.png?v=1786013989",
+      "fileName": "29-watches.png",
+      "group": "fashion"
+    },
+    {
+      "number": 30,
+      "handle": "womens-accessories",
+      "title": "Women's Accessories",
+      "collectionId": "gid://shopify/Collection/298712432739",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/only-sunglases-show.png?v=1786448281",
+      "fileName": "30-womens-accessories.png",
+      "group": "fashion"
+    },
+    {
+      "number": 31,
+      "handle": "women-bags-and-wallets",
+      "title": "Women's Bags & Wallets",
+      "collectionId": "gid://shopify/Collection/298712137827",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-women-bags-and-walltes-clutches-hand-bags-tote-bags.png?v=1786011671",
+      "fileName": "31-women-bags-and-wallets.png",
+      "group": "fashion"
+    },
+    {
+      "number": 32,
+      "handle": "womens-beauty-essentials",
+      "title": "Women's Beauty & Skincare",
+      "collectionId": "gid://shopify/Collection/298712039523",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-image-for-womens-beauty-and-makeup-essential-collection.png?v=1786448648",
+      "fileName": "32-womens-beauty-essentials.png",
+      "group": "beauty"
+    },
+    {
+      "number": 33,
+      "handle": "staff-picks",
+      "title": "Staff Picks",
+      "collectionId": "gid://shopify/Collection/298389602403",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-c1840fc7-3192-43ce-bd43-413fd922ae98.png?v=1785839554",
+      "fileName": "33-staff-picks.png",
+      "group": "general"
+    },
+    {
+      "number": 34,
+      "handle": "viral-tiktok-products",
+      "title": "Viral TikTok Products",
+      "collectionId": "gid://shopify/Collection/298389569635",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/viral-tiktok-picks.png?v=1786116177",
+      "fileName": "34-viral-tiktok-products.png",
+      "group": "general"
+    },
+    {
+      "number": 35,
+      "handle": "gifts-for-seniors",
+      "title": "Gifts for Seniors",
+      "collectionId": "gid://shopify/Collection/298389504099",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/gifts-for-seniors.png?v=1785484062",
+      "fileName": "35-gifts-for-seniors.png",
+      "group": "gifts"
+    },
+    {
+      "number": 36,
+      "handle": "gifts-for-dad",
+      "title": "Gifts for Dad",
+      "collectionId": "gid://shopify/Collection/298389471331",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/gift-for-dad-collection.png?v=1786019143",
+      "fileName": "36-gifts-for-dad.png",
+      "group": "gifts"
+    },
+    {
+      "number": 37,
+      "handle": "gifts-for-mom",
+      "title": "Gifts for Mom",
+      "collectionId": "gid://shopify/Collection/298389438563",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-gifts-of-mom-like-show-the-rings.png?v=1785419364",
+      "fileName": "37-gifts-for-mom.png",
+      "group": "gifts"
+    },
+    {
+      "number": 38,
+      "handle": "memory-organization",
+      "title": "Memory & Organization",
+      "collectionId": "gid://shopify/Collection/298389340259",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-bb388d6f-f5ea-4f8e-9386-9528e7736507.png?v=1789025095",
+      "fileName": "38-memory-organization.png",
+      "group": "senior"
+    },
+    {
+      "number": 39,
+      "handle": "home-safety",
+      "title": "Home Safety",
+      "collectionId": "gid://shopify/Collection/298389307491",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-d07a1a58-37a7-42a4-87ef-cfd7903f0180.png?v=1785839539",
+      "fileName": "39-home-safety.png",
+      "group": "senior"
+    },
+    {
+      "number": 40,
+      "handle": "daily-living-aids",
+      "title": "Daily Living Aids",
+      "collectionId": "gid://shopify/Collection/298389274723",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/please-create-image-for-this-collection-its-daily-living-items.png?v=1783099695",
+      "fileName": "40-daily-living-aids.png",
+      "group": "senior"
+    },
+    {
+      "number": 41,
+      "handle": "relaxation-products",
+      "title": "Relaxation Products",
+      "collectionId": "gid://shopify/Collection/298389012579",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-5035ea37-82c8-488b-85f3-cce4c5776346.png?v=1786019645",
+      "fileName": "41-relaxation-products.png",
+      "group": "wellness"
+    },
+    {
+      "number": 42,
+      "handle": "sleep-essentials",
+      "title": "Sleep Essentials",
+      "collectionId": "gid://shopify/Collection/298388979811",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/sleep-essentials-banner.png?v=1786020087",
+      "fileName": "42-sleep-essentials.png",
+      "group": "wellness"
+    },
+    {
+      "number": 43,
+      "handle": "pet-toys",
+      "title": "Pet Toys",
+      "collectionId": "gid://shopify/Collection/298388914275",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-the-text_966c7095-f069-4743-84c6-132b36d81b2e.png?v=1785418931",
+      "fileName": "43-pet-toys.png",
+      "group": "pets"
+    },
+    {
+      "number": 44,
+      "handle": "pet-grooming",
+      "title": "Pet Grooming",
+      "collectionId": "gid://shopify/Collection/298388881507",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-28d3ee1f-f8ae-4b83-a039-d60488c4722e.png?v=1785839525",
+      "fileName": "44-pet-grooming.png",
+      "group": "pets"
+    },
+    {
+      "number": 45,
+      "handle": "pet-feeding",
+      "title": "Pet Feeding",
+      "collectionId": "gid://shopify/Collection/298388848739",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-bf0c3517-158a-4278-9a87-8f516c221ef8.png?v=1785839519",
+      "fileName": "45-pet-feeding.png",
+      "group": "pets"
+    },
+    {
+      "number": 46,
+      "handle": "pet-travel",
+      "title": "Pet Travel",
+      "collectionId": "gid://shopify/Collection/298388815971",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-18efd562-5a43-47e1-b947-2b03d9ef87dd.png?v=1785839512",
+      "fileName": "46-pet-travel.png",
+      "group": "pets"
+    },
+    {
+      "number": 47,
+      "handle": "cat-supplies",
+      "title": "Cat Supplies",
+      "collectionId": "gid://shopify/Collection/298388783203",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-69ae9703-777b-42ef-b84a-9bb33f3382e8.png?v=1785839505",
+      "fileName": "47-cat-supplies.png",
+      "group": "pets"
+    },
+    {
+      "number": 48,
+      "handle": "decorative-accessories",
+      "title": "Decorative Accessories",
+      "collectionId": "gid://shopify/Collection/298388717667",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-0c68f11e-4ba5-4c20-8fcf-1375df74a377.png?v=1786018796",
+      "fileName": "48-decorative-accessories.png",
+      "group": "home"
+    },
+    {
+      "number": 49,
+      "handle": "smart-lighting",
+      "title": "Lighting & Decor",
+      "collectionId": "gid://shopify/Collection/298388684899",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/cahnge-its-about-decor-lighning-items.png?v=1783100595",
+      "fileName": "49-smart-lighting.png",
+      "group": "home"
+    },
+    {
+      "number": 50,
+      "handle": "seasonal-decor",
+      "title": "Seasonal Decor",
+      "collectionId": "gid://shopify/Collection/298388652131",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-b246193f-3e84-421e-9292-7a3e8005ccaf.png?v=1786019077",
+      "fileName": "50-seasonal-decor.png",
+      "group": "home"
+    },
+    {
+      "number": 51,
+      "handle": "wall-art",
+      "title": "Wall Art",
+      "collectionId": "gid://shopify/Collection/298388619363",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/enhance-this.png?v=1784815303",
+      "fileName": "51-wall-art.png",
+      "group": "home"
+    },
+    {
+      "number": 52,
+      "handle": "holiday-gifts",
+      "title": "Holiday Gifts",
+      "collectionId": "gid://shopify/Collection/298217209955",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/holiday-specials-collection-banner.png?v=1786538889",
+      "fileName": "52-holiday-gifts.png",
+      "group": "gifts"
+    },
+    {
+      "number": 53,
+      "handle": "housewarming-gifts",
+      "title": "Housewarming Gifts",
+      "collectionId": "gid://shopify/Collection/298217046115",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-housewarming-gifts.png?v=1785419123",
+      "fileName": "53-housewarming-gifts.png",
+      "group": "gifts"
+    },
+    {
+      "number": 54,
+      "handle": "senior-living-solutions",
+      "title": "Senior Living Solutions",
+      "collectionId": "gid://shopify/Collection/298109960291",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-banner-for-senior-product-whch-inclde-massager-bib-and-gloves-and-planners.png?v=1783885158",
+      "fileName": "54-senior-living-solutions.png",
+      "group": "senior"
+    },
+    {
+      "number": 55,
+      "handle": "gifts",
+      "title": "Gifts Collection",
+      "collectionId": "gid://shopify/Collection/296701886563",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_24_2026_12_18_26_PM.png?v=1777013396",
+      "fileName": "55-gifts.png",
+      "group": "gifts"
+    },
+    {
+      "number": 56,
+      "handle": "best-sellers",
+      "title": "Best Sellers",
+      "collectionId": "gid://shopify/Collection/291396354147",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/bestseller-collection-premium-picks.png?v=1784817319",
+      "fileName": "56-best-sellers.png",
+      "group": "general"
+    },
+    {
+      "number": 57,
+      "handle": "health-wellness",
+      "title": "Health & Wellness",
+      "collectionId": "gid://shopify/Collection/287952797795",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_26_32_PM.png?v=1775205807",
+      "fileName": "57-health-wellness.png",
+      "group": "senior"
+    },
+    {
+      "number": 58,
+      "handle": "jeans",
+      "title": "Jeans",
+      "collectionId": "gid://shopify/Collection/287803244643",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_03_19_38_PM.png?v=1786022855",
+      "fileName": "58-jeans.png",
+      "group": "fashion"
+    },
+    {
+      "number": 59,
+      "handle": "medical-accessories",
+      "title": "Medical Accessories",
+      "collectionId": "gid://shopify/Collection/286768169059",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_55_35_PM.png?v=1775205018",
+      "fileName": "59-medical-accessories.png",
+      "group": "senior"
+    },
+    {
+      "number": 60,
+      "handle": "garden-tools",
+      "title": "Garden & Tools",
+      "collectionId": "gid://shopify/Collection/286183522403",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_10_40_PM.png?v=1775205754",
+      "fileName": "60-garden-tools.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 61,
+      "handle": "artificial-plants",
+      "title": "Artificial Plants",
+      "collectionId": "gid://shopify/Collection/284296872035",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_12_16_37_PM.png?v=1775199635",
+      "fileName": "61-artificial-plants.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 62,
+      "handle": "covers-cases",
+      "title": "Covers & Cases",
+      "collectionId": "gid://shopify/Collection/299470717027",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-abeae8a1-5be7-4d3b-9f15-bee1b8e7f69a.png?v=1785839622",
+      "fileName": "62-covers-cases.png",
+      "group": "tech"
+    },
+    {
+      "number": 63,
+      "handle": "car-accessories",
+      "title": "Home & Car Accessories",
+      "collectionId": "gid://shopify/Collection/298389143651",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/make-different-pictire-all-car-accesiries-will-cobver-car-cleaning-item-too.png?v=1783101214",
+      "fileName": "63-car-accessories.png",
+      "group": "tech"
+    },
+    {
+      "number": 64,
+      "handle": "cleaning-tools",
+      "title": "Cleaning Tools",
+      "collectionId": "gid://shopify/Collection/298388521059",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/home-cleani-g-tolols-please-make-thsi-sagin-with-my-stopore-theme-mop-and-broom.png?v=1783333069",
+      "fileName": "64-cleaning-tools.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 65,
+      "handle": "home-decor",
+      "title": "Home & Decor",
+      "collectionId": "gid://shopify/Collection/285123412067",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_56_29_PM.png?v=1786019010",
+      "fileName": "65-home-decor.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 66,
+      "handle": "dining-essentials",
+      "title": "Dining Essentials",
+      "collectionId": "gid://shopify/Collection/298388488291",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-6c2fa483-f4eb-4f3d-ae87-b30120a4372e.png?v=1785839478",
+      "fileName": "66-dining-essentials.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 67,
+      "handle": "coffee-tea-accessories",
+      "title": "Coffee & Tea Accessories",
+      "collectionId": "gid://shopify/Collection/298388455523",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-f814810a-cec2-4c26-b5f4-4695a4d82567.png?v=1786454512",
+      "fileName": "67-coffee-tea-accessories.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 68,
+      "handle": "under-44-99",
+      "title": "Under $44.99",
+      "collectionId": "gid://shopify/Collection/298216882275",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/i-want-craete-image-for-under-100-prodct-with-stotre-theme-and-alo-use-very-good-prodcuts-from-the-store-expensive-like-shoose-ect-and-mix-of-produtsc-only-from-teh-store.png?v=1789021193",
+      "fileName": "68-under-44-99.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 69,
+      "handle": "cookware",
+      "title": "Kitchen & Cookware",
+      "collectionId": "gid://shopify/Collection/285291511907",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_01_08_57_PM_307ed98e-0f41-4fff-857b-3547d66de159.png?v=1775207663",
+      "fileName": "69-cookware.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 70,
+      "handle": "kitchen-gadgets",
+      "title": "Kitchen Gadgets",
+      "collectionId": "gid://shopify/Collection/298388389987",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-the-text_98a83479-0fe9-4b68-892e-1bc18ed761cf.png?v=1785418018",
+      "fileName": "70-kitchen-gadgets.png",
+      "group": "kitchen"
+    },
+    {
+      "number": 71,
+      "handle": "beauty-makeup-essentials",
+      "title": "Beauty Makeup Essentials",
+      "collectionId": "gid://shopify/Collection/298791632995",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/remove-the-text.png?v=1786448436",
+      "fileName": "71-beauty-makeup-essentials.png",
+      "group": "beauty"
+    },
+    {
+      "number": 72,
+      "handle": "lips-and-care",
+      "title": "Lip Care",
+      "collectionId": "gid://shopify/Collection/298713153635",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-of-the-lipisticks-and-lip-glosse-lip-care.png?v=1786449110",
+      "fileName": "72-lips-and-care.png",
+      "group": "beauty"
+    },
+    {
+      "number": 73,
+      "handle": "kids",
+      "title": "Kids",
+      "collectionId": "gid://shopify/Collection/299470585955",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/exec-1e5989fa-a530-4161-9567-1992e2c52521.png?v=1785839595",
+      "fileName": "73-kids.png",
+      "group": "kids"
+    },
+    {
+      "number": 74,
+      "handle": "back-to-school",
+      "title": "Back to School",
+      "collectionId": "gid://shopify/Collection/299371954275",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-school-supplies-like-school-bags-and-waterbottles-and-lunch-boxes-pencil-boxes-and-pen-pencil.png?v=1786019543",
+      "fileName": "74-back-to-school.png",
+      "group": "kids"
+    },
+    {
+      "number": 75,
+      "handle": "storage-organization",
+      "title": "Storage & Organization",
+      "collectionId": "gid://shopify/Collection/298388422755",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-banner-for-the-storage-and-organizer-like-lunch-boxes-and-organizers.png?v=1786019761",
+      "fileName": "75-storage-organization.png",
+      "group": "home"
+    },
+    {
+      "number": 76,
+      "handle": "travel-outdoor",
+      "title": "Camping & Travel Essentials",
+      "collectionId": "gid://shopify/Collection/288268320867",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/ChatGPT_Image_Apr_3_2026_02_58_38_PM.png?v=1783883619",
+      "fileName": "76-travel-outdoor.png",
+      "group": "home"
+    },
+    {
+      "number": 77,
+      "handle": "face-creams-moisturizers",
+      "title": "Face Creams & Moisturizers",
+      "collectionId": "gid://shopify/Collection/298741792867",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/create-a-image-banner-for-collection-of-face-cream-and-moisturizer.png?v=1786020611",
+      "fileName": "77-face-creams-moisturizers.png",
+      "group": "beauty"
+    },
+    {
+      "number": 78,
+      "handle": "jewelry-accessories",
+      "title": "Jewelry & Accessories",
+      "collectionId": "gid://shopify/Collection/299506466915",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/jewelry-n-accessories-banner.png?v=1786114441",
+      "fileName": "78-jewelry-accessories.png",
+      "group": "fashion"
+    },
+    {
+      "number": 79,
+      "handle": "mens-footwear",
+      "title": "Men's Footwear",
+      "collectionId": "gid://shopify/Collection/300451201123",
+      "sourceImageUrl": "https://cdn.shopify.com/s/files/1/0580/7659/4275/collections/mens-footwear-banner-elevated.png?v=1788956218",
+      "fileName": "79-mens-footwear.png",
+      "group": "fashion"
+    }
+  ]
+}

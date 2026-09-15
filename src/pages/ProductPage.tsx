@@ -64,6 +64,7 @@ import {
 } from "@/lib/meta-pixel";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
+import { getEditorialGuidesForProductHandle } from "@/lib/editorial-pages";
 import {
   useCollectionProductsMap,
   useProductByHandle,
@@ -112,11 +113,25 @@ function variantOptionParts(title?: string): string[] {
     .slice(0, 3);
 }
 
-function optionGroupLabel(index: number, groupCount: number): string {
-  if (groupCount === 2) {
-    return index === 0 ? "Color" : "Size";
-  }
+function variantOptionValues(variant?: ShopifyProduct["variants"][number] | null): string[] {
+  const selectedOptions = Array.isArray(variant?.selected_options)
+    ? variant.selected_options.map((option) => String(option?.value || "").trim()).filter(Boolean)
+    : [];
+  return selectedOptions.length ? selectedOptions : variantOptionParts(variant?.title);
+}
 
+function variantOptionEntries(variant?: ShopifyProduct["variants"][number] | null): Array<{ name: string; value: string }> {
+  const selectedOptions = Array.isArray(variant?.selected_options)
+    ? variant.selected_options
+      .map((option) => ({ name: String(option?.name || "").trim(), value: String(option?.value || "").trim() }))
+      .filter((option) => option.name && option.value)
+    : [];
+  return selectedOptions.length
+    ? selectedOptions
+    : variantOptionParts(variant?.title).map((value) => ({ name: "", value }));
+}
+
+function optionGroupLabel(index: number, groupCount: number): string {
   return groupCount === 1 ? "Option" : `Option ${index + 1}`;
 }
 
@@ -397,6 +412,10 @@ const ProductPage = () => {
   const collectionIndex = useMemo(
     () => buildProductCollectionIndex(collectionProductsMapPayload),
     [collectionProductsMapPayload],
+  );
+  const editorialGuides = useMemo(
+    () => getEditorialGuidesForProductHandle(product?.handle || ""),
+    [product?.handle],
   );
 
   useEffect(() => {
@@ -783,19 +802,22 @@ const ProductPage = () => {
       />
     );
   }
-  const variantOptionGroupCount = Math.max(1, ...variants.map((variant) => variantOptionParts(variant.title).length));
-  const selectedVariantParts = variantOptionParts(selectedVariant?.title);
+  const variantOptionGroupCount = Math.max(1, ...variants.map((variant) => variantOptionValues(variant).length));
+  const selectedVariantParts = variantOptionValues(selectedVariant);
   const variantOptionGroups = Array.from({ length: variantOptionGroupCount }, (_, groupIndex) => {
     const values = Array.from(
       new Set(
         variants
-          .map((variant) => variantOptionParts(variant.title)[groupIndex])
+          .map((variant) => variantOptionValues(variant)[groupIndex])
           .filter(Boolean),
       ),
     );
+    const declaredLabel = variants
+      .map((variant) => variantOptionEntries(variant)[groupIndex]?.name)
+      .find(Boolean);
 
     return {
-      label: optionGroupLabel(groupIndex, variantOptionGroupCount),
+      label: declaredLabel || optionGroupLabel(groupIndex, variantOptionGroupCount),
       values,
     };
   });
@@ -934,13 +956,13 @@ const ProductPage = () => {
 
   const selectVariantOption = (groupIndex: number, value: string) => {
     const matchingVariant = variants.find((variant) => {
-      const parts = variantOptionParts(variant.title);
+      const parts = variantOptionValues(variant);
       return (
         parts[groupIndex] === value &&
         parts.every((part, index) => index === groupIndex || !selectedVariantParts[index] || part === selectedVariantParts[index]) &&
         isVariantAvailable(variant)
       );
-    }) || variants.find((variant) => variantOptionParts(variant.title)[groupIndex] === value && isVariantAvailable(variant));
+    }) || variants.find((variant) => variantOptionValues(variant)[groupIndex] === value && isVariantAvailable(variant));
 
     if (matchingVariant) {
       setSelectedVariantId(matchingVariant.id);
@@ -1419,6 +1441,30 @@ const ProductPage = () => {
               </AccordionItem>
             </Accordion>
 
+            {editorialGuides.length > 0 ? (
+              <section className="mt-4 rounded-[1.45rem] border border-primary/20 bg-primary/5 p-4" aria-labelledby="product-guide-heading">
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-primary">Helpful guide</p>
+                <h2 id="product-guide-heading" className="mt-1 text-sm font-semibold text-foreground">
+                  Read before you choose
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Compare the live product details with SALT's focused buying guide.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {editorialGuides.slice(0, 2).map((guide) => (
+                    <Link
+                      key={guide.handle}
+                      to={`/pages/${guide.handle}`}
+                      className="group flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-background/80 px-3 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50"
+                    >
+                      <span className="line-clamp-2">{guide.title}</span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {variants.length > 0 ? (
               <div className="mt-5 space-y-5 border-t border-border/70 pt-5">
                 {fitGuidance ? (
@@ -1442,7 +1488,7 @@ const ProductPage = () => {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {group.values.map((value) => {
                         const valueAvailable = variants.some(
-                          (variant) => variantOptionParts(variant.title)[groupIndex] === value && isVariantAvailable(variant),
+                          (variant) => variantOptionValues(variant)[groupIndex] === value && isVariantAvailable(variant),
                         );
                         const valueSelected = selectedVariantParts[groupIndex] === value;
 

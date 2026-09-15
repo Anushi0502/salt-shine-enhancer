@@ -7,6 +7,11 @@ export interface ShopifyImage {
   variant_ids?: number[];
 }
 
+export interface ShopifyVariantOption {
+  name: string;
+  value: string;
+}
+
 export interface ShopifyVariant {
   id: number;
   title: string;
@@ -16,6 +21,7 @@ export interface ShopifyVariant {
   sku?: string;
   requires_shipping?: boolean;
   featured_image?: ShopifyImage | null;
+  selected_options?: ShopifyVariantOption[];
 }
 
 export interface ShopifyProductReference {

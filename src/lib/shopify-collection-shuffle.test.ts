@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyCollectionReorderMoves,
+  buildLiveMembershipTarget,
   buildCollectionReorderMoves,
   shuffleCollectionProductIds,
 } from "@/lib/shopify-collection-shuffle.js";
@@ -28,5 +29,10 @@ describe("manual collection shuffle", () => {
     const current = Array.from({ length: 300 }, (_, index) => String(index));
     const desired = [...current].reverse();
     expect(buildCollectionReorderMoves(current, desired, 250)).toHaveLength(250);
+  });
+
+  it("rebuilds a live target without reintroducing missing or duplicate products", () => {
+    expect(buildLiveMembershipTarget(["new", "b", "b", "c"], ["a", "b", "c", "a"]))
+      .toEqual(["b", "c", "new"]);
   });
 });

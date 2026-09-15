@@ -39,6 +39,13 @@ const BACKFILL_FIELD_IDS = {
   disclosures: "shopify.disclosure",
 };
 
+const GPT_SEO_PROTECTED_FIELD_IDS = new Set([
+  BACKFILL_FIELD_IDS.badgeText,
+  BACKFILL_FIELD_IDS.highlights,
+  BACKFILL_FIELD_IDS.collectionSignal,
+  BACKFILL_FIELD_IDS.searchProductBoostFallback,
+]);
+
 const BACKFILL_FIELDS = Object.fromEntries(
   Object.entries(BACKFILL_FIELD_IDS).map(([name, id]) => [name, FIELD_DEFINITIONS[id]]),
 );
@@ -198,6 +205,26 @@ function getProductExistingCustomData(product) {
     rating: product?.customData?.rating ?? product?.average_rating ?? null,
     ratingCount: product?.customData?.ratingCount ?? product?.total_reviews ?? null,
   });
+}
+
+function isGptSeoProtectedProduct(product) {
+  const marker = product?.gptSeoTypeAttributes;
+  if (!marker) return false;
+  if (typeof marker === "string") {
+    try {
+      return isGptSeoProtectedProduct({ gptSeoTypeAttributes: JSON.parse(marker) });
+    } catch {
+      return false;
+    }
+  }
+  if (marker && typeof marker === "object" && ("jsonValue" in marker || "value" in marker)) {
+    return isGptSeoProtectedProduct({ gptSeoTypeAttributes: marker.jsonValue ?? marker.value });
+  }
+  return Boolean(
+    marker &&
+    typeof marker === "object" &&
+    (marker.generatedBy === "salt-gpt-seo" || Number(marker.schemaVersion) >= 2),
+  );
 }
 
 function isGenericCollectionHandle(handle) {
@@ -1238,6 +1265,7 @@ function inferDiaperTypeReference(product, diaperTypeOptions = []) {
 
 function buildProductPlan(product, context) {
   const existing = getProductExistingCustomData(product);
+  const gptSeoProtected = isGptSeoProtectedProduct(product);
   const existingDisclosures = Array.isArray(product?.disclosures) ? product.disclosures : [];
   const collectionRefs = context.productCollectionsById.get(product.id) || [];
   const collectionTitles = context.productCollectionTitlesById.get(product.id) || [];
@@ -1436,7 +1464,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.subtitle, reason: "already product-specific and unique" });
   }
 
-  if (badgeText && !hasMeaningfulValue(existing.badgeText)) {
+  if (!gptSeoProtected && badgeText && !hasMeaningfulValue(existing.badgeText)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.badgeText,
       label: BACKFILL_FIELDS.badgeText?.name || "Product badge text",
@@ -1452,7 +1480,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.badgeText, reason: "already set" });
   }
 
-  if (highlights.length && (context.forceManagedMetafields || highlightsAssessment.refresh || refreshLegacyHighlights || existingHighlightsNeedExpansion)) {
+  if (!gptSeoProtected && highlights.length && (context.forceManagedMetafields || highlightsAssessment.refresh || refreshLegacyHighlights || existingHighlightsNeedExpansion)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.highlights,
       label: BACKFILL_FIELDS.highlights?.name || "Product highlights",
@@ -1477,7 +1505,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.highlights, reason: "already product-specific and unique" });
   }
 
-  if (collectionSignal && (context.forceManagedMetafields || collectionSignalAssessment.refresh)) {
+  if (!gptSeoProtected && collectionSignal && (context.forceManagedMetafields || collectionSignalAssessment.refresh)) {
     writes.push({
       fieldId: BACKFILL_FIELD_IDS.collectionSignal,
       label: BACKFILL_FIELDS.collectionSignal?.name || "Collection signal",
@@ -1572,7 +1600,7 @@ function buildProductPlan(product, context) {
     skipped.push({ fieldId: BACKFILL_FIELD_IDS.shopChannelMinimumQuantity, reason: "already set" });
   }
 
-  if (searchBoostCandidates.length >= 3 && (context.forceManagedMetafields || searchBoostAssessment.refresh)) {
+  if (!gptSeoProtected && searchBoostCandidates.length >= 3 && (context.forceManagedMetafields || searchBoostAssessment.refresh)) {
     const searchBoostValue = serializeListValue(searchBoostCandidates.slice(0, 5));
     if (context.allowShopifySearchBoostWrite) {
       writes.push({
@@ -1990,6 +2018,7 @@ function buildMetafieldSetBatches(productPlans, maxEntries = 25) {
 export {
   BACKFILL_FIELD_IDS,
   BACKFILL_FIELDS,
+  GPT_SEO_PROTECTED_FIELD_IDS,
   buildBackfillPlan,
   buildMetafieldSetBatches,
   buildSearchBoostCandidates,

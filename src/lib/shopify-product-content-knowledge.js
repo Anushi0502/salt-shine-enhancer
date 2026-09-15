@@ -483,10 +483,10 @@ export const PRODUCT_CONTENT_FAMILIES = Object.freeze([
     terms: [],
     nouns: ["product"],
     facts: ["Product focus", "Size or capacity", "Material", "Supported features", "Use or occasion", "Available options"],
-    purpose: "serves the specific function identified by its handle and confirmed product details",
+    purpose: "is the product format identified by its title, handle, and supplied listing details",
     use: "Use it only for the stated task and follow all supplied setup, handling, and care instructions.",
-    benefit: "Confirmed product facts and available options help shoppers compare it for the intended task.",
-    audience: ["Shoppers looking for the specific product type named", "Buyers comparing confirmed features and options", "Gift buyers when the item suits the recipient's intended use"],
+    benefit: "Its listed format, options, and supported details help shoppers compare the exact item before ordering.",
+    audience: ["Shoppers comparing the product format named in the listing", "Buyers checking the supplied features and options", "Gift buyers matching an item to a supported use"],
   }),
 ]);
 

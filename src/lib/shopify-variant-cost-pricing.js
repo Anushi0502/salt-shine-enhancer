@@ -13,6 +13,9 @@ const DEFAULT_COST_BASED_POLICY_ID = "cost-band-v2-2026-08-24";
 const DEFAULT_COST_BASED_OVERHEAD = 16;
 const DEFAULT_COST_BASED_MIN_CONTRIBUTION_MARGIN = 0.3;
 const DEFAULT_COST_BASED_CLOTHING_MIN_CONTRIBUTION_MARGIN = 0.43;
+export const DEFAULT_MARKET_PRICE_MARGIN_PERCENT = 0.2;
+export const DEFAULT_MARKET_PRICE_MARGIN_MODE = "markup";
+export const DEFAULT_MARKET_PRICE_MARGIN_POLICY_ID = "live-market-anchor-plus-20pct-2026-09-08";
 const DEFAULT_COST_BASED_BANDS = Object.freeze([
   Object.freeze({ maxCost: 5, multiplier: 2.25 }),
   Object.freeze({ maxCost: 12, multiplier: 1.9 }),
@@ -191,6 +194,43 @@ export function costBasedTargetPrice(
   return roundMoneyUpToRetail99(Math.max(floor, multiplierTarget, marginTarget)).toFixed(2);
 }
 
+export function marketPriceMarginTarget(
+  marketPriceValue,
+  {
+    marginPercent = 0,
+    mode = DEFAULT_MARKET_PRICE_MARGIN_MODE,
+    priceFloor = 35,
+  } = {},
+) {
+  const marketPrice = Number(marketPriceValue);
+  const margin = Number(marginPercent);
+  const floor = Number(priceFloor);
+  if (!Number.isFinite(marketPrice) || marketPrice <= 0) return null;
+  if (!Number.isFinite(margin) || margin < 0 || margin >= 1) return null;
+  if (!Number.isFinite(floor) || floor < 0) return null;
+
+  const base = mode === "gross-margin"
+    ? marketPrice / (1 - margin)
+    : mode === "markup"
+      ? marketPrice * (1 + margin)
+      : null;
+  if (!Number.isFinite(base) || base <= 0) return null;
+  return roundMoneyUpToRetail99(Math.max(floor, base)).toFixed(2);
+}
+
+function marketAnchorValue(marketAnchors, id) {
+  const raw = marketAnchors instanceof Map ? marketAnchors.get(id) : marketAnchors?.[id];
+  const value = raw && typeof raw === "object" ? raw.price ?? raw.value : raw;
+  const parsed = parseMoneyValue(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function captureMarketAnchor(marketAnchors, id, value) {
+  if (marketAnchors instanceof Map && !marketAnchors.has(id)) {
+    marketAnchors.set(id, value);
+  }
+}
+
 export function buildCostBasedVariantPricePlan(
   products = [],
   {
@@ -200,6 +240,11 @@ export function buildCostBasedVariantPricePlan(
     clothingMinContributionMargin = DEFAULT_COST_BASED_CLOTHING_MIN_CONTRIBUTION_MARGIN,
     bands = DEFAULT_COST_BASED_BANDS,
     policyId = DEFAULT_COST_BASED_POLICY_ID,
+    marketMarginPercent = 0,
+    marketMarginMode = DEFAULT_MARKET_PRICE_MARGIN_MODE,
+    marketMarginPolicyId = DEFAULT_MARKET_PRICE_MARGIN_POLICY_ID,
+    marketAnchors = new Map(),
+    captureMissingMarketAnchors = true,
   } = {},
 ) {
   const byHandle = new Map();
@@ -213,6 +258,8 @@ export function buildCostBasedVariantPricePlan(
   let variantsBelowTarget = 0;
   let variantsAboveTarget = 0;
   let compareAtClears = 0;
+  let variantsAtMarketTarget = 0;
+  let marketAnchorsCaptured = 0;
 
   for (const product of Array.isArray(products) ? products : []) {
     const clothing = isClothingProduct(product);
@@ -267,8 +314,38 @@ export function buildCostBasedVariantPricePlan(
         blockingHeld.push(review);
         continue;
       }
+      const existingMarketAnchor = marketAnchorValue(marketAnchors, id);
+      if (Number(marketMarginPercent) > 0 && !existingMarketAnchor && !captureMissingMarketAnchors) {
+        const review = {
+          handle: normalizePlainText(product?.handle),
+          variantId: id,
+          label: variantLabel(variant),
+          reason: "missing-market-price-anchor-for-market-margin",
+        };
+        held.push(review);
+        blockingHeld.push(review);
+        continue;
+      }
+      const marketAnchor = existingMarketAnchor || currentPrice;
+      if (Number(marketMarginPercent) > 0 && !existingMarketAnchor) {
+        captureMarketAnchor(marketAnchors, id, currentPrice);
+        marketAnchorsCaptured += 1;
+      }
+      const marketTargetPrice = Number(marketMarginPercent) > 0
+        ? marketPriceMarginTarget(marketAnchor, {
+          marginPercent: marketMarginPercent,
+          mode: marketMarginMode,
+          priceFloor,
+        })
+        : null;
+      const costTargetNumber = Number(targetPrice);
+      const marketTargetNumber = Number(marketTargetPrice);
+      const finalTargetPrice = marketTargetPrice && Number.isFinite(marketTargetNumber)
+        ? roundMoneyUpToRetail99(Math.max(costTargetNumber, marketTargetNumber)).toFixed(2)
+        : targetPrice;
+      if (marketTargetPrice && marketTargetNumber > costTargetNumber) variantsAtMarketTarget += 1;
       const currentCompareAt = parseMoneyValue(variant?.compare_at_price ?? variant?.compareAtPrice);
-      const targetNumber = Number(targetPrice);
+      const targetNumber = Number(finalTargetPrice);
       const compareAtValid = Number.isFinite(currentCompareAt) && currentCompareAt > targetNumber;
       const desiredCompareAt = compareAtValid ? formatMoneyValue(currentCompareAt) : null;
       const compareAtPresent = Number.isFinite(currentCompareAt) && currentCompareAt > 0;
@@ -286,10 +363,18 @@ export function buildCostBasedVariantPricePlan(
         costPerItem: formatMoneyValue(cost),
         costBand: costBandFor(cost, bands),
         currentPrice: formatMoneyValue(currentPrice),
-        price: targetPrice,
+        price: finalTargetPrice,
+        ...(Number(marketMarginPercent) > 0 ? {
+          marketAnchorPrice: formatMoneyValue(marketAnchor),
+          marketMarginPercent: Number(marketMarginPercent),
+          marketMarginMode,
+          marketTargetPrice: marketTargetPrice || null,
+        } : {}),
         ...(compareAtValid || compareAtPresent ? { compareAtPrice: desiredCompareAt } : {}),
         ...(compareAtPresent && !compareAtValid ? { compareAtAction: "clear-invalid-compare-at" } : {}),
-        reason: `${policyId}-exact-cost-band-target`,
+        reason: Number(marketMarginPercent) > 0
+          ? `${policyId}-plus-${marketMarginPolicyId}`
+          : `${policyId}-exact-cost-band-target`,
       });
     }
     if (updates.length) {
@@ -321,6 +406,11 @@ export function buildCostBasedVariantPricePlan(
       variantsBelowTarget,
       variantsAboveTarget,
       compareAtClears,
+      variantsAtMarketTarget,
+      marketAnchorsCaptured,
+      marketMarginPercent: Number(Number(marketMarginPercent).toFixed(4)),
+      marketMarginMode,
+      marketMarginPolicyId,
       pricingPolicy: policyId,
     },
     policy: {
@@ -330,6 +420,12 @@ export function buildCostBasedVariantPricePlan(
       minContributionMargin,
       clothingMinContributionMargin,
       bands: normalizedCostBands(bands),
+      marketMargin: {
+        percent: Number(marketMarginPercent),
+        mode: marketMarginMode,
+        policyId: marketMarginPolicyId,
+        anchor: "first governed live variant sell price; persisted per variant to prevent compounding",
+      },
       formula: "max(price floor, (cost per item + overhead) * cost-band multiplier, (cost per item + overhead) / (1 - contribution margin)); round upward to .99",
       compareAt: "preserve only an existing compare-at strictly above the new target price; clear invalid values; never invent compare-at prices",
       variantDifferences: "calculate every variant independently from live cost, preserving variant and quantity records without peer-price flattening",

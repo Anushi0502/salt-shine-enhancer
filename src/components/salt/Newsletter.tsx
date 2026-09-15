@@ -1,24 +1,29 @@
 import ScrollReveal from "./ScrollReveal";
+import { getNewsletterTags } from "@/lib/newsletter-attribution";
 
 const Newsletter = () => {
+  const newsletterTags = getNewsletterTags();
+
   return (
     <ScrollReveal className="salt-container my-12">
       <div className="rounded-xl border border-salt-line bg-[linear-gradient(125deg,rgba(197,154,69,0.13),rgba(205,90,50,0.11)),hsl(var(--salt-paper))] p-6 grid grid-cols-[1.05fr_0.95fr] gap-4 items-center max-lg:grid-cols-1">
         <div>
           <h2 className="font-serif text-[clamp(1.7rem,3.5vw,2.5rem)]">Get SALT Drop Alerts</h2>
           <p className="text-muted-foreground max-w-[46ch] mt-2.5">
-            Collect emails through your existing marketing flow and announce new releases, discounts, and limited collections with stronger conversion intent.
+            Get SALT Finds, new-product discoveries, and useful collection updates. Unsubscribe anytime.
           </p>
         </div>
         <form
           action="/contact#contact_form"
           method="post"
           acceptCharset="UTF-8"
+          data-salt-newsletter-form="homepage"
+          data-salt-newsletter-tags={newsletterTags}
           className="flex gap-2.5 flex-wrap justify-end max-lg:justify-start"
         >
           <input type="hidden" name="form_type" value="customer" />
           <input type="hidden" name="utf8" value="✓" />
-          <input type="hidden" name="contact[tags]" value="newsletter" />
+          <input type="hidden" name="contact[tags]" value={newsletterTags} />
           <input
             type="email"
             name="contact[email]"

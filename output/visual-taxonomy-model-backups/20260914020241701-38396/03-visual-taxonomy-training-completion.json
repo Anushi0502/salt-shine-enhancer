@@ -1,0 +1,30 @@
+{
+  "status": "verified",
+  "modelPath": "output/visual-taxonomy-model.json",
+  "modelSha256": "c47a270d0c44c54ea3728d0f8f20a56b869d42cfa2065b5376379fd6ab972085",
+  "weightsPath": "output/visual-taxonomy-model-weights.npz",
+  "weightsSha256": "caa5294bd6b62d7829758e7bb96f2dde86bcf583a2287f70e6294760c62b8a95",
+  "datasetId": "visual-sharded-c159945b2c930875c8474da1",
+  "datasetBytes": 50000145606,
+  "imageCount": 262766,
+  "productCount": 137805,
+  "labelCount": 473,
+  "rawDataPurged": true,
+  "purgedBytes": 50000145606,
+  "purgedImageCount": 262766,
+  "purgedDatasetRoot": "sharded:/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-001,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-002,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-003,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-004,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-005,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-006,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-007,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-008,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-009",
+  "completedAt": "2026-08-31T22:16:32.907Z",
+  "taxonomyCompatibility": {
+    "mode": "append-only",
+    "sourceFingerprint": "f969c5e9",
+    "currentFingerprint": "ee1001eb",
+    "addedRuleIds": [
+      "cat-toilet-supplies"
+    ],
+    "removedRuleIds": [],
+    "changedRuleIds": [],
+    "evidence": "Current checked-in taxonomy with addedRuleIds removed reproduces the model source fingerprint exactly; added rules are outside the trained visual label index and remain deterministic-only.",
+    "verifiedAt": "2026-09-08T11:37:21.293Z"
+  },
+  "compatibilityRefreshedAt": "2026-09-08T11:37:21.303Z"
+}

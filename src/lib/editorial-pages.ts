@@ -470,11 +470,53 @@ function buildResourceHubPageContent(): EditorialPageContent {
     introParagraphs: buildResourceIntroParagraphs("hub", "Use the hub when the shopper wants advice first and a product second.", ""),
     cardsTitle: "Choose your path",
     cardsDescription: "Start from the task, not the category label.",
-    cards: SITE_RESOURCE_GUIDES.map((guide) => ({
-      title: guide.title,
-      detail: guide.summary,
-      to: buildResourceRoute(guide.handle),
-    })),
+    cards: [
+      ...SITE_RESOURCE_GUIDES.map((guide) => ({
+        title: guide.title,
+        detail: guide.summary,
+        to: buildResourceRoute(guide.handle),
+      })),
+      {
+        title: "Interactive STEM Assembly Activities",
+        detail: "Hands-on educational and wooden DIY build ideas for kids and families.",
+        to: "/pages/interactive-stem-assembly-activities-for-kids",
+      },
+      {
+        title: "Digital Circus Lunch Box for Kids",
+        detail: "A current lunch-box listing framed around school, picnic, camping, and travel use.",
+        to: "/pages/digital-circus-lunch-box-for-kids",
+      },
+      {
+        title: "Kitchen & Cookware Buying Guide",
+        detail: "A task-first guide to live cookware, food-preparation tools, and practical kitchen helpers.",
+        to: "/pages/kitchen-cookware-buying-guide",
+      },
+      {
+        title: "Jeans & Denim Fit Guide",
+        detail: "A live-title-led route for comparing straight, high-waisted, loose, flared, and skinny denim signals.",
+        to: "/pages/jeans-denim-fit-guide",
+      },
+      {
+        title: "Mobwol 40mm Watch Guide",
+        detail: "A live-title-led comparison of the Mobwol-handle quartz listing and current watch alternatives.",
+        to: "/pages/mobwol-watch-guide",
+      },
+      {
+        title: "Realme Buds Case Compatibility Guide",
+        detail: "Match Realme Buds case variants to the model wording on current live listings.",
+        to: "/pages/realme-buds-case-compatibility-guide",
+      },
+      {
+        title: "Earbuds Buying Guide",
+        detail: "Separate complete wireless earbuds from cases and replacement tips before choosing.",
+        to: "/pages/salt-earbuds-buying-guide",
+      },
+      {
+        title: "Canvas Belt Sizing & Style Guide",
+        detail: "Use the live canvas belt lengths and options as a starting point for sizing.",
+        to: "/pages/canvas-belt-sizing-style-guide",
+      },
+    ],
     chipsTitle: "Search cues",
     chipsDescription: "The topics behind the hub pages.",
     chips: buildResourceChips("hub", SITE_RESOURCE_GUIDES.map((guide) => guide.title)),
@@ -803,6 +845,979 @@ function buildTrackOrderPageContent(): EditorialPageContent {
   };
 }
 
+function buildInteractiveStemAssemblyPageContent(): EditorialPageContent {
+  return {
+    handle: "interactive-stem-assembly-activities-for-kids",
+    kicker: "Kids activities",
+    title: "Interactive STEM Assembly Activities for Kids",
+    seoTitle: "Interactive STEM Assembly Activities for Kids | SALT",
+    metaDescription:
+      "Explore educational assembly toys and science-inspired build activities for kids, with wooden DIY projects and creative play from SALT.",
+    summary:
+      "Find hands-on build activities that combine curiosity, assembly, and creative play, with live SALT listings grounded in educational and DIY product descriptions.",
+    stats: [
+      { label: "Format", value: "Hands-on build" },
+      { label: "Audience", value: "Kids and families" },
+      { label: "Intent", value: "Activity discovery" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Kids Toys & Games", to: "/collections/kids-toys-games" },
+      { label: "STEM assembly activities" },
+    ],
+    accent: {
+      label: "Choose by activity",
+      title: "Build, explore, and keep the next step clear",
+      body:
+        "SALT’s live kids listings include educational assembly toys and a wooden DIY carousel described for science-inspired, balancing, and creative assembly play.",
+      bullets: ["Educational assembly", "Wooden DIY build", "Creative play"],
+    },
+    introParagraphs: [
+      "Looking for an activity that combines building, curiosity, and creative play? Start with the live listing details, then choose the project whose audience and use context fit the child and the activity setting.",
+      "Before ordering, check the selected option and the supplied setup or safety instructions. Keep the activity supervised whenever the product instructions call for it.",
+    ],
+    cardsTitle: "Featured build activities",
+    cardsDescription: "Open the product detail pages to review the current options and supplied listing information.",
+    cards: [
+      {
+        title: "Wooden DIY carousel build",
+        detail:
+          "A kids educational wooden DIY carousel listing with science-experiment, physics-balancing, and creative-assembly wording.",
+        to: "/products/q0kb-kids-educational-wooden-diy-carousel-toy-for-science-experiment-physics-balancing-and-creative-assembly-play-development",
+      },
+      {
+        title: "Educational assembly model",
+        detail:
+          "A children’s science and educational assembly-toy listing with hand-assembled model and decorative-model wording.",
+        to: "/products/childrens-science-and-education-and-educational-assembly-toys-hand-assembled-models-decorative-models-childrens-diy-gifts",
+      },
+    ],
+    stepsTitle: "Before choosing a project",
+    stepsDescription: "Use the live product details as the source of truth for the activity.",
+    steps: [
+      {
+        step: "01",
+        title: "Match the activity",
+        detail: "Choose a listing whose described audience and use context fit the child and the setting.",
+      },
+      {
+        step: "02",
+        title: "Review the option",
+        detail: "Check the selected option, product details, and supplied setup information before ordering.",
+      },
+      {
+        step: "03",
+        title: "Set up thoughtfully",
+        detail: "Follow the supplied instructions and supervise the activity whenever those instructions call for it.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Interactive STEM assemblies", "Educational assembly toys", "Wooden DIY activities", "Creative build play"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current product listings.",
+    faqs: [
+      {
+        question: "What does STEM assembly mean on this page?",
+        answer:
+          "Here it describes build-and-explore products whose live listings use science, educational, balancing, or creative assembly language.",
+      },
+      {
+        question: "Which products are featured?",
+        answer:
+          "The page currently highlights a wooden DIY carousel listing and a children’s educational assembly-model listing. Open each product page to review its current details.",
+      },
+      {
+        question: "How should I choose an activity?",
+        answer:
+          "Start with the listing’s described audience and use context, then check the selected option and supplied setup or safety information before ordering.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live product details",
+    featuredProductsDescription: "These product links keep the guide connected to the current SALT catalog.",
+    featuredProducts: [
+      {
+        handle:
+          "q0kb-kids-educational-wooden-diy-carousel-toy-for-science-experiment-physics-balancing-and-creative-assembly-play-development",
+        collectionLabel: "Kids Toys & Games",
+      },
+      {
+        handle:
+          "childrens-science-and-education-and-educational-assembly-toys-hand-assembled-models-decorative-models-childrens-diy-gifts",
+        collectionLabel: "Kids Toys & Games",
+      },
+    ],
+    actions: [
+      { label: "Browse Kids Toys & Games", to: "/collections/kids-toys-games", primary: true },
+      {
+        label: "Open Resource Hub",
+        to: "/shop?resource=hub",
+      },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildDigitalCircusLunchBoxPageContent(): EditorialPageContent {
+  return {
+    handle: "digital-circus-lunch-box-for-kids",
+    kicker: "Lunch box finds",
+    title: "Digital Circus Lunch Box for Kids",
+    seoTitle: "Amazing Digital Circus Lunch Box for Kids | SALT",
+    metaDescription:
+      "Explore SALT's Amazing Digital Circus lunch box listing for school, picnic, camping, and travel use. Review current options and product details before ordering.",
+    summary:
+      "Explore a current SALT lunch box listing for kids, with product details framed around school, picnic, camping, and travel use.",
+    stats: [
+      { label: "Format", value: "Lunch box" },
+      { label: "Audience", value: "Kids, boys & girls" },
+      { label: "Intent", value: "School-day discovery" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Lunch Boxes", to: "/collections/lunch-boxes" },
+      { label: "Digital Circus lunch box" },
+    ],
+    accent: {
+      label: "Start with the listing",
+      title: "Make lunch-box discovery simpler",
+      body:
+        "The current SALT listing uses the product title and supplied details to describe a lunch box for kids, boys, and girls, with school, picnic, camping, travel, and kitchen context.",
+      bullets: ["School use", "Picnic and travel", "Kids-focused listing"],
+    },
+    introParagraphs: [
+      "If you are comparing lunch containers for a child, this guide points to one current SALT listing whose title and supplied details mention kids, boys, girls, school, picnic, camping, and travel.",
+      "Use the product page as the source of truth. Review the selected option, current price, availability, and supplied care or handling information before ordering; the listing does not establish extra features beyond its current details.",
+    ],
+    cardsTitle: "What to review",
+    cardsDescription: "Keep the shopping decision connected to the live listing and collection.",
+    cards: [
+      {
+        title: "Current product listing",
+        detail: "Open the live product page to review options, price, availability, and supplied details.",
+        to: "/products/the-amazing-digital-circus-lunch-box-for-kids-school-cute-food-storage-containers-boys-girls-picnic-bento-children-birthday-gift",
+      },
+      {
+        title: "Lunch Boxes collection",
+        detail: "Browse the live lunch-box collection when you want to compare nearby options.",
+        to: "/collections/lunch-boxes",
+      },
+      {
+        title: "Back to School",
+        detail: "Use the school-season collection as another route into relevant current listings.",
+        to: "/collections/back-to-school",
+      },
+    ],
+    stepsTitle: "Before choosing a lunch box",
+    stepsDescription: "Use current listing information to keep the choice specific and grounded.",
+    steps: [
+      {
+        step: "01",
+        title: "Match the use",
+        detail: "Choose a listing whose described audience and use context fit the child, school day, picnic, or trip.",
+      },
+      {
+        step: "02",
+        title: "Check the option",
+        detail: "Review the selected variant, current price, availability, and product details before adding it to the cart.",
+      },
+      {
+        step: "03",
+        title: "Follow the details",
+        detail: "Use the supplied care, handling, storage, and safety information for the selected product.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Lunch box for kids", "School lunch container", "Picnic lunch box", "Travel food storage"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current product listing.",
+    faqs: [
+      {
+        question: "What use cases appear in the listing?",
+        answer:
+          "The current product details mention school, picnic, camping, travel, and kitchen context, alongside kids, boys, girls, and children as the audience.",
+      },
+      {
+        question: "Is the product officially licensed?",
+        answer:
+          "The current product title uses The Amazing Digital Circus wording, but the live listing does not independently verify licensing or affiliation. Review the product page and seller details before ordering.",
+      },
+      {
+        question: "What should I check before ordering?",
+        answer:
+          "Check the selected option, current price, availability, product description, and supplied care or handling information on the live product page.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live product details",
+    featuredProductsDescription: "This product link keeps the guide tied to the current SALT catalog record.",
+    featuredProducts: [
+      {
+        handle:
+          "the-amazing-digital-circus-lunch-box-for-kids-school-cute-food-storage-containers-boys-girls-picnic-bento-children-birthday-gift",
+        reason: "The live title and description mention a lunch box for kids with school, picnic, camping, and travel context.",
+        collectionLabel: "Lunch Boxes",
+      },
+    ],
+    actions: [
+      { label: "Browse Lunch Boxes", to: "/collections/lunch-boxes", primary: true },
+      { label: "Browse Back to School", to: "/collections/back-to-school" },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildKitchenCookwareBuyingGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "kitchen-cookware-buying-guide",
+    kicker: "Kitchen & cookware",
+    title: "Kitchen & Cookware Buying Guide",
+    seoTitle: "Kitchen & Cookware Buying Guide | SALT",
+    metaDescription:
+      "Use SALT's Kitchen & Cookware collection to compare cookware, food-preparation tools, dining essentials, and practical kitchen helpers by task.",
+    summary:
+      "A task-first route into SALT's Kitchen & Cookware collection, with live product details for food preparation and everyday kitchen use.",
+    stats: [
+      { label: "Collection", value: "Kitchen & Cookware" },
+      { label: "Format", value: "Guided browse" },
+      { label: "Intent", value: "Small-kitchen planning" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Kitchen & Cookware", to: "/collections/cookware" },
+      { label: "Buying guide" },
+    ],
+    accent: {
+      label: "Choose by task",
+      title: "Start with the kitchen job, then compare the tool",
+      body:
+        "The live SALT collection description covers cookware, kitchen tools, dining essentials, and food-preparation accessories. Use the individual product details to narrow the choice to the job you actually need to do.",
+      bullets: ["Food preparation", "Dining and serving", "Everyday kitchen helpers"],
+    },
+    introParagraphs: [
+      "A useful kitchen setup starts with the task: opening, chopping, pressing, or preparing ingredients. This guide keeps the browse focused on live SALT listings whose titles and supplied details clearly describe those jobs.",
+      "Open the collection for the wider catalog, then review the selected product's current option, price, availability, material or capacity wording, and supplied care information before ordering.",
+    ],
+    cardsTitle: "Live kitchen-tool starting points",
+    cardsDescription: "These links are tied to current product titles and supplied listing details.",
+    cards: [
+      {
+        title: "Chestnut opener",
+        detail: "A stainless-steel chestnut opener listing described for peeling and shelling at home.",
+        to: "/products/chestnut-opener-stainless-steel-chestnut-peeler-cross-knife-for-peeling-and-shelling-for-home-use",
+      },
+      {
+        title: "Garlic and onion cutter",
+        detail: "A manual kitchen-tool listing with 900ml wording for garlic, onion, and salad preparation.",
+        to: "/products/500-900ml-hand-chopper-manual-rope-food-processor-silcer-shredder-salad-maker-garlic-onion-cutter-kitchen-tool-accessories",
+      },
+      {
+        title: "Potato masher and press",
+        detail: "A stainless-steel masher and press listing for mashed-potato and fruit or vegetable preparation.",
+        to: "/products/masher-ricerpress-mashed-potatoes-stainless-steel-crushing-puree-fruit-vegetable-squeezerjuicer-press-maker-kitchen-tools-1",
+      },
+      {
+        title: "Portable garlic crusher",
+        detail: "A manual portable garlic-crusher listing with kitchen-use wording.",
+        to: "/products/1-2pcs-manual-portable-garlic-crusher-twist-kitchen-gadget-for-crushing-garlic-and-ginger-easy-to-use-and-clean",
+      },
+    ],
+    stepsTitle: "Before choosing a kitchen helper",
+    stepsDescription: "Use the live listing as the decision source.",
+    steps: [
+      {
+        step: "01",
+        title: "Name the task",
+        detail: "Decide whether you need an opener, chopper, masher, crusher, or another specific kitchen function.",
+      },
+      {
+        step: "02",
+        title: "Check the detail",
+        detail: "Review the product title, supplied material or capacity wording, selected option, current price, and availability.",
+      },
+      {
+        step: "03",
+        title: "Follow the care notes",
+        detail: "Use the supplied setup, handling, cleaning, storage, and safety information for the selected product.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Kitchen and cookware", "Food preparation tools", "Small kitchen essentials", "Manual kitchen gadgets"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current collection and product listings.",
+    faqs: [
+      {
+        question: "What does the Kitchen & Cookware collection cover?",
+        answer:
+          "Its current collection description mentions cookware, kitchen tools, dining essentials, and food-preparation accessories.",
+      },
+      {
+        question: "How should I choose between the featured tools?",
+        answer:
+          "Start with the task named in the live product title, then check the supplied material or capacity wording, selected option, current price, and availability.",
+      },
+      {
+        question: "Where can I compare more products?",
+        answer:
+          "Open the live Kitchen & Cookware collection to browse beyond the four task-specific starting points on this guide.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live product details",
+    featuredProductsDescription: "These product links keep the guide connected to current SALT catalog records.",
+    featuredProducts: [
+      {
+        handle:
+          "chestnut-opener-stainless-steel-chestnut-peeler-cross-knife-for-peeling-and-shelling-for-home-use",
+        reason: "The live title and details identify a stainless-steel chestnut opener for peeling and shelling.",
+        collectionLabel: "Kitchen & Cookware",
+      },
+      {
+        handle:
+          "500-900ml-hand-chopper-manual-rope-food-processor-silcer-shredder-salad-maker-garlic-onion-cutter-kitchen-tool-accessories",
+        reason: "The live title and details identify a manual garlic and onion cutter with 900ml wording.",
+        collectionLabel: "Kitchen & Cookware",
+      },
+      {
+        handle:
+          "masher-ricerpress-mashed-potatoes-stainless-steel-crushing-puree-fruit-vegetable-squeezerjuicer-press-maker-kitchen-tools-1",
+        reason: "The live title and details identify a stainless-steel masher and press for food preparation.",
+        collectionLabel: "Kitchen & Cookware",
+      },
+      {
+        handle:
+          "1-2pcs-manual-portable-garlic-crusher-twist-kitchen-gadget-for-crushing-garlic-and-ginger-easy-to-use-and-clean",
+        reason: "The live title and details identify a manual portable garlic crusher for kitchen use.",
+        collectionLabel: "Kitchen & Cookware",
+      },
+    ],
+    actions: [
+      { label: "Browse Kitchen & Cookware", to: "/collections/cookware", primary: true },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildJeansDenimFitGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "jeans-denim-fit-guide",
+    kicker: "Jeans & denim",
+    title: "Jeans & Denim Fit Guide",
+    seoTitle: "Jeans & Denim Fit Guide | SALT",
+    metaDescription:
+      "Compare the live SALT Jeans collection by the fit and style wording in current product titles, then check size details before ordering.",
+    summary:
+      "A practical route into SALT's Jeans collection, using current product-title signals to compare denim styles without promising a fit the listing does not verify.",
+    stats: [
+      { label: "Collection", value: "Jeans" },
+      { label: "Audience", value: "Men and women" },
+      { label: "Intent", value: "Fit and style discovery" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Jeans", to: "/collections/jeans" },
+      { label: "Denim fit guide" },
+    ],
+    accent: {
+      label: "Compare the silhouette",
+      title: "Use the live title as your first filter",
+      body:
+        "The current SALT Jeans collection is described as denim-led apparel for casual and everyday styling. Its live product titles provide useful starting signals such as straight leg, high waisted, loose, flared, boot cut, and skinny.",
+      bullets: ["Straight-leg signals", "High-waisted and skinny signals", "Loose, flared, and boot-cut signals"],
+    },
+    introParagraphs: [
+      "If you are shopping for jeans, start with the silhouette you want, then open the live product page to check the available options and size information. This guide uses the wording currently visible in SALT product titles rather than treating a style label as a guaranteed fit.",
+      "The current live descriptions identify both men's and women's audience wording. Review the selected option, measurements or size guidance, current price, availability, and supplied care information before ordering.",
+    ],
+    cardsTitle: "Live style starting points",
+    cardsDescription: "These links are tied to current product titles and supplied listing details.",
+    cards: [
+      {
+        title: "Straight-leg denim",
+        detail: "A men's listing whose current title uses straight-leg, comfort, and mid-waist wording.",
+        to: "/products/mens-jeans-black-denim-pants-straight-leg-comfort-mid-waist-white-embroidery-casual-streetwear-spring-slim-fit-trousers",
+      },
+      {
+        title: "High-waisted jegging",
+        detail: "A women's listing whose current title uses high-waisted, stretchy, and jegging wording.",
+        to: "/products/women-jegging-jeans-high-waisted-fashion-denim-pants-good-stretchy-streetwear-running-sports-casual-body-shaping-pants-legging",
+      },
+      {
+        title: "Loose and worn denim",
+        detail: "A men's listing whose current title uses loose, worn, and patch-detail wording.",
+        to: "/products/mens-jeans-patch-lightning-jeans-mens-loose-jeans-worn-out-jeans",
+      },
+      {
+        title: "Flared and boot-cut denim",
+        detail: "A men's listing whose current title uses flared and boot-cut wording.",
+        to: "/products/jeans-men-mens-flared-jeans-boot-cut-leg-flared-male-designer-classic-denim-jeans-high-waist-stretch-loose-flared-blue-jeans",
+      },
+    ],
+    stepsTitle: "Before choosing a pair",
+    stepsDescription: "Keep style discovery separate from fit confirmation.",
+    steps: [
+      {
+        step: "01",
+        title: "Choose the style cue",
+        detail: "Use the live title's straight, skinny, loose, high-waisted, flared, or boot-cut wording as the first filter.",
+      },
+      {
+        step: "02",
+        title: "Check the size detail",
+        detail: "Review the product page's available options, measurements or size guidance, and audience wording before ordering.",
+      },
+      {
+        step: "03",
+        title: "Review the live listing",
+        detail: "Confirm the selected option, current price, availability, product details, and supplied care information.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Jeans fit guide", "Straight-leg denim", "High-waisted jeans", "Loose and flared jeans"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current collection and product titles.",
+    faqs: [
+      {
+        question: "What does the Jeans collection cover?",
+        answer: "Its current collection description says it is denim-led apparel for casual and everyday styling.",
+      },
+      {
+        question: "Can a title guarantee the fit?",
+        answer:
+          "No. The style words on this guide come from current product titles. Use them as a starting filter, then check the live product's size details and selected option.",
+      },
+      {
+        question: "Are both men's and women's listings represented?",
+        answer:
+          "Yes. The current live product descriptions used here identify men's or women's audience wording. Review each product page for its exact audience and options.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live product details",
+    featuredProductsDescription: "These product links keep the guide connected to current SALT denim records.",
+    featuredProducts: [
+      {
+        handle:
+          "mens-jeans-black-denim-pants-straight-leg-comfort-mid-waist-white-embroidery-casual-streetwear-spring-slim-fit-trousers",
+        reason: "The live title uses straight-leg, comfort, and mid-waist wording for a men's jeans listing.",
+        collectionLabel: "Jeans",
+      },
+      {
+        handle:
+          "women-jegging-jeans-high-waisted-fashion-denim-pants-good-stretchy-streetwear-running-sports-casual-body-shaping-pants-legging",
+        reason: "The live title uses high-waisted, stretchy, and jegging wording for a women's jeans listing.",
+        collectionLabel: "Jeans",
+      },
+      {
+        handle: "mens-jeans-patch-lightning-jeans-mens-loose-jeans-worn-out-jeans",
+        reason: "The live title uses loose and worn wording for a men's jeans listing.",
+        collectionLabel: "Jeans",
+      },
+      {
+        handle:
+          "jeans-men-mens-flared-jeans-boot-cut-leg-flared-male-designer-classic-denim-jeans-high-waist-stretch-loose-flared-blue-jeans",
+        reason: "The live title uses flared and boot-cut wording for a men's jeans listing.",
+        collectionLabel: "Jeans",
+      },
+    ],
+    actions: [
+      { label: "Browse Jeans", to: "/collections/jeans", primary: true },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildMobwolWatchGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "mobwol-watch-guide",
+    kicker: "Watch discovery",
+    title: "Mobwol 40mm Watch Guide",
+    seoTitle: "Mobwol 40mm Quartz Watch Guide | SALT",
+    metaDescription:
+      "Compare the SALT Mobwol-handle 40mm quartz watch with current mechanical, smart, and women's watch listings, then review options before ordering.",
+    summary:
+      "A product-led watch comparison built from current SALT titles and supplied listing details. The live URL uses a Mobwol handle, while the customer-facing title currently identifies a 40mm quartz watch.",
+    stats: [
+      { label: "Collection", value: "Watches" },
+      { label: "Focus", value: "40mm quartz" },
+      { label: "Intent", value: "Watch comparison" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Watches", to: "/collections/watches" },
+      { label: "Mobwol watch guide" },
+    ],
+    accent: {
+      label: "Start with the listing",
+      title: "Compare movement, materials, and options",
+      body:
+        "The current Mobwol-handle listing is titled 40mm Quartz Watch Sport Wear Quartz Watch. Its supplied details mention a 40mm size, glass and stainless-steel material wording, waterproof wording, a men's audience, and Black or White color options.",
+      bullets: ["40mm quartz listing", "Glass and stainless-steel wording", "Black or White options"],
+    },
+    introParagraphs: [
+      "If you searched for a Mobwol watch, use the matching live product page as the source of truth. The handle contains Mobwol, but the current customer-facing title and supplied details are the safer basis for comparing the listing.",
+      "Use the comparison cards to choose a starting point, then review the selected option, current price, availability, product details, and supplied care information before ordering. This page does not infer a brand relationship or features that the live records do not state.",
+    ],
+    cardsTitle: "Live watch starting points",
+    cardsDescription: "Each link is tied to a current active watch listing and its visible title signals.",
+    cards: [
+      {
+        title: "Mobwol-handle 40mm quartz watch",
+        detail: "The live title and details mention 40mm, quartz, glass, stainless steel, waterproof wording, and Black or White options.",
+        to: "/products/mobwol-2026-new-mens-watches-40mm-luxury-quartz-watch-men-sport-wear-resistant-glass-3bar-waterproof-stainless-steel",
+      },
+      {
+        title: "Automatic mechanical watch",
+        detail: "The live title uses automatic, mechanical, waterproof, and genuine-leather wording, with a stainless-steel material signal.",
+        to: "/products/high-end-waterproof-automatic-mechanical-watch-with-genuine-leather-strap-and-stainless-steel-transparent-back-cover",
+      },
+      {
+        title: "Sports smart watch",
+        detail: "The live title uses sports smart watch, HD screen, Bluetooth, and waterproof wording. Check device compatibility on the listing.",
+        to: "/products/2026-new-sports-smart-watch-1-39-hd-screen-with-bluetooth-call-ip68-waterproof-health-monitoring-smartwatch-for-android-and-ios",
+      },
+      {
+        title: "Women's casual wristwatch",
+        detail: "The live title uses numerals, thin bracelet, casual wristwatch, and women's audience wording with multiple color options.",
+        to: "/products/women-quartz-watches-for-women-fashion-ladies-watches-with-simple-dial-easy-read-numerals-thin-bracelet-casual-wristwatch-gift",
+      },
+    ],
+    stepsTitle: "Before choosing a watch",
+    stepsDescription: "Keep the comparison grounded in the live listing.",
+    steps: [
+      {
+        step: "01",
+        title: "Choose the watch type",
+        detail: "Start with quartz, mechanical, smart, or casual wristwatch wording in the current product title.",
+      },
+      {
+        step: "02",
+        title: "Check the options",
+        detail: "Review the available color or other options, selected variant, current price, and availability.",
+      },
+      {
+        step: "03",
+        title: "Confirm the details",
+        detail: "Read the supplied materials, feature wording, compatibility notes, and care information before ordering.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Mobwol watch", "40mm quartz watch", "Automatic mechanical watch", "Sports smart watch"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in current live watch records.",
+    faqs: [
+      {
+        question: "Does the live title confirm the Mobwol brand?",
+        answer:
+          "The product URL uses a Mobwol handle, but the current customer-facing title says 40mm Quartz Watch Sport Wear Quartz Watch. Review the live listing and seller details before treating the handle as a brand claim.",
+      },
+      {
+        question: "What details are listed for the 40mm watch?",
+        answer:
+          "The supplied listing details mention a 40mm size, quartz wording, glass and stainless-steel material wording, waterproof wording, a men's audience, and Black or White options.",
+      },
+      {
+        question: "Where can I compare more watch types?",
+        answer:
+          "Open the live Watches collection to compare additional active listings, then check each product page for its exact options and supplied details.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live product details",
+    featuredProductsDescription: "These links keep the guide connected to current SALT watch records.",
+    featuredProducts: [
+      {
+        handle:
+          "mobwol-2026-new-mens-watches-40mm-luxury-quartz-watch-men-sport-wear-resistant-glass-3bar-waterproof-stainless-steel",
+        reason: "The live handle contains Mobwol and the current title uses 40mm and quartz watch wording.",
+        collectionLabel: "Watches",
+      },
+      {
+        handle: "high-end-waterproof-automatic-mechanical-watch-with-genuine-leather-strap-and-stainless-steel-transparent-back-cover",
+        reason: "The live title uses automatic mechanical, waterproof, leather, and stainless-steel wording.",
+        collectionLabel: "Watches",
+      },
+      {
+        handle:
+          "2026-new-sports-smart-watch-1-39-hd-screen-with-bluetooth-call-ip68-waterproof-health-monitoring-smartwatch-for-android-and-ios",
+        reason: "The live title uses sports smart watch, HD screen, Bluetooth, and waterproof wording.",
+        collectionLabel: "Watches",
+      },
+      {
+        handle:
+          "women-quartz-watches-for-women-fashion-ladies-watches-with-simple-dial-easy-read-numerals-thin-bracelet-casual-wristwatch-gift",
+        reason: "The live title uses numerals, thin bracelet, casual wristwatch, and women's audience wording.",
+        collectionLabel: "Watches",
+      },
+    ],
+    actions: [
+      { label: "Browse Watches", to: "/collections/watches", primary: true },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildRealmeBudsCaseCompatibilityGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "realme-buds-case-compatibility-guide",
+    kicker: "Audio accessories",
+    title: "Realme Buds Case Compatibility Guide",
+    seoTitle: "Realme Buds Case Compatibility Guide | SALT",
+    metaDescription:
+      "Compare live SALT Realme Buds cases by supported model wording, silicone material, and current options before ordering.",
+    summary:
+      "A model-first route for shoppers comparing Realme Buds protective cases, using the model wording and options visible in current SALT listings.",
+    stats: [
+      { label: "Category", value: "Earbuds cases" },
+      { label: "Focus", value: "Model matching" },
+      { label: "Intent", value: "Compatibility discovery" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Audio", to: "/collections/audio" },
+      { label: "Realme Buds case guide" },
+    ],
+    accent: {
+      label: "Match the model first",
+      title: "Choose the case by the exact variant wording",
+      body:
+        "The live SALT case listings use different model signals: one listing is specifically tied to Realme Buds Air8, while another lists Air5, Air5 Pro, Air6, Air6 Pro, T01, T100, T110, T300, and T310 in its variant titles.",
+      bullets: ["Air8 case listing", "Air5 and Air6 variants", "Silicone case material"],
+    },
+    introParagraphs: [
+      "Searching for a Realme Buds Air 5 cover? Start by matching the model printed on the earbuds or charging case to the exact option shown on the live product page.",
+      "The current Air8 case is a separate listing from the multi-model case. Select the matching option, then review the current price, availability, material wording, and product details before ordering. A case title or variant label is not a substitute for checking the fit yourself.",
+    ],
+    cardsTitle: "Live case starting points",
+    cardsDescription: "Use the model wording as the first filter, then open the listing for the selected option.",
+    cards: [
+      {
+        title: "Realme Buds Air8 case",
+        detail: "The live listing handle and SEO details identify compatibility with Realme Buds Air8; its supplied details mention silicone and portable use.",
+        to: "/products/silicone-protective-case-for-realme-buds-air8-liquid-silicone-cover-slim-lightweight-headphones-protective-case-1pcs",
+      },
+      {
+        title: "Multi-model Realme Buds case",
+        detail: "The live variant titles include Realme Buds Air5, Air5 Pro, Air6, Air6 Pro, T01, T100, T110, T300, and T310 options.",
+        to: "/products/case-for-realme-buds-t01-t310-t300-t100-t110-air5-air6-pro-silicone-cover-black-flower-earbuds-soft-protective-headset-skin",
+      },
+      {
+        title: "Audio and cases collection",
+        detail: "Browse related earbuds, cases, and audio listings after identifying the model you need.",
+        to: "/collections/audio",
+      },
+    ],
+    stepsTitle: "Before choosing a case",
+    stepsDescription: "Keep compatibility decisions tied to the selected live variant.",
+    steps: [
+      {
+        step: "01",
+        title: "Read the model",
+        detail: "Confirm the exact Realme Buds model from the device or charging-case information.",
+      },
+      {
+        step: "02",
+        title: "Open the matching listing",
+        detail: "Use the handle and variant wording to find the case that names your model.",
+      },
+      {
+        step: "03",
+        title: "Verify the option",
+        detail: "Check the selected variant, current price, availability, material wording, and product details before ordering.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Realme Buds Air 5 cover", "Realme Buds Air8 case", "Earbuds protective case", "Silicone earbuds cover"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current case listings.",
+    faqs: [
+      {
+        question: "Does the Air8 case also confirm Air5 compatibility?",
+        answer:
+          "No. The Air8 case is a separate listing. Use the multi-model case listing when its variant titles name Air5 or another supported model, then confirm the selected option before ordering.",
+      },
+      {
+        question: "Which models appear in the multi-model case options?",
+        answer:
+          "The current variant titles include Realme Buds Air5, Air5 Pro, Air6, Air6 Pro, T01, T100, T110, T300, and T310.",
+      },
+      {
+        question: "What material is stated in the listings?",
+        answer:
+          "The supplied listing details use silicone material wording. Review the live product page for the selected option and current care information.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live case details",
+    featuredProductsDescription: "These links keep the guide connected to current SALT case records.",
+    featuredProducts: [
+      {
+        handle:
+          "silicone-protective-case-for-realme-buds-air8-liquid-silicone-cover-slim-lightweight-headphones-protective-case-1pcs",
+        reason: "The live handle and SEO details identify Realme Buds Air8 compatibility.",
+        collectionLabel: "Audio",
+      },
+      {
+        handle:
+          "case-for-realme-buds-t01-t310-t300-t100-t110-air5-air6-pro-silicone-cover-black-flower-earbuds-soft-protective-headset-skin",
+        reason: "The live variant titles name Air5, Air6, and Realme Buds T-series options.",
+        collectionLabel: "Audio",
+      },
+    ],
+    actions: [
+      { label: "Browse Audio", to: "/collections/audio", primary: true },
+      { label: "Browse Earbuds & Cases", to: "/collections/earbuds-and-cases" },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildSaltEarbudsBuyingGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "salt-earbuds-buying-guide",
+    kicker: "Earbuds and audio",
+    title: "Earbuds Buying Guide: Cases, Tips & Wireless Earbuds",
+    seoTitle: "Earbuds Buying Guide: Cases, Tips & Wireless Earbuds | SALT",
+    metaDescription:
+      "Compare SALT wireless earbuds, protective cases, and replacement tips by product type, compatibility wording, and listed features.",
+    summary:
+      "A clear starting point for comparing complete wireless earbuds with the cases and replacement tips that support them.",
+    stats: [
+      { label: "Formats", value: "3" },
+      { label: "Focus", value: "Audio choices" },
+      { label: "Intent", value: "Product discovery" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Audio", to: "/collections/audio" },
+      { label: "Earbuds buying guide" },
+    ],
+    accent: {
+      label: "Start with the product type",
+      title: "Separate earbuds from cases and tips",
+      body:
+        "The current SALT audio listings include complete wireless earbuds, protective cases, and replacement ear tips. Product type and compatibility wording should be checked before comparing features or adding an item to the cart.",
+      bullets: ["Complete earbuds", "Protective cases", "Replacement ear tips"],
+    },
+    introParagraphs: [
+      "If you searched for earbuds, first decide whether you need a complete listening product, a protective case, or replacement ear tips. The live product titles and supplied details use different model and product-type signals.",
+      "Compare only the features stated on the selected listing. Check the model, selected option, current price, availability, compatibility wording, and supplied care information before ordering.",
+    ],
+    cardsTitle: "Live audio starting points",
+    cardsDescription: "Open each listing to review the current product type and model-specific options.",
+    cards: [
+      {
+        title: "Realme Buds Air 8 wireless earbuds",
+        detail: "A complete earbuds listing whose title and supplied details use wireless, Bluetooth, and portable wording.",
+        to: "/products/realme-buds-air-8-wireless-earphone-bluetooth-5-4-active-noise-cancelling-true-hours-battery-tws-earbuds-global-version",
+      },
+      {
+        title: "Xiaomi Buds 6 wireless earbuds",
+        detail: "A complete wireless earbuds listing whose title and supplied details use Bluetooth and portable wording.",
+        to: "/products/new-xiaomi-buds-6-bluetooth-earphone-real-time-translation-headphones-professional-tuning-earbuds-super-light-earphone-headset",
+      },
+      {
+        title: "Protective case",
+        detail: "A separate Realme Buds Air8 case listing with silicone and portable-use wording.",
+        to: "/products/silicone-protective-case-for-realme-buds-air8-liquid-silicone-cover-slim-lightweight-headphones-protective-case-1pcs",
+      },
+      {
+        title: "Replacement ear tips",
+        detail: "A separate ear-tips listing whose title references Realme Buds Air 5 Pro and whose supplied details mention silicone.",
+        to: "/products/tips-for-realme-buds-air-5-pro-earbuds-eartips-moondrop-golden-ages-tws-silicone-ear-tips-headphones-earplugs",
+      },
+    ],
+    stepsTitle: "Before choosing an audio product",
+    stepsDescription: "Use the live listing to keep the comparison precise.",
+    steps: [
+      {
+        step: "01",
+        title: "Name the need",
+        detail: "Choose complete earbuds, a protective case, or replacement tips before comparing listings.",
+      },
+      {
+        step: "02",
+        title: "Match the model",
+        detail: "Check the model wording in the title, variant options, and compatibility details.",
+      },
+      {
+        step: "03",
+        title: "Review the listing",
+        detail: "Confirm the selected option, current price, availability, listed features, and supplied care information.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["SALT earbuds", "Wireless Bluetooth earbuds", "Earbuds cases", "Replacement ear tips"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current SALT audio listings.",
+    faqs: [
+      {
+        question: "How are earbuds different from a case or ear tips?",
+        answer:
+          "The complete-earbuds listings describe listening products, while the separate case and ear-tips listings are accessories. Check the product title and type before ordering.",
+      },
+      {
+        question: "What features are visible in the complete-earbuds listings?",
+        answer:
+          "The current Realme and Xiaomi listings use wireless, Bluetooth, and portable wording in their supplied details. Review each live page for the exact model and current options.",
+      },
+      {
+        question: "Can I assume an accessory fits every earbud?",
+        answer:
+          "No. Match the accessory to the exact model wording and selected option on the live listing. Do not rely on a general earbuds label alone.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live audio details",
+    featuredProductsDescription: "These links keep the guide connected to current SALT earbuds and accessory records.",
+    featuredProducts: [
+      {
+        handle:
+          "realme-buds-air-8-wireless-earphone-bluetooth-5-4-active-noise-cancelling-true-hours-battery-tws-earbuds-global-version",
+        reason: "The live title and supplied details identify a complete Realme Buds Air 8 wireless Bluetooth earbuds listing.",
+        collectionLabel: "Audio",
+      },
+      {
+        handle:
+          "new-xiaomi-buds-6-bluetooth-earphone-real-time-translation-headphones-professional-tuning-earbuds-super-light-earphone-headset",
+        reason: "The live title and supplied details identify a complete Xiaomi Buds 6 wireless Bluetooth earbuds listing.",
+        collectionLabel: "Audio",
+      },
+      {
+        handle:
+          "silicone-protective-case-for-realme-buds-air8-liquid-silicone-cover-slim-lightweight-headphones-protective-case-1pcs",
+        reason: "The live listing is a separate Realme Buds Air8 protective case.",
+        collectionLabel: "Audio",
+      },
+      {
+        handle:
+          "tips-for-realme-buds-air-5-pro-earbuds-eartips-moondrop-golden-ages-tws-silicone-ear-tips-headphones-earplugs",
+        reason: "The live title references Realme Buds Air 5 Pro replacement ear tips.",
+        collectionLabel: "Audio",
+      },
+    ],
+    actions: [
+      { label: "Browse Audio", to: "/collections/audio", primary: true },
+      { label: "Browse Earbuds & Cases", to: "/collections/earbuds-and-cases" },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
+function buildCanvasBeltSizingStyleGuidePageContent(): EditorialPageContent {
+  return {
+    handle: "canvas-belt-sizing-style-guide",
+    kicker: "Men's accessories",
+    title: "Canvas Belt Sizing & Style Guide",
+    seoTitle: "Canvas Belt Sizing & Style Guide | SALT",
+    metaDescription:
+      "Compare SALT men's canvas belts by listed length, color option, buckle style, and fit before ordering.",
+    summary:
+      "A practical guide to the current SALT canvas belt listing, with length and option cues taken directly from its live variants.",
+    stats: [
+      { label: "Material", value: "Canvas" },
+      { label: "Lengths", value: "105–130 cm" },
+      { label: "Audience", value: "Men" },
+    ],
+    breadcrumbs: [
+      { label: "Home", to: "/" },
+      { label: "Men's Accessories", to: "/collections/mens-accessories" },
+      { label: "Canvas belt guide" },
+    ],
+    accent: {
+      label: "Measure before ordering",
+      title: "Choose the listed length and option together",
+      body:
+        "The current listing title uses porous, pin-buckle, canvas, and men's wording. Its live variants include 105 cm, 110 cm, 120 cm, and 130 cm length signals alongside five numbered color options.",
+      bullets: ["Canvas material", "Pin-buckle title signal", "105–130 cm variants"],
+    },
+    introParagraphs: [
+      "The easiest way to choose a canvas belt is to start with a measurement you already trust, then match that measurement to the exact length option on the live listing.",
+      "The current product record identifies canvas material and a men's audience. Review the selected color and length, current price, availability, product details, and supplied care information before ordering; the title alone does not guarantee fit.",
+    ],
+    cardsTitle: "Live belt starting point",
+    cardsDescription: "The current product has multiple length and numbered color options.",
+    cards: [
+      {
+        title: "Porous pin-buckle canvas belt",
+        detail: "The live title uses men's canvas-belt and pin-buckle wording, with 105 cm, 110 cm, 120 cm, and 130 cm option signals.",
+        to: "/products/new-porous-pin-buckle-canvas-belts-mens-fashion-versatile-belt-student-youth-military-training-extended-denim-designer-belt",
+      },
+      {
+        title: "Men's accessories",
+        detail: "Browse the related live collection for current belts and nearby accessory listings.",
+        to: "/collections/mens-accessories",
+      },
+      {
+        title: "Men's collection",
+        detail: "Use the broader men's route when you want to compare accessories with other current listings.",
+        to: "/collections/men-collection",
+      },
+    ],
+    stepsTitle: "Before choosing a belt",
+    stepsDescription: "Use your measurement and the selected live option together.",
+    steps: [
+      {
+        step: "01",
+        title: "Measure a reference",
+        detail: "Use a belt that fits or follow the measurement method supplied on the product page.",
+      },
+      {
+        step: "02",
+        title: "Match the length",
+        detail: "Compare your reference measurement with the available 105 cm, 110 cm, 120 cm, or 130 cm option.",
+      },
+      {
+        step: "03",
+        title: "Confirm the option",
+        detail: "Check the selected numbered color, current price, availability, material wording, and product details.",
+      },
+    ],
+    chipsTitle: "Search cues",
+    chipsDescription: "The phrases this guide is designed to answer.",
+    chips: ["Canvas belt", "Porous belt", "Pin-buckle belt", "Men's belt sizing"],
+    faqsTitle: "Common questions",
+    faqsDescription: "Short answers grounded in the current belt listing.",
+    faqs: [
+      {
+        question: "What material is stated for the belt?",
+        answer: "The current product details use canvas material wording and identify a men's audience.",
+      },
+      {
+        question: "Which length options are visible?",
+        answer: "The live variant titles include 105 cm, 110 cm, 120 cm, and 130 cm length signals.",
+      },
+      {
+        question: "Are the numbered options guaranteed to fit a specific waist?",
+        answer:
+          "No. Use the live product measurement information and compare it with a belt or measurement that already fits you before choosing an option.",
+      },
+    ],
+    featuredProductsTitle: "Shop the live belt details",
+    featuredProductsDescription: "This link keeps the guide connected to the current SALT belt record.",
+    featuredProducts: [
+      {
+        handle:
+          "new-porous-pin-buckle-canvas-belts-mens-fashion-versatile-belt-student-youth-military-training-extended-denim-designer-belt",
+        reason: "The live title and details identify a men's canvas belt with porous and pin-buckle wording.",
+        collectionLabel: "Men's Accessories",
+      },
+    ],
+    actions: [
+      { label: "Browse Men's Accessories", to: "/collections/mens-accessories", primary: true },
+      { label: "Browse Men's Collection", to: "/collections/men-collection" },
+      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  };
+}
+
 const resourceEditorialPages: Record<string, EditorialPageContent> = {
   resources: buildResourceHubPageContent(),
   ...Object.fromEntries(
@@ -1037,6 +2052,14 @@ const editorialPages: Record<string, EditorialPageContent> = {
   "wholesale-inquiries": buildWholesalePageContent(),
   "terms-conditions": buildTermsConditionsPageContent(),
   "track-order": buildTrackOrderPageContent(),
+  "interactive-stem-assembly-activities-for-kids": buildInteractiveStemAssemblyPageContent(),
+  "digital-circus-lunch-box-for-kids": buildDigitalCircusLunchBoxPageContent(),
+  "kitchen-cookware-buying-guide": buildKitchenCookwareBuyingGuidePageContent(),
+  "jeans-denim-fit-guide": buildJeansDenimFitGuidePageContent(),
+  "mobwol-watch-guide": buildMobwolWatchGuidePageContent(),
+  "realme-buds-case-compatibility-guide": buildRealmeBudsCaseCompatibilityGuidePageContent(),
+  "salt-earbuds-buying-guide": buildSaltEarbudsBuyingGuidePageContent(),
+  "canvas-belt-sizing-style-guide": buildCanvasBeltSizingStyleGuidePageContent(),
   ...Object.fromEntries(
     SITE_COLLECTIONS.map((collection) => [
       collection.handle,
@@ -1053,6 +2076,35 @@ const editorialPages: Record<string, EditorialPageContent> = {
   ),
   ...resourceEditorialPages,
 };
+
+const productDiscoveryGuideHandles = [
+  "interactive-stem-assembly-activities-for-kids",
+  "digital-circus-lunch-box-for-kids",
+  "kitchen-cookware-buying-guide",
+  "jeans-denim-fit-guide",
+  "mobwol-watch-guide",
+  "realme-buds-case-compatibility-guide",
+  "salt-earbuds-buying-guide",
+  "canvas-belt-sizing-style-guide",
+] as const;
+
+export function getEditorialGuidesForProductHandle(productHandle: string): EditorialPageContent[] {
+  const normalizedProductHandle = String(productHandle || "").trim().toLowerCase();
+  if (!normalizedProductHandle) {
+    return [];
+  }
+
+  return productDiscoveryGuideHandles
+    .map((guideHandle) => editorialPages[guideHandle])
+    .filter(
+      (guide): guide is EditorialPageContent =>
+        Boolean(
+          guide?.featuredProducts?.some(
+            (featuredProduct) => featuredProduct.handle.trim().toLowerCase() === normalizedProductHandle,
+          ),
+        ),
+    );
+}
 
 export function getEditorialPageContent(handle: string): EditorialPageContent | null {
   const normalizedHandle = String(handle || "").trim().toLowerCase();

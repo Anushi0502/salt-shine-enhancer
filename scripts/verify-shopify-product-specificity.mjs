@@ -1,29 +1,27 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
 
 import {
   PRODUCT_CONTENT_SPECIFICITY_VERSION,
   assessProductContentSpecificity,
   findCatalogContentCollisions,
 } from "../src/lib/product-content-specificity.js";
+import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.mjs";
 
-const execFileAsync = promisify(execFile);
 const ROOT_DIR = resolve(import.meta.dirname, "..");
 const DEFAULT_OUTPUT = resolve(ROOT_DIR, "output", "shopify-product-specificity-manifest.json");
 const SHOP_BASE = process.env.SALT_SHOP_URL || "https://0309d3-72.myshopify.com";
 const SHOP_DOMAIN = new URL(SHOP_BASE).hostname;
 const API_VERSION = process.env.SHOPIFY_ADMIN_API_VERSION || "2026-07";
-const SHOPIFY_CLI_AGENT_INFO = process.env.SHOPIFY_CLI_AGENT_INFO || "n:salt-shine-enhancer|v:1|p:openai";
-const SHOPIFY_CLI_AGENT_IDS =
-  process.env.SHOPIFY_CLI_AGENT_IDS || `s:${process.env.CONVERSATION_ID || "local"}|r:${process.pid}|i:salt-specificity`;
 const POLL_INTERVAL_MS = Math.max(1000, Number(process.env.SALT_BULK_POLL_INTERVAL_MS || 2000));
 const BULK_TIMEOUT_MS = Math.max(60_000, Number(process.env.SALT_BULK_TIMEOUT_MS || 15 * 60_000));
+const shopifyAdminClient = createShopifyAdminGraphQLClient({
+  rootDir: ROOT_DIR,
+  agentName: "product-specificity",
+});
 
 const BULK_PRODUCT_QUERY = /* GraphQL */ `
   {
@@ -131,52 +129,13 @@ function sleep(milliseconds) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
 }
 
-function getShopifyCliEnv() {
-  return {
-    ...process.env,
-    SHOPIFY_CLI_AGENT_INFO,
-    SHOPIFY_CLI_AGENT_IDS,
-  };
-}
-
-async function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false } = {}) {
-  const tempDir = await mkdtemp(join(tmpdir(), "salt-shopify-specificity-"));
-  const queryFile = join(tempDir, "operation.graphql");
-  const outputFile = join(tempDir, "result.json");
-  const variableFile = join(tempDir, "variables.json");
-
-  try {
-    await writeFile(queryFile, query, "utf8");
-    const hasVariables = variables && Object.keys(variables).length > 0;
-    if (hasVariables) await writeFile(variableFile, JSON.stringify(variables), "utf8");
-    const cliArgs = [
-      "store",
-      "execute",
-      "--store",
-      SHOP_DOMAIN,
-      "--version",
-      API_VERSION,
-      "--query-file",
-      queryFile,
-      "--output-file",
-      outputFile,
-      "--json",
-    ];
-    if (hasVariables) cliArgs.push("--variable-file", variableFile);
-    if (allowMutations) cliArgs.push("--allow-mutations");
-
-    await execFileAsync("shopify", cliArgs, {
-      env: getShopifyCliEnv(),
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    const payload = JSON.parse(await readFile(outputFile, "utf8"));
-    if (Array.isArray(payload.errors) && payload.errors.length) {
-      throw new Error(payload.errors.map((entry) => entry.message || "Shopify GraphQL error").join(" | "));
-    }
-    return payload.data || payload || {};
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+function runShopifyStoreGraphQL(query, variables = {}, { allowMutations = false, operation = "Shopify request" } = {}) {
+  return shopifyAdminClient.run(query, variables, {
+    allowMutations,
+    operation,
+    maxAttempts: Number(process.env.SALT_SHOPIFY_MAX_REQUEST_ATTEMPTS || 8),
+    maxRetryDelayMs: Number(process.env.SALT_SHOPIFY_MAX_RETRY_DELAY_MS || 120_000),
+  });
 }
 
 function metafieldValue(field) {

@@ -230,6 +230,26 @@ describe("Shopify SEO release reconciliation", () => {
     expect(JSON.stringify(diff.productInput)).not.toContain("tags");
   });
 
+  it("does not let a later deterministic release overwrite GPT SEO fields", async () => {
+    const { productPlan, liveProduct } = await makePlanAndLive();
+    const diff = compareLiveProductToPlan({
+      ...liveProduct,
+      title: "GPT-owned product title",
+      descriptionHtml: "<p>GPT-owned product description.</p>",
+      productType: "GPT-owned type",
+      category: { id: "gid://shopify/TaxonomyCategory/gpt-owned" },
+      seo: { title: "GPT-owned SEO title", description: "GPT-owned SEO description" },
+      gptSeoTypeAttributes: {
+        jsonValue: { schemaVersion: 2, generatedBy: "salt-gpt-seo" },
+        value: JSON.stringify({ schemaVersion: 2, generatedBy: "salt-gpt-seo" }),
+      },
+    }, productPlan);
+
+    expect(diff.productInput).toEqual({ id: "gid://shopify/Product/101" });
+    expect(diff.changedFields).toEqual([]);
+    expect(diff.skippedFields.filter((field) => field.reason.includes("GPT SEO protected"))).toHaveLength(5);
+  });
+
   it("keeps Shopify variant prices unchanged while deriving quantity tags", async () => {
     const { productPlan } = await makePlanAndLive();
 

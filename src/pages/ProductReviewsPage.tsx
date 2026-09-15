@@ -54,9 +54,10 @@ const ProductReviewsPage = () => {
       <SeoMetadata
         title={`${product.title} Reviews | SALT Online Store`}
         description={`Read customer reviews for ${product.title}.`}
-        canonicalPath={`/products/${product.handle}/reviews`}
+        canonicalPath={`/products/${product.handle}`}
         image={productImage(product) || undefined}
         ogType="product"
+        noIndex
       />
       <div className="salt-panel-shell rounded-[1.6rem] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

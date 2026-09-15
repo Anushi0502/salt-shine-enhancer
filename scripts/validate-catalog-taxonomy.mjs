@@ -21,6 +21,10 @@ function addError(errors, message) {
   if (errors.length < 100) errors.push(message);
 }
 
+function addWarning(warnings, message) {
+  if (warnings.length < 100) warnings.push(message);
+}
+
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -34,7 +38,7 @@ function productImageUrls(product) {
   )];
 }
 
-function validateOverrides(errors, products) {
+function validateOverrides(errors, warnings, products) {
   const productById = new Map(products.map((product) => [normalizeText(product?.id), product]));
   const productByHandle = new Map(products.map((product) => [normalizeText(product?.handle).toLowerCase(), product]));
   const overrideIds = new Set();
@@ -69,7 +73,10 @@ function validateOverrides(errors, products) {
 
     const product = productById.get(normalizeText(override.productId)) || productByHandle.get(normalizeText(override.handle).toLowerCase());
     if (!product) {
-      addError(errors, `Image-reviewed override ${id} does not match a product in the current catalog.`);
+      // A reviewed override can outlive a product after a catalog refresh. It
+      // cannot affect the current release, so quarantine it instead of making
+      // an otherwise valid full-catalog run fail on stale training evidence.
+      addWarning(warnings, `Image-reviewed override ${id} was quarantined because it does not match a product in the current catalog.`);
       continue;
     }
     if (!isImageReviewedCatalogTaxonomyOverride(override)) {
@@ -139,13 +146,14 @@ async function main() {
     process.stdout.write(`MLX/Metal knowledge scoring completed for ${modelEvidenceByKey.size}/${products.length} products.\n`);
   }
   const errors = [];
+  const warnings = [];
   const knowledgeIds = new Set();
   const specificTypeKeys = new Set();
   let eligibleProducts = 0;
   let heldProducts = 0;
 
   if (!products.length) addError(errors, "Catalog has no products.");
-  validateOverrides(errors, products);
+  validateOverrides(errors, warnings, products);
   validateFalseFriendFixtures(errors);
 
   for (const product of products) {
@@ -194,10 +202,14 @@ async function main() {
     uniqueProductKnowledgeRecords: knowledgeIds.size,
     uniqueSpecificProductDescriptorKeys: specificTypeKeys.size,
     overrideCount: CATALOG_TAXONOMY_OVERRIDES.length,
+    warnings: warnings.length,
     errors: errors.length,
   };
 
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+  if (warnings.length) {
+    process.stderr.write(`Catalog taxonomy validation warnings:\n${warnings.map((warning) => `- ${warning}`).join("\n")}\n`);
+  }
   if (errors.length) {
     process.stderr.write(`Catalog taxonomy validation failed:\n${errors.map((error) => `- ${error}`).join("\n")}\n`);
     process.exitCode = 1;

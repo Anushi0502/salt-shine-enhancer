@@ -1,0 +1,2543 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "2026-08-06.1.visual-finetuned.2",
+  "modelType": "mlx-metal-finetuned-visual-taxonomy-classifier",
+  "backend": "mlx-metal",
+  "trained": true,
+  "candidateOnly": true,
+  "labelPolicy": "deterministic-candidate-only",
+  "releaseUse": "candidate-evidence-only",
+  "taxonomy": {
+    "version": "2026-08-06.1",
+    "fingerprint": "f969c5e9",
+    "labels": [
+      {
+        "index": 0,
+        "ruleId": "aa-rechargeable-battery-kits",
+        "trained": true
+      },
+      {
+        "index": 1,
+        "ruleId": "abdominal-wellness-patches",
+        "trained": false
+      },
+      {
+        "index": 2,
+        "ruleId": "acne-patches",
+        "trained": true
+      },
+      {
+        "index": 3,
+        "ruleId": "african-hair-nourishing-oils",
+        "trained": false
+      },
+      {
+        "index": 4,
+        "ruleId": "air-fryer-liners",
+        "trained": true
+      },
+      {
+        "index": 5,
+        "ruleId": "alarm-clocks",
+        "trained": true
+      },
+      {
+        "index": 6,
+        "ruleId": "aloe-lip-balms",
+        "trained": true
+      },
+      {
+        "index": 7,
+        "ruleId": "altar-ceremony-decor",
+        "trained": false
+      },
+      {
+        "index": 8,
+        "ruleId": "ampoule-openers",
+        "trained": false
+      },
+      {
+        "index": 9,
+        "ruleId": "animal-figure-toys",
+        "trained": true
+      },
+      {
+        "index": 10,
+        "ruleId": "anime-books-media",
+        "trained": true
+      },
+      {
+        "index": 11,
+        "ruleId": "anime-cosplay-costumes",
+        "trained": true
+      },
+      {
+        "index": 12,
+        "ruleId": "anime-cosplay-props",
+        "trained": true
+      },
+      {
+        "index": 13,
+        "ruleId": "anime-figures-standees",
+        "trained": true
+      },
+      {
+        "index": 14,
+        "ruleId": "anime-graphic-tshirts",
+        "trained": true
+      },
+      {
+        "index": 15,
+        "ruleId": "anime-pajamas",
+        "trained": true
+      },
+      {
+        "index": 16,
+        "ruleId": "anime-pins-badges",
+        "trained": true
+      },
+      {
+        "index": 17,
+        "ruleId": "anime-plush-dolls",
+        "trained": true
+      },
+      {
+        "index": 18,
+        "ruleId": "anime-school-shoulder-bags",
+        "trained": true
+      },
+      {
+        "index": 19,
+        "ruleId": "anime-shorts",
+        "trained": true
+      },
+      {
+        "index": 20,
+        "ruleId": "anime-stickers",
+        "trained": true
+      },
+      {
+        "index": 21,
+        "ruleId": "anime-trading-cards",
+        "trained": true
+      },
+      {
+        "index": 22,
+        "ruleId": "anime-wall-art",
+        "trained": true
+      },
+      {
+        "index": 23,
+        "ruleId": "anime-wigs",
+        "trained": true
+      },
+      {
+        "index": 24,
+        "ruleId": "aquarium-co2-diffusers",
+        "trained": true
+      },
+      {
+        "index": 25,
+        "ruleId": "aquarium-supplies",
+        "trained": true
+      },
+      {
+        "index": 26,
+        "ruleId": "artificial-flower-bouquets",
+        "trained": true
+      },
+      {
+        "index": 27,
+        "ruleId": "artificial-plants",
+        "trained": true
+      },
+      {
+        "index": 28,
+        "ruleId": "artificial-vine-lights",
+        "trained": true
+      },
+      {
+        "index": 29,
+        "ruleId": "automotive-ac-refrigerant-kits",
+        "trained": false
+      },
+      {
+        "index": 30,
+        "ruleId": "automotive-general",
+        "trained": true
+      },
+      {
+        "index": 31,
+        "ruleId": "baby-bath-toy",
+        "trained": true
+      },
+      {
+        "index": 32,
+        "ruleId": "baby-bibs",
+        "trained": true
+      },
+      {
+        "index": 33,
+        "ruleId": "baby-care",
+        "trained": true
+      },
+      {
+        "index": 34,
+        "ruleId": "baby-crawling-knee-pad-socks",
+        "trained": true
+      },
+      {
+        "index": 35,
+        "ruleId": "baby-diaper-bags-organizers",
+        "trained": true
+      },
+      {
+        "index": 36,
+        "ruleId": "baby-feeding-bottles",
+        "trained": true
+      },
+      {
+        "index": 37,
+        "ruleId": "baby-pacifiers-feeders",
+        "trained": true
+      },
+      {
+        "index": 38,
+        "ruleId": "baby-support-pillows",
+        "trained": true
+      },
+      {
+        "index": 39,
+        "ruleId": "baby-thermometers",
+        "trained": true
+      },
+      {
+        "index": 40,
+        "ruleId": "backflow-incense-burners",
+        "trained": true
+      },
+      {
+        "index": 41,
+        "ruleId": "backpacks",
+        "trained": true
+      },
+      {
+        "index": 42,
+        "ruleId": "bag-strap",
+        "trained": true
+      },
+      {
+        "index": 43,
+        "ruleId": "bags-general",
+        "trained": true
+      },
+      {
+        "index": 44,
+        "ruleId": "bar-table-sets",
+        "trained": true
+      },
+      {
+        "index": 45,
+        "ruleId": "bathroom-fixtures",
+        "trained": true
+      },
+      {
+        "index": 46,
+        "ruleId": "bb-creams",
+        "trained": true
+      },
+      {
+        "index": 47,
+        "ruleId": "beach-sand-toys",
+        "trained": true
+      },
+      {
+        "index": 48,
+        "ruleId": "beach-umbrellas",
+        "trained": true
+      },
+      {
+        "index": 49,
+        "ruleId": "beadable-pens",
+        "trained": true
+      },
+      {
+        "index": 50,
+        "ruleId": "beard-grooming",
+        "trained": true
+      },
+      {
+        "index": 51,
+        "ruleId": "beauty-tools",
+        "trained": true
+      },
+      {
+        "index": 52,
+        "ruleId": "beauty-uv-lamp",
+        "trained": true
+      },
+      {
+        "index": 53,
+        "ruleId": "bedding-linens",
+        "trained": true
+      },
+      {
+        "index": 54,
+        "ruleId": "beekeeping-supplies",
+        "trained": true
+      },
+      {
+        "index": 55,
+        "ruleId": "belt",
+        "trained": true
+      },
+      {
+        "index": 56,
+        "ruleId": "binder-clip-sets",
+        "trained": true
+      },
+      {
+        "index": 57,
+        "ruleId": "bluetooth-item-trackers",
+        "trained": true
+      },
+      {
+        "index": 58,
+        "ruleId": "blush-powders",
+        "trained": true
+      },
+      {
+        "index": 59,
+        "ruleId": "board-games",
+        "trained": true
+      },
+      {
+        "index": 60,
+        "ruleId": "body-care",
+        "trained": true
+      },
+      {
+        "index": 61,
+        "ruleId": "body-firming-creams",
+        "trained": false
+      },
+      {
+        "index": 62,
+        "ruleId": "body-firming-oils",
+        "trained": true
+      },
+      {
+        "index": 63,
+        "ruleId": "body-lotions",
+        "trained": true
+      },
+      {
+        "index": 64,
+        "ruleId": "body-powder-dispensers",
+        "trained": true
+      },
+      {
+        "index": 65,
+        "ruleId": "book-covers",
+        "trained": true
+      },
+      {
+        "index": 66,
+        "ruleId": "book-nook-lamps",
+        "trained": true
+      },
+      {
+        "index": 67,
+        "ruleId": "books-learning",
+        "trained": true
+      },
+      {
+        "index": 68,
+        "ruleId": "bottle-guessing-games",
+        "trained": true
+      },
+      {
+        "index": 69,
+        "ruleId": "bracelets",
+        "trained": true
+      },
+      {
+        "index": 70,
+        "ruleId": "brightening-skincare-packs",
+        "trained": true
+      },
+      {
+        "index": 71,
+        "ruleId": "bubble-electric-guns",
+        "trained": true
+      },
+      {
+        "index": 72,
+        "ruleId": "bubble-solution-refills",
+        "trained": true
+      },
+      {
+        "index": 73,
+        "ruleId": "bubble-toys",
+        "trained": true
+      },
+      {
+        "index": 74,
+        "ruleId": "budget-planners",
+        "trained": true
+      },
+      {
+        "index": 75,
+        "ruleId": "calendula-skin-creams",
+        "trained": false
+      },
+      {
+        "index": 76,
+        "ruleId": "calligraphy-workbooks",
+        "trained": true
+      },
+      {
+        "index": 77,
+        "ruleId": "calming-sensory-stickers",
+        "trained": true
+      },
+      {
+        "index": 78,
+        "ruleId": "calming-skin-creams",
+        "trained": true
+      },
+      {
+        "index": 79,
+        "ruleId": "camera-accessory",
+        "trained": true
+      },
+      {
+        "index": 80,
+        "ruleId": "camp-shower",
+        "trained": true
+      },
+      {
+        "index": 81,
+        "ruleId": "camping-gear",
+        "trained": true
+      },
+      {
+        "index": 82,
+        "ruleId": "candle-molds",
+        "trained": true
+      },
+      {
+        "index": 83,
+        "ruleId": "candles",
+        "trained": true
+      },
+      {
+        "index": 84,
+        "ruleId": "car-accessories",
+        "trained": true
+      },
+      {
+        "index": 85,
+        "ruleId": "car-fragrance",
+        "trained": true
+      },
+      {
+        "index": 86,
+        "ruleId": "car-remote-key-pcb-boards",
+        "trained": true
+      },
+      {
+        "index": 87,
+        "ruleId": "car-seat-back-organizers",
+        "trained": false
+      },
+      {
+        "index": 88,
+        "ruleId": "car-wash-sprayers",
+        "trained": true
+      },
+      {
+        "index": 89,
+        "ruleId": "car-window-sun-shades",
+        "trained": false
+      },
+      {
+        "index": 90,
+        "ruleId": "car-windshield-sunshade-umbrellas",
+        "trained": false
+      },
+      {
+        "index": 91,
+        "ruleId": "card-collecting-accessories",
+        "trained": true
+      },
+      {
+        "index": 92,
+        "ruleId": "card-holder-lanyards",
+        "trained": true
+      },
+      {
+        "index": 93,
+        "ruleId": "carrier-oils",
+        "trained": true
+      },
+      {
+        "index": 94,
+        "ruleId": "cash-savings-binders",
+        "trained": true
+      },
+      {
+        "index": 95,
+        "ruleId": "cash-surprise-gift-boxes",
+        "trained": true
+      },
+      {
+        "index": 96,
+        "ruleId": "cat-products",
+        "trained": true
+      },
+      {
+        "index": 97,
+        "ruleId": "cc-correcting-creams",
+        "trained": true
+      },
+      {
+        "index": 98,
+        "ruleId": "ceramic-bowl-sets",
+        "trained": false
+      },
+      {
+        "index": 99,
+        "ruleId": "ceramic-soap-dishes",
+        "trained": false
+      },
+      {
+        "index": 100,
+        "ruleId": "ceramide-calming-lotions",
+        "trained": true
+      },
+      {
+        "index": 101,
+        "ruleId": "charger",
+        "trained": true
+      },
+      {
+        "index": 102,
+        "ruleId": "charging-cable",
+        "trained": true
+      },
+      {
+        "index": 103,
+        "ruleId": "cica-hydration-creams",
+        "trained": true
+      },
+      {
+        "index": 104,
+        "ruleId": "cica-panthenol-cream",
+        "trained": true
+      },
+      {
+        "index": 105,
+        "ruleId": "cica-repair-creams",
+        "trained": false
+      },
+      {
+        "index": 106,
+        "ruleId": "cleaning-tools",
+        "trained": true
+      },
+      {
+        "index": 107,
+        "ruleId": "cleansing-balms",
+        "trained": true
+      },
+      {
+        "index": 108,
+        "ruleId": "cleansing-oils",
+        "trained": true
+      },
+      {
+        "index": 109,
+        "ruleId": "cocktail-shakers",
+        "trained": true
+      },
+      {
+        "index": 110,
+        "ruleId": "collagen-facial-mists",
+        "trained": true
+      },
+      {
+        "index": 111,
+        "ruleId": "collagen-shea-butter-creams",
+        "trained": true
+      },
+      {
+        "index": 112,
+        "ruleId": "collectible-card-albums",
+        "trained": true
+      },
+      {
+        "index": 113,
+        "ruleId": "color-changing-cc-creams",
+        "trained": true
+      },
+      {
+        "index": 114,
+        "ruleId": "color-correcting-makeup-bases",
+        "trained": true
+      },
+      {
+        "index": 115,
+        "ruleId": "compact-face-powders",
+        "trained": true
+      },
+      {
+        "index": 116,
+        "ruleId": "computer-mouse",
+        "trained": true
+      },
+      {
+        "index": 117,
+        "ruleId": "computer-storage",
+        "trained": false
+      },
+      {
+        "index": 118,
+        "ruleId": "contouring-powder-palettes",
+        "trained": true
+      },
+      {
+        "index": 119,
+        "ruleId": "cookie-cutters-molds",
+        "trained": true
+      },
+      {
+        "index": 120,
+        "ruleId": "cookware",
+        "trained": true
+      },
+      {
+        "index": 121,
+        "ruleId": "corsets",
+        "trained": true
+      },
+      {
+        "index": 122,
+        "ruleId": "cosmetic-containers",
+        "trained": true
+      },
+      {
+        "index": 123,
+        "ruleId": "cosmetic-emulsifying-waxes",
+        "trained": true
+      },
+      {
+        "index": 124,
+        "ruleId": "cosmetic-storage-boxes",
+        "trained": false
+      },
+      {
+        "index": 125,
+        "ruleId": "craft-diy",
+        "trained": true
+      },
+      {
+        "index": 126,
+        "ruleId": "cream-blushes",
+        "trained": true
+      },
+      {
+        "index": 127,
+        "ruleId": "cream-eyeshadow-pots",
+        "trained": true
+      },
+      {
+        "index": 128,
+        "ruleId": "creator-photography-backdrops",
+        "trained": true
+      },
+      {
+        "index": 129,
+        "ruleId": "curl-defining-mousses",
+        "trained": true
+      },
+      {
+        "index": 130,
+        "ruleId": "custom-stickers",
+        "trained": true
+      },
+      {
+        "index": 131,
+        "ruleId": "cycling-jerseys",
+        "trained": true
+      },
+      {
+        "index": 132,
+        "ruleId": "cycling-water-bottles",
+        "trained": true
+      },
+      {
+        "index": 133,
+        "ruleId": "dining",
+        "trained": true
+      },
+      {
+        "index": 134,
+        "ruleId": "document-folders",
+        "trained": true
+      },
+      {
+        "index": 135,
+        "ruleId": "dog-products",
+        "trained": true
+      },
+      {
+        "index": 136,
+        "ruleId": "doll-clothing-accessories",
+        "trained": true
+      },
+      {
+        "index": 137,
+        "ruleId": "dollhouse-miniatures",
+        "trained": true
+      },
+      {
+        "index": 138,
+        "ruleId": "drawing-activity-toys",
+        "trained": true
+      },
+      {
+        "index": 139,
+        "ruleId": "dresses",
+        "trained": true
+      },
+      {
+        "index": 140,
+        "ruleId": "earbuds",
+        "trained": true
+      },
+      {
+        "index": 141,
+        "ruleId": "earbuds-protective-cases",
+        "trained": true
+      },
+      {
+        "index": 142,
+        "ruleId": "earrings",
+        "trained": true
+      },
+      {
+        "index": 143,
+        "ruleId": "educational-toys",
+        "trained": true
+      },
+      {
+        "index": 144,
+        "ruleId": "electric-boat-toys",
+        "trained": true
+      },
+      {
+        "index": 145,
+        "ruleId": "electric-spice-grinders",
+        "trained": false
+      },
+      {
+        "index": 146,
+        "ruleId": "electronic-adapter",
+        "trained": true
+      },
+      {
+        "index": 147,
+        "ruleId": "essential-oils",
+        "trained": true
+      },
+      {
+        "index": 148,
+        "ruleId": "eye-creams",
+        "trained": true
+      },
+      {
+        "index": 149,
+        "ruleId": "eye-makeup",
+        "trained": true
+      },
+      {
+        "index": 150,
+        "ruleId": "eye-makeup-primers",
+        "trained": true
+      },
+      {
+        "index": 151,
+        "ruleId": "eyelash-tweezers",
+        "trained": true
+      },
+      {
+        "index": 152,
+        "ruleId": "face-makeup",
+        "trained": true
+      },
+      {
+        "index": 153,
+        "ruleId": "face-masks",
+        "trained": true
+      },
+      {
+        "index": 154,
+        "ruleId": "face-smoothing-patches",
+        "trained": true
+      },
+      {
+        "index": 155,
+        "ruleId": "facial-lifting-care-sticks",
+        "trained": false
+      },
+      {
+        "index": 156,
+        "ruleId": "facial-lifting-creams",
+        "trained": true
+      },
+      {
+        "index": 157,
+        "ruleId": "facial-mists",
+        "trained": true
+      },
+      {
+        "index": 158,
+        "ruleId": "facial-steamers",
+        "trained": true
+      },
+      {
+        "index": 159,
+        "ruleId": "fitness-equipment",
+        "trained": true
+      },
+      {
+        "index": 160,
+        "ruleId": "fitness-shaker-bottles",
+        "trained": true
+      },
+      {
+        "index": 161,
+        "ruleId": "flat-caps",
+        "trained": true
+      },
+      {
+        "index": 162,
+        "ruleId": "food-covers",
+        "trained": true
+      },
+      {
+        "index": 163,
+        "ruleId": "food-storage-containers",
+        "trained": true
+      },
+      {
+        "index": 164,
+        "ruleId": "formal-neckties",
+        "trained": true
+      },
+      {
+        "index": 165,
+        "ruleId": "fragrance",
+        "trained": true
+      },
+      {
+        "index": 166,
+        "ruleId": "gaming-mouse-replacement-boards",
+        "trained": true
+      },
+      {
+        "index": 167,
+        "ruleId": "garden-harvesting-thumb-protectors",
+        "trained": true
+      },
+      {
+        "index": 168,
+        "ruleId": "garden-hoes-weeding-tools",
+        "trained": true
+      },
+      {
+        "index": 169,
+        "ruleId": "garden-tools",
+        "trained": true
+      },
+      {
+        "index": 170,
+        "ruleId": "garden-weeding-rakes",
+        "trained": false
+      },
+      {
+        "index": 171,
+        "ruleId": "gel-pens",
+        "trained": true
+      },
+      {
+        "index": 172,
+        "ruleId": "gift-packaging",
+        "trained": true
+      },
+      {
+        "index": 173,
+        "ruleId": "glitter-lipsticks",
+        "trained": true
+      },
+      {
+        "index": 174,
+        "ruleId": "gloves",
+        "trained": true
+      },
+      {
+        "index": 175,
+        "ruleId": "grooming-device-charging-cables",
+        "trained": false
+      },
+      {
+        "index": 176,
+        "ruleId": "grooming-tools",
+        "trained": true
+      },
+      {
+        "index": 177,
+        "ruleId": "gym-shorts",
+        "trained": false
+      },
+      {
+        "index": 178,
+        "ruleId": "gym-water-bottle-holders",
+        "trained": true
+      },
+      {
+        "index": 179,
+        "ruleId": "hair-accessories",
+        "trained": true
+      },
+      {
+        "index": 180,
+        "ruleId": "hair-care",
+        "trained": true
+      },
+      {
+        "index": 181,
+        "ruleId": "hair-glossing-oils",
+        "trained": true
+      },
+      {
+        "index": 182,
+        "ruleId": "hair-pomades",
+        "trained": false
+      },
+      {
+        "index": 183,
+        "ruleId": "hair-removal-creams",
+        "trained": true
+      },
+      {
+        "index": 184,
+        "ruleId": "hair-removal-oils",
+        "trained": true
+      },
+      {
+        "index": 185,
+        "ruleId": "hair-styling-tools",
+        "trained": true
+      },
+      {
+        "index": 186,
+        "ruleId": "hair-trimmer-lubricating-oils",
+        "trained": true
+      },
+      {
+        "index": 187,
+        "ruleId": "hair-volumizing-texture-powders",
+        "trained": true
+      },
+      {
+        "index": 188,
+        "ruleId": "hand-care",
+        "trained": true
+      },
+      {
+        "index": 189,
+        "ruleId": "hand-foot-care",
+        "trained": true
+      },
+      {
+        "index": 190,
+        "ruleId": "handbags",
+        "trained": true
+      },
+      {
+        "index": 191,
+        "ruleId": "handheld-can-bottle-openers",
+        "trained": true
+      },
+      {
+        "index": 192,
+        "ruleId": "handkerchiefs-pocket-squares",
+        "trained": true
+      },
+      {
+        "index": 193,
+        "ruleId": "hardware-fasteners",
+        "trained": true
+      },
+      {
+        "index": 194,
+        "ruleId": "hats-caps",
+        "trained": true
+      },
+      {
+        "index": 195,
+        "ruleId": "headphones",
+        "trained": true
+      },
+      {
+        "index": 196,
+        "ruleId": "herbal-tooth-powders",
+        "trained": true
+      },
+      {
+        "index": 197,
+        "ruleId": "home-air-appliances",
+        "trained": true
+      },
+      {
+        "index": 198,
+        "ruleId": "home-appliances",
+        "trained": true
+      },
+      {
+        "index": 199,
+        "ruleId": "home-aroma-diffusers",
+        "trained": true
+      },
+      {
+        "index": 200,
+        "ruleId": "home-decor",
+        "trained": true
+      },
+      {
+        "index": 201,
+        "ruleId": "home-furniture",
+        "trained": true
+      },
+      {
+        "index": 202,
+        "ruleId": "home-lighting",
+        "trained": true
+      },
+      {
+        "index": 203,
+        "ruleId": "home-storage",
+        "trained": true
+      },
+      {
+        "index": 204,
+        "ruleId": "hoodies-sweaters",
+        "trained": true
+      },
+      {
+        "index": 205,
+        "ruleId": "hot-water-bottles",
+        "trained": true
+      },
+      {
+        "index": 206,
+        "ruleId": "hydrating-brightening-skin-creams",
+        "trained": false
+      },
+      {
+        "index": 207,
+        "ruleId": "hydrating-concentrates",
+        "trained": true
+      },
+      {
+        "index": 208,
+        "ruleId": "id-card-lanyards-badge-holders",
+        "trained": true
+      },
+      {
+        "index": 209,
+        "ruleId": "industrial-mixing-filling-machines",
+        "trained": false
+      },
+      {
+        "index": 210,
+        "ruleId": "intimate-care",
+        "trained": true
+      },
+      {
+        "index": 211,
+        "ruleId": "jackets-coats",
+        "trained": true
+      },
+      {
+        "index": 212,
+        "ruleId": "jeans",
+        "trained": true
+      },
+      {
+        "index": 213,
+        "ruleId": "key-ring",
+        "trained": true
+      },
+      {
+        "index": 214,
+        "ruleId": "keyboard",
+        "trained": true
+      },
+      {
+        "index": 215,
+        "ruleId": "keyboard-fidget-keychains",
+        "trained": true
+      },
+      {
+        "index": 216,
+        "ruleId": "kids-accessories",
+        "trained": true
+      },
+      {
+        "index": 217,
+        "ruleId": "kids-bath-bombs",
+        "trained": true
+      },
+      {
+        "index": 218,
+        "ruleId": "kids-bowling-games",
+        "trained": false
+      },
+      {
+        "index": 219,
+        "ruleId": "kids-busy-boards",
+        "trained": true
+      },
+      {
+        "index": 220,
+        "ruleId": "kids-car-seat-travel-trays",
+        "trained": true
+      },
+      {
+        "index": 221,
+        "ruleId": "kids-cash-register-playsets",
+        "trained": true
+      },
+      {
+        "index": 222,
+        "ruleId": "kids-chore-charts",
+        "trained": true
+      },
+      {
+        "index": 223,
+        "ruleId": "kids-cooking-tool-playsets",
+        "trained": true
+      },
+      {
+        "index": 224,
+        "ruleId": "kids-diving-pool-games",
+        "trained": true
+      },
+      {
+        "index": 225,
+        "ruleId": "kids-doctor-playsets",
+        "trained": true
+      },
+      {
+        "index": 226,
+        "ruleId": "kids-electronic-learning-tablets",
+        "trained": true
+      },
+      {
+        "index": 227,
+        "ruleId": "kids-fishing-games",
+        "trained": true
+      },
+      {
+        "index": 228,
+        "ruleId": "kids-kitchen-food-cutting-sets",
+        "trained": true
+      },
+      {
+        "index": 229,
+        "ruleId": "kids-kitchen-playsets",
+        "trained": true
+      },
+      {
+        "index": 230,
+        "ruleId": "kids-learning-laptop-toys",
+        "trained": true
+      },
+      {
+        "index": 231,
+        "ruleId": "kids-life-skills-books",
+        "trained": true
+      },
+      {
+        "index": 232,
+        "ruleId": "kids-makeup-playsets",
+        "trained": true
+      },
+      {
+        "index": 233,
+        "ruleId": "kids-matching-games",
+        "trained": true
+      },
+      {
+        "index": 234,
+        "ruleId": "kids-money-bank-safes",
+        "trained": true
+      },
+      {
+        "index": 235,
+        "ruleId": "kids-outdoor-playhouses",
+        "trained": false
+      },
+      {
+        "index": 236,
+        "ruleId": "kids-paper-craft-books",
+        "trained": true
+      },
+      {
+        "index": 237,
+        "ruleId": "kids-pen-control-training-cards",
+        "trained": true
+      },
+      {
+        "index": 238,
+        "ruleId": "kids-pretend-food-playsets",
+        "trained": true
+      },
+      {
+        "index": 239,
+        "ruleId": "kids-pull-radish-games",
+        "trained": true
+      },
+      {
+        "index": 240,
+        "ruleId": "kids-ride-on-vehicles",
+        "trained": true
+      },
+      {
+        "index": 241,
+        "ruleId": "kids-sleepwear",
+        "trained": true
+      },
+      {
+        "index": 242,
+        "ruleId": "kids-sports-footwear",
+        "trained": true
+      },
+      {
+        "index": 243,
+        "ruleId": "kids-straw-water-bottles",
+        "trained": true
+      },
+      {
+        "index": 244,
+        "ruleId": "kids-tablets",
+        "trained": true
+      },
+      {
+        "index": 245,
+        "ruleId": "kids-three-sided-toothbrushes",
+        "trained": true
+      },
+      {
+        "index": 246,
+        "ruleId": "kids-toothbrushes",
+        "trained": true
+      },
+      {
+        "index": 247,
+        "ruleId": "kids-toothpaste",
+        "trained": true
+      },
+      {
+        "index": 248,
+        "ruleId": "kids-trash-bins",
+        "trained": true
+      },
+      {
+        "index": 249,
+        "ruleId": "kids-video-walkie-talkies",
+        "trained": false
+      },
+      {
+        "index": 250,
+        "ruleId": "kids-water-sensory-playsets",
+        "trained": true
+      },
+      {
+        "index": 251,
+        "ruleId": "kids-wear",
+        "trained": true
+      },
+      {
+        "index": 252,
+        "ruleId": "kindergarten-bunk-beds",
+        "trained": true
+      },
+      {
+        "index": 253,
+        "ruleId": "kitchen-aprons",
+        "trained": true
+      },
+      {
+        "index": 254,
+        "ruleId": "kitchen-food-prep",
+        "trained": true
+      },
+      {
+        "index": 255,
+        "ruleId": "kitchen-gadgets",
+        "trained": true
+      },
+      {
+        "index": 256,
+        "ruleId": "kitchen-knife-sets",
+        "trained": false
+      },
+      {
+        "index": 257,
+        "ruleId": "kitchen-knife-utensil-organizers",
+        "trained": true
+      },
+      {
+        "index": 258,
+        "ruleId": "kitchen-liquid-dispensers",
+        "trained": false
+      },
+      {
+        "index": 259,
+        "ruleId": "kitchen-seasoning",
+        "trained": true
+      },
+      {
+        "index": 260,
+        "ruleId": "kitchen-sink-storage-racks",
+        "trained": true
+      },
+      {
+        "index": 261,
+        "ruleId": "kitchen-towels",
+        "trained": true
+      },
+      {
+        "index": 262,
+        "ruleId": "kitchen-trash-bag-holders",
+        "trained": true
+      },
+      {
+        "index": 263,
+        "ruleId": "knee-compression-supports",
+        "trained": true
+      },
+      {
+        "index": 264,
+        "ruleId": "kohl-kajal-eye-makeup",
+        "trained": true
+      },
+      {
+        "index": 265,
+        "ruleId": "language-practice-copybooks",
+        "trained": false
+      },
+      {
+        "index": 266,
+        "ruleId": "laptop-accessory",
+        "trained": true
+      },
+      {
+        "index": 267,
+        "ruleId": "laptop-cooling-pads",
+        "trained": true
+      },
+      {
+        "index": 268,
+        "ruleId": "laptop-sleeves",
+        "trained": true
+      },
+      {
+        "index": 269,
+        "ruleId": "laptop-stands",
+        "trained": true
+      },
+      {
+        "index": 270,
+        "ruleId": "led-menu-displays",
+        "trained": true
+      },
+      {
+        "index": 271,
+        "ruleId": "led-vanity-dressing-tables",
+        "trained": true
+      },
+      {
+        "index": 272,
+        "ruleId": "leg-elevation-pillows",
+        "trained": true
+      },
+      {
+        "index": 273,
+        "ruleId": "lingerie-underwear",
+        "trained": true
+      },
+      {
+        "index": 274,
+        "ruleId": "lint-rollers",
+        "trained": true
+      },
+      {
+        "index": 275,
+        "ruleId": "lip-brightening-balms",
+        "trained": true
+      },
+      {
+        "index": 276,
+        "ruleId": "lip-brightening-care-sets",
+        "trained": true
+      },
+      {
+        "index": 277,
+        "ruleId": "lip-brightening-creams",
+        "trained": true
+      },
+      {
+        "index": 278,
+        "ruleId": "lip-care-makeup",
+        "trained": true
+      },
+      {
+        "index": 279,
+        "ruleId": "lip-nourishing-oils",
+        "trained": true
+      },
+      {
+        "index": 280,
+        "ruleId": "lip-plumper-oils",
+        "trained": true
+      },
+      {
+        "index": 281,
+        "ruleId": "lip-repair-balms",
+        "trained": true
+      },
+      {
+        "index": 282,
+        "ruleId": "liquid-blushes",
+        "trained": true
+      },
+      {
+        "index": 283,
+        "ruleId": "literature-holders",
+        "trained": true
+      },
+      {
+        "index": 284,
+        "ruleId": "loose-face-powders",
+        "trained": true
+      },
+      {
+        "index": 285,
+        "ruleId": "magic-flying-ball-toys",
+        "trained": true
+      },
+      {
+        "index": 286,
+        "ruleId": "makeup-brush-sets",
+        "trained": true
+      },
+      {
+        "index": 287,
+        "ruleId": "makeup-microneedle-patches",
+        "trained": true
+      },
+      {
+        "index": 288,
+        "ruleId": "makeup-primers",
+        "trained": true
+      },
+      {
+        "index": 289,
+        "ruleId": "makeup-remover-cleansing-balms",
+        "trained": true
+      },
+      {
+        "index": 290,
+        "ruleId": "makeup-remover-cleansing-waters",
+        "trained": true
+      },
+      {
+        "index": 291,
+        "ruleId": "makeup-remover-oils",
+        "trained": true
+      },
+      {
+        "index": 292,
+        "ruleId": "makeup-remover-wipes",
+        "trained": true
+      },
+      {
+        "index": 293,
+        "ruleId": "makeup-setting-sprays",
+        "trained": true
+      },
+      {
+        "index": 294,
+        "ruleId": "marbled-dinner-plate-sets",
+        "trained": true
+      },
+      {
+        "index": 295,
+        "ruleId": "massage-wellness",
+        "trained": true
+      },
+      {
+        "index": 296,
+        "ruleId": "mechanical-watches",
+        "trained": true
+      },
+      {
+        "index": 297,
+        "ruleId": "mens-activewear-sets",
+        "trained": true
+      },
+      {
+        "index": 298,
+        "ruleId": "mens-body-care-kits",
+        "trained": true
+      },
+      {
+        "index": 299,
+        "ruleId": "mens-graphic-tshirts",
+        "trained": true
+      },
+      {
+        "index": 300,
+        "ruleId": "mens-hair-replacement-wigs",
+        "trained": true
+      },
+      {
+        "index": 301,
+        "ruleId": "mens-intimate-deodorant-creams",
+        "trained": false
+      },
+      {
+        "index": 302,
+        "ruleId": "mens-intimate-performance-creams",
+        "trained": true
+      },
+      {
+        "index": 303,
+        "ruleId": "mens-spf-day-creams",
+        "trained": true
+      },
+      {
+        "index": 304,
+        "ruleId": "mens-tone-up-creams",
+        "trained": true
+      },
+      {
+        "index": 305,
+        "ruleId": "metal-card-wallets",
+        "trained": true
+      },
+      {
+        "index": 306,
+        "ruleId": "microphone-accessories",
+        "trained": true
+      },
+      {
+        "index": 307,
+        "ruleId": "microphones",
+        "trained": true
+      },
+      {
+        "index": 308,
+        "ruleId": "milk-frothers",
+        "trained": true
+      },
+      {
+        "index": 309,
+        "ruleId": "mini-usb-air-cooler-fans",
+        "trained": true
+      },
+      {
+        "index": 310,
+        "ruleId": "mobility-aids",
+        "trained": true
+      },
+      {
+        "index": 311,
+        "ruleId": "moisturizing-corrector-creams",
+        "trained": true
+      },
+      {
+        "index": 312,
+        "ruleId": "mouse-accessories",
+        "trained": true
+      },
+      {
+        "index": 313,
+        "ruleId": "mouse-pad",
+        "trained": true
+      },
+      {
+        "index": 314,
+        "ruleId": "nail-art-kitchen-aprons",
+        "trained": true
+      },
+      {
+        "index": 315,
+        "ruleId": "nail-care",
+        "trained": true
+      },
+      {
+        "index": 316,
+        "ruleId": "necklaces",
+        "trained": true
+      },
+      {
+        "index": 317,
+        "ruleId": "newborn-photography-props",
+        "trained": true
+      },
+      {
+        "index": 318,
+        "ruleId": "niacinamide-creams",
+        "trained": true
+      },
+      {
+        "index": 319,
+        "ruleId": "notebooks-planners",
+        "trained": true
+      },
+      {
+        "index": 320,
+        "ruleId": "novelty-shaped-candles",
+        "trained": true
+      },
+      {
+        "index": 321,
+        "ruleId": "novelty-stationery-sets",
+        "trained": true
+      },
+      {
+        "index": 322,
+        "ruleId": "number-learning-toys",
+        "trained": true
+      },
+      {
+        "index": 323,
+        "ruleId": "nursing-pillows",
+        "trained": true
+      },
+      {
+        "index": 324,
+        "ruleId": "office-desk",
+        "trained": true
+      },
+      {
+        "index": 325,
+        "ruleId": "order-price-adjustments",
+        "trained": true
+      },
+      {
+        "index": 326,
+        "ruleId": "outdoor-playground-equipment",
+        "trained": false
+      },
+      {
+        "index": 327,
+        "ruleId": "paper-cutters",
+        "trained": true
+      },
+      {
+        "index": 328,
+        "ruleId": "party-backdrops",
+        "trained": true
+      },
+      {
+        "index": 329,
+        "ruleId": "party-bottle-stickers",
+        "trained": false
+      },
+      {
+        "index": 330,
+        "ruleId": "party-table-covers",
+        "trained": true
+      },
+      {
+        "index": 331,
+        "ruleId": "pen-pencil-case",
+        "trained": true
+      },
+      {
+        "index": 332,
+        "ruleId": "periodic-table-desk-decor",
+        "trained": true
+      },
+      {
+        "index": 333,
+        "ruleId": "personalized-school-labels",
+        "trained": true
+      },
+      {
+        "index": 334,
+        "ruleId": "pet-cooling-mats",
+        "trained": true
+      },
+      {
+        "index": 335,
+        "ruleId": "pet-feeding-mats",
+        "trained": true
+      },
+      {
+        "index": 336,
+        "ruleId": "pet-general",
+        "trained": true
+      },
+      {
+        "index": 337,
+        "ruleId": "pet-nail-clippers",
+        "trained": true
+      },
+      {
+        "index": 338,
+        "ruleId": "phone-auto-clickers",
+        "trained": true
+      },
+      {
+        "index": 339,
+        "ruleId": "phone-case",
+        "trained": true
+      },
+      {
+        "index": 340,
+        "ruleId": "phone-charms-dust-plugs",
+        "trained": true
+      },
+      {
+        "index": 341,
+        "ruleId": "phone-holder-mount",
+        "trained": true
+      },
+      {
+        "index": 342,
+        "ruleId": "phone-lanyards",
+        "trained": true
+      },
+      {
+        "index": 343,
+        "ruleId": "phone-selfie-monitors",
+        "trained": true
+      },
+      {
+        "index": 344,
+        "ruleId": "phone-tablet-stand",
+        "trained": true
+      },
+      {
+        "index": 345,
+        "ruleId": "photo-album-keychains",
+        "trained": true
+      },
+      {
+        "index": 346,
+        "ruleId": "photocard-holders-keychains",
+        "trained": true
+      },
+      {
+        "index": 347,
+        "ruleId": "piano-keyboard-labels",
+        "trained": true
+      },
+      {
+        "index": 348,
+        "ruleId": "pigmentation-brightening-treatment-sets",
+        "trained": true
+      },
+      {
+        "index": 349,
+        "ruleId": "pill-organizers",
+        "trained": true
+      },
+      {
+        "index": 350,
+        "ruleId": "plant-pots",
+        "trained": true
+      },
+      {
+        "index": 351,
+        "ruleId": "plant-stem-support-trellises",
+        "trained": true
+      },
+      {
+        "index": 352,
+        "ruleId": "plant-watering-bottles",
+        "trained": false
+      },
+      {
+        "index": 353,
+        "ruleId": "plush-keychains",
+        "trained": false
+      },
+      {
+        "index": 354,
+        "ruleId": "polygonum-multiflorum-hair-essences",
+        "trained": true
+      },
+      {
+        "index": 355,
+        "ruleId": "popcorn-machines",
+        "trained": true
+      },
+      {
+        "index": 356,
+        "ruleId": "portable-camping-cookware-sets",
+        "trained": true
+      },
+      {
+        "index": 357,
+        "ruleId": "portable-camping-furniture",
+        "trained": true
+      },
+      {
+        "index": 358,
+        "ruleId": "portable-usb-reading-lights",
+        "trained": true
+      },
+      {
+        "index": 359,
+        "ruleId": "powder-puff-storage-cases",
+        "trained": true
+      },
+      {
+        "index": 360,
+        "ruleId": "power-bank",
+        "trained": true
+      },
+      {
+        "index": 361,
+        "ruleId": "prank-toys",
+        "trained": true
+      },
+      {
+        "index": 362,
+        "ruleId": "precision-dispensing-bottles",
+        "trained": true
+      },
+      {
+        "index": 363,
+        "ruleId": "pretend-play-car-keys",
+        "trained": true
+      },
+      {
+        "index": 364,
+        "ruleId": "pretend-play-food-sets",
+        "trained": true
+      },
+      {
+        "index": 365,
+        "ruleId": "quartz-watches",
+        "trained": true
+      },
+      {
+        "index": 366,
+        "ruleId": "rain-sun-umbrellas",
+        "trained": true
+      },
+      {
+        "index": 367,
+        "ruleId": "reading-accessories",
+        "trained": true
+      },
+      {
+        "index": 368,
+        "ruleId": "reading-lights",
+        "trained": true
+      },
+      {
+        "index": 369,
+        "ruleId": "reborn-dolls-kits",
+        "trained": true
+      },
+      {
+        "index": 370,
+        "ruleId": "refillable-spray-bottles",
+        "trained": true
+      },
+      {
+        "index": 371,
+        "ruleId": "religious-study-wallet-organizers",
+        "trained": true
+      },
+      {
+        "index": 372,
+        "ruleId": "reusable-drink-bottles",
+        "trained": true
+      },
+      {
+        "index": 373,
+        "ruleId": "reusable-makeup-remover-pads",
+        "trained": true
+      },
+      {
+        "index": 374,
+        "ruleId": "ring-binder",
+        "trained": true
+      },
+      {
+        "index": 375,
+        "ruleId": "ring-light",
+        "trained": true
+      },
+      {
+        "index": 376,
+        "ruleId": "ring-remote-controls",
+        "trained": true
+      },
+      {
+        "index": 377,
+        "ruleId": "rings",
+        "trained": true
+      },
+      {
+        "index": 378,
+        "ruleId": "robes-sleepwear",
+        "trained": true
+      },
+      {
+        "index": 379,
+        "ruleId": "rosehip-seed-oils",
+        "trained": true
+      },
+      {
+        "index": 380,
+        "ruleId": "rosemary-clove-hair-oils",
+        "trained": true
+      },
+      {
+        "index": 381,
+        "ruleId": "rosemary-mint-hair-masks",
+        "trained": true
+      },
+      {
+        "index": 382,
+        "ruleId": "scarves",
+        "trained": true
+      },
+      {
+        "index": 383,
+        "ruleId": "school-photography-backdrops",
+        "trained": true
+      },
+      {
+        "index": 384,
+        "ruleId": "school-supplies",
+        "trained": true
+      },
+      {
+        "index": 385,
+        "ruleId": "science-measuring-tools",
+        "trained": true
+      },
+      {
+        "index": 386,
+        "ruleId": "serveware",
+        "trained": true
+      },
+      {
+        "index": 387,
+        "ruleId": "shirts",
+        "trained": true
+      },
+      {
+        "index": 388,
+        "ruleId": "shoes",
+        "trained": true
+      },
+      {
+        "index": 389,
+        "ruleId": "shopping-bags",
+        "trained": true
+      },
+      {
+        "index": 390,
+        "ruleId": "shorts",
+        "trained": true
+      },
+      {
+        "index": 391,
+        "ruleId": "silicone-baking-molds",
+        "trained": true
+      },
+      {
+        "index": 392,
+        "ruleId": "skincare",
+        "trained": true
+      },
+      {
+        "index": 393,
+        "ruleId": "skirts",
+        "trained": true
+      },
+      {
+        "index": 394,
+        "ruleId": "sleep-support-pillows",
+        "trained": true
+      },
+      {
+        "index": 395,
+        "ruleId": "sleep-wellness",
+        "trained": true
+      },
+      {
+        "index": 396,
+        "ruleId": "sliding-puzzle-games",
+        "trained": true
+      },
+      {
+        "index": 397,
+        "ruleId": "slimming-massage-oils",
+        "trained": true
+      },
+      {
+        "index": 398,
+        "ruleId": "small-beverage-bottles",
+        "trained": true
+      },
+      {
+        "index": 399,
+        "ruleId": "small-pet-harnesses",
+        "trained": true
+      },
+      {
+        "index": 400,
+        "ruleId": "smart-planters",
+        "trained": true
+      },
+      {
+        "index": 401,
+        "ruleId": "smart-watch",
+        "trained": true
+      },
+      {
+        "index": 402,
+        "ruleId": "smartphone-video-rigs",
+        "trained": true
+      },
+      {
+        "index": 403,
+        "ruleId": "socks",
+        "trained": true
+      },
+      {
+        "index": 404,
+        "ruleId": "soft-toys",
+        "trained": true
+      },
+      {
+        "index": 405,
+        "ruleId": "speaker",
+        "trained": true
+      },
+      {
+        "index": 406,
+        "ruleId": "spinning-top-toys",
+        "trained": true
+      },
+      {
+        "index": 407,
+        "ruleId": "sports-protection",
+        "trained": true
+      },
+      {
+        "index": 408,
+        "ruleId": "sports-shock-absorbing-insoles",
+        "trained": false
+      },
+      {
+        "index": 409,
+        "ruleId": "sports-socks",
+        "trained": true
+      },
+      {
+        "index": 410,
+        "ruleId": "sports-water-jugs",
+        "trained": true
+      },
+      {
+        "index": 411,
+        "ruleId": "stationery-gift-sets",
+        "trained": true
+      },
+      {
+        "index": 412,
+        "ruleId": "sticky-notes",
+        "trained": true
+      },
+      {
+        "index": 413,
+        "ruleId": "straw-water-bottles",
+        "trained": true
+      },
+      {
+        "index": 414,
+        "ruleId": "stress-ball-toys",
+        "trained": true
+      },
+      {
+        "index": 415,
+        "ruleId": "stress-squeeze-toys",
+        "trained": true
+      },
+      {
+        "index": 416,
+        "ruleId": "succulent-garden-tool-sets",
+        "trained": true
+      },
+      {
+        "index": 417,
+        "ruleId": "suits",
+        "trained": true
+      },
+      {
+        "index": 418,
+        "ruleId": "sunglasses",
+        "trained": true
+      },
+      {
+        "index": 419,
+        "ruleId": "t-shirts",
+        "trained": true
+      },
+      {
+        "index": 420,
+        "ruleId": "table-linens",
+        "trained": true
+      },
+      {
+        "index": 421,
+        "ruleId": "tail-combs",
+        "trained": false
+      },
+      {
+        "index": 422,
+        "ruleId": "target-games",
+        "trained": true
+      },
+      {
+        "index": 423,
+        "ruleId": "teleprompters",
+        "trained": true
+      },
+      {
+        "index": 424,
+        "ruleId": "ties",
+        "trained": true
+      },
+      {
+        "index": 425,
+        "ruleId": "tire-inflators",
+        "trained": true
+      },
+      {
+        "index": 426,
+        "ruleId": "tools-hardware",
+        "trained": true
+      },
+      {
+        "index": 427,
+        "ruleId": "topical-joint-care-creams",
+        "trained": true
+      },
+      {
+        "index": 428,
+        "ruleId": "toss-catch-games",
+        "trained": true
+      },
+      {
+        "index": 429,
+        "ruleId": "towels",
+        "trained": true
+      },
+      {
+        "index": 430,
+        "ruleId": "toy-blasters",
+        "trained": true
+      },
+      {
+        "index": 431,
+        "ruleId": "toy-figures",
+        "trained": true
+      },
+      {
+        "index": 432,
+        "ruleId": "toy-revolver-launchers",
+        "trained": false
+      },
+      {
+        "index": 433,
+        "ruleId": "toy-vehicles",
+        "trained": true
+      },
+      {
+        "index": 434,
+        "ruleId": "toys-general",
+        "trained": true
+      },
+      {
+        "index": 435,
+        "ruleId": "traditional-watch",
+        "trained": true
+      },
+      {
+        "index": 436,
+        "ruleId": "travel-bags",
+        "trained": true
+      },
+      {
+        "index": 437,
+        "ruleId": "travel-neck-pillows",
+        "trained": true
+      },
+      {
+        "index": 438,
+        "ruleId": "travel-organizers",
+        "trained": true
+      },
+      {
+        "index": 439,
+        "ruleId": "trousers-pants",
+        "trained": true
+      },
+      {
+        "index": 440,
+        "ruleId": "turmeric-face-creams",
+        "trained": true
+      },
+      {
+        "index": 441,
+        "ruleId": "turmeric-vitamin-c-face-creams",
+        "trained": true
+      },
+      {
+        "index": 442,
+        "ruleId": "twister-party-games",
+        "trained": false
+      },
+      {
+        "index": 443,
+        "ruleId": "umbrella-covers",
+        "trained": true
+      },
+      {
+        "index": 444,
+        "ruleId": "universal-laptop-sleeves",
+        "trained": true
+      },
+      {
+        "index": 445,
+        "ruleId": "usb-flash-drive",
+        "trained": true
+      },
+      {
+        "index": 446,
+        "ruleId": "vehicle-battery-charger",
+        "trained": true
+      },
+      {
+        "index": 447,
+        "ruleId": "vehicle-neck-pillows",
+        "trained": true
+      },
+      {
+        "index": 448,
+        "ruleId": "video-capture-cards",
+        "trained": true
+      },
+      {
+        "index": 449,
+        "ruleId": "virtual-pet-toys",
+        "trained": true
+      },
+      {
+        "index": 450,
+        "ruleId": "vision-correction-lenses",
+        "trained": true
+      },
+      {
+        "index": 451,
+        "ruleId": "wall-tile-stickers",
+        "trained": true
+      },
+      {
+        "index": 452,
+        "ruleId": "wallets",
+        "trained": true
+      },
+      {
+        "index": 453,
+        "ruleId": "washing-machine-lint-catchers",
+        "trained": true
+      },
+      {
+        "index": 454,
+        "ruleId": "watch-band",
+        "trained": true
+      },
+      {
+        "index": 455,
+        "ruleId": "watch-charger",
+        "trained": true
+      },
+      {
+        "index": 456,
+        "ruleId": "water-bottles",
+        "trained": true
+      },
+      {
+        "index": 457,
+        "ruleId": "water-dispensers",
+        "trained": true
+      },
+      {
+        "index": 458,
+        "ruleId": "water-shoes-aqua-socks",
+        "trained": true
+      },
+      {
+        "index": 459,
+        "ruleId": "waterproof-hiking-socks",
+        "trained": true
+      },
+      {
+        "index": 460,
+        "ruleId": "whey-protein-powders",
+        "trained": true
+      },
+      {
+        "index": 461,
+        "ruleId": "wire-loop-skill-games",
+        "trained": true
+      },
+      {
+        "index": 462,
+        "ruleId": "wireless-charger",
+        "trained": true
+      },
+      {
+        "index": 463,
+        "ruleId": "wireless-hdmi-extenders",
+        "trained": true
+      },
+      {
+        "index": 464,
+        "ruleId": "womens-blouses",
+        "trained": true
+      },
+      {
+        "index": 465,
+        "ruleId": "womens-flare-jeans",
+        "trained": true
+      },
+      {
+        "index": 466,
+        "ruleId": "womens-intimate-moisturizing-creams",
+        "trained": true
+      },
+      {
+        "index": 467,
+        "ruleId": "womens-short-curly-wigs",
+        "trained": true
+      },
+      {
+        "index": 468,
+        "ruleId": "wooden-desk-organizers",
+        "trained": true
+      },
+      {
+        "index": 469,
+        "ruleId": "writing-stationery-sets",
+        "trained": false
+      },
+      {
+        "index": 470,
+        "ruleId": "writing-supplies",
+        "trained": true
+      },
+      {
+        "index": 471,
+        "ruleId": "yarn-crochet-supplies",
+        "trained": true
+      },
+      {
+        "index": 472,
+        "ruleId": "yoga-grip-socks",
+        "trained": true
+      }
+    ],
+    "untrainedLabels": [
+      "abdominal-wellness-patches",
+      "african-hair-nourishing-oils",
+      "altar-ceremony-decor",
+      "ampoule-openers",
+      "automotive-ac-refrigerant-kits",
+      "body-firming-creams",
+      "calendula-skin-creams",
+      "car-seat-back-organizers",
+      "car-window-sun-shades",
+      "car-windshield-sunshade-umbrellas",
+      "ceramic-bowl-sets",
+      "ceramic-soap-dishes",
+      "cica-repair-creams",
+      "computer-storage",
+      "cosmetic-storage-boxes",
+      "electric-spice-grinders",
+      "facial-lifting-care-sticks",
+      "garden-weeding-rakes",
+      "grooming-device-charging-cables",
+      "gym-shorts",
+      "hair-pomades",
+      "hydrating-brightening-skin-creams",
+      "industrial-mixing-filling-machines",
+      "kids-bowling-games",
+      "kids-outdoor-playhouses",
+      "kids-video-walkie-talkies",
+      "kitchen-knife-sets",
+      "kitchen-liquid-dispensers",
+      "language-practice-copybooks",
+      "mens-intimate-deodorant-creams",
+      "outdoor-playground-equipment",
+      "party-bottle-stickers",
+      "plant-watering-bottles",
+      "plush-keychains",
+      "sports-shock-absorbing-insoles",
+      "tail-combs",
+      "toy-revolver-launchers",
+      "twister-party-games",
+      "writing-stationery-sets"
+    ],
+    "compatibility": {
+      "mode": "append-only",
+      "sourceFingerprint": "f969c5e9",
+      "currentFingerprint": "ee1001eb",
+      "addedRuleIds": [
+        "cat-toilet-supplies"
+      ],
+      "removedRuleIds": [],
+      "changedRuleIds": [],
+      "evidence": "Current checked-in taxonomy with addedRuleIds removed reproduces the model source fingerprint exactly; added rules are outside the trained visual label index and remain deterministic-only.",
+      "verifiedAt": "2026-09-08T11:37:21.293Z"
+    }
+  },
+  "dataset": {
+    "datasetId": "visual-sharded-c159945b2c930875c8474da1",
+    "bytes": 50000145606,
+    "imageCount": 262766,
+    "productCount": 137805,
+    "labelCount": 473,
+    "manifestSha256": "2d21aa9e3a6dea962fc7eb073597980ab37c4bdebf7cb8ed341492462b35293a",
+    "splitPolicy": "deterministic product-group split; no product or image crosses splits; staged in sequential 25 GB shards",
+    "labelPolicy": "deterministic-candidate-only"
+  },
+  "encoder": {
+    "fineTuned": true,
+    "baseCheckpointPath": "/Users/mac/.cache/salt-visual-taxonomy/siglip-base.checkpoint.json",
+    "baseCheckpointSha256": "4b80cf4164748c2eaae1cf59f32dfae47676d65deaa8760652e4418dc42b4ec3",
+    "fineTunedCheckpointPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors",
+    "fineTunedCheckpointSha256": "9f085f80916ee92733096e4f9af2e81069103be27da48e087cdf9ca1f9f8e942",
+    "fineTuning": {
+      "steps": 20870,
+      "device": "metal",
+      "datasetManifestSha256": "2d21aa9e3a6dea962fc7eb073597980ab37c4bdebf7cb8ed341492462b35293a",
+      "reportPath": "/Users/mac/.cache/salt-visual-taxonomy-training/checkpoints/visual-taxonomy-encoder-finetuned.safetensors.training.aggregate.json",
+      "reportSha256": "5f09da515e972ece362d28fa0eb5b22976cac58c716225592c4d653544ab12cf",
+      "shardCount": 9
+    },
+    "command": [
+      "/Users/mac/.cache/salt-visual-taxonomy-training/venv/bin/python",
+      "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/scripts/visual-taxonomy-encoder-mlx.py",
+      "encode"
+    ],
+    "trainCommand": [
+      "/Users/mac/.cache/salt-visual-taxonomy-training/venv/bin/python",
+      "/Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/scripts/visual-taxonomy-encoder-mlx.py",
+      "fine-tune"
+    ]
+  },
+  "training": {
+    "records": 262766,
+    "embeddingDimensions": 768,
+    "device": "metal",
+    "precision": "float16",
+    "epochs": 8,
+    "batchSize": 256,
+    "metrics": {
+      "train": {
+        "records": 234871,
+        "excludedRecords": 0,
+        "accuracy": 0.6717304392624036,
+        "coverage": 1,
+        "macroF1": 0.4308947038825438,
+        "selectiveMargin": 2,
+        "selectiveRecords": 88073,
+        "selectiveAccuracy": 0.9000601773528777,
+        "selectiveCoverage": 0.37498456599580193,
+        "selectiveMacroF1": 0.5799970413238107
+      },
+      "validation": {
+        "records": 13782,
+        "excludedRecords": 201,
+        "accuracy": 0.6904658249891162,
+        "coverage": 0.98562540227419,
+        "macroF1": 0.40831255176271664,
+        "selectiveMargin": 2,
+        "selectiveRecords": 6128,
+        "selectiveAccuracy": 0.8989882506527415,
+        "selectiveCoverage": 0.4446379335364969,
+        "selectiveMacroF1": 0.5935338214676336
+      },
+      "test": {
+        "records": 13769,
+        "excludedRecords": 143,
+        "accuracy": 0.689084174595105,
+        "coverage": 0.9897211040828062,
+        "macroF1": 0.39049044105249875,
+        "selectiveMargin": 2,
+        "selectiveRecords": 6285,
+        "selectiveAccuracy": 0.8984884645982498,
+        "selectiveCoverage": 0.4564601641368291,
+        "selectiveMacroF1": 0.590063603961993
+      },
+      "qualityGate": {
+        "passed": true,
+        "decisionMode": "selective-high-margin-only",
+        "minimumValidationSelectiveAccuracy": 0.85,
+        "minimumTestSelectiveAccuracy": 0.85,
+        "minimumValidationSelectiveMacroF1": 0.55,
+        "minimumTestSelectiveMacroF1": 0.55,
+        "minimumValidationSelectiveCoverage": 0.4,
+        "minimumTestSelectiveCoverage": 0.4,
+        "minimumSelectiveMargin": 2,
+        "selectiveMargin": 2,
+        "bestEpoch": 6
+      }
+    },
+    "completedAt": "2026-08-31T22:16:32.900Z",
+    "resourcePolicy": "two sequential <=25 GB raw shards; raw shard purged after each verified pass; OS-managed swap only"
+  },
+  "weights": {
+    "path": "output/visual-taxonomy-model-weights.npz",
+    "sha256": "caa5294bd6b62d7829758e7bb96f2dde86bcf583a2287f70e6294760c62b8a95",
+    "bytes": 728092
+  },
+  "retention": {
+    "rawDataPurged": true,
+    "purgedBytes": 50000145606,
+    "purgedImageCount": 262766,
+    "purgedAt": "2026-08-31T22:16:32.900Z",
+    "purgedDatasetRoot": "sharded:/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-001,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-002,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-003,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-004,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-005,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-006,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-007,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-008,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-009",
+    "rawDataPolicy": "each marked shard is deleted immediately after adapter or final-encoder verification"
+  }
+}

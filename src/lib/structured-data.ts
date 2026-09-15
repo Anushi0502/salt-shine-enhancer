@@ -24,6 +24,14 @@ export function buildOrganizationStructuredData(
     name: shop?.name || "SALT",
     url: origin,
     logo: `${origin}/brand/salt-logo.png`,
+    description: "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "help@saltonlinestore.com",
+      telephone: "+1 888-835-7211",
+      availableLanguage: ["English"],
+    },
     inLanguage: "en-US",
     sameAs: ORGANIZATION_SAME_AS,
   };

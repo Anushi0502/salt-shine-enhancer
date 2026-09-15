@@ -10,7 +10,7 @@ const reviewDir = resolve(rootDir, "output", "catalog-image-review-fresh");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const classifications = Array.isArray(manifest?.classifications) ? manifest.classifications : [];
 const fallback = classifications.filter((entry) => ["fallback", "review"].includes(entry?.source));
-const reviewed = classifications.filter((entry) => ["taxonomy", "approved-override", "vision", "existing-vision"].includes(entry?.source));
+const reviewed = classifications.filter((entry) => ["taxonomy", "approved-override", "vision", "existing-vision", "evidence-fallback"].includes(entry?.source));
 const unresolved = classifications.filter((entry) => !entry?.source || entry.source === "guess");
 if (unresolved.length) {
   throw new Error(`Visual review finalization found ${unresolved.length} products without a supervised decision source.`);
@@ -29,6 +29,7 @@ const report = {
   summary: {
     totalClassifications: classifications.length,
     reviewed: reviewed.length,
+    evidenceBacked: classifications.filter((entry) => entry?.source === "evidence-fallback").length,
     fallbackResolved: fallback.length,
     fallbackWithEvidence: fallback.length - fallbackWithoutEvidence.length,
     pending: 0,

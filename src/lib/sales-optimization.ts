@@ -49,6 +49,19 @@ function normalizeText(value: unknown): string {
     .trim();
 }
 
+function buildProductStructuredDataSku(product: ShopifyProduct): string {
+  const productId = asText(product.id).replace(/[^a-z0-9]/gi, "");
+  if (productId) {
+    return `salt-${productId}`.slice(0, 70);
+  }
+
+  const fallbackHandle = asText(product.handle)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 60);
+  return fallbackHandle ? `salt-${fallbackHandle}` : "salt-product";
+}
+
 function tokenize(value: unknown): string[] {
   return normalizeText(value)
     .split(" ")
@@ -579,6 +592,14 @@ export function buildOrganizationStructuredData(shop: ShopifyShop | null | undef
     "@type": "Organization",
     name: shop?.name || "SALT",
     url: origin,
+    description: "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "help@saltonlinestore.com",
+      telephone: "+1 888-835-7211",
+      availableLanguage: ["English"],
+    },
     sameAs: [
       "https://instagram.com/saltonlinestore",
       "https://www.facebook.com/profile.php?id=61573199456052",
@@ -664,7 +685,10 @@ export function buildProductStructuredData(
       "@type": "Brand",
       name: product.vendor || "SALT",
     },
-    sku: String(selectedVariant?.sku || product.variants[0]?.sku || product.handle || product.id),
+    // Supplier SKUs can contain `#`, `:`, and very long option strings that
+    // fail Google's Merchant listing validation. A short Shopify product-ID
+    // SKU is stable, ASCII-safe, and stays within Google's length limit.
+    sku: buildProductStructuredDataSku(product),
     url: canonicalProductUrl,
     offers: {
       "@type": "Offer",
@@ -673,6 +697,26 @@ export function buildProductStructuredData(
       availability,
       url: canonicalProductUrl,
       itemCondition: "https://schema.org/NewCondition",
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: 0,
+          currency: normalizedCurrency,
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "US",
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "US",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 30,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+      },
       ...(comparePrice > currentPrice
         ? {
             priceSpecification: {

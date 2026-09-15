@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import { getCatalogTaxonomyDefinitions } from "../src/lib/catalog-taxonomy.js";
+import { readFileWithRetry } from "./reliable-file-read.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const outputDir = resolve(rootDir, "output");
@@ -32,12 +34,25 @@ function imageUrls(product) {
 }
 
 async function readJson(path, fallback = null) {
-  try {
-    return JSON.parse(await readFile(path, "utf8"));
-  } catch (error) {
-    if (error?.code === "ENOENT") return fallback;
-    throw error;
+  const attempts = Math.max(2, Math.min(10, Number(process.env.SALT_FILE_READ_ATTEMPTS || 8)));
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const raw = String(await readFileWithRetry(path, "utf8")).trim();
+      if (!raw) {
+        const error = new Error(`empty JSON artifact: ${path}`);
+        error.code = "EAGAIN";
+        throw error;
+      }
+      return JSON.parse(raw);
+    } catch (error) {
+      if (error?.code === "ENOENT") return fallback;
+      lastError = error;
+      if (attempt === attempts - 1) throw error;
+      await sleep(Math.min(4_000, 250 * 2 ** attempt));
+    }
   }
+  throw lastError;
 }
 
 async function fileInfo(path) {

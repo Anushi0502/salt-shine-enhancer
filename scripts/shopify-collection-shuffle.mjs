@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 
 import {
   applyCollectionReorderMoves,
+  buildLiveMembershipTarget,
   buildCollectionReorderMoves,
   shuffleCollectionProductIds,
 } from "../src/lib/shopify-collection-shuffle.js";
@@ -12,6 +13,7 @@ import { createShopifyAdminGraphQLClient } from "./shopify-admin-graphql-client.
 
 const rootDir = resolve(import.meta.dirname, "..");
 const defaultOutputPath = resolve(rootDir, "output", "shopify-collection-shuffle-manifest.json");
+const progressOutputPath = resolve(rootDir, "output", "shopify-collection-shuffle-progress.json");
 const collectionPageSize = Math.max(1, Math.min(250, Number(process.env.SALT_COLLECTION_SHUFFLE_PAGE_SIZE || 100)));
 const productPageSize = 250;
 const jobPollMs = Math.max(1000, Number(process.env.SALT_COLLECTION_SHUFFLE_JOB_POLL_MS || 2000));
@@ -22,7 +24,14 @@ const jobPollAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_SHUFFLE_J
 const readbackAttempts = Math.max(1, Number(process.env.SALT_COLLECTION_SHUFFLE_READBACK_ATTEMPTS || 12));
 const readbackDelayMs = Math.max(1000, Number(process.env.SALT_COLLECTION_SHUFFLE_READBACK_DELAY_MS || 5000));
 const liveBatchReadbackThreshold = Math.max(0, Number(process.env.SALT_COLLECTION_SHUFFLE_LIVE_BATCH_READBACK_THRESHOLD || 1000));
+// A completed reorder job is already an ordering checkpoint. For large
+// collections, periodically re-read the live connection instead of fetching
+// every page after every batch; the final exact readback remains mandatory.
+const liveBatchReadbackEvery = Math.max(1, Number(process.env.SALT_COLLECTION_SHUFFLE_LIVE_BATCH_READBACK_EVERY || 8));
 const collectionReadConcurrency = Math.max(1, Math.min(8, Number(process.env.SALT_COLLECTION_SHUFFLE_READ_CONCURRENCY || 4)));
+const collectionApplyConcurrency = Math.max(1, Math.min(3, Number(process.env.SALT_COLLECTION_SHUFFLE_APPLY_CONCURRENCY || 2)));
+const shuffleRequestAttempts = Math.max(1, Math.min(5, Number(process.env.SALT_COLLECTION_SHUFFLE_REQUEST_ATTEMPTS || 3)));
+const shuffleRequestRetryDelayMs = Math.max(1000, Math.min(30_000, Number(process.env.SALT_COLLECTION_SHUFFLE_REQUEST_RETRY_DELAY_MS || 15_000)));
 const excludedCollectionHandles = new Set(
   String(process.env.SALT_COLLECTION_SHUFFLE_EXCLUDE_HANDLES || "test")
     .split(",")
@@ -30,6 +39,33 @@ const excludedCollectionHandles = new Set(
     .filter(Boolean),
 );
 const client = createShopifyAdminGraphQLClient({ rootDir, agentName: "collection-shuffle" });
+const jsonWriteQueues = new Map();
+
+function enqueueJsonWrite(path, value) {
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+  const previous = jsonWriteQueues.get(path) || Promise.resolve();
+  const next = previous.catch(() => {}).then(() => writeFile(path, content, "utf8"));
+  jsonWriteQueues.set(path, next);
+  return next;
+}
+
+function requestOptions(operation, options = {}) {
+  return {
+    ...options,
+    operation,
+    maxAttempts: shuffleRequestAttempts,
+    maxRetryDelayMs: shuffleRequestRetryDelayMs,
+  };
+}
+
+async function writeProgress(patch = {}) {
+  await enqueueJsonWrite(progressOutputPath, {
+      kind: "salt-collection-shuffle-progress",
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      ...patch,
+    });
+}
 
 const COLLECTIONS_QUERY = /* GraphQL */ `
   query CollectionShuffleCollections($first: Int!, $after: String) {
@@ -94,19 +130,15 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function buildLiveMembershipTarget(currentIds, plannedIds) {
-  const currentSet = new Set(currentIds);
-  const plannedSet = new Set(plannedIds);
-  const plannedMembersStillLive = plannedIds.filter((id) => currentSet.has(id));
-  const newlyLiveMembers = currentIds.filter((id) => !plannedSet.has(id));
-  return [...plannedMembersStillLive, ...newlyLiveMembers];
+function normalizeProductIds(ids) {
+  return [...new Set(asArray(ids).map((id) => String(id || "")).filter(Boolean))];
 }
 
 async function fetchCollections() {
   const collections = [];
   let after = null;
   while (true) {
-    const payload = await client.run(COLLECTIONS_QUERY, { first: collectionPageSize, after }, { operation: "read collections for manual shuffle" });
+    const payload = await client.run(COLLECTIONS_QUERY, { first: collectionPageSize, after }, requestOptions("read collections for manual shuffle"));
     collections.push(...asArray(payload?.collections?.nodes));
     if (!payload?.collections?.pageInfo?.hasNextPage) break;
     after = payload.collections.pageInfo.endCursor || null;
@@ -119,7 +151,7 @@ async function fetchCollectionProducts(collectionId) {
   const ids = [];
   let after = null;
   while (true) {
-    const payload = await client.run(PRODUCTS_QUERY, { id: collectionId, first: productPageSize, after }, { operation: `read products for collection ${collectionId}` });
+    const payload = await client.run(PRODUCTS_QUERY, { id: collectionId, first: productPageSize, after }, requestOptions(`read products for collection ${collectionId}`));
     const connection = payload?.collection?.products;
     ids.push(...asArray(connection?.nodes).map((product) => String(product?.id || "")).filter(Boolean));
     if (!connection?.pageInfo?.hasNextPage) break;
@@ -172,22 +204,35 @@ async function buildPlan(seed) {
   });
 }
 
-async function waitForJob(jobId) {
+async function waitForJob(jobId, { onPoll } = {}) {
   if (!jobId) return;
   for (let attempt = 0; attempt < jobPollAttempts; attempt += 1) {
-    const payload = await client.run(JOB_QUERY, { id: jobId }, { operation: `wait for collection reorder job ${jobId}` });
-    if (payload?.job?.done === true) return;
+    await onPoll?.({
+      jobId,
+      attempt: attempt + 1,
+      maxAttempts: jobPollAttempts,
+    });
+    const payload = await client.run(JOB_QUERY, { id: jobId }, requestOptions(`wait for collection reorder job ${jobId}`));
+    if (payload?.job?.done === true) {
+      await onPoll?.({
+        jobId,
+        attempt: attempt + 1,
+        maxAttempts: jobPollAttempts,
+        done: true,
+      });
+      return;
+    }
     await new Promise((resolvePromise) => setTimeout(resolvePromise, jobPollMs));
   }
   throw new Error(`Collection reorder job ${jobId} did not finish within the verification window`);
 }
 
-async function applyCollection(entry) {
+async function applyCollection(entry, { onBatchComplete, onJobPoll } = {}) {
   if (entry.currentSortOrder !== "MANUAL") {
     const payload = await client.run(
       SORT_UPDATE_MUTATION,
       { id: entry.id, sortOrder: "MANUAL" },
-      { allowMutations: true, operation: `set manual sort for ${entry.handle}` },
+      requestOptions(`set manual sort for ${entry.handle}`, { allowMutations: true }),
     );
     const errors = asArray(payload?.collectionUpdate?.userErrors);
     if (errors.length) throw new Error(`${entry.handle}: ${JSON.stringify(errors)}`);
@@ -195,13 +240,11 @@ async function applyCollection(entry) {
 
   // Always start from Shopify's live order. This makes a resumed apply safe if
   // a previous process completed a reorder before its checkpoint was written.
-  let currentIds = await fetchCollectionProducts(entry.id);
-  const targetIds = buildLiveMembershipTarget(currentIds, entry.desiredIds);
-  const plannedSet = new Set(entry.desiredIds);
-  const currentSet = new Set(currentIds);
-  const membershipDrift = {
-    missingFromLive: entry.desiredIds.filter((id) => !currentSet.has(id)),
-    newlyLive: currentIds.filter((id) => !plannedSet.has(id)),
+  let currentIds = normalizeProductIds(await fetchCollectionProducts(entry.id));
+  let targetIds = buildLiveMembershipTarget(currentIds, entry.desiredIds);
+  let membershipDrift = {
+    missingFromLive: normalizeProductIds(entry.desiredIds).filter((id) => !new Set(currentIds).has(id)),
+    newlyLive: currentIds.filter((id) => !new Set(entry.desiredIds).has(id)),
   };
   const maxReorderBatches = Math.max(4, Math.ceil(Math.max(currentIds.length, targetIds.length) / 250) * 4);
   let reorderBatches = 0;
@@ -210,27 +253,97 @@ async function applyCollection(entry) {
     if (reorderBatches > maxReorderBatches) {
       throw new Error(`${entry.handle}: exceeded ${maxReorderBatches} live reorder batches without converging`);
     }
-    const moves = buildCollectionReorderMoves(currentIds, targetIds);
-    if (!moves.length) throw new Error(`Unable to build a reorder move for ${entry.handle}`);
+    let moves = buildCollectionReorderMoves(currentIds, targetIds);
+    if (!moves.length) {
+      // A long-running collection can change membership while reorder jobs are
+      // in flight. Rebuild both arrays from Shopify before treating the state
+      // as irrecoverable; never emit an invalid or guessed move.
+      const refreshedIds = normalizeProductIds(await fetchCollectionProducts(entry.id));
+      const refreshedTargetIds = buildLiveMembershipTarget(refreshedIds, entry.desiredIds);
+      const plannedSet = new Set(normalizeProductIds(entry.desiredIds));
+      const refreshedSet = new Set(refreshedIds);
+      membershipDrift = {
+        missingFromLive: [...new Set([
+          ...membershipDrift.missingFromLive,
+          ...normalizeProductIds(entry.desiredIds).filter((id) => !refreshedSet.has(id)),
+        ])],
+        newlyLive: [...new Set([
+          ...membershipDrift.newlyLive,
+          ...refreshedIds.filter((id) => !plannedSet.has(id)),
+        ])],
+      };
+      currentIds = refreshedIds;
+      targetIds = refreshedTargetIds;
+      moves = buildCollectionReorderMoves(currentIds, targetIds);
+      if (!moves.length && currentIds.join("|") !== targetIds.join("|")) {
+        throw new Error(
+          `Unable to build a reorder move for ${entry.handle}; live membership changed during reorder `
+          + `(current=${currentIds.length}, target=${targetIds.length}, `
+          + `missing=${membershipDrift.missingFromLive.length}, newlyLive=${membershipDrift.newlyLive.length})`,
+        );
+      }
+    }
+    if (!moves.length) break;
     const payload = await client.run(
       REORDER_MUTATION,
       // Shopify models newPosition as UnsignedInt64, which the Admin GraphQL
       // CLI requires to be encoded as a string even for small positions.
       { id: entry.id, moves: moves.map((move) => ({ ...move, newPosition: String(move.newPosition) })) },
-      { allowMutations: true, operation: `shuffle collection ${entry.handle}` },
+      requestOptions(`shuffle collection ${entry.handle}`, { allowMutations: true }),
     );
     const errors = asArray(payload?.collectionReorderProducts?.userErrors);
     if (errors.length) throw new Error(`${entry.handle}: ${JSON.stringify(errors)}`);
-    await waitForJob(payload?.collectionReorderProducts?.job?.id);
+    const jobId = payload?.collectionReorderProducts?.job?.id;
+    await onJobPoll?.({
+      jobId,
+      batch: reorderBatches,
+      maxBatches: maxReorderBatches,
+      phase: "job-started",
+    });
+    await waitForJob(jobId, {
+      onPoll: async ({ attempt, maxAttempts, done }) => onJobPoll?.({
+        jobId,
+        batch: reorderBatches,
+        maxBatches: maxReorderBatches,
+        phase: done ? "job-complete" : "job-polling",
+        jobAttempt: attempt,
+        jobMaxAttempts: maxAttempts,
+      }),
+    });
     // For small collections, mirroring the completed job avoids an extra
     // connection read. Large collections can expose a partially applied order
     // at position boundaries, so recompute every next batch from live Shopify
     // state instead of trusting a local mirror.
-    if (liveBatchReadbackThreshold > 0 && currentIds.length >= liveBatchReadbackThreshold) {
-      currentIds = await fetchCollectionProducts(entry.id);
+    if (
+      liveBatchReadbackThreshold > 0 &&
+      currentIds.length >= liveBatchReadbackThreshold &&
+      reorderBatches % liveBatchReadbackEvery === 0
+    ) {
+      const refreshedIds = normalizeProductIds(await fetchCollectionProducts(entry.id));
+      const refreshedTargetIds = buildLiveMembershipTarget(refreshedIds, entry.desiredIds);
+      const plannedSet = new Set(normalizeProductIds(entry.desiredIds));
+      const refreshedSet = new Set(refreshedIds);
+      membershipDrift = {
+        missingFromLive: [...new Set([
+          ...membershipDrift.missingFromLive,
+          ...normalizeProductIds(entry.desiredIds).filter((id) => !refreshedSet.has(id)),
+        ])],
+        newlyLive: [...new Set([
+          ...membershipDrift.newlyLive,
+          ...refreshedIds.filter((id) => !plannedSet.has(id)),
+        ])],
+      };
+      currentIds = refreshedIds;
+      targetIds = refreshedTargetIds;
     } else {
       currentIds = applyCollectionReorderMoves(currentIds, moves);
     }
+    await onBatchComplete?.({
+      batch: reorderBatches,
+      maxBatches: maxReorderBatches,
+      moveCount: moves.length,
+      remaining: currentIds.length,
+    });
   }
 
   let actualIds = [];
@@ -348,6 +461,7 @@ async function main() {
           seed: "one deterministic shuffle per collection per seed; the daily release supplies a new date seed",
           mutationLimit: 250,
           readback: "every collection order is read back after asynchronous reorder jobs finish",
+          liveBatchReadbackEvery,
           resume: "reuse the same date-seeded plan and begin each collection from live Shopify order",
         },
         summary: {
@@ -368,41 +482,136 @@ async function main() {
   }
 
   const appliedCollections = new Set(manifest.appliedCollections || []);
-  for (const [index, entry] of plan.entries()) {
-    if (appliedCollections.has(entry.handle)) continue;
-    process.stdout.write(`Shuffle progress: ${appliedCollections.size}/${plan.length} starting ${entry.handle}\n`);
-    manifest.inFlightHandle = entry.handle;
-    manifest.lastAttemptAt = new Date().toISOString();
-    await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-    try {
-      const membershipDrift = await applyCollection(entry);
-      appliedCollections.add(entry.handle);
-      manifest.appliedCollections = [...appliedCollections];
-      manifest.inFlightHandle = "";
-      manifest.lastError = "";
-      manifest.failures = (manifest.failures || []).filter((failure) => failure?.handle !== entry.handle);
-      if (!manifest.failures.length) manifest.failedAt = "";
-      if (membershipDrift.missingFromLive.length || membershipDrift.newlyLive.length) {
-        manifest.membershipDrift = [
-          ...(manifest.membershipDrift || []),
-          { handle: entry.handle, ...membershipDrift },
+  manifest.inFlightCollections = { ...(manifest.inFlightCollections || {}) };
+
+  await mapWithConcurrency(
+    plan,
+    collectionApplyConcurrency,
+    async (entry, index) => {
+      if (appliedCollections.has(entry.handle)) return;
+      process.stdout.write(`Shuffle progress: ${appliedCollections.size}/${plan.length} starting ${entry.handle}\n`);
+      manifest.inFlightCollections[entry.handle] = {
+        collectionId: entry.id,
+        batch: 0,
+        maxBatches: 0,
+        phase: "starting",
+        jobId: "",
+        jobAttempt: 0,
+        jobMaxAttempts: jobPollAttempts,
+        lastAttemptAt: new Date().toISOString(),
+      };
+      await enqueueJsonWrite(args.output, manifest);
+      await writeProgress({
+        status: "running",
+        handle: entry.handle,
+        collectionId: entry.id,
+        batch: 0,
+        maxBatches: 0,
+        phase: "starting",
+        activeHandles: Object.keys(manifest.inFlightCollections),
+      });
+      try {
+        const membershipDrift = await applyCollection(entry, {
+          onJobPoll: async ({ jobId, batch, maxBatches, phase, jobAttempt = 0, jobMaxAttempts = jobPollAttempts }) => {
+            const inFlight = manifest.inFlightCollections[entry.handle] || {};
+            Object.assign(inFlight, {
+              collectionId: entry.id,
+              batch,
+              maxBatches,
+              phase,
+              jobId: String(jobId || ""),
+              jobAttempt,
+              jobMaxAttempts,
+              lastPolledAt: new Date().toISOString(),
+            });
+            manifest.inFlightCollections[entry.handle] = inFlight;
+            await enqueueJsonWrite(args.output, manifest);
+            await writeProgress({
+              status: "running",
+              handle: entry.handle,
+              collectionId: entry.id,
+              batch,
+              maxBatches,
+              phase,
+              jobId: String(jobId || ""),
+              jobAttempt,
+              jobMaxAttempts,
+              activeHandles: Object.keys(manifest.inFlightCollections),
+            });
+          },
+          onBatchComplete: async ({ batch, maxBatches, moveCount, remaining }) => {
+            const inFlight = manifest.inFlightCollections[entry.handle] || {};
+            Object.assign(inFlight, {
+              batch,
+              maxBatches,
+              moveCount,
+              remaining,
+              phase: "batch-complete",
+              progressAt: new Date().toISOString(),
+            });
+            manifest.inFlightCollections[entry.handle] = inFlight;
+            await enqueueJsonWrite(args.output, manifest);
+            process.stdout.write(
+              `Shuffle progress: ${appliedCollections.size}/${plan.length} ${entry.handle} batch ${batch}/${maxBatches} (${moveCount} moves)\n`,
+            );
+          },
+        });
+        appliedCollections.add(entry.handle);
+        manifest.appliedCollections = plan
+          .filter((candidate) => appliedCollections.has(candidate.handle))
+          .map((candidate) => candidate.handle);
+        delete manifest.inFlightCollections[entry.handle];
+        manifest.lastError = "";
+        manifest.failures = (manifest.failures || []).filter((failure) => failure?.handle !== entry.handle);
+        if (!manifest.failures.length) manifest.failedAt = "";
+        if (membershipDrift.missingFromLive.length || membershipDrift.newlyLive.length) {
+          manifest.membershipDrift = [
+            ...(manifest.membershipDrift || []).filter((drift) => drift?.handle !== entry.handle),
+            { handle: entry.handle, ...membershipDrift },
+          ];
+        }
+        await writeProgress({
+          // A per-collection completion is not the end of the shuffle when
+          // another bounded worker is still active or work remains queued.
+          status: "running",
+          handle: entry.handle,
+          collectionId: entry.id,
+          activeHandles: Object.keys(manifest.inFlightCollections),
+        });
+        await enqueueJsonWrite(args.output, manifest);
+        process.stdout.write(`Shuffle progress: ${appliedCollections.size}/${plan.length} verified ${entry.handle}\n`);
+      } catch (error) {
+        const detail = String(error?.message || error);
+        manifest.lastError = detail;
+        manifest.failedAt = new Date().toISOString();
+        manifest.failures = [
+          ...(manifest.failures || []).filter((failure) => failure?.handle !== entry.handle),
+          { handle: entry.handle, reason: "apply-failed", error: detail },
         ];
+        await enqueueJsonWrite(args.output, manifest);
+        await writeProgress({
+          status: "failed",
+          handle: entry.handle,
+          collectionId: entry.id,
+          batch: manifest.inFlightCollections[entry.handle]?.batch || 0,
+          phase: manifest.inFlightCollections[entry.handle]?.phase || "failed",
+          error: detail,
+          activeHandles: Object.keys(manifest.inFlightCollections),
+        });
+        throw error;
       }
-      await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-      process.stdout.write(`Shuffle progress: ${index + 1}/${plan.length} verified ${entry.handle}\n`);
-    } catch (error) {
-      manifest.lastError = String(error?.message || error);
-      manifest.failedAt = new Date().toISOString();
-      manifest.failures = [
-        ...(manifest.failures || []).filter((failure) => failure?.handle !== entry.handle),
-        { handle: entry.handle, reason: "apply-failed", error: manifest.lastError },
-      ];
-      await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-      throw error;
-    }
-  }
+    },
+  );
+  delete manifest.inFlightCollections;
   manifest.completedAt = new Date().toISOString();
-  await writeFile(args.output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await enqueueJsonWrite(args.output, manifest);
+  await writeProgress({
+    status: "completed",
+    handle: "",
+    collectionId: "",
+    activeHandles: [],
+    completedAt: manifest.completedAt,
+  });
   process.stdout.write(`Collection shuffle complete: ${manifest.appliedCollections?.length || 0} collections manually sorted and read back.\n`);
 }
 

@@ -72,7 +72,7 @@ export default async function handler(req: RecentlyOrderedRequest, res: Recently
     data?: { orders?: unknown };
   };
 
-  if (!response.ok || body.errors?.length) {
+  if (!response.ok || (Array.isArray(body.errors) && body.errors.length > 0)) {
     res.status(502).json({ error: "Unable to load Shopify order products" });
     return;
   }
