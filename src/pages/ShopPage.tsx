@@ -400,8 +400,8 @@ const ShopPage = () => {
   const collectionHeroSummary =
     selectedCollection?.customData?.heroSummary ||
     formatCollectionDescription(
-      curatedSubcollection?.description ||
-        curatedCollection?.description ||
+      curatedSubcollection?.summary ||
+        curatedCollection?.summary ||
         selectedCollection?.description ||
         "",
     );

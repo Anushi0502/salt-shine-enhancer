@@ -67,6 +67,12 @@ export type EditorialPageContent = {
   actions: EditorialAction[];
 };
 
+export type EditorialPagePayload = {
+  generatedAt: string;
+  source: string;
+  page: EditorialPageContent;
+};
+
 import {
   SITE_COLLECTIONS,
   SITE_RESOURCE_GUIDES,
@@ -80,6 +86,7 @@ import {
   getResourceByHandle,
   getResourceTopicByHandle,
   getSubcollectionByHandle,
+  type SiteResourceGuide,
 } from "@/lib/site-navigation";
 import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
 

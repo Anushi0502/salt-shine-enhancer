@@ -24,9 +24,15 @@ const query = /* GraphQL */ `
 `;
 
 type CachedFeed = { expiresAt: number; payload: unknown };
+type RecentlyOrderedRequest = { method?: string };
+type RecentlyOrderedResponse = {
+  setHeader: (name: string, value: string) => void;
+  status: (code: number) => RecentlyOrderedResponse;
+  json: (body: unknown) => void;
+};
 let cachedFeed: CachedFeed | null = null;
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: RecentlyOrderedRequest, res: RecentlyOrderedResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     res.status(405).json({ error: "Method not allowed" });
@@ -61,7 +67,10 @@ export default async function handler(req: any, res: any) {
     },
     body: JSON.stringify({ query }),
   });
-  const body: any = await response.json();
+  const body = await response.json() as {
+    errors?: unknown[];
+    data?: { orders?: unknown };
+  };
 
   if (!response.ok || body.errors?.length) {
     res.status(502).json({ error: "Unable to load Shopify order products" });

@@ -57,7 +57,10 @@ describe("product content specificity", () => {
         customData: { subtitle: "Portable wireless charging accessory" },
       },
     ];
-    const fields = [{ id: "subtitle", getValue: (product: any) => product.customData.subtitle }];
+    const fields = [{
+      id: "subtitle",
+      getValue: (product: { customData: { subtitle: string } }) => product.customData.subtitle,
+    }];
     const collisions = findCatalogContentCollisions(products, fields);
     const index = buildCatalogContentCollisionIndex(products, fields);
 

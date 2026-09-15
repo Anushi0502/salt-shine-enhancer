@@ -30,14 +30,15 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://0309d3-72.myshopify.com",
 ];
 
-type FinanceRequest = {
+export type FinanceRequest = {
   headers?: Record<string, string | string[] | undefined>;
   body?: unknown;
   method?: string;
+  query?: Record<string, string | string[] | undefined>;
   socket?: { remoteAddress?: string };
 };
 
-type FinanceResponse = {
+export type FinanceResponse = {
   status: (code: number) => FinanceResponse;
   json: (body: unknown) => void;
   end: () => void;
@@ -50,6 +51,22 @@ type ShopifyMoneySet = {
 };
 
 type ShopifyMoney = { amount?: string | number; currencyCode?: string };
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function asRecords(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? value.map(asRecord) : [];
+}
+
+function asMoney(value: unknown): ShopifyMoney | null {
+  const record = asRecord(value);
+  return {
+    amount: typeof record.amount === "string" || typeof record.amount === "number" ? record.amount : undefined,
+    currencyCode: typeof record.currencyCode === "string" ? record.currencyCode : undefined,
+  };
+}
 
 type ShopifyUtmParameters = {
   source?: string | null;
@@ -667,7 +684,7 @@ async function currentShopifyAccessToken(): Promise<string> {
   return refreshShopifyAccessToken();
 }
 
-async function queryShopify(query: string, variables: Record<string, unknown>): Promise<any> {
+async function queryShopify(query: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!hasShopifyCredentials()) throw new Error("Shopify Admin credentials are not configured");
 
   let token = await currentShopifyAccessToken();
@@ -677,9 +694,9 @@ async function queryShopify(query: string, variables: Record<string, unknown>): 
       headers: shopifyHeaders(token),
       body: JSON.stringify({ query, variables }),
     });
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     const message = formatShopifyApiError(body, response.status);
-    if (response.ok && !message) return body.data;
+    if (response.ok && !message) return asRecord(body.data);
 
     if (attempt === 0 && shopifyRefreshToken && isInvalidShopifyToken(message, response.status)) {
       token = await refreshShopifyAccessToken(true);
@@ -752,11 +769,12 @@ async function loadOrdersByQuery(query: string): Promise<ShopifyOrder[]> {
 
   while (pageCount < 20) {
     const data = await queryShopify(ORDER_QUERY, { query, after });
-    const connection = data?.orders;
-    orders.push(...(connection?.nodes || []));
+    const connection = asRecord(data.orders);
+    orders.push(...asRecords(connection.nodes) as ShopifyOrder[]);
+    const pageInfo = asRecord(connection.pageInfo);
     pageCount += 1;
-    if (!connection?.pageInfo?.hasNextPage || !connection?.pageInfo?.endCursor) break;
-    after = connection.pageInfo.endCursor;
+    if (!pageInfo.hasNextPage || !pageInfo.endCursor) break;
+    after = String(pageInfo.endCursor);
   }
 
   return orders;
@@ -774,14 +792,14 @@ async function hydrateUnresolvedOrderCosts(orders: ShopifyOrder[]): Promise<void
   try {
     const data = await queryShopify(PRODUCT_VARIANT_COST_QUERY, { ids: [...productIds] });
     const costsByProduct = new Map<string, Map<string, ShopifyMoney>>();
-    for (const product of data?.nodes || []) {
-      const productId = String(product?.id || "").trim();
+    for (const product of asRecords(data.nodes)) {
+      const productId = String(product.id || "").trim();
       if (!productId) continue;
       const costsBySku = new Map<string, ShopifyMoney>();
-      for (const variant of product?.variants?.nodes || []) {
-        const sku = String(variant?.sku || "").trim();
-        const unitCost = variant?.inventoryItem?.unitCost;
-        if (sku && unitCost?.amount != null) costsBySku.set(sku, unitCost);
+      for (const variant of asRecords(asRecord(product.variants).nodes)) {
+        const sku = String(variant.sku || "").trim();
+        const unitCost = asMoney(asRecord(variant.inventoryItem).unitCost);
+        if (sku && unitCost.amount != null) costsBySku.set(sku, unitCost);
       }
       if (costsBySku.size) costsByProduct.set(productId, costsBySku);
     }
@@ -875,8 +893,8 @@ async function loadCampaignCosts(orders: ShopifyOrder[], start: string, end: str
       campaign: group.campaign,
     };
     const data = await queryShopify(MARKETING_ACTIVITY_QUERY, { utm });
-    const activities = (data?.marketingActivities?.nodes || []) as Array<Record<string, any>>;
-    const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(activity.adSpend), 0);
+    const activities = asRecords(asRecord(data.marketingActivities).nodes);
+    const adSpendCents = activities.reduce((sum, activity) => sum + simpleMoneyCents(asMoney(activity.adSpend)), 0);
     const orderRows = [...group.orderRows].sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id));
     const base = orderRows.length ? Math.floor(adSpendCents / orderRows.length) : 0;
     const remainder = orderRows.length ? adSpendCents % orderRows.length : 0;
@@ -890,7 +908,7 @@ async function loadCampaignCosts(orders: ShopifyOrder[], start: string, end: str
         campaign: group.campaign || "unknown",
         adSpendCents,
         allocatedCents: adSpendCents,
-        currency: String(activities[0]?.adSpend?.currencyCode || DEFAULT_CURRENCY),
+        currency: String(asMoney(activities[0]?.adSpend)?.currencyCode || DEFAULT_CURRENCY),
         orderCount: orderRows.length,
       });
     }
@@ -996,11 +1014,12 @@ async function loadDisputes(start: string, end: string): Promise<DisputeSource> 
     let pageCount = 0;
     while (pageCount < 20) {
       const data = await queryShopify(DISPUTE_QUERY, { query: `initiated_at:>=${start}T00:00:00Z initiated_at:<=${end}T23:59:59Z`, after });
-      const connection = data?.disputes;
-      disputes.push(...((connection?.nodes || []) as ShopifyDispute[]));
+      const connection = asRecord(data.disputes);
+      disputes.push(...asRecords(connection.nodes) as ShopifyDispute[]);
+      const pageInfo = asRecord(connection.pageInfo);
       pageCount += 1;
-      if (!connection?.pageInfo?.hasNextPage || !connection?.pageInfo?.endCursor) break;
-      after = connection.pageInfo.endCursor;
+      if (!pageInfo.hasNextPage || !pageInfo.endCursor) break;
+      after = String(pageInfo.endCursor);
     }
     const byOrderId = new Map<string, ShopifyDispute[]>();
     for (const dispute of disputes) {
@@ -1122,9 +1141,9 @@ function sumMoneyCents(values: Array<ShopifyMoney | null | undefined>): number {
   return values.reduce((sum, value) => sum + simpleMoneyCents(value), 0);
 }
 
-function normalizeGraphqlPayouts(nodes: Array<Record<string, any>>): FinancePayout[] {
+function normalizeGraphqlPayouts(nodes: Array<Record<string, unknown>>): FinancePayout[] {
   return nodes.map((payout) => {
-    const summary = payout.summary || {};
+    const summary = asRecord(payout.summary);
     const feeCents = sumMoneyCents([
       summary.chargesFee,
       summary.refundsFee,
@@ -1141,7 +1160,8 @@ function normalizeGraphqlPayouts(nodes: Array<Record<string, any>>): FinancePayo
       summary.reservedFundsGross,
       summary.retriedPayoutsGross,
     ]);
-    const netCents = simpleMoneyCents(payout.net);
+    const net = asMoney(payout.net);
+    const netCents = simpleMoneyCents(net);
     return {
       id: String(payout.externalTraceId || payout.legacyResourceId || payout.id || "unknown"),
       issuedAt: String(payout.issuedAt || ""),
@@ -1150,7 +1170,7 @@ function normalizeGraphqlPayouts(nodes: Array<Record<string, any>>): FinancePayo
       amountCents: grossCents || netCents + feeCents,
       feeCents,
       netCents,
-      currency: simpleMoneyCurrency(payout.net),
+      currency: simpleMoneyCurrency(net),
     } satisfies FinancePayout;
   });
 }
@@ -1161,9 +1181,9 @@ async function loadPayouts(start: string, end: string): Promise<{ payouts: Finan
   let graphqlError = "";
   try {
     const data = await queryShopify(PAYOUT_QUERY, { query: payoutDateQuery(start, end) });
-    const account = data?.shopifyPaymentsAccount;
-    if (!account) throw new Error("Shopify Payments account is not available for this store");
-    return { payouts: normalizeGraphqlPayouts(account.payouts?.nodes || []), state: "connected" };
+    const account = asRecord(data.shopifyPaymentsAccount);
+    if (!Object.keys(account).length) throw new Error("Shopify Payments account is not available for this store");
+    return { payouts: normalizeGraphqlPayouts(asRecords(asRecord(account.payouts).nodes)), state: "connected" };
   } catch (error) {
     graphqlError = error instanceof Error ? error.message : "Shopify Payments GraphQL unavailable";
   }
@@ -1388,19 +1408,20 @@ async function loadShopifySubscriptions(start: string, end: string): Promise<Sub
   try {
     const data = await queryShopify(APP_SUBSCRIPTION_QUERY, {});
     const days = periodDays(start, end);
-    const subscriptions = (data?.currentAppInstallation?.activeSubscriptions || []).flatMap((subscription: Record<string, any>) => {
+    const subscriptions = asRecords(asRecord(data.currentAppInstallation).activeSubscriptions).flatMap((subscription) => {
       if (subscription.test) return [];
-      return (subscription.lineItems || []).flatMap((lineItem: Record<string, any>, index: number) => {
-        const pricing = lineItem?.plan?.pricingDetails;
-        if (pricing?.__typename !== "AppRecurringPricing" || pricing.price?.amount == null) return [];
+      return asRecords(subscription.lineItems).flatMap((lineItem, index) => {
+        const pricing = asRecord(asRecord(lineItem.plan).pricingDetails);
+        const price = asMoney(pricing.price);
+        if (pricing.__typename !== "AppRecurringPricing" || price?.amount == null) return [];
         const interval = String(pricing.interval || "EVERY_30_DAYS").toLowerCase().replaceAll("every_30_days", "monthly");
-        const amountCents = simpleMoneyCents(pricing.price);
+        const amountCents = simpleMoneyCents(price);
         return [{
           name: `${String(subscription.name || "Shopify app subscription")}${index ? ` ${index + 1}` : ""}`,
           category: "Shopify app",
           interval,
           allocatedCents: Math.round(amountCents * recurringMultiplier(interval, days)),
-          currency: simpleMoneyCurrency(pricing.price),
+          currency: simpleMoneyCurrency(price),
           source: "Shopify Admin billing",
           active: String(subscription.status || "ACTIVE").toLowerCase() === "active",
         } satisfies FinanceSubscription];

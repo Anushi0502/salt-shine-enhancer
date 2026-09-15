@@ -119,7 +119,6 @@ describe("buildHomeCollectionHierarchy", () => {
       "pet-toys",
     ]);
     expect(hierarchy.categories[3].items.map((item) => item.handle)).toEqual([
-      "posture-support",
       "sleep-essentials",
       "relaxation-products",
       "massage-tools",
@@ -128,7 +127,6 @@ describe("buildHomeCollectionHierarchy", () => {
     expect(hierarchy.categories[4].items.map((item) => item.handle)).toEqual([
       "travel-organizers",
       "car-accessories",
-      "camping-gear",
       "portable-gadgets",
       "outdoor-essentials",
     ]);
@@ -136,9 +134,7 @@ describe("buildHomeCollectionHierarchy", () => {
       "daily-living-aids",
       "home-safety",
       "memory-organization",
-      "caregiver-essentials",
       "gifts-for-seniors",
-      "mobility-support",
     ]);
     expect(hierarchy.categories[6].items.map((item) => item.handle)).toEqual([
       "gifts-for-mom",
@@ -146,10 +142,8 @@ describe("buildHomeCollectionHierarchy", () => {
       "gifts-for-seniors",
       "housewarming-gifts",
       "birthday-gifts",
-      "holiday-gifts",
     ]);
     expect(hierarchy.categories[7].items.map((item) => item.handle)).toEqual([
-      "viral-tiktok-products",
       "appplaza-best-sellers",
       "new-arrivals",
       "staff-picks",

@@ -252,8 +252,8 @@ function parseJudgeMeData(data: Pick<JudgeMeWidgetData, "widgetHtml"> | undefine
   }
 
   const widgetSummary = parseJudgeMeWidgetSummary(data.widgetHtml);
-  let averageRating = widgetSummary?.rating || 0;
-  let reviewCount = widgetSummary?.reviewCount || 0;
+  const averageRating = widgetSummary?.rating || 0;
+  const reviewCount = widgetSummary?.reviewCount || 0;
 
   const reviewDoc = new DOMParser().parseFromString(data.widgetHtml || "", "text/html");
   const reviewNodes = Array.from(reviewDoc.querySelectorAll(".jdgm-rev"));

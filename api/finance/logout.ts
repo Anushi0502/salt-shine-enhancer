@@ -1,6 +1,6 @@
-import { clearFinanceSession, financeResponse, handleFinanceOptions, setFinanceCors } from "./_shared.js";
+import { clearFinanceSession, financeResponse, handleFinanceOptions, setFinanceCors, type FinanceRequest, type FinanceResponse } from "./_shared.js";
 
-export default function handler(req: any, res: any) {
+export default function handler(req: FinanceRequest, res: FinanceResponse) {
   if (handleFinanceOptions(req, res, "POST, OPTIONS")) return;
   setFinanceCors(req, res);
   if (req.method !== "POST") {

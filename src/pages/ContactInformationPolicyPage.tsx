@@ -1,8 +1,15 @@
-import { Building2, Mail, Phone } from "lucide-react";
+import { Building2, Mail, Phone, type LucideIcon } from "lucide-react";
 import OpenContentPageShell from "@/components/storefront/OpenContentPageShell";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 
-const contactDetails = [
+type ContactDetail = {
+  label: string;
+  value: string;
+  href?: string;
+  icon: LucideIcon;
+};
+
+const contactDetails: ContactDetail[] = [
   {
     label: "Trade name",
     value: "Senior and living Today (SALT)",

@@ -1,5 +1,5 @@
-import getISOWeek from "date-fns/getISOWeek";
-import getISOWeekYear from "date-fns/getISOWeekYear";
+import { getISOWeek } from "date-fns/getISOWeek";
+import { getISOWeekYear } from "date-fns/getISOWeekYear";
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -27,11 +27,7 @@ export interface BuildWeeklyNotificationPlanOptions {
 
 export interface SerializedWeeklyNotificationPlan {
   weekKey: string;
-  notifications: Array<
-    WeeklyNotificationPlanEntry & {
-      scheduledAt: string;
-    }
-  >;
+  notifications: Array<Omit<WeeklyNotificationPlanEntry, "scheduledAt"> & { scheduledAt: string }>;
 }
 
 const WEEKLY_NOTIFICATION_TEMPLATES: WeeklyNotificationTemplate[] = [

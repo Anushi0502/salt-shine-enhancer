@@ -197,8 +197,10 @@ export function validateShardPlan(plan) {
 }
 
 function adapterPathForShard(finalPath, index, shardCount) {
-  if (index === shardCount - 1) return resolve(finalPath);
-  return resolve(`${finalPath}.shard-${String(index + 1).padStart(3, "0")}`);
+  if (index === shardCount - 1) return finalPath;
+  // Preserve the path representation supplied by the training plan. A POSIX
+  // path must not be rewritten to the current drive when this runs on Windows.
+  return `${finalPath}.shard-${String(index + 1).padStart(3, "0")}`;
 }
 
 function buildFullManifest(shardManifests, plan) {

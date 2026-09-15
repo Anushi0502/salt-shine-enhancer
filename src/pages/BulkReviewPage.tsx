@@ -618,7 +618,7 @@ const BulkReviewPage = () => {
   });
 
   const { data: productsPayload } = useProductSearchIndex();
-  const products = productsPayload?.products || [];
+  const products = useMemo(() => productsPayload?.products || [], [productsPayload?.products]);
   const judgeMeConfig = useMemo(() => getJudgeMeConfig(), []);
 
   const productById = useMemo(() => {

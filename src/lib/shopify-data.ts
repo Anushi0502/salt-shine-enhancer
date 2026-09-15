@@ -166,7 +166,7 @@ function normalizeBaseUrl(input: string | undefined | null): string | null {
 export async function primeLiveShopifyData(queryClient: Pick<QueryClient, "fetchQuery">): Promise<void> {
   const results = await Promise.allSettled(
     LIVE_SHOPIFY_PRIME_QUERIES.map((query) =>
-      queryClient.fetchQuery({
+      queryClient.fetchQuery<unknown>({
         queryKey: query.queryKey,
         queryFn: query.queryFn,
         staleTime: CATALOG_STALE_TIME_MS,
@@ -881,18 +881,20 @@ function getCurrentCollectionPageContext(): { handle: string; page: number } | n
 }
 
 async function fetchCollectionPageProducts(handle: string, page: number): Promise<CollectionPageProductsPayload> {
-  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const normalizedHandle = resolveCollectionShopifyHandle(String(handle || "").trim());
   if (!normalizedHandle) {
     throw new Error("Collection handle is required");
   }
 
   const endpointErrors: string[] = [];
-  const mergedHandles = getMergedCollectionHandles(normalizedHandle);
 
   for (const base of getLiveCatalogBases()) {
     try {
       const productsById = new Map<number, ShopifyProduct>();
-      const handlesToFetch = mergedHandles.length ? mergedHandles : [normalizedHandle];
+      // This loader hydrates one visible Shopify collection page. Route aliases
+      // are resolved above, so fetching their legacy source handles here would
+      // duplicate requests and can make a slow alias block the current page.
+      const handlesToFetch = [normalizedHandle];
       let liveTotal: number | null = null;
 
       await Promise.all(
@@ -1512,7 +1514,7 @@ async function fetchBlogPostsFromCache(): Promise<BlogPostsPayload> {
   return normalizeBlogPayload({
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: payload.source || BLOG_POSTS_DATA_PATH,
-    blogHandle: payload.blogHandle || BLOG_HANDLE,
+    blogHandle: String(payload.blogHandle || BLOG_HANDLE),
     total: payload.total || posts.length,
     posts,
   });

@@ -38,6 +38,12 @@ const COMPILED_AUDIENCE_TERMS = Object.freeze(
   ),
 );
 
+const AUDIENCE_TRIGGER_TOKENS = new Set(
+  Object.values(COMPILED_AUDIENCE_TERMS)
+    .flat()
+    .flatMap((entry) => entry.tokens),
+);
+
 const DEPARTMENTS = Object.freeze({
   women: "Women",
   men: "Men",
@@ -8697,6 +8703,15 @@ function scoreRule(entry, evidence) {
 }
 
 function inferAudience(evidence) {
+  const directTokens = [
+    ...(evidence.fields.title || []),
+    ...(evidence.fields.handle || []),
+    ...(evidence.fields.productType || []),
+  ];
+  if (!directTokens.some((token) => AUDIENCE_TRIGGER_TOKENS.has(token))) {
+    return { id: "unisex", label: "Unisex", confidence: 0, signals: [] };
+  }
+
   const signals = new Map();
   for (const [audience, terms] of Object.entries(COMPILED_AUDIENCE_TERMS)) {
     let score = 0;
@@ -9053,11 +9068,30 @@ export function classifyCatalogTaxonomyByRuleId(product, ruleId, {
 
 export function classifyCatalogTaxonomy(product, { ignoreOverride = false } = {}) {
   const evidence = buildEvidence(product);
+  const override = ignoreOverride ? null : getCatalogTaxonomyOverride(product);
+  if (override) {
+    const audience = inferAudience(evidence);
+    const attributes = extractCatalogAttributes(product, evidence);
+    return classificationFromApprovedOverride(override, evidence, audience, attributes);
+  }
+
+  const candidateEntries = candidateRules(evidence);
+  if (!candidateEntries.length) {
+    // Unknown supplier types are common in the long tail. Avoid running the
+    // full audience/attribute analysis when the token index already proves no
+    // controlled taxonomy rule can match this record.
+    const hasAudienceEvidence = evidence.allTokens.some((token) => AUDIENCE_TRIGGER_TOKENS.has(token));
+    const hasAttributeEvidence = evidence.allTokens.some((token) => ATTRIBUTE_TRIGGER_TOKENS.has(token));
+    return fallbackClassification(
+      product,
+      hasAudienceEvidence ? inferAudience(evidence) : { id: "unisex", label: "Unisex", confidence: 0, signals: [] },
+      hasAttributeEvidence ? extractCatalogAttributes(product, evidence) : {},
+    );
+  }
+
   const audience = inferAudience(evidence);
   const attributes = extractCatalogAttributes(product, evidence);
-  const override = ignoreOverride ? null : getCatalogTaxonomyOverride(product);
-  if (override) return classificationFromApprovedOverride(override, evidence, audience, attributes);
-  const candidateMatches = candidateRules(evidence)
+  const candidateMatches = candidateEntries
     .map((entry) => scoreRule(entry, evidence))
     .filter(Boolean)
     .sort((left, right) => right.consensusScore - left.consensusScore || right.score - left.score || left.entry.id.localeCompare(right.entry.id));

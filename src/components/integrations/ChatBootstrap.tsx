@@ -48,7 +48,6 @@ const ENABLE_MOOSEDESK = import.meta.env.VITE_ENABLE_MOOSEDESK === "true";
 declare global {
   interface Window {
     mdSettings?: Record<string, unknown>;
-    Shopify?: unknown;
   }
 }
 

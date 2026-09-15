@@ -80,10 +80,12 @@ const CollectionSubcollectionRoutePage = () => {
     }
   }, [
     normalizedHandle,
+    normalizedSubhandle,
     searchParams,
     setSearchParams,
     subcollection?.searchQuery,
     subcollection?.shopifyHandle,
+    subcollection?.priceFilter,
     subcollection?.priceFilter?.max,
     subcollection?.priceFilter?.min,
   ]);

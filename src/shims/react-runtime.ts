@@ -1,4 +1,8 @@
+// The storefront loads React from a UMD global; its complete runtime surface
+// is intentionally forwarded by the compatibility shim.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ReactRuntime = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ReactDomRuntime = any;
 
 const globalScope = window as Window &
