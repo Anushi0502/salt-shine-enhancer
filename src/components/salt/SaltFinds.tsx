@@ -25,7 +25,7 @@ export function SaltFinds() {
           </p>
         </div>
         <Link
-          to="/shop?resource=hub"
+          to="/pages/resources"
           className="salt-outline-chip h-10 px-4 py-0 text-[0.66rem] font-bold uppercase tracking-[0.14em]"
         >
           Open Resource Hub

@@ -28,23 +28,44 @@ export const SPECIAL_COLLECTION_MINIMUMS = Object.freeze({
   "anime-collectables": 1000,
 });
 
+const CREATOR_BLOCKED_COLLECTION_CONTEXT = /\b(?:jeans?|trousers?|pants?|denim|skirts?|shorts?|clothing|apparel)\b/i;
+
+function isBlockedSpecialCollectionProduct(product, collection) {
+  if (collection !== "creator-essentials") return false;
+  return CREATOR_BLOCKED_COLLECTION_CONTEXT.test([
+    product?.title,
+    product?.handle,
+    product?.product_type || product?.productType,
+  ].filter(Boolean).join(" "));
+}
+
 export function buildSpecialCollectionAssignments(products) {
   const activeHandles = new Set(products.map((product) => String(product?.handle || "").toLowerCase()));
-  const assignments = new Map((manifest.assignments || [])
-    .filter((assignment) => activeHandles.has(String(assignment?.handle || "").toLowerCase()))
-    .map((assignment) => [String(assignment.handle).toLowerCase(), {
+  const productsByHandle = new Map(products.map((product) => [String(product?.handle || "").toLowerCase(), product]));
+  const assignments = new Map();
+  for (const assignment of manifest.assignments || []) {
+    const handle = String(assignment?.handle || "").toLowerCase();
+    const product = productsByHandle.get(handle);
+    if (!activeHandles.has(handle) || !product) continue;
+    const matchedCollections = (assignment.matchedCollections || [])
+      .filter((collection) => !isBlockedSpecialCollectionProduct(product, collection));
+    const tags = (assignment.tags || []).filter((tag) =>
+      !isBlockedSpecialCollectionProduct(product, String(tag).replace(/^salt:category:/i, "")));
+    if (!matchedCollections.length) continue;
+    assignments.set(handle, {
       handle: assignment.handle,
-      tags: assignment.tags || [],
-      matchedCollections: assignment.matchedCollections || [],
+      tags,
+      matchedCollections,
       matchedSignals: assignment.matchedSignals || [],
       rationale: assignment.rationale || "Full-catalog deterministic special-collection manifest.",
-    }]));
+    });
+  }
   for (const product of products) {
     const tags = (product?.tags || []).map((tag) => String(tag).toLowerCase());
     const handle = String(product?.handle || "").toLowerCase();
     for (const collection of Object.keys(SPECIAL_COLLECTION_MINIMUMS)) {
       const tagMatches = tags.includes(collection) || tags.includes(`salt:category:${collection}`);
-      if (tagMatches && !assignments.has(handle)) {
+      if (tagMatches && !isBlockedSpecialCollectionProduct(product, collection) && !assignments.has(handle)) {
         assignments.set(handle, {
           handle: product.handle,
           tags: [`salt:category:${collection}`],

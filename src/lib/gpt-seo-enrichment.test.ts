@@ -61,6 +61,25 @@ describe("GPT SEO evidence gate", () => {
     expect(result.issues).toContain("unsupported-html:script");
   });
 
+  it("recognizes hyphenated family evidence without weakening the family gate", () => {
+    const travelBag = validateGptSeoRecord({
+      handle: "travel-bag-cosmetics-backpack",
+      title: "Travel Bag Cosmetics Backpack",
+      productType: "backpack",
+      tags: ["travel-bag"],
+      descriptionHtml: "Travel bag cosmetics backpack for travel and fitness.",
+    }, {
+      title: "Travel Bag Cosmetics Backpack",
+      descriptionHtml: "<p>Travel bag cosmetics backpack for travel and fitness.</p>",
+      seoTitle: "Travel Bag Cosmetics Backpack",
+      seoDescription: "Travel Bag Cosmetics Backpack is listed for travel and fitness use, with supplied details and options to review before ordering.",
+      searchTerms: ["travel bag", "cosmetics backpack", "fitness bag"],
+      category: { department: "Camping & Travel Essentials", category: "Travel Essentials", subcategory: "Travel Bags & Luggage", productType: "Travel Bag" },
+      metafields: { highlights: ["Travel bag", "Cosmetics backpack"], collectionSignal: "Travel Essentials > Travel Bags & Luggage", typeAttributes: {} },
+    });
+    expect(travelBag.accepted).toBe(true);
+  });
+
   it("merges only accepted records into the existing Shopify plan", () => {
     const plan = {
       products: [{ handle: product.handle, desiredProductInput: { seo: {} } }],

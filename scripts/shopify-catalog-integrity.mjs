@@ -100,6 +100,10 @@ const tagBulkRepairConcurrency = Math.max(
   1,
   Math.min(4, Number(process.env.SALT_CATALOG_TAG_BULK_REPAIR_CONCURRENCY || 2)),
 );
+const liveCatalogReconcileAttempts = Math.max(
+  0,
+  Math.min(3, Number(process.env.SALT_CATALOG_LIVE_RECONCILE_ATTEMPTS || 2)),
+);
 const defaultCatalogBatchSize = 50;
 const visionModel = process.env.SALT_CATALOG_VISION_MODEL || "gemma3:4b";
 const ollamaUrl = (process.env.SALT_OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
@@ -1612,6 +1616,10 @@ function describeTagReadbackFailure(failure) {
   return `${failure?.handle || failure?.productId || "unknown product"}: missing [${missing}], extra [${extra}]`;
 }
 
+export function isCatalogBoundaryChangedError(error) {
+  return error?.code === "CATALOG_BOUNDARY_CHANGED";
+}
+
 async function verifyExactTags(tasks, retryInfo) {
   let failures = [];
   const taskById = new Map(tasks.map((task) => [task.productId, task]));
@@ -1685,6 +1693,26 @@ async function verifyExactTags(tasks, retryInfo) {
       process.stdout.write("Targeted tag consistency retry resolved the transient live readback mismatch(es).\n");
       return readbackTagsByProductId;
     }
+  }
+  const boundaryFailures = failures.filter((failure) => failure?.unexpectedActiveProduct || failure?.missingActiveProduct);
+  const nonBoundaryFailures = failures.filter((failure) => !failure?.unexpectedActiveProduct && !failure?.missingActiveProduct);
+  if (boundaryFailures.length && !nonBoundaryFailures.length) {
+    const error = new Error(
+      `Active Shopify catalog changed during exact managed-tag readback: ${boundaryFailures
+        .slice(0, 10)
+        .map(describeTagReadbackFailure)
+        .join("; ")}`,
+    );
+    error.code = "CATALOG_BOUNDARY_CHANGED";
+    error.unexpectedActiveProducts = boundaryFailures
+      .filter((failure) => failure?.unexpectedActiveProduct)
+      .map((failure) => failure.handle || failure.productId)
+      .filter(Boolean);
+    error.missingActiveProducts = boundaryFailures
+      .filter((failure) => failure?.missingActiveProduct)
+      .map((failure) => failure.handle || failure.productId)
+      .filter(Boolean);
+    throw error;
   }
 
   const detail = failures.slice(0, 10).map(describeTagReadbackFailure).join("; ");
@@ -2543,6 +2571,7 @@ async function run(args) {
   if (args.supervisedVision && process.env.SALT_CATALOG_VISION_SUPERVISED !== "1") {
     throw new Error("--supervised-vision requires SALT_CATALOG_VISION_SUPERVISED=1; image evidence must be explicitly enabled by the release command.");
   }
+  const liveCatalogReconcileAttempt = Math.max(0, Number(args.liveCatalogReconcileAttempt || 0));
   if (args.mode === "apply") await verifyCollectionApproval();
   const retryInfo = [];
   const priorManifestPath = process.env.SALT_CATALOG_REUSE_MANIFEST_PATH ||
@@ -2648,10 +2677,10 @@ async function run(args) {
   if (candidateVisualModelEvidenceByHandle.size) {
     process.stdout.write(`Using ${candidateVisualModelEvidenceByHandle.size} current-catalog local SigLIP review decisions with confidence gates.\n`);
   }
-  const canReusePriorManifest = args.mode === "verify" && Boolean(priorSnapshot) &&
+  const canReusePriorManifest = ["verify", "apply"].includes(args.mode) && Boolean(priorSnapshot) &&
     (!args.reclassify || args.reusePriorManifest);
-  if (args.reusePriorManifest && (!args.reclassify || args.mode !== "verify")) {
-    throw new Error("--reuse-prior-manifest is only allowed for a reclassifying verification.");
+  if (args.reusePriorManifest && (!args.reclassify || !["verify", "apply"].includes(args.mode))) {
+    throw new Error("--reuse-prior-manifest is only allowed for a reclassifying apply or verification.");
   }
   let modelEvidenceByKey = null;
   if (!canReusePriorManifest) {
@@ -2957,7 +2986,19 @@ async function run(args) {
 
   if (args.mode === "apply") {
     await applyExactTags(tagTasks, retryInfo, args.output, manifest);
-    const exactTagReadback = await verifyExactTags(tagTasks, retryInfo);
+    let exactTagReadback;
+    try {
+      exactTagReadback = await verifyExactTags(tagTasks, retryInfo);
+    } catch (error) {
+      if (isCatalogBoundaryChangedError(error) && liveCatalogReconcileAttempt < liveCatalogReconcileAttempts) {
+        const nextAttempt = liveCatalogReconcileAttempt + 1;
+        process.stdout.write(
+          `Live active catalog changed during exact tag readback; refreshing the governed manifest and retrying reconciliation ${nextAttempt}/${liveCatalogReconcileAttempts}.\n`,
+        );
+        return run({ ...args, liveCatalogReconcileAttempt: nextAttempt });
+      }
+      throw error;
+    }
     // Membership verification must use the post-mutation tag snapshot. The
     // pre-write snapshot can still contain removed merged-alias tags and make
     // a valid smart collection look incomplete.

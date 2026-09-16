@@ -7,7 +7,7 @@ Taxonomy version: `2026-08-06.1`
 Every tag below is preserved exactly as it currently exists, including spelling, capitalization, and legacy supplier wording. This taxonomy never deletes, rewrites, or normalizes an existing Shopify tag.
 
 Source: verified live Shopify Admin tag read at 2026-09-15T07:49:08.798Z.
-Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignments.
+Current catalog snapshot: 788 distinct tags across 120,162 product-tag assignments.
 
 ## How Existing Tags Are Used
 
@@ -20,81 +20,80 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 
 | Existing Shopify tag | Products in current snapshot | Dominant classified use | Review-held products | Planned use |
 | --- | ---: | --- | ---: | --- |
-| new-arrivals | 16,632 | Men's Fashion > T-Shirts (632), Men's Fashion > Shoes & Footwear (612) | 124 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| general-merchandise | 7,482 | Men's Fashion > Shoes & Footwear (615), Women's Fashion > Shirts & Blouses (510) | 72 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| men | 3,995 | Men's Fashion > T-Shirts (653), Men's Fashion > Shoes & Footwear (615) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| men-collection | 3,048 | Men's Fashion > T-Shirts (616), Men's Fashion > Trousers & Pants (503) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| new-arrivals | 16,634 | Men's Fashion > T-Shirts (632), Men's Fashion > Shoes & Footwear (612) | 123 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| general-merchandise | 7,486 | Men's Fashion > Shoes & Footwear (614), Women's Fashion > Shirts & Blouses (510) | 72 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| men | 3,996 | Men's Fashion > T-Shirts (653), Men's Fashion > Shoes & Footwear (614) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| men-collection | 3,049 | Men's Fashion > T-Shirts (616), Men's Fashion > Trousers & Pants (503) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | general | 2,791 | Beauty & Skincare > Eye Makeup (449), Beauty & Skincare > Lip Care & Makeup (397) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| beauty-makeup-essentials | 2,784 | Beauty & Skincare > Eye Makeup (441), Beauty & Skincare > Lip Care & Makeup (397) | 17 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| men-fashion | 2,241 | Men's Fashion > T-Shirts (653), Men's Fashion > Shoes & Footwear (615) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| women | 2,240 | Women's Fashion > Shirts & Blouses (479), Women's Fashion > Shoes & Footwear (426) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| beauty-makeup-essentials | 2,784 | Beauty & Skincare > Eye Makeup (442), Beauty & Skincare > Lip Care & Makeup (398) | 17 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| men-fashion | 2,241 | Men's Fashion > T-Shirts (653), Men's Fashion > Shoes & Footwear (614) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| women | 2,241 | Women's Fashion > Shirts & Blouses (479), Women's Fashion > Shoes & Footwear (426) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | home-decor | 2,051 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Kitchen Gadgets (257) | 5 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | beauty-skincare | 2,049 | Beauty & Skincare > Eye Makeup (449), Beauty & Skincare > Lip Care & Makeup (397) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | kids | 1,908 | Kids Wear > Kids Clothing (415), Kids Wear > Kids Sports Footwear (360) | 18 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| portable-gadgets | 1,589 | Covers & Cases > Phone Cases (409), Audio > Microphones (205) | 15 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| footwear | 1,490 | Men's Fashion > Shoes & Footwear (584), Women's Fashion > Shoes & Footwear (432) | 14 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| portable-gadgets | 1,587 | Covers & Cases > Phone Cases (409), Audio > Microphones (205) | 15 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| footwear | 1,490 | Men's Fashion > Shoes & Footwear (583), Women's Fashion > Shoes & Footwear (431) | 14 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | electronic-accessories | 1,460 | Covers & Cases > Phone Cases (409), Audio > Microphones (205) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| shoes | 1,422 | Men's Fashion > Shoes & Footwear (615), Women's Fashion > Shoes & Footwear (434) | 14 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| gifts | 1,394 | Gift Packaging & Party Supplies > Party Decorations (77), Office & School Supplies > Pen & Pencil Cases (75) | 18 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| shoes | 1,422 | Men's Fashion > Shoes & Footwear (614), Women's Fashion > Shoes & Footwear (433) | 14 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | office-school | 1,307 | Office & School Supplies > Pen & Pencil Cases (370), Office & School Supplies > Notebooks & Planners (317) | 5 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | office-school-supplies | 1,307 | Office & School Supplies > Pen & Pencil Cases (370), Office & School Supplies > Notebooks & Planners (317) | 5 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| women-fashion | 1,299 | Women's Fashion > Shirts & Blouses (510), Women's Fashion > Shoes & Footwear (434) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| cookware | 1,203 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Kitchen Gadgets (261) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| kitchen-cookware | 1,203 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Kitchen Gadgets (261) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| waterproof | 1,185 | Beauty & Skincare > Eye Makeup (180), Beauty & Skincare > Lip Care & Makeup (112) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| women-fashion | 1,292 | Women's Fashion > Shirts & Blouses (510), Women's Fashion > Shoes & Footwear (433) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| cookware | 1,202 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Kitchen Gadgets (261) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| kitchen-cookware | 1,202 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Kitchen Gadgets (261) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| waterproof | 1,186 | Beauty & Skincare > Eye Makeup (180), Beauty & Skincare > Lip Care & Makeup (112) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | portable | 1,126 | Kitchen & Cookware > Drinkware (159), Kitchen & Cookware > Food Storage Containers (89) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | anime-collectables | 1,073 | Kids Wear > Kids Clothing (62), Kitchen & Cookware > Drinkware (58) | 16 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | stationery | 1,020 | Office & School Supplies > Pen & Pencil Cases (355), Office & School Supplies > Notebooks & Planners (299) | 5 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| dining-essentials | 1,015 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Dining & Serveware (251) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| Beauty and Makeups | 998 | Beauty & Skincare > Face Makeup (289), Beauty & Skincare > Lip Care & Makeup (244) | 32 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| dining-essentials | 1,015 | Kitchen & Cookware > Drinkware (362), Kitchen & Cookware > Dining & Serveware (250) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| Beauty and Makeups | 998 | Beauty & Skincare > Face Makeup (292), Beauty & Skincare > Lip Care & Makeup (245) | 31 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | electronic assessories | 970 | Covers & Cases > Phone Cases (326), Vehicle Accessories > Vehicle Battery Chargers (175) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | kids-wear | 848 | Kids Wear > Kids Clothing (401), Kids Wear > Kids Sports Footwear (360) | 17 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | travel-outdoor | 810 | Kitchen & Cookware > Food Storage Containers (229), Travel Essentials > Travel Bags & Luggage (224) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | camping-travel | 786 | Kitchen & Cookware > Food Storage Containers (229), Travel Essentials > Travel Bags & Luggage (224) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | back-to-school | 718 | Office & School Supplies > Pen & Pencil Cases (207), Travel Essentials > Backpacks (165) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | mens-fashion | 712 | Men's Fashion > T-Shirts (606), Men's Fashion > Socks (25) | 0 | preserve; search discovery and low-priority classification evidence |
-| t-shirt | 681 | Men's Fashion > T-Shirts (584), Men's Fashion > Anime Graphic T-Shirts (33) | 0 | preserve; search discovery and low-priority classification evidence |
-| trousers | 670 | Men's Fashion > Trousers & Pants (527), Women's Fashion > Trousers & Pants (107) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| pants | 652 | Men's Fashion > Trousers & Pants (527), Women's Fashion > Trousers & Pants (89) | 0 | preserve; search discovery and low-priority classification evidence |
+| t-shirt | 681 | Men's Fashion > T-Shirts (584), Men's Fashion > Anime Graphic T-Shirts (32) | 0 | preserve; search discovery and low-priority classification evidence |
+| trousers | 670 | Men's Fashion > Trousers & Pants (525), Women's Fashion > Trousers & Pants (107) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| pants | 652 | Men's Fashion > Trousers & Pants (525), Women's Fashion > Trousers & Pants (89) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-s-graphic-t-shirt | 648 | Men's Fashion > T-Shirts (645), Men's Fashion > Anime Graphic T-Shirts (3) | 0 | preserve; search discovery and low-priority classification evidence |
-| classification-fallback | 613 | Unclassified - Review Required > Unclassified (218), Men's Fashion > Shoes & Footwear (26) | 600 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| classification-fallback | 611 | Unclassified - Review Required > Unclassified (218), Men's Fashion > Shoes & Footwear (26) | 600 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | womens-fashion | 611 | Women's Fashion > Shirts & Blouses (434), Women's Fashion > Dresses (66) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| hat | 579 | Men's Accessories > Hats & Caps (289), Women's Accessories > Hats & Caps (189) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| hats | 578 | Men's Accessories > Hats & Caps (294), Women's Accessories > Hats & Caps (189) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| hat | 579 | Men's Accessories > Hats & Caps (289), Women's Accessories > Hats & Caps (188) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| hats | 578 | Men's Accessories > Hats & Caps (294), Women's Accessories > Hats & Caps (188) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | men-t-shirt | 572 | Men's Fashion > T-Shirts (547), Men's Fashion > Anime Graphic T-Shirts (19) | 0 | preserve; search discovery and low-priority classification evidence |
-| trending-finds | 544 | Women's Fashion > Shoes & Footwear (104), Jewelry > Rings (47) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| trending-finds | 544 | Women's Fashion > Shoes & Footwear (103), Jewelry > Rings (47) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | creator-essentials | 535 | Audio > Microphones (162), Audio > Earbuds & Earphones (134) | 8 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | smart-lighting | 531 | Lighting & Decor > Lamps & Lighting (243), Lighting & Decor > Home Decor (171) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | lighting-decor | 528 | Lighting & Decor > Lamps & Lighting (240), Lighting & Decor > Home Decor (171) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| eye-beauty-collection | 523 | Beauty & Skincare > Eye Makeup (441), Women's Beauty & Skincare > Eye Makeup (54) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| women-s-blouse | 517 | Women's Fashion > Shirts & Blouses (510), Watches > Fashion Watches (7) | 0 | preserve; search discovery and low-priority classification evidence |
+| eye-beauty-collection | 523 | Beauty & Skincare > Eye Makeup (442), Women's Beauty & Skincare > Eye Makeup (53) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | travel-essentials | 515 | Travel Essentials > Travel Bags & Luggage (224), Travel Essentials > Backpacks (187) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| eye-makeup | 491 | Beauty & Skincare > Eye Makeup (435), Women's Beauty & Skincare > Eye Makeup (54) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| women-s-blouse | 510 | Women's Fashion > Shirts & Blouses (510) | 0 | preserve; search discovery and low-priority classification evidence |
+| eye-makeup | 491 | Beauty & Skincare > Eye Makeup (436), Women's Beauty & Skincare > Eye Makeup (53) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | mens-footwear | 476 | Men's Fashion > Shoes & Footwear (476) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-accessories | 466 | Men's Accessories > Hats & Caps (294), Men's Accessories > Belts (70) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| women-accessories | 458 | Women's Accessories > Hats & Caps (189), Women's Accessories > Scarves & Wraps (71) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| lips-and-care | 457 | Beauty & Skincare > Lip Care & Makeup (397), Women's Beauty & Skincare > Lip Care & Makeup (47) | 0 | preserve; search discovery and low-priority classification evidence |
+| women-accessories | 458 | Women's Accessories > Hats & Caps (188), Women's Accessories > Scarves & Wraps (70) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| lips-and-care | 457 | Beauty & Skincare > Lip Care & Makeup (398), Women's Beauty & Skincare > Lip Care & Makeup (46) | 0 | preserve; search discovery and low-priority classification evidence |
 | car-accessories | 447 | Vehicle Accessories > Vehicle Battery Chargers (175), Home & Car Accessories > Cleaning Tools (82) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | kids-clothing | 443 | Kids Wear > Kids Clothing (443) | 0 | preserve; search discovery and low-priority classification evidence |
 | sports-fitness | 441 | Fitness Equipment > Fitness & Training (210), Fitness Equipment > Sports Protection (108) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | fitness-equipment | 439 | Fitness Equipment > Fitness & Training (210), Fitness Equipment > Sports Protection (108) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| blush-glow | 429 | Beauty & Skincare > Face Makeup (337), Women's Beauty & Skincare > Face Makeup (32) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| blush-glow | 429 | Beauty & Skincare > Face Makeup (341), Women's Beauty & Skincare > Face Makeup (28) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | covers-cases | 426 | Covers & Cases > Phone Cases (406), Covers & Cases > Earbuds Cases (20) | 0 | preserve; search discovery and low-priority classification evidence |
 | wireless | 426 | Audio > Microphones (146), Audio > Earbuds & Earphones (109) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| lip-product | 425 | Beauty & Skincare > Lip Care & Makeup (366), Women's Beauty & Skincare > Lip Care & Makeup (46) | 0 | preserve; search discovery and low-priority classification evidence |
+| lip-product | 425 | Beauty & Skincare > Lip Care & Makeup (367), Women's Beauty & Skincare > Lip Care & Makeup (45) | 0 | preserve; search discovery and low-priority classification evidence |
 | womens-footwear | 425 | Women's Fashion > Shoes & Footwear (425) | 0 | preserve; search discovery and low-priority classification evidence |
-| women-beauty-skincare | 415 | Women's Beauty & Skincare > Fragrance (123), Women's Beauty & Skincare > Eye Makeup (54) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| women-beauty-skincare | 415 | Women's Beauty & Skincare > Fragrance (114), Women's Beauty & Skincare > Eye Makeup (53) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | kids-toys-games | 409 | Kids Toys & Games > Educational Toys (82), Kids Toys & Games > Games & Puzzles (58) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | phone-case | 406 | Covers & Cases > Phone Cases (406) | 0 | preserve; search discovery and low-priority classification evidence |
 | laptop | 401 | Computer Accessories > Laptop Accessories (125), Mouse & Keyboard > Computer Mice (53) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | led | 401 | Lighting & Decor > Lamps & Lighting (221), Watches > Fashion Watches (18) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | men-beauty-skincare | 398 | Men's Beauty & Skincare > Fragrance (117), Men's Beauty & Skincare > Grooming Tools (113) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| luxury-fragrances | 393 | Women's Beauty & Skincare > Fragrance (123), Men's Beauty & Skincare > Fragrance (117) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| luxury-fragrances | 393 | Men's Beauty & Skincare > Fragrance (117), Women's Beauty & Skincare > Fragrance (114) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | kids-footwear | 377 | Kids Wear > Kids Sports Footwear (349), Kids Wear > Shoes & Footwear (23) | 12 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | audio | 374 | Audio > Microphones (205), Audio > Earbuds & Earphones (147) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| watches | 362 | Watches > Fashion Watches (249), Watches > Smart Watches (111) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| men-bags-wallets | 359 | Men's Bags & Wallets > Wallets & Card Holders (176), Men's Bags & Wallets > Bags (76) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| hair-nourishment | 358 | Beauty & Skincare > Hair Care (242), Men's Beauty & Skincare > Hair Care (63) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| watches | 371 | Watches > Fashion Watches (258), Watches > Smart Watches (111) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| men-bags-wallets | 359 | Men's Bags & Wallets > Wallets & Card Holders (176), Men's Bags & Wallets > Bags (75) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| hair-nourishment | 358 | Beauty & Skincare > Hair Care (245), Men's Beauty & Skincare > Hair Care (63) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | womens-accessories | 354 | Women's Accessories > Hats & Caps (150), Women's Accessories > Scarves & Wraps (69) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | water-bottles | 353 | Kitchen & Cookware > Drinkware (266), Fitness Equipment > Fitness & Training (42) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | pen-pencil-case | 348 | Office & School Supplies > Pen & Pencil Cases (348) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -104,7 +103,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | i phone cases | 335 | Covers & Cases > Phone Cases (332), Men's Bags & Wallets > Bags (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | notebook-planner | 310 | Office & School Supplies > Notebooks & Planners (285), Office & School Supplies > Pen & Pencil Cases (19) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | storage-organization | 306 | Kitchen & Cookware > Food Storage Containers (241), Home Storage & Organization > Storage & Organization (59) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| fragrance | 305 | Women's Beauty & Skincare > Fragrance (123), Men's Beauty & Skincare > Fragrance (117) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| fragrance | 305 | Men's Beauty & Skincare > Fragrance (117), Women's Beauty & Skincare > Fragrance (114) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | kitchen-gadgets | 297 | Kitchen & Cookware > Kitchen Gadgets (285), Kitchen & Cookware > Kitchen Storage (4) | 17 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | best-sellers | 296 | Men's Fashion > Trousers & Pants (17), Beauty & Skincare > Hair Care (9) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | fashion | 296 | Fashion > Shoes & Footwear (93), Fashion > Dresses (39) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -112,7 +111,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | mens-accessories | 294 | Men's Accessories > Hats & Caps (116), Men's Accessories > Belts (57) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | formal-footwear | 293 | Men's Fashion > Shoes & Footwear (218), Women's Fashion > Shoes & Footwear (42) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | wallet | 288 | Men's Bags & Wallets > Wallets & Card Holders (174), Bags & Wallets > Wallets & Card Holders (74) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| women accessories | 284 | Women's Beauty & Skincare > Fragrance (64), Jewelry > Rings (41) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| women accessories | 284 | Women's Beauty & Skincare > Fragrance (55), Jewelry > Rings (41) | 6 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | eye mAKEUP ESSENTIALS | 276 | Beauty & Skincare > Eye Makeup (241), Women's Beauty & Skincare > Eye Makeup (24) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | mens-beauty-skincare | 276 | Men's Beauty & Skincare > Grooming Tools (106), Men's Beauty & Skincare > Fragrance (77) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | womens-beauty-essentials | 274 | Women's Beauty & Skincare > Fragrance (72), Women's Beauty & Skincare > Eye Makeup (51) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -120,15 +119,16 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | decorative-accessories | 267 | Lighting & Decor > Home Decor (171), Lighting & Decor > Planters & Garden Decor (89) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | IPHONECASES | 265 | Covers & Cases > Phone Cases (262), Men's Bags & Wallets > Bags (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | lunch-boxes | 264 | Kitchen & Cookware > Food Storage Containers (217), Kitchen & Cookware > Dining & Serveware (34) | 0 | preserve; search discovery and low-priority classification evidence |
-| face-makeup | 261 | Beauty & Skincare > Face Makeup (237), Women's Beauty & Skincare > Face Makeup (21) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| face-makeup | 261 | Beauty & Skincare > Face Makeup (239), Women's Beauty & Skincare > Face Makeup (19) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | Men T shirts | 257 | Men's Fashion > T-Shirts (242), Men's Fashion > Anime Graphic T-Shirts (5) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| baby | 256 | Kids Wear > Kids Clothing (46), Baby Care > Baby Care Essentials (32) | 4 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| baby | 256 | Kids Wear > Kids Clothing (46), Baby Care > Baby Care Essentials (32) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | mouse-keyboard | 254 | Mouse & Keyboard > Computer Mice (103), Mouse & Keyboard > Mouse Pads (78) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | i phone | 245 | Covers & Cases > Phone Cases (242), Men's Bags & Wallets > Bags (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | pets | 245 | Pet Care > Dog Supplies (49), Home & Car Accessories > Cleaning Tools (33) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | wall-lights | 241 | Lighting & Decor > Lamps & Lighting (241) | 0 | preserve; search discovery and low-priority classification evidence |
+| watch | 241 | Watches > Fashion Watches (241) | 0 | preserve; search discovery and low-priority classification evidence |
+| gifts | 239 | Gift Packaging & Party Supplies > Party Decorations (77), Office & School Supplies > Pen & Pencil Cases (26) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | water-bottle | 239 | Kitchen & Cookware > Drinkware (238), Kids Toys & Games > Bath Toys (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| watch | 231 | Watches > Fashion Watches (231) | 0 | preserve; search discovery and low-priority classification evidence |
 | bags-wallets | 230 | Bags & Wallets > Wallets & Card Holders (74), Bags & Wallets > Bags (66) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | food-storage-container | 229 | Kitchen & Cookware > Food Storage Containers (229) | 0 | preserve; search discovery and low-priority classification evidence |
 | smart | 228 | Watches > Smart Watches (92), Vehicle Accessories > Vehicle Battery Chargers (51) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -137,39 +137,39 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | travel-bag | 224 | Travel Essentials > Travel Bags & Luggage (224) | 0 | preserve; search discovery and low-priority classification evidence |
 | automotive | 219 | Vehicle Accessories > Vehicle Battery Chargers (175), Vehicle Accessories > Car Air Fresheners & Fragrance (17) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | vehicle-accessories | 219 | Vehicle Accessories > Vehicle Battery Chargers (175), Vehicle Accessories > Car Air Fresheners & Fragrance (17) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| Moisturizer | 216 | Beauty & Skincare > Skincare (75), Men's Beauty & Skincare > Skincare (22) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| Moisturizer | 216 | Beauty & Skincare > Skincare (77), Men's Beauty & Skincare > Skincare (22) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | fashion-accessories | 215 | Fashion Accessories > Hats & Caps (67), Fashion Accessories > Keychains & Key Rings (38) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | rechargeable | 215 | Lighting & Decor > Lamps & Lighting (83), Vehicle Accessories > Vehicle Battery Chargers (19) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | car | 206 | Vehicle Accessories > Vehicle Battery Chargers (175), Chargers > Watch Chargers (12) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | foldable | 206 | Travel Essentials > Travel Bags & Luggage (47), Women's Accessories > Hats & Caps (21) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | microphone | 205 | Audio > Microphones (205) | 0 | preserve; search discovery and low-priority classification evidence |
-| dramatic-lashes | 203 | Beauty & Skincare > Eye Makeup (165), Women's Beauty & Skincare > Eye Makeup (28) | 0 | preserve; search discovery and low-priority classification evidence |
-| skincare | 197 | Beauty & Skincare > Skincare (139), Women's Beauty & Skincare > Skincare (31) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| women-bags-wallets | 197 | Women's Bags & Wallets > Handbags (71), Women's Bags & Wallets > Bags (44) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| dramatic-lashes | 203 | Beauty & Skincare > Eye Makeup (166), Women's Beauty & Skincare > Eye Makeup (27) | 0 | preserve; search discovery and low-priority classification evidence |
+| skincare | 197 | Beauty & Skincare > Skincare (162), Men's Beauty & Skincare > Skincare (26) | 0 | preserve; search discovery and low-priority classification evidence |
+| women-bags-wallets | 197 | Women's Bags & Wallets > Handbags (64), Women's Bags & Wallets > Wallets & Card Holders (38) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | backpack | 189 | Travel Essentials > Backpacks (187), Home Decor > Anime Wall Art (2) | 0 | preserve; search discovery and low-priority classification evidence |
-| dining-accessory | 188 | Kitchen & Cookware > Dining & Serveware (188) | 0 | preserve; search discovery and low-priority classification evidence |
+| dining-accessory | 187 | Kitchen & Cookware > Dining & Serveware (187) | 0 | preserve; search discovery and low-priority classification evidence |
 | health-wellness | 187 | Health & Wellness > Aromatherapy & Essential Oils (78), Health & Wellness > Massage & Recovery (47) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| bag | 186 | Men's Bags & Wallets > Bags (76), Bags & Wallets > Bags (66) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| bag | 186 | Bags & Wallets > Bags (75), Men's Bags & Wallets > Bags (75) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | earbuds-and-cases | 182 | Audio > Earbuds & Earphones (159), Covers & Cases > Earbuds Cases (20) | 12 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | iphone | 180 | Covers & Cases > Phone Cases (100), Vehicle Accessories > Vehicle Battery Chargers (14) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| hair-care | 178 | Beauty & Skincare > Hair Care (145), Men's Beauty & Skincare > Hair Care (19) | 0 | preserve; search discovery and low-priority classification evidence |
+| hair-care | 178 | Beauty & Skincare > Hair Care (147), Men's Beauty & Skincare > Hair Care (19) | 0 | preserve; search discovery and low-priority classification evidence |
 | wall-art | 178 | Lighting & Decor > Home Decor (147), Home Decor > Anime Wall Art (28) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | vehicle-battery-charger | 175 | Vehicle Accessories > Vehicle Battery Chargers (175) | 0 | preserve; search discovery and low-priority classification evidence |
 | repair-shine-serums | 170 | Beauty & Skincare > Hair Care (135), Men's Beauty & Skincare > Hair Care (14) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| face-creams-moisturizers | 165 | Beauty & Skincare > Skincare (81), Beauty & Skincare > Body Care (20) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| face-creams-moisturizers | 165 | Beauty & Skincare > Skincare (87), Beauty & Skincare > Body Care (20) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | wireless mouses | 165 | Mouse & Keyboard > Computer Mice (102), Mouse & Keyboard > Keyboards (49) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| bedsheets-handlooms-towels | 161 | Bedsheets, Handlooms & Towels > Towels (82), Bedsheets, Handlooms & Towels > Bedding & Linens (60) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| bedsheets-handlooms-towels | 162 | Bedsheets, Handlooms & Towels > Towels (82), Bedsheets, Handlooms & Towels > Bedding & Linens (60) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | Eyelashes | 160 | Beauty & Skincare > Eye Makeup (145), Women's Beauty & Skincare > Eye Makeup (14) | 0 | preserve; search discovery and low-priority classification evidence |
 | WOMEN FAISHON | 156 | Women's Fashion > Shirts & Blouses (40), Women's Fashion > Jackets & Coats (38) | 5 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| handbag | 155 | Women's Bags & Wallets > Handbags (71), Men's Bags & Wallets > Handbags (61) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| handbag | 155 | Women's Bags & Wallets > Handbags (64), Men's Bags & Wallets > Handbags (60) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | wigs | 153 | Women's Accessories > Wigs (62), Men's Beauty & Skincare > Hair Care (32) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | computer-accessories | 151 | Computer Accessories > Laptop Accessories (126), Computer Accessories > Cable Organizers (11) | 0 | preserve; search discovery and low-priority classification evidence |
 | garden-tools | 151 | Lighting & Decor > Planters & Garden Decor (88), Home & Car Accessories > Garden & Tools (37) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | earbuds | 150 | Audio > Earbuds & Earphones (147), Office & School Supplies > Pen & Pencil Cases (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | mascara-collection | 150 | Beauty & Skincare > Eye Makeup (131), Women's Beauty & Skincare > Eye Makeup (19) | 0 | preserve; search discovery and low-priority classification evidence |
 | school-bags | 148 | Travel Essentials > Backpacks (145), Home Decor > Anime Wall Art (2) | 0 | preserve; search discovery and low-priority classification evidence |
-| Blushes | 145 | Beauty & Skincare > Face Makeup (114), Women's Beauty & Skincare > Face Makeup (13) | 8 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| dress | 142 | Women's Fashion > Dresses (72), Fashion > Dresses (39) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| Blushes | 145 | Beauty & Skincare > Face Makeup (115), Women's Beauty & Skincare > Face Makeup (12) | 7 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| dress | 142 | Women's Fashion > Dresses (72), Fashion > Dresses (40) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | jacket-coat | 141 | Women's Fashion > Jackets & Coats (59), Men's Fashion > Jackets & Coats (53) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | glam-eye-palettes | 138 | Beauty & Skincare > Eye Makeup (84), Beauty & Skincare > Face Makeup (20) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | jeans | 134 | Men's Fashion > Jeans (102), Women's Fashion > Jeans (22) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -180,17 +180,17 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | everyday-jewelry | 126 | Jewelry > Rings (98), Jewelry > Bracelets (13) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | jewelry | 126 | Jewelry > Rings (98), Jewelry > Anime Pins & Badges (12) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | jewelry-accessories | 126 | Jewelry > Rings (98), Jewelry > Bracelets (13) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| seasonal-decor | 120 | Gift Packaging & Party Supplies > Party Decorations (43), Lighting & Decor > Home Decor (16) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| seasonal-decor | 120 | Gift Packaging & Party Supplies > Party Decorations (43), Lighting & Decor > Home Decor (16) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | reading-light | 119 | Lighting & Decor > Lamps & Lighting (119) | 0 | preserve; search discovery and low-priority classification evidence |
 | beard-grooming-product | 118 | Men's Beauty & Skincare > Grooming Tools (83), Beauty & Skincare > Grooming Tools (30) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | home-safety | 116 | Kids Wear > Kids Sports Footwear (40), Men's Fashion > Shoes & Footwear (17) | 4 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| Perfume | 115 | Women's Beauty & Skincare > Fragrance (66), Men's Beauty & Skincare > Fragrance (27) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| smart-watch | 113 | Watches > Smart Watches (111), Watches > Fashion Watches (2) | 0 | preserve; search discovery and low-priority classification evidence |
+| Perfume | 115 | Women's Beauty & Skincare > Fragrance (57), Men's Beauty & Skincare > Fragrance (27) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | lamp-lighting | 111 | Lighting & Decor > Lamps & Lighting (111) | 0 | preserve; search discovery and low-priority classification evidence |
 | laptop-accessory | 111 | Computer Accessories > Laptop Accessories (111) | 0 | preserve; search discovery and low-priority classification evidence |
+| smart-watch | 111 | Watches > Smart Watches (111) | 0 | preserve; search discovery and low-priority classification evidence |
 | sports-protective-gear | 107 | Fitness Equipment > Sports Protection (107) | 0 | preserve; search discovery and low-priority classification evidence |
 | computer-mouse | 103 | Mouse & Keyboard > Computer Mice (103) | 0 | preserve; search discovery and low-priority classification evidence |
-| hair-styling-tool | 103 | Beauty & Skincare > Hair Care (87), Women's Beauty & Skincare > Hair Care (9) | 0 | preserve; search discovery and low-priority classification evidence |
+| hair-styling-tool | 103 | Beauty & Skincare > Hair Care (88), Women's Beauty & Skincare > Hair Care (8) | 0 | preserve; search discovery and low-priority classification evidence |
 | dog-supplies | 102 | Pet Care > Dog Supplies (49), Pet Care > Cat Supplies (13) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | Hair Tools | 102 | Beauty & Skincare > Hair Care (81), Men's Beauty & Skincare > Hair Care (7) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | baby-care | 99 | Baby Care > Baby Care Essentials (39), Baby Care > Diaper Bags & Organizers (22) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -198,21 +198,21 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | Kitchen essentials | 98 | Kitchen & Cookware > Dining & Serveware (32), Kitchen & Cookware > Kitchen Gadgets (29) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | ring | 98 | Jewelry > Rings (98) | 0 | preserve; search discovery and low-priority classification evidence |
 | rings | 98 | Jewelry > Rings (98) | 0 | preserve; search discovery and low-priority classification evidence |
-| gift-packaging | 96 | Gift Packaging & Party Supplies > Party Decorations (77), Gift Packaging & Party Supplies > Gift Bags & Packaging (15) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | camera-content-accessories | 95 | Camera & Content Accessories > Video Capture Cards (36), Camera & Content Accessories > Camera Accessories (25) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| scarf | 95 | Women's Accessories > Scarves & Wraps (66), Men's Accessories > Scarves & Wraps (15) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| gift-packaging | 95 | Gift Packaging & Party Supplies > Party Decorations (77), Gift Packaging & Party Supplies > Gift Bags & Packaging (15) | 0 | preserve; search discovery and low-priority classification evidence |
+| scarf | 95 | Women's Accessories > Scarves & Wraps (65), Men's Accessories > Scarves & Wraps (15) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | wig | 95 | Women's Accessories > Wigs (62), Fashion Accessories > Wigs (31) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | perpetual-desk-calendar | 94 | Office & School Supplies > Calendars (94) | 0 | preserve; search discovery and low-priority classification evidence |
 | belt | 92 | Men's Accessories > Belts (70), Women's Accessories > Belts (13) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | Hair accessories | 92 | Women's Accessories > Hair Accessories (61), Kids Wear > Kids Clothing (13) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | pet-care | 92 | Pet Care > Dog Supplies (49), Pet Care > Cat Supplies (28) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | pet-essentials | 92 | Pet Care > Dog Supplies (49), Pet Care > Cat Supplies (28) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| nail-care | 90 | Beauty & Skincare > Nail Tools (57), Women's Beauty & Skincare > Nail Tools (33) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| nail-care | 90 | Beauty & Skincare > Nail Tools (76), Women's Beauty & Skincare > Nail Tools (14) | 0 | preserve; search discovery and low-priority classification evidence |
 | planter | 88 | Lighting & Decor > Planters & Garden Decor (88) | 0 | preserve; search discovery and low-priority classification evidence |
 | Eyeshadow palette and tools | 87 | Beauty & Skincare > Eye Makeup (71), Women's Beauty & Skincare > Eye Makeup (7) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | chargers | 86 | Chargers > Power Banks (42), Chargers > Wireless Chargers (17) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | coffee-tea-accessories | 85 | Kitchen & Cookware > Drinkware (21), Kitchen & Cookware > Dining & Serveware (15) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| bag-strap | 84 | Bags & Wallets > Bag Straps & Accessories (42), Men's Bags & Wallets > Bag Straps & Accessories (22) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| bag-strap | 84 | Bags & Wallets > Bag Straps & Accessories (53), Men's Bags & Wallets > Bag Straps & Accessories (16) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | relaxation-products | 84 | Health & Wellness > Aromatherapy & Essential Oils (78), Health & Wellness > Sleep & Relaxation (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | writing-supply | 84 | Office & School Supplies > Writing Supplies (83), Home Decor > Anime Wall Art (1) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | insulated | 83 | Kitchen & Cookware > Food Storage Containers (26), Kitchen & Cookware > Drinkware (13) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -220,9 +220,9 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | hair-accessory | 82 | Women's Accessories > Hair Accessories (67), Kids Accessories > Hair Accessories (8) | 0 | preserve; search discovery and low-priority classification evidence |
 | towel | 82 | Bedsheets, Handlooms & Towels > Towels (82) | 0 | preserve; search discovery and low-priority classification evidence |
 | socks | 81 | Men's Fashion > Socks (29), Kids Wear > Socks (20) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| body-care | 80 | Beauty & Skincare > Body Care (66), Men's Beauty & Skincare > Body Care (7) | 0 | preserve; search discovery and low-priority classification evidence |
+| body-care | 80 | Beauty & Skincare > Body Care (68), Men's Beauty & Skincare > Body Care (7) | 0 | preserve; search discovery and low-priority classification evidence |
 | book | 80 | Office & School Supplies > Books & Learning (74), Office & School Supplies > Anime Stickers (4) | 0 | preserve; search discovery and low-priority classification evidence |
-| hair-wash-essentials | 79 | Beauty & Skincare > Hair Care (48), Men's Beauty & Skincare > Hair Care (7) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| hair-wash-essentials | 79 | Beauty & Skincare > Hair Care (50), Men's Beauty & Skincare > Hair Care (7) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | essential-oil | 78 | Health & Wellness > Aromatherapy & Essential Oils (78) | 0 | preserve; search discovery and low-priority classification evidence |
 | kitchen-gadget | 78 | Kitchen & Cookware > Kitchen Gadgets (78) | 0 | preserve; search discovery and low-priority classification evidence |
 | mouse-pad | 78 | Mouse & Keyboard > Mouse Pads (78) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -236,46 +236,46 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | fitness-shaker-bottle | 64 | Kitchen & Cookware > Drinkware (64) | 0 | preserve; search discovery and low-priority classification evidence |
 | cleaning-tool | 63 | Home & Car Accessories > Cleaning Tools (63) | 0 | preserve; search discovery and low-priority classification evidence |
 | Mascara | 63 | Beauty & Skincare > Eye Makeup (55), Women's Beauty & Skincare > Eye Makeup (8) | 0 | preserve; search discovery and low-priority classification evidence |
-| anime-graphic-t-shirt | 62 | Men's Fashion > Anime Graphic T-Shirts (30), Fashion > Anime Graphic T-Shirts (21) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| anime-graphic-t-shirt | 62 | Men's Fashion > Anime Graphic T-Shirts (29), Fashion > Anime Graphic T-Shirts (24) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | shorts | 62 | Men's Fashion > Shorts (51), Fashion > Shorts (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | board-game | 58 | Kids Toys & Games > Games & Puzzles (57), Office & School Supplies > Anime Stickers (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| robe | 58 | Men's Fashion > Robes & Sleepwear (49), Women's Fashion > Robes & Sleepwear (5) | 0 | preserve; search discovery and low-priority classification evidence |
+| robe | 58 | Men's Fashion > Robes & Sleepwear (42), Fashion > Robes & Sleepwear (8) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | party-backdrop | 56 | Gift Packaging & Party Supplies > Party Decorations (56) | 0 | preserve; search discovery and low-priority classification evidence |
-| handkerchief-pocket-square | 55 | Men's Accessories > Handkerchiefs & Pocket Squares (36), Fashion Accessories > Handkerchiefs & Pocket Squares (10) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| handkerchief-pocket-square | 55 | Men's Accessories > Handkerchiefs & Pocket Squares (36), Fashion Accessories > Handkerchiefs & Pocket Squares (11) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | bedding-linen | 54 | Bedsheets, Handlooms & Towels > Bedding & Linens (54) | 0 | preserve; search discovery and low-priority classification evidence |
 | home-storage-organization | 53 | Home Storage & Organization > Storage & Organization (53) | 0 | preserve; search discovery and low-priority classification evidence |
 | phone-holder-mount | 53 | Phone & Tablet Accessories > Phone Holders & Mounts (53) | 0 | preserve; search discovery and low-priority classification evidence |
 | home-organizer | 52 | Home Storage & Organization > Storage & Organization (52) | 0 | preserve; search discovery and low-priority classification evidence |
-| BAGS AND WALLETS | 51 | Women's Bags & Wallets > Handbags (19), Women's Bags & Wallets > Bag Straps & Accessories (9) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
-| sunglasses | 51 | Women's Accessories > Sunglasses (35), Men's Accessories > Sunglasses (10) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| BAGS AND WALLETS | 51 | Women's Bags & Wallets > Handbags (19), Women's Bags & Wallets > Bag Straps & Accessories (7) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| sunglasses | 51 | Women's Accessories > Sunglasses (28), Fashion Accessories > Sunglasses (13) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | grooming-tool | 50 | Men's Beauty & Skincare > Grooming Tools (28), Beauty & Skincare > Grooming Tools (17) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | document-folder | 49 | Office & School Supplies > Binders & Folders (49) | 0 | preserve; search discovery and low-priority classification evidence |
 | dog-product | 49 | Pet Care > Dog Supplies (49) | 0 | preserve; search discovery and low-priority classification evidence |
-| Travel and outdoor | 49 | Bags & Wallets > Bags (12), Home Storage & Organization > Storage & Organization (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| Travel and outdoor | 49 | Bags & Wallets > Bags (13), Home Storage & Organization > Storage & Organization (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | magsafe-gadgets | 48 | Covers & Cases > Phone Cases (23), Phone & Tablet Accessories > Phone Holders & Mounts (10) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| Men bags and wallets | 48 | Travel Essentials > Travel Bags & Luggage (17), Men's Bags & Wallets > Bag Straps & Accessories (8) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| Men bags and wallets | 48 | Travel Essentials > Travel Bags & Luggage (17), Bags & Wallets > Bag Straps & Accessories (6) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | bath-toy | 46 | Kids Toys & Games > Bath Toys (46) | 0 | preserve; search discovery and low-priority classification evidence |
 | massage-recovery-tool | 46 | Health & Wellness > Massage & Recovery (46) | 0 | preserve; search discovery and low-priority classification evidence |
-| Women skincare | 46 | Women's Beauty & Skincare > Skincare (31), Women's Beauty & Skincare > Body Care (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| Women skincare | 46 | Beauty & Skincare > Skincare (25), Women's Beauty & Skincare > Skincare (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | massage-tools | 45 | Health & Wellness > Massage & Recovery (45) | 0 | preserve; search discovery and low-priority classification evidence |
 | gifts-for-mom | 44 | Watches > Smart Watches (8), Jewelry > Rings (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | key-ring | 44 | Fashion Accessories > Keychains & Key Rings (38), Men's Accessories > Keychains & Key Rings (4) | 0 | preserve; search discovery and low-priority classification evidence |
 | candles | 43 | Office & School Supplies > Craft & DIY Supplies (12), Lighting & Decor > Candles & Home Fragrance (11) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | medical-accessories | 43 | Health & Wellness > Medicine & Pill Organizers (16), Bags & Wallets > Bags (6) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | suit | 43 | Men's Fashion > Suits & Formalwear (40), Women's Fashion > Suits & Formalwear (2) | 0 | preserve; search discovery and low-priority classification evidence |
-| beauty-tool | 42 | Beauty & Skincare > Beauty Tools (38), Women's Beauty & Skincare > Beauty Tools (4) | 0 | preserve; search discovery and low-priority classification evidence |
+| beauty-tool | 42 | Beauty & Skincare > Beauty Tools (39), Women's Beauty & Skincare > Beauty Tools (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | power-bank | 42 | Chargers > Power Banks (42) | 0 | preserve; search discovery and low-priority classification evidence |
 | rain-sun-umbrella | 41 | Travel Essentials > Rain & Sun Umbrellas (41) | 0 | preserve; search discovery and low-priority classification evidence |
 | travel-neck-pillow | 41 | Travel Essentials > Travel Pillows (41) | 0 | preserve; search discovery and low-priority classification evidence |
 | type-c | 41 | Vehicle Accessories > Vehicle Battery Chargers (11), Audio > Microphones (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | baby-care-product | 40 | Baby Care > Baby Care Essentials (39), Kids Toys & Games > Anime Figures & Standees (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| fashion accessories | 40 | Women's Accessories > Sunglasses (35), Men's Accessories > Sunglasses (5) | 0 | preserve; search discovery and low-priority classification evidence |
+| fashion accessories | 40 | Women's Accessories > Sunglasses (28), Fashion Accessories > Sunglasses (7) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | fashion jewelry | 40 | Jewelry > Rings (39), Kids Wear > Kids Clothing (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | gifts for women | 40 | Jewelry > Rings (39), Kids Wear > Kids Clothing (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| shopping-bag | 40 | Women's Bags & Wallets > Shopping Bags (24), Bags & Wallets > Shopping Bags (15) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| shopping-bag | 40 | Bags & Wallets > Shopping Bags (28), Women's Bags & Wallets > Shopping Bags (12) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | womens jewelry | 40 | Jewelry > Rings (39), Kids Wear > Kids Clothing (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | womens rings | 40 | Jewelry > Rings (39), Kids Wear > Kids Clothing (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| womens sunglasses | 40 | Women's Accessories > Sunglasses (35), Men's Accessories > Sunglasses (5) | 0 | preserve; search discovery and low-priority classification evidence |
+| womens sunglasses | 40 | Women's Accessories > Sunglasses (28), Fashion Accessories > Sunglasses (7) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | Nail Accessories | 39 | Beauty & Skincare > Nail Tools (37), Beauty & Skincare > Body Care (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | card-holder-sleeve | 38 | Office & School Supplies > Card & Collecting Accessories (38) | 0 | preserve; search discovery and low-priority classification evidence |
 | daily-living-aids | 38 | Health & Wellness > Medicine & Pill Organizers (14), Health & Wellness > Mobility & Support (7) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -295,7 +295,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | men-s-hair-replacement-wig | 32 | Men's Beauty & Skincare > Hair Care (32) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-wigs | 32 | Men's Beauty & Skincare > Hair Care (32) | 0 | preserve; search discovery and low-priority classification evidence |
 | craft-supply | 31 | Office & School Supplies > Craft & DIY Supplies (31) | 0 | preserve; search discovery and low-priority classification evidence |
-| face-mask | 31 | Men's Beauty & Skincare > Face Masks (24), Women's Beauty & Skincare > Face Masks (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| face-mask | 31 | Beauty & Skincare > Face Masks (27), Men's Beauty & Skincare > Face Masks (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | kitchen-food-prep-tool | 31 | Kitchen & Cookware > Kitchen Gadgets (31) | 0 | preserve; search discovery and low-priority classification evidence |
 | cat-supplies | 30 | Pet Care > Cat Supplies (26), Pet Care > Cat Toilets & Litter Supplies (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | home-air-appliance | 30 | Home & Car Accessories > Home Air Appliances (30) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -304,31 +304,31 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | cat-product | 29 | Pet Care > Cat Supplies (28), Kids Toys & Games > Anime Trading Cards (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | pet-toys | 29 | Pet Care > Cat Supplies (8), Pet Care > Dog Supplies (7) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | pet-travel | 29 | Pet Care > Dog Supplies (17), Pet Care > Cat Supplies (11) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| uv400 sunglasses | 29 | Women's Accessories > Sunglasses (26), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority classification evidence |
-| gloves | 27 | Fashion Accessories > Gloves (14), Men's Accessories > Gloves (10) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| uv400 sunglasses | 29 | Women's Accessories > Sunglasses (22), Fashion Accessories > Sunglasses (4) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| gloves | 27 | Fashion Accessories > Gloves (15), Men's Accessories > Gloves (9) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | straw-water-bottle | 27 | Kitchen & Cookware > Drinkware (26), Office & School Supplies > Anime Stickers (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| outdoor sunglasses | 26 | Women's Accessories > Sunglasses (23), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority classification evidence |
+| outdoor sunglasses | 26 | Women's Accessories > Sunglasses (17), Fashion Accessories > Sunglasses (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | serveware | 26 | Kitchen & Cookware > Dining & Serveware (26) | 0 | preserve; search discovery and low-priority classification evidence |
 | body-lotion | 25 | Beauty & Skincare > Body Care (22), Men's Beauty & Skincare > Body Care (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | camera-accessory | 25 | Camera & Content Accessories > Camera Accessories (25) | 0 | preserve; search discovery and low-priority classification evidence |
 | ipad | 25 | Covers & Cases > Phone Cases (7), Computer Accessories > Laptop Accessories (5) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | anime-cosplay-wig | 24 | Fashion Accessories > Anime Wigs (17), Women's Accessories > Anime Wigs (6) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | anime-wall-art | 24 | Home Decor > Anime Wall Art (24) | 0 | preserve; search discovery and low-priority classification evidence |
-| cream-blush | 24 | Beauty & Skincare > Face Makeup (21), Women's Beauty & Skincare > Face Makeup (3) | 0 | preserve; search discovery and low-priority classification evidence |
+| cream-blush | 24 | Beauty & Skincare > Face Makeup (22), Women's Beauty & Skincare > Face Makeup (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | usb-c | 24 | Vehicle Accessories > Vehicle Battery Chargers (18), Camera & Content Accessories > Camera Accessories (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | diaper-bag-organizer | 22 | Baby Care > Diaper Bags & Organizers (22) | 0 | preserve; search discovery and low-priority classification evidence |
 | liquid-blush | 22 | Beauty & Skincare > Face Makeup (20), Women's Beauty & Skincare > Face Makeup (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | lip-plumper-oil | 21 | Beauty & Skincare > Lip Care & Makeup (20), Women's Beauty & Skincare > Lip Care & Makeup (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | loose-face-powder | 21 | Beauty & Skincare > Face Makeup (21) | 0 | preserve; search discovery and low-priority classification evidence |
-| party-table-cover | 21 | Gift Packaging & Party Supplies > Party Decorations (20), Bedsheets, Handlooms & Towels > Table Linens (1) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| party-table-cover | 20 | Gift Packaging & Party Supplies > Party Decorations (20) | 0 | preserve; search discovery and low-priority classification evidence |
 | anime-trading-card | 19 | Kids Toys & Games > Anime Trading Cards (19) | 0 | preserve; search discovery and low-priority classification evidence |
-| hoodie-sweater | 19 | Men's Fashion > Hoodies & Sweaters (7), Fashion > Hoodies & Sweaters (5) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
+| hoodie-sweater | 19 | Fashion > Hoodies & Sweaters (6), Men's Fashion > Hoodies & Sweaters (6) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | skirt | 19 | Women's Fashion > Skirts (17), Fashion > Skirts (2) | 0 | preserve; search discovery and low-priority classification evidence |
+| table-linen | 19 | Bedsheets, Handlooms & Towels > Table Linens (19) | 0 | preserve; search discovery and low-priority classification evidence |
 | anime-shorts | 18 | Fashion > Anime Shorts (9), Men's Fashion > Anime Shorts (9) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | gel-pen | 18 | Office & School Supplies > Writing Supplies (18) | 0 | preserve; search discovery and low-priority classification evidence |
 | makeup-brush-set | 18 | Beauty & Skincare > Beauty Tools (17), Women's Beauty & Skincare > Beauty Tools (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | sports-socks | 18 | Men's Fashion > Socks (14), Fashion > Socks (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| table-linen | 18 | Bedsheets, Handlooms & Towels > Table Linens (18) | 0 | preserve; search discovery and low-priority classification evidence |
 | Wellness Massagers | 18 | Health & Wellness > Massage & Recovery (12), Travel Essentials > Travel Pillows (6) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | women-s-trousers | 18 | Women's Fashion > Trousers & Pants (18) | 0 | preserve; search discovery and low-priority classification evidence |
 | car-fragrance | 17 | Vehicle Accessories > Car Air Fresheners & Fragrance (17) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -341,7 +341,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | kitchen-towel | 16 | Kitchen & Cookware > Dining & Serveware (16) | 0 | preserve; search discovery and low-priority classification evidence |
 | lint-roller | 16 | Home & Car Accessories > Cleaning Tools (16) | 0 | preserve; search discovery and low-priority classification evidence |
 | reading-accessory | 16 | Office & School Supplies > Reading Accessories (16) | 0 | preserve; search discovery and low-priority classification evidence |
-| eyelash-curler | 15 | Women's Beauty & Skincare > Beauty Tools (13), Beauty & Skincare > Beauty Tools (2) | 0 | preserve; search discovery and low-priority classification evidence |
+| eyelash-curler | 15 | Beauty & Skincare > Beauty Tools (10), Women's Beauty & Skincare > Beauty Tools (5) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | gift-bag-packaging | 15 | Gift Packaging & Party Supplies > Gift Bags & Packaging (15) | 0 | preserve; search discovery and low-priority classification evidence |
 | photography-backdrop | 15 | Camera & Content Accessories > Photography Accessories (15) | 0 | preserve; search discovery and low-priority classification evidence |
 | pill-organizer | 15 | Health & Wellness > Medicine & Pill Organizers (15) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -350,8 +350,9 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | anime-cosplay-costume | 14 | Fashion > Anime Cosplay Costumes (5), Men's Fashion > Anime Cosplay Costumes (4) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | beadable-pen | 14 | Office & School Supplies > Writing Supplies (14) | 0 | preserve; search discovery and low-priority classification evidence |
 | bubble-toy | 14 | Kids Toys & Games > Bubble Toys (14) | 0 | preserve; search discovery and low-priority classification evidence |
-| cycling sunglasses | 14 | Women's Accessories > Sunglasses (11), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| sport sunglasses | 14 | Women's Accessories > Sunglasses (11), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| cycling sunglasses | 14 | Women's Accessories > Sunglasses (9), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| mechanical-watch | 14 | Watches > Fashion Watches (14) | 0 | preserve; search discovery and low-priority classification evidence |
+| sport sunglasses | 14 | Women's Accessories > Sunglasses (9), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | sports-water-jug | 14 | Kitchen & Cookware > Drinkware (14) | 0 | preserve; search discovery and low-priority classification evidence |
 | teleprompter | 14 | Camera & Content Accessories > Teleprompters (14) | 0 | preserve; search discovery and low-priority classification evidence |
 | travel-organizer | 14 | Travel Essentials > Travel Organizers (14) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -359,9 +360,8 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | blush-powder | 13 | Beauty & Skincare > Face Makeup (10), Women's Beauty & Skincare > Face Makeup (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | bracelets | 13 | Jewelry > Bracelets (13) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | lingerie-underwear | 13 | Women's Fashion > Lingerie & Underwear (5), Kids Wear > Lingerie & Underwear (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| mechanical-watch | 13 | Watches > Fashion Watches (13) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-s-briefcase | 13 | Men's Bags & Wallets > Men's Briefcases & Laptop Bags (13) | 0 | preserve; search discovery and low-priority classification evidence |
-| square sunglasses | 13 | Women's Accessories > Sunglasses (10), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| square sunglasses | 13 | Women's Accessories > Sunglasses (7), Fashion Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | tool-hardware | 13 | Home & Car Accessories > Tools & Hardware (13) | 0 | preserve; search discovery and low-priority classification evidence |
 | water-dispenser | 13 | Kitchen & Cookware > Drinkware (13) | 0 | preserve; search discovery and low-priority classification evidence |
 | water-shoe-aqua-sock | 13 | Kids Wear > Kids Sports Footwear (6), Kids Wear > Water Shoes & Aqua Socks (5) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
@@ -373,12 +373,12 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | fishing sunglasses | 12 | Women's Accessories > Sunglasses (8), Men's Accessories > Sunglasses (4) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | food-cover | 12 | Kitchen & Cookware > Food Storage Containers (12) | 0 | preserve; search discovery and low-priority classification evidence |
 | pet-grooming | 12 | Pet Care > Cat Supplies (4), Pet Care > Pet Nail Clippers & Claw Trimmers (4) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| polarized sunglasses | 12 | Women's Accessories > Sunglasses (9), Men's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| polarized sunglasses | 12 | Women's Accessories > Sunglasses (6), Fashion Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | artificial-plants | 11 | Lighting & Decor > Home Decor (10), Jewelry > Necklaces & Pendants (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | cable-organizer | 11 | Computer Accessories > Cable Organizers (11) | 0 | preserve; search discovery and low-priority classification evidence |
 | cycling-jersey | 11 | Men's Fashion > Cycling Jerseys (6), Fashion > Cycling Jerseys (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | MEN FORMAL SHIRTS | 11 | Men's Fashion > T-Shirts (10), Men's Fashion > Suits & Formalwear (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| round sunglasses | 11 | Women's Accessories > Sunglasses (10), Men's Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| round sunglasses | 11 | Women's Accessories > Sunglasses (9), Fashion Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | acne-patch | 10 | Beauty & Skincare > Skincare (10) | 0 | preserve; search discovery and low-priority classification evidence |
 | anime-sticker-set | 10 | Office & School Supplies > Anime Stickers (10) | 0 | preserve; search discovery and low-priority classification evidence |
 | budget-planner | 10 | Office & School Supplies > Notebooks & Planners (9), Office & School Supplies > Pen & Pencil Cases (1) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -401,7 +401,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | baby-romper-clothing | 8 | Kids Wear > Baby Rompers & Clothing (4), Kids Wear > Kids Clothing (4) | 3 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | corset | 8 | Women's Fashion > Lingerie & Underwear (7), Fashion > Lingerie & Underwear (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | hair-removal-cream | 8 | Women's Beauty & Skincare > Grooming Tools (4), Beauty & Skincare > Grooming Tools (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| hand-care | 8 | Beauty & Skincare > Body Care (6), Women's Beauty & Skincare > Body Care (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| hand-care | 8 | Beauty & Skincare > Body Care (7), Women's Beauty & Skincare > Body Care (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | jumpsuit | 8 | Women's Fashion > Jumpsuits & Rompers (4), Camping Essentials > Camping Gear (1) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | makeup-primer | 8 | Beauty & Skincare > Face Makeup (8) | 0 | preserve; search discovery and low-priority classification evidence |
 | mobility-aid | 8 | Health & Wellness > Mobility & Support (8) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -411,7 +411,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | dollhouse-miniature | 7 | Kids Toys & Games > Dollhouse Miniatures (7) | 0 | preserve; search discovery and low-priority classification evidence |
 | hair-removal-oil | 7 | Beauty & Skincare > Grooming Tools (7) | 0 | preserve; search discovery and low-priority classification evidence |
 | Home essentials | 7 | Office & School Supplies > Binders & Folders (3), Office & School Supplies > Pen & Pencil Cases (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| makeup-setting-spray | 7 | Beauty & Skincare > Face Makeup (6), Women's Beauty & Skincare > Face Makeup (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| makeup-setting-spray | 7 | Beauty & Skincare > Face Makeup (7) | 0 | preserve; search discovery and low-priority classification evidence |
 | prank-toy | 7 | Kids Toys & Games > Prank & Novelty Toys (7) | 0 | preserve; search discovery and low-priority classification evidence |
 | soft-toys | 7 | Soft Toys > Anime Plush Dolls (3), Soft Toys > Plush & Soft Toys (3) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | body-powder-dispenser | 6 | Baby Care > Baby Grooming (6) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -420,12 +420,12 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | fitted-mattress-cover | 6 | Bedsheets, Handlooms & Towels > Bedding & Linens (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | handheld-can-bottle-opener | 6 | Kitchen & Cookware > Kitchen Gadgets (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | headphones | 6 | Audio > Headphones & Headsets (6) | 0 | preserve; search discovery and low-priority classification evidence |
-| hiking sunglasses | 6 | Women's Accessories > Sunglasses (4), Men's Accessories > Sunglasses (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| hiking sunglasses | 6 | Women's Accessories > Sunglasses (3), Men's Accessories > Sunglasses (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | home-garden | 6 | Home & Garden > Gardening Tools (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-s-intimate-performance-cream | 6 | Men's Beauty & Skincare > Intimate Care (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | password-organizer-book | 6 | Office & School Supplies > Notebooks & Planners (4), Office & School Supplies > Pen & Pencil Cases (2) | 2 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | phone-charm-dust-plug | 6 | Phone & Tablet Accessories > Phone Charms & Dust Plugs (6) | 0 | preserve; search discovery and low-priority classification evidence |
-| running sunglasses | 6 | Women's Accessories > Sunglasses (5), Men's Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| running sunglasses | 6 | Women's Accessories > Sunglasses (4), Fashion Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | sleep-essentials | 6 | Health & Wellness > Sleep & Relaxation (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | tank-top | 6 | Men's Fashion > Tops (6) | 0 | preserve; search discovery and low-priority classification evidence |
 | wire-loop-skill-game | 6 | Kids Toys & Games > Action & Skill Games (6) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -479,8 +479,8 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | toss-catch-ball-game | 4 | Kids Toys & Games > Toss & Catch Games (4) | 0 | preserve; search discovery and low-priority classification evidence |
 | toy | 4 | Pet Care > Pet Accessories (2), Kids Toys & Games > Anime Figures & Standees (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | travel sunglasses | 4 | Women's Accessories > Sunglasses (3), Men's Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| uv protection sunglasses | 4 | Women's Accessories > Sunglasses (3), Men's Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| uv-nail-lamp | 4 | Beauty & Skincare > Nail Tools (2), Women's Beauty & Skincare > Nail Tools (2) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| uv protection sunglasses | 4 | Women's Accessories > Sunglasses (2), Fashion Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| uv-nail-lamp | 4 | Beauty & Skincare > Nail Tools (3), Women's Beauty & Skincare > Nail Tools (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | wireless-hdmi-extender | 4 | Computer Accessories > Wireless Display Adapters (4) | 0 | preserve; search discovery and low-priority classification evidence |
 | anime-pajamas-loungewear | 3 | Fashion > Anime Pajamas & Loungewear (1), Kids Wear > Anime Pajamas & Loungewear (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | anime-plush-doll | 3 | Soft Toys > Anime Plush Dolls (3) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -488,7 +488,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | beauty-product | 3 | Beauty & Skincare > Beauty & Personal Care (2), Women's Beauty & Skincare > Beauty & Personal Care (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | body-firming-cream | 3 | Beauty & Skincare > Body Care (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | cat-toilet-litter-supply | 3 | Pet Care > Cat Toilets & Litter Supplies (3) | 0 | preserve; search discovery and low-priority classification evidence |
-| cica-repair-cream | 3 | Beauty & Skincare > Skincare (2), Women's Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| cica-repair-cream | 3 | Beauty & Skincare > Skincare (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | cleansing-balm | 3 | Beauty & Skincare > Skincare (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | cleansing-oil | 3 | Beauty & Skincare > Skincare (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | collectible-card-album | 3 | Office & School Supplies > Photocard Holders & Keychains (3) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -514,13 +514,13 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | makeup-remover-oil | 3 | Beauty & Skincare > Skincare (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | men-s-activewear-set | 3 | Men's Fashion > Activewear Sets (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | number-learning-toy | 3 | Kids Toys & Games > Educational Toys (3) | 0 | preserve; search discovery and low-priority classification evidence |
-| oval sunglasses | 3 | Women's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority classification evidence |
+| oval sunglasses | 3 | Women's Accessories > Sunglasses (2), Fashion Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | periodic-table-desk-decor | 3 | Lighting & Decor > Home Decor (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | plush-character-keychain | 3 | Kids Toys & Games > Plush Toys & Keychains (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | powder-puff-storage-case | 3 | Beauty & Skincare > Makeup Tools (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | quartz-watch | 3 | Watches > Fashion Watches (3) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | reborn-doll-kit | 3 | Kids Toys & Games > Reborn Dolls & Kits (2), Kids Wear > Kids Clothing (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
-| rectangle sunglasses | 3 | Women's Accessories > Sunglasses (3) | 0 | preserve; search discovery and low-priority classification evidence |
+| rectangle sunglasses | 3 | Fashion Accessories > Sunglasses (2), Women's Accessories > Sunglasses (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | shower-cap | 3 | Beauty & Skincare > Bath Accessories (2), Women's Beauty & Skincare > Bath Accessories (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | smartphone-video-rig | 3 | Camera & Content Accessories > Smartphone Video Rigs (3) | 0 | preserve; search discovery and low-priority classification evidence |
 | sports-shock-absorbing-insole | 3 | Men's Accessories > Footwear Accessories (3) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -560,7 +560,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | embroidery-patch | 2 | Jewelry > Anime Pins & Badges (1), Office & School Supplies > Craft & DIY Supplies (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
 | eye-cream | 2 | Beauty & Skincare > Skincare (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | face-smoothing-patch | 2 | Beauty & Skincare > Skincare (2) | 0 | preserve; search discovery and low-priority classification evidence |
-| facial-steamer | 2 | Beauty & Skincare > Beauty Tools (1), Women's Beauty & Skincare > Beauty Tools (1) | 0 | preserve; search discovery and low-priority evidence only because current usage is mixed |
+| facial-steamer | 2 | Beauty & Skincare > Beauty Tools (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | garden-hoe-weeding-tool | 2 | Home & Car Accessories > Garden & Tools (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | glitter-lipstick | 2 | Beauty & Skincare > Lip Care & Makeup (2) | 0 | preserve; search discovery and low-priority classification evidence |
 | hair-nourishing-oil | 2 | Beauty & Skincare > Hair Care (2) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -638,7 +638,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | ceramide-calming-lotion | 1 | Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | cica-hydration-cream | 1 | Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | classroom-pocket-chart | 1 | Office & School Supplies > Books & Learning (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| collagen-facial-mist | 1 | Women's Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| collagen-facial-mist | 1 | Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | collagen-shea-butter-cream | 1 | Beauty & Skincare > Body Care (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | color-correcting-makeup-base | 1 | Beauty & Skincare > Face Makeup (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | computer-storage-accessory | 1 | Storage Devices > Computer Storage (1) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -655,7 +655,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | electric-milk-frother | 1 | Kitchen & Cookware > Coffee & Tea Accessories (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | electronic-accessory | 1 | Electronic Accessories > Electronic Accessories (1) | 1 | preserve; search discovery and low-priority evidence only while affected products are reviewed |
 | eye-makeup-primer | 1 | Beauty & Skincare > Eye Makeup (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| foot-care-tool | 1 | Women's Beauty & Skincare > Foot Care (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| foot-care-tool | 1 | Beauty & Skincare > Foot Care (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | gaming-mouse-replacement-board | 1 | Mouse & Keyboard > Mouse Accessories (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | garden-harvesting-thumb-protector | 1 | Home & Car Accessories > Garden Tools (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | garden-weeding-rake | 1 | Home & Car Accessories > Garden & Tools (1) | 0 | preserve; search discovery and low-priority classification evidence |
@@ -669,7 +669,7 @@ Current catalog snapshot: 788 distinct tags across 121,310 product-tag assignmen
 | holiday-candy-jar | 1 | Gift Packaging & Party Supplies > Holiday Candy Jars & Bottles (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | home-appliance | 1 | Home & Car Accessories > Home Appliances (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | housewarming-gifts | 1 | Office & School Supplies > Notebooks & Planners (1) | 0 | preserve; search discovery and low-priority classification evidence |
-| hydrating-brightening-skin-cream | 1 | Women's Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
+| hydrating-brightening-skin-cream | 1 | Beauty & Skincare > Skincare (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | imitation pearl ring | 1 | Jewelry > Rings (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | industrial-equipment | 1 | Industrial Equipment > Mixing & Filling Machines (1) | 0 | preserve; search discovery and low-priority classification evidence |
 | industrial-mixing-filling-machine | 1 | Industrial Equipment > Mixing & Filling Machines (1) | 0 | preserve; search discovery and low-priority classification evidence |

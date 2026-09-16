@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
+import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { delimiter, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const rootDir = resolve(import.meta.dirname, "..");
@@ -11,7 +12,36 @@ const watcherScript = resolve(rootDir, "scripts", "realtime-release-watcher.mjs"
 const watcherLogPath = resolve(outputDir, "realtime-release-watcher.log");
 const controlUiScript = resolve(rootDir, "scripts", "release-control-ui.mjs");
 const controlUiLogPath = resolve(outputDir, "release-control-ui.log");
-const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
+
+function resolveNpmBin() {
+  if (process.platform === "win32") return process.env.SALT_NPM_BIN || "npm.cmd";
+  const candidates = [
+    process.env.SALT_NPM_BIN,
+    "/usr/local/bin/npm",
+    "/opt/homebrew/bin/npm",
+    "/usr/bin/npm",
+    "npm",
+  ].filter(Boolean);
+  return candidates.find((candidate) => !candidate.includes("/") || existsSync(candidate)) || "npm";
+}
+
+const npmBin = resolveNpmBin();
+
+export function buildRuntimePath(existingPath = "") {
+  const nodeBinDir = resolve(process.execPath, "..");
+  const userNpmBinDir = process.env.HOME ? resolve(process.env.HOME, ".npm-global", "bin") : "";
+  const candidates = [
+    nodeBinDir,
+    "/usr/local/bin",
+    "/opt/homebrew/bin",
+    userNpmBinDir,
+    "/usr/bin",
+    "/bin",
+    ...String(existingPath || "").split(delimiter),
+  ].filter(Boolean);
+  return [...new Set(candidates)].join(delimiter);
+}
+
 const releaseArgs = process.argv.slice(2);
 const releaseScript = String(process.env.SALT_FOREGROUND_RELEASE_SCRIPT || "release:core").trim() || "release:core";
 const controlUiPort = Number.isInteger(Number(process.env.SALT_RELEASE_UI_PORT))
@@ -155,6 +185,7 @@ async function markInterruptedCheckpoint(reason) {
 function foregroundEnvironment() {
   return {
     ...process.env,
+    PATH: buildRuntimePath(process.env.PATH),
     // release.mjs normally detaches its own watcher. The supervisor owns the
     // watcher here so every monitor event remains in this terminal.
     SALT_RELEASE_EMBEDDED_WATCHER: "0",
@@ -264,6 +295,7 @@ async function main() {
   process.once("SIGTERM", () => stopAll("SIGTERM"));
 
   writeSupervisorOutput(`\n[supervisor] starting ${releaseScript}; all release and watcher output is multiplexed below\n`);
+  writeSupervisorOutput(`[supervisor] npm launcher: ${npmBin}\n`);
   writeSupervisorOutput(`[supervisor] command: npm run ${releaseScript}${releaseArgs.length ? ` -- ${releaseArgs.join(" ")}` : ""}\n`);
   spawnControlUi(env);
   writeSupervisorOutput(`[supervisor] default control UI: http://127.0.0.1:${controlUiPort} (opened automatically)\n`);

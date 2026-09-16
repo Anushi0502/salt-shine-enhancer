@@ -9,7 +9,11 @@ import { useDocumentMetadata } from "@/components/support/useDocumentMetadata";
 import { useEditorialPage } from "@/lib/shopify-data";
 import { getRuntimeContext } from "@/lib/theme-assets";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
-import { buildFaqStructuredData } from "@/lib/structured-data";
+import {
+  buildEditorialBreadcrumbStructuredData,
+  buildFaqStructuredData,
+  buildWebPageStructuredData,
+} from "@/lib/structured-data";
 
 const runtimeContext = getRuntimeContext();
 const supportEmail = runtimeContext.supportEmail || "help@saltonlinestore.com";
@@ -113,18 +117,25 @@ const FaqPage = () => {
     { label: "Home", to: "/" },
     { label: "FAQ" },
   ];
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   const stats = page.stats || [];
   const chips = page.chips || [];
   const faqCountLabel = `${page.faqs?.length || 0} answers`;
   const faqStructuredData = buildFaqStructuredData(
     page.faqs,
-    typeof window === "undefined" ? "" : window.location.origin,
+    origin,
+    "/pages/faq",
   );
+  const faqPageStructuredData = [
+    buildWebPageStructuredData(page.title, page.summary, "/pages/faq", origin),
+    buildEditorialBreadcrumbStructuredData(breadcrumbs, "/pages/faq", origin),
+    faqStructuredData,
+  ].filter(Boolean);
 
   return (
     <section className="mx-auto w-[min(1240px,calc(100%_-_20px))] pb-16 pt-4 sm:pb-18 sm:pt-5">
-      <SeoMetadata structuredData={[faqStructuredData]} scope="faq-page" />
+      <SeoMetadata structuredData={faqPageStructuredData} scope="faq-page" />
       <InnerBreadcrumbs items={breadcrumbs} />
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(19rem,0.88fr)]">
@@ -324,7 +335,7 @@ const FaqPage = () => {
             {[
               { label: "Contact us", to: "/pages/contact-us", primary: true },
               { label: "Track order", to: "/track-order" },
-              { label: "Resource Hub", to: "/shop?resource=hub" },
+              { label: "Resource Hub", to: "/pages/resources" },
             ].map(renderAction)}
           </div>
         </div>

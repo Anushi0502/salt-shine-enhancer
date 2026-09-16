@@ -63,6 +63,23 @@ function productFingerprint(product) {
   })).digest("hex");
 }
 
+function canonicalizeGptSeoRecord(record, product) {
+  const normalized = normalizeGptSeoRecord(record, product);
+  const taxonomy = productGptEvidence(product).verifiedTaxonomy || {};
+  return {
+    ...normalized,
+    // GPT writes the copy, while the supplied verified taxonomy remains the
+    // canonical category source and prevents broad aliases from leaking into
+    // Shopify category/metafield planning.
+    category: {
+      department: taxonomy.department || normalized.category.department,
+      category: taxonomy.category || normalized.category.category,
+      subcategory: taxonomy.subcategory || normalized.category.subcategory,
+      productType: taxonomy.productType || normalized.category.productType,
+    },
+  };
+}
+
 function catalogBoundary(products) {
   return createHash("sha256").update(products.map((product) => normalizeKey(product.handle)).sort().join("\n")).digest("hex");
 }
@@ -170,14 +187,15 @@ async function requestGpt(product, apiKey) {
       const content = payload?.choices?.[0]?.message?.content;
       if (!content) throw new Error("GPT SEO response contained no message content");
       const parsed = JSON.parse(String(content).replace(/^```json\s*/i, "").replace(/\s*```$/, ""));
-      const validation = validateGptSeoRecord(product, parsed);
+      const normalized = canonicalizeGptSeoRecord(parsed, product);
+      const validation = validateGptSeoRecord(product, normalized);
       return {
         handle: normalizeKey(product.handle),
         evidenceFingerprint: productFingerprint(product),
         accepted: validation.accepted,
         issues: validation.issues,
         matchedEvidenceTokens: validation.matchedEvidenceTokens,
-        record: normalizeGptSeoRecord(parsed, product),
+        record: normalized,
       };
     } catch (error) {
       lastError = error;
@@ -275,6 +293,20 @@ async function requestAppleScriptBatch(products, { batchIndex, batchCount }) {
   const promptText = `${appleScriptPrompt({ inputPath, responsePath, batchIndex, batchCount, productCount: products.length })}\n`;
   const existingRecords = await readResponseIfReady(responsePath, requestId, batchIndex);
   if (!existingRecords) {
+    // Never destroy a response from another catalog generation. Preserve it
+    // before replacing the queue slot so a guarded resume can recover it.
+    let existingResponsePresent = false;
+    try {
+      await access(responsePath);
+      existingResponsePresent = true;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (existingResponsePresent) {
+      const preservedPath = `${responsePath}.stale-${Date.now()}.json`;
+      await rename(responsePath, preservedPath);
+      process.stdout.write(`Preserved stale GPT batch ${batchIndex} response at ${preservedPath}.\n`);
+    }
     await rm(responsePath, { force: true });
     await writeJsonAtomically(inputPath, input);
     await writeFile(promptPath, promptText, "utf8");
@@ -303,14 +335,15 @@ async function requestAppleScriptBatch(products, { batchIndex, batchCount }) {
         record: normalizeGptSeoRecord({}, { handle }),
       };
     }
-    const validation = validateGptSeoRecord(product, entry.record || entry);
+    const normalized = canonicalizeGptSeoRecord(entry.record || entry, product);
+    const validation = validateGptSeoRecord(product, normalized);
     return {
       handle,
       evidenceFingerprint: productFingerprint(product),
       accepted: validation.accepted,
       issues: validation.issues,
       matchedEvidenceTokens: validation.matchedEvidenceTokens,
-      record: normalizeGptSeoRecord(entry.record || entry, product),
+      record: normalized,
     };
   });
 }

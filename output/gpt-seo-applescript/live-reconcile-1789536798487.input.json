@@ -1,0 +1,3575 @@
+{
+  "schemaVersion": 2,
+  "requestId": "5e495cf6dab92e2cc5ae449f06d72ec456b3722df5ae5ade6f5bf7828c78ded8",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 1,
+  "batchCount": 1,
+  "products": [
+    {
+      "handle": "artificial-ivy-vines-with-lights-for-room-wedding-decor",
+      "evidenceFingerprint": "533e13337be090ace60d0ca2014f18cbe040b71987d03b04ab95fbca11bd7878",
+      "evidence": {
+        "handle": "artificial-ivy-vines-with-lights-for-room-wedding-decor",
+        "title": "Wedding Decor Home Decor",
+        "productType": "HOME DECOR",
+        "vendor": "SALT",
+        "tags": [
+          "classification-fallback"
+        ],
+        "sourceDescription": " About Wedding Decor Home Decor   Wedding Decor Home Decor is a home decor identified by the product title and supplied listing details.   Key Details    Use: wedding, Wedding    Use   Care   Use it for the listed wedding, Wedding context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wedding Decor Home Decor?   A: Wedding Decor Home Decor is a home decor identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: wedding, Wedding ",
+        "verifiedTaxonomy": {
+          "department": "Home & Decor",
+          "category": "Lighting & Decor",
+          "subcategory": "Home Decor",
+          "productType": "Artificial Plant Decor",
+          "shopifyCategory": "Home & Garden > Decor"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "20M (10 Strings) / Watermelon Leaves",
+            "sku": "14:202422806#Watermelon Leaves;5:361386#20M (10 Strings)",
+            "selectedOptions": [
+              "Size: 20M (10 Strings)",
+              "Color: Watermelon Leaves"
+            ]
+          },
+          {
+            "title": "20M (10 Strings) / Pothos Leaves",
+            "sku": "14:202884863#Pothos Leaves;5:361386#20M (10 Strings)",
+            "selectedOptions": [
+              "Size: 20M (10 Strings)",
+              "Color: Pothos Leaves"
+            ]
+          },
+          {
+            "title": "20M (10 Strings) / Warm Light Strings",
+            "sku": "14:202419806#Warm Light Strings;5:361386#20M (10 Strings)",
+            "selectedOptions": [
+              "Size: 20M (10 Strings)",
+              "Color: Warm Light Strings"
+            ]
+          },
+          {
+            "title": "20M (10 Strings) / Creeper Leaves",
+            "sku": "14:202422807#Creeper Leaves;5:361386#20M (10 Strings)",
+            "selectedOptions": [
+              "Size: 20M (10 Strings)",
+              "Color: Creeper Leaves"
+            ]
+          },
+          {
+            "title": "4M (2 Strings) / Warm Light Strings",
+            "sku": "14:202419806#Warm Light Strings;5:200000323#4M (2 Strings)",
+            "selectedOptions": [
+              "Size: 4M (2 Strings)",
+              "Color: Warm Light Strings"
+            ]
+          },
+          {
+            "title": "4M (2 Strings) / Creeper Leaves",
+            "sku": "14:202422807#Creeper Leaves;5:200000323#4M (2 Strings)",
+            "selectedOptions": [
+              "Size: 4M (2 Strings)",
+              "Color: Creeper Leaves"
+            ]
+          },
+          {
+            "title": "10M (5 Strings) / Pothos Leaves",
+            "sku": "14:202884863#Pothos Leaves;5:361385#10M (5 Strings)",
+            "selectedOptions": [
+              "Size: 10M (5 Strings)",
+              "Color: Pothos Leaves"
+            ]
+          },
+          {
+            "title": "10M (5 Strings) / Begonia Leaves",
+            "sku": "14:202888825#Begonia Leaves;5:361385#10M (5 Strings)",
+            "selectedOptions": [
+              "Size: 10M (5 Strings)",
+              "Color: Begonia Leaves"
+            ]
+          },
+          {
+            "title": "10M (5 Strings) / Creeper Leaves",
+            "sku": "14:202422807#Creeper Leaves;5:361385#10M (5 Strings)",
+            "selectedOptions": [
+              "Size: 10M (5 Strings)",
+              "Color: Creeper Leaves"
+            ]
+          },
+          {
+            "title": "10M (5 Strings) / Watermelon Leaves",
+            "sku": "14:202422806#Watermelon Leaves;5:361385#10M (5 Strings)",
+            "selectedOptions": [
+              "Size: 10M (5 Strings)",
+              "Color: Watermelon Leaves"
+            ]
+          },
+          {
+            "title": "20M (10 Strings) / Begonia Leaves",
+            "sku": "14:202888825#Begonia Leaves;5:361386#20M (10 Strings)",
+            "selectedOptions": [
+              "Size: 20M (10 Strings)",
+              "Color: Begonia Leaves"
+            ]
+          },
+          {
+            "title": "10M (5 Strings) / Warm Light Strings",
+            "sku": "14:202419806#Warm Light Strings;5:361385#10M (5 Strings)",
+            "selectedOptions": [
+              "Size: 10M (5 Strings)",
+              "Color: Warm Light Strings"
+            ]
+          },
+          {
+            "title": "2M (1 String) / Pothos Leaves",
+            "sku": "14:202884863#Pothos Leaves;5:200000990#2M (1 String)",
+            "selectedOptions": [
+              "Size: 2M (1 String)",
+              "Color: Pothos Leaves"
+            ]
+          },
+          {
+            "title": "2M (1 String) / Begonia Leaves",
+            "sku": "14:202888825#Begonia Leaves;5:200000990#2M (1 String)",
+            "selectedOptions": [
+              "Size: 2M (1 String)",
+              "Color: Begonia Leaves"
+            ]
+          },
+          {
+            "title": "2M (1 String) / Creeper Leaves",
+            "sku": "14:202422807#Creeper Leaves;5:200000990#2M (1 String)",
+            "selectedOptions": [
+              "Size: 2M (1 String)",
+              "Color: Creeper Leaves"
+            ]
+          },
+          {
+            "title": "2M (1 String) / Watermelon Leaves",
+            "sku": "14:202422806#Watermelon Leaves;5:200000990#2M (1 String)",
+            "selectedOptions": [
+              "Size: 2M (1 String)",
+              "Color: Watermelon Leaves"
+            ]
+          },
+          {
+            "title": "4M (2 Strings) / Begonia Leaves",
+            "sku": "14:202888825#Begonia Leaves;5:200000323#4M (2 Strings)",
+            "selectedOptions": [
+              "Size: 4M (2 Strings)",
+              "Color: Begonia Leaves"
+            ]
+          },
+          {
+            "title": "4M (2 Strings) / Watermelon Leaves",
+            "sku": "14:202422806#Watermelon Leaves;5:200000323#4M (2 Strings)",
+            "selectedOptions": [
+              "Size: 4M (2 Strings)",
+              "Color: Watermelon Leaves"
+            ]
+          },
+          {
+            "title": "4M (2 Strings) / Pothos Leaves",
+            "sku": "14:202884863#Pothos Leaves;5:200000323#4M (2 Strings)",
+            "selectedOptions": [
+              "Size: 4M (2 Strings)",
+              "Color: Pothos Leaves"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "ultralight-carbon-fiber-t-handle-walking-stick-219g",
+      "evidenceFingerprint": "935c2a11c172a576eff121f88ac407e58baa28728ad501fc62cea04d1c902d0b",
+      "evidence": {
+        "handle": "ultralight-carbon-fiber-t-handle-walking-stick-219g",
+        "title": "Ultralight Carbon Fiber T Handle Walking",
+        "productType": "Fiber T",
+        "vendor": "SALT",
+        "tags": [
+          "best-sellers",
+          "health-wellness",
+          "mobility-aid",
+          "trending-finds"
+        ],
+        "sourceDescription": " About Ultralight Carbon Fiber T Handle Walking   Ultralight Carbon Fiber T Handle Walking is a fiber t identified by the product title and supplied listing details.   Key Details    Size or capacity: 219g    Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Ultralight Carbon Fiber T Handle Walking?   A: Ultralight Carbon Fiber T Handle Walking is a fiber t identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 219g ",
+        "verifiedTaxonomy": {
+          "department": "General Merchandise",
+          "category": "Unclassified - Review Required",
+          "subcategory": "Unclassified",
+          "productType": "fiber t",
+          "shopifyCategory": ""
+        },
+        "evidencedTypeAttributes": {
+          "measurements": [
+            "219g"
+          ]
+        },
+        "variants": [
+          {
+            "title": "black",
+            "sku": "14:193",
+            "selectedOptions": [
+              "Color: black"
+            ]
+          },
+          {
+            "title": "Blue",
+            "sku": "14:173",
+            "selectedOptions": [
+              "Color: Blue"
+            ]
+          },
+          {
+            "title": "Brown",
+            "sku": "14:365458",
+            "selectedOptions": [
+              "Color: Brown"
+            ]
+          },
+          {
+            "title": "Pure Black",
+            "sku": "14:200004889#Pure Black",
+            "selectedOptions": [
+              "Color: Pure Black"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "green-leaf-string-lights-artificial-ivy-vine-fairy-light-garland-wedding-party-decoration-christmas-home-room-wall-hanging-plant",
+      "evidenceFingerprint": "9c36083079a5756f7957d87da5b861cc3e60d59ba7ff7f9d36d1417452843548",
+      "evidence": {
+        "handle": "green-leaf-string-lights-artificial-ivy-vine-fairy-light-garland-wedding-party-decoration-christmas-home-room-wall-hanging-plant",
+        "title": "Vine Fairy Light Decorative String Lights",
+        "productType": "Decorative String Lights",
+        "vendor": "SALT",
+        "tags": [
+          "artificial-vine-light",
+          "creator-essentials",
+          "home-decor",
+          "lighting-decor",
+          "new-arrivals",
+          "seasonal-decor",
+          "smart-lighting",
+          "wall-lights"
+        ],
+        "sourceDescription": " About Vine Fairy Light Decorative String Lights   Vine Fairy Light Decorative String Lights is a decorative string lights identified by the product title and supplied listing details.   Key Details    Use: wedding, party    Use   Care   Use it for the listed wedding, party context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Vine Fairy Light Decorative String Lights?   A: Vine Fairy Light Decorative String Lights is a decorative string lights identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: wedding, party   SALT catalog listing reference Ref C7WQD1. ",
+        "verifiedTaxonomy": {
+          "department": "Home & Decor",
+          "category": "Lighting & Decor",
+          "subcategory": "Home Decor",
+          "productType": "Artificial Plant Decor",
+          "shopifyCategory": "Home & Garden > Decor"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "smart"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Ivy Vines / 10M 100LED",
+            "sku": "14:202888825#Ivy Vines;5:361385#10M 100LED",
+            "selectedOptions": [
+              "Color: Ivy Vines",
+              "Size: 10M 100LED"
+            ]
+          },
+          {
+            "title": "Ivy Vines / 5M 50LED",
+            "sku": "14:202888825#Ivy Vines;5:200000323#5M 50LED",
+            "selectedOptions": [
+              "Color: Ivy Vines",
+              "Size: 5M 50LED"
+            ]
+          },
+          {
+            "title": "Ivy Vines / 2M 20LED",
+            "sku": "14:202888825#Ivy Vines;5:200000990#2M 20LED",
+            "selectedOptions": [
+              "Color: Ivy Vines",
+              "Size: 2M 20LED"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "green-leaf-string-lights-5-10m-artificial-ivy-vine-fairy-light-wedding-party-decoration-christmas-home-decor-wall-plant",
+      "evidenceFingerprint": "28d89a0e1e22d3967eec384bed13a6680d5d3700b941506c0ad53dd9e761517f",
+      "evidence": {
+        "handle": "green-leaf-string-lights-5-10m-artificial-ivy-vine-fairy-light-wedding-party-decoration-christmas-home-decor-wall-plant",
+        "title": "Vine Fairy Light Decorative String Lights",
+        "productType": "Decorative String Lights",
+        "vendor": "SALT",
+        "tags": [
+          "artificial-vine-light",
+          "creator-essentials",
+          "home-decor",
+          "lighting-decor",
+          "new-arrivals",
+          "seasonal-decor",
+          "smart-lighting",
+          "wall-lights"
+        ],
+        "sourceDescription": " About Vine Fairy Light Decorative String Lights   Vine Fairy Light Decorative String Lights is a decorative string lights identified by the product title and supplied listing details.   Key Details    Use: wedding, party    Use   Care   Use it for the listed wedding, party context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Vine Fairy Light Decorative String Lights?   A: Vine Fairy Light Decorative String Lights is a decorative string lights identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: wedding, party   SALT catalog listing reference Ref I91KZH. ",
+        "verifiedTaxonomy": {
+          "department": "Home & Decor",
+          "category": "Lighting & Decor",
+          "subcategory": "Home Decor",
+          "productType": "Artificial Plant Decor",
+          "shopifyCategory": "Home & Garden > Decor"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "smart"
+          ],
+          "measurements": [
+            "10m"
+          ]
+        },
+        "variants": [
+          {
+            "title": "5-Twocolor lvy vine / 10M 100LEDs",
+            "sku": "136:200002573#5-Twocolor lvy vine;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 5-Twocolor lvy vine",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "1-Green leaf rattan / 2M 20LEDs",
+            "sku": "136:10#1-Green leaf rattan;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 1-Green leaf rattan",
+              "Wattage: 2M 20LEDs"
+            ]
+          },
+          {
+            "title": "5-Twocolor lvy vine / 2M 20LEDs",
+            "sku": "136:200002573#5-Twocolor lvy vine;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 5-Twocolor lvy vine",
+              "Wattage: 2M 20LEDs"
+            ]
+          },
+          {
+            "title": "5-Twocolor lvy vine / 5M 50LEDs",
+            "sku": "136:200002573#5-Twocolor lvy vine;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 5-Twocolor lvy vine",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "6-Sunflower / 2M 20LEDs",
+            "sku": "136:29#6-Sunflower;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 6-Sunflower",
+              "Wattage: 2M 20LEDs"
+            ]
+          },
+          {
+            "title": "6-Sunflower / 5M 50LEDs",
+            "sku": "136:29#6-Sunflower;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 6-Sunflower",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "1-Green leaf rattan / 5M 50LEDs",
+            "sku": "136:10#1-Green leaf rattan;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 1-Green leaf rattan",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "1-Green leaf rattan / 10M 100LEDs",
+            "sku": "136:10#1-Green leaf rattan;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 1-Green leaf rattan",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "6-Sunflower / 10M 100LEDs",
+            "sku": "136:29#6-Sunflower;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 6-Sunflower",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "4-Lvy Vines / 2M 20LEDs",
+            "sku": "136:173#4-Lvy Vines;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 4-Lvy Vines",
+              "Wattage: 2M 20LEDs"
+            ]
+          },
+          {
+            "title": "2-Watermelon leaf / 2M 20LEDs",
+            "sku": "136:200002572#2-Watermelon leaf;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 2-Watermelon leaf",
+              "Wattage: 2M 20LEDs"
+            ]
+          },
+          {
+            "title": "2-Watermelon leaf / 5M 50LEDs",
+            "sku": "136:200002572#2-Watermelon leaf;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 2-Watermelon leaf",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "4-Lvy Vines / 5M 50LEDs",
+            "sku": "136:173#4-Lvy Vines;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 4-Lvy Vines",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "4-Lvy Vines / 10M 100LEDs",
+            "sku": "136:173#4-Lvy Vines;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 4-Lvy Vines",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "3-Green Dill / 5M 50LEDs",
+            "sku": "136:175#3-Green Dill;249:200006306#5M 50LEDs",
+            "selectedOptions": [
+              "Emitting Color: 3-Green Dill",
+              "Wattage: 5M 50LEDs"
+            ]
+          },
+          {
+            "title": "3-Green Dill / 10M 100LEDs",
+            "sku": "136:175#3-Green Dill;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 3-Green Dill",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "2-Watermelon leaf / 10M 100LEDs",
+            "sku": "136:200002572#2-Watermelon leaf;249:200006307#10M 100LEDs",
+            "selectedOptions": [
+              "Emitting Color: 2-Watermelon leaf",
+              "Wattage: 10M 100LEDs"
+            ]
+          },
+          {
+            "title": "3-Green Dill / 2M 20LEDs",
+            "sku": "136:175#3-Green Dill;249:200006305#2M 20LEDs",
+            "selectedOptions": [
+              "Emitting Color: 3-Green Dill",
+              "Wattage: 2M 20LEDs"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "corsets-for-women-wide-belt-gothic-slimming-sheath-flat-belly-white-corset-elastic-high-waist-faux-leather-black-belts-korsett",
+      "evidenceFingerprint": "1cf1fe7faad4c38370c3cf8551e01dc2cd668cd7fe26533d587a68ebcc239a95",
+      "evidence": {
+        "handle": "corsets-for-women-wide-belt-gothic-slimming-sheath-flat-belly-white-corset-elastic-high-waist-faux-leather-black-belts-korsett",
+        "title": "Unisex High Waist Suit Set For Daily And Casual Outfit Styling",
+        "productType": "High Waist",
+        "vendor": "SALT",
+        "tags": [
+          "corset",
+          "general-merchandise",
+          "new-arrivals",
+          "women",
+          "women-fashion",
+          "womens-fashion"
+        ],
+        "sourceDescription": " About Unisex High Waist Suit Set For Daily And Casual Outfit Styling   Unisex High Waist Suit Set For Daily And Casual Outfit Styling is a high waist identified by the product title and supplied listing details.   Key Details     Material: leather   Audience: women, Unisex     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Unisex High Waist Suit Set For Daily And Casual Outfit Styling?   A: Unisex High Waist Suit Set For Daily And Casual Outfit Styling is a high waist identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: leather Audience: women, Unisex ",
+        "verifiedTaxonomy": {
+          "department": "Women",
+          "category": "Women's Fashion",
+          "subcategory": "Suits & Formalwear",
+          "productType": "Suit",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Suits"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "leather"
+          ]
+        },
+        "variants": [
+          {
+            "title": "WHITE / One Size",
+            "sku": "14:29;5:200003528",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Size: One Size"
+            ]
+          },
+          {
+            "title": "brown / One Size",
+            "sku": "14:173#brown;5:200003528",
+            "selectedOptions": [
+              "Color: brown",
+              "Size: One Size"
+            ]
+          },
+          {
+            "title": "Red / One Size",
+            "sku": "14:10;5:200003528",
+            "selectedOptions": [
+              "Color: Red",
+              "Size: One Size"
+            ]
+          },
+          {
+            "title": "black / One Size",
+            "sku": "14:193;5:200003528",
+            "selectedOptions": [
+              "Color: black",
+              "Size: One Size"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "womens-corset-body-shapewear-sexy-wide-leather-belt-cummerbunds-strap-belts-for-women-high-waist-slimming-corsets-and-bustiers",
+      "evidenceFingerprint": "4cb1a6904408f06706ef3ccf8f066207269e9a7d4fa71305f5ea40bdd01ef4ec",
+      "evidence": {
+        "handle": "womens-corset-body-shapewear-sexy-wide-leather-belt-cummerbunds-strap-belts-for-women-high-waist-slimming-corsets-and-bustiers",
+        "title": "Unisex High Waist Suit Set For Daily And Casual Outfit Styling Belt",
+        "productType": "Belt Cummerbunds Strap",
+        "vendor": "SALT",
+        "tags": [
+          "corset",
+          "general-merchandise",
+          "new-arrivals",
+          "women",
+          "women-fashion",
+          "womens-fashion"
+        ],
+        "sourceDescription": " About Unisex High Waist Suit Set For Daily And Casual Outfit Styling Belt   Unisex High Waist Suit Set For Daily And Casual Outfit Styling Belt is a belt cummerbunds strap identified by the product title and supplied listing details.   Key Details     Material: leather   Audience: women, Unisex     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Unisex High Waist Suit Set For Daily And Casual Outfit Styling Belt?   A: Unisex High Waist Suit Set For Daily And Casual Outfit Styling Belt is a belt cummerbunds strap identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: leather Audience: women, Unisex ",
+        "verifiedTaxonomy": {
+          "department": "Women",
+          "category": "Women's Accessories",
+          "subcategory": "Belts",
+          "productType": "Belt",
+          "shopifyCategory": "Apparel & Accessories > Clothing Accessories > Belts"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "leather"
+          ]
+        },
+        "variants": [
+          {
+            "title": "red / One Size",
+            "sku": "14:10#red;289:200003528",
+            "selectedOptions": [
+              "Color: red",
+              "Cup Size: One Size"
+            ]
+          },
+          {
+            "title": "brown / One Size",
+            "sku": "14:173#brown;289:200003528",
+            "selectedOptions": [
+              "Color: brown",
+              "Cup Size: One Size"
+            ]
+          },
+          {
+            "title": "black / One Size",
+            "sku": "14:193#black;289:200003528",
+            "selectedOptions": [
+              "Color: black",
+              "Cup Size: One Size"
+            ]
+          },
+          {
+            "title": "white / One Size",
+            "sku": "14:771#white;289:200003528",
+            "selectedOptions": [
+              "Color: white",
+              "Cup Size: One Size"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "2025-man-mechanical-watches-for-men-sport-analog-automatic-wristwatches-with-silicone-strap-stainless-steel-waterproof-reloj",
+      "evidenceFingerprint": "fa98f4b52e94c686af3580d5ae3a85bb94a5d21225fa76366486edd9e5de0c53",
+      "evidence": {
+        "handle": "2025-man-mechanical-watches-for-men-sport-analog-automatic-wristwatches-with-silicone-strap-stainless-steel-waterproof-reloj",
+        "title": "Wristwatches Silicone Strap",
+        "productType": "Wristwatches Silicone Strap",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "mechanical-watch",
+          "men",
+          "men-collection",
+          "new-arrivals",
+          "watches",
+          "waterproof"
+        ],
+        "sourceDescription": " About Wristwatches Silicone Strap   Wristwatches Silicone Strap is a wristwatches silicone strap identified by the product title and supplied listing details.   Key Details     Material: silicone, stainless steel, Silicone   Features: automatic, waterproof   Audience: men     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wristwatches Silicone Strap?   A: Wristwatches Silicone Strap is a wristwatches silicone strap identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: silicone, stainless steel, Silicone Features: automatic, waterproof Audience: men ",
+        "verifiedTaxonomy": {
+          "department": "Watches",
+          "category": "Watches",
+          "subcategory": "Fashion Watches",
+          "productType": "Watch",
+          "shopifyCategory": "Apparel & Accessories > Jewelry > Watches"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "silicone",
+            "stainless steel"
+          ],
+          "features": [
+            "automatic",
+            "waterproof"
+          ]
+        },
+        "variants": [
+          {
+            "title": "blue / China Mainland",
+            "sku": "14:173#blue;200007763:201336100",
+            "selectedOptions": [
+              "Color: blue",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "black / China Mainland",
+            "sku": "14:193#black;200007763:201336100",
+            "selectedOptions": [
+              "Color: black",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "green / China Mainland",
+            "sku": "14:175#green;200007763:201336100",
+            "selectedOptions": [
+              "Color: green",
+              "Ships From: China Mainland"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "6-color-small-gold-eyeliner-pen-double-ended-long-lasting-eyeliner-waterproof-and-non-marring-eyeliner-brush-style-eyeliner",
+      "evidenceFingerprint": "bb7a634664bbcbe18a3725057416275a23e310cecec6310b96a33b2618e8a7f8",
+      "evidence": {
+        "handle": "6-color-small-gold-eyeliner-pen-double-ended-long-lasting-eyeliner-waterproof-and-non-marring-eyeliner-brush-style-eyeliner",
+        "title": "Waterproof 6 Color Makeup Brush For Beauty Organization And Makeup",
+        "productType": "makeup product",
+        "vendor": "SALT",
+        "tags": [
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "eye-beauty-collection",
+          "eye-makeup",
+          "general",
+          "general-merchandise",
+          "new-arrivals",
+          "waterproof"
+        ],
+        "sourceDescription": " About Waterproof 6 Color Makeup Brush For Beauty Organization And Makeup   Waterproof 6 Color Makeup Brush For Beauty Organization And Makeup is a makeup product identified by the product title and supplied listing details.   Key Details     Features: waterproof, Waterproof   Use: Makeup, makeup     Use   Care   Use it for the listed Makeup, makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Waterproof 6 Color Makeup Brush For Beauty Organization And Makeup?   A: Waterproof 6 Color Makeup Brush For Beauty Organization And Makeup is a makeup product identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Features: waterproof, Waterproof Use: Makeup, makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Beauty Tools",
+          "productType": "Beauty Tool",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "waterproof"
+          ]
+        },
+        "variants": [
+          {
+            "title": "03 LIGHT BROWN",
+            "sku": "200001176:200000195#03 LIGHT BROWN",
+            "selectedOptions": [
+              "Color: 03 LIGHT BROWN"
+            ]
+          },
+          {
+            "title": "04 GREY",
+            "sku": "200001176:200006151#04 GREY",
+            "selectedOptions": [
+              "Color: 04 GREY"
+            ]
+          },
+          {
+            "title": "05 DARK COFFEE",
+            "sku": "200001176:200006154#05 DARK COFFEE",
+            "selectedOptions": [
+              "Color: 05 DARK COFFEE"
+            ]
+          },
+          {
+            "title": "06 DARK BROWN",
+            "sku": "200001176:200006157#06 DARK BROWN",
+            "selectedOptions": [
+              "Color: 06 DARK BROWN"
+            ]
+          },
+          {
+            "title": "01 BLACK",
+            "sku": "200001176:193#01 BLACK",
+            "selectedOptions": [
+              "Color: 01 BLACK"
+            ]
+          },
+          {
+            "title": "02 BROWN",
+            "sku": "200001176:365458#02 BROWN",
+            "selectedOptions": [
+              "Color: 02 BROWN"
+            ]
+          },
+          {
+            "title": "07 COMBO(01-06)",
+            "sku": "200001176:618#07 COMBO(01-06)",
+            "selectedOptions": [
+              "Color: 07 COMBO(01-06)"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "lip-plumper-serum-instant-volumizing-lip-plumping-oil-moisturizing-dark-lips-remedy-anti-wrinkle-increase-elasticity-lip-30ml",
+      "evidenceFingerprint": "cab33a8a1c077cce9f3a45016c4d0477557a466010aede85fe9e3440cba4561a",
+      "evidence": {
+        "handle": "lip-plumper-serum-instant-volumizing-lip-plumping-oil-moisturizing-dark-lips-remedy-anti-wrinkle-increase-elasticity-lip-30ml",
+        "title": "Volumizing Lip Plumping Oil Moisturizing Dark",
+        "productType": "Lip Gloss",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "general",
+          "general-merchandise",
+          "lip-plumper-oil",
+          "lips-and-care",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Volumizing Lip Plumping Oil Moisturizing Dark   Volumizing Lip Plumping Oil Moisturizing Dark is a lip product identified by the product title and supplied listing details.   Key Details     Size or capacity: 30ml   Use: makeup     Use   Care   Use it for the listed makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Volumizing Lip Plumping Oil Moisturizing Dark?   A: Volumizing Lip Plumping Oil Moisturizing Dark is a lip product identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 30ml Use: makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Skincare",
+          "productType": "Skincare",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Skin Care"
+        },
+        "evidencedTypeAttributes": {
+          "measurements": [
+            "30ml"
+          ]
+        },
+        "variants": [
+          {
+            "title": "2 PCS",
+            "sku": "14:365462#2 PCS",
+            "selectedOptions": [
+              "Color: 2 PCS"
+            ]
+          },
+          {
+            "title": "3 PCS",
+            "sku": "14:29#3 PCS",
+            "selectedOptions": [
+              "Color: 3 PCS"
+            ]
+          },
+          {
+            "title": "1 PCS",
+            "sku": "14:193#1 PCS",
+            "selectedOptions": [
+              "Color: 1 PCS"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "yoga-shorts-women-fitness-elastic-running-workout-short-leggings-for-ladies-gym-sport-shorts-fitness-sportwear",
+      "evidenceFingerprint": "13c99e9c6b0149b0c99081babe2d00b1fdd525d91878c11f0e9b967b7b9eba1d",
+      "evidence": {
+        "handle": "yoga-shorts-women-fitness-elastic-running-workout-short-leggings-for-ladies-gym-sport-shorts-fitness-sportwear",
+        "title": "Yoga Gym Yoga Band For Stretching And Fitness Routines Pants",
+        "productType": "pants",
+        "vendor": "SALT",
+        "tags": [
+          "fitness-equipment",
+          "general-merchandise",
+          "gym-shorts",
+          "new-arrivals",
+          "sports-fitness",
+          "women",
+          "women-fashion"
+        ],
+        "sourceDescription": " About Yoga Gym Yoga Band For Stretching And Fitness Routines Pants   Yoga Gym Yoga Band For Stretching And Fitness Routines Pants is a pants identified by the product title and supplied listing details.   Key Details     Audience: women   Use: fitness, running, gym, Gym, Fitness     Use   Care   Use it for the listed fitness, running, gym, Gym, Fitness context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Yoga Gym Yoga Band For Stretching And Fitness Routines Pants?   A: Yoga Gym Yoga Band For Stretching And Fitness Routines Pants is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: women Use: fitness, running, gym, Gym, Fitness ",
+        "verifiedTaxonomy": {
+          "department": "Women",
+          "category": "Women's Fashion",
+          "subcategory": "Trousers & Pants",
+          "productType": "Pants",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Pants"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "WHITE / L",
+            "sku": "14:29;5:361385",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "pink / M",
+            "sku": "14:1052#pink;5:361386",
+            "selectedOptions": [
+              "Color: pink",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "pink / S",
+            "sku": "14:1052#pink;5:100014064",
+            "selectedOptions": [
+              "Color: pink",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "light blue / L",
+            "sku": "14:173#light blue;5:361385",
+            "selectedOptions": [
+              "Color: light blue",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "light blue / M",
+            "sku": "14:173#light blue;5:361386",
+            "selectedOptions": [
+              "Color: light blue",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "black / M",
+            "sku": "14:193;5:361386",
+            "selectedOptions": [
+              "Color: black",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "black / L",
+            "sku": "14:193;5:361385",
+            "selectedOptions": [
+              "Color: black",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "WHITE / S",
+            "sku": "14:29;5:100014064",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "WHITE / M",
+            "sku": "14:29;5:361386",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "pink / L",
+            "sku": "14:1052#pink;5:361385",
+            "selectedOptions": [
+              "Color: pink",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "black / S",
+            "sku": "14:193;5:100014064",
+            "selectedOptions": [
+              "Color: black",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "light blue / S",
+            "sku": "14:173#light blue;5:100014064",
+            "selectedOptions": [
+              "Color: light blue",
+              "Size: S"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "new-womens-suit-3-pieces-lady-business-office-suits-slim-fit-women-tuxedo-casual-suits-for-women-blazer-vest-pants",
+      "evidenceFingerprint": "3eaf73c2fc90a3d2d064149f1912196ec39345cba6d0c689d25854702f34e919",
+      "evidence": {
+        "handle": "new-womens-suit-3-pieces-lady-business-office-suits-slim-fit-women-tuxedo-casual-suits-for-women-blazer-vest-pants",
+        "title": "Womens Suit Pieces Lady Business Office",
+        "productType": "Pants",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "new-arrivals",
+          "women",
+          "women-fashion",
+          "women-s-suit-set"
+        ],
+        "sourceDescription": " About Womens Suit Pieces Lady Business Office   Womens Suit Pieces Lady Business Office is a pants identified by the product title and supplied listing details.   Key Details     Size or capacity: 3 pieces   Audience: women   Use: office, Office     Use   Care   Use it for the listed office, Office context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Womens Suit Pieces Lady Business Office?   A: Womens Suit Pieces Lady Business Office is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 3 pieces Audience: women Use: office, Office ",
+        "verifiedTaxonomy": {
+          "department": "Women",
+          "category": "Women's Fashion",
+          "subcategory": "Trousers & Pants",
+          "productType": "Pants",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Pants"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Burgundy / S / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / M / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XXS / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XS / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XXXL / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XXXS / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XL / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XXL / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / M / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / L / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XS / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / S / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XXXS / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Brown / XXS / China Mainland",
+            "sku": "14:173#Brown;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Black / XXL / China Mainland",
+            "sku": "14:193#Black;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Black / XXXL / China Mainland",
+            "sku": "14:193#Black;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XXS / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XS / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XXXL / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XXXS / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XL / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XXL / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / M / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / L / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XS / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / S / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XXXS / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Coral / XXS / China Mainland",
+            "sku": "14:365458#Coral;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Coral",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XXL / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XXXL / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / L / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Burgundy / XL / China Mainland",
+            "sku": "14:1254#Burgundy;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Burgundy",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XXXL / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XXXS / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XL / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XXL / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / M / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / L / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XS / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / S / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XXXS / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Fuchsia / XXS / China Mainland",
+            "sku": "14:691#Fuchsia;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Fuchsia",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XXL / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XXXL / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / L / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / XL / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / S / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Dark Grey / M / China Mainland",
+            "sku": "14:350850#Dark Grey;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Dark Grey",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XL / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XXL / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / M / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / L / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XS / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / S / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XXXS / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XXS / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XXL / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XXXL / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / L / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XL / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / S / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / M / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XXS / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Green / XS / China Mainland",
+            "sku": "14:200004890#Green;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / M / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / L / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / XS / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / S / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / XXXS / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Navy Blue / XXS / China Mainland",
+            "sku": "14:200001438#Navy Blue;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XXL / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:4182",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XXXL / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / L / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:361385",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: L",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XL / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:100014065",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / S / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:100014064",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: S",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / M / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:361386",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: M",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XXS / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:4181",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XXS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XS / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:872",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XS",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Grey / XXXL / China Mainland",
+            "sku": "14:200004889#Grey;200007763:201336100;5:4183",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: XXXL",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Khaki / XXXS / China Mainland",
+            "sku": "14:200002130#Khaki;200007763:201336100;5:200006272",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: XXXS",
+              "Ships From: China Mainland"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "womens-elastic-and-elastic-woven-belt-in-one-outfit-casual-and-versatile-denim-belt-for-men-and-women",
+      "evidenceFingerprint": "46772c19b6e7a3e4f59f1235b42f03543df9320278acec77a4b6f3b8308744f6",
+      "evidence": {
+        "handle": "womens-elastic-and-elastic-woven-belt-in-one-outfit-casual-and-versatile-denim-belt-for-men-and-women",
+        "title": "Unisex Casual Pants For Daily And Casual Outfit Styling",
+        "productType": "pants",
+        "vendor": "SALT",
+        "tags": [
+          "belt",
+          "general-merchandise",
+          "men",
+          "men-accessories",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Unisex Casual Pants For Daily And Casual Outfit Styling   Unisex Casual Pants For Daily And Casual Outfit Styling is a pants identified by the product title and supplied listing details.   Key Details    Audience: men, women, Unisex    Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Unisex Casual Pants For Daily And Casual Outfit Styling?   A: Unisex Casual Pants For Daily And Casual Outfit Styling is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: men, women, Unisex ",
+        "verifiedTaxonomy": {
+          "department": "Men",
+          "category": "Men's Fashion",
+          "subcategory": "Trousers & Pants",
+          "productType": "Pants",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Pants"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Orange / 105CM",
+            "sku": "14:350852;200000858:201447585",
+            "selectedOptions": [
+              "Color: Orange",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "Beige / 105CM",
+            "sku": "14:771;200000858:201447585",
+            "selectedOptions": [
+              "Color: Beige",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "WHITE / 105CM",
+            "sku": "14:29;200000858:201447585",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "GRAY / 125cm",
+            "sku": "14:691;200000858:201447588",
+            "selectedOptions": [
+              "Color: GRAY",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "black / 105CM",
+            "sku": "14:193;200000858:201447585",
+            "selectedOptions": [
+              "Color: black",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "Red / 125cm",
+            "sku": "14:10;200000858:201447588",
+            "selectedOptions": [
+              "Color: Red",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Red / 105CM",
+            "sku": "14:10;200000858:201447585",
+            "selectedOptions": [
+              "Color: Red",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "Orange / 125cm",
+            "sku": "14:350852;200000858:201447588",
+            "selectedOptions": [
+              "Color: Orange",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "GRAY / 105CM",
+            "sku": "14:691;200000858:201447585",
+            "selectedOptions": [
+              "Color: GRAY",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "Pink / 125cm",
+            "sku": "14:1052;200000858:201447588",
+            "selectedOptions": [
+              "Color: Pink",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Coffee / 105CM",
+            "sku": "14:200005100;200000858:201447585",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "WHITE / 125cm",
+            "sku": "14:29;200000858:201447588",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Pink / 105CM",
+            "sku": "14:1052;200000858:201447585",
+            "selectedOptions": [
+              "Color: Pink",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "Navy Blue / 105CM",
+            "sku": "14:201800840;200000858:201447585",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "army green / 125cm",
+            "sku": "14:200004889;200000858:201447588",
+            "selectedOptions": [
+              "Color: army green",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "army green / 105CM",
+            "sku": "14:200004889;200000858:201447585",
+            "selectedOptions": [
+              "Color: army green",
+              "Belt Length: 105CM"
+            ]
+          },
+          {
+            "title": "black / 125cm",
+            "sku": "14:193;200000858:201447588",
+            "selectedOptions": [
+              "Color: black",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Navy Blue / 125cm",
+            "sku": "14:201800840;200000858:201447588",
+            "selectedOptions": [
+              "Color: Navy Blue",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Beige / 125cm",
+            "sku": "14:771;200000858:201447588",
+            "selectedOptions": [
+              "Color: Beige",
+              "Belt Length: 125cm"
+            ]
+          },
+          {
+            "title": "Coffee / 125cm",
+            "sku": "14:200005100;200000858:201447588",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Belt Length: 125cm"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "wooden-beard-comb-styling-comb-double-sided-with-fine-and-coarse-teeth-pocket-comb-portable-travel-comb",
+      "evidenceFingerprint": "864df73793ca3dee18f301ac8dbd4867836bc5380f78204ab98bb47a8cc8e959",
+      "evidence": {
+        "handle": "wooden-beard-comb-styling-comb-double-sided-with-fine-and-coarse-teeth-pocket-comb-portable-travel-comb",
+        "title": "Wooden Beard Comb Styling Double",
+        "productType": "Comb Styling",
+        "vendor": "SALT",
+        "tags": [
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "general",
+          "general-merchandise",
+          "hair-nourishment",
+          "hair-styling-tool",
+          "new-arrivals",
+          "portable"
+        ],
+        "sourceDescription": " About Wooden Beard Comb Styling Double   Wooden Beard Comb Styling Double is a comb identified by the product title and supplied listing details.   Key Details     Material: wooden, Wooden   Features: portable   Use: travel, makeup     Use   Care   Use it for the listed travel, makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wooden Beard Comb Styling Double?   A: Wooden Beard Comb Styling Double is a comb identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: wooden, Wooden Features: portable Use: travel, makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Hair Care",
+          "productType": "Tail Comb",
+          "shopifyCategory": "Health & Beauty > Personal Care > Hair Care"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "wooden"
+          ],
+          "features": [
+            "portable"
+          ]
+        },
+        "variants": [
+          {
+            "title": "JuM ShuangMHXS",
+            "sku": "14:350852#JuM ShuangMHXS",
+            "selectedOptions": [
+              "Color: JuM ShuangMHXS"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "lip-plumper-lip-volumizer-hydration-nourishing-plump-deep-moisture-smooth-non-sticky-fragrance-free-easy-to-apply-lip-care-1",
+      "evidenceFingerprint": "dda174eaafbf512495b94b0334352da607ed163aa75e258cc08a8ddfd9565336",
+      "evidence": {
+        "handle": "lip-plumper-lip-volumizer-hydration-nourishing-plump-deep-moisture-smooth-non-sticky-fragrance-free-easy-to-apply-lip-care-1",
+        "title": "Lip Plumper Volumizer Hydration Nourishing",
+        "productType": "perfume",
+        "vendor": "SALT",
+        "tags": [
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "general",
+          "general-merchandise",
+          "lip-plumper-oil",
+          "lips-and-care",
+          "luxury-fragrances",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Lip Plumper Volumizer Hydration Nourishing   Lip Plumper Volumizer Hydration Nourishing is a perfume identified by the product title and supplied listing details.   Key Details    Use: makeup    Use   Care   Use it for the listed makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Lip Plumper Volumizer Hydration Nourishing?   A: Lip Plumper Volumizer Hydration Nourishing is a perfume identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: makeup   SALT catalog listing reference Ref M5ID8D. ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Fragrance",
+          "productType": "Fragrance",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "1pc",
+            "sku": "200001176:193#1pc",
+            "selectedOptions": [
+              "Color: 1pc"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "30-household-skills-every-kid-should-know-practical-life-skills-book-for-kids-and-tweens-cleaning-laundry-kitchen-basics",
+      "evidenceFingerprint": "3827ce02dbc7f431b4a3d9be67384aee435dc61a816c2b6d6c8096953302c252",
+      "evidence": {
+        "handle": "30-household-skills-every-kid-should-know-practical-life-skills-book-for-kids-and-tweens-cleaning-laundry-kitchen-basics",
+        "title": "Tweens Cleaning Laundry Kitchen Basics",
+        "productType": "toy",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "kids",
+          "kids-life-skills-book",
+          "kids-toys-games",
+          "new-arrivals",
+          "office-school",
+          "office-school-supplies"
+        ],
+        "sourceDescription": " About Tweens Cleaning Laundry Kitchen Basics   Tweens Cleaning Laundry Kitchen Basics is a toy identified by the product title and supplied listing details.   Key Details     Audience: kid, kids   Use: kitchen, Kitchen, office, school     Use   Care   Use it for the listed kitchen, Kitchen, office, school context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Tweens Cleaning Laundry Kitchen Basics?   A: Tweens Cleaning Laundry Kitchen Basics is a toy identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: kid, kids Use: kitchen, Kitchen, office, school ",
+        "verifiedTaxonomy": {
+          "department": "Office & School Supplies",
+          "category": "Office & School Supplies",
+          "subcategory": "Books & Learning",
+          "productType": "Book",
+          "shopifyCategory": "Media > Books"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "1",
+            "sku": "100007787:150",
+            "selectedOptions": [
+              "Volume: 1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "wooden-montessorri-toys-five-in-one-multifunctional-baby-toys-exercise-childrens-hand-eye-coordination-logic-imagination-space",
+      "evidenceFingerprint": "be791869f8396741a458c2335b2e157eaa38dd730ae77e647aba9e6cf921eb86",
+      "evidence": {
+        "handle": "wooden-montessorri-toys-five-in-one-multifunctional-baby-toys-exercise-childrens-hand-eye-coordination-logic-imagination-space",
+        "title": "Wooden Montessorri Toys Five One Multifunctional",
+        "productType": "toy",
+        "vendor": "SALT",
+        "tags": [
+          "baby",
+          "educational-toy",
+          "kids-toys-games",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Wooden Montessorri Toys Five One Multifunctional   Wooden Montessorri Toys Five One Multifunctional is a toy identified by the product title and supplied listing details.   Key Details     Material: wooden, Wooden   Audience: baby, kids     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wooden Montessorri Toys Five One Multifunctional?   A: Wooden Montessorri Toys Five One Multifunctional is a toy identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: wooden, Wooden Audience: baby, kids ",
+        "verifiedTaxonomy": {
+          "department": "Sports & Fitness",
+          "category": "Fitness Equipment",
+          "subcategory": "Fitness & Training",
+          "productType": "Fitness Equipment",
+          "shopifyCategory": "Sporting Goods > Exercise & Fitness"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "wooden"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Wooden Castle / China Mainland",
+            "sku": "14:200006152#Wooden Castle;200007763:201336100",
+            "selectedOptions": [
+              "Color: Wooden Castle",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Wooden Rocket / China Mainland",
+            "sku": "14:200006151#Wooden Rocket;200007763:201336100",
+            "selectedOptions": [
+              "Color: Wooden Rocket",
+              "Ships From: China Mainland"
+            ]
+          },
+          {
+            "title": "Mushroom / China Mainland",
+            "sku": "14:200006153#Mushroom;200007763:201336100",
+            "selectedOptions": [
+              "Color: Mushroom",
+              "Ships From: China Mainland"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "kids-chore-chart-with-10-papers-chore-chart-plastic-checklist-board-diy-to-do-list-for-home-routine-planning-blank-paper",
+      "evidenceFingerprint": "c3253812ec1043c376e9b845d3616a284780554b0bcd07054494c78bd8f61c26",
+      "evidence": {
+        "handle": "kids-chore-chart-with-10-papers-chore-chart-plastic-checklist-board-diy-to-do-list-for-home-routine-planning-blank-paper",
+        "title": "Kids Chore Chart With 10 Papers Chore Chart Plastic Checklist Board",
+        "productType": "Chore Chart",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "kids",
+          "kids-accessories",
+          "kids-chore-chart",
+          "new-arrivals",
+          "office-school",
+          "office-school-supplies"
+        ],
+        "sourceDescription": " About Kids Chore Chart With 10 Papers Chore Chart Plastic Checklist Board   Kids Chore Chart With 10 Papers Chore Chart Plastic Checklist Board is a chore chart identified by the product title and supplied listing details.   Key Details     Material: plastic, Plastic   Audience: kids, Kids   Use: office, school     Use   Care   Use it for the listed office, school context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Kids Chore Chart With 10 Papers Chore Chart Plastic Checklist Board?   A: Kids Chore Chart With 10 Papers Chore Chart Plastic Checklist Board is a chore chart identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: plastic, Plastic Audience: kids, Kids Use: office, school ",
+        "verifiedTaxonomy": {
+          "department": "Office & School Supplies",
+          "category": "Office & School Supplies",
+          "subcategory": "Craft & DIY Supplies",
+          "productType": "Craft Supply",
+          "shopifyCategory": "Arts & Entertainment > Hobbies & Creative Arts"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "plastic"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Green",
+            "sku": "14:200211869#Green",
+            "selectedOptions": [
+              "Color: Green"
+            ]
+          },
+          {
+            "title": "Blue",
+            "sku": "14:100013777#Blue",
+            "selectedOptions": [
+              "Color: Blue"
+            ]
+          },
+          {
+            "title": "Pink",
+            "sku": "14:200005100#Pink",
+            "selectedOptions": [
+              "Color: Pink"
+            ]
+          },
+          {
+            "title": "White",
+            "sku": "14:200002984#White",
+            "selectedOptions": [
+              "Color: White"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "water-botlte-flat-bpa-free-sport-clear-plastic-crystal-drinks-kettle-notebook-milk-juice-transparent-drinkware-birthday-gift",
+      "evidenceFingerprint": "ff5482fb8957cd2a62398ae4bfee47a6ad5622daa276ba4952bd741a144f98c2",
+      "evidence": {
+        "handle": "water-botlte-flat-bpa-free-sport-clear-plastic-crystal-drinks-kettle-notebook-milk-juice-transparent-drinkware-birthday-gift",
+        "title": "Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle",
+        "productType": "bottle",
+        "vendor": "SALT",
+        "tags": [
+          "cookware",
+          "dining-essentials",
+          "gifts",
+          "home-decor",
+          "kitchen-cookware",
+          "new-arrivals",
+          "water-bottle"
+        ],
+        "sourceDescription": " About Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle   Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle is a bottle identified by the product title and supplied listing details.   Key Details     Material: plastic, Plastic   Use: kitchen     Use   Care   Use it for the listed kitchen context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle?   A: Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle is a bottle identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: plastic, Plastic Use: kitchen   SALT catalog listing reference Ref RJC5LU. ",
+        "verifiedTaxonomy": {
+          "department": "Office & School Supplies",
+          "category": "Office & School Supplies",
+          "subcategory": "Notebooks & Planners",
+          "productType": "Notebook & Planner",
+          "shopifyCategory": "Office Supplies > Notebooks & Notepads"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "plastic"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Blue / 301-400ml",
+            "sku": "14:173;26:200007962",
+            "selectedOptions": [
+              "Color: Blue",
+              "Capacity: 301-400ml"
+            ]
+          },
+          {
+            "title": "Pink / 301-400ml",
+            "sku": "14:1052;26:200007962",
+            "selectedOptions": [
+              "Color: Pink",
+              "Capacity: 301-400ml"
+            ]
+          },
+          {
+            "title": "green / 301-400ml",
+            "sku": "14:175;26:200007962",
+            "selectedOptions": [
+              "Color: green",
+              "Capacity: 301-400ml"
+            ]
+          },
+          {
+            "title": "WHITE / 301-400ml",
+            "sku": "14:29;26:200007962",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Capacity: 301-400ml"
+            ]
+          },
+          {
+            "title": "Light Grey / 301-400ml",
+            "sku": "14:200006151;26:200007962",
+            "selectedOptions": [
+              "Color: Light Grey",
+              "Capacity: 301-400ml"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "water-botlte-flat-bpa-free-sport-clear-plastic-crystal-drinks-kettle-notebook-milk-juice-transparent-drinkware-birthday-gift-1",
+      "evidenceFingerprint": "c9aecb01af308e34a086b5290fce769f6bc33b1dd4a926b656aa18dec220d87d",
+      "evidence": {
+        "handle": "water-botlte-flat-bpa-free-sport-clear-plastic-crystal-drinks-kettle-notebook-milk-juice-transparent-drinkware-birthday-gift-1",
+        "title": "Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle",
+        "productType": "bottle",
+        "vendor": "SALT",
+        "tags": [
+          "cookware",
+          "dining-essentials",
+          "gifts",
+          "home-decor",
+          "kitchen-cookware",
+          "new-arrivals",
+          "water-bottle"
+        ],
+        "sourceDescription": " About Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle   Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle is a bottle identified by the product title and supplied listing details.   Key Details     Material: plastic, Plastic   Use: kitchen     Use   Care   Use it for the listed kitchen context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle?   A: Water Botlte Flat Bpa Free Sport Clear Plastic Crystal Drinks Kettle is a bottle identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Material: plastic, Plastic Use: kitchen   SALT catalog listing reference Ref AXQ1OK. ",
+        "verifiedTaxonomy": {
+          "department": "Office & School Supplies",
+          "category": "Office & School Supplies",
+          "subcategory": "Notebooks & Planners",
+          "productType": "Notebook & Planner",
+          "shopifyCategory": "Office Supplies > Notebooks & Notepads"
+        },
+        "evidencedTypeAttributes": {
+          "materials": [
+            "plastic"
+          ]
+        },
+        "variants": [
+          {
+            "title": "green / 500ml",
+            "sku": "14:175;26:200008121#500ml",
+            "selectedOptions": [
+              "Color: green",
+              "Capacity: 500ml"
+            ]
+          },
+          {
+            "title": "green / 360ml",
+            "sku": "14:175;26:200007236#360ml",
+            "selectedOptions": [
+              "Color: green",
+              "Capacity: 360ml"
+            ]
+          },
+          {
+            "title": "WHITE / 500ml",
+            "sku": "14:29;26:200008121#500ml",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Capacity: 500ml"
+            ]
+          },
+          {
+            "title": "WHITE / 360ml",
+            "sku": "14:29;26:200007236#360ml",
+            "selectedOptions": [
+              "Color: WHITE",
+              "Capacity: 360ml"
+            ]
+          },
+          {
+            "title": "Light Grey / 500ml",
+            "sku": "14:200006151;26:200008121#500ml",
+            "selectedOptions": [
+              "Color: Light Grey",
+              "Capacity: 500ml"
+            ]
+          },
+          {
+            "title": "Light Grey / 360ml",
+            "sku": "14:200006151;26:200007236#360ml",
+            "selectedOptions": [
+              "Color: Light Grey",
+              "Capacity: 360ml"
+            ]
+          },
+          {
+            "title": "Pink / 500ml",
+            "sku": "14:1052;26:200008121#500ml",
+            "selectedOptions": [
+              "Color: Pink",
+              "Capacity: 500ml"
+            ]
+          },
+          {
+            "title": "Pink / 360ml",
+            "sku": "14:1052;26:200007236#360ml",
+            "selectedOptions": [
+              "Color: Pink",
+              "Capacity: 360ml"
+            ]
+          },
+          {
+            "title": "Blue / 500ml",
+            "sku": "14:173;26:200008121#500ml",
+            "selectedOptions": [
+              "Color: Blue",
+              "Capacity: 500ml"
+            ]
+          },
+          {
+            "title": "Blue / 360ml",
+            "sku": "14:173;26:200007236#360ml",
+            "selectedOptions": [
+              "Color: Blue",
+              "Capacity: 360ml"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "unisex-automatic-retractable-roller-skates-womens-high-top-sports-shoes-with-wheels-dual-purpose-skating-sports-shoes",
+      "evidenceFingerprint": "7a089c56ba8aebfa2969889b2a9adb95fad617510637f1389159395473ab71a2",
+      "evidence": {
+        "handle": "unisex-automatic-retractable-roller-skates-womens-high-top-sports-shoes-with-wheels-dual-purpose-skating-sports-shoes",
+        "title": "Unisex Automatic Retractable Roller Skates Women S High Top Sports",
+        "productType": "shirt",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "new-arrivals",
+          "shoes",
+          "women",
+          "women-fashion"
+        ],
+        "sourceDescription": " About Unisex Automatic Retractable Roller Skates Women S High Top Sports   Unisex Automatic Retractable Roller Skates Women S High Top Sports is a shirt identified by the product title and supplied listing details.   Key Details     Features: automatic, Automatic   Audience: unisex, Unisex, Women, women     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Unisex Automatic Retractable Roller Skates Women S High Top Sports?   A: Unisex Automatic Retractable Roller Skates Women S High Top Sports is a shirt identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Features: automatic, Automatic Audience: unisex, Unisex, Women, women ",
+        "verifiedTaxonomy": {
+          "department": "Women",
+          "category": "Women's Fashion",
+          "subcategory": "Shirts & Blouses",
+          "productType": "Women's Blouse",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Shirts & Tops"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "automatic"
+          ]
+        },
+        "variants": [
+          {
+            "title": "DJ231-Pink / EUR40",
+            "sku": "14:365458#DJ231-Pink;200000124:100013888#EUR40",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR40"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR39",
+            "sku": "14:365458#DJ231-Pink;200000124:200000364#EUR39",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR39"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR38",
+            "sku": "14:365458#DJ231-Pink;200000124:200000898#EUR38",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR38"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR37",
+            "sku": "14:365458#DJ231-Pink;200000124:100010482#EUR37",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR37"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR43",
+            "sku": "14:365458#DJ231-Pink;200000124:200000338#EUR43",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR43"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR42",
+            "sku": "14:365458#DJ231-Pink;200000124:200000337#EUR42",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR42"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR41",
+            "sku": "14:365458#DJ231-Pink;200000124:100010483#EUR41",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR41"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR43",
+            "sku": "14:350852#DJ231-White;200000124:200000338#EUR43",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR43"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR42",
+            "sku": "14:350852#DJ231-White;200000124:200000337#EUR42",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR42"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR41",
+            "sku": "14:350852#DJ231-White;200000124:100010483#EUR41",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR41"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR40",
+            "sku": "14:350852#DJ231-White;200000124:100013888#EUR40",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR40"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR36",
+            "sku": "14:365458#DJ231-Pink;200000124:200000334#EUR36",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR36"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR35",
+            "sku": "14:365458#DJ231-Pink;200000124:200000333#EUR35",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR35"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR34",
+            "sku": "14:365458#DJ231-Pink;200000124:153#EUR34",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR34"
+            ]
+          },
+          {
+            "title": "DJ231-Pink / EUR33",
+            "sku": "14:365458#DJ231-Pink;200000124:200000284#EUR33",
+            "selectedOptions": [
+              "Color: DJ231-Pink",
+              "Shoe Size: EUR33"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR35",
+            "sku": "14:350852#DJ231-White;200000124:200000333#EUR35",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR35"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR34",
+            "sku": "14:350852#DJ231-White;200000124:153#EUR34",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR34"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR33",
+            "sku": "14:350852#DJ231-White;200000124:200000284#EUR33",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR33"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR43",
+            "sku": "14:10#DJ231-Black;200000124:200000338#EUR43",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR43"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR39",
+            "sku": "14:350852#DJ231-White;200000124:200000364#EUR39",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR39"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR38",
+            "sku": "14:350852#DJ231-White;200000124:200000898#EUR38",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR38"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR37",
+            "sku": "14:350852#DJ231-White;200000124:100010482#EUR37",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR37"
+            ]
+          },
+          {
+            "title": "DJ231-White / EUR36",
+            "sku": "14:350852#DJ231-White;200000124:200000334#EUR36",
+            "selectedOptions": [
+              "Color: DJ231-White",
+              "Shoe Size: EUR36"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR38",
+            "sku": "14:10#DJ231-Black;200000124:200000898#EUR38",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR38"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR37",
+            "sku": "14:10#DJ231-Black;200000124:100010482#EUR37",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR37"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR36",
+            "sku": "14:10#DJ231-Black;200000124:200000334#EUR36",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR36"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR35",
+            "sku": "14:10#DJ231-Black;200000124:200000333#EUR35",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR35"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR42",
+            "sku": "14:10#DJ231-Black;200000124:200000337#EUR42",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR42"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR41",
+            "sku": "14:10#DJ231-Black;200000124:100010483#EUR41",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR41"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR40",
+            "sku": "14:10#DJ231-Black;200000124:100013888#EUR40",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR40"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR39",
+            "sku": "14:10#DJ231-Black;200000124:200000364#EUR39",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR39"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR34",
+            "sku": "14:10#DJ231-Black;200000124:153#EUR34",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR34"
+            ]
+          },
+          {
+            "title": "DJ231-Black / EUR33",
+            "sku": "14:10#DJ231-Black;200000124:200000284#EUR33",
+            "selectedOptions": [
+              "Color: DJ231-Black",
+              "Shoe Size: EUR33"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "waterproof-mattress-pad-cover-breathable-washable-bedspreads-healthy-anti-bacteria-anti-mite-fitted-double-bed-sheet-160x200",
+      "evidenceFingerprint": "c50871f1fdfcc0f8780f40e2ef8d89dedbab7918f34521f4d3028e66ce126bc1",
+      "evidence": {
+        "handle": "waterproof-mattress-pad-cover-breathable-washable-bedspreads-healthy-anti-bacteria-anti-mite-fitted-double-bed-sheet-160x200",
+        "title": "Waterproof Mattress Pad Cover Breathable Washable Bedspreads Healthy",
+        "productType": "Mattress Pad Cover",
+        "vendor": "SALT",
+        "tags": [
+          "bedsheets-handlooms-towels",
+          "fitted-mattress-cover",
+          "general-merchandise",
+          "home-decor",
+          "new-arrivals",
+          "waterproof"
+        ],
+        "sourceDescription": " About Waterproof Mattress Pad Cover Breathable Washable Bedspreads Healthy   Waterproof Mattress Pad Cover Breathable Washable Bedspreads Healthy is a mattress pad cover identified by the product title and supplied listing details.   Key Details    Features: waterproof, Waterproof    Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Waterproof Mattress Pad Cover Breathable Washable Bedspreads Healthy?   A: Waterproof Mattress Pad Cover Breathable Washable Bedspreads Healthy is a mattress pad cover identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Features: waterproof, Waterproof ",
+        "verifiedTaxonomy": {
+          "department": "Home & Decor",
+          "category": "Bedsheets, Handlooms & Towels",
+          "subcategory": "Bedding & Linens",
+          "productType": "Bedding & Linen",
+          "shopifyCategory": "Home & Garden > Linens & Bedding"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "waterproof"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Dousha / 120x200x25cm",
+            "sku": "14:10#Dousha;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 100x200x25cm",
+            "sku": "14:10#Dousha;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Naihuang / 160x200x25cm",
+            "sku": "14:366#Naihuang;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Naihuang",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 220x200x25cm",
+            "sku": "14:10#Dousha;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Naihuang / 140x200x25cm",
+            "sku": "14:366#Naihuang;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Naihuang",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Naihuang / 180x200x25cm",
+            "sku": "14:366#Naihuang;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Naihuang",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Naihuang / 100x200x25cm",
+            "sku": "14:366#Naihuang;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Naihuang",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Naihuang / 150x200x25cm",
+            "sku": "14:366#Naihuang;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Naihuang",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 100x200x25cm",
+            "sku": "14:200002984#Black;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 150x200x25cm",
+            "sku": "14:200002984#Black;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 220x200x25cm",
+            "sku": "14:200002984#Black;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 120x200x25cm",
+            "sku": "14:200002984#Black;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 180x200x25cm",
+            "sku": "14:10#Dousha;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 160x200x25cm",
+            "sku": "14:10#Dousha;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 150x200x25cm",
+            "sku": "14:10#Dousha;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Dousha / 140x200x25cm",
+            "sku": "14:10#Dousha;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Dousha",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 150x200x25cm",
+            "sku": "14:496#LakeGreen;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 140x200x25cm",
+            "sku": "14:496#LakeGreen;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 120x200x25cm",
+            "sku": "14:496#LakeGreen;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 100x200x25cm",
+            "sku": "14:496#LakeGreen;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 160x200x25cm",
+            "sku": "14:200002984#Black;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 220x200x25cm",
+            "sku": "14:496#LakeGreen;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 140x200x25cm",
+            "sku": "14:200002984#Black;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Black / 180x200x25cm",
+            "sku": "14:200002984#Black;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 140x200x25cm",
+            "sku": "14:200006151#Grey;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 180x200x25cm",
+            "sku": "14:200006151#Grey;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 100x200x25cm",
+            "sku": "14:200006151#Grey;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 150x200x25cm",
+            "sku": "14:200006151#Grey;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 220x200x25cm",
+            "sku": "14:200006151#Grey;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 120x200x25cm",
+            "sku": "14:200006151#Grey;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 180x200x25cm",
+            "sku": "14:496#LakeGreen;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "LakeGreen / 160x200x25cm",
+            "sku": "14:496#LakeGreen;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: LakeGreen",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 180x200x25cm",
+            "sku": "14:175#Skyblue;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 160x200x25cm",
+            "sku": "14:175#Skyblue;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 150x200x25cm",
+            "sku": "14:175#Skyblue;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 140x200x25cm",
+            "sku": "14:175#Skyblue;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 120x200x25cm",
+            "sku": "14:175#Skyblue;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 100x200x25cm",
+            "sku": "14:175#Skyblue;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Grey / 160x200x25cm",
+            "sku": "14:200006151#Grey;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Grey",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Skyblue / 220x200x25cm",
+            "sku": "14:175#Skyblue;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Skyblue",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 160x200x25cm",
+            "sku": "14:173#Navy;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 220x200x25cm",
+            "sku": "14:1063#Zhangqing;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 140x200x25cm",
+            "sku": "14:173#Navy;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 180x200x25cm",
+            "sku": "14:173#Navy;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 100x200x25cm",
+            "sku": "14:173#Navy;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 150x200x25cm",
+            "sku": "14:173#Navy;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 220x200x25cm",
+            "sku": "14:173#Navy;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Navy / 120x200x25cm",
+            "sku": "14:173#Navy;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Navy",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 220x200x25cm",
+            "sku": "14:193#Brown;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 120x200x25cm",
+            "sku": "14:193#Brown;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 180x200x25cm",
+            "sku": "14:1063#Zhangqing;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 160x200x25cm",
+            "sku": "14:1063#Zhangqing;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 150x200x25cm",
+            "sku": "14:1063#Zhangqing;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 140x200x25cm",
+            "sku": "14:1063#Zhangqing;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 120x200x25cm",
+            "sku": "14:1063#Zhangqing;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Zhangqing / 100x200x25cm",
+            "sku": "14:1063#Zhangqing;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Zhangqing",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 120x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 100x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 160x200x25cm",
+            "sku": "14:193#Brown;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 220x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 140x200x25cm",
+            "sku": "14:193#Brown;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 180x200x25cm",
+            "sku": "14:193#Brown;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 100x200x25cm",
+            "sku": "14:193#Brown;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Brown / 150x200x25cm",
+            "sku": "14:193#Brown;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Brown",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 100x200x25cm",
+            "sku": "14:200006153#Khaki;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 150x200x25cm",
+            "sku": "14:200006153#Khaki;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 220x200x25cm",
+            "sku": "14:200006153#Khaki;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 120x200x25cm",
+            "sku": "14:200006153#Khaki;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 180x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 180x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 160x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 150x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Lightgrey / 140x200x25cm",
+            "sku": "14:200006152#Lightgrey;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Lightgrey",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Yuse / 150x200x25cm",
+            "sku": "14:365016#Yuse;5:203126845#150x200x25cm",
+            "selectedOptions": [
+              "Color: Yuse",
+              "Size: 150x200x25cm"
+            ]
+          },
+          {
+            "title": "Yuse / 140x200x25cm",
+            "sku": "14:365016#Yuse;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Yuse",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Yuse / 120x200x25cm",
+            "sku": "14:365016#Yuse;5:201299020#120x200x25cm",
+            "selectedOptions": [
+              "Color: Yuse",
+              "Size: 120x200x25cm"
+            ]
+          },
+          {
+            "title": "Yuse / 100x200x25cm",
+            "sku": "14:365016#Yuse;5:201299019#100x200x25cm",
+            "selectedOptions": [
+              "Color: Yuse",
+              "Size: 100x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 160x200x25cm",
+            "sku": "14:200006153#Khaki;5:214318054#160x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 160x200x25cm"
+            ]
+          },
+          {
+            "title": "Yuse / 220x200x25cm",
+            "sku": "14:365016#Yuse;5:669962744#220x200x25cm",
+            "selectedOptions": [
+              "Color: Yuse",
+              "Size: 220x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 140x200x25cm",
+            "sku": "14:200006153#Khaki;5:201299022#140x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 140x200x25cm"
+            ]
+          },
+          {
+            "title": "Khaki / 180x200x25cm",
+            "sku": "14:200006153#Khaki;5:382310044#180x200x25cm",
+            "selectedOptions": [
+              "Color: Khaki",
+              "Size: 180x200x25cm"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "wireless-hdmi-usb-c-video-transmitter-and-receiver-extender-kit-type-c-hdmi-tv-display-stick-dongle-for-projector-tv-camera-pc",
+      "evidenceFingerprint": "4c974ab5950d53eb0d91636f07cf5b24f2f9061ea4778b45ad9f2f49d03dc40d",
+      "evidence": {
+        "handle": "wireless-hdmi-usb-c-video-transmitter-and-receiver-extender-kit-type-c-hdmi-tv-display-stick-dongle-for-projector-tv-camera-pc",
+        "title": "Wireless Hdmi USB C Video Transmitter And Receiver Extender Kit Type",
+        "productType": "Receiver Extender Kit",
+        "vendor": "SALT",
+        "tags": [
+          "computer-accessories",
+          "creator-essentials",
+          "electronic-accessories",
+          "new-arrivals",
+          "portable-gadgets",
+          "usb-c",
+          "wireless",
+          "wireless-hdmi-extender"
+        ],
+        "sourceDescription": " About Wireless Hdmi USB C Video Transmitter And Receiver Extender Kit Type   Wireless Hdmi USB C Video Transmitter And Receiver Extender Kit Type is a receiver extender kit identified by the product title and supplied listing details.   Key Details     Features: wireless, usb, Wireless, USB, portable   Compatibility: usb c video transmitte, type c hdmi tv display, USB C Video Transmitte, usb c wireless wireles, usb c     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wireless Hdmi USB C Video Transmitter And Receiver Extender Kit Type?   A: Wireless Hdmi USB C Video Transmitter And Receiver Extender Kit Type is a receiver extender kit identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Features: wireless, usb, Wireless, USB, portable Compatibility: usb c video transmitte, type c hdmi tv display, USB C Video Transmitte, usb c wireless wireles, usb c ",
+        "verifiedTaxonomy": {
+          "department": "Electronic Accessories",
+          "category": "Camera & Content Accessories",
+          "subcategory": "Camera Accessories",
+          "productType": "Camera Accessory",
+          "shopifyCategory": "Electronics > Camera & Optics > Camera Accessories"
+        },
+        "evidencedTypeAttributes": {
+          "features": [
+            "portable",
+            "wireless",
+            "usb"
+          ],
+          "compatibility": [
+            "usb c"
+          ]
+        },
+        "variants": [
+          {
+            "title": "S1725-50m",
+            "sku": "14:10#S1725-50m",
+            "selectedOptions": [
+              "Color: S1725-50m"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "handle": "women-summer-mini-skirts-high-waist-slim-fittness-hip-pencil-skirts-vintage-bodycon-skirt-sexy-clubwear-ladies-office-clothing",
+      "evidenceFingerprint": "000f256040bedaf50ae363639dd659e1eccb50c06759bf5396c60004c65e12d1",
+      "evidence": {
+        "handle": "women-summer-mini-skirts-high-waist-slim-fittness-hip-pencil-skirts-vintage-bodycon-skirt-sexy-clubwear-ladies-office-clothing",
+        "title": "Women Summer Mini Skirts High Waist Slim Fittness Hip Pencil Skirts",
+        "productType": "Fittness Hip Pencil",
+        "vendor": "SALT",
+        "tags": [
+          "general-merchandise",
+          "new-arrivals",
+          "skirt",
+          "women",
+          "women-fashion",
+          "womens-fashion"
+        ],
+        "sourceDescription": " About Women Summer Mini Skirts High Waist Slim Fittness Hip Pencil Skirts   Women Summer Mini Skirts High Waist Slim Fittness Hip Pencil Skirts is a fittness hip pencil identified by the product title and supplied listing details.   Key Details     Audience: women, Women   Use: office     Use   Care   Use it for the listed office context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Women Summer Mini Skirts High Waist Slim Fittness Hip Pencil Skirts?   A: Women Summer Mini Skirts High Waist Slim Fittness Hip Pencil Skirts is a fittness hip pencil identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: women, Women Use: office ",
+        "verifiedTaxonomy": {
+          "department": "Office & School Supplies",
+          "category": "Office & School Supplies",
+          "subcategory": "Writing Supplies",
+          "productType": "Writing Supply",
+          "shopifyCategory": "Office Supplies > Writing & Drawing Supplies"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Green / XXXL",
+            "sku": "14:175#Green;5:4183",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXXL"
+            ]
+          },
+          {
+            "title": "Claret / XXL",
+            "sku": "14:273312254#Claret;5:4182",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: XXL"
+            ]
+          },
+          {
+            "title": "Claret / XL",
+            "sku": "14:273312254#Claret;5:100014065",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: XL"
+            ]
+          },
+          {
+            "title": "Coffee / XS",
+            "sku": "14:933#Coffee;5:872",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: XS"
+            ]
+          },
+          {
+            "title": "Claret / XXXL",
+            "sku": "14:273312254#Claret;5:4183",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: XXXL"
+            ]
+          },
+          {
+            "title": "Coffee / M",
+            "sku": "14:933#Coffee;5:361386",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "Coffee / S",
+            "sku": "14:933#Coffee;5:100014064",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "Coffee / XL",
+            "sku": "14:933#Coffee;5:100014065",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: XL"
+            ]
+          },
+          {
+            "title": "Coffee / L",
+            "sku": "14:933#Coffee;5:361385",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "Coffee / XXXL",
+            "sku": "14:933#Coffee;5:4183",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: XXXL"
+            ]
+          },
+          {
+            "title": "Coffee / XXL",
+            "sku": "14:933#Coffee;5:4182",
+            "selectedOptions": [
+              "Color: Coffee",
+              "Size: XXL"
+            ]
+          },
+          {
+            "title": "Green / S",
+            "sku": "14:175#Green;5:100014064",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "Green / XS",
+            "sku": "14:175#Green;5:872",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XS"
+            ]
+          },
+          {
+            "title": "Green / L",
+            "sku": "14:175#Green;5:361385",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "Green / M",
+            "sku": "14:175#Green;5:361386",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "Green / XXL",
+            "sku": "14:175#Green;5:4182",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XXL"
+            ]
+          },
+          {
+            "title": "Green / XL",
+            "sku": "14:175#Green;5:100014065",
+            "selectedOptions": [
+              "Color: Green",
+              "Size: XL"
+            ]
+          },
+          {
+            "title": "Black / XS",
+            "sku": "14:193#Black;5:872",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XS"
+            ]
+          },
+          {
+            "title": "Black / M",
+            "sku": "14:193#Black;5:361386",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: M"
+            ]
+          },
+          {
+            "title": "Black / S",
+            "sku": "14:193#Black;5:100014064",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "Black / XL",
+            "sku": "14:193#Black;5:100014065",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XL"
+            ]
+          },
+          {
+            "title": "Black / L",
+            "sku": "14:193#Black;5:361385",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "Black / XXXL",
+            "sku": "14:193#Black;5:4183",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XXXL"
+            ]
+          },
+          {
+            "title": "Black / XXL",
+            "sku": "14:193#Black;5:4182",
+            "selectedOptions": [
+              "Color: Black",
+              "Size: XXL"
+            ]
+          },
+          {
+            "title": "Claret / S",
+            "sku": "14:273312254#Claret;5:100014064",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: S"
+            ]
+          },
+          {
+            "title": "Claret / XS",
+            "sku": "14:273312254#Claret;5:872",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: XS"
+            ]
+          },
+          {
+            "title": "Claret / L",
+            "sku": "14:273312254#Claret;5:361385",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: L"
+            ]
+          },
+          {
+            "title": "Claret / M",
+            "sku": "14:273312254#Claret;5:361386",
+            "selectedOptions": [
+              "Color: Claret",
+              "Size: M"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

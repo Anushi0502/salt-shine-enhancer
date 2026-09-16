@@ -4,6 +4,7 @@ import AppKit
 import SwiftUI
 
 final class ReleaseStore: ObservableObject {
+    @Published var seoMode = "gpt"
     @Published var seoScope = "all-products"
     @Published private(set) var status = "unknown"
     @Published private(set) var watcher = "unknown"
@@ -64,6 +65,16 @@ final class ReleaseStore: ObservableObject {
         let parts = stepIndex.split(separator: "/").compactMap { Double(String($0)) }
         guard parts.count == 2, parts[1] > 0 else { return 0 }
         return min(max(parts[0] / parts[1], 0), 1)
+    }
+
+    var resumeButtonTitle: String {
+        let normalized = status.lowercased()
+        guard ["failed", "interrupted", "paused", "waiting_for_network"].contains(normalized),
+              let first = stepIndex.split(separator: "/").first,
+              let step = Int(first), step > 0 else {
+            return "Resume checkpoint"
+        }
+        return "Resume from step \(step)"
     }
 
     func refresh() {
@@ -168,7 +179,7 @@ final class ReleaseStore: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let payload: [String: Any] = [
             "profile": "catalog",
-            "seoMode": "gpt",
+            "seoMode": seoMode,
             "seoScope": seoScope,
             "resume": resume,
         ]
@@ -185,7 +196,15 @@ final class ReleaseStore: ObservableObject {
                 } else if httpCode >= 400 {
                     self.message = apiError ?? "Start failed with HTTP \(httpCode)."
                 } else {
-                    self.message = "Supervisor started. Polling release and watcher output."
+                    let actualMode = (responseObject?["seoMode"] as? String ?? self.seoMode).uppercased()
+                    if resume, let persistedMode = responseObject?["seoMode"] as? String {
+                        self.seoMode = persistedMode.lowercased()
+                    }
+                    if resume, let step = responseObject?["resumeFromStep"] as? Int {
+                        self.message = "Resuming from step \(step) in \(actualMode) mode. Polling release and watcher output."
+                    } else {
+                        self.message = "Supervisor started. Polling release and watcher output."
+                    }
                     self.refresh()
                 }
             }
@@ -423,13 +442,23 @@ struct ReleaseControlView: View {
                                     .foregroundColor(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
 
+                                Picker("SEO mode", selection: $store.seoMode) {
+                                    Text("GPT SEO").tag("gpt")
+                                    Text("Normal SEO").tag("deterministic")
+                                }
+                                .pickerStyle(.menu)
+                                .disabled(store.processActive)
+
                                 Picker("SEO scope", selection: $store.seoScope) {
                                     Text("All active products").tag("all-products")
                                     Text("New products only").tag("new-products")
                                 }
                                 .pickerStyle(.menu)
+                                .disabled(store.processActive)
 
-                                Text("GPT SEO is enabled for this operator workflow. It processes 500 products per batch and protects GPT-written fields from overwrite.")
+                                Text(store.seoMode == "gpt"
+                                    ? "GPT SEO processes 500 products per batch and protects GPT-written fields from overwrite. Resume uses the saved checkpoint mode and scope."
+                                    : "Normal SEO uses deterministic catalog rules and never overwrites fields protected by a GPT SEO record.")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
 
@@ -438,7 +467,7 @@ struct ReleaseControlView: View {
                                         .buttonStyle(.borderedProminent)
                                         .keyboardShortcut("r", modifiers: [.command])
                                         .disabled(store.processActive)
-                                    Button("Resume checkpoint") { store.start(resume: true) }
+                                    Button(store.resumeButtonTitle) { store.start(resume: true) }
                                         .buttonStyle(.bordered)
                                         .disabled(store.processActive)
                                     Button("Stop release") { store.stop() }

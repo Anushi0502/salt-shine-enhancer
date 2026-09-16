@@ -3,6 +3,7 @@ import { ChevronRight, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import InnerBreadcrumbs from "@/components/storefront/InnerBreadcrumbs";
+import AnswerFirstBlock from "@/components/storefront/AnswerFirstBlock";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import Reveal from "@/components/storefront/Reveal";
 import ResourceGuideCard from "@/components/resources/ResourceGuideCard";
@@ -14,7 +15,11 @@ import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatt
 import { useEditorialPage, useProductByHandle } from "@/lib/shopify-data";
 import { useCollections } from "@/lib/collections-data";
 import { buildResourceRoute, SITE_RESOURCE_GUIDES, getCollectionByHandle } from "@/lib/site-navigation";
-import { buildFaqStructuredData } from "@/lib/structured-data";
+import {
+  buildEditorialBreadcrumbStructuredData,
+  buildFaqStructuredData,
+  buildWebPageStructuredData,
+} from "@/lib/structured-data";
 import type { ShopifyProduct } from "@/types/shopify";
 
 type ResourceAction = {
@@ -146,10 +151,20 @@ const ResourcesPage = () => {
     [collectionsData?.collections],
   );
 
-  const resourceStructuredData = useMemo(
-    () => [buildFaqStructuredData(page?.faqs, origin)].filter(Boolean),
-    [origin, page?.faqs],
-  );
+  const resourceStructuredData = useMemo(() => {
+    const breadcrumbs = page?.breadcrumbs?.length
+      ? page.breadcrumbs
+      : [
+          { label: "Home", to: "/" },
+          { label: page?.title || "Resource Hub" },
+        ];
+
+    return [
+      page ? buildWebPageStructuredData(page.title, page.summary, "/pages/resources", origin) : null,
+      buildEditorialBreadcrumbStructuredData(breadcrumbs, "/pages/resources", origin),
+      buildFaqStructuredData(page?.faqs, origin, "/pages/resources"),
+    ].filter(Boolean);
+  }, [origin, page]);
 
   const productsByHandle = useMemo(
     () =>
@@ -167,7 +182,7 @@ const ResourcesPage = () => {
     [page?.title, productsByHandle],
   );
   if (isLoading) {
-    return <LoadingState title="Loading Resource Hub" subtitle="Building the AEO/GEO resource hub." />;
+    return <LoadingState title="Loading Resource Hub" subtitle="Building the practical guide hub." />;
   }
 
   if (error || !page) {
@@ -283,7 +298,7 @@ const ResourcesPage = () => {
                 {page.accent?.title || "Built for people who need a clear next step"}
               </h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {page.accent?.body || "The Resource Hub gives shoppers and answer engines one calm place to start."}
+                {page.accent?.body || "The Resource Hub gives shoppers one calm place to start."}
               </p>
 
               {page.accent?.bullets?.length ? (
@@ -313,6 +328,8 @@ const ResourcesPage = () => {
           </aside>
         </Reveal>
       </div>
+
+      {page.answerBlock ? <AnswerFirstBlock block={page.answerBlock} className="mt-4" /> : null}
 
       <div className="salt-editorial-shell mt-4 rounded-[1.6rem] p-4 sm:p-5 lg:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -412,7 +429,7 @@ const ResourcesPage = () => {
       ) : null}
 
       {page.faqs?.length ? (
-        <section className="mt-4">
+        <section className="mt-4" data-faq-section="true">
           <div className="salt-section-shell rounded-[1.85rem] p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -421,7 +438,7 @@ const ResourcesPage = () => {
                   {page.faqsTitle || "Common questions"}
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                  {page.faqsDescription || "Short answers that help shoppers and answer engines move faster."}
+                  {page.faqsDescription || "Short answers that help shoppers move from a question to a confident choice."}
                 </p>
               </div>
               <div className="salt-editorial-meta inline-flex h-9 items-center rounded-full px-3 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
@@ -429,22 +446,30 @@ const ResourcesPage = () => {
               </div>
             </div>
 
-            <Accordion type="single" collapsible defaultValue="resource-faq-0" className="mt-4">
+            <Accordion
+              type="multiple"
+              defaultValue={page.faqs.map((_, index) => `resource-faq-${index}`)}
+              className="mt-4"
+            >
               {page.faqs.map((faq, index) => (
                 <AccordionItem
                   key={faq.question}
                   value={`resource-faq-${index}`}
                   className="mb-3 overflow-hidden rounded-[1.25rem] border border-border/65 border-b-0 bg-background/92 px-4 data-[state=open]:border-primary/20 data-[state=open]:shadow-[0_16px_28px_-24px_rgba(15,23,42,0.18)] last:mb-0"
                 >
-                  <AccordionTrigger className="py-4 text-left text-[0.98rem] font-semibold leading-6 text-foreground no-underline hover:no-underline [&>svg]:text-primary">
+                  <AccordionTrigger
+                    className="py-4 text-left text-[0.98rem] font-semibold leading-6 text-foreground no-underline hover:no-underline [&>svg]:text-primary"
+                  >
                     <span className="flex min-w-0 items-start gap-3">
                       <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/90 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-primary">
                         {String(index + 1).padStart(2, "0")}
                       </span>
-                      <span className="min-w-0">{faq.question}</span>
+                      <span data-faq-question="true" className="min-w-0">
+                        {faq.question}
+                      </span>
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-4 pl-9 text-sm leading-7 text-muted-foreground">
+                  <AccordionContent data-faq-answer="true" className="pb-4 pl-9 text-sm leading-7 text-muted-foreground">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

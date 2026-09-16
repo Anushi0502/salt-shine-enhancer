@@ -33,9 +33,11 @@ on run argv
   tell application "System Events"
     tell process "ChatGPT"
       set frontmost to true
+      -- Opening a local input file focuses the ChatGPT composer. Avoid a
+      -- coordinate click because split panes can place it on an artifact.
       keystroke "v" using {command down}
-      delay 1
-      keystroke return using {command down}
+      delay 2
+      keystroke return
     end tell
   end tell
 

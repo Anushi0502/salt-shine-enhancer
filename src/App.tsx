@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
 import AppErrorBoundary from "@/components/layout/AppErrorBoundary";
 import SiteShell from "@/components/layout/SiteShell";
 import DeferredAppIntegrations from "@/components/integrations/DeferredAppIntegrations";
@@ -10,6 +10,7 @@ import { CartProvider } from "@/lib/cart";
 import { isNativeApp } from "@/lib/mobile";
 import { ThemeProvider } from "@/lib/theme";
 import { WishlistProvider } from "@/lib/wishlist";
+import { buildResourceRoute } from "@/lib/site-navigation";
 
 let homePageModule: Promise<typeof import("@/pages/HomePage")> | null = null;
 const loadHomePage = () => (homePageModule ??= import("@/pages/HomePage"));
@@ -71,8 +72,20 @@ const StorefrontShopRoute = () => {
   const resourceHandle = searchParams.get("handle") || "";
 
   if (resourceMode === "hub") {
-    return <ResourcesPage />;
+    return <Navigate to="/pages/resources" replace />;
   }
+
+  if (resourceMode === "guide" && resourceHandle) {
+    return <Navigate to={buildResourceRoute(resourceHandle)} replace />;
+  }
+
+  return <ShopPage />;
+};
+
+const StorefrontResourceRoute = () => {
+  const [searchParams] = useSearchParams();
+  const resourceMode = searchParams.get("resource");
+  const resourceHandle = searchParams.get("handle") || "";
 
   if (resourceMode === "guide" && resourceHandle) {
     return (
@@ -86,7 +99,14 @@ const StorefrontShopRoute = () => {
     );
   }
 
-  return <ShopPage />;
+  return <ResourcesPage />;
+};
+
+const ResourceRouteAlias = () => {
+  const params = useParams<{ category?: string; handle?: string }>();
+  const resourceHandle = [params.category, params.handle].filter(Boolean).join("/");
+
+  return <Navigate to={resourceHandle ? buildResourceRoute(resourceHandle) : "/pages/resources"} replace />;
 };
 
 const StorefrontHomeRoute = () => {
@@ -138,8 +158,8 @@ const AppShell = () => (
                 <Route path="/pages/mission-vision" element={<MissionVisionPage />} />
                 <Route path="/affiliate-program" element={<AffiliateProgramPage />} />
                 <Route path="/pages/affiliate-program" element={<AffiliateProgramPage />} />
-                <Route path="/resources" element={<ResourcesPage />} />
-                <Route path="/pages/resources" element={<ResourcesPage />} />
+                <Route path="/resources" element={<Navigate to="/pages/resources" replace />} />
+                <Route path="/pages/resources" element={<StorefrontResourceRoute />} />
                 <Route
                   path="/pages/interactive-stem-assembly-activities-for-kids"
                   element={
@@ -241,40 +261,16 @@ const AppShell = () => (
                 <Route path="/apps/finance" element={<FinancePage />} />
                 <Route
                   path="/resources/:handle"
-                  element={
-                    <RouteEditorialPage
-                      resolveHandle={(params) => params.handle || ""}
-                      loadingTitle="Loading resource"
-                      loadingSubtitle="Building the curated resource page."
-                      errorTitle="Resource unavailable"
-                      errorSubtitle="Please retry to refresh the resource page."
-                      />
-                    }
+                  element={<ResourceRouteAlias />}
                   />
                 <Route path="/faq" element={<FaqPage />} />
                 <Route
                   path="/resources/:category/:handle"
-                  element={
-                    <RouteEditorialPage
-                      resolveHandle={(params) => `${params.category || ""}/${params.handle || ""}`}
-                      loadingTitle="Loading resource"
-                      loadingSubtitle="Building the curated resource page."
-                      errorTitle="Resource unavailable"
-                      errorSubtitle="Please retry to refresh the resource page."
-                    />
-                  }
+                  element={<ResourceRouteAlias />}
                 />
                 <Route
                   path="/pages/resources/:category/:handle"
-                  element={
-                    <RouteEditorialPage
-                      resolveHandle={(params) => `${params.category || ""}/${params.handle || ""}`}
-                      loadingTitle="Loading resource"
-                      loadingSubtitle="Building the curated resource page."
-                      errorTitle="Resource unavailable"
-                      errorSubtitle="Please retry to refresh the resource page."
-                    />
-                  }
+                  element={<ResourceRouteAlias />}
                 />
                 <Route path="/pages/faq" element={<FaqPage />} />
                 <Route path="/wholesale-inquiries" element={<WholesaleInquiriesPage />} />

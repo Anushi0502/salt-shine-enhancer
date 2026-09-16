@@ -7,6 +7,7 @@ const rootDir = process.cwd();
 const origin = (process.env.SALT_PUBLIC_SITEMAP_ORIGIN || "https://www.saltonlinestore.com").replace(/\/+$/, "");
 const dataDir = resolve(rootDir, "public", "data");
 const outputPath = resolve(rootDir, "public", "sitemap.xml");
+const resourceSitemapOutputPath = resolve(rootDir, "public", "salt-resource-sitemap.xml");
 
 function escapeXml(value) {
   return String(value || "")
@@ -57,6 +58,46 @@ const [productsPayload, collectionsPayload, blogPayload] = await Promise.all([
   readJson("blog-posts.json"),
 ]);
 
+// Keep the answer-first resource routes discoverable on Shopify's server-200
+// native page path. The React app uses the query parameters to select the
+// answer page; `/shop` query/filter URLs remain noindex utility views.
+const resourceHubRoutes = [
+  "senior-living-guides",
+  "senior-living-guides/best-gifts-for-seniors",
+  "senior-living-guides/home-safety-tips",
+  "senior-living-guides/caregiver-resources",
+  "home-living",
+  "home-living/how-to-stay-organized-at-home",
+  "home-living/small-space-organization-tips",
+  "home-living/decluttering-your-home",
+  "home-living/creating-a-comfortable-living-space",
+  "lifestyle-wellness",
+  "lifestyle-wellness/simple-habits-for-a-less-stressful-life",
+  "lifestyle-wellness/creating-better-daily-routines",
+  "lifestyle-wellness/work-life-balance-tips",
+  "lifestyle-wellness/self-care-at-home",
+  "gift-guides",
+  "gift-guides/best-gifts-for-mom",
+  "gift-guides/best-gifts-for-dad",
+  "gift-guides/best-gifts-for-grandparents",
+  "gift-guides/housewarming-gift-ideas",
+  "gift-guides/holiday-gift-guides",
+  "home-safety-organization",
+  "home-safety-organization/home-safety-tips-for-every-age",
+  "home-safety-organization/organizing-important-documents",
+  "home-safety-organization/family-emergency-preparedness",
+  "home-safety-organization/keeping-your-home-clutter-free",
+  "family-legacy",
+  "family-legacy/preserving-family-memories",
+  "family-legacy/why-every-family-should-have-important-information-organized",
+  "family-legacy/creating-a-family-legacy",
+  "family-legacy/planning-for-the-future",
+  "pet-home-life",
+  "pet-home-life/organizing-pet-supplies",
+  "pet-home-life/making-your-home-pet-friendly",
+  "pet-home-life/travel-tips-for-pet-owners",
+];
+
 const productRecords = Array.isArray(productsPayload?.products)
   ? productsPayload.products
   : (
@@ -98,6 +139,13 @@ const addUrl = (path, options = {}) => {
   ["/pages/terms-conditions", "weekly", "0.5"],
 ].forEach(([path, changefreq, priority]) => addUrl(path, { changefreq, priority }));
 
+for (const route of resourceHubRoutes) {
+  addUrl(`/pages/resources?resource=guide&handle=${encodeURIComponent(route)}`, {
+    changefreq: "monthly",
+    priority: route.includes("/") ? "0.6" : "0.7",
+  });
+}
+
 for (const collection of Array.isArray(collectionsPayload?.collections) ? collectionsPayload.collections : []) {
   const handle = String(collection?.handle || "").trim();
   if (!handle) continue;
@@ -128,7 +176,7 @@ for (const post of Array.isArray(blogPayload?.posts) ? blogPayload.posts : []) {
   });
 }
 
-const body = Array.from(urls.entries())
+const renderSitemap = (entries) => entries
   .map(([path, entry]) => {
     const lastmod = entry.lastmod ? `\n    <lastmod>${escapeXml(entry.lastmod)}</lastmod>` : "";
     return `  <url>\n    <loc>${escapeXml(`${origin}${path}`)}</loc>${lastmod}\n    <changefreq>${escapeXml(entry.changefreq || "weekly")}</changefreq>\n    <priority>${escapeXml(entry.priority || "0.5")}</priority>\n  </url>`;
@@ -137,8 +185,19 @@ const body = Array.from(urls.entries())
 
 await writeFile(
   outputPath,
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${renderSitemap(Array.from(urls.entries()))}\n</urlset>\n`,
   "utf8",
 );
 
-process.stdout.write(`Generated ${urls.size} sitemap URLs at ${outputPath}\n`);
+const resourceSitemapEntries = resourceHubRoutes.map((route) => {
+  const path = `/pages/resources?resource=guide&handle=${encodeURIComponent(route)}`;
+  return [path, urls.get(path) || { changefreq: "monthly", priority: route.includes("/") ? "0.6" : "0.7" }];
+});
+
+await writeFile(
+  resourceSitemapOutputPath,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${renderSitemap(resourceSitemapEntries)}\n</urlset>\n`,
+  "utf8",
+);
+
+process.stdout.write(`Generated ${urls.size} sitemap URLs at ${outputPath} and ${resourceSitemapEntries.length} resource URLs at ${resourceSitemapOutputPath}\n`);

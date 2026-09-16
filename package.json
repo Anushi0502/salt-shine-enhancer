@@ -107,6 +107,7 @@
     "shopify:product-anomalies:repair:apply": "node scripts/repair-shopify-product-anomalies.mjs --apply",
     "shopify:product-anomalies:repair:verify": "node scripts/repair-shopify-product-anomalies.mjs --verify",
     "catalog:seo:gpt:prepare": "node scripts/prepare-gpt-seo-enrichment.mjs",
+    "catalog:seo:gpt:reconcile-live": "node scripts/reconcile-gpt-seo-live-drift.mjs",
     "shopify:collections:repair:validate": "node scripts/validate-collection-repair-rules.mjs",
     "shopify:catalog-integrity:review:dry-run": "SALT_CATALOG_VISION_SUPERVISED=1 SALT_REQUIRE_KNOWLEDGE_MODEL=1 SALT_KNOWLEDGE_ACCELERATOR=auto node scripts/shopify-catalog-integrity.mjs --dry-run --review-only --supervised-vision --batch-size 50",
     "shopify:collections:dry-run": "node scripts/shopify-catalog-collections-apply.mjs --dry-run",

@@ -20,6 +20,16 @@ export type EditorialFaq = {
   answer: string;
 };
 
+export type EditorialAnswerBlock = {
+  question: string;
+  answer: string;
+  usefulFor: string;
+  nextStep: string;
+  takeaways?: string[];
+  queryPrompts?: string[];
+  decisionSteps?: EditorialStep[];
+};
+
 export type EditorialAction = {
   label: string;
   to?: string;
@@ -40,6 +50,7 @@ export type EditorialPageContent = {
   summary: string;
   seoTitle?: string;
   metaDescription?: string;
+  answerBlock?: EditorialAnswerBlock;
   breadcrumbs?: Array<{ label: string; to?: string }>;
   stats: EditorialStat[];
   accent: {
@@ -127,7 +138,7 @@ function buildCollectionPageContent(collectionHandle: string): EditorialPageCont
         to: buildSearchQueryUrl(collection.searchQuery),
         primary: true,
       },
-      { label: "Resource Hub", to: "/shop?resource=hub" },
+      { label: "Resource Hub", to: "/pages/resources" },
       { label: "All collections", to: "/collections" },
     ],
   };
@@ -229,7 +240,7 @@ function buildCollectionsIndexPageContent(): EditorialPageContent {
       collection.subcollections.slice(0, 2).map((subcollection) => `${collection.title}: ${subcollection.title}`),
     ),
     actions: [
-      { label: "Resource Hub", to: "/shop?resource=hub", primary: true },
+      { label: "Resource Hub", to: "/pages/resources", primary: true },
       { label: "Search the catalog", to: "/shop" },
       { label: "Contact support", to: "/pages/contact-us" },
     ],
@@ -237,6 +248,261 @@ function buildCollectionsIndexPageContent(): EditorialPageContent {
 }
 
 type ResourcePageKind = "hub" | "category" | "topic";
+
+function lowerFirst(value: string): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function buildResourceTopicQuestion(title: string): string {
+  const cleanTitle = String(title || "").trim().replace(/[?!.]+$/g, "");
+  const lowerTitle = lowerFirst(cleanTitle);
+  const normalized = lowerTitle.toLowerCase();
+  const explicitQuestions: Record<string, string> = {
+    "simple habits for a less stressful life": "What simple habits can make life less stressful?",
+    "family emergency preparedness": "How can I prepare my family for emergencies?",
+    "caregiver resources": "What caregiver resources can help with daily routines?",
+    "why every family should have important information organized":
+      "Why should every family keep important information organized?",
+  };
+
+  if (explicitQuestions[normalized]) {
+    return explicitQuestions[normalized];
+  }
+
+  if (/^best gifts\b/i.test(cleanTitle)) {
+    return `What are the ${lowerTitle}?`;
+  }
+  if (/^how to\s+/i.test(cleanTitle)) {
+    return `How can I ${lowerTitle.replace(/^how to\s+/i, "")}?`;
+  }
+  const actionTitle = lowerTitle.replace(
+    /^(creating|making|preserving|planning|organizing|decluttering|keeping)\s+/i,
+    (prefix) =>
+      ({
+        creating: "create ",
+        making: "make ",
+        preserving: "preserve ",
+        planning: "plan ",
+        organizing: "organize ",
+        decluttering: "declutter ",
+        keeping: "keep ",
+      })[prefix.trim().toLowerCase()] || prefix,
+  );
+  if (actionTitle !== lowerTitle) {
+    return /^(organize|declutter|keep)\b/i.test(actionTitle)
+      ? `How do I ${actionTitle}?`
+      : `How can I ${actionTitle}?`;
+  }
+  if (/\btips\b/i.test(cleanTitle)) {
+    return `What are practical ${lowerTitle}?`;
+  }
+  if (/^self-care\b/i.test(cleanTitle)) {
+    return `What are practical ${lowerTitle} ideas?`;
+  }
+  if (/^why\b/i.test(cleanTitle)) {
+    return `${cleanTitle}?`;
+  }
+
+  return `What should I know about ${lowerTitle}?`;
+}
+
+function buildResourceQueryPrompts(
+  kind: ResourcePageKind,
+  title: string,
+  collectionTitle = "",
+): string[] {
+  if (kind === "hub") {
+    return [
+      "What is the SALT Resource Hub?",
+      "Which SALT guide should I open first?",
+      "Where can I find practical product ideas for a specific need?",
+    ];
+  }
+
+  const lowerTitle = lowerFirst(title);
+  if (kind === "category") {
+    return [
+      `What does ${lowerTitle} cover?`,
+      `What can I find in ${lowerTitle}?`,
+      collectionTitle
+        ? `Which SALT collection is related to ${lowerTitle}?`
+        : `Which SALT products relate to ${lowerTitle}?`,
+    ];
+  }
+
+  return [
+    buildResourceTopicQuestion(title),
+    "What should I compare before choosing a product?",
+    collectionTitle
+      ? "Which SALT collection is the next place to compare?"
+      : `Where can I find practical products related to ${lowerTitle}?`,
+  ];
+}
+
+function buildResourceDecisionSteps(kind: ResourcePageKind, collectionTitle = ""): EditorialStep[] {
+  if (kind === "hub") {
+    return [
+      { step: "01", title: "Name the need", detail: "Start with the task, occasion, or routine you want to make easier." },
+      { step: "02", title: "Narrow the question", detail: "Open the guide, then choose the topic that sounds closest to your situation." },
+      { step: "03", title: "Check the live listing", detail: "Compare the linked product details, options, delivery terms, and returns before ordering." },
+    ];
+  }
+
+  if (kind === "category") {
+    return [
+      { step: "01", title: "Choose a topic", detail: "Use the topic cards to move from a broad need to a more specific question." },
+      {
+        step: "02",
+        title: "Compare the collection",
+        detail: collectionTitle
+          ? `Open ${collectionTitle} when you are ready to compare the current product range.`
+          : "Open the linked collection when you are ready to compare the current product range.",
+      },
+      { step: "03", title: "Verify before buying", detail: "Review the live listing for price, availability, options, delivery, and returns." },
+    ];
+  }
+
+  return [
+    { step: "01", title: "Match the use case", detail: "Make sure the topic fits the person, room, occasion, or routine you have in mind." },
+    {
+      step: "02",
+      title: "Compare real options",
+      detail: collectionTitle
+        ? `Use ${collectionTitle} and the featured product links to compare what is currently available.`
+        : "Use the featured product links to compare what is currently available.",
+    },
+    { step: "03", title: "Confirm the details", detail: "Check the selected option, product information, delivery terms, and returns before ordering." },
+  ];
+}
+
+function buildResourceTakeaways(
+  kind: ResourcePageKind,
+  title: string,
+  summary: string,
+  collectionTitle = "",
+): string[] {
+  if (kind === "hub") {
+    return [
+      "Start with the task, occasion, or routine—not a product name.",
+      "Use a guide for broad context and a topic page for a focused question.",
+      "Confirm current price, options, delivery, and returns on the linked live listing.",
+    ];
+  }
+
+  if (kind === "category") {
+    return [
+      summary,
+      "Choose the topic that matches the reader's situation before browsing the full catalog.",
+      collectionTitle
+        ? `Use the ${collectionTitle} collection to compare current product listings.`
+        : "Use the linked product picks to compare current listings.",
+    ];
+  }
+
+  return [
+    summary,
+    `Use this page as a focused starting point for ${title.toLowerCase()}, then follow the related routes.`,
+    collectionTitle
+      ? `Use the ${collectionTitle} collection to compare current products.`
+      : "Review the live product details before choosing an item.",
+  ];
+}
+
+function buildResourceDirectAnswer(
+  kind: ResourcePageKind,
+  title: string,
+  summary: string,
+  collectionTitle = "",
+): string {
+  if (kind === "hub") {
+    return `${summary} Start with the guide that matches the task or occasion, then open a focused topic page before moving to the related collection or product.`;
+  }
+
+  if (kind === "category") {
+    return `${summary} Use the topic pages to narrow the question, then compare the related ${collectionTitle || "live"} product listings when you are ready to shop.`;
+  }
+
+  return `${summary} Use the answer and topic links here as a focused starting point, then confirm the current product details, availability, delivery terms, and returns on the linked listing.`;
+}
+
+function buildResourceAnswerBlock(
+  kind: ResourcePageKind,
+  title: string,
+  summary: string,
+  collectionTitle = "",
+): EditorialAnswerBlock {
+  if (kind === "hub") {
+    return {
+      question: "Where should I start when I need a practical product answer?",
+      answer: buildResourceDirectAnswer(kind, title, summary, collectionTitle),
+      usefulFor: "Shoppers who know the task, occasion, or problem but not the exact product.",
+      nextStep: "Choose a guide, then open the topic that matches the question.",
+      takeaways: buildResourceTakeaways(kind, title, summary, collectionTitle),
+      queryPrompts: buildResourceQueryPrompts(kind, title, collectionTitle),
+      decisionSteps: buildResourceDecisionSteps(kind, collectionTitle),
+    };
+  }
+
+  if (kind === "category") {
+    return {
+      question: `What does ${title} help me decide?`,
+      answer: buildResourceDirectAnswer(kind, title, summary, collectionTitle),
+      usefulFor: `Shoppers comparing ${title.toLowerCase()} ideas before opening a product page.`,
+      nextStep: collectionTitle
+        ? `Choose a topic, then compare the ${collectionTitle} collection.`
+        : "Choose a topic, then review the featured product picks.",
+      takeaways: buildResourceTakeaways(kind, title, summary, collectionTitle),
+      queryPrompts: buildResourceQueryPrompts(kind, title, collectionTitle),
+      decisionSteps: buildResourceDecisionSteps(kind, collectionTitle),
+    };
+  }
+
+  return {
+    question: buildResourceTopicQuestion(title),
+    answer: buildResourceDirectAnswer(kind, title, summary, collectionTitle),
+    usefulFor: `Shoppers looking for a focused ${title.toLowerCase()} starting point.`,
+    nextStep: collectionTitle
+      ? `Review the ${collectionTitle} collection and the featured product picks.`
+      : "Review the featured product picks and related guides.",
+    takeaways: buildResourceTakeaways(kind, title, summary, collectionTitle),
+    queryPrompts: buildResourceQueryPrompts(kind, title, collectionTitle),
+    decisionSteps: buildResourceDecisionSteps(kind, collectionTitle),
+  };
+}
+
+function buildDefaultAnswerBlock(page: EditorialPageContent): EditorialAnswerBlock {
+  const lowerTitle = lowerFirst(page.title);
+  const question =
+    page.handle === "faq"
+      ? "What should I know before ordering from SALT?"
+      : page.handle === "collections"
+        ? "How should I choose a SALT collection?"
+        : page.handle === "contact"
+          ? "How can I get help from SALT?"
+          : `What should I know about ${lowerTitle}?`;
+  const nextAction = page.actions.find((action) => action.primary) || page.actions[0];
+  const queryPrompts =
+    page.handle === "faq"
+      ? [question, "Where can I find SALT shipping and return information?"]
+      : page.handle === "collections"
+        ? [question, "How do I narrow from a SALT collection to the right product?"]
+        : page.handle === "contact"
+          ? [question, "Who should I contact about a SALT order or product question?"]
+          : [question, `What is the next step after reading ${lowerTitle}?`];
+
+  return {
+    question,
+    answer: page.summary,
+    usefulFor: `${page.kicker || "SALT"} visitors who need a clear answer before taking the next step.`,
+    nextStep: nextAction?.label || "Use the related links on this page.",
+    takeaways: page.accent.bullets.slice(0, 3),
+    queryPrompts,
+  };
+}
+
+function ensureAnswerBlock(page: EditorialPageContent): EditorialPageContent {
+  return page.answerBlock ? page : { ...page, answerBlock: buildDefaultAnswerBlock(page) };
+}
 
 function getCollectionTitleFromRoute(collectionRoute?: string | null): string {
   const rawHandle = String(collectionRoute || "")
@@ -305,7 +571,17 @@ function buildResourceIntroParagraphs(kind: ResourcePageKind, summary: string, c
   ];
 }
 
-function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?: string): EditorialFaq[] {
+type ResourceFaqOptions = {
+  categoryTitle?: string;
+  summary?: string;
+  collectionTitle?: string;
+};
+
+function buildResourceFaqs(
+  kind: ResourcePageKind,
+  title: string,
+  options: ResourceFaqOptions = {},
+): EditorialFaq[] {
   if (kind === "hub") {
     return [
       {
@@ -319,9 +595,9 @@ function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?
           "Pick the card that matches the task, open the guide, then move into the topic page if the question needs a more specific answer.",
       },
       {
-        question: "Why does this format work for AEO and GEO?",
+        question: "Why does this format make shopping easier?",
         answer:
-          "The pages answer the question first, stay narrow, and connect each answer to real product pages and collections people can click next.",
+          "The pages answer the question first, stay narrow, and connect each answer to real product pages and collections people can open next.",
       },
     ];
   }
@@ -329,36 +605,38 @@ function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?
   if (kind === "category") {
     return [
       {
-        question: `What does ${title} help me solve?`,
-        answer: "It turns a broad shopping or planning need into a clearer route, so the reader can move from curiosity to a practical next step.",
+        question: `What does ${title} cover?`,
+        answer: `${options.summary || "This guide turns a broad need into a clearer route."} Use the topic cards to move from the broad category into the question that fits best.`,
       },
       {
-        question: "Which page should I open after this one?",
-        answer: "Open the most relevant subtopic page inside the category, then use the collection link if you want to browse products directly.",
+        question: `Which collection connects to ${title}?`,
+        answer: options.collectionTitle
+          ? `This guide connects to the ${options.collectionTitle} collection. Use that route when you are ready to compare the relevant live product listings.`
+          : "Use the linked collection route when you are ready to compare the relevant live product listings.",
       },
       {
-        question: "How many products should this page feature?",
-        answer: "Three strong examples are enough; that keeps the page useful without turning it into a noisy catalog dump.",
+        question: `What should I open next in ${title}?`,
+        answer: "Choose the topic that matches your situation, then review the featured product examples before browsing the full collection.",
       },
     ];
   }
 
-  const scope = categoryTitle || "this category";
+  const scope = options.categoryTitle || "this category";
   return [
     {
-      question: `What should someone look for in ${scope}?`,
-      answer:
-        "Start with the easiest win inside the category, then move into the subtopic that best matches the problem, budget, or routine.",
+      question: `What is ${title} about?`,
+      answer: `${options.summary || `This page focuses on ${title.toLowerCase()}.`} Use the topic page as a focused starting point, then follow the collection or product links when you are ready to browse.`,
     },
     {
-      question: `How do I choose the right subtopic inside ${scope}?`,
-      answer:
-        "Pick the version of the category that matches the shopper's situation most closely, then use the product picks as a practical next step.",
+      question: `Which collection connects to ${title}?`,
+      answer: options.collectionTitle
+        ? `This topic points to ${options.collectionTitle}. Start there if you want to compare products related to this question.`
+        : `Start with ${scope}, then use the featured product links as the practical next step.`,
     },
     {
-      question: `What should ${scope} link to next?`,
+      question: `What should I check before choosing ${title} in ${scope}?`,
       answer:
-        "Link to the parent category, one sibling topic, the most relevant collection route, and the first product in the featured set.",
+        "Match the topic to your own situation, then read the live product details, available options, delivery terms, and return information before ordering.",
     },
   ];
 }
@@ -366,7 +644,7 @@ function buildResourceFaqs(kind: ResourcePageKind, title: string, categoryTitle?
 function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): EditorialAction[] {
   if (kind === "hub") {
     return [
-      { label: "Browse the guides", to: "/shop?resource=hub", primary: true },
+      { label: "Browse the guides", to: "/pages/resources", primary: true },
       { label: "Shop the catalog", to: "/shop" },
       { label: "Contact us", to: "/pages/contact-us" },
     ];
@@ -375,7 +653,7 @@ function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): 
   const collectionTitle = getCollectionTitleFromRoute(collectionRoute);
   return [
     { label: `Shop ${collectionTitle || "collection"}`, to: collectionRoute, primary: true },
-    { label: "Resource Hub", to: "/shop?resource=hub" },
+    { label: "Resource Hub", to: "/pages/resources" },
     { label: "Contact us", to: "/pages/contact-us" },
   ];
 }
@@ -457,6 +735,11 @@ function buildResourceHubPageContent(): EditorialPageContent {
     seoTitle: "Resource Hub | SALT Online Store",
     metaDescription: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
     summary: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
+    answerBlock: buildResourceAnswerBlock(
+      "hub",
+      "Resource Hub",
+      "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
+    ),
     stats: [
       { label: "Guides", value: String(SITE_RESOURCE_GUIDES.length) },
       { label: "Goal", value: "Answer-first" },
@@ -526,7 +809,7 @@ function buildResourceHubPageContent(): EditorialPageContent {
       handle: product.handle,
     })),
     faqsTitle: "Common questions",
-    faqsDescription: "Short answers that help shoppers and answer engines move faster.",
+    faqsDescription: "Short answers that help shoppers move from a question to a confident choice.",
     faqs: buildResourceFaqs("hub", "Resource Hub"),
     actions: buildResourceActions("hub", ""),
   };
@@ -541,14 +824,15 @@ function buildResourceCategoryPageContent(guide: SiteResourceGuide): EditorialPa
     seoTitle: `${guide.title} | SALT Resource Hub`,
     metaDescription: `${guide.summary} Explore the related collection, compare the topic pages, and use the product picks to move from research to shopping.`,
     summary: guide.summary,
+    answerBlock: buildResourceAnswerBlock("category", guide.title, guide.summary, collectionTitle),
     stats: [
       { label: "Topics", value: String(guide.topics.length) },
       { label: "Collection", value: collectionTitle || "Editorial route" },
-      { label: "Intent", value: "AEO / GEO" },
+      { label: "Intent", value: "Decision support" },
     ],
     breadcrumbs: [
       { label: "Home", to: "/" },
-      { label: "Resource Hub", to: "/shop?resource=hub" },
+      { label: "Resource Hub", to: "/pages/resources" },
       { label: guide.title },
     ],
     accent: buildResourceAccent("category", guide.title, guide.summary, collectionTitle),
@@ -568,7 +852,10 @@ function buildResourceCategoryPageContent(guide: SiteResourceGuide): EditorialPa
     featuredProducts: buildResourceFeaturedProducts(guide.featuredProducts, guide.collectionRoute),
     faqsTitle: "Frequently asked",
     faqsDescription: "Short answers that support shopping without losing the editorial thread.",
-    faqs: buildResourceFaqs("category", guide.title),
+    faqs: buildResourceFaqs("category", guide.title, {
+      summary: guide.summary,
+      collectionTitle,
+    }),
     actions: buildResourceActions("category", guide.collectionRoute),
   };
 }
@@ -584,6 +871,7 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
     seoTitle: `${topic.title} | ${guide.title} | SALT Resource Hub`,
     metaDescription: `${topic.summary} Use the collection route, sibling guides, and featured products to answer the question with a clear next step.`,
     summary: topic.summary,
+    answerBlock: buildResourceAnswerBlock("topic", topic.title, topic.summary, collectionTitle),
     stats: [
       { label: "Topic", value: topic.title },
       { label: "Collection", value: collectionTitle || "Editorial route" },
@@ -591,7 +879,7 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
     ],
     breadcrumbs: [
       { label: "Home", to: "/" },
-      { label: "Resource Hub", to: "/shop?resource=hub" },
+      { label: "Resource Hub", to: "/pages/resources" },
       { label: guide.title, to: buildResourceRoute(guide.handle) },
       { label: topic.title },
     ],
@@ -612,7 +900,11 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
     featuredProducts: buildResourceFeaturedProducts(topic.featuredProducts, topic.collectionRoute),
     faqsTitle: "Frequently asked",
     faqsDescription: "Short answers that reduce friction before the shopper moves on.",
-    faqs: buildResourceFaqs("topic", topic.title, guide.title),
+    faqs: buildResourceFaqs("topic", topic.title, {
+      categoryTitle: guide.title,
+      summary: topic.summary,
+      collectionTitle,
+    }),
     actions: buildResourceActions("topic", topic.collectionRoute),
   };
 }
@@ -760,7 +1052,7 @@ function buildWholesalePageContent(): EditorialPageContent {
     actions: [
       { label: "Contact Us", to: "/pages/contact-us", primary: true },
       { label: "Browse collections", to: "/collections" },
-      { label: "Resource Hub", to: "/shop?resource=hub" },
+      { label: "Resource Hub", to: "/pages/resources" },
     ],
   };
 }
@@ -951,7 +1243,7 @@ function buildInteractiveStemAssemblyPageContent(): EditorialPageContent {
       { label: "Browse Kids Toys & Games", to: "/collections/kids-toys-games", primary: true },
       {
         label: "Open Resource Hub",
-        to: "/shop?resource=hub",
+        to: "/pages/resources",
       },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
@@ -1062,7 +1354,7 @@ function buildDigitalCircusLunchBoxPageContent(): EditorialPageContent {
     actions: [
       { label: "Browse Lunch Boxes", to: "/collections/lunch-boxes", primary: true },
       { label: "Browse Back to School", to: "/collections/back-to-school" },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1194,7 +1486,7 @@ function buildKitchenCookwareBuyingGuidePageContent(): EditorialPageContent {
     ],
     actions: [
       { label: "Browse Kitchen & Cookware", to: "/collections/cookware", primary: true },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1324,7 +1616,7 @@ function buildJeansDenimFitGuidePageContent(): EditorialPageContent {
     ],
     actions: [
       { label: "Browse Jeans", to: "/collections/jeans", primary: true },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1455,7 +1747,7 @@ function buildMobwolWatchGuidePageContent(): EditorialPageContent {
     ],
     actions: [
       { label: "Browse Watches", to: "/collections/watches", primary: true },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1571,7 +1863,7 @@ function buildRealmeBudsCaseCompatibilityGuidePageContent(): EditorialPageConten
     actions: [
       { label: "Browse Audio", to: "/collections/audio", primary: true },
       { label: "Browse Earbuds & Cases", to: "/collections/earbuds-and-cases" },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1704,7 +1996,7 @@ function buildSaltEarbudsBuyingGuidePageContent(): EditorialPageContent {
     actions: [
       { label: "Browse Audio", to: "/collections/audio", primary: true },
       { label: "Browse Earbuds & Cases", to: "/collections/earbuds-and-cases" },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -1812,7 +2104,7 @@ function buildCanvasBeltSizingStyleGuidePageContent(): EditorialPageContent {
     actions: [
       { label: "Browse Men's Accessories", to: "/collections/mens-accessories", primary: true },
       { label: "Browse Men's Collection", to: "/collections/men-collection" },
-      { label: "Open Resource Hub", to: "/shop?resource=hub" },
+      { label: "Open Resource Hub", to: "/pages/resources" },
       { label: "Contact SALT", to: "/pages/contact-us" },
     ],
   };
@@ -2114,7 +2406,7 @@ export function getEditorialPageContent(handle: string): EditorialPageContent | 
 
   const directMatch = editorialPages[normalizedHandle];
   if (directMatch) {
-    return directMatch;
+    return ensureAnswerBlock(directMatch);
   }
 
   const [resourceCategorySegment, resourceTopicSegment] = normalizedHandle.split("/", 2);
@@ -2122,13 +2414,15 @@ export function getEditorialPageContent(handle: string): EditorialPageContent | 
     const resourceGuide = getResourceByHandle(resourceCategorySegment);
     const resourceTopic = resourceGuide ? getResourceTopicByHandle(resourceCategorySegment, resourceTopicSegment) : null;
     if (resourceGuide && resourceTopic) {
-      return editorialPages[`${resourceGuide.handle}/${resourceTopic.handle}`] || null;
+      const resourcePage = editorialPages[`${resourceGuide.handle}/${resourceTopic.handle}`];
+      return resourcePage ? ensureAnswerBlock(resourcePage) : null;
     }
   }
 
   const collectionMatch = getCollectionByHandle(normalizedHandle);
   if (collectionMatch) {
-    return editorialPages[collectionMatch.handle] || null;
+    const collectionPage = editorialPages[collectionMatch.handle];
+    return collectionPage ? ensureAnswerBlock(collectionPage) : null;
   }
 
   const [collectionSegment, subcollectionSegment] = normalizedHandle.split("/", 2);
@@ -2136,7 +2430,8 @@ export function getEditorialPageContent(handle: string): EditorialPageContent | 
     const nestedCollection = getCollectionByHandle(collectionSegment);
     const nestedSubcollection = nestedCollection ? getSubcollectionByHandle(collectionSegment, subcollectionSegment) : null;
     if (nestedCollection && nestedSubcollection) {
-      return editorialPages[`${nestedCollection.handle}/${nestedSubcollection.handle}`] || null;
+      const subcollectionPage = editorialPages[`${nestedCollection.handle}/${nestedSubcollection.handle}`];
+      return subcollectionPage ? ensureAnswerBlock(subcollectionPage) : null;
     }
   }
 
@@ -2144,5 +2439,5 @@ export function getEditorialPageContent(handle: string): EditorialPageContent | 
 }
 
 export function listEditorialPages(): EditorialPageContent[] {
-  return Object.values(editorialPages);
+  return Object.values(editorialPages).map(ensureAnswerBlock);
 }

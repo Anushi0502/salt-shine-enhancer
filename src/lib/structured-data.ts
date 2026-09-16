@@ -133,6 +133,7 @@ export function buildArticleStructuredData(post: BlogPost, origin: string): Stru
 export function buildFaqStructuredData(
   faqs: FaqEntry[] | null | undefined,
   origin: string,
+  pagePath = "/pages/faq",
 ): StructuredData | null {
   const questions = (faqs || [])
     .map((faq) => ({
@@ -156,7 +157,66 @@ export function buildFaqStructuredData(
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    url: `${origin}/pages/faq`,
+    url: absoluteStructuredUrl(pagePath, origin) || `${origin}/pages/faq`,
     mainEntity: questions,
+  };
+}
+
+export function buildWebPageStructuredData(
+  title: string,
+  description: string,
+  pagePath: string,
+  origin: string,
+): StructuredData | null {
+  const url = absoluteStructuredUrl(pagePath, origin);
+  if (!url) {
+    return null;
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: cleanStructuredText(title, 150),
+    description: cleanStructuredText(description, 500),
+    inLanguage: "en-US",
+    isPartOf: { "@id": `${origin}/#website` },
+    about: { "@id": `${origin}/#organization` },
+  };
+}
+
+type BreadcrumbEntry = {
+  label: string;
+  to?: string;
+};
+
+export function buildEditorialBreadcrumbStructuredData(
+  items: BreadcrumbEntry[] | null | undefined,
+  currentPath: string,
+  origin: string,
+): StructuredData | null {
+  const cleanItems = (items || [])
+    .map((item, index, allItems) => ({
+      name: cleanStructuredText(item?.label, 120),
+      url: absoluteStructuredUrl(item?.to || (index === allItems.length - 1 ? currentPath : "/"), origin),
+    }))
+    .filter((item): item is { name: string; url: string } => Boolean(item.name && item.url));
+
+  if (!cleanItems.length) {
+    return null;
+  }
+
+  const pageUrl = cleanItems[cleanItems.length - 1]?.url || `${origin}${currentPath}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "@id": `${pageUrl}#breadcrumb`,
+    itemListElement: cleanItems.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   };
 }

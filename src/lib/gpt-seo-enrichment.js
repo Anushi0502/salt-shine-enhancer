@@ -16,8 +16,8 @@ const INCOMPATIBLE_FAMILY_RULES = [
   { phrase: /\bphone\s+case\b/i, evidence: /\b(?:phone|iphone|samsung|pixel)\b/i },
   { phrase: /\bearbuds?\s+case\b/i, evidence: /\b(?:earbuds?|airpods?|earphones?)\b/i },
   { phrase: /\b(?:pet|dog|cat)\s+(?:supplies|toy|grooming|feeding|travel)\b/i, evidence: /\b(?:pet|dog|cat|puppy|kitten)\b/i },
-  { phrase: /\bmakeup\b|\bcosmetic/i, evidence: /\b(?:makeup|cosmetic|lipstick|mascara|blush|eyeliner|beauty)\b/i },
-  { phrase: /\b(?:wig|hair\s+extension|human\s+hair)\b/i, evidence: /\b(?:wig|hair\s+extension|human\s+hair|lace\s+front|weave|toupee)\b/i },
+  { phrase: /\bmakeup\b|\bcosmetic/i, evidence: /\b(?:makeup|cosmetic(?:s)?|lipstick|mascara|blush|eyeliner|beauty)\b/i },
+  { phrase: /\b(?:wig|hair\s+extension|human\s+hair)\b/i, evidence: /\b(?:wig|hair\s+extension|human[-\s]+hair|lace[-\s]+front|weave|toupee)\b/i },
 ];
 
 function text(value) {
@@ -196,6 +196,7 @@ export function validateGptSeoRecord(product, record) {
     evidence.vendor,
     evidence.tags.join(" "),
     evidence.sourceDescription,
+    JSON.stringify(evidence.verifiedTaxonomy),
     evidence.variants.flatMap((variant) => [variant.title, variant.sku, ...variant.selectedOptions]).join(" "),
   ].join(" ");
   const outputText = [
@@ -211,6 +212,7 @@ export function validateGptSeoRecord(product, record) {
   ].join(" ");
   const evidenceTokens = tokens(evidenceText);
   const outputTokens = tokens(outputText);
+  const familyEvidenceText = evidenceText.replace(/[-_]+/g, " ");
   const matchedTokens = [...evidenceTokens].filter((token) => outputTokens.has(token));
   const issues = [];
   if (!normalized.handle) issues.push("missing-handle");
@@ -243,7 +245,7 @@ export function validateGptSeoRecord(product, record) {
   if (matchedTokens.length < 2) issues.push("insufficient-evidence-overlap");
   if (GENERIC_PATTERNS.some((pattern) => pattern.test(outputText))) issues.push("generic-copy");
   for (const rule of INCOMPATIBLE_FAMILY_RULES) {
-    if (rule.phrase.test(outputText) && !rule.evidence.test(evidenceText)) issues.push(`unsupported-family:${rule.phrase}`);
+    if (rule.phrase.test(outputText) && !rule.evidence.test(familyEvidenceText)) issues.push(`unsupported-family:${rule.phrase}`);
   }
   for (const match of normalized.descriptionHtml.matchAll(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi)) {
     if (!["h2", "h3", "p", "ul", "li", "strong", "ol"].includes(match[1].toLowerCase())) {

@@ -1,0 +1,45 @@
+{
+  "requestId": "f3f8f02c7a27f02791c0b089a890f2161fd8e590784a72ee2919de23eee77069",
+  "schemaVersion": 2,
+  "batchIndex": 1,
+  "records": [
+    {
+      "handle": "kem-trng-da-body-mm-a-cosmetics-dng-trng-nhanh-chong-mn-mang-hng-nc-hoa-quyn-ru-bright-white-smooth-and-soft-skin",
+      "accepted": true,
+      "record": {
+        "title": "Kem Trng Da Body Mm Cosmetics",
+        "descriptionHtml": "<h2>Kem Trng Da Body Mm Cosmetics</h2><p>Kem Trng Da Body Mm Cosmetics is listed as Da Body in Body Care under Beauty &amp; Skincare.</p><h3>Product details</h3><ul><li><strong>Department:</strong> Beauty</li><li><strong>Category:</strong> Beauty &amp; Skincare &gt; Body Care</li><li><strong>Product type:</strong> Body Care</li><li><strong>Audience:</strong> Women, women</li><li><strong>Use:</strong> makeup</li><li><strong>Options shown:</strong> 1PCS; 1PCS 1</li></ul>",
+        "seoTitle": "Kem Trng Da Body Mm Cosmetics",
+        "seoDescription": "Kem Trng Da Body Mm Cosmetics is listed as Da Body in Beauty & Skincare > Body Care, with Women audience and 1PCS or 1PCS 1 options for makeup use.",
+        "category": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Body Care",
+          "productType": "Body Care"
+        },
+        "metafields": {
+          "badgeText": "Body Care",
+          "highlights": [
+            "Product: Kem Trng Da Body Mm Cosmetics",
+            "Category: Beauty & Skincare > Body Care",
+            "Audience: Women, women",
+            "Options: 1PCS; 1PCS 1"
+          ],
+          "collectionSignal": "Beauty & Skincare > Body Care > Body Care",
+          "typeAttributes": {}
+        },
+        "searchTerms": [
+          "Kem Trng Da Body Mm Cosmetics",
+          "Da Body",
+          "Body Care",
+          "Beauty & Skincare",
+          "makeup",
+          "1PCS",
+          "1PCS 1",
+          "Women",
+          "SALT"
+        ]
+      }
+    }
+  ]
+}

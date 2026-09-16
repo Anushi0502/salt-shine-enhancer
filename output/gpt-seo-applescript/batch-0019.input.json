@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "requestId": "fcf1e587c306bd4bbdbc9c5a5592d363c7729e751ddceb15adeb34408fd152fd",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 19,
+  "batchCount": 36,
+  "products": [
+    {
+      "handle": "50g-170g-got-2b-spray-human-hair-styling-gel-got2b-spray-glued-freeze-spray-ultra-glued-invincible-styling-got2b-strong-hair-gel",
+      "evidenceFingerprint": "0927b62deb6c75455eacfb7655a6ee7b3f000aa2670c9528f8cc0f2d947c5e84",
+      "evidence": {
+        "handle": "50g-170g-got-2b-spray-human-hair-styling-gel-got2b-spray-glued-freeze-spray-ultra-glued-invincible-styling-got2b-strong-hair-gel",
+        "title": "50g 170g Got 2b Spray Human",
+        "productType": "Got 2b",
+        "vendor": "SALT",
+        "tags": [
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "general",
+          "general-merchandise",
+          "hair-care",
+          "hair-nourishment",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About 50g 170g Got 2b Spray Human   50g 170g Got 2b Spray Human is a got 2b identified by the product title and supplied listing details.   Key Details     Size or capacity: 50g, 170g   Use: makeup, hair care     Use   Care   Use it for the listed makeup, hair care context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is 50g 170g Got 2b Spray Human?   A: 50g 170g Got 2b Spray Human is a got 2b identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 50g, 170g Use: makeup, hair care ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Hair Care",
+          "productType": "Hair Care",
+          "shopifyCategory": "Health & Beauty > Personal Care > Hair Care"
+        },
+        "evidencedTypeAttributes": {
+          "measurements": [
+            "50g",
+            "170g"
+          ]
+        },
+        "variants": [
+          {
+            "title": "edge control set",
+            "sku": "14:366#edge control set",
+            "selectedOptions": []
+          },
+          {
+            "title": "Got 2b 35g",
+            "sku": "14:29#Got 2b 35g",
+            "selectedOptions": []
+          },
+          {
+            "title": "38ml glue",
+            "sku": "14:175#38ml glue",
+            "selectedOptions": []
+          },
+          {
+            "title": "31g lace gel",
+            "sku": "14:365462#31g lace gel",
+            "selectedOptions": []
+          },
+          {
+            "title": "150ml gel",
+            "sku": "14:193#150ml gel",
+            "selectedOptions": []
+          }
+        ]
+      }
+    }
+  ]
+}

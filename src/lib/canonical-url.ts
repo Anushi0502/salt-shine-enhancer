@@ -126,6 +126,18 @@ export function normalizeCanonicalPath(input: string | null | undefined): string
 }
 
 export function buildCanonicalUrl(input: string | null | undefined): string {
+  try {
+    const rawUrl = new URL(String(input || ""), `${CANONICAL_ORIGIN}/`);
+    if (rawUrl.pathname === "/pages/resources" && rawUrl.searchParams.get("resource") === "guide") {
+      const handle = String(rawUrl.searchParams.get("handle") || "").trim().toLowerCase();
+      if (/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?$/.test(handle)) {
+        return `${CANONICAL_ORIGIN}/pages/resources?resource=guide&handle=${encodeURIComponent(handle)}`;
+      }
+    }
+  } catch {
+    // Fall through to the standard path-only canonical normalization.
+  }
+
   const pathname = normalizeCanonicalPath(input);
   return pathname === "/" ? `${CANONICAL_ORIGIN}/` : `${CANONICAL_ORIGIN}${pathname}`;
 }

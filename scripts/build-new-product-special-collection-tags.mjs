@@ -81,6 +81,11 @@ const ANIME_MERCHANDISE_SIGNALS = [
 
 const ANIME_BLOCKED_COLLECTION_CONTEXT = /hotel[\s-]+collection|perfume|beauty|makeup|cosmetic|banknote|currency|savings|fountain[\s-]+pen|\bpen\b|calendar|bedsheet|bed[\s-]+sheet|robe|trousers|\bshirt\b|clothing|formal|business|kitchen|cookware|hair|comb|skincare|lipstick|wallet|tactical[\s-]+bag|gym[\s-]+bag/i;
 const ANIME_STRONG_MERCHANDISE_CONTEXT = /anime|manga|cosplay|otaku|cartoon|kawaii|character|comic|chibi|waifu|manhua|manhwa|sanrio|hello[\s-]+kitty|kuromi|naruto|pokemon|demon[\s-]+slayer|marvel|disney|photocard|kpop|idol|collectible|cute|doll|animal|bear|cat/i;
+const CREATOR_BLOCKED_COLLECTION_CONTEXT = /\b(?:jeans?|trousers?|pants?|denim|skirts?|shorts?|clothing|apparel)\b/i;
+
+function matchesCreatorEssentials(signalText) {
+  return !CREATOR_BLOCKED_COLLECTION_CONTEXT.test(signalText);
+}
 
 function matchesAnimeCollectables(signalText) {
   if (ANIME_FANDOM_SIGNALS.some((signal) => signal.test(signalText))) return true;
@@ -137,6 +142,7 @@ export const SPECIAL_COLLECTION_RULES = [
       /\bspeaker\b/i,
       /\b(?:phone[\s-]+holder|phone[\s-]+stand|phone[\s-]+mount)\b/i,
     ],
+    matches: matchesCreatorEssentials,
   },
   {
     handle: "anime-collectables",

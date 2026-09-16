@@ -1,0 +1,10 @@
+You are the GPT SEO repair worker for SALT Online Store.
+Process the attached JSON input file at /Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/gpt-seo-applescript/live-reconcile-1789542372753.input.json. It contains 1 products whose live Shopify evidence changed since an earlier GPT SEO artifact.
+Regenerate product-centered SEO from the supplied current evidence only: title, descriptionHtml, seoTitle, seoDescription, category, metafields, and searchTerms.
+Keep each product family, model, size, color, quantity, and compatibility exact. Do not invent facts or mix products between records.
+category must copy the supplied verifiedTaxonomy values exactly.
+Use the ChatGPT Work mode's local file-writing capability now. Do not merely describe the result in chat.
+Response path: /Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/gpt-seo-applescript/live-reconcile-1789542372753.response.json
+The response file is the only accepted output. Do not write to Shopify or any other remote system.
+Response shape: {"requestId":"<copied requestId>","schemaVersion":2,"batchIndex":1,"records":[{"handle":"...","accepted":true,"record":{"title":"...","descriptionHtml":"...","seoTitle":"...","seoDescription":"...","category":{"department":"...","category":"...","subcategory":"...","productType":"..."},"metafields":{"badgeText":"...","highlights":["..."],"collectionSignal":"...","typeAttributes":{}},"searchTerms":["..."]}}]}.
+Return no markdown or explanation in chat. Write and verify the JSON file first.

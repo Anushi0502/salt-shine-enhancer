@@ -901,7 +901,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
               "returnMethod": "https://schema.org/ReturnByMail",
               "returnFees": "https://schema.org/FreeReturn"
             }
-          }{% if salt_schema_judgeme_rating_value > 0 and salt_schema_judgeme_review_count_value > 0 %},
+          }{% if salt_schema_judgeme_rating_value >= 1 and salt_schema_judgeme_rating_value <= 5 and salt_schema_judgeme_review_count_value > 0 %},
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": {{ salt_schema_judgeme_rating_value | json }},
@@ -1792,6 +1792,7 @@ async function copyAssets(entryJsPath, entryCssPath) {
   await cp(resolve(publicDir, "site.webmanifest"), resolve(themeAssetsDir, "site.webmanifest"));
   await cp(resolve(publicDir, "android-chrome-192x192.png"), resolve(themeAssetsDir, "android-chrome-192x192.png"));
   await cp(resolve(publicDir, "android-chrome-512x512.png"), resolve(themeAssetsDir, "android-chrome-512x512.png"));
+  await cp(resolve(publicDir, "salt-resource-sitemap.xml"), resolve(themeAssetsDir, "salt-resource-sitemap.xml"));
   await cp(
     resolve(publicDir, "shopify-meta-pixel-customer-events.js"),
     resolve(themeAssetsDir, "shopify-meta-pixel-customer-events.js"),

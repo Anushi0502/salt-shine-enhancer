@@ -1342,6 +1342,10 @@ function buildCatalogReleaseSteps({
   const verificationIntegrityArgs = process.env.SALT_RELEASE_REUSE_VERIFIED_PLAN === "1"
     ? [...integrityArgs, "--reuse-prior-manifest"]
     : integrityArgs;
+  // Step 24 has already produced the exact governed plan. Reuse that plan in
+  // step 25 after fetching a fresh live catalog, avoiding a second full CPU
+  // classification pass while keeping the mutation and readback gates intact.
+  const collectionApplyArgs = [...integrityArgs, "--reuse-prior-manifest"];
   // The final gate runs after all writes, so verify the generation applied by
   // the preceding reconciliation stage. Reclassifying here would create a
   // second plan from transient image/network evidence and compare writes that
@@ -1482,7 +1486,7 @@ function buildCatalogReleaseSteps({
     {
       label: "Apply exact full-catalog collection reconciliation",
       command: npmBin,
-      args: ["run", "shopify:catalog-integrity:apply", "--", ...integrityArgs],
+      args: ["run", "shopify:catalog-integrity:apply", "--", ...collectionApplyArgs],
       cwd: releaseRootDir,
     },
     ...buildSyncDataSteps({
@@ -1837,11 +1841,13 @@ export function buildReleaseSteps({
 }
 
 function parseArgs(argv) {
+  const configuredResumeStep = Number(process.env.SALT_RELEASE_RESUME_FROM_STEP || 0);
   const args = {
     profile: process.env.SALT_RELEASE_PROFILE || "catalog",
     resume: process.env.SALT_RELEASE_RESUME === "1",
     seoMode: String(process.env.SALT_RELEASE_SEO_MODE || "deterministic").trim().toLowerCase(),
     seoScope: String(process.env.SALT_RELEASE_SEO_SCOPE || "all-products").trim().toLowerCase(),
+    resumeFromStep: Number.isInteger(configuredResumeStep) && configuredResumeStep > 0 ? configuredResumeStep : null,
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -1869,6 +1875,18 @@ function parseArgs(argv) {
 
     if (token === "--resume") {
       args.resume = true;
+      continue;
+    }
+
+    if (token === "--resume-from-step") {
+      if (!next) throw new Error("Missing value for --resume-from-step");
+      const resumeFromStep = Number(next);
+      if (!Number.isInteger(resumeFromStep) || resumeFromStep <= 0) {
+        throw new Error("--resume-from-step must be a positive integer");
+      }
+      args.resume = true;
+      args.resumeFromStep = resumeFromStep;
+      index += 1;
       continue;
     }
 
@@ -1911,6 +1929,9 @@ async function main() {
     assertReleaseModePrerequisites(args);
     process.env.SALT_RELEASE_SEO_MODE = args.seoMode;
     process.env.SALT_RELEASE_SEO_SCOPE = args.seoScope;
+    // Only a guarded resume may reuse the GPT enrichment checkpoint. A fresh
+    // run must build a new artifact instead of silently mixing generations.
+    process.env.SALT_GPT_SEO_RESUME = args.resume ? "1" : "0";
     if (args.profile !== "products") {
       // Release stages need a full catalog for audits and Shopify mutations,
       // but the storefront must not materialize the old product/search/home
@@ -2011,8 +2032,11 @@ async function main() {
         }
       }
     }
+    const explicitResumeStep = args.resume
+      ? args.resumeFromStep || getExplicitResumeStep(previousRunState)
+      : null;
     let resumeFromStep = args.resume
-      ? Math.max(1, Number(previousRunState?.stepIndex || previousRunState?.completedStepIndex || 1))
+      ? Math.max(1, Number(explicitResumeStep || previousRunState?.stepIndex || previousRunState?.completedStepIndex || 1))
       : 1;
     let deletionBoundaryChanged = false;
     if (args.resume && args.profile !== "products") {
@@ -2050,6 +2074,7 @@ async function main() {
       heartbeatAt: new Date().toISOString(),
       resumed: args.resume,
       resumedFromStep: args.resume ? resumeFromStep : null,
+      resumeFromStepOverride: explicitResumeStep,
       completedSteps: [],
       completedStepFingerprint: "",
       preflight: preflightResult,
@@ -2107,6 +2132,9 @@ async function main() {
     if (args.resume && previousRunState?.stepLabel && !graphDrift) {
       const resolvedResume = resolveResumeStep(steps, previousRunState, resumeFromStep);
       resumeFromStep = resolvedResume.resumeFromStep;
+      process.stdout.write(
+        `Resume checkpoint verified: step ${resumeFromStep}/${steps.length} (${steps[resumeFromStep - 1]?.label || "unknown"}).\n`,
+      );
       if (resolvedResume.reason === "collection-audit-source-repair") {
         process.env.SALT_CATALOG_FORCE_COLLECTION_SOURCE_REFRESH = "1";
         process.env.SALT_CATALOG_FORCE_PRICE_COLLECTION_REFRESH = "1";
@@ -2195,7 +2223,6 @@ async function main() {
         "Explicit restart marker detected; restarting the full-catalog generation from step 1.\n",
       );
     }
-    const explicitResumeStep = getExplicitResumeStep(previousRunState);
     if (args.resume && explicitResumeStep && args.profile !== "products" && !graphDrift) {
       resumeFromStep = explicitResumeStep;
       process.stdout.write(

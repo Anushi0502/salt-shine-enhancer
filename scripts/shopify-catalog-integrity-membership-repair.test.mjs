@@ -5,6 +5,7 @@ import {
   applyExactTagReadbackToProducts,
   buildStaleMembershipPulsePlans,
   filterMembershipToActiveProducts,
+  isCatalogBoundaryChangedError,
 } from "./shopify-catalog-integrity.mjs";
 
 describe("active collection membership scope", () => {
@@ -13,6 +14,15 @@ describe("active collection membership scope", () => {
     const active = new Set(["active-1"]);
 
     expect(filterMembershipToActiveProducts(members, active)).toEqual(new Set(["active-1"]));
+  });
+
+  it("identifies live catalog growth separately from a managed-tag mismatch", () => {
+    const error = Object.assign(new Error("active catalog changed"), {
+      code: "CATALOG_BOUNDARY_CHANGED",
+    });
+
+    expect(isCatalogBoundaryChangedError(error)).toBe(true);
+    expect(isCatalogBoundaryChangedError(new Error("missing managed tag"))).toBe(false);
   });
 });
 

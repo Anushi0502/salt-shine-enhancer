@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "requestId": "db0351833f11641c8856f0c97443aeb01f179b4dec87217804460e319ac9011c",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 31,
+  "batchCount": 36,
+  "products": [
+    {
+      "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women",
+      "evidenceFingerprint": "88bdda0cd022c9dfe5b7e9f0f85d79e60a8947b707f23133d9c07e4d46a0283f",
+      "evidence": {
+        "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women",
+        "title": "Travel Bag Duffel Cosmetics Backpack",
+        "productType": "backpack",
+        "vendor": "SALT",
+        "tags": [
+          "camping-travel",
+          "men",
+          "new-arrivals",
+          "travel-bag",
+          "travel-essentials",
+          "travel-outdoor"
+        ],
+        "sourceDescription": " About Travel Bag Duffel Cosmetics Backpack   Travel Bag Duffel Cosmetics Backpack is a backpack identified by the product title and supplied listing details.   Key Details     Audience: men, women   Use: travel, fitness, Travel, camping, outdoor     Use   Care   Use it for the listed travel, fitness, Travel, camping, outdoor context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Travel Bag Duffel Cosmetics Backpack?   A: Travel Bag Duffel Cosmetics Backpack is a backpack identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: men, women Use: travel, fitness, Travel, camping, outdoor   SALT catalog listing reference Ref 1Z591G. ",
+        "verifiedTaxonomy": {
+          "department": "Camping & Travel Essentials",
+          "category": "Travel Essentials",
+          "subcategory": "Travel Bags & Luggage",
+          "productType": "Travel Bag",
+          "shopifyCategory": "Luggage & Bags > Luggage"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Beige",
+            "sku": "14:771",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women-1",
+      "evidenceFingerprint": "3273b37b0fe2c4bd9476e8ce6e71d627bd2801362439f7a1284e3186d733a1e9",
+      "evidence": {
+        "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women-1",
+        "title": "Travel Bag Duffel Cosmetics Backpack",
+        "productType": "backpack",
+        "vendor": "SALT",
+        "tags": [
+          "camping-travel",
+          "men",
+          "new-arrivals",
+          "travel-bag",
+          "travel-essentials",
+          "travel-outdoor"
+        ],
+        "sourceDescription": " About Travel Bag Duffel Cosmetics Backpack   Travel Bag Duffel Cosmetics Backpack is a backpack identified by the product title and supplied listing details.   Key Details     Audience: men, women   Use: travel, fitness, Travel, camping, outdoor     Use   Care   Use it for the listed travel, fitness, Travel, camping, outdoor context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Travel Bag Duffel Cosmetics Backpack?   A: Travel Bag Duffel Cosmetics Backpack is a backpack identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: men, women Use: travel, fitness, Travel, camping, outdoor   SALT catalog listing reference Ref NA9232. ",
+        "verifiedTaxonomy": {
+          "department": "Camping & Travel Essentials",
+          "category": "Travel Essentials",
+          "subcategory": "Travel Bags & Luggage",
+          "productType": "Travel Bag",
+          "shopifyCategory": "Luggage & Bags > Luggage"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Beige",
+            "sku": "14:771",
+            "selectedOptions": []
+          }
+        ]
+      }
+    }
+  ]
+}

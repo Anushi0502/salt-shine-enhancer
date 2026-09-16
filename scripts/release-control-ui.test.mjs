@@ -9,6 +9,8 @@ import {
   buildReleaseActivity,
   formatVisualTrainingStatus,
   isActiveReleaseState,
+  isResumableReleaseCheckpoint,
+  applyResumeCheckpointSelection,
   isProcessAlive,
   resolveReleaseStopPid,
   summarizeReleaseError,
@@ -25,14 +27,50 @@ describe("release control UI start contract", () => {
     });
   });
 
-  it("keeps the desktop control surface GPT-only", () => {
-    expect(() => validateStartRequest({ seoMode: "deterministic" })).toThrow(/Only GPT SEO/);
+  it("allows GPT and normal SEO modes", () => {
+    expect(validateStartRequest({ seoMode: "deterministic" })).toEqual({
+      profile: "catalog",
+      seoMode: "deterministic",
+      seoScope: "all-products",
+      resume: false,
+    });
     expect(validateStartRequest({ seoScope: "new-products", resume: true })).toEqual({
       profile: "catalog",
       seoMode: "gpt",
       seoScope: "new-products",
       resume: true,
     });
+  });
+
+  it("preserves the saved mode, scope, and step on resume", () => {
+    const request = applyResumeCheckpointSelection(validateStartRequest({
+      seoMode: "deterministic",
+      seoScope: "new-products",
+      resume: true,
+    }), {
+      status: "interrupted",
+      stepIndex: 5,
+      seoMode: "gpt",
+      seoScope: "all-products",
+    });
+    expect(request).toMatchObject({ seoMode: "gpt", seoScope: "all-products", resumeFromStep: 5 });
+    expect(isResumableReleaseCheckpoint({ status: "interrupted", stepIndex: 5 })).toBe(true);
+    expect(isResumableReleaseCheckpoint({ status: "completed", stepIndex: 5 })).toBe(false);
+  });
+
+  it("preserves an explicit bounded repair step over the saved checkpoint", () => {
+    const request = applyResumeCheckpointSelection(validateStartRequest({
+      seoMode: "gpt",
+      seoScope: "all-products",
+      resume: true,
+      resumeFromStep: 24,
+    }), {
+      status: "interrupted",
+      stepIndex: 36,
+      seoMode: "gpt",
+      seoScope: "all-products",
+    });
+    expect(request).toMatchObject({ resume: true, resumeFromStep: 24 });
   });
 
   it("routes the legacy daily selector through the unified catalog workflow", () => {

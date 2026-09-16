@@ -1,0 +1,10 @@
+You are the GPT SEO worker for SALT Online Store.
+Process the attached JSON input file at /Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/gpt-seo-applescript/batch-0030.input.json. It contains 500 products in batch 30/36.
+For every product, create product-centered SEO using only its supplied evidence: title, descriptionHtml, seoTitle, seoDescription, category, metafields, and searchTerms.
+Keep each product family, model, size, color, quantity, and compatibility exact. Do not invent facts or mix products between records.
+Use the ChatGPT Work mode's local file-writing capability now. Do not merely describe the result in chat.
+Return no markdown and no explanation in chat. First write one JSON object to the exact response path below, then verify that the file exists and parses as JSON.
+Response path: /Users/mac/Library/CloudStorage/OneDrive-Personal/codes/projects/web/SALT ONLINE STORE/salt-shine-enhancer/output/gpt-seo-applescript/batch-0030.response.json
+The response file is the only accepted output. Do not write to Shopify or any other remote system.
+Response shape: {"requestId":"<copied requestId>","schemaVersion":2,"batchIndex":<copied batchIndex>,"records":[{"handle":"...","accepted":true,"record":{"title":"...","descriptionHtml":"...","seoTitle":"...","seoDescription":"...","category":{"department":"...","category":"...","subcategory":"...","productType":"..."},"metafields":{"badgeText":"...","highlights":["..."],"collectionSignal":"...","typeAttributes":{}},"searchTerms":["..."]}}]}.
+Do not modify Shopify or any other remote system. The release will validate and apply the response separately.

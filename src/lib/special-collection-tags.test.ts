@@ -18,6 +18,18 @@ describe("special collection release gates", () => {
       .toContain("anime-collectables");
   });
 
+  it("does not route apparel into Creator Essentials through creator-like wording", () => {
+    const assignments = buildSpecialCollectionAssignments([
+      {
+        handle: "womens-clothing-new-jeans-speaker-jeans-women-long-pants-jeans",
+        title: "Speaker Jeans Long Pants",
+        product_type: "Pants",
+      },
+    ]);
+
+    expect(assignments).toEqual([]);
+  });
+
   it("blocks a release below either full-catalog minimum", () => {
     expect(() => assertSpecialCollectionMinimums({
       "creator-essentials": 499,

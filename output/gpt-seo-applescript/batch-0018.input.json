@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "requestId": "ed09dcf90d1af6fbd4697f4b6d9840acc28167b894c0af7a7f78d9f01b3c1842",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 18,
+  "batchCount": 36,
+  "products": [
+    {
+      "handle": "natural-hair-blush-brush-face-detail-shadow-makeup-brushes-goat-hairs-blusher-bronzer-pro-essential-cosmetic-tools",
+      "evidenceFingerprint": "4f61106046127f6235686be698c0f7cdf4d5257667393a85c8e29fb2729a02ce",
+      "evidence": {
+        "handle": "natural-hair-blush-brush-face-detail-shadow-makeup-brushes-goat-hairs-blusher-bronzer-pro-essential-cosmetic-tools",
+        "title": "Natural Hair Blush Brush Face Detail Makeup Product",
+        "productType": "makeup product",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "blush-glow",
+          "face-makeup",
+          "general",
+          "general-merchandise",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Natural Hair Blush Brush Face Detail Makeup Product   Natural Hair Blush Brush Face Detail Makeup Product is a makeup product identified by the product title and supplied listing details.   Key Details    Use: makeup, Makeup    Use   Care   Use it for the listed makeup, Makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Natural Hair Blush Brush Face Detail Makeup Product?   A: Natural Hair Blush Brush Face Detail Makeup Product is a makeup product identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: makeup, Makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Face Makeup",
+          "productType": "Face Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Face Makeup"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Default Title",
+            "sku": "<none>",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "double-ended-eye-makeup-brush-soft-bristles-precise-blending-travel-eye-shadow-brush-2-in-1-dual-ended-eyeshadow-makeup-brushes",
+      "evidenceFingerprint": "38efe29a89ae10cd5855b75388cf2d4f49b1ca373723dd4ca901d1713aff6454",
+      "evidence": {
+        "handle": "double-ended-eye-makeup-brush-soft-bristles-precise-blending-travel-eye-shadow-brush-2-in-1-dual-ended-eyeshadow-makeup-brushes",
+        "title": "Double Ended Eye Makeup Brush Soft Eyeshadow Palette",
+        "productType": "eyeshadow palette",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "eye-beauty-collection",
+          "eye-makeup",
+          "general",
+          "general-merchandise",
+          "glam-eye-palettes",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Double Ended Eye Makeup Brush Soft Eyeshadow Palette   Double Ended Eye Makeup Brush Soft Eyeshadow Palette is an eyeshadow palette identified by the product title and supplied listing details.   Key Details    Use: makeup, travel, Makeup    Use   Care   Use it for the listed makeup, travel, Makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Double Ended Eye Makeup Brush Soft Eyeshadow Palette?   A: Double Ended Eye Makeup Brush Soft Eyeshadow Palette is an eyeshadow palette identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: makeup, travel, Makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Eye Makeup",
+          "productType": "Eye Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Eye Makeup"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Default Title",
+            "sku": "<none>",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "small-fan-shaped-blush-brush-precision-application-for-powder-cream-liquid-makeup-tool",
+      "evidenceFingerprint": "0579986fab4b1f0e436df6d5630c7e3941dd99766d265a53729fef14866f528a",
+      "evidence": {
+        "handle": "small-fan-shaped-blush-brush-precision-application-for-powder-cream-liquid-makeup-tool",
+        "title": "Small Fan Shaped Blush Brush Precision Makeup Product",
+        "productType": "makeup product",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "blush-glow",
+          "face-makeup",
+          "general",
+          "general-merchandise",
+          "new-arrivals"
+        ],
+        "sourceDescription": " About Small Fan Shaped Blush Brush Precision Makeup Product   Small Fan Shaped Blush Brush Precision Makeup Product is a makeup product identified by the product title and supplied listing details.   Key Details    Use: makeup, Makeup    Use   Care   Use it for the listed makeup, Makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Small Fan Shaped Blush Brush Precision Makeup Product?   A: Small Fan Shaped Blush Brush Precision Makeup Product is a makeup product identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: makeup, Makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Face Makeup",
+          "productType": "Face Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Face Makeup"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Default Title",
+            "sku": "<none>",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "sadoer-caviar-facial-cleanser-face-wash-foam-face-cleanser-deep-cleansing-whitening-anti-wrinkle-moisturizing-skin-care",
+      "evidenceFingerprint": "43043cff0370a5304b8c9113668f62920d5a934febe19d982c17e2fc56953f59",
+      "evidence": {
+        "handle": "sadoer-caviar-facial-cleanser-face-wash-foam-face-cleanser-deep-cleansing-whitening-anti-wrinkle-moisturizing-skin-care",
+        "title": "Sadoer Caviar Facial Cleanser Face Wash",
+        "productType": "Face Wash",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "beauty-skincare",
+          "general",
+          "general-merchandise",
+          "new-arrivals",
+          "skincare"
+        ],
+        "sourceDescription": " About Sadoer Caviar Facial Cleanser Face Wash   Sadoer Caviar Facial Cleanser Face Wash is a face wash identified by the product title and supplied listing details.   Key Details    Use: skin care, makeup    Use   Care   Use it for the listed skin care, makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Sadoer Caviar Facial Cleanser Face Wash?   A: Sadoer Caviar Facial Cleanser Face Wash is a face wash identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Use: skin care, makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Skincare",
+          "productType": "Skincare",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Skin Care"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Default Title",
+            "sku": "<none>",
+            "selectedOptions": []
+          }
+        ]
+      }
+    }
+  ]
+}

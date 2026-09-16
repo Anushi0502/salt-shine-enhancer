@@ -91,8 +91,14 @@ const REPAIR_CASES = Object.freeze([
   {
     id: "candles-evidence",
     product: { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
-    knowledge: EMPTY_KNOWLEDGE,
+    knowledge: { ...EMPTY_KNOWLEDGE, subcategoryId: "candles-home-fragrance" },
     required: ["candles"],
+  },
+  {
+    id: "candles-steel-tool-exclusion",
+    product: { title: "Stainless Steel Candle Wax Melting Pot", handle: "stainless-steel-candle-wax-melting-pot" },
+    knowledge: { ...EMPTY_KNOWLEDGE, subcategoryId: "cookware" },
+    forbidden: ["candles"],
   },
   {
     id: "pet-feeding-subcategory-evidence",

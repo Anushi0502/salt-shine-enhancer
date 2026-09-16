@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-15T10:29:09.829Z",
+  "generatedAt": "2026-09-16T10:37:30.969Z",
   "policy": "Every ambiguous product receives supervised evidence or an explicit non-semantic fallback; no pending review items remain.",
   "summary": {
     "totalClassifications": 17747,
-    "reviewed": 17136,
+    "reviewed": 17112,
     "evidenceBacked": 116,
-    "fallbackResolved": 611,
-    "fallbackWithEvidence": 611,
+    "fallbackResolved": 635,
+    "fallbackWithEvidence": 635,
     "pending": 0
   },
   "fallbackProducts": [
@@ -112,6 +112,17 @@
     {
       "productId": "gid://shopify/Product/7764937965667",
       "handle": "mens-summer-fitness-tank-top-breathable-quick-drying-vest",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/7765004255331",
+      "handle": "dank-meme-hamster-t-shirt-womens-streetwear-short-sleeve",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -475,6 +486,17 @@
     {
       "productId": "gid://shopify/Product/8050008490083",
       "handle": "t-shirt-for-women-in-early-autumn-new-contrasting-color-half-open-collar-design-small-shirt-fashion-loose-tees-slimming-top",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8050008850531",
+      "handle": "t-shirt-for-women-2025-summer-new-v-neck-front-shoulder-slim-fit-slim-and-hiding-secondary-breast-basic-temperament-top",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -1551,6 +1573,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8055605624931",
+      "handle": "mens-fashion-casual-shirt-with-musical-floral-design-short-sleeve-button-up-shirt-retro-hawaiian-inspired-summer-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8055605887075",
       "handle": "mens-formal-casual-shirt-short-sleeve-ice-silk-classic-collar-for-smart-looks",
       "title": "",
@@ -2387,6 +2420,28 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8094209343587",
+      "handle": "2026-mens-casual-t-shirt-fashion-slim-long-sleeve-v-neck-fitness-t-shirts-tops-homme-tshirt-boyfriend-gift-harajuku-streetwear",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8094213832803",
+      "handle": "wonder-t-shirt-feminist-girl-power-t-shirt-superhero-mom-t-shirt-wonder-mom-womens-pattern-t-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8094219173987",
       "handle": "led-bookshelf-light-library-lantern-vintage-reading-corner-night-lamp-decorative-bookcase-lighting-for-office-home-decor-gift",
       "title": "",
@@ -2453,6 +2508,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8097467859043",
+      "handle": "custom-logo-fashion-vest-apron-waterproof-nylon-plain-quick-drying-cobbler-barista-aprons-waiters-shirts-barber-coat-printing",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8097469988963",
       "handle": "ap-ss26-teen-girl-women-solid-color-cotton-jersey-fabric-fitted-tee-shirt-ladies-fashion-brief-t-shirts-top",
       "title": "",
@@ -2464,8 +2530,52 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8097470054499",
+      "handle": "fashion-boys-funny-t-shirt-yeet-long-sleeve-children-t-shirts-spring-fall-kids-girls-tops-children-clothes4419",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8097470513251",
+      "handle": "custom-vintage-washed-t-shirts-diy-hip-hop-t-shirt-oversize-streetwear-short-sleeve-customized-tops-tees-man-woman-100-cotton",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8097472512099",
       "handle": "the-creature-cases-style-cartoon-print-t-shirts-high-quality-100-cotton-tee-shirt-round-neck-cartoon-boys-girls-kawaii-t-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8097472872547",
+      "handle": "summer-t-shirts-woman-o-neck-short-sleeves-tees-satin-klein-blue-champagne-solid-color-loose-womensoversized-t-shirt-silk-tops",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8097473757283",
+      "handle": "tacvasen-short-sleeve-crew-neck-cotton-t-shirts-mens-breathable-casual-t-shirt-sports-pullover-basic-tee-shirts-tops-clothing",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -2499,6 +2609,17 @@
     {
       "productId": "gid://shopify/Product/8097476903011",
       "handle": "womens-short-sleeve-t-shirts-casual-v-neck-t-shirt-summer-hippie-styel-tops-summer-beach-print-tees",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8097480900707",
+      "handle": "summer-fashion-outdoors-casual-white-color-simplicity-cotton-t-shirts-womens-o-neck-pocket-short-sleeve-loose-breathable-tops",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -2761,6 +2882,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8103709180003",
+      "handle": "womens-trendy-shirt-urban-casual-fashion-top",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8103710425187",
       "handle": "cowboy-western-hats-and-bandanas-for-kids-costume-hat-accessories-for-toddler-child-theme-birthday-party-halloween-costume-dress",
       "title": "",
@@ -2981,8 +3113,41 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8113425776739",
+      "handle": "womens-sleeveless-t-shirt-trendy-fashion-versatile-base-shirt-slim-fit-round-summer-neck-t-shirt-casual-breathable-clothing",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8113425875043",
       "handle": "2025-new-high-quality-casual-t-shirt-sexy-slim-short-sleeves-fashion-trend-solid-women-clothing-y2k-tops",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8113425973347",
+      "handle": "womens-new-arrival-golf-apparel-slim-fit-stretchy-slimming-versatile-knit-short-sleeve-t-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8113426104419",
+      "handle": "womens-funny-two-heart-print-black-t-shirt-casual-crew-neck-short-sleeve-soft-comfortable-fashion-tee-daily-basic-casual-top",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -3003,8 +3168,52 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8113427677283",
+      "handle": "womens-long-sleeve-collared-loose-fit-versatile-printed-casual-and-commuter-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8113429020771",
+      "handle": "womens-simple-solid-color-short-sleeved-shirt-for-commuting-casual-and-stylish-suitable-for-everyday-wear",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8113429938275",
+      "handle": "womens-casual-commuter-shirt-bohemian-geometric-print-long-sleeve-shirt",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8113431412835",
       "handle": "womens-casual-t-shirt-black-floral-print-short-sleeve-crew-neck-top-lightweight-breathable-fabric-ladies-t-shirts",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8113431543907",
+      "handle": "womens-classic-polo-shirt-short-sleeve-polo-shirt-with-button-placket-and-slim-fit",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5027,6 +5236,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8127789072483",
+      "handle": "3pcs-womens-clothing-long-sleeve-crop-tank-top-and-drawstring-shorts-pajama-set",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8127802474595",
       "handle": "4-in-1-fast-charging-station",
       "title": "",
@@ -5093,8 +5313,8 @@
       "semanticAssignmentAllowed": false
     },
     {
-      "productId": "gid://shopify/Product/8127814762595",
-      "handle": "winter-hooded-jacket-fashion-casual-warm-fleece-coat-windproof-rainproof-parka-windbreaker-mens-top",
+      "productId": "gid://shopify/Product/8127815975011",
+      "handle": "sexy-geometric-print-shirt-fashion-v-neck-long-sleeved-tops-womens-clothing",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5128,6 +5348,17 @@
     {
       "productId": "gid://shopify/Product/8127817482339",
       "handle": "beach-swimsuit-high-waist-deep-v-neck-tummy-control-bikini",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8127818006627",
+      "handle": "womens-solid-color-drop-shoulder-long-sleeve-shirt",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."
@@ -5247,6 +5478,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8128536150115",
+      "handle": "summer-short-sleeved-shirt-button-pullover-top-fashion-casual-womens-clothing",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8128536936547",
       "handle": "refrigeration-handheld-turbo-fan-mini-portable-hand-fan-usb-rechargeable-personal-fan-small-pocket-fan",
       "title": "",
@@ -5302,6 +5544,17 @@
       "semanticAssignmentAllowed": false
     },
     {
+      "productId": "gid://shopify/Product/8128542572643",
+      "handle": "lapel-long-sleeve-shirt-womens-single-breasted-pleated-shirt-tops-clothing",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
       "productId": "gid://shopify/Product/8128550076515",
       "handle": "ergonomic-lumbar-support-seat-cushion-posture-correcting-memory-foam-chair-pad-for-students-office-home-use",
       "title": "",
@@ -5348,6 +5601,17 @@
     {
       "productId": "gid://shopify/Product/8128554958947",
       "handle": "portable-mini-cooling-fan-with-oscillating-blades-compact-personal-air-circulator-for-desk-travel-office-home-use",
+      "title": "",
+      "reason": [
+        "Deterministic taxonomy did not reach a safe classification."
+      ],
+      "collectionHandle": "classification-fallback",
+      "managedTag": "classification-fallback",
+      "semanticAssignmentAllowed": false
+    },
+    {
+      "productId": "gid://shopify/Product/8128558399587",
+      "handle": "womens-casual-short-sleeve-top-crew-neck-t-shirt-loose-fit-summer-basic-tee-for-daily-wear",
       "title": "",
       "reason": [
         "Deterministic taxonomy did not reach a safe classification."

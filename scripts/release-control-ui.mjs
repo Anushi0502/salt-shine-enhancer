@@ -110,11 +110,14 @@ const HTML = String.raw`<!doctype html>
       <section class="card" aria-label="Release controls">
         <div class="unified-pill"><div><strong>Unified catalog workflow</strong><span>Full catalog and daily scheduling share the same guarded graph.</span></div><b>CONNECTED</b></div>
         <div class="fields">
+          <label for="seo-mode">SEO mode
+            <select id="seo-mode"><option value="gpt">GPT SEO</option><option value="deterministic">Normal SEO</option></select>
+          </label>
           <label for="seo-scope">SEO scope
             <select id="seo-scope"><option value="all-products">All active products</option><option value="new-products">New products only</option></select>
           </label>
         </div>
-        <p class="notice" role="note">GPT SEO is enabled for this guarded workflow. Product-centered SEO is processed in protected batches of 500; GPT-written fields are never overwritten by deterministic backfills.</p>
+        <p class="notice" id="seo-notice" role="note">GPT SEO uses product-centered protected batches of 500; GPT-written fields are never overwritten by normal SEO backfills. Resume always uses the saved checkpoint mode and scope.</p>
         <div class="actions">
           <button class="primary" id="start">Start release</button>
           <button class="secondary" id="resume">Resume checkpoint</button>
@@ -148,9 +151,11 @@ const HTML = String.raw`<!doctype html>
   </main>
   <script>
     const $ = (id) => document.getElementById(id);
+    const mode = $('seo-mode');
     const scope = $('seo-scope');
     const message = $('message');
     const logPageSize = 15;
+    let selectionTouched = false;
     let logLines = [];
     let logStart = 0;
     let logLoaded = false;
@@ -203,6 +208,11 @@ const HTML = String.raw`<!doctype html>
     function formatGptSeoProgress(progress) {
       if (!progress || !Number(progress.total)) return '';
       return String(progress.message || '').trim();
+    }
+    function updateSeoNotice() {
+      $('seo-notice').textContent = mode.value === 'gpt'
+        ? 'GPT SEO uses product-centered protected batches of 500; GPT-written fields are never overwritten by normal SEO backfills. Resume always uses the saved checkpoint mode and scope.'
+        : 'Normal SEO uses the deterministic catalog rules. It never overwrites fields protected by a completed GPT SEO record.';
     }
     function updateReleaseSummary(run, state, active, gptProgress) {
       const status = String(run?.status || 'unknown').trim().toLowerCase();
@@ -258,11 +268,17 @@ const HTML = String.raw`<!doctype html>
         const gptMessage = formatGptSeoProgress(gptProgress);
         $('gpt-progress').textContent = gptMessage;
         $('gpt-progress').hidden = !gptMessage;
+        if (!selectionTouched && !active && ['gpt', 'deterministic'].includes(seoMode)) mode.value = seoMode;
+        updateSeoNotice();
         $('index').textContent = run.stepIndex ? (run.stepIndex + '/' + (run.totalSteps || '?')) : '-';
         $('pid').textContent = active ? (state.process?.pid || run.pid || '-') : '-';
         $('heartbeat').textContent = run.heartbeatAt ? new Date(run.heartbeatAt).toLocaleTimeString() : '-';
         updateLog(state.log || 'No release output yet.');
+        const resumable = ['failed', 'interrupted', 'paused', 'waiting_for_network'].includes(String(status).toLowerCase()) && Number(run.stepIndex || 0) > 0;
+        $('resume').textContent = resumable ? 'Resume from step ' + run.stepIndex : 'Resume checkpoint';
+        $('resume').setAttribute('aria-label', resumable ? 'Resume checkpoint from step ' + run.stepIndex : 'Resume checkpoint');
         $('start').disabled = active; $('resume').disabled = active; $('stop').disabled = !active;
+        mode.disabled = active; scope.disabled = active;
         if (message.textContent.startsWith('State polling failed:')) message.textContent = 'Connected to the local release service.';
       } catch (error) { message.textContent = 'State polling failed: ' + error.message; }
     }
@@ -302,10 +318,17 @@ const HTML = String.raw`<!doctype html>
     async function start(resume) {
       message.textContent = resume ? 'Requesting guarded resume...' : 'Requesting guarded release...';
       try {
-        const response = await fetch('/api/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ profile: 'catalog', seoMode: 'gpt', seoScope: scope.value, resume }) });
+        const response = await fetch('/api/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ profile: 'catalog', seoMode: mode.value, seoScope: scope.value, resume }) });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'start request failed');
-        message.textContent = 'Started supervisor PID ' + payload.pid + '. Polling live output.';
+        if (resume && payload.seoMode) {
+          mode.value = payload.seoMode;
+          selectionTouched = false;
+          updateSeoNotice();
+        }
+        message.textContent = resume && payload.resumeFromStep
+          ? 'Resuming from step ' + payload.resumeFromStep + ' in ' + String(payload.seoMode || mode.value).toUpperCase() + ' mode. Polling live output.'
+          : 'Started supervisor PID ' + payload.pid + '. Polling live output.';
         await refresh();
       } catch (error) { message.textContent = error.message; }
     }
@@ -322,6 +345,8 @@ const HTML = String.raw`<!doctype html>
     }
     $('start').addEventListener('click', () => start(false));
     $('resume').addEventListener('click', () => start(true));
+    mode.addEventListener('change', () => { selectionTouched = true; updateSeoNotice(); });
+    scope.addEventListener('change', () => { selectionTouched = true; });
     $('stop').addEventListener('click', stop);
     $('show-earlier').addEventListener('click', () => {
       if (logStart <= 0) return;
@@ -549,6 +574,11 @@ export function isActiveReleaseState(state = {}) {
     && Number(state?.pid || 0) > 0;
 }
 
+export function isResumableReleaseCheckpoint(state = {}) {
+  return ["failed", "interrupted", "paused", "waiting_for_network"].includes(String(state?.status || "").trim().toLowerCase())
+    && Number(state?.stepIndex || 0) > 0;
+}
+
 export function summarizeReleaseError(release = {}) {
   const details = [release?.error, release?.stageError, release?.stageStderr, release?.lastError]
     .filter(Boolean)
@@ -688,17 +718,41 @@ export function validateStartRequest(payload) {
   const requestedProfile = String(request.profile || "catalog").trim().toLowerCase();
   const seoMode = String(request.seoMode || "gpt").trim().toLowerCase();
   const seoScope = String(request.seoScope || "all-products").trim().toLowerCase();
+  const hasResumeFromStep = request.resumeFromStep !== undefined && request.resumeFromStep !== null && request.resumeFromStep !== "";
+  const resumeFromStep = hasResumeFromStep ? Number(request.resumeFromStep) : null;
   if (!["catalog", "daily"].includes(requestedProfile)) throw new Error("profile must be catalog or daily");
-  if (!["deterministic", "gpt"].includes(seoMode)) throw new Error("seoMode must be gpt");
-  if (seoMode !== "gpt") throw new Error("Only GPT SEO is available in the desktop control UI");
+  if (!["deterministic", "gpt"].includes(seoMode)) throw new Error("seoMode must be gpt or deterministic");
   if (!["all-products", "new-products"].includes(seoScope)) throw new Error("seoScope must be all-products or new-products");
+  if (hasResumeFromStep && (!Number.isInteger(resumeFromStep) || resumeFromStep <= 0)) {
+    throw new Error("resumeFromStep must be a positive integer");
+  }
+  if (hasResumeFromStep && request.resume !== true) {
+    throw new Error("resumeFromStep requires resume=true");
+  }
   return {
     // The UI exposes one workflow. Keep accepting the legacy daily value for
     // old clients, but route it through the canonical full-catalog graph.
     profile: "catalog",
-    seoMode: "gpt",
+    seoMode,
     seoScope,
     resume: request.resume === true,
+    ...(hasResumeFromStep ? { resumeFromStep } : {}),
+  };
+}
+
+export function applyResumeCheckpointSelection(request, checkpoint = {}) {
+  if (!request?.resume) return request;
+  const checkpointMode = String(checkpoint?.seoMode || "").trim().toLowerCase();
+  const checkpointScope = String(checkpoint?.seoScope || "").trim().toLowerCase();
+  return {
+    ...request,
+    seoMode: ["gpt", "deterministic"].includes(checkpointMode) ? checkpointMode : request.seoMode,
+    seoScope: ["all-products", "new-products"].includes(checkpointScope) ? checkpointScope : request.seoScope,
+    resumeFromStep: Number(request.resumeFromStep || 0) > 0
+      ? Number(request.resumeFromStep)
+      : Number(checkpoint?.stepIndex || 0) > 0
+        ? Number(checkpoint.stepIndex)
+        : null,
   };
 }
 
@@ -718,6 +772,18 @@ async function readState() {
   const watcherAlive = isProcessAlive(watcherPid);
   const watcherReleaseStatus = String(watcher?.releaseStatus || "").trim().toLowerCase();
   const stateSource = releaseStatus ? "release checkpoint" : watcherAlive ? "watcher heartbeat" : "no checkpoint";
+  const gptSeoProgressView = gptSeoProgress && !liveProcess &&
+    ["failed", "interrupted", "paused", "waiting_for_network"].includes(releaseStatus) &&
+    gptSeoProgress.state === "starting-batch"
+    ? {
+      ...gptSeoProgress,
+      state: "checkpoint-ready",
+      message: `GPT SEO batch ${gptSeoProgress.currentBatch}/${gptSeoProgress.batchCount} ready on resume; ` +
+        `${Number(gptSeoProgress.processed || 0).toLocaleString()}/${Number(gptSeoProgress.total || 0).toLocaleString()} processed; ` +
+        `${Number(gptSeoProgress.accepted || 0).toLocaleString()} accepted; ` +
+        `${Number(gptSeoProgress.rejected || 0).toLocaleString()} queued for retry.`,
+    }
+    : gptSeoProgress;
   const watcherView = watcher && typeof watcher === "object"
     ? {
       ...watcher,
@@ -737,7 +803,7 @@ async function readState() {
     releaseStateSource: stateSource,
     visualTaxonomyTraining,
     visualTaxonomyShardTraining,
-    gptSeoProgress,
+    gptSeoProgress: gptSeoProgressView,
     log,
     process: {
       active: liveProcess,
@@ -830,16 +896,23 @@ async function waitForReleaseStop(rootPid, releasePid, timeoutMs = 8_000) {
 }
 
 async function startRelease(payload) {
-  const request = validateStartRequest(payload);
+  const requested = validateStartRequest(payload);
   if (activeChild && activeChild.exitCode === null) throw new Error(`release supervisor already running as PID ${activeChild.pid}`);
   const current = await readJsonIfPresent(releaseStatePath);
   const currentPid = Number(current?.pid || 0);
   if (["running", "waiting_for_network"].includes(String(current?.status || "").toLowerCase()) && isProcessAlive(currentPid)) {
     throw new Error(`release is already running as PID ${currentPid}`);
   }
+  if (requested.resume && !isResumableReleaseCheckpoint(current)) {
+    throw new Error("No resumable release checkpoint with a saved step was found.");
+  }
+  const request = applyResumeCheckpointSelection(requested, current);
   await updateWatcherState({ manualStopReleasePid: 0, manualStopAt: "" });
   const args = [supervisorPath, "--profile", request.profile, "--seo-mode", request.seoMode, "--seo-scope", request.seoScope];
-  if (request.resume) args.push("--resume");
+  if (request.resume) {
+    args.push("--resume");
+    if (request.resumeFromStep) args.push("--resume-from-step", String(request.resumeFromStep));
+  }
   await mkdir(outputDir, { recursive: true });
   const child = spawn(process.execPath, args, {
     cwd: rootDir,
@@ -847,6 +920,8 @@ async function startRelease(payload) {
       ...process.env,
       SALT_RELEASE_SEO_MODE: request.seoMode,
       SALT_RELEASE_SEO_SCOPE: request.seoScope,
+      SALT_RELEASE_RESUME: request.resume ? "1" : "0",
+      SALT_GPT_SEO_RESUME: request.resume ? "1" : "0",
       SALT_GPT_SEO_PROVIDER: "applescript",
       SALT_GPT_SEO_BATCH_SIZE: "500",
       SALT_VISUAL_ENCODER_BATCH_SIZE: "32",
@@ -856,18 +931,13 @@ async function startRelease(payload) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   activeChild = child;
-  let logWrite = Promise.resolve();
-  const append = (chunk) => {
-    logWrite = logWrite
-      .then(() => appendFile(logPath, String(chunk), "utf8"))
-      .catch(() => undefined);
-    return logWrite;
-  };
-  child.stdout.on("data", (chunk) => void append(chunk));
-  child.stderr.on("data", (chunk) => void append(chunk));
-  child.once("error", (error) => void append(`[ui] supervisor error: ${error.stack || error}\n`));
+  // `run-release-foreground.mjs` is the single writer for release and
+  // watcher output. Drain the supervisor streams here without appending them
+  // again, otherwise every line appears twice in the UI log.
+  child.stdout.resume();
+  child.stderr.resume();
+  child.once("error", () => undefined);
   child.once("exit", (code, signal) => {
-    void append(`[ui] supervisor exited: ${signal ? `signal ${signal}` : `code ${code}`}\n`);
     if (activeChild === child) activeChild = null;
   });
   return { ...request, pid: child.pid };

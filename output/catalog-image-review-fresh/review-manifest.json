@@ -1,10 +1,10 @@
 {
   "summary": {
     "totalClassifications": 17747,
-    "reviewed": 17136,
+    "reviewed": 17112,
     "evidenceBacked": 116,
-    "fallbackResolved": 611,
-    "fallbackWithEvidence": 611,
+    "fallbackResolved": 635,
+    "fallbackWithEvidence": 635,
     "pending": 0
   },
   "records": []

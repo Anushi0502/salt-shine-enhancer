@@ -1,0 +1,45 @@
+{
+  "requestId": "f3f8f02c7a27f02791c0b089a890f2161fd8e590784a72ee2919de23eee77069",
+  "schemaVersion": 2,
+  "batchIndex": 1,
+  "records": [
+    {
+      "handle": "kem-trng-da-body-mm-a-cosmetics-dng-trng-nhanh-chong-mn-mang-hng-nc-hoa-quyn-ru-bright-white-smooth-and-soft-skin",
+      "accepted": true,
+      "record": {
+        "title": "Kem Trng Da Body Mm Cosmetics",
+        "descriptionHtml": "<h2>Kem Trng Da Body Mm Cosmetics</h2><p>Kem Trng Da Body Mm Cosmetics is a Da Body listing from SALT in Beauty &amp; Skincare, under the Beauty department.</p><h3>Key details</h3><ul><li><strong>Product type:</strong> Da Body</li><li><strong>Category:</strong> Beauty &amp; Skincare &gt; Body Care</li><li><strong>Audience:</strong> Women, women</li><li><strong>Use:</strong> makeup</li><li><strong>Options shown:</strong> 1PCS; 1PCS 1</li></ul><h3>Use &amp; care</h3><p>Review the supplied setup, handling, cleaning, storage, and safety instructions for this listing.</p>",
+        "seoTitle": "Kem Trng Da Body Mm Cosmetics",
+        "seoDescription": "Kem Trng Da Body Mm Cosmetics is a Da Body listing in Beauty & Skincare > Body Care, with 1PCS and 1PCS 1 options for the listed makeup context.",
+        "category": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Body Care",
+          "productType": "Body Care"
+        },
+        "metafields": {
+          "badgeText": "Body Care",
+          "highlights": [
+            "Product type: Da Body",
+            "Category: Beauty & Skincare > Body Care",
+            "Use: makeup",
+            "Options: 1PCS; 1PCS 1"
+          ],
+          "collectionSignal": "Beauty > Beauty & Skincare > Body Care > Body Care",
+          "typeAttributes": {}
+        },
+        "searchTerms": [
+          "Kem Trng Da Body Mm Cosmetics",
+          "Da Body",
+          "Body Care",
+          "Beauty & Skincare",
+          "makeup",
+          "1PCS",
+          "1PCS 1",
+          "Women",
+          "SALT"
+        ]
+      }
+    }
+  ]
+}

@@ -1081,7 +1081,7 @@ export function buildResourceRoute(handle: string): string {
 
   const withoutPrefix = normalized.startsWith("resources/") ? normalized.slice("resources/".length) : normalized;
   return withoutPrefix
-    ? `/shop?resource=guide&handle=${encodeURIComponent(withoutPrefix)}`
+    ? `/pages/resources?resource=guide&handle=${encodeURIComponent(withoutPrefix)}`
     : "/pages/resources";
 }
 

@@ -1,0 +1,1000 @@
+{
+  "schemaVersion": 2,
+  "requestId": "938f1a20943a1327f29005d38f7973064b8969e81552aa820a1ff494f04d6cca",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 24,
+  "batchCount": 36,
+  "products": [
+    {
+      "handle": "mens-2-piece-formal-suit-utility-style-golden-buttons-suit-trousers-combination-fashionable-business-use",
+      "evidenceFingerprint": "9c0facd0ee9665b1fc183de4ced1aaed5715ff6ebef9ae338fd2268c15923121",
+      "evidence": {
+        "handle": "mens-2-piece-formal-suit-utility-style-golden-buttons-suit-trousers-combination-fashionable-business-use",
+        "title": "Mens Piece Formal Suit Utility Golden",
+        "productType": "Pants",
+        "vendor": "SALT",
+        "tags": [
+          "men",
+          "men-collection",
+          "men-fashion",
+          "new-arrivals",
+          "suit"
+        ],
+        "sourceDescription": " About Mens Piece Formal Suit Utility Golden   Mens Piece Formal Suit Utility Golden is a pants identified by the product title and supplied listing details.   Key Details     Size or capacity: 2 piece   Audience: men     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Mens Piece Formal Suit Utility Golden?   A: Mens Piece Formal Suit Utility Golden is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 2 piece Audience: men ",
+        "verifiedTaxonomy": {
+          "department": "Men",
+          "category": "Men's Fashion",
+          "subcategory": "Suits & Formalwear",
+          "productType": "Suit",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Suits"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Red / L",
+            "sku": "14:10;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / M",
+            "sku": "14:10;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XXL",
+            "sku": "14:10;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XL",
+            "sku": "14:10;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / 4XL",
+            "sku": "14:10;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XXXL",
+            "sku": "14:10;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / XS",
+            "sku": "14:29;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / 5XL",
+            "sku": "14:10;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / M",
+            "sku": "14:29;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / S",
+            "sku": "14:29;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / XL",
+            "sku": "14:29;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / L",
+            "sku": "14:29;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / XXXL",
+            "sku": "14:29;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / XXL",
+            "sku": "14:29;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / 5XL",
+            "sku": "14:29;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "WHITE / 4XL",
+            "sku": "14:29;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / XXL",
+            "sku": "14:175;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / XL",
+            "sku": "14:175;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / 4XL",
+            "sku": "14:175;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / XXXL",
+            "sku": "14:175;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XS",
+            "sku": "14:1052;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / 5XL",
+            "sku": "14:175;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / M",
+            "sku": "14:1052;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / S",
+            "sku": "14:1052;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XL",
+            "sku": "14:1052;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / L",
+            "sku": "14:1052;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XXXL",
+            "sku": "14:1052;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XXL",
+            "sku": "14:1052;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / 5XL",
+            "sku": "14:1052;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / 4XL",
+            "sku": "14:1052;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / S",
+            "sku": "14:10;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XS",
+            "sku": "14:10;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / 4XL",
+            "sku": "14:365458#Brown;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / XXXL",
+            "sku": "14:365458#Brown;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / XS",
+            "sku": "14:691;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / 5XL",
+            "sku": "14:365458#Brown;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / M",
+            "sku": "14:691;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / S",
+            "sku": "14:691;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / XL",
+            "sku": "14:691;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / L",
+            "sku": "14:691;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / XXXL",
+            "sku": "14:691;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / XXL",
+            "sku": "14:691;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / 5XL",
+            "sku": "14:691;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "GRAY / 4XL",
+            "sku": "14:691;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / S",
+            "sku": "14:175;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / XS",
+            "sku": "14:175;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / L",
+            "sku": "14:175;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "green / M",
+            "sku": "14:175;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / XS",
+            "sku": "14:1254;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / 5XL",
+            "sku": "14:193;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / M",
+            "sku": "14:1254;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / S",
+            "sku": "14:1254;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / XL",
+            "sku": "14:1254;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / L",
+            "sku": "14:1254;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / XXXL",
+            "sku": "14:1254;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / XXL",
+            "sku": "14:1254;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / 5XL",
+            "sku": "14:1254;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "SKY BLUE / 4XL",
+            "sku": "14:1254;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / S",
+            "sku": "14:365458#Brown;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / XS",
+            "sku": "14:365458#Brown;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / L",
+            "sku": "14:365458#Brown;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / M",
+            "sku": "14:365458#Brown;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / XXL",
+            "sku": "14:365458#Brown;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown / XL",
+            "sku": "14:365458#Brown;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / S",
+            "sku": "14:193;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / XS",
+            "sku": "14:193;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / L",
+            "sku": "14:193;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / M",
+            "sku": "14:193;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / XXL",
+            "sku": "14:193;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / XL",
+            "sku": "14:193;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / 4XL",
+            "sku": "14:193;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "black / XXXL",
+            "sku": "14:193;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XXXL",
+            "sku": "14:200002984;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XXL",
+            "sku": "14:200002984;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / 5XL",
+            "sku": "14:200002984;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / 4XL",
+            "sku": "14:200002984;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "PURPLE / S",
+            "sku": "14:496;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "PURPLE / XS",
+            "sku": "14:496;5:872",
+            "selectedOptions": []
+          },
+          {
+            "title": "PURPLE / L",
+            "sku": "14:496;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "PURPLE / M",
+            "sku": "14:496;5:361386",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "men-suits-3-pieces-slim-fit-business-suits-groom-blue-noble-grey-white-tuxedos-for-formal-wedding-suitblazer-pants-vest",
+      "evidenceFingerprint": "9511009804a6eec05b85ce52396deaa1d65dc06b367c068b9207bdaf221ded4d",
+      "evidence": {
+        "handle": "men-suits-3-pieces-slim-fit-business-suits-groom-blue-noble-grey-white-tuxedos-for-formal-wedding-suitblazer-pants-vest",
+        "title": "Wedding Suitblazer Pants",
+        "productType": "Pants",
+        "vendor": "SALT",
+        "tags": [
+          "men",
+          "men-collection",
+          "men-fashion",
+          "new-arrivals",
+          "pants",
+          "trousers"
+        ],
+        "sourceDescription": " About Wedding Suitblazer Pants   Wedding Suitblazer Pants is a pants identified by the product title and supplied listing details.   Key Details     Size or capacity: 3 pieces   Audience: men   Use: wedding, Wedding     Use   Care   Use it for the listed wedding, Wedding context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Wedding Suitblazer Pants?   A: Wedding Suitblazer Pants is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 3 pieces Audience: men Use: wedding, Wedding ",
+        "verifiedTaxonomy": {
+          "department": "Men",
+          "category": "Men's Fashion",
+          "subcategory": "Trousers & Pants",
+          "productType": "Pants",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Pants"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Beige / 5XL",
+            "sku": "14:771#Beige;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / 4XL",
+            "sku": "14:771#Beige;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / XXXL",
+            "sku": "14:771#Beige;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / XXL",
+            "sku": "14:771#Beige;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / L",
+            "sku": "14:193#Black;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / M",
+            "sku": "14:193#Black;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / S",
+            "sku": "14:193#Black;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / XS（old）",
+            "sku": "14:193#Black;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / 4XL",
+            "sku": "14:193#Black;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / XXXL",
+            "sku": "14:193#Black;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / XXL",
+            "sku": "14:193#Black;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / XL",
+            "sku": "14:193#Black;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / M",
+            "sku": "14:1254#Light blue;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / S",
+            "sku": "14:1254#Light blue;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / XS（old）",
+            "sku": "14:1254#Light blue;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / 5XL",
+            "sku": "14:193#Black;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / XXXL",
+            "sku": "14:1254#Light blue;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / XXL",
+            "sku": "14:1254#Light blue;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / XL",
+            "sku": "14:1254#Light blue;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / L",
+            "sku": "14:1254#Light blue;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / 5XL",
+            "sku": "14:1254#Light blue;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / 4XL",
+            "sku": "14:1254#Light blue;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Green / XS（old）",
+            "sku": "14:175#Green;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / XS（old）",
+            "sku": "14:771#Beige;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / XL",
+            "sku": "14:771#Beige;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / L",
+            "sku": "14:771#Beige;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / M",
+            "sku": "14:771#Beige;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / S",
+            "sku": "14:771#Beige;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Beige / XXS",
+            "sku": "14:771#Beige;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black / XXS",
+            "sku": "14:193#Black;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / 5XL",
+            "sku": "14:202520811#Mint Green;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / 4XL",
+            "sku": "14:202520811#Mint Green;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XXL",
+            "sku": "14:200002984#Burgundy;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XL",
+            "sku": "14:200002984#Burgundy;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / L",
+            "sku": "14:200002984#Burgundy;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / M",
+            "sku": "14:200002984#Burgundy;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / XS（old）",
+            "sku": "14:173#Blue;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / 5XL",
+            "sku": "14:200002984#Burgundy;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / 4XL",
+            "sku": "14:200002984#Burgundy;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XXXL",
+            "sku": "14:200002984#Burgundy;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / XL",
+            "sku": "14:173#Blue;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / L",
+            "sku": "14:173#Blue;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / M",
+            "sku": "14:173#Blue;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / S",
+            "sku": "14:173#Blue;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / 5XL",
+            "sku": "14:173#Blue;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / 4XL",
+            "sku": "14:173#Blue;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / XXXL",
+            "sku": "14:173#Blue;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / XXL",
+            "sku": "14:173#Blue;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / L",
+            "sku": "14:1052#Pink;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / M",
+            "sku": "14:1052#Pink;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / S",
+            "sku": "14:1052#Pink;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Burgundy / XXS",
+            "sku": "14:200002984#Burgundy;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XS（old）",
+            "sku": "14:1052#Pink;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / 4XL",
+            "sku": "14:1052#Pink;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Navy / XXS",
+            "sku": "14:201800840#Navy;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XXXL",
+            "sku": "14:1052#Pink;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Royal blue / XXS",
+            "sku": "14:200013902#Royal blue;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XXL",
+            "sku": "14:1052#Pink;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XL",
+            "sku": "14:1052#Pink;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / XXS",
+            "sku": "14:202520811#Mint Green;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / M",
+            "sku": "14:202520811#Mint Green;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "Purple / XXS",
+            "sku": "14:496#Purple;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / S",
+            "sku": "14:202520811#Mint Green;5:100014064",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XXS",
+            "sku": "14:10#Red;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / XS（old）",
+            "sku": "14:202520811#Mint Green;5:100014066",
+            "selectedOptions": []
+          },
+          {
+            "title": "Hunt Green / XXS",
+            "sku": "14:200004889#Hunt Green;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / 5XL",
+            "sku": "14:1052#Pink;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Pink / XXS",
+            "sku": "14:1052#Pink;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / XXXL",
+            "sku": "14:202520811#Mint Green;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / XXL",
+            "sku": "14:202520811#Mint Green;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "Green / XXS",
+            "sku": "14:175#Green;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / XL",
+            "sku": "14:202520811#Mint Green;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "Blue / XXS",
+            "sku": "14:173#Blue;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Mint Green / L",
+            "sku": "14:202520811#Mint Green;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Light blue / XXS",
+            "sku": "14:1254#Light blue;5:4181",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / 5XL",
+            "sku": "14:10#Red;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / 4XL",
+            "sku": "14:10#Red;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "Red / XXXL",
+            "sku": "14:10#Red;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "Navy / L",
+            "sku": "14:201800840#Navy;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "Navy / M",
+            "sku": "14:201800840#Navy;5:361386",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "business-casual-two-button-suit-mens-sets-solid-color-slim-fit-suit-blazer-and-full-length-pants-formal-two-pieces-set-clothing",
+      "evidenceFingerprint": "a9276939a631069344e2b765863c6ad8ca0472e0a8e4d4a7980eaaf60fb3ec9f",
+      "evidence": {
+        "handle": "business-casual-two-button-suit-mens-sets-solid-color-slim-fit-suit-blazer-and-full-length-pants-formal-two-pieces-set-clothing",
+        "title": "Casual Two Button Suit Mens Solid",
+        "productType": "Pants",
+        "vendor": "SALT",
+        "tags": [
+          "men",
+          "men-collection",
+          "men-fashion",
+          "new-arrivals",
+          "suit"
+        ],
+        "sourceDescription": " About Casual Two Button Suit Mens Solid   Casual Two Button Suit Mens Solid is a pants identified by the product title and supplied listing details.   Key Details    Audience: men    Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Casual Two Button Suit Mens Solid?   A: Casual Two Button Suit Mens Solid is a pants identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: men ",
+        "verifiedTaxonomy": {
+          "department": "Men",
+          "category": "Men's Fashion",
+          "subcategory": "Suits & Formalwear",
+          "productType": "Suit",
+          "shopifyCategory": "Apparel & Accessories > Clothing > Suits"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "LJT1822 Coffee / XL / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / XXL / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / XXXL / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / 4XL / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / 4XL / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / 5XL / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / M / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / L / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / L / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / XL / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / XXL / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / XXXL / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / XXXL / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:4183",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / 4XL / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:200000990",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / 5XL / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:200000991",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Dark Grey / M / China Mainland",
+            "sku": "14:200004890#LJT1822 Dark Grey;200007763:201336100;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / M / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:361386",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / L / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:361385",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / XL / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:100014065",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Black / XXL / China Mainland",
+            "sku": "14:193#LJT1822 Black;200007763:201336100;5:4182",
+            "selectedOptions": []
+          },
+          {
+            "title": "LJT1822 Coffee / 5XL / China Mainland",
+            "sku": "14:200001438#LJT1822 Coffee;200007763:201336100;5:200000991",
+            "selectedOptions": []
+          }
+        ]
+      }
+    }
+  ]
+}

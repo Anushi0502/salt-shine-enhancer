@@ -1,0 +1,83 @@
+{
+  "requestId": "db0351833f11641c8856f0c97443aeb01f179b4dec87217804460e319ac9011c",
+  "schemaVersion": 2,
+  "batchIndex": 31,
+  "records": [
+    {
+      "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women",
+      "accepted": true,
+      "record": {
+        "title": "Beige Travel Bag Duffel Cosmetics Backpack",
+        "descriptionHtml": "<h2>Beige Travel Bag Duffel Cosmetics Backpack</h2><p>The Travel Bag Duffel Cosmetics Backpack is a backpack for men and women, listed for travel, fitness, camping, and outdoor use.</p><ul><li>Color: Beige</li><li>Product type: backpack</li><li>Listed uses: travel, fitness, camping, outdoor</li></ul>",
+        "seoTitle": "Beige Travel Bag Duffel Cosmetics Backpack | SALT",
+        "seoDescription": "SALT Travel Bag Duffel Cosmetics Backpack in Beige is a backpack for men and women, listed for travel, fitness, camping, and outdoor use.",
+        "category": {
+          "department": "Camping & Travel Essentials",
+          "category": "Travel Essentials",
+          "subcategory": "Travel Bags & Luggage",
+          "productType": "Travel Bag"
+        },
+        "metafields": {
+          "badgeText": "New Arrival",
+          "highlights": [
+            "Beige color",
+            "Backpack product type",
+            "For men and women",
+            "Listed uses: travel, fitness, camping, outdoor"
+          ],
+          "collectionSignal": "Travel Essentials > Travel Bags & Luggage > Travel Bag",
+          "typeAttributes": {}
+        },
+        "searchTerms": [
+          "Travel Bag Duffel Cosmetics Backpack",
+          "Beige backpack",
+          "travel bag",
+          "Travel Essentials",
+          "Travel Bags & Luggage",
+          "camping travel",
+          "fitness",
+          "outdoor",
+          "men and women"
+        ]
+      }
+    },
+    {
+      "handle": "travel-bag-duffel-bag-cosmetics-bag-professional-fitness-bag-yoga-swimming-training-backpack-satchel-shoulder-crossbody-tote-bag-suitable-for-men-and-women-1",
+      "accepted": true,
+      "record": {
+        "title": "Beige Travel Bag Duffel Cosmetics Backpack",
+        "descriptionHtml": "<h2>Beige Travel Bag Duffel Cosmetics Backpack</h2><p>The Travel Bag Duffel Cosmetics Backpack is a backpack for men and women, listed for travel, fitness, camping, and outdoor use.</p><ul><li>Color: Beige</li><li>Product type: backpack</li><li>Listed uses: travel, fitness, camping, outdoor</li></ul>",
+        "seoTitle": "Beige Travel Bag Duffel Cosmetics Backpack | SALT",
+        "seoDescription": "SALT Travel Bag Duffel Cosmetics Backpack in Beige is a backpack for men and women, listed for travel, fitness, camping, and outdoor use.",
+        "category": {
+          "department": "Camping & Travel Essentials",
+          "category": "Travel Essentials",
+          "subcategory": "Travel Bags & Luggage",
+          "productType": "Travel Bag"
+        },
+        "metafields": {
+          "badgeText": "New Arrival",
+          "highlights": [
+            "Beige color",
+            "Backpack product type",
+            "For men and women",
+            "Listed uses: travel, fitness, camping, outdoor"
+          ],
+          "collectionSignal": "Travel Essentials > Travel Bags & Luggage > Travel Bag",
+          "typeAttributes": {}
+        },
+        "searchTerms": [
+          "Travel Bag Duffel Cosmetics Backpack",
+          "Beige backpack",
+          "travel bag",
+          "Travel Essentials",
+          "Travel Bags & Luggage",
+          "camping travel",
+          "fitness",
+          "outdoor",
+          "men and women"
+        ]
+      }
+    }
+  ]
+}

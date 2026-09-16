@@ -23,10 +23,10 @@ describe("resource hub content", () => {
     const topic = getResourceTopicByHandle("senior-living-guides", "home-safety-tips");
     expect(topic?.title).toBe("Home Safety Tips");
     expect(buildResourceRoute("senior-living-guides")).toBe(
-      "/shop?resource=guide&handle=senior-living-guides",
+      "/pages/resources?resource=guide&handle=senior-living-guides",
     );
     expect(buildResourceTopicRoute("senior-living-guides", "home-safety-tips")).toBe(
-      "/shop?resource=guide&handle=senior-living-guides%2Fhome-safety-tips",
+      "/pages/resources?resource=guide&handle=senior-living-guides%2Fhome-safety-tips",
     );
   });
 
@@ -50,12 +50,50 @@ describe("resource hub content", () => {
     }
   });
 
-  it("scopes topic FAQs to the parent category", () => {
+  it("gives every resource route an answer-first block and page-specific FAQs", () => {
     const page = getEditorialPageContent("senior-living-guides/home-safety-tips");
 
+    expect(page?.answerBlock?.question).toContain("home safety tips");
+    expect(page?.answerBlock?.answer).toContain("safer rooms");
+    expect(page?.answerBlock?.usefulFor).toContain("home safety tips");
+    expect(page?.answerBlock?.nextStep).toContain("Home Decor & Lighting");
+    expect(page?.answerBlock?.takeaways).toHaveLength(3);
+    expect(page?.answerBlock?.queryPrompts).toHaveLength(3);
+    expect(page?.answerBlock?.decisionSteps).toHaveLength(3);
+    expect(page?.answerBlock?.queryPrompts?.[0]).toBe("What are practical home safety tips?");
     expect(page?.faqs?.length).toBeGreaterThan(0);
-    expect(page?.faqs?.every((faq) => !faq.question.includes("Home Safety Tips"))).toBe(true);
+    expect(page?.faqs?.some((faq) => faq.question.includes("Home Safety Tips"))).toBe(true);
     expect(page?.faqs?.some((faq) => faq.question.includes("Senior Living Guides"))).toBe(true);
+  });
+
+  it("keeps every guide and topic ready for answer-first extraction", () => {
+    const handles = RESOURCE_HUB_GUIDES.flatMap((guide) => [
+      guide.handle,
+      ...guide.topics.map((topic) => `${guide.handle}/${topic.handle}`),
+    ]);
+
+    for (const handle of handles) {
+      const page = getEditorialPageContent(handle);
+      expect(page?.answerBlock?.question).toBeTruthy();
+      expect(page?.answerBlock?.answer).toBeTruthy();
+      expect(page?.answerBlock?.usefulFor).toBeTruthy();
+      expect(page?.answerBlock?.nextStep).toBeTruthy();
+      expect(page?.answerBlock?.takeaways?.length).toBeGreaterThanOrEqual(3);
+      expect(page?.answerBlock?.queryPrompts?.length).toBeGreaterThanOrEqual(3);
+      expect(page?.answerBlock?.decisionSteps?.length).toBe(3);
+      expect(page?.faqs?.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("adds a direct answer surface to the broader editorial storefront", () => {
+    for (const handle of ["about-us", "collections", "faq", "interactive-stem-assembly-activities-for-kids"]) {
+      const page = getEditorialPageContent(handle);
+
+      expect(page?.answerBlock?.question).toBeTruthy();
+      expect(page?.answerBlock?.answer).toBeTruthy();
+      expect(page?.answerBlock?.takeaways?.length).toBeGreaterThanOrEqual(1);
+      expect(page?.answerBlock?.queryPrompts?.length).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it("keeps the GSC STEM landing page tied to the verified live products", () => {

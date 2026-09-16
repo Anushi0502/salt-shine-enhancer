@@ -1,33 +1,35 @@
 # SALT Release Bottleneck Report
 
-Generated: 2026-09-15T12:29:32.017Z
+Generated: 2026-09-16T11:45:21.325Z
 Profile: catalog
 Status: running
-Measured: 4/66 steps (0.2 minutes)
+Measured: 5/66 steps (3.82 minutes)
 Bottleneck threshold: 1.00 minutes
 
 ## Top Bottlenecks
 
 | Step | Category | Duration | Share | Status |
 | ---: | --- | ---: | ---: | --- |
-| 1 | local-model | 0.15 min | 78.82% | bottleneck |
+| 5 | shopify-io | 3.75 min | 98.09% | bottleneck |
+  Recommendation: Reuse the complete variant map, process cost bands in bounded batches, and read back only changed variants.
+| 1 | local-model | 0.05 min | 1.27% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 2 | local-model | 0.02 min | 10.68% | bottleneck |
+| 2 | local-model | 0.01 min | 0.32% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 3 | local-model | 0.02 min | 8.15% | bottleneck |
+| 3 | local-model | 0.01 min | 0.24% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 4 | local-model | 0 min | 2.36% | bottleneck |
+| 4 | local-model | 0 min | 0.07% | bottleneck |
   Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
 
 ## All Steps
 
 | Step | Label | Duration | Status |
 | ---: | --- | ---: | --- |
-| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.15 min | bottleneck |
-| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 0.02 min | bottleneck |
-| 3 | Verify trained 128M-record catalog knowledge model | 0.02 min | bottleneck |
+| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.05 min | bottleneck |
+| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 0.01 min | bottleneck |
+| 3 | Verify trained 128M-record catalog knowledge model | 0.01 min | bottleneck |
 | 4 | Verify approved catalog taxonomy release | 0 min | bottleneck |
-| 5 | Scan and remove active products missing live variant cost | - min | pending |
+| 5 | Scan and remove active products missing live variant cost | 3.75 min | bottleneck |
 | 6 | Refresh Shopify data: Shopify product and collection data | - min | pending |
 | 7 | Refresh Shopify data: recently ordered products and managed collection membership (parallel) | - min | pending |
 | 8 | Dry-run active product option and unit-cost anomaly repair | - min | pending |

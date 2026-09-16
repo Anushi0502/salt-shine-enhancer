@@ -1,0 +1,48 @@
+{
+  "requestId": "fcf1e587c306bd4bbdbc9c5a5592d363c7729e751ddceb15adeb34408fd152fd",
+  "schemaVersion": 2,
+  "batchIndex": 19,
+  "records": [
+    {
+      "handle": "50g-170g-got-2b-spray-human-hair-styling-gel-got2b-spray-glued-freeze-spray-ultra-glued-invincible-styling-got2b-strong-hair-gel",
+      "accepted": true,
+      "record": {
+        "title": "50g 170g Got 2b Spray Human",
+        "descriptionHtml": "<h2>50g 170g Got 2b Spray Human</h2><p>50g 170g Got 2b Spray Human is listed in Beauty &amp; Skincare &gt; Hair Care, under Beauty.</p><h3>Product details</h3><ul><li><strong>Product type:</strong> Hair Care</li><li><strong>Size or capacity:</strong> 50g, 170g</li><li><strong>Listed options:</strong> edge control set; Got 2b 35g; 38ml glue; 31g lace gel; 150ml gel</li></ul>",
+        "seoTitle": "50g 170g Got 2b Spray Human",
+        "seoDescription": "50g 170g Got 2b Spray Human is listed as Hair Care in Hair Care, under Beauty. Review the supplied details and listed options before ordering.",
+        "category": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Hair Care",
+          "productType": "Hair Care"
+        },
+        "metafields": {
+          "badgeText": "Hair Care",
+          "highlights": [
+            "Product: 50g 170g Got 2b Spray Human",
+            "Type: Hair Care",
+            "Category: Beauty & Skincare > Hair Care",
+            "Size or capacity: 50g, 170g"
+          ],
+          "collectionSignal": "Hair Care | Got 2b",
+          "typeAttributes": {
+            "measurements": [
+              "50g",
+              "170g"
+            ]
+          }
+        },
+        "searchTerms": [
+          "50g 170g Got 2b Spray Human",
+          "Got 2b",
+          "Hair Care",
+          "Beauty & Skincare",
+          "Beauty",
+          "50g",
+          "170g"
+        ]
+      }
+    }
+  ]
+}

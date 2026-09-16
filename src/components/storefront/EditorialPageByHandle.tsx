@@ -2,9 +2,15 @@ import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import OpenContentPageShell from "@/components/storefront/OpenContentPageShell";
+import AnswerFirstBlock from "@/components/storefront/AnswerFirstBlock";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import ResilientImage from "@/components/storefront/ResilientImage";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
+import {
+  buildEditorialBreadcrumbStructuredData,
+  buildFaqStructuredData,
+  buildWebPageStructuredData,
+} from "@/lib/structured-data";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { buildResourceReason } from "@/lib/editorial-pages";
@@ -517,8 +523,8 @@ const EditorialPageByHandle = ({
     }));
   }, [resolvedFeaturedProducts]);
   const isResourceHubHandle = normalizedHandle === "resources";
-  const isResourcePageHandle = isResourceHubHandle || normalizedHandle.includes("/");
   const resourceContext = useMemo(() => findResourceContext(normalizedHandle), [normalizedHandle]);
+  const isResourcePageHandle = isResourceHubHandle || Boolean(resourceContext.guide);
   const resourceRouteTiles = useMemo<ResourceRouteVisual[]>(() => {
     if (isResourceHubHandle) {
       return SITE_RESOURCE_GUIDES.map((guide) =>
@@ -564,12 +570,42 @@ const EditorialPageByHandle = ({
     "/wholesale-inquiries": "/pages/wholesale-inquiries",
     "/terms-conditions": "/pages/terms-conditions",
   };
-  const canonicalPath = canonicalAliases[location.pathname] || location.pathname || `/pages/${normalizedHandle}`;
+  const resourceQueryParams = new URLSearchParams(location.search);
+  const resourceQueryHandle = String(resourceQueryParams.get("handle") || "").trim().toLowerCase();
+  const isResourceQueryRoute =
+    location.pathname === "/pages/resources" &&
+    resourceQueryParams.get("resource") === "guide" &&
+    Boolean(resourceQueryHandle);
+  const routePath = isResourceQueryRoute
+    ? `${location.pathname}?resource=guide&handle=${encodeURIComponent(resourceQueryHandle)}`
+    : location.pathname;
+  const canonicalPath = canonicalAliases[location.pathname] || routePath || `/pages/${normalizedHandle}`;
+  const editorialStructuredData = data?.page
+    ? [
+        buildWebPageStructuredData(
+          data.page.title,
+          data.page.summary,
+          canonicalPath,
+          typeof window === "undefined" ? "" : window.location.origin,
+        ),
+        buildEditorialBreadcrumbStructuredData(
+          data.page.breadcrumbs,
+          canonicalPath,
+          typeof window === "undefined" ? "" : window.location.origin,
+        ),
+        buildFaqStructuredData(
+          data.page.faqs,
+          typeof window === "undefined" ? "" : window.location.origin,
+          canonicalPath,
+        ),
+      ].filter(Boolean)
+    : [];
   const seoMetadata = (
     <SeoMetadata
       title={data?.page?.seoTitle || (data?.page ? `${data.page.title} | SALT Online Store` : "SALT Online Store")}
       description={data?.page?.metaDescription || data?.page?.summary || "Useful SALT guides and store information for easier everyday shopping."}
       canonicalPath={canonicalPath}
+      structuredData={editorialStructuredData}
     />
   );
 
@@ -670,7 +706,7 @@ const EditorialPageByHandle = ({
   return (
     <>
       {seoMetadata}
-      <OpenContentPageShell
+    <OpenContentPageShell
       breadcrumbs={breadcrumbs}
       kicker={page.kicker}
       title={page.title}
@@ -681,6 +717,7 @@ const EditorialPageByHandle = ({
       className={pageSectionClassName}
       tone={isResourceHub ? "shop" : "default"}
     >
+      {page.answerBlock ? <AnswerFirstBlock block={page.answerBlock} className="mt-4" /> : null}
       {isResourcePage && resourceRouteTiles.length ? (
         <ResourceHubBrowseSection
           eyebrow={isResourceHub ? "Choose your path" : resourceContext.guide?.title || page.title}
@@ -804,24 +841,33 @@ const EditorialPageByHandle = ({
       ) : null}
 
       {page.faqs?.length ? (
-        <section className="mt-10">
+        <section className="mt-10" data-faq-section="true">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-primary">
             {page.faqsTitle || "Frequently asked"}
           </p>
           {page.faqsDescription ? (
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{page.faqsDescription}</p>
           ) : null}
-          <Accordion type="single" collapsible className="salt-surface mt-4 rounded-[1.2rem] px-4">
+          <Accordion
+            type="multiple"
+            defaultValue={page.faqs.map((_, index) => `faq-${index}`)}
+            className="salt-surface mt-4 rounded-[1.2rem] px-4"
+          >
             {page.faqs.map((faq, index) => (
               <AccordionItem
                 key={faq.question}
                 value={`faq-${index}`}
                 className={index === page.faqs.length - 1 ? "border-none" : "border-b border-border/70"}
               >
-                <AccordionTrigger className="py-4 text-left text-base font-semibold text-foreground hover:no-underline">
+                <AccordionTrigger
+                  data-faq-question="true"
+                  className="py-4 text-left text-base font-semibold text-foreground hover:no-underline"
+                >
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 text-sm leading-6 text-muted-foreground">{faq.answer}</AccordionContent>
+                <AccordionContent data-faq-answer="true" className="pb-4 text-sm leading-6 text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>

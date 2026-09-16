@@ -15,7 +15,7 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 
 ## Existing Shopify Tags Are Not The Controlled Vocabulary
 
-- 788 existing Shopify tags with 121,310 current product assignments are documented separately in `output/catalog-existing-tag-inventory.md`.
+- 788 existing Shopify tags with 120,162 current product assignments are documented separately in `output/catalog-existing-tag-inventory.md`.
 - The 636 tags below are proposed canonical simple tags, not a replacement for unrelated merchant tags.
 - Inventory source: verified live Shopify Admin tag read at 2026-09-15T07:49:08.798Z.
 - Existing tags stay available for raw shopper discovery and low-priority evidence. They never override title, handle, or product-type evidence, and they are never used alone as collection rules.
@@ -25,24 +25,24 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 
 | Proposed tag | Products |
 | --- | ---: |
-| `men` | 3,996 |
-| `general` | 2,792 |
-| `women` | 2,713 |
-| `portable` | 2,593 |
-| `kids` | 2,280 |
-| `men-fashion` | 2,241 |
+| `men` | 3,936 |
+| `general` | 2,964 |
+| `portable` | 2,591 |
+| `women` | 2,550 |
+| `kids` | 2,255 |
+| `men-fashion` | 2,228 |
 | `home-decor` | 2,224 |
-| `beauty-skincare` | 2,051 |
+| `beauty-skincare` | 2,155 |
 | `electronic-accessories` | 1,458 |
 | `office-school` | 1,305 |
 | `office-school-supplies` | 1,305 |
-| `women-fashion` | 1,291 |
-| `kitchen-cookware` | 1,209 |
+| `women-fashion` | 1,290 |
+| `kitchen-cookware` | 1,208 |
 | `waterproof` | 1,191 |
 | `shoes` | 1,182 |
-| `kids-wear` | 908 |
+| `kids-wear` | 906 |
 | `camping-travel` | 783 |
-| `smart` | 778 |
+| `smart` | 776 |
 | `pants` | 651 |
 | `men-s-graphic-t-shirt` | 645 |
 | `hat` | 579 |
@@ -50,8 +50,8 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `travel-essentials` | 513 |
 | `women-s-blouse` | 510 |
 | `eye-makeup` | 493 |
-| `men-accessories` | 466 |
-| `women-accessories` | 459 |
+| `men-accessories` | 465 |
+| `women-accessories` | 450 |
 | `kids-clothing` | 447 |
 | `sports-fitness` | 441 |
 | `fitness-equipment` | 439 |
@@ -59,49 +59,49 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `wireless` | 426 |
 | `lip-product` | 425 |
 | `iphone` | 421 |
-| `women-beauty-skincare` | 416 |
 | `phone-case` | 409 |
 | `kids-toys-games` | 404 |
 | `led` | 403 |
 | `laptop` | 402 |
-| `men-beauty-skincare` | 398 |
+| `men-beauty-skincare` | 376 |
 | `audio` | 373 |
 | `watches` | 371 |
 | `pen-pencil-case` | 370 |
 | `kids-sports-shoes` | 362 |
-| `men-bags-wallets` | 358 |
+| `men-bags-wallets` | 349 |
 | `adjustable` | 346 |
 | `bluetooth` | 337 |
+| `women-beauty-skincare` | 334 |
+| `fashion` | 312 |
 | `fragrance` | 305 |
-| `fashion` | 296 |
 | `wallet` | 286 |
 | `notebook-planner` | 285 |
+| `bags-wallets` | 270 |
 | `camping-essentials` | 269 |
 | `face-makeup` | 258 |
 | `mouse-keyboard` | 254 |
-| `pets` | 247 |
+| `pets` | 242 |
 | `watch` | 242 |
-| `baby` | 239 |
 | `water-bottle` | 238 |
-| `bags-wallets` | 229 |
+| `baby` | 234 |
 | `food-storage-container` | 228 |
 | `home-car-accessories` | 227 |
+| `fashion-accessories` | 226 |
 | `travel-bag` | 224 |
 | `automotive` | 219 |
 | `vehicle-accessories` | 219 |
 | `rechargeable` | 216 |
-| `fashion-accessories` | 215 |
 | `foldable` | 206 |
 | `microphone` | 205 |
 | `skincare` | 202 |
-| `women-bags-wallets` | 197 |
-| `dining-accessory` | 188 |
 | `backpack` | 187 |
+| `dining-accessory` | 187 |
 | `health-wellness` | 186 |
 | `bag` | 185 |
 | `hair-care` | 178 |
 | `vehicle-battery-charger` | 175 |
-| `bedsheets-handlooms-towels` | 161 |
+| `women-bags-wallets` | 165 |
+| `bedsheets-handlooms-towels` | 162 |
 | `handbag` | 156 |
 | `computer-accessories` | 151 |
 | `earbuds` | 147 |
@@ -142,8 +142,8 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `socks` | 80 |
 | `essential-oil` | 78 |
 | `mouse-pad` | 78 |
-| `kids-accessories` | 75 |
 | `book` | 74 |
+| `kids-accessories` | 74 |
 | `cookware` | 70 |
 | `women-wigs` | 70 |
 | `anime-graphic-t-shirt` | 68 |
@@ -214,11 +214,11 @@ This is a read-only proposal. No Shopify tags, metafields, categories, variants,
 | `party-table-cover` | 20 |
 | `anime-shorts` | 19 |
 | `skirt` | 19 |
+| `table-linen` | 19 |
 | `gel-pen` | 18 |
 | `hoodie-sweater` | 18 |
 | `makeup-brush-set` | 18 |
 | `sports-socks` | 18 |
-| `table-linen` | 18 |
 | `women-s-trousers` | 18 |
 | `car-fragrance` | 17 |
 | `earbuds-protective-case` | 17 |

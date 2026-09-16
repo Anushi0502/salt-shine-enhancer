@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { buildControlUiCommand, buildReleaseCommand, findRunningWatcherPids, prefixLines } from "./run-release-foreground.mjs";
+import { buildControlUiCommand, buildReleaseCommand, buildRuntimePath, findRunningWatcherPids, prefixLines } from "./run-release-foreground.mjs";
 
 describe("foreground release supervisor", () => {
   it("prefixes complete lines and preserves a partial line for the next chunk", () => {
@@ -23,6 +23,12 @@ describe("foreground release supervisor", () => {
 
   it("supports the internal release implementation used by the public command", () => {
     expect(buildReleaseCommand("release:core", ["--resume"])).toEqual(["run", "release:core", "--", "--resume"]);
+  });
+
+  it("keeps the Node runtime discoverable for npm child processes", () => {
+    const runtimePath = buildRuntimePath("/custom/bin:/usr/bin");
+    expect(runtimePath.split(":")).toContain("/usr/local/bin");
+    expect(runtimePath.split(":")).toContain("/custom/bin");
   });
 
   it("ensures the control UI is part of the default supervisor path", () => {

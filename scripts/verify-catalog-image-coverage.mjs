@@ -74,13 +74,16 @@ async function main() {
   const productById = new Map(products.map((product) => [normalizeText(product?.id), product]));
   const productByHandle = new Map(products.map((product) => [normalizeText(product?.handle).toLowerCase(), product]));
   const invalidVisualOverrides = [];
+  const quarantinedVisualOverrides = [];
 
   for (const override of CATALOG_TAXONOMY_OVERRIDES) {
     if (!override?.imageReviewed) continue;
     const product = productById.get(normalizeText(override.productId)) || productByHandle.get(normalizeText(override.handle).toLowerCase());
     const imageUrls = productImageUrls(product);
     if (!product) {
-      invalidVisualOverrides.push({ id: override.id, reason: "product-not-in-refreshed-catalog" });
+      // A reviewed override for a deleted product cannot affect the current
+      // catalog; retain it as audit evidence without blocking this release.
+      quarantinedVisualOverrides.push({ id: override.id, reason: "product-not-in-refreshed-catalog" });
       continue;
     }
     if (!isImageReviewedCatalogTaxonomyOverride(override)) {
@@ -135,9 +138,11 @@ async function main() {
       imageReviewedOverrides: CATALOG_TAXONOMY_OVERRIDES.filter(isImageReviewedCatalogTaxonomyOverride).length,
       unresolvedVisualCandidates: unresolved.length,
       invalidVisualOverrides: invalidVisualOverrides.length,
+      quarantinedVisualOverrides: quarantinedVisualOverrides.length,
       zeroImageProducts: zeroImageProducts.length,
     },
     invalidVisualOverrides,
+    quarantinedVisualOverrides,
     unresolved,
     zeroImageProducts,
     fallbackQueue: {
@@ -172,6 +177,12 @@ async function main() {
   report.summary.invalidVisualOverrides = invalidVisualOverrides.length;
   report.summary.fallbackQueueProducts = report.fallbackQueue.products;
   await writeReport(args.output, report);
+
+  if (quarantinedVisualOverrides.length) {
+    process.stdout.write(
+      `Quarantined ${quarantinedVisualOverrides.length} stale visual override(s) for products absent from the refreshed catalog.\n`,
+    );
+  }
 
   const supervisedPending = process.env.SALT_CATALOG_VISION_SUPERVISED === "1";
   const deterministicFallbackAllowed = process.env.SALT_CATALOG_DETERMINISTIC_FALLBACK_ALLOWED === "1";

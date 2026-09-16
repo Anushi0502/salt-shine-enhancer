@@ -284,12 +284,15 @@ const GIFT_RECIPIENT_TERMS = Object.freeze({
 
 const GIFT_INTENT_TERMS = Object.freeze([
   "gift", "gifts", "present", "presents", "gift set", "gift box", "gift idea", "gift ideas", "birthday",
-  "christmas", "holiday", "fathers day", "father s day", "mothers day", "mother s day",
+  "christmas", "holiday", "fathers day", "father s day", "mothers day", "mother s day", "for dad", "for mom",
 ]);
 
 const DAILY_LIVING_AID_TERMS = Object.freeze([
   "daily living", "daily-living", "elderly", "senior care", "caregiver", "assistive", "adaptive", "mobility aid",
   "pill organizer", "pill box", "medicine organizer", "medication organizer", "reacher grabber", "dressing aid",
+  "ergonomic jar opener", "adaptive jar opener", "jar opener", "button hook", "button helper", "zipper helper",
+  "long handled shoehorn", "long-handle shoehorn", "shoehorn", "folding reacher", "key turner", "key turner grip",
+  "sock aid", "sock dressing aid", "dressing stick",
   "bed rail", "shower chair", "grab bar", "safety rail", "walker", "walking cane", "wheelchair accessory",
   "hearing aid accessory", "vision aid", "adult bib", "adult bibs", "adult mealtime bib", "adult mealtime bibs",
   "adult clothing protector", "clothing protector",
@@ -297,12 +300,47 @@ const DAILY_LIVING_AID_TERMS = Object.freeze([
 
 const SENIOR_LIVING_TERMS = Object.freeze([
   "senior", "elderly", "senior care", "caregiver", "assisted living", "nursing home", "retirement", "daily living",
-  "mobility aid", "pill organizer", "medicine organizer", "adaptive", "assistive",
+  "mobility aid", "pill organizer", "medicine organizer", "adaptive", "assistive", "readable calendar clock",
+  "large display calendar clock", "low glare motion light", "stable tablet stand", "armchair organizer",
+  "large button timer", "lever style handle cover",
 ]);
 
-const CANDLE_TERMS = Object.freeze([
-  "candle", "candles", "scented candle", "soy candle", "wax melt", "tealight", "tea light", "votive",
-  "pillar candle", "taper candle", "led candle", "flameless candle", "candle holder", "candlelight",
+const CANDLE_PRODUCT_TERMS = Object.freeze([
+  "candle", "candles", "scented candle", "soy candle", "soy wax candle", "wax melt", "tealight", "tea light", "votive",
+  "pillar candle", "taper candle", "led candle", "flameless candle", "wooden wick", "candle jar", "jar candle",
+  "sculptural candle", "ceramic candle", "candlelight",
+]);
+
+const CANDLE_NON_PRODUCT_TERMS = Object.freeze([
+  "candle holder", "candle warmer", "wax warmer", "candle lamp", "candle mold", "candle mould", "candle making",
+  "wick trimmer", "candle snuffer",
+]);
+
+const JEWELRY_FALSE_POSITIVE_TERMS = Object.freeze([
+  "anti mosquito", "mosquito repeller", "bathtub", "sports waterproof bracelet", "sun protection ring",
+  "swimming pool float ring", "calendario decoration", "desk calendar", "desktop ornament", "ornament manual",
+  "perpetual calendar", "loose leaf", "spiral ring", "necklace earring bag", "wrist weight", "fitness tracker",
+  "fitness gripper", "fitness band", "smart band", "pedometer bracelet", "fascia ring", "abdominal massager",
+  "smart ring", "smartwatch", "charging case", "watch", "watches", "key ring", "keychain", "ring light",
+  "ring binder", "ring toss", "ring toy", "jewelry box", "jewelry case", "jewelry organizer", "jewelry storage",
+  "calendar", "planner",
+]);
+
+const ARTIFICIAL_PLANT_TERMS = Object.freeze([
+  "artificial aquarium plant", "aquarium decor plant", "aquatic plant", "artificial plant", "artificial bonsai",
+  "artificial ivy", "artificial vine", "artificial fern", "artificial monstera", "artificial olive", "artificial eucalyptus",
+  "artificial pothos", "fake plant", "fake potted plant", "faux plant", "faux potted plant", "potted fern", "fern plant",
+  "artificial flower", "artificial orchid", "artificial succulent", "artificial grass", "faux olive", "faux eucalyptus",
+  "faux orchid", "faux pothos", "faux monstera", "real touch plant", "real touch eucalyptus",
+]);
+
+const MAGSAFE_PRODUCT_TERMS = Object.freeze([
+  "magsafe", "mag safe", "qi2", "magnetic phone stand", "magnetic charging stand", "magnetic phone wallet",
+  "magnetic camera grip", "magnetic car mount", "foldable magnetic charger", "magnetic wallet kickstand",
+]);
+
+const PET_TOY_TERMS = Object.freeze([
+  "toy", "ball", "chew", "tunnel", "scratcher", "scratch", "enrichment", "puzzle", "teaser",
 ]);
 
 const EXTRA_SEMANTIC_SPECS = [
@@ -311,11 +349,7 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("best-sellers", "Best Sellers", { dynamic: "best-sellers" }, ["appplaza-best-sellers"]),
   spec("artificial-plants", "Artificial Plants", {
     require: {
-      textAny: [
-        "artificial aquarium plant", "aquarium decor plant", "aquatic plant", "artificial plant",
-        "artificial bonsai", "artificial ivy", "artificial vine", "fake plant", "fake potted plant",
-        "artificial flower", "artificial orchid", "artificial succulent", "artificial grass",
-      ],
+      textAny: ARTIFICIAL_PLANT_TERMS,
     },
     exclude: { textAny: ["string light", "string lights", "vine light", "vine lights", "lamp", "lighting", "grass mat", "turf"] },
   }, ["artificial-aquarium-decor-plants"]),
@@ -369,10 +403,12 @@ const EXTRA_SEMANTIC_SPECS = [
   }, ["books"]),
   spec("camping-gear", "Camping Gear", { categories: ["camping-essentials"], targets: ["camping-gear"] }),
   spec("candles", "Candles", {
-    require: { textAny: CANDLE_TERMS },
-    subcategories: ["candles-home-fragrance"],
-    targets: ["candles"],
-    textAny: CANDLE_TERMS,
+    // Candle-making tools, cookware, camping lanterns, and other products
+    // often mention candles without belonging in the customer-facing candle
+    // collection. Require the resolved taxonomy subcategory as well as direct
+    // candle evidence so stale tags cannot widen membership.
+    require: { subcategories: ["candles-home-fragrance"], textAny: CANDLE_PRODUCT_TERMS },
+    exclude: { textAny: CANDLE_NON_PRODUCT_TERMS },
   }),
   spec("car-accessories", "Home & Car Accessories", { departments: ["automotive"], categories: ["home-car-accessories"], targets: ["car-accessories"] }),
   spec("caregiver-essentials", "Caregiver Essentials", { dynamic: "caregiver", textAny: ["caregiver", "patient aid", "daily living aid", "medicine organizer"] }),
@@ -417,11 +453,14 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("housewarming-gifts", "Housewarming Gifts", { dynamic: "housewarming-gifts", textAny: ["housewarming gift", "new home gift"] }),
   spec("iphone-cases", "iPhone Cases", { require: { rules: ["phone-case"], textAny: ["iphone"] } }),
   spec("jeans", "Jeans", { subcategories: ["jeans"], rules: ["jeans"] }),
-  spec("jewelry-accessories", "Jewelry & Accessories", { departments: ["jewelry"] }),
+  spec("jewelry-accessories", "Jewelry & Accessories", {
+    departments: ["jewelry"],
+    exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
+  }),
   spec("kitchen-gadgets", "Kitchen Gadgets", { subcategories: ["kitchen-gadgets"], targets: ["kitchen-gadgets"] }),
   spec("lips-and-care", "Lip Care", { subcategories: ["lip-care-makeup"], targets: ["lips-and-care"] }),
   spec("luxury-fragrances", "Luxury Fragrances", { subcategories: ["fragrance"], textAny: ["perfume", "fragrance", "cologne", "eau de parfum", "eau de toilette"] }),
-  spec("magsafe-gadgets", "MagSafe Gadgets", { textAny: ["magsafe", "mag safe"] }),
+  spec("magsafe-gadgets", "MagSafe Gadgets", { textAny: MAGSAFE_PRODUCT_TERMS }),
   spec("mascara-collection", "Mascara Collection", { textAny: ["mascara"] }),
   spec("massage-tools", "Massage Tools", { subcategories: ["massage-recovery"], targets: ["massage-tools"] }),
   spec("medical-accessories", "Medical Accessories", { subcategories: ["medical-accessories", "medicine-organizers", "vision-care"], textAny: ["medical", "pill box", "pill cutter", "medicine organizer"] }),
@@ -443,14 +482,20 @@ const EXTRA_SEMANTIC_SPECS = [
   spec("pet-grooming", "Pet Grooming", {
     require: {
       departments: ["pets"],
-      textAny: ["groom", "grooming", "groomer", "brush", "comb", "nail", "clipper", "trimmer", "shampoo", "conditioner", "detangler", "bathing"],
+      textAny: ["groom", "grooming", "groomer", "brush", "comb", "nail", "clipper", "trimmer", "shampoo", "conditioner", "detangler", "bathing", "towel"],
     },
   }),
-  spec("pet-toys", "Pet Toys", { textAll: ["pet"], textAny: ["toy", "ball", "chew"] }),
+  spec("pet-toys", "Pet Toys", {
+    require: {
+      departments: ["pets"],
+      textAnyGroups: [["pet", "pets", "dog", "dogs", "puppy", "puppies", "cat", "cats", "kitten", "kittens"], PET_TOY_TERMS],
+    },
+    textAnyGroups: [["pet", "pets", "dog", "dogs", "puppy", "puppies", "cat", "cats", "kitten", "kittens"], PET_TOY_TERMS],
+  }),
   spec("pet-travel", "Pet Travel", {
     require: {
       departments: ["pets"],
-      textAny: ["travel", "carrier", "trolley", "car seat", "stroller", "harness", "leash", "lead", "pet backpack"],
+      textAny: ["travel", "carrier", "trolley", "car seat", "stroller", "harness", "leash", "lead", "pet backpack", "hammock"],
     },
     exclude: { textAny: ["lint", "hair remover", "fabric", "sofa", "clothes cleaning", "pet waste bag", "poop bag"] },
   }),
@@ -537,30 +582,35 @@ function buildPlanSpecs() {
             require: { departments: ["jewelry"], subcategories: ["rings"] },
             subcategories: ["rings"],
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "necklaces"
         ? {
             require: { departments: ["jewelry"], subcategories: ["necklaces-pendants"] },
             subcategories: ["necklaces-pendants"],
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "bracelets"
         ? {
             require: { departments: ["jewelry"], subcategories: ["bracelets"] },
             subcategories: ["bracelets"],
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "earrings"
         ? {
             require: { departments: ["jewelry"], subcategories: ["earrings"] },
             subcategories: ["earrings"],
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "everyday-jewelry"
         ? {
             require: { departments: ["jewelry"] },
             departments: ["jewelry"],
             targets: [entry.handle, ...entry.legacyHandles],
+            exclude: { textAny: JEWELRY_FALSE_POSITIVE_TERMS },
           }
       : entry.handle === "school-bags"
         ? {

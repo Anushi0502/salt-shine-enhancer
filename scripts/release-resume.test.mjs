@@ -42,6 +42,22 @@ describe("release checkpoint resume", () => {
     })).toEqual({ resumeFromStep: 2, restarted: false });
   });
 
+  it("retries an interrupted step-five checkpoint instead of restarting at step one", () => {
+    const catalogSteps = [
+      { label: "Audit catalog inputs" },
+      { label: "Verify visual taxonomy gate" },
+      { label: "Refresh Shopify data" },
+      { label: "Repair product anomalies" },
+      { label: "Scan and remove active products missing live variant cost" },
+    ];
+
+    expect(resolveResumeStep(catalogSteps, {
+      status: "interrupted",
+      stepIndex: 5,
+      stepLabel: "Scan and remove active products missing live variant cost",
+    })).toEqual({ resumeFromStep: 5, restarted: false });
+  });
+
   it("restarts safely when a checkpoint label is not in the current graph", () => {
     expect(resolveResumeStep(steps, {
       stepIndex: 9,

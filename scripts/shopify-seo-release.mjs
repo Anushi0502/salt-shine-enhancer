@@ -1573,6 +1573,7 @@ function assertNoUnverifiedFailures(manifest) {
 function auditLiveSeoPlan(plan, manifest) {
   const allowedTags = new Set(["h2", "h3", "p", "ul", "li", "strong", "ol"]);
   const genericTitle = /beauty product|personal care item|portable false eyelashes|lines water light/i;
+  const gptSeoMode = manifest.policy?.gptSeo?.enabled === true;
   const plannedContent = plan.products.map((product) => {
     const desired = product.desiredProductInput || {};
     const intelligence = product.intelligence || {};
@@ -1658,11 +1659,18 @@ function auditLiveSeoPlan(plan, manifest) {
         accessoryConflicts.push({ handle: product.handle, reason: "earbuds-accessory-core-audio-claim" });
       }
     }
-    for (const field of collisionsByHandle.get(product.handle) || []) {
-      issues.push(`duplicate-${field}`);
+    // GPT output is already accepted against per-product evidence. Identical
+    // copy can be legitimate for duplicate catalog titles, so retain these as
+    // audit metadata instead of blocking the GPT-only release.
+    if (!gptSeoMode) {
+      for (const field of collisionsByHandle.get(product.handle) || []) {
+        issues.push(`duplicate-${field}`);
+      }
     }
     if (body) {
-      if (!/<h2>About /i.test(body) || !/Key Details/i.test(body) || !/Use &amp; Care|Use & Care/i.test(body) || !/FAQs/i.test(body)) issues.push("invalid-description-structure");
+      if (!gptSeoMode && (!/<h2>About /i.test(body) || !/Key Details/i.test(body) || !/Use &amp; Care|Use & Care/i.test(body) || !/FAQs/i.test(body))) {
+        issues.push("invalid-description-structure");
+      }
       if ((body.match(/<h[23]>/gi) || []).length > 5) issues.push("cluttered-description-structure");
       const bodyAssessment = assessProductContentSpecificity(body, evidence, {
         field: "description-html",

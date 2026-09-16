@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "requestId": "f3f8f02c7a27f02791c0b089a890f2161fd8e590784a72ee2919de23eee77069",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 1,
+  "batchCount": 1,
+  "products": [
+    {
+      "handle": "kem-trng-da-body-mm-a-cosmetics-dng-trng-nhanh-chong-mn-mang-hng-nc-hoa-quyn-ru-bright-white-smooth-and-soft-skin",
+      "evidenceFingerprint": "b1ffa363b916206cf18fa6d124dc5517cff9edd61e6c63f6a5ad72bbe167e94a",
+      "evidence": {
+        "handle": "kem-trắng-da-body-mềm-a-cosmetics-dưỡng-trắng-nhanh-chong-mịn-mang-hương-nước-hoa-quyến-ru-bright-white-smooth-and-soft-skin",
+        "title": "Kem Trng Da Body Mm Cosmetics",
+        "productType": "Da Body",
+        "vendor": "SALT",
+        "tags": [
+          "Beauty and Makeups",
+          "beauty-makeup-essentials",
+          "body-care",
+          "new-arrivals",
+          "Women skincare",
+          "women-beauty-skincare"
+        ],
+        "sourceDescription": " About Kem Trng Da Body Mm Cosmetics   Kem Trng Da Body Mm Cosmetics is a da body identified by the product title and supplied listing details.   Key Details     Audience: Women, women   Use: makeup     Use   Care   Use it for the listed makeup context and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Kem Trng Da Body Mm Cosmetics?   A: Kem Trng Da Body Mm Cosmetics is a da body identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Audience: Women, women Use: makeup ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Body Care",
+          "productType": "Body Care",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Skin Care"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "1PCS",
+            "sku": "14:366#1PCS",
+            "selectedOptions": [
+              "Color: 1PCS"
+            ]
+          },
+          {
+            "title": "1PCS 1",
+            "sku": "14:10#1PCS",
+            "selectedOptions": [
+              "Color: 1PCS 1"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

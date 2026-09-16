@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "requestId": "49bb68aee2df20c3b8c2aa6f851519c2c8b2414ea3f8b499d8dbc311ecadeef2",
+  "provider": "chatgpt-applescript",
+  "model": "gpt-5-mini",
+  "batchIndex": 2,
+  "batchCount": 36,
+  "products": [
+    {
+      "handle": "5-pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-toy-for-kids-holiday-gifts-toy-decor-dolls-accessories-1",
+      "evidenceFingerprint": "f3853281490fda2de0b8f959fac1e98580f48b7714b8fb8843116a55a8e8b8bc",
+      "evidence": {
+        "handle": "5-pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-toy-for-kids-holiday-gifts-toy-decor-dolls-accessories-1",
+        "title": "Pcs Doll False Eyelashes",
+        "productType": "toy",
+        "vendor": "SALT",
+        "tags": [
+          "anime-collectables",
+          "classification-fallback"
+        ],
+        "sourceDescription": " About Pcs Doll False Eyelashes   Pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.   Key Details     Size or capacity: 5 pcs, 1 Pcs, 8052486373475 Pcs   Audience: kids     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Pcs Doll False Eyelashes?   A: Pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 5 pcs, 1 Pcs, 8052486373475 Pcs Audience: kids ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Eye Makeup",
+          "productType": "Eye Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Eye Makeup"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Brown 1.0cm",
+            "sku": "14:200006156#Brown 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.8cm",
+            "sku": "14:1063#Black 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 1.0cm",
+            "sku": "14:1254#Black 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.6cm",
+            "sku": "14:200006152#Brown 0.6cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.8cm",
+            "sku": "14:200006154#Brown 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.6cm",
+            "sku": "14:29#Black 0.6cm",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "5pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-fake-lashes-for-kids-holiday-gifts-toy-decor-dolls-accessories",
+      "evidenceFingerprint": "cb1af3db2ff022dee0782d8ed71dd78f22696fd44f805cac1401ce8e8c308b87",
+      "evidence": {
+        "handle": "5pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-fake-lashes-for-kids-holiday-gifts-toy-decor-dolls-accessories",
+        "title": "5pcs Doll False Eyelashes",
+        "productType": "toy",
+        "vendor": "SALT",
+        "tags": [
+          "anime-collectables",
+          "classification-fallback"
+        ],
+        "sourceDescription": " About 5pcs Doll False Eyelashes   5pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.   Key Details     Size or capacity: 5pcs   Audience: kids     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is 5pcs Doll False Eyelashes?   A: 5pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 5pcs Audience: kids ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Eye Makeup",
+          "productType": "Eye Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Eye Makeup"
+        },
+        "evidencedTypeAttributes": {
+          "measurements": [
+            "5pcs"
+          ]
+        },
+        "variants": [
+          {
+            "title": "Brown 1.0cm",
+            "sku": "14:200006156#Brown 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.6cm",
+            "sku": "14:200006152#Brown 0.6cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.8cm",
+            "sku": "14:200006154#Brown 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.8cm",
+            "sku": "14:1063#Black 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 1.0cm",
+            "sku": "14:1254#Black 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.6cm",
+            "sku": "14:29#Black 0.6cm",
+            "selectedOptions": []
+          }
+        ]
+      }
+    },
+    {
+      "handle": "5-pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-toy-for-kids-holiday-gifts-toy-decor-dolls-accessories",
+      "evidenceFingerprint": "08be91b27b7cdbb9d8e42338a23bd2a69805c2b762c657a102b3846f4146b912",
+      "evidence": {
+        "handle": "5-pcs-doll-false-eyelashes-diy-eye-lash-black-brown-simulation-toy-for-kids-holiday-gifts-toy-decor-dolls-accessories",
+        "title": "Pcs Doll False Eyelashes",
+        "productType": "toy",
+        "vendor": "SALT",
+        "tags": [
+          "anime-collectables",
+          "classification-fallback"
+        ],
+        "sourceDescription": " About Pcs Doll False Eyelashes   Pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.   Key Details     Size or capacity: 5 pcs, 8052485652579 Pcs   Audience: kids     Use   Care   Use it only for the stated product purpose and follow the supplied setup, handling, cleaning, storage, and safety instructions.   FAQs    Q: What is Pcs Doll False Eyelashes?   A: Pcs Doll False Eyelashes is a toy identified by the product title and supplied listing details.    Q: What should I check before ordering?   A: Size or capacity: 5 pcs, 8052485652579 Pcs Audience: kids ",
+        "verifiedTaxonomy": {
+          "department": "Beauty",
+          "category": "Beauty & Skincare",
+          "subcategory": "Eye Makeup",
+          "productType": "Eye Makeup",
+          "shopifyCategory": "Health & Beauty > Personal Care > Cosmetics > Eye Makeup"
+        },
+        "evidencedTypeAttributes": {},
+        "variants": [
+          {
+            "title": "Brown 1.0cm",
+            "sku": "14:200006156#Brown 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 1.0cm",
+            "sku": "14:1254#Black 1.0cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.8cm",
+            "sku": "14:200006154#Brown 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Brown 0.6cm",
+            "sku": "14:200006152#Brown 0.6cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.8cm",
+            "sku": "14:1063#Black 0.8cm",
+            "selectedOptions": []
+          },
+          {
+            "title": "Black 0.6cm",
+            "sku": "14:29#Black 0.6cm",
+            "selectedOptions": []
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -529,20 +529,36 @@ describe("catalog collection governance", () => {
     expect(buildProductCollectionTags(unrelated, knowledge)).not.toEqual(expect.arrayContaining(["gifts-for-dad", "gifts-for-mom"]));
   });
 
-  it("broadens living-aid, senior-solution, and candle evidence without requiring taxonomy", () => {
+  it("requires candle taxonomy evidence instead of trusting a candle keyword alone", () => {
     const knowledge = { proposedTags: [], collectionTargets: [], classificationRule: "general-merchandise" };
-    expect(buildProductCollectionTags(
-      { title: "Adjustable Elderly Bed Rail Assistive Support", handle: "adjustable-elderly-bed-rail" },
-      knowledge,
-    )).toContain("daily-living-aids");
-    expect(buildProductCollectionTags(
-      { title: "Caregiver Daily Living Aid for Assisted Living", handle: "caregiver-daily-living-aid" },
-      knowledge,
-    )).toContain("senior-living-solutions");
     expect(buildProductCollectionTags(
       { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
       knowledge,
+    )).not.toContain("candles");
+
+    const candleKnowledge = {
+      ...knowledge,
+      subcategoryId: "candles-home-fragrance",
+    };
+    expect(buildProductCollectionTags(
+      { title: "Scented Soy Candle in Glass Jar", handle: "scented-soy-candle-glass-jar" },
+      candleKnowledge,
     )).toContain("candles");
+  });
+
+  it("keeps steel candle-making tools and lanterns out of Candles", () => {
+    const cases = [
+      ["Stainless Steel Wax Melting Pot", "wax-melting-pot-stainless-steel", "beekeeping-supplies"],
+      ["Stainless Steel Candle Wax Boiler", "stainless-steel-candle-wax-boiler", "cookware"],
+      ["Aluminum Candle Lantern for Camping", "aluminum-candle-lantern-camping", "camping-gear"],
+    ];
+    for (const [title, handle, subcategoryId] of cases) {
+      const tags = buildProductCollectionTags(
+        { title, handle, product_type: "tool" },
+        { subcategoryId, proposedTags: [], collectionTargets: [], classificationRule: subcategoryId },
+      );
+      expect(tags, `${handle} must not enter Candles`).not.toContain("candles");
+    }
   });
 
   it("routes human footwear into the four precise footwear collections", () => {
@@ -656,6 +672,53 @@ describe("catalog collection governance", () => {
       expect(tags).toContain("everyday-jewelry");
       expect(tags).toContain("jewelry-accessories");
     }
+  });
+
+  it("keeps non-jewelry products out of Jewelry & Accessories", () => {
+    const falsePositives = [
+      ["Sweatproof Anti Mosquito Bracelet Plant Repeller", "anti-mosquito-bracelet-plant-repeller"],
+      ["Sport Smart Fitness Tracker Bracelet", "sport-smart-fitness-tracker-bracelet"],
+      ["Desk Calendario Decoration Ring", "desk-calendario-decoration-ring"],
+      ["R10 Smart Ring With Charging Case", "r10-smart-ring-with-charging-case"],
+    ];
+    for (const [title, handle] of falsePositives) {
+      const tags = buildProductCollectionTags({ title, handle }, {
+        departmentId: "jewelry",
+        proposedTags: ["jewelry-accessories"],
+        collectionTargets: ["jewelry-accessories"],
+      });
+      expect(tags, `${title} must not enter Jewelry & Accessories`).not.toContain("jewelry-accessories");
+    }
+  });
+
+  it("routes the sourcing-playbook product angles without adjacent-category leakage", () => {
+    const examples = [
+      ["Ergonomic Jar Opener", "daily-living-aids"],
+      ["Readable Calendar Clock", "senior-living-solutions"],
+      ["Silk Pillowcase", "sleep-essentials"],
+      ["Collapsible Cat Play Tunnel", "pet-toys"],
+      ["Rounded Pin Pet Brush", "pet-grooming"],
+      ["Car Hammock for Dogs", "pet-travel"],
+      ["Small Potted Artificial Fern", "artificial-plants"],
+      ["Foldable MagSafe Charging Station", "magsafe-gadgets"],
+      ["Wood Valet Tray for Dad", "gifts-for-dad"],
+      ["Practical Gift for Mom", "gifts-for-mom"],
+    ];
+
+    for (const [title, collection] of examples) {
+      const product = { title, handle: title.toLowerCase().replace(/[^a-z0-9]+/g, "-") };
+      const knowledge = classifyCatalogTaxonomy(product);
+      expect(knowledge.reviewRequired, `${title} should be resolved`).toBe(false);
+      expect(buildProductCollectionTags(product, knowledge), `${title} should enter ${collection}`)
+        .toContain(collection);
+    }
+  });
+
+  it("keeps candle accessories out while retaining real candle products", () => {
+    const candle = classifyCatalogTaxonomy({ title: "Amber Jar Scented Candle", handle: "amber-jar-scented-candle" });
+    const holder = classifyCatalogTaxonomy({ title: "Candle Holder", handle: "candle-holder" });
+    expect(buildProductCollectionTags({ title: "Amber Jar Scented Candle" }, candle)).toContain("candles");
+    expect(buildProductCollectionTags({ title: "Candle Holder" }, holder)).not.toContain("candles");
   });
 
   it("separates school bags, lunch boxes, and water bottles from adjacent products", () => {
