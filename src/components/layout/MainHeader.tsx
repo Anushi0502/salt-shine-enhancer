@@ -78,6 +78,21 @@ const utilityNavItems: HeaderNavItem[] = [
   },
 ];
 
+const fixedHeaderLinks: SiteHeaderCollectionLink[] = [
+  {
+    label: "Best Sellers",
+    routeHandle: "best-sellers",
+    activeCollectionHandles: ["best-sellers", "appplaza-best-sellers"],
+    to: "/collections/best-sellers",
+  },
+  {
+    label: "New Arrivals",
+    routeHandle: "new-arrivals",
+    activeCollectionHandles: ["new-arrivals"],
+    to: "/collections/new-arrivals",
+  },
+];
+
 function isActiveNavItem(item: HeaderNavItem, pathname: string, search: string): boolean {
   if (item.isActive) {
     return item.isActive(pathname, search);
@@ -524,7 +539,7 @@ const MainHeader = () => {
     return options;
   }, [sidebarCollections]);
   const headerLinks = useMemo(() => {
-    return headerCollections.flatMap<SiteHeaderCollectionLink>((group) => {
+    const dynamicLinks = headerCollections.flatMap<SiteHeaderCollectionLink>((group) => {
       const routeHandle = group.handle || group.items[0]?.handle;
       if (!routeHandle || !group.href) {
         return [];
@@ -539,6 +554,8 @@ const MainHeader = () => {
         },
       ];
     });
+
+    return [...fixedHeaderLinks, ...dynamicLinks];
   }, [headerCollections]);
 
   useEffect(() => {
