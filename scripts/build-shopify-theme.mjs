@@ -9,7 +9,7 @@ const rootDir = process.cwd();
 const distDir = resolve(rootDir, "dist");
 const publicDir = resolve(rootDir, "public");
 const defaultThemeDir = resolve(rootDir, "..", "salt-online-store-shopify");
-const financeApiOrigin = (process.env.VITE_FINANCE_API_ORIGIN || "https://salt-online-storev2-gcs1124s-projects.vercel.app")
+const financeApiOrigin = (process.env.VITE_FINANCE_API_ORIGIN || "https://salt-online-storev2.vercel.app")
   .trim()
   .replace(/\/+$/, "");
 const shopifyAppKey = (process.env.VITE_SHOPIFY_APP_KEY || "8b71b8f5e5349a4352259e3bc6522c14").trim();
