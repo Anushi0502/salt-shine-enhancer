@@ -334,23 +334,6 @@ export function buildCollectionNavigation(
   payload: ShopifyNavigationPayload | null | undefined,
   menu: "sidebar" | "header" = "sidebar",
 ): CollectionNavigationGroup[] {
-  const fixedGroups: CollectionNavigationGroup[] = [
-    {
-      id: "fixed-best-sellers",
-      title: "Best Sellers",
-      handle: "best-sellers",
-      href: collectionHref("best-sellers"),
-      items: [],
-    },
-    {
-      id: "fixed-new-arrivals",
-      title: "New Arrivals",
-      handle: "new-arrivals",
-      href: collectionHref("new-arrivals"),
-      items: [],
-    },
-  ];
-
   const seenGroupHandles = new Set<string>(RESERVED_COLLECTION_HANDLES);
   const sourceItems = menu === "header" ? payload?.headerItems || [] : payload?.items || [];
   const groups = sourceItems.flatMap<CollectionNavigationGroup>((item, index) => {
@@ -395,7 +378,7 @@ export function buildCollectionNavigation(
     ];
   });
 
-  return [...fixedGroups, ...groups];
+  return groups;
 }
 
 export function useShopifyNavigation(enabled = true) {

@@ -47,21 +47,6 @@ type HeaderNavItem = {
   isActive?: (pathname: string, search: string) => boolean;
 };
 
-const fixedHeaderLinks: SiteHeaderCollectionLink[] = [
-  {
-    label: "Best Sellers",
-    routeHandle: "best-sellers",
-    activeCollectionHandles: ["best-sellers", "appplaza-best-sellers"],
-    to: "/collections/best-sellers",
-  },
-  {
-    label: "New Arrivals",
-    routeHandle: "new-arrivals",
-    activeCollectionHandles: ["new-arrivals"],
-    to: "/collections/new-arrivals",
-  },
-];
-
 const utilityNavItems: HeaderNavItem[] = [
   {
     label: "Resources",
@@ -232,7 +217,7 @@ function HeaderMenuDrawer({
           type="button"
           aria-label="Close menu"
           onClick={() => onOpenChange(false)}
-          className="fixed inset-0 z-[55] bg-foreground/15 backdrop-blur-md"
+          className="fixed inset-0 z-[55] bg-foreground/15"
         />
       ) : null}
       <SheetContent
@@ -539,7 +524,7 @@ const MainHeader = () => {
     return options;
   }, [sidebarCollections]);
   const headerLinks = useMemo(() => {
-    const dynamicLinks = headerCollections.slice(fixedHeaderLinks.length).flatMap<SiteHeaderCollectionLink>((group) => {
+    return headerCollections.flatMap<SiteHeaderCollectionLink>((group) => {
       const routeHandle = group.handle || group.items[0]?.handle;
       if (!routeHandle || !group.href) {
         return [];
@@ -554,8 +539,6 @@ const MainHeader = () => {
         },
       ];
     });
-
-    return [...fixedHeaderLinks, ...dynamicLinks];
   }, [headerCollections]);
 
   useEffect(() => {

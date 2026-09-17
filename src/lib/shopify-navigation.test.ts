@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { buildCollectionNavigation, normalizeShopifyNavigationPayload } from "@/lib/shopify-navigation";
 
 describe("Shopify collection navigation", () => {
-  it("keeps only the two reserved collection links when the Admin menu is unavailable", () => {
+  it("does not add reserved collection links when the Shopify menu is unavailable", () => {
     const groups = buildCollectionNavigation({ items: [] });
 
-    expect(groups.map((group) => group.title)).toEqual(["Best Sellers", "New Arrivals"]);
+    expect(groups).toEqual([]);
   });
 
   it("uses Shopify menu titles, handles, and nested collection links without sample fallbacks", () => {
@@ -30,15 +30,15 @@ describe("Shopify collection navigation", () => {
     const groups = buildCollectionNavigation(payload);
 
     expect(groups.map((group) => group.title)).toEqual([
-      "Best Sellers",
-      "New Arrivals",
       "Admin Home Group",
       "Admin Outdoor",
     ]);
-    expect(groups[2]?.handle).toBeNull();
-    expect(groups[2]?.items.map((item) => item.title)).toEqual(["Admin Cookware"]);
-    expect(groups[3]?.href).toBe("/collections/admin-outdoor");
-    expect(groups[3]?.items[0]?.href).toBe("/collections/admin-travel-picks");
+    expect(groups[0]?.handle).toBeNull();
+    expect(groups[0]?.items.map((item) => item.title)).toEqual(["Admin Cookware"]);
+    expect(groups[1]?.href).toBe("/collections/admin-outdoor");
+    expect(groups[1]?.items[0]?.href).toBe("/collections/admin-travel-picks");
+    expect(groups.map((group) => group.title)).not.toContain("Best Sellers");
+    expect(groups.map((group) => group.title)).not.toContain("New Arrivals");
     expect(groups.map((group) => group.title)).not.toContain("Home & Kitchen");
   });
 
@@ -57,15 +57,11 @@ describe("Shopify collection navigation", () => {
     });
 
     expect(buildCollectionNavigation(payload, "header").map((group) => group.title)).toEqual([
-      "Best Sellers",
-      "New Arrivals",
       "Men",
       "Women",
       "Kids",
     ]);
     expect(buildCollectionNavigation(payload, "sidebar").map((group) => group.title)).toEqual([
-      "Best Sellers",
-      "New Arrivals",
       "Men",
       "Women",
       "Kids",
