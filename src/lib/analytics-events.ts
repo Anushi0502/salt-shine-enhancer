@@ -27,7 +27,21 @@ export function trackAnalyticsEvent(eventName: string, params: Record<string, un
   if (typeof window === "undefined") return;
 
   const cleaned = cleanParams(params);
-  window.dataLayer?.push({ event: eventName, ...cleaned });
-  window.gtag?.("event", eventName, cleaned);
-}
+  const hasDirectBridge = typeof window.gtag === "function" || Array.isArray(window.dataLayer);
 
+  if (hasDirectBridge) {
+    window.dataLayer?.push({ event: eventName, ...cleaned });
+    window.gtag?.("event", eventName, cleaned);
+    return;
+  }
+
+  const shopifyPublish = (window as Window & {
+    Shopify?: {
+      analytics?: {
+        publish?: (name: string, payload?: Record<string, unknown>) => unknown;
+      };
+    };
+  }).Shopify?.analytics?.publish;
+
+  shopifyPublish?.(eventName, cleaned);
+}

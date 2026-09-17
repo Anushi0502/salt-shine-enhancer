@@ -1,0 +1,22 @@
+{
+  "status": "verified",
+  "modelPath": "output/visual-taxonomy-model.json",
+  "modelSha256": "6f92d2e5f78cc534b3a94b2ee38060306f0d216ba05d4f670235188fbef39aeb",
+  "weightsPath": "output/visual-taxonomy-model-weights.npz",
+  "weightsSha256": "cf820aa6afe543e450b014a0a19c38555b15fe7542990761674831c33932d846",
+  "datasetId": "visual-sharded-c159945b2c930875c8474da1",
+  "datasetBytes": 49974493059,
+  "plannedDatasetBytes": 50000142164,
+  "excludedImageCount": 543,
+  "excludedBytes": 25649105,
+  "sourceDriftCount": 2,
+  "sourceDriftDeltaBytes": -3442,
+  "imageCount": 262223,
+  "productCount": 137749,
+  "labelCount": 473,
+  "rawDataPurged": true,
+  "purgedBytes": 49974493059,
+  "purgedImageCount": 262223,
+  "purgedDatasetRoot": "sharded:/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-001,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-002,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-003,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-004,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-005,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-006,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-007,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-008,/Users/mac/.cache/salt-visual-taxonomy-training/corpus/shard-009",
+  "completedAt": "2026-09-15T07:19:20.762Z"
+}

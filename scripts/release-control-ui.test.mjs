@@ -170,6 +170,13 @@ describe("release control UI start contract", () => {
       detail: "Taxonomy mismatch is not a unique append-only extension; retraining is required.",
     });
     expect(formatVisualTrainingStatus({ status: "verified" })).toEqual({ label: "verified", detail: "" });
+    expect(formatVisualTrainingStatus({
+      status: "verified",
+      lifecycle: { mode: "frozen-final", retrainPolicy: "manual-only" },
+    })).toEqual({
+      label: "frozen final",
+      detail: "Visual model is finalized; automatic retraining is disabled.",
+    });
   });
 
   it("shows shard progress while the model gate is working", () => {

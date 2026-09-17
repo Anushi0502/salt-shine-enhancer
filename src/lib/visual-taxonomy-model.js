@@ -9,6 +9,8 @@ export const VISUAL_TAXONOMY_MODEL_TYPE = "mlx-metal-finetuned-visual-taxonomy-c
 export const VISUAL_TAXONOMY_MODEL_BACKEND = "mlx-metal";
 export const VISUAL_TAXONOMY_MIN_DATASET_BYTES = 50_000_000_000;
 export const VISUAL_TAXONOMY_MODEL_VERSION = `${CATALOG_TAXONOMY_VERSION}.visual-finetuned.2`;
+export const VISUAL_TAXONOMY_MODEL_LIFECYCLE = "frozen-final";
+export const VISUAL_TAXONOMY_MODEL_RETRAIN_POLICY = "manual-only";
 
 function asObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -32,6 +34,31 @@ export function sha256Text(value) {
 
 function normalizedRuleIds(value) {
   return [...new Set((Array.isArray(value) ? value : []).map(String).map((entry) => entry.trim()).filter(Boolean))].sort();
+}
+
+/**
+ * The lifecycle seal covers the complete installed artifact except the
+ * lifecycle block itself, allowing verification to detect a hand-edited
+ * finalization claim without creating a circular hash.
+ */
+export function visualTaxonomyModelFinalizationSeal(model) {
+  const copy = asObject(model);
+  const { lifecycle: _lifecycle, ...sealedModel } = copy;
+  return sha256Text(JSON.stringify(sealedModel));
+}
+
+export function isFrozenFinalVisualTaxonomyModel(model) {
+  const value = asObject(model);
+  const lifecycle = asObject(value.lifecycle);
+  const compatibility = asObject(value.taxonomy?.compatibility);
+  if (lifecycle.mode !== VISUAL_TAXONOMY_MODEL_LIFECYCLE) return false;
+  if (lifecycle.retrainPolicy !== VISUAL_TAXONOMY_MODEL_RETRAIN_POLICY) return false;
+  if (!String(lifecycle.finalizedAt || "").trim() || !String(lifecycle.evidence || "").trim()) return false;
+  if (compatibility.mode !== VISUAL_TAXONOMY_MODEL_LIFECYCLE) return false;
+  if (compatibility.sourceFingerprint !== value.taxonomy?.fingerprint) return false;
+  if (!String(compatibility.finalizedAgainstFingerprint || "").trim()) return false;
+  if (!String(compatibility.evidence || "").trim()) return false;
+  return lifecycle.modelSealSha256 === visualTaxonomyModelFinalizationSeal(value);
 }
 
 /**
@@ -87,7 +114,9 @@ export async function assertVisualTaxonomyModel(model, {
   if (taxonomyVersion && value.taxonomy?.version !== taxonomyVersion) {
     throw new Error(`Visual taxonomy model taxonomy version ${value.taxonomy?.version || "missing"} does not match ${taxonomyVersion}.`);
   }
-  if (taxonomyFingerprint && value.taxonomy?.fingerprint !== taxonomyFingerprint && !appendOnlyTaxonomyCompatibility(value, taxonomyFingerprint, getCatalogTaxonomyDefinitions())) {
+  if (taxonomyFingerprint && value.taxonomy?.fingerprint !== taxonomyFingerprint &&
+    !appendOnlyTaxonomyCompatibility(value, taxonomyFingerprint, getCatalogTaxonomyDefinitions()) &&
+    !isFrozenFinalVisualTaxonomyModel(value)) {
     throw new Error("Visual taxonomy model taxonomy fingerprint does not match the checked-in taxonomy.");
   }
 

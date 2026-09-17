@@ -232,7 +232,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     <meta name="theme-color" content="#1e3a6e">
     {% assign salt_route = request.path %}
     {% assign salt_seo_title = page_title | default: shop.name %}
-    {% assign salt_seo_description = page_description | default: shop.description | default: 'Shop curated cookware, gifts, apparel, and everyday essentials from SALT Online Store.' %}
+      {% assign salt_seo_description = page_description | default: shop.description | default: 'SALT is a curated online store for practical, giftable finds across home, kitchen, travel, pet care, wellness, style, and everyday essentials.' %}
     {% assign salt_seo_robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' %}
     {% assign salt_seo_canonical = canonical_url | split: '?' | first %}
     {% assign salt_custom_canonical = false %}
@@ -260,7 +260,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
 
     {% if salt_route == '/' %}
       {% assign salt_seo_title = 'SALT Online Store | Curated essentials and giftable finds' %}
-      {% assign salt_seo_description = 'Shop practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.' %}
+      {% assign salt_seo_description = 'SALT is a curated online store for practical, giftable finds across home, kitchen, travel, pet care, wellness, style, and everyday essentials.' %}
       {% assign salt_seo_canonical = 'https://' | append: request.host | append: '/' %}
       {% assign salt_custom_canonical = true %}
     {% elsif salt_route == '/pages/finance' or salt_route == '/apps:finance' or salt_route == '/apps/finance' %}
@@ -674,7 +674,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
         "name": {{ shop.name | json }},
         "url": "https://{{ request.host }}/",
         "logo": {{ 'brand-salt-logo.png' | asset_url | json }},
-        "description": "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+        "description": "SALT is a curated online store for practical, giftable finds across home, kitchen, travel, pet care, wellness, style, and everyday essentials.",
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "customer support",

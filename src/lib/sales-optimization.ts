@@ -1,6 +1,7 @@
 import { compareAt, minPrice, savingsPercent, productImage, stripHtml } from "@/lib/formatters";
 import { buildCanonicalUrl } from "@/lib/canonical-url";
 import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
+import { SALT_BRAND_DESCRIPTION } from "@/lib/salt-brand";
 import type {
   CollectionProductsPayload,
   ShopifyCollection,
@@ -592,7 +593,7 @@ export function buildOrganizationStructuredData(shop: ShopifyShop | null | undef
     "@type": "Organization",
     name: shop?.name || "SALT",
     url: origin,
-    description: "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+    description: SALT_BRAND_DESCRIPTION,
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",

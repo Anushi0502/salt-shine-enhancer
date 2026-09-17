@@ -1,45 +1,51 @@
 # SALT Release Bottleneck Report
 
-Generated: 2026-09-16T11:45:21.325Z
+Generated: 2026-09-17T10:21:14.532Z
 Profile: catalog
 Status: running
-Measured: 5/66 steps (3.82 minutes)
-Bottleneck threshold: 1.00 minutes
+Measured: 15/66 steps (89.92 minutes)
+Bottleneck threshold: 4.50 minutes
 
 ## Top Bottlenecks
 
 | Step | Category | Duration | Share | Status |
 | ---: | --- | ---: | ---: | --- |
-| 5 | shopify-io | 3.75 min | 98.09% | bottleneck |
+| 6 | shopify-io | 54.99 min | 61.16% | critical |
+  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
+| 11 | shopify-io | 24.48 min | 27.23% | critical |
+  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
+| 15 | local-model | 4.92 min | 5.47% | bottleneck |
+  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
+| 5 | shopify-io | 2.71 min | 3.01% | bottleneck |
   Recommendation: Reuse the complete variant map, process cost bands in bounded batches, and read back only changed variants.
-| 1 | local-model | 0.05 min | 1.27% | bottleneck |
-  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 2 | local-model | 0.01 min | 0.32% | bottleneck |
-  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 3 | local-model | 0.01 min | 0.24% | bottleneck |
-  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
-| 4 | local-model | 0 min | 0.07% | bottleneck |
-  Recommendation: Reuse fingerprinted local artifacts and keep MLX/Metal inference bounded by memory while batching CPU preparation.
+| 10 | shopify-io | 0.91 min | 1.01% | bottleneck |
+  Recommendation: Keep stage checkpoints and telemetry enabled; parallelize only independent work.
+| 12 | shopify-io | 0.78 min | 0.86% | bottleneck |
+  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
+| 7 | shopify-io | 0.71 min | 0.79% | bottleneck |
+  Recommendation: Reuse the shared release snapshot and complete cache, and overlap independent feeds while keeping membership reads live when required.
+| 8 | shopify-io | 0.19 min | 0.21% | bottleneck |
+  Recommendation: Keep stage checkpoints and telemetry enabled; parallelize only independent work.
 
 ## All Steps
 
 | Step | Label | Duration | Status |
 | ---: | --- | ---: | --- |
-| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.05 min | bottleneck |
-| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 0.01 min | bottleneck |
-| 3 | Verify trained 128M-record catalog knowledge model | 0.01 min | bottleneck |
-| 4 | Verify approved catalog taxonomy release | 0 min | bottleneck |
-| 5 | Scan and remove active products missing live variant cost | 3.75 min | bottleneck |
-| 6 | Refresh Shopify data: Shopify product and collection data | - min | pending |
-| 7 | Refresh Shopify data: recently ordered products and managed collection membership (parallel) | - min | pending |
-| 8 | Dry-run active product option and unit-cost anomaly repair | - min | pending |
-| 9 | Apply deterministic option repairs and draft high-cost outliers | - min | pending |
-| 10 | Verify product anomaly repairs with live readback | - min | pending |
-| 11 | Refresh Shopify data after product anomaly repairs: Shopify product and collection data | - min | pending |
-| 12 | Refresh Shopify data after product anomaly repairs: recently ordered products and managed collection membership (parallel) | - min | pending |
-| 13 | Build shared full-catalog release snapshot | - min | pending |
-| 14 | Read live Shopify tag inventory | - min | pending |
-| 15 | Regenerate catalog taxonomy and preserved-tag audit | - min | pending |
+| 1 | Audit visual taxonomy training inputs and 25 GB shard policy | 0.04 min | normal |
+| 2 | Ensure verified Metal visual taxonomy model and raw-data retention gate | 0.01 min | normal |
+| 3 | Verify trained 128M-record catalog knowledge model | 0.01 min | normal |
+| 4 | Verify approved catalog taxonomy release | 0 min | normal |
+| 5 | Scan and remove active products missing live variant cost | 2.71 min | bottleneck |
+| 6 | Refresh Shopify data: Shopify product and collection data | 54.99 min | critical |
+| 7 | Refresh Shopify data: recently ordered products and managed collection membership (parallel) | 0.71 min | bottleneck |
+| 8 | Dry-run active product option and unit-cost anomaly repair | 0.19 min | bottleneck |
+| 9 | Apply deterministic option repairs and draft high-cost outliers | 0.03 min | normal |
+| 10 | Verify product anomaly repairs with live readback | 0.91 min | bottleneck |
+| 11 | Refresh Shopify data after product anomaly repairs: Shopify product and collection data | 24.48 min | critical |
+| 12 | Refresh Shopify data after product anomaly repairs: recently ordered products and managed collection membership (parallel) | 0.78 min | bottleneck |
+| 13 | Build shared full-catalog release snapshot | 0.03 min | normal |
+| 14 | Read live Shopify tag inventory | 0.1 min | normal |
+| 15 | Regenerate catalog taxonomy and preserved-tag audit | 4.92 min | bottleneck |
 | 16 | Validate refreshed catalog taxonomy | - min | pending |
 | 17 | Build visual taxonomy review queue | - min | pending |
 | 18 | Ensure local free-use SigLIP visual candidate is downloaded | - min | pending |

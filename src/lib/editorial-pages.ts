@@ -100,6 +100,7 @@ import {
   type SiteResourceGuide,
 } from "@/lib/site-navigation";
 import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
+import { SALT_BRAND_DESCRIPTION, SALT_FINDS_WEEK_01 } from "@/lib/salt-brand";
 
 function buildCollectionPageContent(collectionHandle: string): EditorialPageContent | null {
   const collection = getCollectionByHandle(collectionHandle);
@@ -658,13 +659,115 @@ function buildResourceActions(kind: ResourcePageKind, collectionRoute: string): 
   ];
 }
 
+const RESOURCE_TOPIC_OVERRIDES: Record<string, Partial<EditorialPageContent>> = {
+  [SALT_FINDS_WEEK_01.slug]: {
+    seoTitle: `${SALT_FINDS_WEEK_01.title} | SALT Resource Hub`,
+    metaDescription:
+      "A practical gift checklist for choosing something useful, easy to enjoy, and grounded in the recipient's everyday routine.",
+    summary: SALT_FINDS_WEEK_01.summary,
+    answerBlock: {
+      question: "How do I choose a practical gift for someone who has everything?",
+      answer:
+        "Choose something that supports a real routine rather than adding clutter. Start with a use case, compare ease of use and fit, then confirm the current product details before ordering.",
+      usefulFor: "Gift shoppers who want something thoughtful and useful without guessing at personal taste.",
+      nextStep: "Compare the three live examples, then open the Gifts collection for more current options.",
+      takeaways: [
+        "A practical gift earns its place by solving a small, repeatable need.",
+        "Compare the recipient's routine, setup, and comfort before choosing a style or gadget.",
+        "Confirm current options, price, availability, delivery, and returns on the live listing.",
+      ],
+      queryPrompts: [
+        "What is a practical gift for someone who has everything?",
+        "How do I choose a useful gift without adding clutter?",
+        "Which SALT gifts should I compare first?",
+      ],
+      decisionSteps: [
+        {
+          step: "01",
+          title: "Start with a routine",
+          detail: "Think about a repeated moment—planning, lighting a workspace, or keeping useful information visible.",
+        },
+        {
+          step: "02",
+          title: "Choose utility over novelty",
+          detail: "Prefer a clear everyday use, a manageable setup, and a form that feels natural for the recipient.",
+        },
+        {
+          step: "03",
+          title: "Verify the live listing",
+          detail: "Check the current title, options, price, availability, delivery terms, and returns before buying.",
+        },
+      ],
+    },
+    accent: {
+      label: "SALT Finds",
+      title: "The gift should fit the person, not just the occasion",
+      body:
+        "When someone already owns plenty, a useful gift starts with the routine it can support. Use the checklist to compare the reason to give, the effort to use, and the live details on the product page.",
+      bullets: ["Routine-led choices", "Useful over clutter", "Live listing checks"],
+    },
+    introParagraphs: [
+      "When someone already has plenty, the best starting point is not another generic category. Think about a routine they repeat and look for a small upgrade that makes that moment easier or more pleasant.",
+      "This is a comparison framework, not a promise that one item suits everyone. Use the examples as starting points, then confirm the recipient, options, price, delivery terms, and returns on the live listing.",
+    ],
+    cardsTitle: "Compare by the routine",
+    cardsDescription: "A useful gift usually has a clear reason to be opened and used.",
+    chipsTitle: "Gift decision cues",
+    chipsDescription: "Use these cues to keep the choice personal and practical.",
+    chips: ["Practical gifts", "Useful gift ideas", "Low-clutter choices", "SALT Finds", "Gifts"],
+    faqsTitle: "Common gift questions",
+    faqsDescription: "Short answers for choosing a useful gift with fewer guesses.",
+    faqs: [
+      {
+        question: "What makes a gift practical?",
+        answer:
+          "A practical gift supports a real routine, has a clear use, and does not require the recipient to change too much about how they already live or work.",
+      },
+      {
+        question: "How should I compare gift ideas for someone who has everything?",
+        answer:
+          "Compare the routine first, then ease of use, setup, and the information the recipient needs to choose confidently. Utility is more useful than a generic claim that something is the best.",
+      },
+      {
+        question: "What should I check before ordering a gift?",
+        answer:
+          "Check the live product title, available options, current price, availability, delivery terms, and return information. If the choice depends on taste or fit, confirm that detail with the recipient when possible.",
+      },
+    ],
+    featuredProductsTitle: "Three live starting points",
+    featuredProductsDescription: "These examples cover planning, lighting, and visible information; use the live pages for current details.",
+    featuredProducts: [
+      {
+        handle: SALT_FINDS_WEEK_01.featuredProducts[0],
+        reason: "A planning-led gift to compare for someone who likes keeping important notes or plans together.",
+        collectionLabel: "Gifts",
+      },
+      {
+        handle: SALT_FINDS_WEEK_01.featuredProducts[1],
+        reason: "A desk-lighting listing to compare when a useful home or work-space upgrade would suit the recipient.",
+        collectionLabel: "Gifts",
+      },
+      {
+        handle: SALT_FINDS_WEEK_01.featuredProducts[2],
+        reason: "A straightforward display option to compare for someone who appreciates visible time, day, and temperature information.",
+        collectionLabel: "Gifts",
+      },
+    ],
+    actions: [
+      { label: "Shop Gifts", to: SALT_FINDS_WEEK_01.collectionRoute, primary: true },
+      { label: "Open Resource Hub", to: "/pages/resources" },
+      { label: "Contact SALT", to: "/pages/contact-us" },
+    ],
+  },
+};
+
 function buildResourceAccent(kind: ResourcePageKind, title: string, summary: string, collectionTitle: string): EditorialPageContent["accent"] {
   if (kind === "hub") {
     return {
       label: "Why this exists",
       title: "Built for people who need a clear next step",
       body:
-        "The Resource Hub gives shoppers and AI search engines one calm place to start. Each page answers one question, stays focused, and points to a real next click.",
+        `${SALT_BRAND_DESCRIPTION} The Resource Hub gives shoppers one calm place to start, with each page focused on a useful question and a real next click.`,
       bullets: [],
     };
   }
@@ -733,8 +836,8 @@ function buildResourceHubPageContent(): EditorialPageContent {
     kicker: "Resource Hub",
     title: "Resource Hub",
     seoTitle: "Resource Hub | SALT Online Store",
-    metaDescription: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
-    summary: "Pick the question you're trying to answer, then jump into the guide or topic page that fits it best.",
+    metaDescription: `${SALT_BRAND_DESCRIPTION} Pick the question you're trying to answer, then open the guide or topic page that fits it best.`,
+    summary: `${SALT_BRAND_DESCRIPTION} Pick the question you're trying to answer, then open the guide or topic page that fits it best.`,
     answerBlock: buildResourceAnswerBlock(
       "hub",
       "Resource Hub",
@@ -759,6 +862,11 @@ function buildResourceHubPageContent(): EditorialPageContent {
         detail: guide.summary,
         to: buildResourceRoute(guide.handle),
       })),
+      {
+        title: SALT_FINDS_WEEK_01.title,
+        detail: SALT_FINDS_WEEK_01.summary,
+        to: SALT_FINDS_WEEK_01.route,
+      },
       {
         title: "Interactive STEM Assembly Activities",
         detail: "Hands-on educational and wooden DIY build ideas for kids and families.",
@@ -864,7 +972,7 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
   const collectionTitle = getCollectionTitleFromRoute(topic.collectionRoute);
   const siblingTopics = guide.topics.filter((entry) => entry.handle !== topic.handle).slice(0, 4);
 
-  return {
+  const page: EditorialPageContent = {
     handle: `${guide.handle}/${topic.handle}`,
     kicker: guide.title,
     title: topic.title,
@@ -907,6 +1015,17 @@ function buildResourceTopicPageContent(guide: SiteResourceGuide, topic: SiteReso
     }),
     actions: buildResourceActions("topic", topic.collectionRoute),
   };
+
+  const override = RESOURCE_TOPIC_OVERRIDES[topic.handle];
+  return override
+    ? {
+        ...page,
+        ...override,
+        handle: page.handle,
+        kicker: page.kicker,
+        title: page.title,
+      }
+    : page;
 }
 
 function buildFaqPageContent(): EditorialPageContent {

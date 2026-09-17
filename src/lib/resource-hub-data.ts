@@ -1,4 +1,5 @@
 import type { SiteResourceGuide } from "@/lib/site-navigation";
+import { SALT_FINDS_WEEK_01 } from "@/lib/salt-brand";
 
 const P = {
   planner: "scented-decorative-candle-aromatherapy-nordic-room-decor",
@@ -190,6 +191,13 @@ export const RESOURCE_HUB_GUIDES: SiteResourceGuide[] = [
         summary: "Seasonal gift ideas that keep shopping organized and help you choose something meaningful without the last-minute scramble.",
         collectionRoute: "/collections/gifts",
         featuredProducts: featured(P.dailyBloom, P.helloKitty, P.titanicDiffuser),
+      },
+      {
+        title: SALT_FINDS_WEEK_01.title,
+        handle: SALT_FINDS_WEEK_01.slug,
+        summary: SALT_FINDS_WEEK_01.summary,
+        collectionRoute: SALT_FINDS_WEEK_01.collectionRoute,
+        featuredProducts: featured(...SALT_FINDS_WEEK_01.featuredProducts),
       },
     ],
   },

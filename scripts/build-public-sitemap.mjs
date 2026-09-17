@@ -82,6 +82,7 @@ const resourceHubRoutes = [
   "gift-guides/best-gifts-for-grandparents",
   "gift-guides/housewarming-gift-ideas",
   "gift-guides/holiday-gift-guides",
+  "gift-guides/practical-gifts-for-someone-who-has-everything",
   "home-safety-organization",
   "home-safety-organization/home-safety-tips-for-every-age",
   "home-safety-organization/organizing-important-documents",

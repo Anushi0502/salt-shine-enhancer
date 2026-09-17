@@ -4,7 +4,9 @@ import {
   assertVisualTaxonomyModel,
   buildVisualTaxonomyLabelIndex,
   findAppendOnlyTaxonomyExtension,
+  isFrozenFinalVisualTaxonomyModel,
   visualTaxonomyModelCompatibility,
+  visualTaxonomyModelFinalizationSeal,
   VISUAL_TAXONOMY_MIN_DATASET_BYTES,
   VISUAL_TAXONOMY_MODEL_BACKEND,
   VISUAL_TAXONOMY_MODEL_SCHEMA_VERSION,
@@ -97,6 +99,63 @@ describe("visual taxonomy model contract", () => {
     }), {
       taxonomyFingerprint: taxonomyTrainingFingerprint(definitions),
     })).resolves.toBeDefined();
+  });
+
+  it("accepts a sealed final model after collection taxonomy rules change", async () => {
+    const model = validModel({
+      taxonomy: {
+        version: CATALOG_TAXONOMY_VERSION,
+        fingerprint: "source-fingerprint",
+        labels: [{ index: 0, ruleId: "phone-case" }, { index: 1, ruleId: "airpods-earbuds-cases" }],
+        compatibility: {
+          mode: "frozen-final",
+          sourceFingerprint: "source-fingerprint",
+          finalizedAgainstFingerprint: "previous-current-fingerprint",
+          visualLabelRuleIds: ["airpods-earbuds-cases", "phone-case"],
+          outsideVisualLabelIndexRuleIds: ["new-collection-rule"],
+          evidence: "operator verified",
+        },
+      },
+      lifecycle: {
+        mode: "frozen-final",
+        retrainPolicy: "manual-only",
+        finalizedAt: "2026-09-17T00:00:00.000Z",
+        evidence: "operator verified",
+      },
+    });
+    model.lifecycle.modelSealSha256 = visualTaxonomyModelFinalizationSeal(model);
+
+    expect(isFrozenFinalVisualTaxonomyModel(model)).toBe(true);
+    await expect(assertVisualTaxonomyModel(model, {
+      taxonomyFingerprint: "a-new-collection-taxonomy-fingerprint",
+    })).resolves.toBeDefined();
+  });
+
+  it("rejects an unsealed finalization claim", async () => {
+    const model = validModel({
+      lifecycle: {
+        mode: "frozen-final",
+        retrainPolicy: "manual-only",
+        finalizedAt: "2026-09-17T00:00:00.000Z",
+        evidence: "operator verified",
+        modelSealSha256: "not-a-valid-seal",
+      },
+      taxonomy: {
+        version: CATALOG_TAXONOMY_VERSION,
+        fingerprint: "source-fingerprint",
+        compatibility: {
+          mode: "frozen-final",
+          sourceFingerprint: "source-fingerprint",
+          finalizedAgainstFingerprint: "previous-current-fingerprint",
+          evidence: "operator verified",
+        },
+      },
+    });
+
+    expect(isFrozenFinalVisualTaxonomyModel(model)).toBe(false);
+    await expect(assertVisualTaxonomyModel(model, {
+      taxonomyFingerprint: "a-new-collection-taxonomy-fingerprint",
+    })).rejects.toThrow(/fingerprint does not match/);
   });
 
   it("accepts candidate coverage when quarantined bytes exactly complete the signed target", async () => {

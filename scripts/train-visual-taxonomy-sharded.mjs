@@ -785,9 +785,13 @@ async function encodeFinalShards({ args, plan, state, statePath, localStatePath,
     const recordPath = resolve(workRoot, "records", `shard-${String(index + 1).padStart(3, "0")}.jsonl`);
     const saved = state.embeddingShards[key];
     if (saved?.status === "purged") {
-      await verifyFile(recordPath, `validated embedding records for shard ${key}`);
-      recordPaths.push(recordPath);
-      continue;
+      const record = await stat(recordPath).catch(() => null);
+      if (record?.isFile() && record.size > 0) {
+        await verifyFile(recordPath, `validated embedding records for shard ${key}`);
+        recordPaths.push(recordPath);
+        continue;
+      }
+      process.stdout.write(`Validated embedding records for shard ${key} are missing; regenerating them from the signed shard checkpoint.\n`);
     }
     const stagingProgressPath = resolve(shard.datasetDir, ".salt-visual-staging-progress.json");
     await saveState(statePath, state, {

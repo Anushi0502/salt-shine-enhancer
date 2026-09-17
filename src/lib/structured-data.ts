@@ -1,4 +1,5 @@
 import type { BlogPost, ShopifyShop } from "@/types/shopify";
+import { SALT_BRAND_DESCRIPTION } from "@/lib/salt-brand";
 
 type StructuredData = Record<string, unknown>;
 
@@ -24,7 +25,7 @@ export function buildOrganizationStructuredData(
     name: shop?.name || "SALT",
     url: origin,
     logo: `${origin}/brand/salt-logo.png`,
-    description: "Curated practical, giftable finds across cookware, home, beauty, apparel, gadgets, and everyday essentials.",
+    description: SALT_BRAND_DESCRIPTION,
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",

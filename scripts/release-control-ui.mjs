@@ -13,6 +13,7 @@ const releaseStatePath = resolve(outputDir, "release-run-state.json");
 const watcherStatePath = resolve(outputDir, "realtime-release-watcher-state.json");
 const visualTrainingStatusPath = resolve(outputDir, "visual-taxonomy-training-status.json");
 const visualShardTrainingStatePath = resolve(outputDir, "visual-taxonomy-shard-training-state.json");
+const visualTaxonomyModelPath = resolve(process.env.SALT_VISUAL_TAXONOMY_MODEL_PATH || resolve(outputDir, "visual-taxonomy-model.json"));
 const gptSeoProgressPath = resolve(outputDir, "gpt-seo-enrichment.json");
 const gptSeoQueueDir = resolve(outputDir, "gpt-seo-applescript");
 const logPath = resolve(outputDir, "release-control-ui.log");
@@ -162,6 +163,10 @@ const HTML = String.raw`<!doctype html>
     let logFollowLatest = true;
     function formatModelStatus(training) {
       const status = String(training?.status || 'unknown').trim().toLowerCase();
+      const lifecycle = training?.lifecycle || {};
+      if (lifecycle.mode === 'frozen-final' && lifecycle.retrainPolicy === 'manual-only') {
+        return { label: 'frozen final', detail: 'Visual model is finalized; automatic retraining is disabled.' };
+      }
       const details = String(training?.reason || training?.error || '').trim();
       const lines = details.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
       const detail = lines.find((line) => /taxonomy|retrain|incompatible|metal model/i.test(line) && !/^command failed:/i.test(line)) || lines[0] || '';
@@ -628,6 +633,10 @@ export function formatVisualTrainingStatus(training) {
   const detailLines = details.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const detail = detailLines.find((line) => /taxonomy|retrain|incompatible|metal model/i.test(line) && !/^command failed:/i.test(line)) || detailLines[0] || "";
   const needsRetraining = ["failed", "blocked"].includes(status) && /taxonomy mismatch|retrain|incompatible|stale/i.test(details);
+  const lifecycle = training?.lifecycle || {};
+  if (lifecycle.mode === "frozen-final" && lifecycle.retrainPolicy === "manual-only") {
+    return { label: "frozen final", detail: "Visual model is finalized; automatic retraining is disabled." };
+  }
   return {
     label: needsRetraining ? "retrain required" : status,
     detail: detail.replace(/^Error:\s*/i, ""),
@@ -757,14 +766,23 @@ export function applyResumeCheckpointSelection(request, checkpoint = {}) {
 }
 
 async function readState() {
-  const [release, watcher, visualTaxonomyTraining, visualTaxonomyShardTraining, gptSeoProgress, log] = await Promise.all([
+  const [release, watcher, visualTaxonomyTraining, visualTaxonomyShardTraining, gptSeoProgress, log, visualTaxonomyModel] = await Promise.all([
     readJsonIfPresent(releaseStatePath),
     readJsonIfPresent(watcherStatePath),
     readJsonIfPresent(visualTrainingStatusPath),
     readVisualShardTrainingState(),
     readGptSeoProgress(),
     readOperationalLog(),
+    readJsonIfPresent(visualTaxonomyModelPath),
   ]);
+  const visualTaxonomyTrainingView = visualTaxonomyTraining && typeof visualTaxonomyTraining === "object" && !visualTaxonomyTraining.readError
+    ? {
+      ...visualTaxonomyTraining,
+      ...(visualTaxonomyModel?.lifecycle ? { lifecycle: visualTaxonomyModel.lifecycle } : {}),
+      ...(visualTaxonomyModel?.candidateOnly !== undefined ? { candidateOnly: visualTaxonomyModel.candidateOnly } : {}),
+      ...(visualTaxonomyModel?.modelVersion ? { modelVersion: visualTaxonomyModel.modelVersion } : {}),
+    }
+    : visualTaxonomyTraining;
   const releaseStatus = String(release?.status || "").trim().toLowerCase();
   const persistedReleaseActive = isActiveReleaseState(release) && isProcessAlive(release?.pid);
   const liveProcess = Boolean(activeChild && activeChild.exitCode === null) || persistedReleaseActive;
@@ -801,7 +819,7 @@ async function readState() {
     release,
     watcher: watcherView,
     releaseStateSource: stateSource,
-    visualTaxonomyTraining,
+    visualTaxonomyTraining: visualTaxonomyTrainingView,
     visualTaxonomyShardTraining,
     gptSeoProgress: gptSeoProgressView,
     log,

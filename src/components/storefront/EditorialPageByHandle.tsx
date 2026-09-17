@@ -14,6 +14,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { buildResourceReason } from "@/lib/editorial-pages";
+import { trackAnalyticsEvent } from "@/lib/analytics-events";
 import { useCollections } from "@/lib/collections-data";
 import {
   SITE_RESOURCE_GUIDES,
@@ -91,6 +92,21 @@ type ResourceFeaturedShelfProps = {
   description?: string;
   products: ResourceFeaturedView[];
 };
+
+function trackResourceProductSelect(product: ShopifyProduct, itemListName: string): void {
+  trackAnalyticsEvent("select_item", {
+    item_list_name: itemListName,
+    items: [
+      {
+        item_id: String(product.id || product.handle),
+        item_name: product.title,
+        item_category: product.product_type || undefined,
+        price: minPrice(product),
+        quantity: 1,
+      },
+    ],
+  });
+}
 
 type ResourceRouteCardProps = ResourceRouteVisual & {
   prominent?: boolean;
@@ -359,6 +375,7 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-start">
         <Link
           to={`/products/${heroProduct.handle}`}
+          onClick={() => trackResourceProductSelect(heroProduct.product, title)}
           className="salt-panel-shell group relative overflow-hidden rounded-[1.75rem] shadow-[0_24px_48px_-36px_rgba(15,23,42,0.2)] transition hover:-translate-y-0.5 hover:border-primary/20"
         >
           <div className="relative aspect-[1.12/0.9] overflow-hidden">
@@ -411,6 +428,7 @@ const ResourceFeaturedShelf = ({ title, description, products }: ResourceFeature
             <Link
               key={product.handle}
               to={`/products/${product.handle}`}
+              onClick={() => trackResourceProductSelect(product.product, title)}
               className="salt-panel-shell group flex items-stretch overflow-hidden rounded-[1.45rem] shadow-[0_18px_38px_-30px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:border-primary/20"
             >
               <div className="relative w-32 shrink-0 overflow-hidden sm:w-36">

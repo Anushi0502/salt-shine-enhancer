@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildCandidateTrainingEnv,
+  forceVisualTaxonomyRetrainRequested,
   isTaxonomyDriftError,
 } from "./ensure-visual-taxonomy-model.mjs";
 
@@ -19,6 +20,12 @@ describe("visual taxonomy model recovery", () => {
     expect(isTaxonomyDriftError({
       message: "Visual taxonomy weights checksum does not match the installed model metadata.",
     })).toBe(false);
+  });
+
+  it("keeps retraining opt-in instead of automatic", () => {
+    expect(forceVisualTaxonomyRetrainRequested(["node", "ensure"], {})).toBe(false);
+    expect(forceVisualTaxonomyRetrainRequested(["node", "ensure", "--force-retrain"], {})).toBe(true);
+    expect(forceVisualTaxonomyRetrainRequested(["node", "ensure"], { SALT_VISUAL_FORCE_RETRAIN: "1" })).toBe(true);
   });
 
   it("preserves the candidate-label gate while rebuilding a candidate shard plan", () => {

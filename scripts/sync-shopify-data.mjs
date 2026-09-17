@@ -260,6 +260,41 @@ async function fetchCollectionProductIdsFromCachedFile(handle) {
   return productIds;
 }
 
+async function fetchCollectionProductIdsFromAdminGraphQL(handle) {
+  const productIds = [];
+  let after = null;
+
+  while (true) {
+    const payload = await runShopifyStoreGraphQL(
+      COLLECTION_PRODUCTS_QUERY,
+      { query: `handle:${handle}`, first: limit, after },
+      { operation: `read live collection ids ${handle}` },
+    );
+    const collection = (Array.isArray(payload?.collections?.nodes) ? payload.collections.nodes : [])
+      .find((entry) => entry?.handle === handle);
+
+    if (!collection) {
+      throw new Error(`Collection "${handle}" was not found in Shopify GraphQL`);
+    }
+
+    const products = Array.isArray(collection.products?.nodes) ? collection.products.nodes : [];
+    productIds.push(
+      ...products
+        .map((product) => String(product?.id || "").match(/(\d+)$/)?.[1] || "")
+        .filter(Boolean),
+    );
+
+    if (!collection.products?.pageInfo?.hasNextPage) {
+      break;
+    }
+
+    after = collection.products.pageInfo.endCursor;
+  }
+
+  process.stdout.write(`Using live Shopify GraphQL collection ids for "${handle}" with ${productIds.length} products\n`);
+  return productIds;
+}
+
 async function loadForcedLiveCollectionHandles() {
   try {
     const manifest = JSON.parse(await readFile(collectionMergeManifestPath, "utf8"));
@@ -832,6 +867,20 @@ const COLLECTION_CUSTOM_DATA_QUERY = /* GraphQL */ `
         trustStrip: metafield(namespace: "salt-marketing", key: "trust_strip") {
           jsonValue
           value
+        }
+      }
+    }
+  }
+`;
+
+const COLLECTION_PRODUCTS_QUERY = /* GraphQL */ `
+  query CollectionProductsByHandle($query: String!, $first: Int!, $after: String) {
+    collections(first: 1, query: $query) {
+      nodes {
+        handle
+        products(first: $first, after: $after) {
+          nodes { id }
+          pageInfo { hasNextPage endCursor }
         }
       }
     }
@@ -1583,7 +1632,17 @@ async function fetchCollectionProductIds(handle) {
       const reason = forceLiveCollectionMemberships
         ? "canonical release"
         : "completed merge target";
-      throw new Error(`Live collection ids failed for ${reason} "${handle}": ${message}`);
+      try {
+        process.stdout.write(
+          `Public collection ids unavailable for ${reason} "${handle}"; reading live membership through Shopify GraphQL (${message})\n`,
+        );
+        return await fetchCollectionProductIdsFromAdminGraphQL(handle);
+      } catch (graphQlError) {
+        const graphQlMessage = graphQlError instanceof Error ? graphQlError.message : "unknown GraphQL error";
+        throw new Error(
+          `Live collection ids failed for ${reason} "${handle}" via public JSON and Shopify GraphQL: ${message}; ${graphQlMessage}`,
+        );
+      }
     }
     process.stdout.write(`Live collection ids failed for "${handle}"; trying cached mapping (${message})\n`);
 

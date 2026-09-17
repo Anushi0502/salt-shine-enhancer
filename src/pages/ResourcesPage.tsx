@@ -11,6 +11,7 @@ import ResourceProductCard from "@/components/resources/ResourceProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { buildResourceReason } from "@/lib/editorial-pages";
 import { RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
+import { SALT_FINDS_WEEK_01 } from "@/lib/salt-brand";
 import { conciseTitle, formatMoney, minPrice, productImage } from "@/lib/formatters";
 import { useEditorialPage, useProductByHandle } from "@/lib/shopify-data";
 import { useCollections } from "@/lib/collections-data";
@@ -397,6 +398,22 @@ const ResourcesPage = () => {
             />
           ))}
         </div>
+
+        <article className="mt-4 grid gap-4 rounded-[1.6rem] border border-primary/15 bg-[linear-gradient(135deg,hsl(var(--primary)/0.08),hsl(var(--background)/0.92)_58%,hsl(var(--accent)/0.42))] p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
+          <div>
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-primary">Featured this week</p>
+            <h3 className="mt-2 font-display text-[clamp(1.45rem,2.8vw,2.15rem)] leading-[0.98] text-foreground">
+              {SALT_FINDS_WEEK_01.title}
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{SALT_FINDS_WEEK_01.summary}</p>
+          </div>
+          <Link
+            to={SALT_FINDS_WEEK_01.route}
+            className="salt-primary-cta inline-flex h-11 items-center justify-center rounded-full px-5 text-[0.68rem] font-bold uppercase tracking-[0.1em]"
+          >
+            Open SALT Finds
+          </Link>
+        </article>
       </section>
 
       {featuredProducts.length ? (

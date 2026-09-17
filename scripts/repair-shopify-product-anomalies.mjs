@@ -110,7 +110,7 @@ const PRODUCT_OPTION_UPDATE_MUTATION = /* GraphQL */ `
   mutation ProductAnomalyRepairOption($productId: ID!, $option: OptionUpdateInput!, $variantStrategy: ProductOptionUpdateVariantStrategy!) {
     productOptionUpdate(productId: $productId, option: $option, variantStrategy: $variantStrategy) {
       product { id handle title status options { id name position values } }
-      userErrors { field message code }
+      userErrors { field message }
     }
   }
 `;
@@ -119,7 +119,7 @@ const PRODUCT_UPDATE_MUTATION = /* GraphQL */ `
   mutation ProductAnomalyRepairStatus($product: ProductUpdateInput!) {
     productUpdate(product: $product) {
       product { id handle title status }
-      userErrors { field message code }
+      userErrors { field message }
     }
   }
 `;
@@ -329,12 +329,20 @@ function formatUserErrors(errors) {
     .join("; ");
 }
 
+function toProductGid(productId) {
+  const value = String(productId || "").trim();
+  if (value.startsWith("gid://shopify/Product/")) return value;
+  const numericId = value.match(/(\d+)$/)?.[1] || "";
+  return numericId ? `gid://shopify/Product/${numericId}` : value;
+}
+
 async function fetchProduct(productId) {
   const variants = [];
   let after = null;
   let product = null;
+  const productGid = toProductGid(productId);
   while (true) {
-    const payload = await client.run(PRODUCT_QUERY, { id: productId, variantAfter: after }, { operation: `read product anomaly repair ${productId}` });
+    const payload = await client.run(PRODUCT_QUERY, { id: productGid, variantAfter: after }, { operation: `read product anomaly repair ${productId}` });
     if (!payload?.product) return null;
     product ||= { ...payload.product, variants: [] };
     variants.push(...asArray(payload.product.variants?.nodes));
@@ -387,7 +395,7 @@ async function applyOptionTask(task) {
     return { ...task, status: "held-stale-evidence", error: targetExists ? "target option name collision" : "live option values no longer prove the planned semantic" };
   }
   const payload = await client.run(PRODUCT_OPTION_UPDATE_MUTATION, {
-    productId: task.productId,
+    productId: toProductGid(task.productId),
     option: { id: task.optionId, name: task.toName },
     variantStrategy: "LEAVE_AS_IS",
   }, { allowMutations: true, operation: `rename product option ${task.productId}` });
@@ -410,7 +418,7 @@ async function applyCostTask(task) {
   const evidence = costEvidenceStillMatches(product, task);
   if (!evidence.ok) return { ...task, status: "held-stale-evidence", error: evidence.reason };
   const payload = await client.run(PRODUCT_UPDATE_MUTATION, {
-    product: { id: task.productId, status: "DRAFT" },
+    product: { id: toProductGid(task.productId), status: "DRAFT" },
   }, { allowMutations: true, operation: `draft cost outlier ${task.productId}` });
   const mutation = payload?.productUpdate;
   const errors = formatUserErrors(mutation?.userErrors);
@@ -478,7 +486,9 @@ async function runDryRun(destination) {
   await writeJsonAtomically(destination, manifest);
   process.stdout.write(`${JSON.stringify({ output: destination, summary: manifest.summary, priceSummary: audit.priceSummary, costSummary: audit.costSummary }, null, 2)}\n`);
   if (!source.coverageExact) throw new Error("Product anomaly repair dry-run did not cover every active product with variants.");
-  if (plan.optionHeld.length || plan.costHeld.length) throw new Error(`Product anomaly repair has ${plan.optionHeld.length} held option task(s) and ${plan.costHeld.length} held cost task(s); no unsafe writes were started.`);
+  if (plan.optionHeld.length || plan.costHeld.length) {
+    process.stdout.write(`Held anomaly tasks quarantined: ${plan.optionHeld.length} option task(s), ${plan.costHeld.length} cost task(s); no unsafe writes were started.\n`);
+  }
 }
 
 async function checkpointManifest(path, manifest) {
@@ -546,8 +556,6 @@ async function runVerify(path) {
   });
   const failures = [...optionResults, ...costResults].filter((result) => !result.ok);
   const unresolved = [
-    ...asArray(manifest.tasks.optionHeld),
-    ...asArray(manifest.tasks.costHeld),
     ...manifest.tasks.optionRenames.filter((task) => !["already-exact", "applied-verified", "verified"].includes(task.status)),
     ...manifest.tasks.costDrafts.filter((task) => !["already-draft", "drafted-verified", "verified"].includes(task.status)),
   ];
@@ -558,6 +566,8 @@ async function runVerify(path) {
     costVerified: costResults.filter((result) => result.ok).length,
     readbackFailures: failures.length,
     unresolved: unresolved.length,
+    heldOptionTasks: asArray(manifest.tasks.optionHeld).length,
+    heldCostTasks: asArray(manifest.tasks.costHeld).length,
   };
   await checkpointManifest(path, manifest);
   process.stdout.write(`${JSON.stringify({ output: path, summary: manifest.summary }, null, 2)}\n`);

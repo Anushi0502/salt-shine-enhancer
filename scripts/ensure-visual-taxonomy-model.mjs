@@ -25,6 +25,7 @@ const trainingWaitTimeoutMs = Math.max(
 );
 const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const execFileAsync = promisify(execFile);
+const finalizationScriptPath = resolve(rootDir, "scripts", "finalize-visual-taxonomy-model.mjs");
 const defaultMetalPython = resolve(
   process.env.HOME || "/tmp",
   ".cache",
@@ -340,6 +341,14 @@ async function verifyModel() {
   });
 }
 
+async function finalizeModel() {
+  await execFileAsync(process.execPath, [finalizationScriptPath], {
+    cwd: rootDir,
+    env: process.env,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+}
+
 async function refreshAppendOnlyCompatibility() {
   await execFileAsync(process.execPath, [compatibilityRefreshScriptPath], {
     cwd: rootDir,
@@ -386,6 +395,10 @@ async function verifyOrRefreshModel() {
     }
     await verifyModel();
   }
+}
+
+export function forceVisualTaxonomyRetrainRequested(argv = process.argv, env = process.env) {
+  return argv.includes("--force-retrain") || String(env.SALT_VISUAL_FORCE_RETRAIN || "") === "1";
 }
 
 async function trainModel(inputs, { candidateOnly = false } = {}) {
@@ -624,11 +637,13 @@ async function runConfiguredTraining(plan, reason) {
     }
     if (!plan.sharded) await trainModel(plan.inputs, plan);
     await verifyModel();
+    await finalizeModel();
     await writeTrainingStatus("verified", {
-      reason: "Metal training, quality, checksum, and post-training purge gates passed",
+      reason: "Metal training, quality, checksum, purge, and one-time finalization gates passed",
       completedAt: new Date().toISOString(),
+      retrainPolicy: "manual-only",
     });
-    process.stdout.write(`Visual taxonomy model trained, verified, and installed at ${modelPath}.\n`);
+    process.stdout.write(`Visual taxonomy model trained, verified, finalized, and installed at ${modelPath}.\n`);
   } catch (error) {
     await writeTrainingStatus("failed", {
       error: String(error?.message || error),
@@ -648,28 +663,34 @@ async function ensureModel() {
     await recoverPendingPurge();
   }
   if (await modelExists()) {
+    if (forceVisualTaxonomyRetrainRequested()) {
+      const plan = configuredTrainingPlan(await loadTrainingConfig());
+      if (!plan.inputs) {
+        const reason = "explicit visual taxonomy retraining was requested but no complete Metal training inputs are configured";
+        await writeTrainingStatus("blocked", { reason, required: true, retrainPolicy: "manual-only" });
+        throw new Error(`${reason}: ${modelPath}`);
+      }
+      await writeTrainingStatus("planning", {
+        reason: "explicit operator force requested; preserving the installed model before deliberate retraining",
+        retrainPolicy: "manual-only",
+      });
+      const backupPath = await preserveInstalledModelArtifacts("explicit operator force retrain");
+      process.stdout.write(`Preserved the installed visual taxonomy model evidence at ${backupPath} before the explicit force retrain.\n`);
+      await refreshShardedTrainingPlan(plan);
+      await runConfiguredTraining(
+        plan,
+        "Explicit operator force requested; starting deliberate verified Metal retraining.",
+      );
+      return;
+    }
     await writeTrainingStatus("verifying", { reason: "checking installed model artifact and purge evidence" });
     try {
       await verifyOrRefreshModel();
     } catch (error) {
       if (error?.code !== "TAXONOMY_RETRAIN_REQUIRED") throw error;
-      const plan = configuredTrainingPlan(await loadTrainingConfig());
-      if (!plan.inputs) {
-        const reason = "installed visual taxonomy model is incompatible with the current taxonomy and no complete Metal retraining inputs are configured";
-        await writeTrainingStatus("blocked", { reason, required: true });
-        throw new Error(`${reason}: ${modelPath}`);
-      }
-      await writeTrainingStatus("planning", {
-        reason: "append-only compatibility was not proven; preparing a verified taxonomy retrain",
-      });
-      const backupPath = await preserveInstalledModelArtifacts("taxonomy fingerprint drift requires retraining");
-      process.stdout.write(`Preserved the previous visual taxonomy model evidence at ${backupPath}.\n`);
-      await refreshShardedTrainingPlan(plan);
-      await runConfiguredTraining(
-        plan,
-        "Installed visual taxonomy model is stale for the current taxonomy; starting verified Metal retraining.",
-      );
-      return;
+      const reason = "automatic visual taxonomy retraining is disabled; the installed model must be finalized once or retrained only with --force-retrain / SALT_VISUAL_FORCE_RETRAIN=1";
+      await writeTrainingStatus("blocked", { reason, required: true, retrainPolicy: "manual-only" });
+      throw new Error(`${reason}: ${modelPath}`);
     }
     await writeTrainingStatus("verified", { reason: "installed model passed live artifact verification" });
     process.stdout.write(`Verified installed visual taxonomy model at ${modelPath}.\n`);

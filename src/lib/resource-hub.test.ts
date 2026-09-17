@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getEditorialPageContent } from "@/lib/editorial-pages";
 import { RESOURCE_HUB_GUIDES, RESOURCE_HUB_HUB_FEATURED_PRODUCTS } from "@/lib/resource-hub-data";
+import { SALT_FINDS_WEEK_01 } from "@/lib/salt-brand";
 import {
   buildResourceRoute,
   buildResourceTopicRoute,
@@ -15,7 +16,7 @@ function expectValidFeaturedHandle(handle: string) {
 describe("resource hub content", () => {
   it("keeps the expected hub hierarchy and route helpers in sync", () => {
     expect(RESOURCE_HUB_GUIDES).toHaveLength(7);
-    expect(RESOURCE_HUB_GUIDES.flatMap((guide) => guide.topics)).toHaveLength(27);
+    expect(RESOURCE_HUB_GUIDES.flatMap((guide) => guide.topics)).toHaveLength(28);
 
     const guide = getResourceByHandle("senior-living-guides");
     expect(guide?.title).toBe("Senior Living Guides");
@@ -94,6 +95,23 @@ describe("resource hub content", () => {
       expect(page?.answerBlock?.takeaways?.length).toBeGreaterThanOrEqual(1);
       expect(page?.answerBlock?.queryPrompts?.length).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it("publishes the Phase 3 SALT Finds asset with live catalog anchors", () => {
+    const handle = `gift-guides/${SALT_FINDS_WEEK_01.slug}`;
+    const page = getEditorialPageContent(handle);
+    const hub = getEditorialPageContent("resources");
+
+    expect(page?.title).toBe(SALT_FINDS_WEEK_01.title);
+    expect(page?.answerBlock?.question).toBe(
+      "How do I choose a practical gift for someone who has everything?",
+    );
+    expect(page?.answerBlock?.decisionSteps).toHaveLength(3);
+    expect(page?.featuredProducts?.map((product) => product.handle)).toEqual(
+      [...SALT_FINDS_WEEK_01.featuredProducts],
+    );
+    expect(page?.actions?.some((action) => action.to === "/collections/gifts")).toBe(true);
+    expect(hub?.cards?.some((card) => card.to === SALT_FINDS_WEEK_01.route)).toBe(true);
   });
 
   it("keeps the GSC STEM landing page tied to the verified live products", () => {

@@ -3,6 +3,7 @@ import OpenContentPageShell from "@/components/storefront/OpenContentPageShell";
 import { ErrorState, LoadingState } from "@/components/storefront/LoadState";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
 import { sanitizeRichHtml } from "@/lib/formatters";
+import { SALT_BRAND_DESCRIPTION } from "@/lib/salt-brand";
 import { useAboutPage } from "@/lib/shopify-data";
 
 function formatDate(value: string): string {
@@ -53,7 +54,7 @@ const AboutPage = () => {
   const seoMetadata = (
     <SeoMetadata
       title="About SALT Online Store"
-      description="Learn how SALT makes practical products easy to discover, save, and buy."
+      description={SALT_BRAND_DESCRIPTION}
       canonicalPath="/pages/about-us"
     />
   );
@@ -132,10 +133,13 @@ const AboutPage = () => {
         { label: "View cart", to: "/cart" },
       ]}
     >
-      <article
-        className="prose prose-sm max-w-none leading-[1.74] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-muted-foreground prose-img:rounded-2xl prose-img:border prose-img:border-border/70"
-        dangerouslySetInnerHTML={{ __html: cleanedBodyHtml }}
-      />
+      <article className="prose prose-sm max-w-none leading-[1.74] text-foreground dark:prose-invert prose-headings:font-display prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-li:text-foreground prose-p:text-muted-foreground prose-img:rounded-2xl prose-img:border prose-img:border-border/70">
+        <section className="not-prose mb-6 rounded-[1.25rem] border border-primary/15 bg-primary/[0.035] p-4 sm:p-5">
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-primary">What SALT is</p>
+          <p className="mt-2 text-sm leading-7 text-foreground">{SALT_BRAND_DESCRIPTION}</p>
+        </section>
+        <div dangerouslySetInnerHTML={{ __html: cleanedBodyHtml }} />
+      </article>
       </OpenContentPageShell>
     </>
   );

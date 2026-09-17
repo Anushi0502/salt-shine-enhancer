@@ -10,6 +10,7 @@ import GiftBanner from "@/components/salt/GiftBanner";
 import { FreeGiftFinder } from "@/components/salt/FreeGiftFinder";
 import { SaltFinds } from "@/components/salt/SaltFinds";
 import { polishPlainText } from "@/lib/formatters";
+import { SALT_BRAND_SHORT_DESCRIPTION } from "@/lib/salt-brand";
 import { toGiftFinderProduct } from "@/lib/gift-finder-catalog";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
@@ -343,7 +344,7 @@ const HomePage = () => {
       })),
     ).flat();
   }, [reviewLoopCopies, reviewTiles]);
-  const homeDescription = "Shop curated essentials and gift-ready finds with clearer discovery and faster checkout.";
+  const homeDescription = SALT_BRAND_SHORT_DESCRIPTION;
 
   useEffect(() => {
     const carousel = reviewCarouselRef.current;
