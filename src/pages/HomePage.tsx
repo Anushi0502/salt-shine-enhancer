@@ -437,35 +437,6 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
-        <header className="mx-auto w-full max-w-[1360px] px-1 py-1 sm:px-2 sm:py-2 lg:px-4">
-          <div className="salt-section-shell rounded-[1.75rem] px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-9">
-            <div className="max-w-3xl">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-primary sm:text-xs">
-                Curated discovery
-              </p>
-              <h1 className="mt-2 max-w-3xl font-display text-[clamp(2rem,5vw,4.35rem)] leading-[0.95] tracking-[-0.055em] text-foreground">
-                Curated essentials and giftable finds for everyday life
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
-                Shop practical products across cookware, home, beauty, apparel, gadgets, and gifts — then use SALT guides to choose with more confidence.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  to="/pages/resources"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  Explore buying guides
-                </Link>
-                <Link
-                  to="/collections/gifts"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-border bg-background/80 px-5 py-3 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  Shop gifts
-                </Link>
-              </div>
-            </div>
-          </div>
-        </header>
         <HomeHero
           slides={homeHeroSlides}
           loading={homeCollectionProductsQuery.isPending}
