@@ -17,7 +17,6 @@ import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import heroAnimeCollectables from "@/assets/collection-banners/anime-collectables-square.webp";
-import heroCreatorEssentials from "@/assets/collection-banners/creator-essentials-square.webp";
 import heroLipCare from "@/assets/collection-banners/lip-care-square.webp";
 import heroWatches from "@/assets/collection-banners/watches-square.webp";
 import heroGlamEyePalettes from "@/assets/collection-banners/glam-eye-palettes-square.webp";
@@ -220,14 +219,6 @@ const HomePage = () => {
         alt: "Anime Collectables collection banner.",
         ctaHref: `/collections/${sections.animeCollectables.handle}`,
         products: sections.animeCollectables.products,
-      },
-      {
-        key: sections.creatorEssentials.handle,
-        title: sections.creatorEssentials.title,
-        image: heroCreatorEssentials,
-        alt: "Creator Essentials collection banner.",
-        ctaHref: `/collections/${sections.creatorEssentials.handle}`,
-        products: sections.creatorEssentials.products,
       },
       {
         key: sections.lipCare.handle,
