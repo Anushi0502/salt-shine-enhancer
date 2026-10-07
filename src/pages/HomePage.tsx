@@ -4,7 +4,6 @@ import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
-import HomeHero from "@/components/storefront/HomeHero";
 import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { FreeGiftFinder } from "@/components/salt/FreeGiftFinder";
@@ -16,12 +15,7 @@ import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
-import heroAnimeCollectables from "@/assets/collection-banners/anime-collectables-square.webp";
-import heroLipCare from "@/assets/collection-banners/lip-care-square.webp";
-import heroWatches from "@/assets/collection-banners/watches-square.webp";
-import heroGlamEyePalettes from "@/assets/collection-banners/glam-eye-palettes-square.webp";
 import heroMain from "@/assets/hero-main.jpg";
-import type { HomeHeroSlide } from "@/components/storefront/HomeHero";
 import type { ShopifyProduct } from "@/types/shopify";
 
 type ReviewTile = {
@@ -205,47 +199,6 @@ const HomePage = () => {
     },
     [homeFeaturedProductsPayload?.bestSellerProducts, homeFeaturedProductsPayload?.giftFinderProducts],
   );
-  const homeHeroSlides = useMemo<HomeHeroSlide[]>(() => {
-    const sections = homeCollectionProductsPayload?.sections;
-    if (!sections) {
-      return [];
-    }
-
-    return [
-      {
-        key: sections.animeCollectables.handle,
-        title: sections.animeCollectables.title,
-        image: heroAnimeCollectables,
-        alt: "Anime Collectables collection banner.",
-        ctaHref: `/collections/${sections.animeCollectables.handle}`,
-        products: sections.animeCollectables.products,
-      },
-      {
-        key: sections.lipCare.handle,
-        title: sections.lipCare.title,
-        image: heroLipCare,
-        alt: "Lip Care collection banner.",
-        ctaHref: `/collections/${sections.lipCare.handle}`,
-        products: sections.lipCare.products,
-      },
-      {
-        key: sections.watches.handle,
-        title: sections.watches.title,
-        image: heroWatches,
-        alt: "Watches collection banner.",
-        ctaHref: `/collections/${sections.watches.handle}`,
-        products: sections.watches.products,
-      },
-      {
-        key: sections.glamEyePalettes.handle,
-        title: sections.glamEyePalettes.title,
-        image: heroGlamEyePalettes,
-        alt: "Glam Eye Palettes collection banner.",
-        ctaHref: `/collections/${sections.glamEyePalettes.handle}`,
-        products: sections.glamEyePalettes.products,
-      },
-    ];
-  }, [homeCollectionProductsPayload]);
   const homeCollectionSections = useMemo(
     () =>
       HOME_COLLECTION_SHELVES.map((fallbackSection) => {
@@ -428,11 +381,6 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
-        <HomeHero
-          slides={homeHeroSlides}
-          loading={homeCollectionProductsQuery.isPending}
-        />
-
         <Reveal delayMs={80}>
           <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />
