@@ -184,7 +184,7 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
               aria-label={activeSlideLabel}
               aria-live={isRotationActive ? "off" : "polite"}
               aria-atomic="true"
-              className="relative aspect-[16/9] overflow-hidden rounded-[1.25rem] border border-border/70 bg-foreground shadow-[0_24px_50px_-34px_rgba(15,23,42,0.35)] sm:rounded-[1.5rem]"
+              className="relative aspect-square overflow-hidden rounded-[1.25rem] border border-border/70 bg-foreground shadow-[0_24px_50px_-34px_rgba(15,23,42,0.35)] sm:rounded-[1.5rem]"
             >
               <Link
                 to={activeSlide.ctaHref}
@@ -212,19 +212,6 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
                   />
                 )}
               </Link>
-
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(6,18,31,0.78)_0%,rgba(6,18,31,0.36)_38%,rgba(6,18,31,0.02)_72%)]" />
-              <div className="pointer-events-none absolute inset-x-5 bottom-5 max-w-[48%] text-white sm:inset-x-8 sm:bottom-8">
-                <p className="text-[0.58rem] font-bold uppercase tracking-[0.24em] text-white/75 sm:text-[0.68rem]">
-                  SALT collection edit
-                </p>
-                <h2 className="mt-2 font-display text-[clamp(1.8rem,4vw,4.4rem)] font-semibold leading-[0.9] tracking-[-0.06em]">
-                  {activeSlide.title}
-                </h2>
-                <span className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-slate-950 sm:mt-4 sm:px-5 sm:py-2.5 sm:text-[0.66rem]">
-                  Shop collection
-                </span>
-              </div>
 
               {slides.length > 1 ? (
                 <div className="absolute right-2.5 top-2.5 z-10 flex max-w-[calc(100%-1.25rem)] items-center gap-1 rounded-full border border-white/35 bg-slate-950/75 p-1 text-white shadow-lg backdrop-blur-md sm:right-3 sm:top-3">

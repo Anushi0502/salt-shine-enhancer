@@ -33,7 +33,11 @@ function resolveThemeDir() {
 
 const themeDir = resolveThemeDir();
 const themeAssetsDir = resolve(themeDir, "assets");
-const themeScaffoldEntries = ["assets", "config", "layout", "locales", "sections", "templates"];
+// Keep hashed assets from earlier releases. Browsers can retain a cached
+// salt-entry bundle while Shopify has already switched the stable loader to a
+// newer release; deleting the old lazy chunks makes that cached bundle fail
+// with "Failed to fetch dynamically imported module".
+const themeScaffoldEntries = ["config", "layout", "locales", "sections", "templates"];
 const themeDataAssets = [
   {
     source: "recently-ordered-products.json",
@@ -1707,7 +1711,13 @@ Allow: /account/orders
 }
 
 async function copyAssets(entryJsPath, entryCssPath) {
-  await cp(resolve(distDir, "assets"), themeAssetsDir, { recursive: true });
+  const currentDistAssets = await readdir(resolve(distDir, "assets"));
+  await mkdir(themeAssetsDir, { recursive: true });
+  await Promise.all(
+    currentDistAssets.map((asset) =>
+      cp(resolve(distDir, "assets", asset), resolve(themeAssetsDir, asset), { recursive: true }),
+    ),
+  );
 
   const entryJs = basename(entryJsPath);
   const entryCss = basename(entryCssPath);
@@ -1743,8 +1753,10 @@ async function copyAssets(entryJsPath, entryCssPath) {
   // Some lazy chunks import the Vite entry directly. Point every one at the
   // processed, content-addressed entry so the theme has exactly one React
   // runtime and Shopify's CDN cannot retain a stale entry bundle.
-  for (const asset of await readdir(themeAssetsDir)) {
-    if (!asset.endsWith(".js") || asset === themeEntryJs) {
+  // Rewrite only the current build's chunks. Historical chunks stay byte-for-
+  // byte compatible with the entry bundle that originally referenced them.
+  for (const asset of currentDistAssets) {
+    if (!asset.endsWith(".js") || asset === entryJs || asset === themeEntryJs) {
       continue;
     }
 
