@@ -148,11 +148,12 @@ function buildHomeCollectionSection(key, title, handle) {
 }
 
 const homeCollectionSectionsLiquid = [
-  ["animeCollectables", "Anime Collectables", "anime-collectables"],
-  ["creatorEssentials", "Creator Essentials", "creator-essentials"],
-  ["lipCare", "Lip Care", "lips-and-care"],
-  ["watches", "Watches", "watches"],
-  ["glamEyePalettes", "Glam Eye Palettes", "glam-eye-palettes"],
+  ["kids", "Kids", "kids"],
+  ["footwear", "Footwear", "footwear"],
+  ["bestSellers", "Best Sellers", "best-sellers"],
+  ["luxuryFragrances", "Luxury Fragrances", "luxury-fragrances"],
+  ["men", "Men", "men-collection"],
+  ["women", "Women", "women"],
 ].map((entry) => buildHomeCollectionSection(...entry)).join(",\n");
 
 function buildThemeAssetMapEntries() {

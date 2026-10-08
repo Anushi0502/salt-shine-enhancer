@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Reveal from "@/components/storefront/Reveal";
 import ProductCard from "@/components/storefront/ProductCard";
 import SeoMetadata from "@/components/storefront/SeoMetadata";
+import HomeHero, { type HomeHeroSlide } from "@/components/storefront/HomeHero";
 import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
 import { FreeGiftFinder } from "@/components/salt/FreeGiftFinder";
@@ -15,6 +16,12 @@ import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import kidsCollectionBanner from "@/assets/collection-banners/kids-collection-banner.webp";
+import footwearCollectionBanner from "@/assets/collection-banners/footwear-collection-banner.webp";
+import bestsellersCollectionBanner from "@/assets/collection-banners/bestsellers-collection-banner.webp";
+import luxuryFragrancesCollectionBanner from "@/assets/collection-banners/luxury-fragrances-collection-banner.webp";
+import menCollectionBanner from "@/assets/collection-banners/men-collection-banner.webp";
+import womenCollectionBanner from "@/assets/collection-banners/women-collection-banner.webp";
 import heroMain from "@/assets/hero-main.jpg";
 import type { ShopifyProduct } from "@/types/shopify";
 
@@ -32,11 +39,21 @@ const REVIEW_DISPLAY_LIMIT = 24;
 const HOME_PRODUCT_DISPLAY_LIMIT = 12;
 
 const HOME_COLLECTION_SHELVES = [
-  { key: "animeCollectables", title: "Anime Collectables", handle: "anime-collectables" },
-  { key: "creatorEssentials", title: "Creator Essentials", handle: "creator-essentials" },
-  { key: "lipCare", title: "Lip Care", handle: "lips-and-care" },
-  { key: "watches", title: "Watches", handle: "watches" },
-  { key: "glamEyePalettes", title: "Glam Eye Palettes", handle: "glam-eye-palettes" },
+  { key: "kids", title: "Kids", handle: "kids" },
+  { key: "footwear", title: "Footwear", handle: "footwear" },
+  { key: "bestSellers", title: "Best Sellers", handle: "best-sellers" },
+  { key: "luxuryFragrances", title: "Luxury Fragrances", handle: "luxury-fragrances" },
+  { key: "men", title: "Men", handle: "men-collection" },
+  { key: "women", title: "Women", handle: "women" },
+] as const;
+
+const HOME_HERO_BANNERS = [
+  { key: "kids", title: "Kids", handle: "kids", image: kidsCollectionBanner, alt: "Kids collection banner" },
+  { key: "footwear", title: "Footwear", handle: "footwear", image: footwearCollectionBanner, alt: "Footwear collection banner" },
+  { key: "bestSellers", title: "Best Sellers", handle: "best-sellers", image: bestsellersCollectionBanner, alt: "Best Sellers collection banner" },
+  { key: "luxuryFragrances", title: "Luxury Fragrances", handle: "luxury-fragrances", image: luxuryFragrancesCollectionBanner, alt: "Luxury Fragrances collection banner" },
+  { key: "men", title: "Men", handle: "men-collection", image: menCollectionBanner, alt: "Men collection banner" },
+  { key: "women", title: "Women", handle: "women", image: womenCollectionBanner, alt: "Women collection banner" },
 ] as const;
 
 const fallbackReviewTiles: ReviewTile[] = [
@@ -198,6 +215,23 @@ const HomePage = () => {
         });
     },
     [homeFeaturedProductsPayload?.bestSellerProducts, homeFeaturedProductsPayload?.giftFinderProducts],
+  );
+  const homeHeroSlides = useMemo<HomeHeroSlide[]>(
+    () =>
+      HOME_HERO_BANNERS.map((banner) => {
+        const section = homeCollectionProductsPayload?.sections[banner.key];
+
+        return {
+          key: banner.key,
+          title: section?.title || banner.title,
+          image: banner.image,
+          alt: banner.alt,
+          ctaHref: `/collections/${section?.handle || banner.handle}`,
+          description: `Explore the latest ${section?.title || banner.title.toLowerCase()} edit from SALT.`,
+          products: section?.products || [],
+        };
+      }),
+    [homeCollectionProductsPayload],
   );
   const homeCollectionSections = useMemo(
     () =>
@@ -381,6 +415,8 @@ const HomePage = () => {
         image={normalizedHeroMain}
       />
       <div className="space-y-4 sm:space-y-5">
+        <HomeHero slides={homeHeroSlides} loading={homeCollectionProductsQuery.isPending} />
+
         <Reveal delayMs={80}>
           <section className="salt-section-shell rounded-[1.75rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <SectionTitle title="Best Sellers" />

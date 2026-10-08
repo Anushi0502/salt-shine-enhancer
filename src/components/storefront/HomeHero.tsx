@@ -68,6 +68,7 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
   const [isPlaying, setIsPlaying] = useState(shouldAutoplayByDefault);
   const [isPointerPaused, setIsPointerPaused] = useState(false);
   const [isFocusPaused, setIsFocusPaused] = useState(false);
+  const [failedImageKey, setFailedImageKey] = useState<string | null>(null);
   const carouselId = useId();
   const activeSlideId = `${carouselId}-active-slide`;
 
@@ -125,6 +126,10 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
 
   const activeSlide = slides[activeSlideIndex] || slides[0];
 
+  useEffect(() => {
+    setFailedImageKey(null);
+  }, [activeSlide?.image, activeSlide?.key]);
+
   if (!activeSlide) {
     return (
       <section
@@ -179,22 +184,47 @@ const HomeHero = ({ slides = [], reviewSummaries = {}, loading = true }: HomeHer
               aria-label={activeSlideLabel}
               aria-live={isRotationActive ? "off" : "polite"}
               aria-atomic="true"
-              className="relative aspect-square overflow-hidden rounded-[1.25rem] border border-border/70 bg-foreground shadow-[0_24px_50px_-34px_rgba(15,23,42,0.35)] sm:rounded-[1.5rem]"
+              className="relative aspect-[16/9] overflow-hidden rounded-[1.25rem] border border-border/70 bg-foreground shadow-[0_24px_50px_-34px_rgba(15,23,42,0.35)] sm:rounded-[1.5rem]"
             >
               <Link
                 to={activeSlide.ctaHref}
                 aria-label={`Shop ${activeSlide.title}`}
                 className="group absolute inset-0"
               >
-                <img
-                  src={normalizeShopifyAssetUrl(activeSlide.image) || activeSlide.image}
-                  alt={activeSlide.alt}
-                  loading="eager"
-                  {...({ fetchpriority: "high" } as Record<string, string>)}
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
-                />
+                {failedImageKey === activeSlide.key ? (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.48),transparent_42%),linear-gradient(135deg,#07111f,#203452)] px-8 text-center text-white"
+                    aria-label={`${activeSlide.title} collection preview`}
+                  >
+                    <span className="font-display text-[clamp(2rem,5vw,5rem)] font-semibold leading-none tracking-[-0.06em]">
+                      {activeSlide.title}
+                    </span>
+                  </div>
+                ) : (
+                  <img
+                    src={normalizeShopifyAssetUrl(activeSlide.image) || activeSlide.image}
+                    alt={activeSlide.alt}
+                    loading="eager"
+                    onError={() => setFailedImageKey(activeSlide.key)}
+                    {...({ fetchpriority: "high" } as Record<string, string>)}
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
+                  />
+                )}
               </Link>
+
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(6,18,31,0.78)_0%,rgba(6,18,31,0.36)_38%,rgba(6,18,31,0.02)_72%)]" />
+              <div className="pointer-events-none absolute inset-x-5 bottom-5 max-w-[48%] text-white sm:inset-x-8 sm:bottom-8">
+                <p className="text-[0.58rem] font-bold uppercase tracking-[0.24em] text-white/75 sm:text-[0.68rem]">
+                  SALT collection edit
+                </p>
+                <h2 className="mt-2 font-display text-[clamp(1.8rem,4vw,4.4rem)] font-semibold leading-[0.9] tracking-[-0.06em]">
+                  {activeSlide.title}
+                </h2>
+                <span className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-slate-950 sm:mt-4 sm:px-5 sm:py-2.5 sm:text-[0.66rem]">
+                  Shop collection
+                </span>
+              </div>
 
               {slides.length > 1 ? (
                 <div className="absolute right-2.5 top-2.5 z-10 flex max-w-[calc(100%-1.25rem)] items-center gap-1 rounded-full border border-white/35 bg-slate-950/75 p-1 text-white shadow-lg backdrop-blur-md sm:right-3 sm:top-3">

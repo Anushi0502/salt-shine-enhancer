@@ -24,11 +24,12 @@ export type HomeCollectionProductsPayload = {
   generatedAt: string;
   source: string;
   sections: {
-    animeCollectables: HomeCollectionSection;
-    creatorEssentials: HomeCollectionSection;
-    lipCare: HomeCollectionSection;
-    watches: HomeCollectionSection;
-    glamEyePalettes: HomeCollectionSection;
+    kids: HomeCollectionSection;
+    footwear: HomeCollectionSection;
+    bestSellers: HomeCollectionSection;
+    luxuryFragrances: HomeCollectionSection;
+    men: HomeCollectionSection;
+    women: HomeCollectionSection;
   };
 };
 
@@ -42,11 +43,12 @@ const EMPTY_PAYLOAD: HomeCollectionProductsPayload = {
   generatedAt: "",
   source: "",
   sections: {
-    animeCollectables: EMPTY_SECTION("Anime Collectables", "anime-collectables"),
-    creatorEssentials: EMPTY_SECTION("Creator Essentials", "creator-essentials"),
-    lipCare: EMPTY_SECTION("Lip Care", "lips-and-care"),
-    watches: EMPTY_SECTION("Watches", "watches"),
-    glamEyePalettes: EMPTY_SECTION("Glam Eye Palettes", "glam-eye-palettes"),
+    kids: EMPTY_SECTION("Kids", "kids"),
+    footwear: EMPTY_SECTION("Footwear", "footwear"),
+    bestSellers: EMPTY_SECTION("Best Sellers", "best-sellers"),
+    luxuryFragrances: EMPTY_SECTION("Luxury Fragrances", "luxury-fragrances"),
+    men: EMPTY_SECTION("Men", "men-collection"),
+    women: EMPTY_SECTION("Women", "women"),
   },
 };
 
@@ -55,11 +57,12 @@ type SaltHomeCollectionPreloadWindow = Window & {
 };
 
 const HOME_SECTIONS = [
-  ["animeCollectables", "Anime Collectables", "anime-collectables"],
-  ["creatorEssentials", "Creator Essentials", "creator-essentials"],
-  ["lipCare", "Lip Care", "lips-and-care"],
-  ["watches", "Watches", "watches"],
-  ["glamEyePalettes", "Glam Eye Palettes", "glam-eye-palettes"],
+  ["kids", "Kids", "kids"],
+  ["footwear", "Footwear", "footwear"],
+  ["bestSellers", "Best Sellers", "best-sellers"],
+  ["luxuryFragrances", "Luxury Fragrances", "luxury-fragrances"],
+  ["men", "Men", "men-collection"],
+  ["women", "Women", "women"],
 ] as const;
 
 function toHomeCollectionProduct(product: ShopifyProduct): HomeCollectionProduct | null {
