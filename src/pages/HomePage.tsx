@@ -41,7 +41,6 @@ const HOME_PRODUCT_DISPLAY_LIMIT = 12;
 const HOME_COLLECTION_SHELVES = [
   { key: "kids", title: "Kids", handle: "kids" },
   { key: "footwear", title: "Footwear", handle: "footwear" },
-  { key: "bestSellers", title: "Best Sellers", handle: "best-sellers" },
   { key: "luxuryFragrances", title: "Luxury Fragrances", handle: "luxury-fragrances" },
   { key: "men", title: "Men", handle: "men-collection" },
   { key: "women", title: "Women", handle: "women" },
