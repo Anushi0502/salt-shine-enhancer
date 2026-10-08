@@ -944,12 +944,12 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       })();
     </script>
     {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}" fetchpriority="high">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
     {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}" fetchpriority="high">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
     {% elsif request.path == '/' and ${JSON.stringify(routeAssets.home || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
     {% endif %}
     {% if request.page_type == 'product' %}
       {%- comment -%}
@@ -1340,7 +1340,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% endpaginate %}
     {% endif %}
     {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
-      <script type="module" src="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}"></script>
+      <script type="module" src="{{ 'salt-app.js' | asset_url | split: '?' | first }}?v=${themeBuildStamp}"></script>
     {% else %}
     {% endif %}
   </head>
