@@ -922,13 +922,34 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
     <link rel="manifest" href="{{ 'site.webmanifest' | asset_url }}">
     <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
     {{ 'salt-app.css' | asset_url | stylesheet_tag }}
+    <script>
+      (function () {
+        var saltPreloadRetryKey = 'salt-vite-preload-retry';
+
+        function recoverFromPreloadError() {
+          try {
+            if (sessionStorage.getItem(saltPreloadRetryKey) === '1') return;
+            sessionStorage.setItem(saltPreloadRetryKey, '1');
+          } catch (error) {}
+
+          var retryUrl = new URL(window.location.href);
+          retryUrl.searchParams.set('salt_asset_refresh', Date.now().toString(36));
+          window.location.replace(retryUrl.href);
+        }
+
+        window.addEventListener('vite:preloadError', function (event) {
+          event.preventDefault();
+          recoverFromPreloadError();
+        });
+      })();
+    </script>
     {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}" fetchpriority="high">
     {% endif %}
     {% if request.page_type == 'product' and ${JSON.stringify(routeAssets.product || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}" fetchpriority="high">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.product || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}" fetchpriority="high">
     {% elsif request.path == '/' and ${JSON.stringify(routeAssets.home || "")} != blank %}
-      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}">
+      <link rel="modulepreload" href="{{ ${JSON.stringify(routeAssets.home || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}">
     {% endif %}
     {% if request.page_type == 'product' %}
       {%- comment -%}
@@ -1319,7 +1340,7 @@ async function writeThemeScaffold(settingsData = null, routeAssets = {}) {
       {% endpaginate %}
     {% endif %}
     {% if ${JSON.stringify(routeAssets.entry || "")} != blank %}
-      <script type="module" src="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}"></script>
+      <script type="module" src="{{ ${JSON.stringify(routeAssets.entry || "")} | asset_url | split: '?' | first }}?v=${themeBuildStamp}"></script>
     {% else %}
     {% endif %}
   </head>
