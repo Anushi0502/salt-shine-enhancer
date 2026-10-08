@@ -11,7 +11,6 @@ import { formatMoney, productImage } from "@/lib/formatters";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { openExternalUrl } from "@/lib/mobile";
-import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { useCollectionProductsMap, useProductSearchIndex } from "@/lib/shopify-data";
 import {
   buildCartRecommendations,
@@ -230,10 +229,7 @@ const CartDrawer = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {items.map((item) => {
-                  const minimumQuantity = getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity);
-
-                  return (
+                {items.map((item) => (
                     <article
                       key={item.id}
                       className="rounded-[1.5rem] border border-border/70 bg-card/85 p-4 shadow-[0_22px_40px_-34px_rgba(15,23,42,0.16)]"
@@ -275,7 +271,7 @@ const CartDrawer = () => {
                                 <button
                                   type="button"
                                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  disabled={item.quantity <= minimumQuantity}
+                                  disabled={item.quantity <= 1}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
                                   aria-label="Decrease quantity"
                                 >
@@ -293,11 +289,6 @@ const CartDrawer = () => {
                                   <Plus className="h-4 w-4" />
                                 </button>
                               </div>
-                              {minimumQuantity > 1 ? (
-                                <p className="text-[0.68rem] font-medium text-muted-foreground">
-                                  Shop floor: buy {minimumQuantity}.
-                                </p>
-                              ) : null}
                             </div>
 
                             <div className="text-right">
@@ -312,8 +303,7 @@ const CartDrawer = () => {
                         </div>
                       </div>
                     </article>
-                  );
-                })}
+                ))}
               </div>
             )}
 
@@ -389,11 +379,6 @@ const CartDrawer = () => {
                                 image: image || "",
                                 unitPrice: Number(defaultVariant.price || 0),
                                 productType: product.product_type,
-                                minimumQuantity: getMinimumProductQuantity(
-                                  product.handle,
-                                  Number(defaultVariant.price || 0),
-                                  product.customData?.shopChannelMinimumQuantity,
-                                ),
                               },
                               1,
                             );

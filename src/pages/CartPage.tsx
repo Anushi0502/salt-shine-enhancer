@@ -14,7 +14,6 @@ import { formatMoney, productImage } from "@/lib/formatters";
 import { openExternalUrl } from "@/lib/mobile";
 import { trackMetaPixelInitiateCheckout } from "@/lib/meta-pixel";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
-import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { useCollectionProductsMap, useProductSearchIndex } from "@/lib/shopify-data";
 import {
   buildCartRecommendations,
@@ -423,7 +422,7 @@ const CartPage = () => {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity)}
+                          disabled={item.quantity <= 1}
                           className="inline-flex h-10 w-10 items-center justify-center text-foreground disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label="Decrease quantity"
                         >
@@ -439,12 +438,6 @@ const CartPage = () => {
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
-                      {getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity) > 1 ? (
-                        <p className="mt-1 text-[0.72rem] text-muted-foreground">
-                          Shop floor: buy {getMinimumProductQuantity(item.handle, item.unitPrice, item.minimumQuantity)}.
-                        </p>
-                      ) : null}
-
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
@@ -623,11 +616,6 @@ const CartPage = () => {
                                 image: image || "",
                                 unitPrice: Number(defaultVariant.price || 0),
                                 productType: product.product_type,
-                                minimumQuantity: getMinimumProductQuantity(
-                                  product.handle,
-                                  Number(defaultVariant.price || 0),
-                                  product.customData?.shopChannelMinimumQuantity,
-                                ),
                               },
                               1,
                               { openDrawer: false },

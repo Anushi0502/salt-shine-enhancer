@@ -12,7 +12,6 @@ import {
   responsiveShopifyImageSrcSet,
   responsiveShopifyImageUrl,
 } from "@/lib/formatters";
-import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import type { JudgeMeReviewSummary } from "@/lib/judgeme";
 import { useWishlist, wishlistItemFromProduct } from "@/lib/wishlist";
 import type { ShopifyProduct } from "@/types/shopify";
@@ -72,11 +71,6 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
   const cardImage = responsiveShopifyImageUrl(image, 720);
   const cardImageSrcSet = responsiveShopifyImageSrcSet(image);
   const title = conciseTitle(product.title, isShop ? 64 : isDense ? 58 : 64);
-  const minimumQuantity = getMinimumProductQuantity(
-    product.handle,
-    min,
-    product.customData?.shopChannelMinimumQuantity,
-  );
   const highlights = (product.customData?.highlights || []).filter(Boolean).slice(0, 2);
   const wishlisted = isWishlisted(product.handle);
   const fallbackSummary =
@@ -202,11 +196,6 @@ const ProductCard = ({ product, variant = "default", reviewSummary, className = 
             </p>
           </div>
 
-          {minimumQuantity > 1 ? (
-            <p className={`${isHero ? "mt-1" : "mt-2"} text-[0.55rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:text-[0.62rem]`}>
-              Pack x{minimumQuantity}
-            </p>
-          ) : null}
         </div>
       </article>
     );

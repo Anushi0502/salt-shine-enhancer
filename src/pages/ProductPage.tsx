@@ -62,7 +62,6 @@ import {
   trackMetaPixelInitiateCheckout,
   trackMetaPixelViewContent,
 } from "@/lib/meta-pixel";
-import { getMinimumProductQuantity } from "@/lib/minimum-quantity-rules";
 import { recordDeviceOrderHistory } from "@/lib/order-history";
 import { getEditorialGuidesForProductHandle } from "@/lib/editorial-pages";
 import {
@@ -543,15 +542,7 @@ const ProductPage = () => {
     () => variants.find((variant) => variant.id === selectedVariantId) || variants[0],
     [selectedVariantId, variants],
   );
-  const quantityFloor = useMemo(
-    () =>
-      getMinimumProductQuantity(
-        product?.handle,
-        Number(selectedVariant?.price || 0),
-        product?.customData?.shopChannelMinimumQuantity,
-      ),
-    [product?.customData?.shopChannelMinimumQuantity, product?.handle, selectedVariant?.price],
-  );
+  const quantityFloor = 1;
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") {
@@ -585,13 +576,7 @@ const ProductPage = () => {
     }
 
     setSelectedVariantId(initialVariant?.id || 0);
-    setQuantity(
-      getMinimumProductQuantity(
-        product.handle,
-        Number(initialVariant?.price || 0),
-        product.customData?.shopChannelMinimumQuantity,
-      ),
-    );
+    setQuantity(1);
     setActiveImage(productVariantImage(product, initialVariant) || "");
   }, [initialVariant, product]);
 
@@ -944,7 +929,6 @@ const ProductPage = () => {
         image: activeImage || primaryImage,
         unitPrice: price,
         productType: product.product_type,
-        minimumQuantity: product.customData?.shopChannelMinimumQuantity || quantityFloor,
       },
       selectedQuantity,
     );
@@ -1262,7 +1246,7 @@ const ProductPage = () => {
         <Reveal className="salt-reveal-instant lg:self-start">
           <aside
             className="bg-background p-4 sm:p-5 lg:sticky lg:top-24 lg:border-l lg:border-border/70"
-            data-salt-minimum-quantity={quantityFloor}
+            data-salt-minimum-quantity="1"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
