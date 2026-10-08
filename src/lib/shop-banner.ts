@@ -1,4 +1,8 @@
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
+import {
+  getWebsiteCollectionBanner,
+  type WebsiteCollectionBanner,
+} from "@/lib/website-collection-banners";
 import type { ShopifyCollection } from "@/types/shopify";
 
 export type ShopBannerImageSelectionSource =
@@ -11,6 +15,7 @@ export type ShopBannerImageSelection = {
   collection: ShopifyCollection | null;
   image: string | null;
   source: ShopBannerImageSelectionSource;
+  websiteOverride: WebsiteCollectionBanner | null;
 };
 
 function normalizeText(value: string | null | undefined): string {
@@ -48,7 +53,10 @@ function expandTokens(value: string): string[] {
 }
 
 function getCollectionImage(collection: ShopifyCollection | null | undefined): string | null {
-  return normalizeShopifyAssetUrl(collection?.image?.src);
+  return (
+    getWebsiteCollectionBanner(collection)?.image ||
+    normalizeShopifyAssetUrl(collection?.image?.src)
+  );
 }
 
 function isAllProductsCollection(collection: ShopifyCollection): boolean {
@@ -159,14 +167,28 @@ export function resolveShopBannerImageSelection(input: {
   const selectedCollection = input.selectedCollection || null;
 
   if (selectedCollection) {
+    const websiteOverride = getWebsiteCollectionBanner(selectedCollection);
     const selectedImage = getCollectionImage(selectedCollection);
     if (selectedImage) {
       return {
         collection: selectedCollection,
         image: selectedImage,
         source: "selected-collection",
+        websiteOverride,
       };
     }
+  }
+
+  const routeWebsiteOverride = getWebsiteCollectionBanner(
+    input.routeSubcollectionHandle || input.routeCollectionHandle,
+  );
+  if (routeWebsiteOverride) {
+    return {
+      collection: selectedCollection,
+      image: routeWebsiteOverride.image,
+      source: "selected-collection",
+      websiteOverride: routeWebsiteOverride,
+    };
   }
 
   const normalizedCategory = normalizeText(input.categoryValue);
@@ -179,6 +201,7 @@ export function resolveShopBannerImageSelection(input: {
         collection: matchedCollection,
         image: matchedImage,
         source: "matched-category",
+        websiteOverride: getWebsiteCollectionBanner(matchedCollection),
       };
     }
   }
@@ -191,6 +214,7 @@ export function resolveShopBannerImageSelection(input: {
       collection: allProductsCollection,
       image: allProductsImage,
       source: "all-products",
+      websiteOverride: null,
     };
   }
 
@@ -198,5 +222,6 @@ export function resolveShopBannerImageSelection(input: {
     collection: selectedCollection,
     image: null,
     source: "none",
+    websiteOverride: null,
   };
 }

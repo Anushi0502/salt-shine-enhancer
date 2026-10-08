@@ -443,15 +443,16 @@ const ShopPage = () => {
   );
   const selectedCollectionImage = bannerImageSelection.image;
   const selectedCollectionImageAlt =
+    bannerImageSelection.websiteOverride?.alt ||
     bannerImageSelection.collection?.title ||
     curatedSubcollection?.title ||
     curatedCollection?.title ||
     selectedCollection?.title ||
     "Collection preview";
   const showDesignedCollectionBanner = Boolean(
-    selectedCollectionImage &&
+      selectedCollectionImage &&
       bannerImageSelection.source === "selected-collection" &&
-      isDesignedCollectionBanner(selectedCollection),
+      (Boolean(bannerImageSelection.websiteOverride) || isDesignedCollectionBanner(selectedCollection)),
   );
 
   const totalResults = productsPayload?.total ?? sortedProducts.length;

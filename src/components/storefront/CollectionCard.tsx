@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { ShopifyCollection } from "@/types/shopify";
 import { normalizeShopifyAssetUrl } from "@/lib/theme-assets";
 import { buildCollectionRoute } from "@/lib/site-navigation";
+import { getWebsiteCollectionBanner } from "@/lib/website-collection-banners";
 
 export type CollectionCardVariant = "default" | "hero";
 
@@ -34,7 +35,12 @@ const CollectionCard = ({
   editorialContent,
   imageSrc,
 }: CollectionCardProps) => {
-  const image = normalizeShopifyAssetUrl(imageSrc) || normalizeShopifyAssetUrl(collection.image?.src);
+  const websiteBanner = getWebsiteCollectionBanner(collection);
+  const image =
+    normalizeShopifyAssetUrl(imageSrc) ||
+    websiteBanner?.image ||
+    normalizeShopifyAssetUrl(collection.image?.src);
+  const imageAlt = websiteBanner?.alt || collection.title;
   const totalProducts = productCount ?? collection.products_count;
   const isHero = variant === "hero";
   const hasEditorialContent = isHero && Boolean(editorialContent);
@@ -52,7 +58,7 @@ const CollectionCard = ({
               <div className="aspect-[6/5] overflow-hidden">
                 <img
                   src={image}
-                  alt={collection.title}
+                  alt={imageAlt}
                   loading="lazy"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 />
@@ -87,7 +93,7 @@ const CollectionCard = ({
           {image ? (
             <img
               src={image}
-              alt={collection.title}
+              alt={imageAlt}
               loading="lazy"
               className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.03]"
             />

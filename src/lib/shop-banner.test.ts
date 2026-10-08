@@ -3,6 +3,7 @@ import {
   findBestCollectionForCategory,
   resolveShopBannerImageSelection,
 } from "@/lib/shop-banner";
+import { getWebsiteCollectionBanner } from "@/lib/website-collection-banners";
 import type { ShopifyCollection } from "@/types/shopify";
 
 function makeCollection(input: {
@@ -63,6 +64,41 @@ const collections: ShopifyCollection[] = [
 ];
 
 describe("shop banner image selection", () => {
+  it("uses the website banner for a mapped collection instead of the Shopify image", () => {
+    const women = makeCollection({
+      id: 5,
+      title: "Women",
+      handle: "women",
+      image: "https://cdn.shopify.com/old-women-banner.webp",
+    });
+    const selection = resolveShopBannerImageSelection({
+      collections: [...collections, women],
+      selectedCollection: women,
+    });
+
+    expect(selection.source).toBe("selected-collection");
+    expect(selection.websiteOverride?.alt).toBe("Women collection banner");
+    expect(selection.image).toContain("women-collection-banner");
+    expect(selection.image).not.toBe("https://cdn.shopify.com/old-women-banner.webp");
+  });
+
+  it("resolves the Best Sellers website banner from its virtual route alias", () => {
+    const selection = resolveShopBannerImageSelection({
+      collections,
+      routeCollectionHandle: "best-sellers",
+    });
+
+    expect(selection.source).toBe("selected-collection");
+    expect(selection.websiteOverride?.alt).toBe("Best Sellers collection banner");
+    expect(selection.image).toContain("bestsellers-collection-banner");
+  });
+
+  it("supports Shopify's Best Sellers collection handle alias", () => {
+    expect(getWebsiteCollectionBanner("appplaza-best-sellers")?.alt).toBe(
+      "Best Sellers collection banner",
+    );
+  });
+
   it("uses the active Shopify collection image when a collection is selected", () => {
     const selection = resolveShopBannerImageSelection({
       collections,
