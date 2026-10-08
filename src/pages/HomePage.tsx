@@ -7,11 +7,9 @@ import SeoMetadata from "@/components/storefront/SeoMetadata";
 import HomeHero, { type HomeHeroSlide } from "@/components/storefront/HomeHero";
 import { HomeShelfState } from "@/components/storefront/HomeShelfState";
 import GiftBanner from "@/components/salt/GiftBanner";
-import { FreeGiftFinder } from "@/components/salt/FreeGiftFinder";
 import { SaltFinds } from "@/components/salt/SaltFinds";
 import { polishPlainText } from "@/lib/formatters";
 import { SALT_BRAND_SHORT_DESCRIPTION } from "@/lib/salt-brand";
-import { toGiftFinderProduct } from "@/lib/gift-finder-catalog";
 import { useHomeCollectionProducts } from "@/lib/home-collection-products";
 import { useHomeFeaturedProducts } from "@/lib/home-featured-products";
 import { useJudgeMeTestimonials } from "@/lib/judgeme";
@@ -197,24 +195,6 @@ const HomePage = () => {
     [homeFeaturedProductsPayload?.bestSellerProducts],
   );
   const bestSellerDisplayTiles = bestSellerTiles;
-  const giftFinderProducts = useMemo(
-    () => {
-      const sourceProducts =
-        homeFeaturedProductsPayload?.giftFinderProducts?.length
-          ? homeFeaturedProductsPayload.giftFinderProducts
-          : homeFeaturedProductsPayload?.bestSellerProducts || [];
-      const seen = new Set<string>();
-
-      return sourceProducts
-        .map((product, index) => toGiftFinderProduct(product, index))
-        .filter((product) => {
-          if (seen.has(product.slug)) return false;
-          seen.add(product.slug);
-          return true;
-        });
-    },
-    [homeFeaturedProductsPayload?.bestSellerProducts, homeFeaturedProductsPayload?.giftFinderProducts],
-  );
   const homeHeroSlides = useMemo<HomeHeroSlide[]>(
     () =>
       HOME_HERO_BANNERS.map((banner) => {
@@ -483,18 +463,6 @@ const HomePage = () => {
             <GiftBanner />
           </section>
         </Reveal>
-
-        {giftFinderProducts.length > 0 ? (
-          <Reveal delayMs={150}>
-            <section className="salt-section-shell rounded-[1.75rem] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
-              <FreeGiftFinder
-                products={giftFinderProducts}
-                title="Find a live SALT gift in four quick picks"
-                description="Choose a recipient, occasion, budget, and interest to see live catalog picks that stay inside your selected price range."
-              />
-            </section>
-          </Reveal>
-        ) : null}
 
         <Reveal delayMs={210}>
           <SaltFinds />
